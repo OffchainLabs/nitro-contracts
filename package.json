@@ -6,8 +6,7 @@
   "license": "BUSL-1.1",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/offchainlabs/nitro.git",
-    "directory": "contracts"
+    "url": "git+https://github.com/offchainlabs/rollup-contracts.git"
   },
   "files": [
     "src/",
@@ -15,10 +14,10 @@
     "hardhat.prod-config.js"
   ],
   "bugs": {
-    "url": "https://github.com/offchainlabs/nitro/issues"
+    "url": "https://github.com/offchainlabs/rollup-contracts/issues"
   },
   "scripts": {
-    "build": "./scripts/build.bash",
+    "build": "hardhat compile",
     "lint:test": "eslint ./test",
     "solhint": "solhint -f table src/**/*.sol",
     "prettier:solidity": "prettier --write src/**/*.sol",
