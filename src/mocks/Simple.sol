@@ -113,7 +113,9 @@ contract Simple {
 
     function checkGasUsed(address to, bytes calldata input) external view returns (uint256) {
         uint256 before = gasleft();
-        to.staticcall{gas: before - 10000}(input);
+        // The inner call may revert, but we still want to return the amount of gas used,
+        // so we ignore the result of this call.
+        (to.staticcall{gas: before - 10000}(input));
         return before - gasleft();
     }
 }
