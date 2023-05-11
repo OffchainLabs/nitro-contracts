@@ -9,6 +9,7 @@ import "./BridgeCreator.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Create2.sol";
 
 import "./RollupProxy.sol";
 
@@ -30,6 +31,10 @@ contract RollupCreator is Ownable {
 
     address public validatorUtils;
     address public validatorWalletCreator;
+
+    uint256 public deployedRollups;
+    bytes32 internal constant rollupProxyCreationCodeHash =
+        keccak256(type(RollupProxy).creationCode);
 
     constructor() Ownable() {}
 
@@ -60,6 +65,7 @@ contract RollupCreator is Ownable {
         IRollupEventInbox rollupEventInbox;
         IOutbox outbox;
         RollupProxy rollup;
+        bytes32 rollupSalt;
     }
 
     // After this setup:
@@ -67,13 +73,15 @@ contract RollupCreator is Ownable {
     // RollupOwner should be the owner of Rollup's ProxyAdmin
     // RollupOwner should be the owner of Rollup
     // Bridge should have a single inbox and outbox
-    function createRollup(Config memory config, address expectedRollupAddr)
-        external
-        returns (address)
-    {
+    function createRollup(Config memory config) external returns (address) {
         CreateRollupFrame memory frame;
         frame.admin = new ProxyAdmin();
 
+        frame.rollupSalt = bytes32(deployedRollups++);
+        address expectedRollupAddr = Create2.computeAddress(
+            frame.rollupSalt,
+            rollupProxyCreationCodeHash
+        );
         (
             frame.bridge,
             frame.sequencerInbox,
@@ -104,7 +112,10 @@ contract RollupCreator is Ownable {
             osp
         );
 
-        frame.rollup = new RollupProxy(
+        frame.rollup = new RollupProxy{salt: frame.rollupSalt}();
+        require(address(frame.rollup) == expectedRollupAddr, "WRONG_ROLLUP_ADDR");
+
+        frame.rollup.initializeProxy(
             config,
             ContractDependencies({
                 bridge: frame.bridge,
@@ -119,7 +130,6 @@ contract RollupCreator is Ownable {
                 validatorWalletCreator: validatorWalletCreator
             })
         );
-        require(address(frame.rollup) == expectedRollupAddr, "WRONG_ROLLUP_ADDR");
 
         emit RollupCreated(
             address(frame.rollup),
