@@ -85,7 +85,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
 
     constructor() {
         (bool ok, bytes memory data) = address(100).staticcall(
-            bytes.concat(ArbSys.arbOSVersion.selector)
+            abi.encodeWithSelector(ArbSys.arbOSVersion.selector)
         );
         _hostChainIsArbitrum = ok && data.length == 32;
     }
