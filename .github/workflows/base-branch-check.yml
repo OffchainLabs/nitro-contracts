@@ -1,10 +1,11 @@
 name: CI
 
 on:
+  workflow_dispatch:
   pull_request:
 
 jobs:
-  tests:
+  base_branch_check:
     name: Pull request base branch check
     steps:
       - name: Check the pull request base branch
