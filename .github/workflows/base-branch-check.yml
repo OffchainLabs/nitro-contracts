@@ -1,0 +1,15 @@
+name: CI
+
+on:
+  pull_request:
+
+jobs:
+  tests:
+    name: Pull request base branch check
+    steps:
+      - name: Check the pull request base branch
+        run: |
+          if [[ "$GITHUB_BASE_REF" == "main" ]] && [[ "$GITHUB_HEAD_REF" != "develop" ]] && [[ "$GITHUB_HEAD_REF" != hotfix* ]]; then
+            echo -e "\x1b[31mPull requests targeting the main branch must be from the develop branch or a branch name starting with "hotfix".\x1b[0m"
+            exit 1
+          fi
