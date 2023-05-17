@@ -151,7 +151,7 @@ contract InboxStub is IInbox {
         address,
         uint256,
         bytes calldata
-    ) external pure returns (uint256) {
+    ) external returns (uint256) {
         revert("NOT_IMPLEMENTED");
     }
 
@@ -161,7 +161,7 @@ contract InboxStub is IInbox {
         uint256,
         uint256,
         address
-    ) external pure returns (uint256) {
+    ) external returns (uint256) {
         revert("NOT_IMPLEMENTED");
     }
 
