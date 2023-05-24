@@ -1,4 +1,4 @@
-// Copyright 2021-2022, Offchain Labs, Inc.
+// Copyright 2021-2023, Offchain Labs, Inc.
 // For license information, see https://github.com/nitro/blob/master/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
@@ -13,6 +13,10 @@ import "./IOneStepProofEntry.sol";
 contract OneStepProofEntry is IOneStepProofEntry {
     using MerkleProofLib for MerkleProof;
     using MachineLib for Machine;
+
+    using ValueStackLib for ValueStack;
+    using GuardStackLib for GuardStack;
+    using StackFrameLib for StackFrameWindow;
 
     IOneStepProver public prover0;
     IOneStepProver public proverMem;
@@ -113,7 +117,7 @@ contract OneStepProofEntry is IOneStepProofEntry {
         } else if (
             (opcode >= Instructions.GET_GLOBAL_STATE_BYTES32 &&
                 opcode <= Instructions.SET_GLOBAL_STATE_U64) ||
-            (opcode >= Instructions.READ_PRE_IMAGE && opcode <= Instructions.HALT_AND_SET_FINISHED)
+            (opcode >= Instructions.READ_PRE_IMAGE && opcode <= Instructions.POP_ERROR_GUARD)
         ) {
             prover = proverHostIo;
         } else {
@@ -122,7 +126,23 @@ contract OneStepProofEntry is IOneStepProofEntry {
 
         (mach, mod) = prover.executeOneStep(execCtx, mach, mod, inst, proof);
 
-        mach.modulesRoot = modProof.computeRootFromModule(oldModIdx, mod);
+        bool updateRoot = !(opcode == Instructions.LINK_MODULE ||
+            opcode == Instructions.UNLINK_MODULE);
+        if (updateRoot) {
+            mach.modulesRoot = modProof.computeRootFromModule(oldModIdx, mod);
+        }
+
+        if (mach.status == MachineStatus.ERRORED && !mach.guardStack.empty()) {
+            ErrorGuard memory guard = mach.guardStack.pop();
+            mach.frameStack.overwrite(guard.frameStack);
+            mach.valueStack.overwrite(guard.valueStack);
+            mach.internalStack.overwrite(guard.interStack);
+            mach.setPc(guard.onErrorPc);
+
+            // indicate an error and continue
+            mach.valueStack.push(ValueLib.newI32(0));
+            mach.status = MachineStatus.RUNNING;
+        }
 
         return mach.hash();
     }
