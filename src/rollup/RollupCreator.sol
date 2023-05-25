@@ -54,66 +54,57 @@ contract RollupCreator is Ownable {
         emit TemplatesUpdated();
     }
 
-    struct CreateRollupFrame {
-        ProxyAdmin admin;
-        IBridge bridge;
-        ISequencerInbox sequencerInbox;
-        IInbox inbox;
-        IRollupEventInbox rollupEventInbox;
-        IOutbox outbox;
-        RollupProxy rollup;
-        bytes32 rollupSalt;
-    }
-
     // After this setup:
     // Rollup should be the owner of bridge
     // RollupOwner should be the owner of Rollup's ProxyAdmin
     // RollupOwner should be the owner of Rollup
     // Bridge should have a single inbox and outbox
     function createRollup(Config memory config) external returns (address) {
-        CreateRollupFrame memory frame;
-        frame.admin = new ProxyAdmin();
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
 
-        frame.rollupSalt = keccak256(abi.encode(config, deployedRollups++));
-        frame.rollup = new RollupProxy{salt: frame.rollupSalt}();
+        bytes32 rollupSalt = keccak256(abi.encode(config, deployedRollups++));
+
+        // Create the rollup proxy to figure out the address and initialize it later
+        RollupProxy rollup = new RollupProxy{salt: rollupSalt}();
+
         (
-            frame.bridge,
-            frame.sequencerInbox,
-            frame.inbox,
-            frame.rollupEventInbox,
-            frame.outbox
+            IBridge bridge,
+            ISequencerInbox sequencerInbox,
+            IInbox inbox,
+            IRollupEventInbox rollupEventInbox,
+            IOutbox outbox
         ) = bridgeCreator.createBridge(
-            address(frame.admin),
-            address(frame.rollup),
-            config.sequencerInboxMaxTimeVariation
-        );
+                address(proxyAdmin),
+                address(rollup),
+                config.sequencerInboxMaxTimeVariation
+            );
 
-        frame.admin.transferOwnership(config.owner);
+        proxyAdmin.transferOwnership(config.owner);
 
         IChallengeManager challengeManager = IChallengeManager(
             address(
                 new TransparentUpgradeableProxy(
                     address(challengeManagerTemplate),
-                    address(frame.admin),
+                    address(proxyAdmin),
                     ""
                 )
             )
         );
         challengeManager.initialize(
-            IChallengeResultReceiver(address(frame.rollup)),
-            frame.sequencerInbox,
-            frame.bridge,
+            IChallengeResultReceiver(address(rollup)),
+            sequencerInbox,
+            bridge,
             osp
         );
 
-        frame.rollup.initializeProxy(
+        rollup.initializeProxy(
             config,
             ContractDependencies({
-                bridge: frame.bridge,
-                sequencerInbox: frame.sequencerInbox,
-                inbox: frame.inbox,
-                outbox: frame.outbox,
-                rollupEventInbox: frame.rollupEventInbox,
+                bridge: bridge,
+                sequencerInbox: sequencerInbox,
+                inbox: inbox,
+                outbox: outbox,
+                rollupEventInbox: rollupEventInbox,
                 challengeManager: challengeManager,
                 rollupAdminLogic: rollupAdminLogic,
                 rollupUserLogic: rollupUserLogic,
@@ -123,12 +114,12 @@ contract RollupCreator is Ownable {
         );
 
         emit RollupCreated(
-            address(frame.rollup),
-            address(frame.inbox),
-            address(frame.admin),
-            address(frame.sequencerInbox),
-            address(frame.bridge)
+            address(rollup),
+            address(inbox),
+            address(proxyAdmin),
+            address(sequencerInbox),
+            address(bridge)
         );
-        return address(frame.rollup);
+        return address(rollup);
     }
 }
