@@ -31,8 +31,6 @@ contract RollupCreator is Ownable {
     address public validatorUtils;
     address public validatorWalletCreator;
 
-    uint256 public deployedRollups;
-
     constructor() Ownable() {}
 
     function setTemplates(
@@ -62,10 +60,8 @@ contract RollupCreator is Ownable {
     function createRollup(Config memory config) external returns (address) {
         ProxyAdmin proxyAdmin = new ProxyAdmin();
 
-        bytes32 rollupSalt = keccak256(abi.encode(config, deployedRollups++));
-
         // Create the rollup proxy to figure out the address and initialize it later
-        RollupProxy rollup = new RollupProxy{salt: rollupSalt}();
+        RollupProxy rollup = new RollupProxy{salt: keccak256(abi.encode(config))}();
 
         (
             IBridge bridge,
