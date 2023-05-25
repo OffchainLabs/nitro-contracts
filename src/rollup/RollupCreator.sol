@@ -9,7 +9,6 @@ import "./BridgeCreator.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Create2.sol";
 
 import "./RollupProxy.sol";
 
@@ -33,8 +32,6 @@ contract RollupCreator is Ownable {
     address public validatorWalletCreator;
 
     uint256 public deployedRollups;
-    bytes32 internal constant rollupProxyCreationCodeHash =
-        keccak256(type(RollupProxy).creationCode);
 
     constructor() Ownable() {}
 
@@ -77,11 +74,8 @@ contract RollupCreator is Ownable {
         CreateRollupFrame memory frame;
         frame.admin = new ProxyAdmin();
 
-        frame.rollupSalt = bytes32(deployedRollups++);
-        address expectedRollupAddr = Create2.computeAddress(
-            frame.rollupSalt,
-            rollupProxyCreationCodeHash
-        );
+        frame.rollupSalt = keccak256(abi.encode(config, deployedRollups++));
+        frame.rollup = new RollupProxy{salt: frame.rollupSalt}();
         (
             frame.bridge,
             frame.sequencerInbox,
@@ -90,7 +84,7 @@ contract RollupCreator is Ownable {
             frame.outbox
         ) = bridgeCreator.createBridge(
             address(frame.admin),
-            expectedRollupAddr,
+            address(frame.rollup),
             config.sequencerInboxMaxTimeVariation
         );
 
@@ -106,14 +100,11 @@ contract RollupCreator is Ownable {
             )
         );
         challengeManager.initialize(
-            IChallengeResultReceiver(expectedRollupAddr),
+            IChallengeResultReceiver(address(frame.rollup)),
             frame.sequencerInbox,
             frame.bridge,
             osp
         );
-
-        frame.rollup = new RollupProxy{salt: frame.rollupSalt}();
-        require(address(frame.rollup) == expectedRollupAddr, "WRONG_ROLLUP_ADDR");
 
         frame.rollup.initializeProxy(
             config,
