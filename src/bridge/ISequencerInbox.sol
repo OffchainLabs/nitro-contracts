@@ -76,9 +76,9 @@ interface ISequencerInbox is IDelayedMessageProvider {
         uint64 creationBlock;
     }
 
-    // https://github.com/ethereum/solidity/issues/11826
-    // function maxTimeVariation() external view returns (MaxTimeVariation calldata);
-    // function dasKeySetInfo(bytes32) external view returns (DasKeySetInfo calldata);
+    function maxTimeVariation() external view returns (uint256, uint256, uint256, uint256);
+
+    function dasKeySetInfo(bytes32) external view returns (bool, uint64);
 
     /// @notice Remove force inclusion delay after a L1 chainId fork
     function removeDelayAfterFork() external;
