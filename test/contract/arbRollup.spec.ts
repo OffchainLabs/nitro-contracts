@@ -183,18 +183,7 @@ const setup = async () => {
     ethers.constants.AddressZero
   )
 
-  const nonce = await rollupCreator.signer.provider!.getTransactionCount(
-    rollupCreator.address
-  )
-  const expectedRollupAddress = ethers.utils.getContractAddress({
-    from: rollupCreator.address,
-    nonce: nonce + 2,
-  })
-
-  const response = await rollupCreator.createRollup(
-    await getDefaultConfig(),
-    expectedRollupAddress
-  )
+  const response = await rollupCreator.createRollup(await getDefaultConfig())
   const rec = await response.wait()
 
   const rollupCreatedEvent = rollupCreator.interface.parseLog(
@@ -202,10 +191,10 @@ const setup = async () => {
   ).args as RollupCreatedEvent['args']
 
   const rollupAdmin = rollupAdminLogicFac
-    .attach(expectedRollupAddress)
+    .attach(rollupCreatedEvent.rollupAddress)
     .connect(rollupCreator.signer)
   const rollupUser = rollupUserLogicFac
-    .attach(expectedRollupAddress)
+    .attach(rollupCreatedEvent.rollupAddress)
     .connect(user)
 
   await rollupAdmin.setValidator(
