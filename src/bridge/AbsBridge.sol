@@ -13,21 +13,22 @@ import {
     NotDelayedInbox,
     NotSequencerInbox,
     NotOutbox,
-    InvalidOutboxSet
+    InvalidOutboxSet,
+    BadSequencerMessageNumber
 } from "../libraries/Error.sol";
-import "../bridge/IBridge.sol";
-import "../bridge/IEthBridge.sol";
-import "../bridge/Messages.sol";
+import "./IBridge.sol";
+import "./Messages.sol";
 import "../libraries/DelegateCallAware.sol";
+
+import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
 
 /**
  * @title Staging ground for incoming and outgoing messages
- * @notice Holds the inbox accumulator for delayed messages, and is the ETH escrow
- * for value sent with these messages.
+ * @notice Holds the inbox accumulator for sequenced and delayed messages.
  * Since the escrow is held here, this contract also contains a list of allowed
  * outboxes that can make calls from here and withdraw this escrow.
  */
-contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
+abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     using AddressUpgradeable for address;
 
     struct InOutInfo {
@@ -35,16 +36,26 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
         bool allowed;
     }
 
-    mapping(address => InOutInfo) private allowedInboxesMap;
+    mapping(address => InOutInfo) private allowedDelayedInboxesMap;
     mapping(address => InOutInfo) private allowedOutboxesMap;
 
     address[] public allowedDelayedInboxList;
     address[] public allowedOutboxList;
 
-    address private _activeOutbox;
+    address internal _activeOutbox;
+
+    /// @inheritdoc IBridge
+    bytes32[] public delayedInboxAccs;
+
+    /// @inheritdoc IBridge
+    bytes32[] public sequencerInboxAccs;
 
     IOwnable public rollup;
     address public sequencerInbox;
+
+    uint256 public override sequencerReportedSubMessageCount;
+
+    address internal constant EMPTY_ACTIVEOUTBOX = address(type(uint160).max);
 
     modifier onlyRollupOrOwner() {
         if (msg.sender != address(rollup)) {
@@ -56,35 +67,28 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
         _;
     }
 
-    function setSequencerInbox(address _sequencerInbox) external override onlyRollupOrOwner {
-        sequencerInbox = _sequencerInbox;
-        emit SequencerInboxUpdated(_sequencerInbox);
-    }
-
-    /// @dev Accumulator for delayed inbox messages; tail represents hash of the current state; each element represents the inclusion of a new message.
-    bytes32[] public override delayedInboxAccs;
-
-    bytes32[] public override sequencerInboxAccs;
-    uint256 public override sequencerReportedSubMessageCount;
-
-    address private constant EMPTY_ACTIVEOUTBOX = address(type(uint160).max);
-
-    function initialize(IOwnable rollup_) external initializer {
-        _activeOutbox = EMPTY_ACTIVEOUTBOX;
-        rollup = rollup_;
-    }
-
+    /// @dev returns the address of current active Outbox, or zero if no outbox is active
     function activeOutbox() public view returns (address) {
-        if (_activeOutbox == EMPTY_ACTIVEOUTBOX) return address(uint160(0));
-        return _activeOutbox;
+        address outbox = _activeOutbox;
+        // address zero is returned if no outbox is set, but the value used in storage
+        // is non-zero to save users some gas (as storage refunds are usually maxed out)
+        // EIP-1153 would help here.
+        // we don't return `EMPTY_ACTIVEOUTBOX` to avoid a breaking change on the current api
+        if (outbox == EMPTY_ACTIVEOUTBOX) return address(0);
+        return outbox;
     }
 
-    function allowedDelayedInboxes(address inbox) external view override returns (bool) {
-        return allowedInboxesMap[inbox].allowed;
+    function allowedDelayedInboxes(address inbox) public view returns (bool) {
+        return allowedDelayedInboxesMap[inbox].allowed;
     }
 
-    function allowedOutboxes(address outbox) external view override returns (bool) {
+    function allowedOutboxes(address outbox) public view returns (bool) {
         return allowedOutboxesMap[outbox].allowed;
+    }
+
+    modifier onlySequencerInbox() {
+        if (msg.sender != sequencerInbox) revert NotSequencerInbox(msg.sender);
+        _;
     }
 
     function enqueueSequencerMessage(
@@ -94,6 +98,7 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
         uint256 newMessageCount
     )
         external
+        onlySequencerInbox
         returns (
             uint256 seqMessageIndex,
             bytes32 beforeAcc,
@@ -101,36 +106,62 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
             bytes32 acc
         )
     {
-        // TODO: implement stub logic
+        if (
+            sequencerReportedSubMessageCount != prevMessageCount &&
+            prevMessageCount != 0 &&
+            sequencerReportedSubMessageCount != 0
+        ) {
+            revert BadSequencerMessageNumber(sequencerReportedSubMessageCount, prevMessageCount);
+        }
+        sequencerReportedSubMessageCount = newMessageCount;
+        seqMessageIndex = sequencerInboxAccs.length;
+        if (sequencerInboxAccs.length > 0) {
+            beforeAcc = sequencerInboxAccs[sequencerInboxAccs.length - 1];
+        }
+        if (afterDelayedMessagesRead > 0) {
+            delayedAcc = delayedInboxAccs[afterDelayedMessagesRead - 1];
+        }
+        acc = keccak256(abi.encodePacked(beforeAcc, dataHash, delayedAcc));
+        sequencerInboxAccs.push(acc);
     }
 
-    function submitBatchSpendingReport(address batchPoster, bytes32 dataHash)
+    /// @inheritdoc IBridge
+    function submitBatchSpendingReport(address sender, bytes32 messageDataHash)
         external
+        onlySequencerInbox
         returns (uint256)
     {
-        // TODO: implement stub
-    }
-
-    /**
-     * @dev Enqueue a message in the delayed inbox accumulator.
-     * These messages are later sequenced in the SequencerInbox, either by the sequencer as
-     * part of a normal batch, or by force inclusion.
-     */
-    function enqueueDelayedMessage(
-        uint8 kind,
-        address sender,
-        bytes32 messageDataHash
-    ) external payable override returns (uint256) {
-        if (!allowedInboxesMap[msg.sender].allowed) revert NotDelayedInbox(msg.sender);
         return
             addMessageToDelayedAccumulator(
-                kind,
+                L1MessageType_batchPostingReport,
                 sender,
                 uint64(block.number),
-                uint64(block.timestamp), // solhint-disable-line not-rely-on-time
+                uint64(block.timestamp), // solhint-disable-line not-rely-on-time,
                 block.basefee,
                 messageDataHash
             );
+    }
+
+    function _enqueueDelayedMessage(
+        uint8 kind,
+        address sender,
+        bytes32 messageDataHash,
+        uint256 amount
+    ) internal returns (uint256) {
+        if (!allowedDelayedInboxes(msg.sender)) revert NotDelayedInbox(msg.sender);
+
+        uint256 messageCount = addMessageToDelayedAccumulator(
+            kind,
+            sender,
+            uint64(block.number),
+            uint64(block.timestamp), // solhint-disable-line not-rely-on-time
+            _baseFeeToReport(),
+            messageDataHash
+        );
+
+        _transferFunds(amount);
+
+        return messageCount;
     }
 
     function addMessageToDelayedAccumulator(
@@ -169,12 +200,13 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
         return count;
     }
 
+    /// @inheritdoc IBridge
     function executeCall(
         address to,
         uint256 value,
         bytes calldata data
-    ) external override returns (bool success, bytes memory returnData) {
-        if (!allowedOutboxesMap[msg.sender].allowed) revert NotOutbox(msg.sender);
+    ) external returns (bool success, bytes memory returnData) {
+        if (!allowedOutboxes(msg.sender)) revert NotOutbox(msg.sender);
         if (data.length > 0 && !to.isContract()) revert NotContract(to);
         address prevOutbox = _activeOutbox;
         _activeOutbox = msg.sender;
@@ -182,33 +214,40 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
 
         // We use a low level call here since we want to bubble up whether it succeeded or failed to the caller
         // rather than reverting on failure as well as allow contract and non-contract calls
-        // solhint-disable-next-line avoid-low-level-calls
-        (success, returnData) = to.call{value: value}(data);
+        (success, returnData) = _executeLowLevelCall(to, value, data);
+
         _activeOutbox = prevOutbox;
         emit BridgeCallTriggered(msg.sender, to, value, data);
     }
 
-    function setDelayedInbox(address inbox, bool enabled) external override onlyRollupOrOwner {
-        InOutInfo storage info = allowedInboxesMap[inbox];
+    function setSequencerInbox(address _sequencerInbox) external onlyRollupOrOwner {
+        sequencerInbox = _sequencerInbox;
+        emit SequencerInboxUpdated(_sequencerInbox);
+    }
+
+    function setDelayedInbox(address inbox, bool enabled) external onlyRollupOrOwner {
+        InOutInfo storage info = allowedDelayedInboxesMap[inbox];
         bool alreadyEnabled = info.allowed;
         emit InboxToggle(inbox, enabled);
         if ((alreadyEnabled && enabled) || (!alreadyEnabled && !enabled)) {
             return;
         }
         if (enabled) {
-            allowedInboxesMap[inbox] = InOutInfo(allowedDelayedInboxList.length, true);
+            allowedDelayedInboxesMap[inbox] = InOutInfo(allowedDelayedInboxList.length, true);
             allowedDelayedInboxList.push(inbox);
         } else {
             allowedDelayedInboxList[info.index] = allowedDelayedInboxList[
                 allowedDelayedInboxList.length - 1
             ];
-            allowedInboxesMap[allowedDelayedInboxList[info.index]].index = info.index;
+            allowedDelayedInboxesMap[allowedDelayedInboxList[info.index]].index = info.index;
             allowedDelayedInboxList.pop();
-            delete allowedInboxesMap[inbox];
+            delete allowedDelayedInboxesMap[inbox];
         }
     }
 
-    function setOutbox(address outbox, bool enabled) external override onlyRollupOrOwner {
+    function setOutbox(address outbox, bool enabled) external onlyRollupOrOwner {
+        if (outbox == EMPTY_ACTIVEOUTBOX) revert InvalidOutboxSet(outbox);
+
         InOutInfo storage info = allowedOutboxesMap[outbox];
         bool alreadyEnabled = info.allowed;
         emit OutboxToggle(outbox, enabled);
@@ -226,15 +265,31 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
         }
     }
 
+    function setSequencerReportedSubMessageCount(uint256 newMsgCount) external onlyRollupOrOwner {
+        sequencerReportedSubMessageCount = newMsgCount;
+    }
+
     function delayedMessageCount() external view override returns (uint256) {
         return delayedInboxAccs.length;
     }
 
-    function sequencerMessageCount() external view override returns (uint256) {
+    function sequencerMessageCount() external view returns (uint256) {
         return sequencerInboxAccs.length;
     }
 
-    receive() external payable {}
-
+    /// @dev For the classic -> nitro migration. TODO: remove post-migration.
     function acceptFundsFromOldBridge() external payable {}
+
+    /// @dev transfer funds provided to pay for crosschain msg
+    function _transferFunds(uint256 amount) internal virtual;
+
+    function _executeLowLevelCall(
+        address to,
+        uint256 value,
+        bytes memory data
+    ) internal virtual returns (bool success, bytes memory returnData);
+
+    /// @dev get base fee which is emitted in `MessageDelivered` event and then picked up and
+    /// used in ArbOs to calculate the submission fee for retryable ticket
+    function _baseFeeToReport() internal view virtual returns (uint256);
 }
