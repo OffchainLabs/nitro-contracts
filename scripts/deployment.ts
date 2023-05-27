@@ -68,7 +68,8 @@ async function main() {
   try {
     const contracts = await deployAllContracts(signer);
     
-    // Call setTemplates with the deployed contract addresses 
+    // Call setTemplates with the deployed contract addresses
+    console.log("Waiting for the Template to be set on the Rollup Creator")
     await contracts.rollupCreator.setTemplates(
       contracts.bridgeCreator.address,
       contracts.osp.address,
@@ -77,8 +78,9 @@ async function main() {
       contracts.rollupUser.address,
       contracts.validatorUtils.address,
       contracts.validatorWalletCreator.address
+      , {gasLimit: ethers.BigNumber.from("15000000")}
     );
-
+    console.log("Template is set on the Rollup Creator")
     // Define the configuration for the createRollup function
     const rollupConfig = {
       confirmPeriodBlocks: 10,
@@ -98,9 +100,11 @@ async function main() {
         futureSeconds: 60,
       },
     };
- 
+    
+
     // Call the createRollup function
-    const createRollupTx = await contracts.rollupCreator.createRollup(rollupConfig);
+    console.log("Calling createRollup to generate a new rollup ...")
+    const createRollupTx = await contracts.rollupCreator.createRollup(rollupConfig, {gasLimit: ethers.BigNumber.from("15000000")});
     const createRollupReceipt = await createRollupTx.wait();
     const rollupCreatedEvent = createRollupReceipt.events?.find(
       (event: { event: string }) => event.event === "RollupCreated"
