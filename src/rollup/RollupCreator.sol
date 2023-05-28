@@ -102,7 +102,7 @@ contract RollupCreator is Ownable {
                 outbox: outbox,
                 rollupEventInbox: rollupEventInbox,
                 challengeManager: challengeManager,
-                rollupAdminLogic: rollupAdminLogic,
+                rollupAdminLogic: address(rollupAdminLogic),
                 rollupUserLogic: rollupUserLogic,
                 validatorUtils: validatorUtils,
                 validatorWalletCreator: validatorWalletCreator

@@ -50,9 +50,8 @@ import {
   forceCreateNode,
   assertionEquals,
 } from './common/rolluplib'
-import { RollupLib } from '../../build/types/src/rollup/RollupUserLogic.sol/RollupUserLogic'
-type AssertionStruct = RollupLib.AssertionStruct
-type ExecutionStateStruct = RollupLib.ExecutionStateStruct
+import { AssertionStruct } from '../../build/types/src/rollup/RollupCore'
+import { ExecutionStateStruct } from '../../build/types/src/rollup/RollupCore'
 import { keccak256 } from 'ethers/lib/utils'
 import {
   ConfigStruct,

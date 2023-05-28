@@ -12,44 +12,11 @@ import "../bridge/ISequencerInbox.sol";
 import "../bridge/IBridge.sol";
 import "../bridge/IOutbox.sol";
 import "../bridge/IInbox.sol";
+import "./Node.sol";
 import "./IRollupEventInbox.sol";
-import "./IRollupLogic.sol";
-
-struct Config {
-    uint64 confirmPeriodBlocks;
-    uint64 extraChallengeTimeBlocks;
-    address stakeToken;
-    uint256 baseStake;
-    bytes32 wasmModuleRoot;
-    address owner;
-    address loserStakeEscrow;
-    uint256 chainId;
-    string chainConfig;
-    uint64 genesisBlockNum;
-    ISequencerInbox.MaxTimeVariation sequencerInboxMaxTimeVariation;
-}
-
-struct ContractDependencies {
-    IBridge bridge;
-    ISequencerInbox sequencerInbox;
-    IInbox inbox;
-    IOutbox outbox;
-    IRollupEventInbox rollupEventInbox;
-    IChallengeManager challengeManager;
-    IRollupAdmin rollupAdminLogic;
-    IRollupUser rollupUserLogic;
-    // misc contracts that are useful when interacting with the rollup
-    address validatorUtils;
-    address validatorWalletCreator;
-}
 
 library RollupLib {
     using GlobalStateLib for GlobalState;
-
-    struct ExecutionState {
-        GlobalState globalState;
-        MachineStatus machineStatus;
-    }
 
     function stateHash(ExecutionState calldata execState, uint256 inboxMaxCount)
         internal
@@ -80,12 +47,6 @@ library RollupLib {
                     execState.machineStatus
                 )
             );
-    }
-
-    struct Assertion {
-        ExecutionState beforeState;
-        ExecutionState afterState;
-        uint64 numBlocks;
     }
 
     function executionHash(Assertion memory assertion) internal pure returns (bytes32) {

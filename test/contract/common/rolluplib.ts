@@ -10,12 +10,9 @@ import {
   RollupAdminLogic,
   SequencerInbox,
 } from '../../../build/types'
-import {
-  RollupLib,
-  NodeCreatedEvent,
-} from '../../../build/types/src/rollup/RollupUserLogic.sol/RollupUserLogic'
-type AssertionStruct = RollupLib.AssertionStruct
-type ExecutionStateStruct = RollupLib.ExecutionStateStruct
+import { NodeCreatedEvent } from '../../../build/types/src/rollup/RollupUserLogic.sol/RollupUserLogic'
+import { AssertionStruct } from '../../../build/types/src/rollup/RollupCore'
+import { ExecutionStateStruct } from '../../../build/types/src/rollup/RollupCore'
 import { blockStateHash, hashChallengeState } from './challengeLib'
 import * as globalStateLib from './globalStateLib'
 import { constants } from 'ethers'

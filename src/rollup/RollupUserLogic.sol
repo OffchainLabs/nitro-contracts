@@ -9,6 +9,8 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import {IRollupUser} from "./IRollupLogic.sol";
 import "../libraries/UUPSNotUpgradeable.sol";
 import "./RollupCore.sol";
+import "./IRollupLogic.sol";
+
 import {ETH_POS_BLOCK_TIME} from "../libraries/Constants.sol";
 
 abstract contract AbsRollupUserLogic is
@@ -189,7 +191,7 @@ abstract contract AbsRollupUserLogic is
      * @param expectedNodeHash The hash of the node being created (protects against reorgs)
      */
     function stakeOnNewNode(
-        RollupLib.Assertion calldata assertion,
+        Assertion calldata assertion,
         bytes32 expectedNodeHash,
         uint256 prevNodeInboxMaxCount
     ) public onlyValidator whenNotPaused {
@@ -632,7 +634,7 @@ contract RollupUserLogic is AbsRollupUserLogic, IRollupUser {
      * @param prevNodeInboxMaxCount Total of messages in the inbox as of the previous node
      */
     function newStakeOnNewNode(
-        RollupLib.Assertion calldata assertion,
+        Assertion calldata assertion,
         bytes32 expectedNodeHash,
         uint256 prevNodeInboxMaxCount
     ) external payable override {
@@ -701,7 +703,7 @@ contract ERC20RollupUserLogic is AbsRollupUserLogic, IRollupUserERC20 {
      */
     function newStakeOnNewNode(
         uint256 tokenAmount,
-        RollupLib.Assertion calldata assertion,
+        Assertion calldata assertion,
         bytes32 expectedNodeHash,
         uint256 prevNodeInboxMaxCount
     ) external override {
