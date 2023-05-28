@@ -51,7 +51,8 @@ async function deployAllContracts(signer: any): Promise<Record<string, Contract>
 }
 
 async function main() {
-  // Get the signer (account) to deploy the contract
+
+  // Get the private key and RPC to deploy the contract
   const privateKey = process.env.PRIVATE_KEY;
   if (!privateKey) {
     throw new Error("Private key is not defined");
@@ -66,9 +67,14 @@ async function main() {
   const signer = new Wallet(privateKey, provider)
 
   try {
+
+    // Deploying all contracts
     const contracts = await deployAllContracts(signer);
     
-    // Call setTemplates with the deployed contract addresses
+    /* 
+      * Call setTemplates with the deployed contract addresses
+      * Adding 15 million gas limit otherwise it'll be reverted with "gas exceeds block gas limit" error
+    */
     console.log("Waiting for the Template to be set on the Rollup Creator")
     await contracts.rollupCreator.setTemplates(
       contracts.bridgeCreator.address,
@@ -81,38 +87,58 @@ async function main() {
       , {gasLimit: ethers.BigNumber.from("15000000")}
     );
     console.log("Template is set on the Rollup Creator")
+
     // Define the configuration for the createRollup function
     const rollupConfig = {
-      confirmPeriodBlocks: 10,
-      extraChallengeTimeBlocks: 10,
+      confirmPeriodBlocks: 20,
+      extraChallengeTimeBlocks: 0,
       stakeToken: ethers.constants.AddressZero,
       baseStake: ethers.utils.parseEther("1"),
-      wasmModuleRoot: ethers.constants.HashZero,
+      wasmModuleRoot: "0xda4e3ad5e7feacb817c21c8d0220da7650fe9051ece68a3f0b1c5d38bbb27b21",
       owner: signer.address,
       loserStakeEscrow: ethers.constants.AddressZero,
-      chainId: 5,
+      chainId: 421613,
       chainConfig:ethers.constants.HashZero,
       genesisBlockNum: 0,
       sequencerInboxMaxTimeVariation: {
-        delayBlocks: 10,
-        futureBlocks: 10,
-        delaySeconds: 60,
-        futureSeconds: 60,
+        delayBlocks: 16,
+        futureBlocks: 192,
+        delaySeconds: 86400,
+        futureSeconds: 7200,
       },
     };
     
 
-    // Call the createRollup function
-    console.log("Calling createRollup to generate a new rollup ...")
+    /* 
+      * Call the createRollup function
+      * Adding 15 million gas limit otherwise it'll be reverted with "gas exceeds block gas limit" error
+    */
+   console.log("Calling createRollup to generate a new rollup ...")
     const createRollupTx = await contracts.rollupCreator.createRollup(rollupConfig, {gasLimit: ethers.BigNumber.from("15000000")});
     const createRollupReceipt = await createRollupTx.wait();
     const rollupCreatedEvent = createRollupReceipt.events?.find(
       (event: { event: string }) => event.event === "RollupCreated"
       );
 
+      //Checking for RollupCreated event for new rollup address
       if (rollupCreatedEvent) {
         const rollupAddress = rollupCreatedEvent.args?.rollupAddress;
-        console.log("Congratulations! 🎉🎉🎉 New rollup created at address:", rollupAddress);
+        const inboxAddress = rollupCreatedEvent.args?.inboxAddress;
+        const adminProxy = rollupCreatedEvent.args?.adminProxy;
+        const sequencerInbox = rollupCreatedEvent.args?.sequencerInbox;
+        const bridge = rollupCreatedEvent.args?.bridge;
+        console.log("Congratulations! 🎉🎉🎉 All DONE! Here's your addresses:");
+        console.log("Rollup Contract created at address:", rollupAddress);
+        console.log("Inbox Contract created at address:", inboxAddress);
+        console.log("Admin Proxy Contract created at address:", adminProxy);
+        console.log("Sequencer Contract Inbox created at address:", sequencerInbox);
+        console.log("Bridge Contract created at address:", bridge);
+        console.log("Utils Contract created at address:",contracts.validatorUtils.address);
+        console.log("ValidatorWalletCreator Contract created at address:",contracts.validatorWalletCreator.address);
+
+        // getting the block number
+        const blockNumber = createRollupReceipt.blockNumber;
+        console.log("All deployed at block number:", blockNumber);
       } else {
         console.error("RollupCreated event not found");
       }
