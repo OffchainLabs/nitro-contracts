@@ -76,7 +76,15 @@ interface ISequencerInbox is IDelayedMessageProvider {
         uint64 creationBlock;
     }
 
-    function maxTimeVariation() external view returns (uint256, uint256, uint256, uint256);
+    function maxTimeVariation()
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        );
 
     function dasKeySetInfo(bytes32) external view returns (bool, uint64);
 
