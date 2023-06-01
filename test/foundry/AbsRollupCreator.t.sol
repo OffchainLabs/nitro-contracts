@@ -21,15 +21,16 @@ abstract contract AbsRollupCreatorTest is Test {
     address public rollupOwner = address(4400);
     address public deployer = address(4300);
 
-    function _prepareRollupDeployment(address rollupCreator)
+    function _prepareRollupDeployment(
+        address rollupCreator,
+        Config memory config
+    )
         internal
         returns (
             IOneStepProofEntry ospEntry,
             IChallengeManager challengeManager,
             IRollupAdmin rollupAdminLogic,
-            IRollupUser rollupUserLogic,
-            ISequencerInbox.MaxTimeVariation memory timeVars,
-            address expectedRollupAddr
+            IRollupUser rollupUserLogic
         )
     {
         //// deploy challenge stuff
@@ -45,93 +46,7 @@ abstract contract AbsRollupCreatorTest is Test {
         rollupAdminLogic = IRollupAdmin(new RollupAdminLogic());
         rollupUserLogic = IRollupUser(new RollupUserLogic());
 
-        timeVars = ISequencerInbox.MaxTimeVariation(
-            ((60 * 60 * 24) / 15),
-            12,
-            60 * 60 * 24,
-            60 * 60
-        );
-
-        //// calculate expected address for rollup
-        expectedRollupAddr = _calculateExpectedAddr(rollupCreator, vm.getNonce(rollupCreator) + 2);
-
-        return (
-            ospEntry,
-            challengeManager,
-            rollupAdminLogic,
-            rollupUserLogic,
-            timeVars,
-            expectedRollupAddr
-        );
-    }
-
-    function _calculateExpectedAddr(address rollupCreator, uint256 nonce)
-        internal
-        pure
-        returns (address)
-    {
-        bytes1 nonceBytes1 = bytes1(uint8(nonce));
-        address expectedRollupAddr = address(
-            uint160(
-                uint256(
-                    keccak256(
-                        abi.encodePacked(
-                            bytes1(0xd6),
-                            bytes1(0x94),
-                            address(rollupCreator),
-                            nonceBytes1
-                        )
-                    )
-                )
-            )
-        );
-
-        return expectedRollupAddr;
-    }
-
-    function _checkRollupIsSetUp(
-        IRollupCreator rollupCreator,
-        address rollupAddress,
-        IRollupAdmin rollupAdmin,
-        IRollupUser rollupUser
-    ) internal {
-        /// rollup creator
-        assertEq(IOwnable(address(rollupCreator)).owner(), deployer, "Invalid rollupCreator owner");
-
-        /// rollup proxy
-        assertEq(IOwnable(rollupAddress).owner(), rollupOwner, "Invalid rollup owner");
-        assertEq(_getProxyAdmin(rollupAddress), rollupOwner, "Invalid rollup's proxyAdmin owner");
-        assertEq(_getPrimary(rollupAddress), address(rollupAdmin), "Invalid proxy primary impl");
-        assertEq(_getSecondary(rollupAddress), address(rollupUser), "Invalid proxy secondary impl");
-
-        /// rollup check
-        RollupCore rollup = RollupCore(rollupAddress);
-        assertTrue(address(rollup.sequencerInbox()) != address(0), "Invalid seqInbox");
-        assertTrue(address(rollup.bridge()) != address(0), "Invalid bridge");
-        assertTrue(address(rollup.inbox()) != address(0), "Invalid inbox");
-        assertTrue(address(rollup.outbox()) != address(0), "Invalid outbox");
-        assertTrue(address(rollup.rollupEventInbox()) != address(0), "Invalid rollupEventInbox");
-        assertTrue(address(rollup.challengeManager()) != address(0), "Invalid challengeManager");
-    }
-
-    function _expectEvents(
-        IRollupCreator rollupCreator,
-        IBridgeCreator bridgeCreator,
-        address expectedRollupAddr,
-        bytes32 wasmModuleRoot,
-        uint256 chainId
-    ) internal {
-        vm.expectEmit(true, true, true, true);
-        uint256 bridgeCreatorNonce = vm.getNonce(address(bridgeCreator));
-        emit RollupCreated(
-            expectedRollupAddr,
-            _calculateExpectedAddr(address(bridgeCreator), bridgeCreatorNonce + 2),
-            _calculateExpectedAddr(address(rollupCreator), vm.getNonce(address(rollupCreator))),
-            _calculateExpectedAddr(address(bridgeCreator), bridgeCreatorNonce + 1),
-            _calculateExpectedAddr(address(bridgeCreator), bridgeCreatorNonce)
-        );
-
-        emit RollupInitialized(wasmModuleRoot, chainId);
+        return (ospEntry, challengeManager, rollupAdminLogic, rollupUserLogic);
     }
 
     function _getProxyAdmin(address proxy) internal view returns (address) {
