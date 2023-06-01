@@ -15,16 +15,16 @@ contract ERC20RollupCreator is AbsRollupCreator, IERC20RollupCreator {
     // RollupOwner should be the owner of Rollup's ProxyAdmin
     // RollupOwner should be the owner of Rollup
     // Bridge should have a single inbox and outbox
-    function createRollup(
-        Config memory config,
-        address expectedRollupAddr,
-        address nativeToken
-    ) external override returns (address) {
-        return _createRollup(config, expectedRollupAddr, nativeToken);
+    function createRollup(Config memory config, address nativeToken)
+        external
+        override
+        returns (address)
+    {
+        return _createRollup(config, nativeToken);
     }
 
     function _createBridge(
-        address adminProxy,
+        address proxyAdmin,
         address rollup,
         ISequencerInbox.MaxTimeVariation memory maxTimeVariation,
         address nativeToken
@@ -41,7 +41,7 @@ contract ERC20RollupCreator is AbsRollupCreator, IERC20RollupCreator {
     {
         return
             ERC20BridgeCreator(address(bridgeCreator)).createBridge(
-                adminProxy,
+                proxyAdmin,
                 rollup,
                 nativeToken,
                 maxTimeVariation

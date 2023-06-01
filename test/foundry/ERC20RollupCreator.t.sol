@@ -65,10 +65,10 @@ contract ERC20RollupCreatorTest is AbsRollupCreatorTest {
                 owner: rollupOwner,
                 loserStakeEscrow: address(200),
                 chainId: chainId,
+                chainConfig: "abc",
                 genesisBlockNum: 15000000,
                 sequencerInboxMaxTimeVariation: timeVars
             }),
-            expectedRollupAddr,
             nativeToken
         );
 

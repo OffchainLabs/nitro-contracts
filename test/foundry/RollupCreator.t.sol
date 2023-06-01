@@ -55,10 +55,10 @@ contract RollupCreatorTest is AbsRollupCreatorTest {
                 owner: rollupOwner,
                 loserStakeEscrow: address(200),
                 chainId: 1337,
+                chainConfig: "abcd",
                 genesisBlockNum: 15000000,
                 sequencerInboxMaxTimeVariation: timeVars
-            }),
-            expectedRollupAddr
+            })
         );
 
         vm.stopPrank();

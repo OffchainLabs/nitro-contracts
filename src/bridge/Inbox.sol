@@ -200,7 +200,7 @@ contract Inbox is AbsInbox, IEthInbox {
                     nonce,
                     uint256(uint160(address(100))), // ArbSys address
                     value,
-                    abi.encode(ArbSys.withdrawEth.selector, withdrawTo)
+                    abi.encodeWithSelector(ArbSys.withdrawEth.selector, withdrawTo)
                 ),
                 0
             );

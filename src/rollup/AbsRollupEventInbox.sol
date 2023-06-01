@@ -35,8 +35,13 @@ abstract contract AbsRollupEventInbox is
         rollup = address(_bridge.rollup());
     }
 
-    function rollupInitialized(uint256 chainId) external override onlyRollup {
-        bytes memory initMsg = abi.encodePacked(chainId);
+    function rollupInitialized(uint256 chainId, string calldata chainConfig)
+        external
+        override
+        onlyRollup
+    {
+        require(bytes(chainConfig).length > 0, "EMPTY_CHAIN_CONFIG");
+        bytes memory initMsg = abi.encodePacked(chainId, uint8(0), chainConfig);
         uint256 num = _enqueueInitializationMsg(initMsg);
         emit InboxMessageDelivered(num, initMsg);
     }

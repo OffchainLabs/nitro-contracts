@@ -23,15 +23,9 @@ interface IRollupCreator {
 }
 
 interface IEthRollupCreator is IRollupCreator {
-    function createRollup(Config memory config, address expectedRollupAddr)
-        external
-        returns (address);
+    function createRollup(Config memory config) external returns (address);
 }
 
 interface IERC20RollupCreator is IRollupCreator {
-    function createRollup(
-        Config memory config,
-        address expectedRollupAddr,
-        address nativeToken
-    ) external returns (address);
+    function createRollup(Config memory config, address nativeToken) external returns (address);
 }

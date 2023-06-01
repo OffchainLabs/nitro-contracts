@@ -15,19 +15,15 @@ contract RollupCreator is AbsRollupCreator, IEthRollupCreator {
     // RollupOwner should be the owner of Rollup's ProxyAdmin
     // RollupOwner should be the owner of Rollup
     // Bridge should have a single inbox and outbox
-    function createRollup(Config memory config, address expectedRollupAddr)
-        external
-        override
-        returns (address)
-    {
-        return _createRollup(config, expectedRollupAddr, address(0));
+    function createRollup(Config memory config) external override returns (address) {
+        return _createRollup(config, address(0));
     }
 
     function _createBridge(
-        address adminProxy,
+        address proxyAdmin,
         address rollup,
         ISequencerInbox.MaxTimeVariation memory maxTimeVariation,
-        address
+        address // nativeToken does not exist in context of standard Eth based rollup
     )
         internal
         override
@@ -41,7 +37,7 @@ contract RollupCreator is AbsRollupCreator, IEthRollupCreator {
     {
         return
             BridgeCreator(address(bridgeCreator)).createBridge(
-                adminProxy,
+                proxyAdmin,
                 rollup,
                 maxTimeVariation
             );
