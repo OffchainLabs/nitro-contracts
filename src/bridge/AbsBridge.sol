@@ -292,4 +292,11 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     /// @dev get base fee which is emitted in `MessageDelivered` event and then picked up and
     /// used in ArbOs to calculate the submission fee for retryable ticket
     function _baseFeeToReport() internal view virtual returns (uint256);
+
+    /**
+     * @dev This empty reserved space is put in place to allow future versions to add new
+     * variables without shifting down storage in the inheritance chain.
+     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[50] private __gap;
 }
