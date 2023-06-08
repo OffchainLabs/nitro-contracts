@@ -41,6 +41,28 @@ interface ArbRetryableTx {
     function keepalive(bytes32 ticketId) external returns (uint256);
 
     /**
+     * @notice Brings back to life ticketId.
+     * Donate gas to pay for the lifetime extension.
+     * If successful, emits LifetimeExtended event.
+     * Revert if wrong proof or ticketId was already revived.
+     * TODO(magic)
+     * @param ticketId unique ticket identifier
+     * @return new timeout of ticketId
+     */
+    function revive(
+        bytes32 ticketId,
+        uint64 numTries,
+        address from,
+        address to,
+        uint256 callvalue,
+        address beneficiary,
+        bytes calldata retryData,
+        bytes32 rootHash,
+        uint64 leafIndex,
+        bytes32[] calldata proof
+    ) external returns (uint256);
+
+    /**
      * @notice Return the beneficiary of ticketId.
      * Revert if ticketId doesn't exist.
      * @param ticketId unique ticket identifier
@@ -95,6 +117,13 @@ interface ArbRetryableTx {
 
     /// @dev DEPRECATED in favour of new RedeemScheduled event after the nitro upgrade
     event Redeemed(bytes32 indexed userTxHash);
+
+    /**
+     * @notice logs a merkle branch for expired proof synthesis
+     * @param hash the merkle hash
+     * @param position = (level << 192) + leaf
+     */
+    event ExpiredMerkleUpdate(bytes32 indexed hash, uint256 indexed position);
 
     error NoTicketWithID();
     error NotCallable();
