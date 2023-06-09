@@ -36,7 +36,8 @@ contract RollupEventInbox is IRollupEventInbox, IDelayedMessageProvider, Delegat
         onlyRollup
     {
         require(bytes(chainConfig).length > 0, "EMPTY_CHAIN_CONFIG");
-        bytes memory initMsg = abi.encodePacked(chainId, uint8(0), chainConfig);
+        uint8 initMsgVersion = 0;
+        bytes memory initMsg = abi.encodePacked(chainId, initMsgVersion, chainConfig);
         uint256 num = bridge.enqueueDelayedMessage(
             INITIALIZATION_MSG_TYPE,
             address(0),
