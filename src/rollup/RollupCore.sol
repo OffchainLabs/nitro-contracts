@@ -7,7 +7,6 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 
 import "./Node.sol";
-import "./IRollupCore.sol";
 import "./RollupLib.sol";
 import "./IRollupEventInbox.sol";
 import "./IRollupCore.sol";
@@ -568,7 +567,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     }
 
     function createNewNode(
-        RollupLib.Assertion calldata assertion,
+        Assertion calldata assertion,
         uint64 prevNodeNum,
         uint256 prevNodeInboxMaxCount,
         bytes32 expectedNodeHash
