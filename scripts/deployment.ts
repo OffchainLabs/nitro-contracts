@@ -73,19 +73,8 @@ async function deployAllContracts(
 }
 
 async function main() {
-  // Get the private key and RPC to deploy the contract
-  const privateKey = process.env.PRIVATE_KEY
-  if (!privateKey) {
-    throw new Error('Private key is not defined')
-  }
 
-  const providerAPI = process.env.RPC_URL
-  if (!providerAPI) {
-    throw new Error('RPC URL is not defined')
-  }
-
-  const provider = new providers.JsonRpcProvider(providerAPI)
-  const signer = new Wallet(privateKey, provider)
+  const [signer] = await ethers.getSigners()
 
   try {
     // Deploying all contracts
