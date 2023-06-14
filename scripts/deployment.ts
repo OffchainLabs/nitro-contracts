@@ -1,5 +1,5 @@
 import { ethers } from 'hardhat'
-import { ContractFactory, Contract, providers, Wallet } from 'ethers'
+import { ContractFactory, Contract} from 'ethers'
 import '@nomiclabs/hardhat-ethers'
 
 interface RollupCreatedEvent {
@@ -155,6 +155,10 @@ async function main() {
       console.log(
         'ValidatorWalletCreator Contract created at address:',
         contracts.validatorWalletCreator.address
+      )
+      console.log(
+        'outbox Contract created at address:',
+        await contracts.rollup.outbox()
       )
 
       // getting the block number
