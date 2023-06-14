@@ -2,6 +2,19 @@ import { ethers } from 'hardhat'
 import { ContractFactory, Contract, providers, Wallet } from 'ethers'
 import '@nomiclabs/hardhat-ethers'
 
+interface RollupCreatedEvent {
+  event: string;
+  address: string;
+  args?: {
+    rollupAddress: string;
+    inboxAddress: string;
+    adminProxy: string;
+    sequencerInbox: string;
+    bridge: string;
+  };
+}
+
+
 async function deployContract(
   contractName: string,
   signer: any
@@ -126,10 +139,10 @@ async function main() {
       { gasLimit: ethers.BigNumber.from('15000000') }
     )
     const createRollupReceipt = await createRollupTx.wait()
-    const rollupCreatedEvent = createRollupReceipt.events?.find(
-      (event: { event: string }) => event.event === 'RollupCreated'
-    )
 
+    const rollupCreatedEvent = createRollupReceipt.events?.find(
+      (event: RollupCreatedEvent) => event.event === 'RollupCreated' && event.address.toLowerCase() === contracts.rollupCreator.address.toLowerCase()
+    )
     //Checking for RollupCreated event for new rollup address
     if (rollupCreatedEvent) {
       const rollupAddress = rollupCreatedEvent.args?.rollupAddress
