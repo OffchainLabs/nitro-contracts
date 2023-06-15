@@ -125,13 +125,17 @@ interface ArbRetryableTx {
      */
     event ExpiredMerkleUpdate(bytes32 indexed hash, uint256 indexed position);
 
-	/**
+    /**
      * @notice logs a merkle leaf for expired proof synthesis
      * @param ticketId unique ticket identifier
      * @param hash the merkle hash
      * @param position = (level << 192) + leaf
      */
-    event RetryableExpired(bytes32 indexed ticketId, bytes32 indexed hash, uint256 indexed position);
+    event RetryableExpired(
+        bytes32 indexed ticketId,
+        bytes32 indexed hash,
+        uint256 indexed position
+    );
 
     error NoTicketWithID();
     error NotCallable();
