@@ -19,6 +19,7 @@ import "../bridge/IOutbox.sol";
 
 import "../precompiles/ArbSys.sol";
 
+import "../libraries/ArbitrumChecker.sol";
 import {NO_CHAL_INDEX} from "../libraries/Constants.sol";
 
 abstract contract RollupCore is IRollupCore, PausableUpgradeable {
@@ -78,16 +79,9 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     bool public validatorWhitelistDisabled;
 
     // If the chain this RollupCore is deployed on is an Arbitrum chain.
-    bool internal immutable _hostChainIsArbitrum;
+    bool internal immutable _hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
     // If the chain RollupCore is deployed on, this will contain the ArbSys.blockNumber() at each node's creation.
     mapping(uint64 => uint256) internal _nodeCreatedAtArbSysBlock;
-
-    constructor() {
-        (bool ok, bytes memory data) = address(100).staticcall(
-            abi.encodeWithSelector(ArbSys.arbOSVersion.selector)
-        );
-        _hostChainIsArbitrum = ok && data.length == 32;
-    }
 
     /**
      * @notice Get a storage reference to the Node for the given node index
