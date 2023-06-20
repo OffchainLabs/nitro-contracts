@@ -18,6 +18,10 @@ interface ArbWasm {
     // @return version the stylus version
     function stylusVersion() external view returns (uint32 version);
 
+    // @notice gets the stylus version the program was most recently compiled against.
+    // @return version the program version (0 for EVM contracts)
+    function programVersion(address program) external view returns (uint32 version);
+
     // @notice gets the conversion rate between gas and ink
     // @return price the price (in evm gas basis points) of ink
     function inkPrice() external view returns (uint64 price);
@@ -27,12 +31,24 @@ interface ArbWasm {
     function wasmMaxDepth() external view returns (uint32 depth);
 
     // @notice gets the fixed-cost overhead needed to initiate a hostio call
-    // @return cost the cost (in ink) of starting a stylus hostio call
-    function wasmHostioInk() external view returns (uint64 price);
+    // @return ink the cost of starting a stylus hostio call
+    function wasmHostioInk() external view returns (uint64 ink);
 
-    // @notice gets the stylus version the program was most recently compiled against.
-    // @return version the program version (0 for EVM contracts)
-    function programVersion(address program) external view returns (uint32 version);
+    // @notice gets the number of free wasm pages a program gets
+    // @return pages the number of wasm pages (2^16 bytes)
+    function freePages() external view returns (uint16 pages);
+
+    // @notice gets the base cost of each additional wasm page (2^16 bytes)
+    // @return gas base amount of gas needed to grow another wasm page
+    function pageGas() external view returns (uint32 gas);
+
+    // @notice gets the ramp that drives exponential memory costs
+    // @return ramp bits representing the floating point value
+    function pageRamp() external view returns (uint64 ramp);
+
+    // @notice gets the maximum number of pages a wasm may allocate
+    // @return limit the number of pages
+    function pageLimit() external view returns (uint16 limit);
 
     error ProgramNotCompiled();
     error ProgramOutOfDate(uint32 version);
