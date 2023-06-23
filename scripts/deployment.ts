@@ -1,32 +1,62 @@
 import { ethers } from 'hardhat'
 import { ContractFactory, Contract } from 'ethers'
 import '@nomiclabs/hardhat-ethers'
+import { run } from 'hardhat'
 
-interface RollupCreatedEvent {
-  event: string;
-  address: string;
-  args?: {
-    rollupAddress: string;
-    inboxAddress: string;
-    adminProxy: string;
-    sequencerInbox: string;
-    bridge: string;
-  };
+// Define a verification function
+async function verifyContract(
+  contractName: string,
+  contractAddress: string,
+  constructorArguments: any[] = [],
+  contractPathAndName?: string // optional
+): Promise<void> {
+  try {
+    // Define the verification options with possible 'contract' property
+    const verificationOptions: {
+      contract?: string
+      address: string
+      constructorArguments: any[]
+    } = {
+      address: contractAddress,
+      constructorArguments: constructorArguments,
+    }
+
+    // if contractPathAndName is provided, add it to the verification options
+    if (contractPathAndName) {
+      verificationOptions.contract = contractPathAndName
+    }
+
+    await run('verify:verify', verificationOptions)
+    console.log(`Verified contract ${contractName} successfully.`)
+  } catch (error: any) {
+    if (error.message.includes('Already Verified')) {
+      console.log(`Contract ${contractName} is already verified.`)
+    } else {
+      console.error(
+        `Verification for ${contractName} failed with the following error: ${error.message}`
+      )
+    }
+  }
 }
 
-
+// Function to handle contract deployment
 async function deployContract(
   contractName: string,
-  signer: any
+  signer: any,
+  constructorArgs: any[] = []
 ): Promise<Contract> {
   const factory: ContractFactory = await ethers.getContractFactory(contractName)
   const connectedFactory: ContractFactory = factory.connect(signer)
-  const contract: Contract = await connectedFactory.deploy()
+  const contract: Contract = await connectedFactory.deploy(...constructorArgs)
   await contract.deployTransaction.wait()
   console.log(`New ${contractName} created at address:`, contract.address)
+
+  await verifyContract(contractName, contract.address, constructorArgs)
+
   return contract
 }
 
+// Function to handle all deployments of core contracts using deployContract function
 async function deployAllContracts(
   signer: any
 ): Promise<Record<string, Contract>> {
@@ -35,18 +65,12 @@ async function deployAllContracts(
   const proverMem = await deployContract('OneStepProverMemory', signer)
   const proverMath = await deployContract('OneStepProverMath', signer)
   const proverHostIo = await deployContract('OneStepProverHostIo', signer)
-  const OneStepProofEntryFactory: ContractFactory =
-    await ethers.getContractFactory('OneStepProofEntry')
-  const OneStepProofEntryFactoryWithDeployer: ContractFactory =
-    OneStepProofEntryFactory.connect(signer)
-  const osp: Contract = await OneStepProofEntryFactoryWithDeployer.deploy(
+  const osp: Contract = await deployContract('OneStepProofEntry', signer, [
     prover0.address,
     proverMem.address,
     proverMath.address,
-    proverHostIo.address
-  )
-  await osp.deployTransaction.wait()
-  console.log('New osp created at address:', osp.address)
+    proverHostIo.address,
+  ])
   const challengeManager = await deployContract('ChallengeManager', signer)
   const rollupAdmin = await deployContract('RollupAdminLogic', signer)
   const rollupUser = await deployContract('RollupUserLogic', signer)
@@ -73,17 +97,13 @@ async function deployAllContracts(
 }
 
 async function main() {
-
   const [signer] = await ethers.getSigners()
 
   try {
     // Deploying all contracts
     const contracts = await deployAllContracts(signer)
 
-    /*
-     * Call setTemplates with the deployed contract addresses
-     * Adding 15 million gas limit otherwise it'll be reverted with "gas exceeds block gas limit" error
-     */
+    // Call setTemplates with the deployed contract addresses
     console.log('Waiting for the Template to be set on the Rollup Creator')
     await contracts.rollupCreator.setTemplates(
       contracts.bridgeCreator.address,
@@ -92,77 +112,41 @@ async function main() {
       contracts.rollupAdmin.address,
       contracts.rollupUser.address,
       contracts.validatorUtils.address,
-      contracts.validatorWalletCreator.address,
-      { gasLimit: ethers.BigNumber.from('15000000') }
+      contracts.validatorWalletCreator.address
     )
     console.log('Template is set on the Rollup Creator')
 
-    // Define the configuration for the createRollup function
-    const rollupConfig = {
-      confirmPeriodBlocks: 20,
-      extraChallengeTimeBlocks: 0,
-      stakeToken: ethers.constants.AddressZero,
-      baseStake: ethers.utils.parseEther('1'),
-      wasmModuleRoot:
-        '0xda4e3ad5e7feacb817c21c8d0220da7650fe9051ece68a3f0b1c5d38bbb27b21',
-      owner: signer.address,
-      loserStakeEscrow: ethers.constants.AddressZero,
-      chainId: 1337,
-      chainConfig: ethers.constants.HashZero,
-      genesisBlockNum: 0,
-      sequencerInboxMaxTimeVariation: {
-        delayBlocks: 16,
-        futureBlocks: 192,
-        delaySeconds: 86400,
-        futureSeconds: 7200,
-      },
-    }
+    const bridgeAddress = await contracts.bridgeCreator.bridgeTemplate()
+    const sequencerInboxAddress =
+      await contracts.bridgeCreator.sequencerInboxTemplate()
+    const inboxAddress = await contracts.bridgeCreator.inboxTemplate()
+    const outboxAddress = await contracts.bridgeCreator.outboxTemplate()
 
-    /*
-     * Call the createRollup function
-     * Adding 15 million gas limit otherwise it'll be reverted with "gas exceeds block gas limit" error
-     */
-    console.log('Calling createRollup to generate a new rollup ...')
-    const createRollupTx = await contracts.rollupCreator.createRollup(
-      rollupConfig,
-      { gasLimit: ethers.BigNumber.from('15000000') }
+    console.log(
+      `"bridge implementation contract" created at address:`,
+      bridgeAddress
     )
-    const createRollupReceipt = await createRollupTx.wait()
-
-    const rollupCreatedEvent = createRollupReceipt.events?.find(
-      (event: RollupCreatedEvent) => event.event === 'RollupCreated' && event.address.toLowerCase() === contracts.rollupCreator.address.toLowerCase()
+    await verifyContract(
+      'Bridge',
+      bridgeAddress,
+      [],
+      'src/bridge/Bridge.sol:Bridge'
     )
-    //Checking for RollupCreated event for new rollup address
-    if (rollupCreatedEvent) {
-      const rollupAddress = rollupCreatedEvent.args?.rollupAddress
-      const inboxAddress = rollupCreatedEvent.args?.inboxAddress
-      const adminProxy = rollupCreatedEvent.args?.adminProxy
-      const sequencerInbox = rollupCreatedEvent.args?.sequencerInbox
-      const bridge = rollupCreatedEvent.args?.bridge
-      console.log("Congratulations! 🎉🎉🎉 All DONE! Here's your addresses:")
-      console.log('Rollup Contract created at address:', rollupAddress)
-      console.log('Inbox Contract created at address:', inboxAddress)
-      console.log('Admin Proxy Contract created at address:', adminProxy)
-      console.log(
-        'Sequencer Contract Inbox created at address:',
-        sequencerInbox
-      )
-      console.log('Bridge Contract created at address:', bridge)
-      console.log(
-        'Utils Contract created at address:',
-        contracts.validatorUtils.address
-      )
-      console.log(
-        'ValidatorWalletCreator Contract created at address:',
-        contracts.validatorWalletCreator.address
-      )
-
-      // getting the block number
-      const blockNumber = createRollupReceipt.blockNumber
-      console.log('All deployed at block number:', blockNumber)
-    } else {
-      console.error('RollupCreated event not found')
-    }
+    console.log(
+      `"sequencerInbox implementation contract" created at address:`,
+      sequencerInboxAddress
+    )
+    await verifyContract('SequencerInbox', sequencerInboxAddress, [])
+    console.log(
+      `"inbox implementation contract" created at address:`,
+      inboxAddress
+    )
+    await verifyContract('Inbox', inboxAddress, [])
+    console.log(
+      `"outbox implementation contract" created at address:`,
+      outboxAddress
+    )
+    await verifyContract('Outbox', outboxAddress, [])
   } catch (error) {
     console.error(
       'Deployment failed:',
