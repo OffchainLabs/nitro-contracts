@@ -6,4 +6,3 @@ deployments/
 /test/prover/spec-proofs/*.json
 /test/storage/*-old.dot
 scripts/config.ts
-scripts/config.ts
