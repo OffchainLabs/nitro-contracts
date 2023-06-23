@@ -88,7 +88,7 @@ async function main() {
       }
       console.log('Inbox (proxy) Contract created at address:', inboxAddress)
       console.log(
-        'Outbox Contract created at address:',
+        'Outbox (proxy) Contract created at address:',
         await rollupCore.outbox()
       )
       console.log('AdminProxy Contract created at address:', adminProxy)
