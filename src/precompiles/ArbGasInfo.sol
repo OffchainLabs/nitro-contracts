@@ -75,8 +75,8 @@ interface ArbGasInfo {
             uint256
         );
 
-    /// @notice Get the gas accounting parameters. `gasPoolMax` is always zero, as the exponential pricing model has no such notion.
-    /// @return (speedLimitPerSecond, gasPoolMax, maxTxGasLimit)
+    /// @notice Get the gas accounting parameters. `maxTxGasLimit` is always the same as perBlockGasLimit.
+    /// @return (speedLimitPerSecond, perBlockGasLimit, maxTxGasLimit)
     function getGasAccountingParams()
         external
         view

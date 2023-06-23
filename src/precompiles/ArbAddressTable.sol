@@ -29,32 +29,32 @@ interface ArbAddressTable {
      * @param offset offset of target address
      * @return resulting address and updated offset into the buffer (revert if buffer is too short)
      */
-    function decompress(bytes calldata buf, uint256 offset)
+    function decompress(bytes calldata buf, uint64 offset)
         external
         view
-        returns (address, uint256);
+        returns (address, uint64);
 
     /**
      * @param addr address to lookup
      * @return index of an address in the address table (revert if address isn't in the table)
      */
-    function lookup(address addr) external view returns (uint256);
+    function lookup(address addr) external view returns (uint64);
 
     /**
      * @param index index to lookup address
      * @return address at a given index in address table (revert if index is beyond end of table)
      */
-    function lookupIndex(uint256 index) external view returns (address);
+    function lookupIndex(uint64 index) external view returns (address);
 
     /**
      * @notice Register an address in the address table
      * @param addr address to register
      * @return index of the address (existing index, or newly created index if not already registered)
      */
-    function register(address addr) external returns (uint256);
+    function register(address addr) external returns (uint64);
 
     /**
      * @return size of address table (= first unused index)
      */
-    function size() external view returns (uint256);
+    function size() external view returns (uint64);
 }
