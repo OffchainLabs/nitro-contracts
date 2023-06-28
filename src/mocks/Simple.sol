@@ -30,6 +30,8 @@ contract Simple {
     }
 
     function incrementRedeem() external {
+        require(msg.sender == tx.origin, "SENDER_NOT_ORIGIN");
+        require(ArbSys(address(0x64)).wasMyCallersAddressAliased(), "NOT_ALIASED");
         counter++;
         emit RedeemedEvent(msg.sender, ArbRetryableTx(address(110)).getCurrentRedeemer());
     }
