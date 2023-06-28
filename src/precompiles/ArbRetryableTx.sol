@@ -132,9 +132,10 @@ interface ArbRetryableTx {
      * @param position = (level << 192) + leaf
      */
     event RetryableExpired(
-        bytes32 indexed ticketId,
         bytes32 indexed hash,
-        uint256 indexed position
+        uint256 indexed position,
+        bytes32 indexed ticketId,
+        uint64 numTries
     );
 
     error NoTicketWithID();
