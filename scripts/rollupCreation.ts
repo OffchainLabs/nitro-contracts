@@ -34,6 +34,7 @@ async function main() {
   }
 
   const [signer] = await ethers.getSigners()
+
   const rollupCreator = await new ethers.Contract(
     rollupCreatorAddress,
     rollupCreatorAbi,
