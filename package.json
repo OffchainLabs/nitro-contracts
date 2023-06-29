@@ -25,8 +25,8 @@
     "test:compatibility": "yarn run build:0.6 && yarn run build:0.7",
     "test:storage": "./test/storage/test.bash",
     "postinstall": "patch-package",
-    "deployment": "hardhat run scripts/deployment.ts",
-    "rollup": "hardhat run scripts/rollupCreation.ts"
+    "deploy-factory": "hardhat run scripts/deployment.ts",
+    "deploy-rollup": "hardhat run scripts/rollupCreation.ts"
 
   },
   "dependencies": {
