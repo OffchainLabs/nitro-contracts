@@ -140,4 +140,7 @@ interface ArbRetryableTx {
 
     error NoTicketWithID();
     error NotCallable();
+    error AlreadyRevived();
+    error InvalidRootHash();
+    error WrongProof();
 }
