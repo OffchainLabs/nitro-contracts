@@ -93,7 +93,19 @@ interface ArbOwner {
     function setWasmMaxDepth(uint32 depth) external;
 
     // @notice sets the cost of starting a stylus hostio call
-    function setWasmHostioInk(uint64 cost) external;
+    function setWasmHostioInk(uint64 ink) external;
+
+    // @notice sets the number of free wasm pages a tx gets
+    function setWasmFreePages(uint16 pages) external;
+
+    // @notice sets the base cost of each additional wasm page
+    function setWasmPageGas(uint32 gas) external;
+
+    // @notice sets the ramp that drives exponential wasm memory costs
+    function setWasmPageRamp(uint64 ramp) external;
+
+    // @notice sets the maximum number of pages a wasm may allocate
+    function setWasmPageLimit(uint16 limit) external view;
 
     /// @notice Sets serialized chain config in ArbOS state
     function setChainConfig(string calldata chainConfig) external;
