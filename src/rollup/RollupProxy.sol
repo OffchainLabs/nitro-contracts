@@ -5,16 +5,31 @@
 pragma solidity ^0.8.0;
 
 import "../libraries/AdminFallbackProxy.sol";
-import "./IRollupLogic.sol";
+import "./IRollupAdmin.sol";
+import "./Config.sol";
 
 contract RollupProxy is AdminFallbackProxy {
-    constructor(Config memory config, ContractDependencies memory connectedContracts)
-        AdminFallbackProxy(
-            address(connectedContracts.rollupAdminLogic),
-            abi.encodeWithSelector(IRollupAdmin.initialize.selector, config, connectedContracts),
-            address(connectedContracts.rollupUserLogic),
-            abi.encodeWithSelector(IRollupUserAbs.initialize.selector, config.stakeToken),
-            config.owner
-        )
-    {}
+    function initializeProxy(Config memory config, ContractDependencies memory connectedContracts)
+        external
+    {
+        if (
+            _getAdmin() == address(0) &&
+            _getImplementation() == address(0) &&
+            _getSecondaryImplementation() == address(0)
+        ) {
+            _initialize(
+                address(connectedContracts.rollupAdminLogic),
+                abi.encodeWithSelector(
+                    IRollupAdmin.initialize.selector,
+                    config,
+                    connectedContracts
+                ),
+                address(connectedContracts.rollupUserLogic),
+                abi.encodeWithSelector(IRollupUserAbs.initialize.selector, config.stakeToken),
+                config.owner
+            );
+        } else {
+            _fallback();
+        }
+    }
 }

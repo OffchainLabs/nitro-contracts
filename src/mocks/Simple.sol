@@ -43,6 +43,10 @@ contract Simple {
         return block.number;
     }
 
+    function getBlockDifficulty() external view returns (uint256) {
+        return block.difficulty;
+    }
+
     function noop() external pure {}
 
     function pleaseRevert() external pure {

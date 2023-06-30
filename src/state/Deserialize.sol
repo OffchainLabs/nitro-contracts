@@ -11,7 +11,7 @@ import "./Instructions.sol";
 import "./StackFrame.sol";
 import "./GuardStack.sol";
 import "./MerkleProof.sol";
-import "./ModuleMemory.sol";
+import "./ModuleMemoryCompact.sol";
 import "./Module.sol";
 import "./GlobalState.sol";
 
