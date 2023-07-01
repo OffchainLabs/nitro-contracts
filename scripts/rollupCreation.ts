@@ -65,7 +65,8 @@ async function main() {
       const sequencerInbox = rollupCreatedEvent.args?.sequencerInbox
       const bridge = rollupCreatedEvent.args?.bridge
       const validatorUtils = rollupCreatedEvent.args?.validatorUtils
-      const validatorWalletCreator = rollupCreatedEvent.args?.validatorWalletCreator
+      const validatorWalletCreator =
+        rollupCreatedEvent.args?.validatorWalletCreator
 
       const rollupCore = new ethers.Contract(
         rollupAddress,
@@ -94,17 +95,11 @@ async function main() {
         }
       }
       console.log('Inbox (proxy) Contract created at address:', inboxAddress)
-      console.log(
-        'Outbox (proxy) Contract created at address:',
-        outbox
-      )
+      console.log('Outbox (proxy) Contract created at address:', outbox)
       console.log('AdminProxy Contract created at address:', adminProxy)
       console.log('SequencerInbox (proxy) created at address:', sequencerInbox)
       console.log('Bridge (proxy) Contract created at address:', bridge)
-      console.log(
-        'ValidatorUtils Contract created at address:',
-        validatorUtils
-      )
+      console.log('ValidatorUtils Contract created at address:', validatorUtils)
       console.log(
         'ValidatorWalletCreator Contract created at address:',
         validatorWalletCreator
