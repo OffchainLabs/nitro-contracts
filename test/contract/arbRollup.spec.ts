@@ -236,7 +236,7 @@ const setup = async () => {
     rollupUserLogicTemplate,
     blockChallengeFactory: challengeManagerTemplateFac,
     rollupEventBridge: await rollupAdmin.rollupEventInbox(),
-    outbox: await rollupAdmin.outbox(),
+    outbox: rollupCreatedEvent.outbox,
     sequencerInbox: rollupCreatedEvent.sequencerInbox,
     delayedBridge: rollupCreatedEvent.bridge,
     delayedInbox: rollupCreatedEvent.inboxAddress,

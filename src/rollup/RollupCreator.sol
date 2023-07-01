@@ -16,9 +16,12 @@ contract RollupCreator is Ownable {
     event RollupCreated(
         address indexed rollupAddress,
         address inboxAddress,
+        address outbox,
         address adminProxy,
         address sequencerInbox,
-        address bridge
+        address bridge,
+        address validatorUtils,
+        address validatorWalletCreator
     );
     event TemplatesUpdated();
 
@@ -112,9 +115,12 @@ contract RollupCreator is Ownable {
         emit RollupCreated(
             address(rollup),
             address(inbox),
+            address(outbox),
             address(proxyAdmin),
             address(sequencerInbox),
-            address(bridge)
+            address(bridge),
+            address(validatorUtils),
+            address(validatorWalletCreator)
         );
         return address(rollup);
     }
