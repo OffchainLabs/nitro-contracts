@@ -18,7 +18,7 @@
 import { ethers, run, network } from 'hardhat'
 import { Signer } from '@ethersproject/abstract-signer'
 import { BigNumberish, BigNumber } from '@ethersproject/bignumber'
-import { BytesLike, hexConcat, zeroPad } from '@ethersproject/bytes'
+import { BytesLike } from '@ethersproject/bytes'
 import { ContractTransaction } from '@ethersproject/contracts'
 import { assert, expect } from 'chai'
 import {
