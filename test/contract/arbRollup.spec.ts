@@ -1226,5 +1226,4 @@ describe('ArbRollup', () => {
       'VALIDATOR_NOT_AFK'
     )
   })
-
 })
