@@ -137,8 +137,7 @@ contract Inbox is DelegateCallAware, PausableUpgradeable, IInbox {
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
         uint256 maxDataSize = sequencerInbox.maxDataSize();
-        if (messageData.length > maxDataSize)
-            revert DataTooLarge(messageData.length, maxDataSize);
+        if (messageData.length > maxDataSize) revert DataTooLarge(messageData.length, maxDataSize);
         uint256 msgNum = deliverToBridge(L2_MSG, msg.sender, keccak256(messageData));
         emit InboxMessageDeliveredFromOrigin(msgNum);
         return msgNum;

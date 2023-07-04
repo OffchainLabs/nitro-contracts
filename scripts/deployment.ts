@@ -62,7 +62,7 @@ async function deployAllContracts(
   maxDataSize: number = 117964
 ): Promise<Record<string, Contract>> {
   const bridgeCreator = await deployContract('BridgeCreator', signer, [
-    maxDataSize
+    maxDataSize,
   ])
   const prover0 = await deployContract('OneStepProver0', signer)
   const proverMem = await deployContract('OneStepProverMemory', signer)

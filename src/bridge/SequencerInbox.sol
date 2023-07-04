@@ -73,9 +73,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     uint256 public immutable maxDataSize;
 
     /**
-    * @param _maxDataSize The maximum size of a inbox message. This should be set according to the tx size limit of the chain this is deployed on.
-    *                     E.g. On ETH L1 this should be set to 117964 which is 90% of Geth's 128KB tx size limit, leaving ~13KB for proving
-    */
+     * @param _maxDataSize The maximum size of a inbox message. This should be set according to the tx size limit of the chain this is deployed on.
+     *                     E.g. On ETH L1 this should be set to 117964 which is 90% of Geth's 128KB tx size limit, leaving ~13KB for proving
+     */
     constructor(uint256 _maxDataSize) {
         hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
         maxDataSize = _maxDataSize;
