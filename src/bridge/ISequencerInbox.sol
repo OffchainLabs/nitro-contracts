@@ -12,10 +12,10 @@ import "./IBridge.sol";
 
 interface ISequencerInbox is IDelayedMessageProvider {
     struct MaxTimeVariation {
-        uint256 delayBlocks;
-        uint256 futureBlocks;
-        uint256 delaySeconds;
-        uint256 futureSeconds;
+        uint64 delayBlocks;
+        uint64 futureBlocks;
+        uint64 delaySeconds;
+        uint64 futureSeconds;
     }
 
     struct TimeBounds {
@@ -80,10 +80,10 @@ interface ISequencerInbox is IDelayedMessageProvider {
         external
         view
         returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256
+            uint64,
+            uint64,
+            uint64,
+            uint64
         );
 
     function dasKeySetInfo(bytes32) external view returns (bool, uint64);
