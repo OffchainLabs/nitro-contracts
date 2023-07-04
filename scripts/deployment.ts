@@ -58,9 +58,12 @@ async function deployContract(
 
 // Function to handle all deployments of core contracts using deployContract function
 async function deployAllContracts(
-  signer: any
+  signer: any,
+  maxDataSize: number = 117964
 ): Promise<Record<string, Contract>> {
-  const bridgeCreator = await deployContract('BridgeCreator', signer)
+  const bridgeCreator = await deployContract('BridgeCreator', signer, [
+    maxDataSize
+  ])
   const prover0 = await deployContract('OneStepProver0', signer)
   const proverMem = await deployContract('OneStepProverMemory', signer)
   const proverMath = await deployContract('OneStepProverMath', signer)

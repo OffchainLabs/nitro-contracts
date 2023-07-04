@@ -3,7 +3,7 @@ module.exports = async hre => {
   const { deploy } = deployments
   const { deployer } = await getNamedAccounts()
 
-  await deploy('Bridge', { from: deployer, args: [] })
+  await deploy('Bridge', { from: deployer, args: [117964] })
 }
 
 module.exports.tags = ['Bridge']

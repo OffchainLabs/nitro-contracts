@@ -35,7 +35,7 @@ import {
     L2MessageType_unsignedEOATx,
     L2MessageType_unsignedContractTx
 } from "../libraries/MessageTypes.sol";
-import {MAX_DATA_SIZE, UNISWAP_L1_TIMELOCK, UNISWAP_L2_FACTORY} from "../libraries/Constants.sol";
+import {UNISWAP_L1_TIMELOCK, UNISWAP_L2_FACTORY} from "../libraries/Constants.sol";
 import "../precompiles/ArbSys.sol";
 
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
@@ -136,8 +136,9 @@ contract Inbox is DelegateCallAware, PausableUpgradeable, IInbox {
         if (_chainIdChanged()) revert L1Forked();
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
-        if (messageData.length > MAX_DATA_SIZE)
-            revert DataTooLarge(messageData.length, MAX_DATA_SIZE);
+        uint256 maxDataSize = sequencerInbox.maxDataSize();
+        if (messageData.length > maxDataSize)
+            revert DataTooLarge(messageData.length, maxDataSize);
         uint256 msgNum = deliverToBridge(L2_MSG, msg.sender, keccak256(messageData));
         emit InboxMessageDeliveredFromOrigin(msgNum);
         return msgNum;
@@ -610,8 +611,9 @@ contract Inbox is DelegateCallAware, PausableUpgradeable, IInbox {
         address _sender,
         bytes memory _messageData
     ) internal returns (uint256) {
-        if (_messageData.length > MAX_DATA_SIZE)
-            revert DataTooLarge(_messageData.length, MAX_DATA_SIZE);
+        uint256 maxDataSize = sequencerInbox.maxDataSize();
+        if (_messageData.length > maxDataSize)
+            revert DataTooLarge(_messageData.length, maxDataSize);
         uint256 msgNum = deliverToBridge(_kind, _sender, keccak256(_messageData));
         emit InboxMessageDelivered(msgNum, _messageData);
         return msgNum;

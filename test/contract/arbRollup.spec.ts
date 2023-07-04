@@ -165,7 +165,7 @@ const setup = async () => {
   const bridgeCreatorFac = (await ethers.getContractFactory(
     'BridgeCreator'
   )) as BridgeCreator__factory
-  const bridgeCreator = await bridgeCreatorFac.deploy()
+  const bridgeCreator = await bridgeCreatorFac.deploy(117964)
 
   const rollupCreatorFac = (await ethers.getContractFactory(
     'RollupCreator'

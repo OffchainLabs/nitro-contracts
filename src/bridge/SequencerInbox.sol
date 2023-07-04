@@ -33,7 +33,6 @@ import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
 import {GasRefundEnabled, IGasRefunder} from "../libraries/IGasRefunder.sol";
 import "../libraries/DelegateCallAware.sol";
 import "../libraries/ArbitrumChecker.sol";
-import {MAX_DATA_SIZE} from "../libraries/Constants.sol";
 
 /**
  * @title Accepts batches from the sequencer and adds them to the rollup inbox.
@@ -69,7 +68,18 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     mapping(address => bool) public isSequencer;
 
     // If the chain this SequencerInbox is deployed on is an Arbitrum chain.
-    bool internal immutable hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
+    bool internal immutable hostChainIsArbitrum;
+    // The maximum size of a inbox message data payload.
+    uint256 public immutable maxDataSize;
+
+    /**
+    * @param _maxDataSize The maximum size of a inbox message. This should be set according to the tx size limit of the chain this is deployed on.
+    *                     E.g. On ETH L1 this should be set to 117964 which is 90% of Geth's 128KB tx size limit, leaving ~13KB for proving
+    */
+    constructor(uint256 _maxDataSize) {
+        hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
+        maxDataSize = _maxDataSize;
+    }
 
     function _chainIdChanged() internal view returns (bool) {
         return deployTimeChainId != block.chainid;
@@ -309,7 +319,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     modifier validateBatchData(bytes calldata data) {
         uint256 fullDataLen = HEADER_LENGTH + data.length;
-        if (fullDataLen > MAX_DATA_SIZE) revert DataTooLarge(fullDataLen, MAX_DATA_SIZE);
+        if (fullDataLen > maxDataSize) revert DataTooLarge(fullDataLen, maxDataSize);
         if (data.length > 0 && (data[0] & DATA_AUTHENTICATED_FLAG) == DATA_AUTHENTICATED_FLAG) {
             revert DataNotAuthenticated();
         }
