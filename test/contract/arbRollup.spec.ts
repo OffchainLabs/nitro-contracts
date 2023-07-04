@@ -18,7 +18,7 @@
 import { ethers, run, network } from 'hardhat'
 import { Signer } from '@ethersproject/abstract-signer'
 import { BigNumberish, BigNumber } from '@ethersproject/bignumber'
-import { BytesLike, hexConcat, zeroPad } from '@ethersproject/bytes'
+import { BytesLike } from '@ethersproject/bytes'
 import { ContractTransaction } from '@ethersproject/contracts'
 import { assert, expect } from 'chai'
 import {
@@ -236,7 +236,7 @@ const setup = async () => {
     rollupUserLogicTemplate,
     blockChallengeFactory: challengeManagerTemplateFac,
     rollupEventBridge: await rollupAdmin.rollupEventInbox(),
-    outbox: await rollupAdmin.outbox(),
+    outbox: rollupCreatedEvent.outbox,
     sequencerInbox: rollupCreatedEvent.sequencerInbox,
     delayedBridge: rollupCreatedEvent.bridge,
     delayedInbox: rollupCreatedEvent.inboxAddress,

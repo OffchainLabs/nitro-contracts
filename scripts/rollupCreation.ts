@@ -3,7 +3,6 @@ import '@nomiclabs/hardhat-ethers'
 import { run } from 'hardhat'
 import { abi as rollupCreatorAbi } from '../build/contracts/src/rollup/RollupCreator.sol/RollupCreator.json'
 import { rollupConfig } from './config'
-import { abi as rollupCoreAbi } from '../build/contracts/src/rollup/RollupCore.sol/RollupCore.json'
 
 interface RollupCreatedEvent {
   event: string
@@ -11,9 +10,14 @@ interface RollupCreatedEvent {
   args?: {
     rollupAddress: string
     inboxAddress: string
+    outbox: string
+    rollupEventInbox: string
+    challengeManager: string
     adminProxy: string
     sequencerInbox: string
     bridge: string
+    validatorUtils: string
+    validatorWalletCreator: string
   }
 }
 
@@ -57,15 +61,15 @@ async function main() {
     if (rollupCreatedEvent) {
       const rollupAddress = rollupCreatedEvent.args?.rollupAddress
       const inboxAddress = rollupCreatedEvent.args?.inboxAddress
+      const outbox = rollupCreatedEvent.args?.outbox
+      const rollupEventInbox = rollupCreatedEvent.args?.rollupEventInbox
+      const challengeManager = rollupCreatedEvent.args?.challengeManager
       const adminProxy = rollupCreatedEvent.args?.adminProxy
       const sequencerInbox = rollupCreatedEvent.args?.sequencerInbox
       const bridge = rollupCreatedEvent.args?.bridge
-
-      const rollupCore = new ethers.Contract(
-        rollupAddress,
-        rollupCoreAbi,
-        signer
-      )
+      const validatorUtils = rollupCreatedEvent.args?.validatorUtils
+      const validatorWalletCreator =
+        rollupCreatedEvent.args?.validatorWalletCreator
 
       console.log("Congratulations! 🎉🎉🎉 All DONE! Here's your addresses:")
       console.log('RollupProxy Contract created at address:', rollupAddress)
@@ -88,20 +92,16 @@ async function main() {
         }
       }
       console.log('Inbox (proxy) Contract created at address:', inboxAddress)
-      console.log(
-        'Outbox (proxy) Contract created at address:',
-        await rollupCore.outbox()
-      )
+      console.log('Outbox (proxy) Contract created at address:', outbox)
+      console.log('rollupEventInbox (proxy) Contract created at address:', rollupEventInbox)
+      console.log('challengeManager (proxy) Contract created at address:', challengeManager)
       console.log('AdminProxy Contract created at address:', adminProxy)
       console.log('SequencerInbox (proxy) created at address:', sequencerInbox)
       console.log('Bridge (proxy) Contract created at address:', bridge)
-      console.log(
-        'ValidatorUtils Contract created at address:',
-        await rollupCore.validatorUtils()
-      )
+      console.log('ValidatorUtils Contract created at address:', validatorUtils)
       console.log(
         'ValidatorWalletCreator Contract created at address:',
-        await rollupCore.validatorWalletCreator()
+        validatorWalletCreator
       )
 
       const blockNumber = createRollupReceipt.blockNumber

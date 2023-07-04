@@ -27,7 +27,6 @@
     "postinstall": "patch-package",
     "deploy-factory": "hardhat run scripts/deployment.ts",
     "deploy-rollup": "hardhat run scripts/rollupCreation.ts"
-
   },
   "dependencies": {
     "@openzeppelin/contracts": "4.5.0",
