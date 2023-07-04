@@ -93,8 +93,14 @@ async function main() {
       }
       console.log('Inbox (proxy) Contract created at address:', inboxAddress)
       console.log('Outbox (proxy) Contract created at address:', outbox)
-      console.log('rollupEventInbox (proxy) Contract created at address:', rollupEventInbox)
-      console.log('challengeManager (proxy) Contract created at address:', challengeManager)
+      console.log(
+        'rollupEventInbox (proxy) Contract created at address:',
+        rollupEventInbox
+      )
+      console.log(
+        'challengeManager (proxy) Contract created at address:',
+        challengeManager
+      )
       console.log('AdminProxy Contract created at address:', adminProxy)
       console.log('SequencerInbox (proxy) created at address:', sequencerInbox)
       console.log('Bridge (proxy) Contract created at address:', bridge)
