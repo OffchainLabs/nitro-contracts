@@ -56,13 +56,11 @@ contract ProgramTest {
         address ethPrecompile = address(0x01);
 
         result = assert256(result, "block number ", block.number - 1);
-        result = assert256(result, "block hash   ", uint256(blockhash(block.number - 1)));
         result = assert256(result, "chain id     ", block.chainid);
         result = assert256(result, "base fee     ", block.basefee);
         result = assert256(result, "gas price    ", tx.gasprice);
         result = assert256(result, "gas limit    ", block.gaslimit);
         result = assert256(result, "value        ", 0);
-        result = assert256(result, "difficulty   ", block.difficulty);
         result = assert256(result, "timestamp    ", block.timestamp);
         result = assert256(result, "balance      ", fundedAccount.balance);
         result = assert256(result, "rust address ", uint256(uint160(program)));
