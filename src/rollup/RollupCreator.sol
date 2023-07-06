@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./RollupProxy.sol";
+import "./IRollupAdmin.sol";
 
 contract RollupCreator is Ownable {
     event RollupCreated(
@@ -35,6 +36,8 @@ contract RollupCreator is Ownable {
 
     address public validatorUtils;
     address public validatorWalletCreator;
+
+    bool[1] private vals = [true];
 
     constructor() Ownable() {}
 
@@ -62,7 +65,12 @@ contract RollupCreator is Ownable {
     // RollupOwner should be the owner of Rollup's ProxyAdmin
     // RollupOwner should be the owner of Rollup
     // Bridge should have a single inbox and outbox
-    function createRollup(Config memory config) external returns (address) {
+    function createRollup(
+        Config memory config,
+        address _batchPoster,
+        address[] memory _validators,
+        bool[] memory _vals
+    ) external returns (address) {
         ProxyAdmin proxyAdmin = new ProxyAdmin();
 
         // Create the rollup proxy to figure out the address and initialize it later
@@ -80,8 +88,6 @@ contract RollupCreator is Ownable {
                 config.sequencerInboxMaxTimeVariation
             );
 
-        proxyAdmin.transferOwnership(config.owner);
-
         IChallengeManager challengeManager = IChallengeManager(
             address(
                 new TransparentUpgradeableProxy(
@@ -98,6 +104,8 @@ contract RollupCreator is Ownable {
             osp
         );
 
+        address tempOwner = config.owner;
+        config.owner = address(this);
         rollup.initializeProxy(
             config,
             ContractDependencies({
@@ -113,6 +121,16 @@ contract RollupCreator is Ownable {
                 validatorWalletCreator: validatorWalletCreator
             })
         );
+
+        IRollupAdmin rollupAdmin = IRollupAdmin(address(rollup));
+        sequencerInbox.setIsBatchPoster(_batchPoster, true);
+
+        // Call setValidator on the newly created rollup contract
+
+        rollupAdmin.setValidator(_validators, _vals);
+
+        rollupAdmin.setOwner(tempOwner);
+        proxyAdmin.transferOwnership(config.owner);
 
         emit RollupCreated(
             address(rollup),

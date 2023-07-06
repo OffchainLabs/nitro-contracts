@@ -2,7 +2,7 @@ import { ethers } from 'hardhat'
 import '@nomiclabs/hardhat-ethers'
 import { run } from 'hardhat'
 import { abi as rollupCreatorAbi } from '../build/contracts/src/rollup/RollupCreator.sol/RollupCreator.json'
-import { rollupConfig } from './config'
+import { config } from './config'
 
 interface RollupCreatedEvent {
   event: string
@@ -46,9 +46,18 @@ async function main() {
   )
 
   try {
+    let vals: boolean[] = []
+    for (let i = 0; i < config.validators.length; i++) {
+      vals.push(true)
+    }
     // Call the createRollup function
     console.log('Calling createRollup to generate a new rollup ...')
-    const createRollupTx = await rollupCreator.createRollup(rollupConfig)
+    const createRollupTx = await rollupCreator.createRollup(
+      config.rollupConfig,
+      config.batchPoster,
+      config.validators,
+      vals
+    )
     const createRollupReceipt = await createRollupTx.wait()
 
     const rollupCreatedEvent = createRollupReceipt.events?.find(
@@ -93,8 +102,14 @@ async function main() {
       }
       console.log('Inbox (proxy) Contract created at address:', inboxAddress)
       console.log('Outbox (proxy) Contract created at address:', outbox)
-      console.log('rollupEventInbox (proxy) Contract created at address:', rollupEventInbox)
-      console.log('challengeManager (proxy) Contract created at address:', challengeManager)
+      console.log(
+        'rollupEventInbox (proxy) Contract created at address:',
+        rollupEventInbox
+      )
+      console.log(
+        'challengeManager (proxy) Contract created at address:',
+        challengeManager
+      )
       console.log('AdminProxy Contract created at address:', adminProxy)
       console.log('SequencerInbox (proxy) created at address:', sequencerInbox)
       console.log('Bridge (proxy) Contract created at address:', bridge)

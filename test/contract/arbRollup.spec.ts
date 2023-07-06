@@ -182,7 +182,13 @@ const setup = async () => {
     ethers.constants.AddressZero
   )
 
-  const response = await rollupCreator.createRollup(await getDefaultConfig())
+  const response = await rollupCreator.createRollup(
+    await getDefaultConfig(),
+    await sequencer.getAddress(),
+    [await val1.getAddress(), await val2.getAddress(), await val3.getAddress()],
+    [true, true, true]
+  )
+
   const rec = await response.wait()
 
   const rollupCreatedEvent = rollupCreator.interface.parseLog(
@@ -196,18 +202,11 @@ const setup = async () => {
     .attach(rollupCreatedEvent.rollupAddress)
     .connect(user)
 
-  await rollupAdmin.setValidator(
-    [await val1.getAddress(), await val2.getAddress(), await val3.getAddress()],
-    [true, true, true]
-  )
-
   sequencerInbox = (
     (await ethers.getContractFactory(
       'SequencerInbox'
     )) as SequencerInbox__factory
   ).attach(rollupCreatedEvent.sequencerInbox)
-
-  await sequencerInbox.setIsBatchPoster(await sequencer.getAddress(), true)
 
   challengeManager = (
     (await ethers.getContractFactory(
