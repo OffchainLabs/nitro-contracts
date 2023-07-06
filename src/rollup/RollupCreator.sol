@@ -103,7 +103,9 @@ contract RollupCreator is Ownable {
             osp
         );
 
-        address tempOwner = config.owner;
+        // initialize the rollup with this contract as owner to set batch poster and validators
+        // it will transfer the ownership back to the actual owner later
+        address actualOwner = config.owner;
         config.owner = address(this);
         rollup.initializeProxy(
             config,
