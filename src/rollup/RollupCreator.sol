@@ -68,8 +68,7 @@ contract RollupCreator is Ownable {
     function createRollup(
         Config memory config,
         address _batchPoster,
-        address[] memory _validators,
-        bool[] memory _vals
+        address[] memory _validators
     ) external returns (address) {
         ProxyAdmin proxyAdmin = new ProxyAdmin();
 
@@ -121,15 +120,19 @@ contract RollupCreator is Ownable {
                 validatorWalletCreator: validatorWalletCreator
             })
         );
+        {
+            IRollupAdmin rollupAdmin = IRollupAdmin(address(rollup));
+            sequencerInbox.setIsBatchPoster(_batchPoster, true);
 
-        IRollupAdmin rollupAdmin = IRollupAdmin(address(rollup));
-        sequencerInbox.setIsBatchPoster(_batchPoster, true);
+            // Call setValidator on the newly created rollup contract
+            bool[] memory _vals = new bool[](_validators.length);
+            for (uint256 i = 0; i < _validators.length; i++) {
+                _vals[i] = true;
+            }
+            rollupAdmin.setValidator(_validators, _vals);
 
-        // Call setValidator on the newly created rollup contract
-
-        rollupAdmin.setValidator(_validators, _vals);
-
-        rollupAdmin.setOwner(tempOwner);
+            rollupAdmin.setOwner(tempOwner);
+        }
         proxyAdmin.transferOwnership(config.owner);
 
         emit RollupCreated(

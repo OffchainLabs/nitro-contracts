@@ -55,8 +55,7 @@ async function main() {
     const createRollupTx = await rollupCreator.createRollup(
       config.rollupConfig,
       config.batchPoster,
-      config.validators,
-      vals
+      config.validators
     )
     const createRollupReceipt = await createRollupTx.wait()
 
