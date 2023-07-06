@@ -120,20 +120,19 @@ contract RollupCreator is Ownable {
                 validatorWalletCreator: validatorWalletCreator
             })
         );
-        {
-            IRollupAdmin rollupAdmin = IRollupAdmin(address(rollup));
-            sequencerInbox.setIsBatchPoster(_batchPoster, true);
 
-            // Call setValidator on the newly created rollup contract
-            bool[] memory _vals = new bool[](_validators.length);
-            for (uint256 i = 0; i < _validators.length; i++) {
-                _vals[i] = true;
-            }
-            rollupAdmin.setValidator(_validators, _vals);
+        sequencerInbox.setIsBatchPoster(_batchPoster, true);
 
-            rollupAdmin.setOwner(tempOwner);
+        // Call setValidator on the newly created rollup contract
+        bool[] memory _vals = new bool[](_validators.length);
+        for (uint256 i = 0; i < _validators.length; i++) {
+            _vals[i] = true;
         }
-        proxyAdmin.transferOwnership(tempOwner);
+        IRollupAdmin(address(rollup)).setValidator(_validators, _vals);
+
+        IRollupAdmin(address(rollup)).setOwner(actualOwner);
+
+        proxyAdmin.transferOwnership(actualOwner);
 
         emit RollupCreated(
             address(rollup),
