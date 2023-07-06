@@ -68,7 +68,7 @@ contract RollupCreator is Ownable {
     function createRollup(
         Config memory config,
         address _batchPoster,
-        address[] memory _validators
+        address[] calldata _validators
     ) external returns (address) {
         ProxyAdmin proxyAdmin = new ProxyAdmin();
 
