@@ -37,8 +37,6 @@ contract RollupCreator is Ownable {
     address public validatorUtils;
     address public validatorWalletCreator;
 
-    bool[1] private vals = [true];
-
     constructor() Ownable() {}
 
     function setTemplates(
