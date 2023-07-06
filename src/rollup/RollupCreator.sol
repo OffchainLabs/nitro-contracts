@@ -133,7 +133,7 @@ contract RollupCreator is Ownable {
 
             rollupAdmin.setOwner(tempOwner);
         }
-        proxyAdmin.transferOwnership(config.owner);
+        proxyAdmin.transferOwnership(tempOwner);
 
         emit RollupCreated(
             address(rollup),
