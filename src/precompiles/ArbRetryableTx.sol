@@ -126,10 +126,18 @@ interface ArbRetryableTx {
     event ExpiredMerkleUpdate(bytes32 indexed hash, uint256 indexed position);
 
     /**
+     * @notice logs a merkle root snapshot for expired proof synthesis
+     * @param root the merkle root
+     * @param timestamp the snapshot timestamp
+     */
+    event ExpiredMerkleRootSnapshot(bytes32 indexed root, uint64 indexed timestamp);
+
+    /**
      * @notice logs a merkle leaf for expired proof synthesis
      * @param ticketId unique ticket identifier
      * @param hash the merkle hash
      * @param position = (level << 192) + leaf
+     * @param numTries number of pre-expiry retries
      */
     event RetryableExpired(
         bytes32 indexed hash,
