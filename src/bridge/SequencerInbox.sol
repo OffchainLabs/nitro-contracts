@@ -392,18 +392,29 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             // this msg isn't included in the current sequencer batch, but instead added to
             // the delayed messages queue that is yet to be included
             address batchPoster = msg.sender;
-            uint256 dataCost = block.basefee;
+            bytes memory spendingReportMsg;
             if (hostChainIsArbitrum) {
-                // Include extra cost for the host chain's L1 gas charging
-                dataCost += ArbGasInfo(address(0x6c)).getL1BaseFeeEstimate();
+                // Include extra gas for the host chain's L1 gas charging
+                uint256 l1Fees = ArbGasInfo(address(0x6c)).getCurrentTxL1GasFees();
+                uint256 extraGas = l1Fees / block.basefee;
+                require(extraGas <= type(uint64).max, "L1_GAS_NOT_UINT64");
+                spendingReportMsg = abi.encodePacked(
+                    block.timestamp,
+                    batchPoster,
+                    dataHash,
+                    seqMessageIndex,
+                    block.basefee,
+                    uint64(extraGas)
+                );
+            } else {
+                spendingReportMsg = abi.encodePacked(
+                    block.timestamp,
+                    batchPoster,
+                    dataHash,
+                    seqMessageIndex,
+                    block.basefee
+                );
             }
-            bytes memory spendingReportMsg = abi.encodePacked(
-                block.timestamp,
-                batchPoster,
-                dataHash,
-                seqMessageIndex,
-                dataCost
-            );
             uint256 msgNum = bridge.submitBatchSpendingReport(
                 batchPoster,
                 keccak256(spendingReportMsg)
