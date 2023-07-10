@@ -23,9 +23,18 @@ interface IRollupCreator {
 }
 
 interface IEthRollupCreator is IRollupCreator {
-    function createRollup(Config memory config) external returns (address);
+    function createRollup(
+        Config memory config,
+        address _batchPoster,
+        address[] calldata _validators
+    ) external returns (address);
 }
 
 interface IERC20RollupCreator is IRollupCreator {
-    function createRollup(Config memory config, address nativeToken) external returns (address);
+    function createRollup(
+        Config memory config,
+        address _batchPoster,
+        address[] calldata _validators,
+        address nativeToken
+    ) external returns (address);
 }

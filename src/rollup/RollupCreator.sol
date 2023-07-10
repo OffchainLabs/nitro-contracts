@@ -20,7 +20,7 @@ contract RollupCreator is AbsRollupCreator, IEthRollupCreator {
         address _batchPoster,
         address[] calldata _validators
     ) external override returns (address) {
-        return _createRollup(config, address(0));
+        return _createRollup(config, _batchPoster, _validators, address(0));
     }
 
     function _createBridge(
@@ -28,22 +28,19 @@ contract RollupCreator is AbsRollupCreator, IEthRollupCreator {
         address rollup,
         ISequencerInbox.MaxTimeVariation memory maxTimeVariation,
         address // nativeToken does not exist in context of standard Eth based rollup
-    )
-        internal
-        override
-        returns (
-            IBridge,
-            SequencerInbox,
-            IInbox,
-            IRollupEventInbox,
-            Outbox
-        )
-    {
-        return
-            BridgeCreator(address(bridgeCreator)).createBridge(
+    ) internal override returns (BridgeContracts memory) {
+        (
+            IBridge bridge,
+            ISequencerInbox sequencerInbox,
+            IInbox inbox,
+            IRollupEventInbox rollupEventInbox,
+            IOutbox outbox
+        ) = BridgeCreator(address(bridgeCreator)).createBridge(
                 proxyAdmin,
                 rollup,
                 maxTimeVariation
             );
+
+        return BridgeContracts(bridge, sequencerInbox, inbox, rollupEventInbox, outbox);
     }
 }

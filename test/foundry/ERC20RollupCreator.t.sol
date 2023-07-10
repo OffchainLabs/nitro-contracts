@@ -38,7 +38,7 @@ contract ERC20RollupCreatorTest is AbsRollupCreatorTest {
             extraChallengeTimeBlocks: 200,
             stakeToken: address(0),
             baseStake: 1000,
-            wasmModuleRoot: keccak256("0"),
+            wasmModuleRoot: wasmModuleRoot,
             owner: rollupOwner,
             loserStakeEscrow: address(200),
             chainId: chainId,
@@ -52,7 +52,7 @@ contract ERC20RollupCreatorTest is AbsRollupCreatorTest {
             IChallengeManager challengeManager,
             IRollupAdmin rollupAdmin,
             IRollupUser rollupUser
-        ) = _prepareRollupDeployment(address(rollupCreator), config);
+        ) = _prepareRollupDeployment();
 
         //// deployBridgeCreator
         IBridgeCreator bridgeCreator = new ERC20BridgeCreator();
@@ -69,7 +69,16 @@ contract ERC20RollupCreatorTest is AbsRollupCreatorTest {
         );
 
         /// deploy rollup
-        address rollupAddress = rollupCreator.createRollup(config, nativeToken);
+        address batchPoster = makeAddr("batch poster");
+        address[] memory validators = new address[](2);
+        validators[0] = makeAddr("validator1");
+        validators[1] = makeAddr("validator2");
+        address rollupAddress = rollupCreator.createRollup(
+            config,
+            batchPoster,
+            validators,
+            nativeToken
+        );
 
         vm.stopPrank();
 
@@ -92,6 +101,12 @@ contract ERC20RollupCreatorTest is AbsRollupCreatorTest {
         assertTrue(address(rollup.outbox()) != address(0), "Invalid outbox");
         assertTrue(address(rollup.rollupEventInbox()) != address(0), "Invalid rollupEventInbox");
         assertTrue(address(rollup.challengeManager()) != address(0), "Invalid challengeManager");
+        assertTrue(rollup.isValidator(validators[0]), "Invalid validator set");
+        assertTrue(rollup.isValidator(validators[1]), "Invalid validator set");
+        assertTrue(
+            ISequencerInbox(address(rollup.sequencerInbox())).isBatchPoster(batchPoster),
+            "Invalid batch poster"
+        );
         // native token check
         IBridge bridge = RollupCore(address(rollupAddress)).bridge();
         assertEq(

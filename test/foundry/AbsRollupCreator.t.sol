@@ -21,7 +21,7 @@ abstract contract AbsRollupCreatorTest is Test {
     address public rollupOwner = address(4400);
     address public deployer = address(4300);
 
-    function _prepareRollupDeployment(address rollupCreator, Config memory config)
+    function _prepareRollupDeployment()
         internal
         returns (
             IOneStepProofEntry ospEntry,

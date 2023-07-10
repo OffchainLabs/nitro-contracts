@@ -36,6 +36,14 @@ abstract contract AbsRollupCreator is Ownable, IRollupCreator {
     address public validatorUtils;
     address public validatorWalletCreator;
 
+    struct BridgeContracts {
+        IBridge bridge;
+        ISequencerInbox sequencerInbox;
+        IInbox inbox;
+        IRollupEventInbox rollupEventInbox;
+        IOutbox outbox;
+    }
+
     constructor() Ownable() {}
 
     function setTemplates(
@@ -73,18 +81,12 @@ abstract contract AbsRollupCreator is Ownable, IRollupCreator {
         // Create the rollup proxy to figure out the address and initialize it later
         RollupProxy rollup = new RollupProxy{salt: keccak256(abi.encode(config))}();
 
-        (
-            IBridge bridge,
-            ISequencerInbox sequencerInbox,
-            IInbox inbox,
-            IRollupEventInbox rollupEventInbox,
-            IOutbox outbox
-        ) = _createBridge(
-                address(proxyAdmin),
-                address(rollup),
-                config.sequencerInboxMaxTimeVariation,
-                nativeToken
-            );
+        BridgeContracts memory bridgeContracts = _createBridge(
+            address(proxyAdmin),
+            address(rollup),
+            config.sequencerInboxMaxTimeVariation,
+            nativeToken
+        );
 
         IChallengeManager challengeManager = IChallengeManager(
             address(
@@ -97,8 +99,8 @@ abstract contract AbsRollupCreator is Ownable, IRollupCreator {
         );
         challengeManager.initialize(
             IChallengeResultReceiver(address(rollup)),
-            sequencerInbox,
-            bridge,
+            bridgeContracts.sequencerInbox,
+            bridgeContracts.bridge,
             osp
         );
 
@@ -111,11 +113,11 @@ abstract contract AbsRollupCreator is Ownable, IRollupCreator {
         rollup.initializeProxy(
             config,
             ContractDependencies({
-                bridge: bridge,
-                sequencerInbox: sequencerInbox,
-                inbox: inbox,
-                outbox: outbox,
-                rollupEventInbox: rollupEventInbox,
+                bridge: bridgeContracts.bridge,
+                sequencerInbox: bridgeContracts.sequencerInbox,
+                inbox: bridgeContracts.inbox,
+                outbox: bridgeContracts.outbox,
+                rollupEventInbox: bridgeContracts.rollupEventInbox,
                 challengeManager: challengeManager,
                 rollupAdminLogic: address(rollupAdminLogic),
                 rollupUserLogic: rollupUserLogic,
@@ -124,7 +126,7 @@ abstract contract AbsRollupCreator is Ownable, IRollupCreator {
             })
         );
 
-        sequencerInbox.setIsBatchPoster(_batchPoster, true);
+        bridgeContracts.sequencerInbox.setIsBatchPoster(_batchPoster, true);
 
         // Call setValidator on the newly created rollup contract
         bool[] memory _vals = new bool[](_validators.length);
@@ -137,13 +139,13 @@ abstract contract AbsRollupCreator is Ownable, IRollupCreator {
 
         emit RollupCreated(
             address(rollup),
-            address(inbox),
-            address(outbox),
-            address(rollupEventInbox),
+            address(bridgeContracts.inbox),
+            address(bridgeContracts.outbox),
+            address(bridgeContracts.rollupEventInbox),
             address(challengeManager),
             address(proxyAdmin),
-            address(sequencerInbox),
-            address(bridge),
+            address(bridgeContracts.sequencerInbox),
+            address(bridgeContracts.bridge),
             address(validatorUtils),
             address(validatorWalletCreator)
         );
@@ -158,14 +160,5 @@ abstract contract AbsRollupCreator is Ownable, IRollupCreator {
         address rollup,
         ISequencerInbox.MaxTimeVariation memory maxTimeVariation,
         address nativeToken
-    )
-        internal
-        virtual
-        returns (
-            IBridge,
-            SequencerInbox,
-            IInbox,
-            IRollupEventInbox,
-            Outbox
-        );
+    ) internal virtual returns (BridgeContracts memory);
 }
