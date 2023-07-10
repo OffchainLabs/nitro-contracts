@@ -101,6 +101,8 @@ contract RollupCreator is Ownable {
             osp
         );
 
+        proxyAdmin.transferOwnership(config.owner);
+
         // initialize the rollup with this contract as owner to set batch poster and validators
         // it will transfer the ownership back to the actual owner later
         address actualOwner = config.owner;
@@ -131,8 +133,6 @@ contract RollupCreator is Ownable {
         IRollupAdmin(address(rollup)).setValidator(_validators, _vals);
 
         IRollupAdmin(address(rollup)).setOwner(actualOwner);
-
-        proxyAdmin.transferOwnership(actualOwner);
 
         emit RollupCreated(
             address(rollup),
