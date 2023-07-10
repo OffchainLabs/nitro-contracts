@@ -15,7 +15,11 @@ contract RollupCreator is AbsRollupCreator, IEthRollupCreator {
     // RollupOwner should be the owner of Rollup's ProxyAdmin
     // RollupOwner should be the owner of Rollup
     // Bridge should have a single inbox and outbox
-    function createRollup(Config memory config) external override returns (address) {
+    function createRollup(
+        Config memory config,
+        address _batchPoster,
+        address[] calldata _validators
+    ) external override returns (address) {
         return _createRollup(config, address(0));
     }
 
