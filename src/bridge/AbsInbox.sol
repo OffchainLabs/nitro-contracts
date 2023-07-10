@@ -109,6 +109,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInbox {
         _unpause();
     }
 
+    /* solhint-disable func-name-mixedcase */
     function __AbsInbox_init(IBridge _bridge, ISequencerInbox _sequencerInbox)
         internal
         onlyInitializing

@@ -15,9 +15,14 @@ abstract contract AbsRollupCreator is Ownable, IRollupCreator {
     event RollupCreated(
         address indexed rollupAddress,
         address inboxAddress,
+        address outbox,
+        address rollupEventInbox,
+        address challengeManager,
         address adminProxy,
         address sequencerInbox,
-        address bridge
+        address bridge,
+        address validatorUtils,
+        address validatorWalletCreator
     );
     event TemplatesUpdated();
 
@@ -112,9 +117,14 @@ abstract contract AbsRollupCreator is Ownable, IRollupCreator {
         emit RollupCreated(
             address(rollup),
             address(inbox),
+            address(outbox),
+            address(rollupEventInbox),
+            address(challengeManager),
             address(proxyAdmin),
             address(sequencerInbox),
-            address(bridge)
+            address(bridge),
+            address(validatorUtils),
+            address(validatorWalletCreator)
         );
         return address(rollup);
     }
