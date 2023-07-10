@@ -15,20 +15,16 @@
  */
 
 /* eslint-env node, mocha */
-import { ethers, run, network } from 'hardhat'
+import { ethers, run } from 'hardhat'
 import { Signer } from '@ethersproject/abstract-signer'
 import { BigNumberish, BigNumber } from '@ethersproject/bignumber'
 import { BytesLike } from '@ethersproject/bytes'
 import { ContractTransaction } from '@ethersproject/contracts'
 import { assert, expect } from 'chai'
 import {
-  Bridge,
   BridgeCreator__factory,
-  Bridge__factory,
   ChallengeManager,
   ChallengeManager__factory,
-  Inbox,
-  Inbox__factory,
   OneStepProofEntry__factory,
   OneStepProver0__factory,
   OneStepProverHostIo__factory,
@@ -82,8 +78,6 @@ let sequencerInbox: SequencerInbox
 let admin: Signer
 let sequencer: Signer
 let challengeManager: ChallengeManager
-let delayedInbox: Inbox
-let bridge: Bridge
 
 async function getDefaultConfig(
   _confirmPeriodBlocks = confirmationPeriodBlocks
@@ -182,7 +176,12 @@ const setup = async () => {
     ethers.constants.AddressZero
   )
 
-  const response = await rollupCreator.createRollup(await getDefaultConfig())
+  const response = await rollupCreator.createRollup(
+    await getDefaultConfig(),
+    await sequencer.getAddress(),
+    [await val1.getAddress(), await val2.getAddress(), await val3.getAddress()]
+  )
+
   const rec = await response.wait()
 
   const rollupCreatedEvent = rollupCreator.interface.parseLog(
@@ -196,32 +195,17 @@ const setup = async () => {
     .attach(rollupCreatedEvent.rollupAddress)
     .connect(user)
 
-  await rollupAdmin.setValidator(
-    [await val1.getAddress(), await val2.getAddress(), await val3.getAddress()],
-    [true, true, true]
-  )
-
   sequencerInbox = (
     (await ethers.getContractFactory(
       'SequencerInbox'
     )) as SequencerInbox__factory
   ).attach(rollupCreatedEvent.sequencerInbox)
 
-  await sequencerInbox.setIsBatchPoster(await sequencer.getAddress(), true)
-
   challengeManager = (
     (await ethers.getContractFactory(
       'ChallengeManager'
     )) as ChallengeManager__factory
   ).attach(await rollupUser.challengeManager())
-
-  delayedInbox = (
-    (await ethers.getContractFactory('Inbox')) as Inbox__factory
-  ).attach(rollupCreatedEvent.inboxAddress)
-
-  bridge = (
-    (await ethers.getContractFactory('Bridge')) as Bridge__factory
-  ).attach(rollupCreatedEvent.bridge)
 
   return {
     admin,
