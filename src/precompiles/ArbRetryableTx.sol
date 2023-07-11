@@ -138,7 +138,11 @@ interface ArbRetryableTx {
      * @param numLeaves number of leaves in the merkle accumulator
      * @param timestamp the snapshot's timestamp
      */
-    event ExpiredMerkleRootSnapshot(bytes32 indexed root, uint64 indexed numLeaves, uint64 indexed timestamp);
+    event ExpiredMerkleRootSnapshot(
+        bytes32 indexed root,
+        uint64 indexed numLeaves,
+        uint64 indexed timestamp
+    );
 
     /**
      * @notice logs a merkle leaf for expired proof synthesis
