@@ -44,9 +44,16 @@ interface ArbRetryableTx {
      * @notice Brings back to life ticketId.
      * Donate gas to pay for the lifetime extension.
      * If successful, emits LifetimeExtended event.
-     * Revert if wrong proof or ticketId was already revived.
-     * TODO(magic)
+     * Revert if proof is wrong or ticketId was already revived.
      * @param ticketId unique ticket identifier
+     * @param numTries number of pre-expiry retries
+     * @param from address of the retryable submitter
+     * @param to retryable's recipient
+     * @param callvalue retryable's callvalue
+     * @param beneficiary retryable's benficiary
+     * @param rootHash the merkle root to prove against
+     * @param leafIndex merkle leaf index that is proved
+     * @param proof merkle proof of the retryable's inclusion in expired accumulator
      * @return new timeout of ticketId
      */
     function revive(
@@ -128,9 +135,10 @@ interface ArbRetryableTx {
     /**
      * @notice logs a merkle root snapshot for expired proof synthesis
      * @param root the merkle root
-     * @param timestamp the snapshot timestamp
+     * @param numLeaves number of leaves in the merkle accumulator
+     * @param timestamp the snapshot's timestamp
      */
-    event ExpiredMerkleRootSnapshot(bytes32 indexed root, uint64 indexed timestamp);
+    event ExpiredMerkleRootSnapshot(bytes32 indexed root, uint64 indexed numLeaves, uint64 indexed timestamp);
 
     /**
      * @notice logs a merkle leaf for expired proof synthesis
