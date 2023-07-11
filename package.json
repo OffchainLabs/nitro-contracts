@@ -10,7 +10,6 @@
   },
   "files": [
     "src/",
-    "build/contracts",
     "build/types"
   ],
   "bugs": {
