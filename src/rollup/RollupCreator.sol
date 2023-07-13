@@ -58,14 +58,19 @@ contract RollupCreator is Ownable {
         emit TemplatesUpdated();
     }
 
-    // After this setup:
-    // Rollup should be the owner of bridge
-    // RollupOwner should be the owner of Rollup's ProxyAdmin
-    // RollupOwner should be the owner of Rollup
-    // Bridge should have a single inbox and outbox
-    // Validators and batch poster should be set if provided
-    // If you don't want to set validators, put an empty list
-    // If you don't want to set batch-poster, put zero address
+    /**
+     * @notice Create a new rollup
+     * @dev After this setup:
+     * @dev - Rollup should be the owner of bridge
+     * @dev - RollupOwner should be the owner of Rollup's ProxyAdmin
+     * @dev - RollupOwner should be the owner of Rollup
+     * @dev - Bridge should have a single inbox and outbox
+     * @dev - Validators and batch poster should be set if provided
+     * @param config       The configuration for the rollup
+     * @param _batchPoster The address of the batch poster, not used when set to zero address
+     * @param _validators  The list of validator addresses, not used when set to empty list
+     * @return The address of the newly created rollup
+     */
     function createRollup(
         Config memory config,
         address _batchPoster,
