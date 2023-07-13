@@ -70,6 +70,11 @@ interface ArbRetryableTx {
     ) external returns (uint256);
 
     /**
+     * @notice Return root hash and tree size from last expired root snapshot
+     */
+    function getLastExpiredRootSnapshot() external view returns (bytes32, uint64);
+
+    /**
      * @notice Return the beneficiary of ticketId.
      * Revert if ticketId doesn't exist.
      * @param ticketId unique ticket identifier
@@ -131,13 +136,6 @@ interface ArbRetryableTx {
      * @param position = (level << 192) + leaf
      */
     event ExpiredMerkleUpdate(bytes32 indexed hash, uint256 indexed position);
-
-    /**
-     * @notice logs a merkle root snapshot for expired proof synthesis
-     * @param root the merkle root
-     * @param numLeaves number of leaves in the merkle accumulator
-     */
-    event ExpiredMerkleRootSnapshot(bytes32 indexed root, uint64 indexed numLeaves);
 
     /**
      * @notice logs a merkle leaf for expired proof synthesis
