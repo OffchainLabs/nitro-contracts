@@ -4,18 +4,18 @@
 
 pragma solidity ^0.8.0;
 
+import "./RollupProxy.sol";
+import "./IRollupAdmin.sol";
 import "./BridgeCreator.sol";
-
+import "./ERC20BridgeCreator.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "./RollupProxy.sol";
-import "./IRollupAdmin.sol";
-
 contract RollupCreator is Ownable {
     event RollupCreated(
         address indexed rollupAddress,
+        address indexed nativeToken,
         address inboxAddress,
         address outbox,
         address rollupEventInbox,
@@ -28,7 +28,8 @@ contract RollupCreator is Ownable {
     );
     event TemplatesUpdated();
 
-    BridgeCreator public bridgeCreator;
+    BridgeCreator public ethBridgeCreator;
+    ERC20BridgeCreator public erc20BridgeCreator;
     IOneStepProofEntry public osp;
     IChallengeManager public challengeManagerTemplate;
     IRollupAdmin public rollupAdminLogic;
@@ -37,10 +38,19 @@ contract RollupCreator is Ownable {
     address public validatorUtils;
     address public validatorWalletCreator;
 
+    struct BridgeContracts {
+        IBridge bridge;
+        ISequencerInbox sequencerInbox;
+        IInbox inbox;
+        IRollupEventInbox rollupEventInbox;
+        IOutbox outbox;
+    }
+
     constructor() Ownable() {}
 
     function setTemplates(
-        BridgeCreator _bridgeCreator,
+        BridgeCreator _ethBridgeCreator,
+        ERC20BridgeCreator _erc20BridgeCreator,
         IOneStepProofEntry _osp,
         IChallengeManager _challengeManagerLogic,
         IRollupAdmin _rollupAdminLogic,
@@ -48,7 +58,8 @@ contract RollupCreator is Ownable {
         address _validatorUtils,
         address _validatorWalletCreator
     ) external onlyOwner {
-        bridgeCreator = _bridgeCreator;
+        ethBridgeCreator = _ethBridgeCreator;
+        erc20BridgeCreator = _erc20BridgeCreator;
         osp = _osp;
         challengeManagerTemplate = _challengeManagerLogic;
         rollupAdminLogic = _rollupAdminLogic;
@@ -69,29 +80,49 @@ contract RollupCreator is Ownable {
      * @param config       The configuration for the rollup
      * @param _batchPoster The address of the batch poster, not used when set to zero address
      * @param _validators  The list of validator addresses, not used when set to empty list
+     * @param _nativeToken Address of the custom fee token used by rollup. If rollup is ETH-based address(0) should be provided
      * @return The address of the newly created rollup
      */
     function createRollup(
         Config memory config,
         address _batchPoster,
-        address[] calldata _validators
+        address[] calldata _validators,
+        address _nativeToken
     ) external returns (address) {
         ProxyAdmin proxyAdmin = new ProxyAdmin();
 
         // Create the rollup proxy to figure out the address and initialize it later
         RollupProxy rollup = new RollupProxy{salt: keccak256(abi.encode(config))}();
 
-        (
-            IBridge bridge,
-            ISequencerInbox sequencerInbox,
-            IInbox inbox,
-            IRollupEventInbox rollupEventInbox,
-            IOutbox outbox
-        ) = bridgeCreator.createBridge(
+        BridgeContracts memory bridgeContracts;
+        if (_nativeToken == address(0)) {
+            // create ETH-based rollup if address zero is provided for native token
+            (
+                bridgeContracts.bridge,
+                bridgeContracts.sequencerInbox,
+                bridgeContracts.inbox,
+                bridgeContracts.rollupEventInbox,
+                bridgeContracts.outbox
+            ) = ethBridgeCreator.createBridge(
                 address(proxyAdmin),
                 address(rollup),
                 config.sequencerInboxMaxTimeVariation
             );
+        } else {
+            // otherwise create ERC20-based rollup with custom fee token
+            (
+                bridgeContracts.bridge,
+                bridgeContracts.sequencerInbox,
+                bridgeContracts.inbox,
+                bridgeContracts.rollupEventInbox,
+                bridgeContracts.outbox
+            ) = erc20BridgeCreator.createBridge(
+                address(proxyAdmin),
+                address(rollup),
+                _nativeToken,
+                config.sequencerInboxMaxTimeVariation
+            );
+        }
 
         IChallengeManager challengeManager = IChallengeManager(
             address(
@@ -104,8 +135,8 @@ contract RollupCreator is Ownable {
         );
         challengeManager.initialize(
             IChallengeResultReceiver(address(rollup)),
-            sequencerInbox,
-            bridge,
+            bridgeContracts.sequencerInbox,
+            bridgeContracts.bridge,
             osp
         );
 
@@ -118,11 +149,11 @@ contract RollupCreator is Ownable {
         rollup.initializeProxy(
             config,
             ContractDependencies({
-                bridge: bridge,
-                sequencerInbox: sequencerInbox,
-                inbox: inbox,
-                outbox: outbox,
-                rollupEventInbox: rollupEventInbox,
+                bridge: bridgeContracts.bridge,
+                sequencerInbox: bridgeContracts.sequencerInbox,
+                inbox: bridgeContracts.inbox,
+                outbox: bridgeContracts.outbox,
+                rollupEventInbox: bridgeContracts.rollupEventInbox,
                 challengeManager: challengeManager,
                 rollupAdminLogic: address(rollupAdminLogic),
                 rollupUserLogic: rollupUserLogic,
@@ -133,7 +164,7 @@ contract RollupCreator is Ownable {
 
         // setting batch poster, if the address provided is not zero address
         if (_batchPoster != address(0)) {
-            sequencerInbox.setIsBatchPoster(_batchPoster, true);
+            bridgeContracts.sequencerInbox.setIsBatchPoster(_batchPoster, true);
         }
 
         // Call setValidator on the newly created rollup contract just if validator set is not empty
@@ -149,13 +180,14 @@ contract RollupCreator is Ownable {
 
         emit RollupCreated(
             address(rollup),
-            address(inbox),
-            address(outbox),
-            address(rollupEventInbox),
+            _nativeToken,
+            address(bridgeContracts.inbox),
+            address(bridgeContracts.outbox),
+            address(bridgeContracts.rollupEventInbox),
             address(challengeManager),
             address(proxyAdmin),
-            address(sequencerInbox),
-            address(bridge),
+            address(bridgeContracts.sequencerInbox),
+            address(bridgeContracts.bridge),
             address(validatorUtils),
             address(validatorWalletCreator)
         );
