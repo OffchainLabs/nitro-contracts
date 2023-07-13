@@ -156,10 +156,15 @@ const setup = async () => {
   )) as RollupUserLogic__factory
   const rollupUserLogicTemplate = await rollupUserLogicFac.deploy()
 
-  const bridgeCreatorFac = (await ethers.getContractFactory(
+  const ethBridgeCreatorFac = (await ethers.getContractFactory(
     'BridgeCreator'
   )) as BridgeCreator__factory
-  const bridgeCreator = await bridgeCreatorFac.deploy()
+  const ethBridgeCreator = await ethBridgeCreatorFac.deploy()
+
+  const erc20BridgeCreatorFac = (await ethers.getContractFactory(
+    'ERC20BridgeCreator'
+  )) as BridgeCreator__factory
+  const erc20BridgeCreator = await erc20BridgeCreatorFac.deploy()
 
   const rollupCreatorFac = (await ethers.getContractFactory(
     'RollupCreator'
@@ -167,7 +172,8 @@ const setup = async () => {
   const rollupCreator = await rollupCreatorFac.deploy()
 
   await rollupCreator.setTemplates(
-    bridgeCreator.address,
+    ethBridgeCreator.address,
+    erc20BridgeCreator.address,
     oneStepProofEntry.address,
     challengeManagerTemplate.address,
     rollupAdminLogicTemplate.address,
@@ -179,7 +185,8 @@ const setup = async () => {
   const response = await rollupCreator.createRollup(
     await getDefaultConfig(),
     await sequencer.getAddress(),
-    [await val1.getAddress(), await val2.getAddress(), await val3.getAddress()]
+    [await val1.getAddress(), await val2.getAddress(), await val3.getAddress()],
+    ethers.constants.AddressZero
   )
 
   const rec = await response.wait()
