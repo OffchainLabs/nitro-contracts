@@ -58,11 +58,19 @@ contract RollupCreator is Ownable {
         emit TemplatesUpdated();
     }
 
-    // After this setup:
-    // Rollup should be the owner of bridge
-    // RollupOwner should be the owner of Rollup's ProxyAdmin
-    // RollupOwner should be the owner of Rollup
-    // Bridge should have a single inbox and outbox
+    /**
+     * @notice Create a new rollup
+     * @dev After this setup:
+     * @dev - Rollup should be the owner of bridge
+     * @dev - RollupOwner should be the owner of Rollup's ProxyAdmin
+     * @dev - RollupOwner should be the owner of Rollup
+     * @dev - Bridge should have a single inbox and outbox
+     * @dev - Validators and batch poster should be set if provided
+     * @param config       The configuration for the rollup
+     * @param _batchPoster The address of the batch poster, not used when set to zero address
+     * @param _validators  The list of validator addresses, not used when set to empty list
+     * @return The address of the newly created rollup
+     */
     function createRollup(
         Config memory config,
         address _batchPoster,
@@ -123,14 +131,19 @@ contract RollupCreator is Ownable {
             })
         );
 
-        sequencerInbox.setIsBatchPoster(_batchPoster, true);
-
-        // Call setValidator on the newly created rollup contract
-        bool[] memory _vals = new bool[](_validators.length);
-        for (uint256 i = 0; i < _validators.length; i++) {
-            _vals[i] = true;
+        // setting batch poster, if the address provided is not zero address
+        if (_batchPoster != address(0)) {
+            sequencerInbox.setIsBatchPoster(_batchPoster, true);
         }
-        IRollupAdmin(address(rollup)).setValidator(_validators, _vals);
+
+        // Call setValidator on the newly created rollup contract just if validator set is not empty
+        if (_validators.length != 0) {
+            bool[] memory _vals = new bool[](_validators.length);
+            for (uint256 i = 0; i < _validators.length; i++) {
+                _vals[i] = true;
+            }
+            IRollupAdmin(address(rollup)).setValidator(_validators, _vals);
+        }
 
         IRollupAdmin(address(rollup)).setOwner(actualOwner);
 
