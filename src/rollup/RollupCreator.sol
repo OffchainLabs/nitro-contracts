@@ -63,6 +63,9 @@ contract RollupCreator is Ownable {
     // RollupOwner should be the owner of Rollup's ProxyAdmin
     // RollupOwner should be the owner of Rollup
     // Bridge should have a single inbox and outbox
+    // Validators and batch poster should be set if provided
+    // If you don't want to set validators, put an empty list
+    // If you don't want to set batch-poster, put zero address
     function createRollup(
         Config memory config,
         address _batchPoster,
@@ -123,14 +126,19 @@ contract RollupCreator is Ownable {
             })
         );
 
-        sequencerInbox.setIsBatchPoster(_batchPoster, true);
-
-        // Call setValidator on the newly created rollup contract
-        bool[] memory _vals = new bool[](_validators.length);
-        for (uint256 i = 0; i < _validators.length; i++) {
-            _vals[i] = true;
+        // setting batch poster, if the address provided is not zero address
+        if (_batchPoster != address(0)) {
+            sequencerInbox.setIsBatchPoster(_batchPoster, true);
         }
-        IRollupAdmin(address(rollup)).setValidator(_validators, _vals);
+
+        // Call setValidator on the newly created rollup contract just if validator set is not empty
+        if (_validators.length != 0) {
+            bool[] memory _vals = new bool[](_validators.length);
+            for (uint256 i = 0; i < _validators.length; i++) {
+                _vals[i] = true;
+            }
+            IRollupAdmin(address(rollup)).setValidator(_validators, _vals);
+        }
 
         IRollupAdmin(address(rollup)).setOwner(actualOwner);
 
