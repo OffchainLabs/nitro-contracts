@@ -10,11 +10,13 @@ import "./BridgeCreator.sol";
 contract RollupCreator is AbsRollupCreator, IEthRollupCreator {
     constructor() AbsRollupCreator() {}
 
-    // After this setup:
-    // Rollup should be the owner of bridge
-    // RollupOwner should be the owner of Rollup's ProxyAdmin
-    // RollupOwner should be the owner of Rollup
-    // Bridge should have a single inbox and outbox
+    /**
+     * @notice Create a new rollup
+     * @param  config       The configuration for the rollup
+     * @param  _batchPoster The address of the batch poster, not used when set to zero address
+     * @param  _validators  The list of validator addresses, not used when set to empty list
+     * @return The address of the newly created rollup
+     */
     function createRollup(
         Config memory config,
         address _batchPoster,
