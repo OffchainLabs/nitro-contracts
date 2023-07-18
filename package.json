@@ -29,6 +29,7 @@
     "test:e2e": "hardhat test test/e2e/*.ts",
     "postinstall": "patch-package",
     "deploy-factory": "hardhat run scripts/deployment.ts",
+    "deploy-factory:goerli": "hardhat run scripts/deployment.ts --network arbGoerliRollup",
     "deploy-rollup": "hardhat run scripts/rollupCreation.ts"
   },
   "dependencies": {
@@ -36,6 +37,7 @@
     "@ethersproject/providers": "^5.7.2",
     "@openzeppelin/contracts": "4.5.0",
     "@openzeppelin/contracts-upgradeable": "4.5.2",
+    "dotenv": "^16.3.1",
     "patch-package": "^6.4.7"
   },
   "private": false,
