@@ -18,6 +18,9 @@ interface ArbOwner {
     /// @notice Remove account from the list of chain owners
     function removeChainOwner(address ownerToRemove) external;
 
+    /// @notice Rectify the list of chain owners
+    function rectifyChainOwner(address ownerToRectify) external;
+
     /// @notice See if the user is a chain owner
     function isChainOwner(address addr) external view returns (bool);
 
