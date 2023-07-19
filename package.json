@@ -29,7 +29,7 @@
     "test:e2e": "hardhat test test/e2e/*.ts",
     "postinstall": "patch-package",
     "deploy-factory": "hardhat run scripts/deployment.ts",
-    "deploy-rollup": "hardhat run scripts/createEthRollup.ts",
+    "deploy-eth-rollup": "hardhat run scripts/createEthRollup.ts",
     "deploy-erc20-rollup": "hardhat run scripts/createERC20Rollup.ts"
   },
   "dependencies": {
