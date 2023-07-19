@@ -40,7 +40,7 @@ async function verifyContract(
 }
 
 // Function to handle contract deployment
-export async function deployContract(
+async function deployContract(
   contractName: string,
   signer: any,
   constructorArgs: any[] = []

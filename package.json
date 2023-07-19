@@ -29,8 +29,8 @@
     "test:e2e": "hardhat test test/e2e/*.ts",
     "postinstall": "patch-package",
     "deploy-factory": "hardhat run scripts/deployment.ts",
-    "deploy-factory:goerli": "hardhat run scripts/deployment.ts --network arbGoerliRollup",
-    "deploy-rollup": "hardhat run scripts/rollupCreation.ts"
+    "deploy-rollup": "hardhat run scripts/createEthRollup.ts",
+    "deploy-erc20-rollup": "hardhat run scripts/createERC20Rollup.ts"
   },
   "dependencies": {
     "@arbitrum/sdk": "^3.1.3",
