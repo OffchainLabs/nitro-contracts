@@ -18,7 +18,14 @@ async function deployERC20Token(deployer: Signer): Promise<string> {
 
 async function main() {
   const [deployer] = await ethers.getSigners()
-  const customFeeTokenAddress = await deployERC20Token(deployer)
+
+  let customFeeTokenAddress = process.env.FEE_TOKEN_ADDRESS
+  if (!customFeeTokenAddress) {
+    console.log(
+      'FEE_TOKEN_ADDRESS env var not provided, deploying new ERC20 token'
+    )
+    customFeeTokenAddress = await deployERC20Token(deployer)
+  }
 
   console.log('Creating new rollup with', customFeeTokenAddress, 'as fee token')
   await createRollup(customFeeTokenAddress)
