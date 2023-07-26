@@ -15,7 +15,7 @@ interface IERC20Bridge is IBridge {
      * are not supported to be used as chain's native token, as they can break collateralization
      * invariants.
      */
-    function nativeToken() external returns (address);
+    function nativeToken() external view returns (address);
 
     /**
      * @dev Enqueue a message in the delayed inbox accumulator.
