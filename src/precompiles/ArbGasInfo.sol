@@ -95,7 +95,7 @@ interface ArbGasInfo {
     /// @notice Get how slowly ArbOS updates its estimate of the L1 basefee
     function getL1BaseFeeEstimateInertia() external view returns (uint64);
 
-    /// @notice Get the L1 pricer reward rate
+    /// @notice Get the L1 pricer reward rate, in wei per unit
     function getL1RewardRate() external view returns (uint64);
 
     /// @notice Get the L1 pricer reward recipient
