@@ -28,6 +28,7 @@ import "./ISequencerInbox.sol";
 import "../rollup/IRollupLogic.sol";
 import "./Messages.sol";
 import "../precompiles/ArbGasInfo.sol";
+import "../precompiles/ArbSys.sol";
 
 import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
 import {GasRefundEnabled, IGasRefunder} from "../libraries/IGasRefunder.sol";
@@ -454,9 +455,13 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         require(keysetBytes.length < 64 * 1024, "keyset is too large");
 
         if (dasKeySetInfo[ksHash].isValidKeyset) revert AlreadyValidDASKeyset(ksHash);
+        uint256 creationBlock = block.number;
+        if (hostChainIsArbitrum) {
+            creationBlock = ArbSys(address(100)).arbBlockNumber();
+        }
         dasKeySetInfo[ksHash] = DasKeySetInfo({
             isValidKeyset: true,
-            creationBlock: uint64(block.number)
+            creationBlock: uint64(creationBlock)
         });
         emit SetValidKeyset(ksHash, keysetBytes);
         emit OwnerFunctionCalled(2);
