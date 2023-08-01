@@ -135,7 +135,7 @@ library Instructions {
     uint16 internal constant CROSS_MODULE_CALL = 0x8009;
     uint16 internal constant CALLER_MODULE_INTERNAL_CALL = 0x800A;
     uint16 internal constant CROSS_MODULE_FORWARD = 0x800B;
-    uint16 internal constant CROSS_MODULE_DYNAMIC_CALL = 0x800C;
+    uint16 internal constant CROSS_MODULE_INTERNAL_CALL = 0x800C;
 
     uint16 internal constant GET_GLOBAL_STATE_BYTES32 = 0x8010;
     uint16 internal constant SET_GLOBAL_STATE_BYTES32 = 0x8011;
