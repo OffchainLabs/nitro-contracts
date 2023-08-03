@@ -30,6 +30,7 @@ import {MAX_DATA_SIZE} from "../libraries/Constants.sol";
 
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/StorageSlotUpgradeable.sol";
 
 /**
  * @title Inbox for user and contract originated messages
@@ -37,6 +38,11 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
  * to await inclusion in the SequencerInbox
  */
 abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInbox {
+    /// @dev Storage slot with the admin of the contract.
+    /// This is the keccak-256 hash of "eip1967.proxy.admin" subtracted by 1.
+    bytes32 internal constant _ADMIN_SLOT =
+        0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
+
     /// @inheritdoc IInbox
     IBridge public bridge;
     /// @inheritdoc IInbox
@@ -204,6 +210,11 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInbox {
                 ),
                 0
             );
+    }
+
+    /// @inheritdoc IInbox
+    function getProxyAdmin() external view returns (address) {
+        return StorageSlotUpgradeable.getAddressSlot(_ADMIN_SLOT).value;
     }
 
     function _createRetryableTicket(

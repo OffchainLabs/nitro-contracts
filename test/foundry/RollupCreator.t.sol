@@ -133,7 +133,7 @@ contract RollupCreatorTest is Test {
             "Invalid bridge's proxyAdmin owner"
         );
         assertEq(
-            _getProxyAdmin(address(rollup.inbox())),
+            rollup.inbox().getProxyAdmin(),
             proxyAdminExpectedAddress,
             "Invalid inbox' proxyAdmin owner"
         );

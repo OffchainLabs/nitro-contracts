@@ -20,6 +20,10 @@ abstract contract AbsInboxTest is Test {
     address public seqInbox = address(1001);
 
     /* solhint-disable func-name-mixedcase */
+    function test_getProxyAdmin() public {
+        assertNotEq(inbox.getProxyAdmin(), address(0), "Invalid proxy admin");
+    }
+
     function test_setAllowList() public {
         address[] memory users = new address[](2);
         users[0] = address(300);

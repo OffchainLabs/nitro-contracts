@@ -202,4 +202,8 @@ contract InboxStub is IInbox, IEthInbox {
     function allowListEnabled() external pure returns (bool) {
         revert("NOT_IMPLEMENTED");
     }
+
+    function getProxyAdmin() external pure returns (address) {
+        revert("NOT_IMPLEMENTED");
+    }
 }
