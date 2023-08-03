@@ -270,6 +270,56 @@ contract RollupCreatorTest is Test {
         );
     }
 
+    function test_upgrade() public {
+        vm.startPrank(deployer);
+
+        // deployment params
+        ISequencerInbox.MaxTimeVariation memory timeVars =
+            ISequencerInbox.MaxTimeVariation(((60 * 60 * 24) / 15), 12, 60 * 60 * 24, 60 * 60);
+        Config memory config = Config({
+            confirmPeriodBlocks: 20,
+            extraChallengeTimeBlocks: 200,
+            stakeToken: address(0),
+            baseStake: 1000,
+            wasmModuleRoot: keccak256("wasm"),
+            owner: rollupOwner,
+            loserStakeEscrow: address(200),
+            chainId: 1337,
+            chainConfig: "abc",
+            genesisBlockNum: 15_000_000,
+            sequencerInboxMaxTimeVariation: timeVars
+        });
+
+        /// deploy rollup
+        address batchPoster = makeAddr("batch poster");
+        address[] memory validators = new address[](2);
+        validators[0] = makeAddr("validator1");
+        validators[1] = makeAddr("validator2");
+        address rollupAddress =
+            rollupCreator.createRollup(config, batchPoster, validators, address(0));
+
+        vm.stopPrank();
+
+        //// upgrade inbox
+        RollupCore rollup = RollupCore(rollupAddress);
+        address inbox = address(rollup.inbox());
+        address proxyAdmin = computeCreateAddress(address(rollupCreator), 1);
+        UpgradeExecutor upgradeExecutor =
+            UpgradeExecutor(computeCreateAddress(address(rollupCreator), 2));
+
+        Dummy newLogicImpl = new Dummy();
+        bytes memory data = abi.encodeWithSelector(
+            ProxyUpgradeAction.perform.selector, address(proxyAdmin), inbox, address(newLogicImpl)
+        );
+
+        address upgradeAction = address(new ProxyUpgradeAction());
+        vm.prank(rollupOwner);
+        upgradeExecutor.execute(upgradeAction, data);
+
+        // check upgrade was successful
+        assertEq(_getImpl(inbox), address(newLogicImpl));
+    }
+
     function _prepareRollupDeployment()
         internal
         returns (
@@ -300,6 +350,11 @@ contract RollupCreatorTest is Test {
         return address(uint160(uint256(vm.load(proxy, adminSlot))));
     }
 
+    function _getImpl(address proxy) internal view returns (address) {
+        bytes32 implSlot = bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1);
+        return address(uint160(uint256(vm.load(proxy, implSlot))));
+    }
+
     function _getPrimary(address proxy) internal view returns (address) {
         bytes32 primarySlot = bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1);
         return address(uint160(uint256(vm.load(proxy, primarySlot))));
@@ -310,4 +365,14 @@ contract RollupCreatorTest is Test {
             bytes32(uint256(keccak256("eip1967.proxy.implementation.secondary")) - 1);
         return address(uint160(uint256(vm.load(proxy, secondarySlot))));
     }
+}
+
+contract ProxyUpgradeAction {
+    function perform(address admin, address payable target, address newLogic) public payable {
+        ProxyAdmin(admin).upgrade(TransparentUpgradeableProxy(target), newLogic);
+    }
+}
+
+contract Dummy {
+    function dummy() public {}
 }
