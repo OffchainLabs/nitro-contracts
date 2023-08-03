@@ -138,6 +138,11 @@ contract RollupCreatorTest is Test {
             "Invalid inbox' proxyAdmin owner"
         );
         assertEq(
+            _getProxyAdmin(address(rollup.outbox())),
+            proxyAdminExpectedAddress,
+            "Invalid outbox' proxyAdmin owner"
+        );
+        assertEq(
             _getProxyAdmin(address(rollup.rollupEventInbox())),
             proxyAdminExpectedAddress,
             "Invalid rollupEventInbox' proxyAdmin owner"
@@ -243,6 +248,11 @@ contract RollupCreatorTest is Test {
             _getProxyAdmin(address(rollup.inbox())),
             proxyAdminExpectedAddress,
             "Invalid inbox' proxyAdmin owner"
+        );
+        assertEq(
+            _getProxyAdmin(address(rollup.outbox())),
+            proxyAdminExpectedAddress,
+            "Invalid outbox' proxyAdmin owner"
         );
         assertEq(
             _getProxyAdmin(address(rollup.rollupEventInbox())),
