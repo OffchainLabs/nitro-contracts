@@ -105,9 +105,9 @@ contract RollupCreator is Ownable {
                 )
             )
         );
-        address[] memory upgradeExecutors = new address[](1);
-        upgradeExecutors[0] = config.owner;
-        upgradeExecutor.initialize(address(upgradeExecutor), upgradeExecutors);
+        address[] memory executors = new address[](1);
+        executors[0] = config.owner;
+        upgradeExecutor.initialize(address(upgradeExecutor), executors);
 
         // Create the rollup proxy to figure out the address and initialize it later
         RollupProxy rollup = new RollupProxy{salt: keccak256(abi.encode(config))}();
