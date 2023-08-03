@@ -37,6 +37,7 @@ import {
   RollupUserLogic__factory,
   SequencerInbox,
   SequencerInbox__factory,
+  UpgradeExecutor__factory,
 } from '../../build/types'
 import { initializeAccounts } from './utils'
 
@@ -156,6 +157,11 @@ const setup = async () => {
   )) as RollupUserLogic__factory
   const rollupUserLogicTemplate = await rollupUserLogicFac.deploy()
 
+  const upgradeExecutorLogicFac = (await ethers.getContractFactory(
+    'UpgradeExecutor'
+  )) as UpgradeExecutor__factory
+  const upgradeExecutorLogic = await upgradeExecutorLogicFac.deploy()
+
   const ethBridgeCreatorFac = (await ethers.getContractFactory(
     'BridgeCreator'
   )) as BridgeCreator__factory
@@ -178,6 +184,7 @@ const setup = async () => {
     challengeManagerTemplate.address,
     rollupAdminLogicTemplate.address,
     rollupUserLogicTemplate.address,
+    upgradeExecutorLogic.address,
     ethers.constants.AddressZero,
     ethers.constants.AddressZero
   )

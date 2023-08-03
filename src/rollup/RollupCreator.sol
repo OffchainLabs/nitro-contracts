@@ -8,6 +8,7 @@ import "./RollupProxy.sol";
 import "./IRollupAdmin.sol";
 import "./BridgeCreator.sol";
 import "./ERC20BridgeCreator.sol";
+import "../libraries/UpgradeExecutor.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -34,6 +35,7 @@ contract RollupCreator is Ownable {
     IChallengeManager public challengeManagerTemplate;
     IRollupAdmin public rollupAdminLogic;
     IRollupUser public rollupUserLogic;
+    UpgradeExecutor public upgradeExecutorLogic;
 
     address public validatorUtils;
     address public validatorWalletCreator;
@@ -55,6 +57,7 @@ contract RollupCreator is Ownable {
         IChallengeManager _challengeManagerLogic,
         IRollupAdmin _rollupAdminLogic,
         IRollupUser _rollupUserLogic,
+        UpgradeExecutor _upgradeExecutorLogic,
         address _validatorUtils,
         address _validatorWalletCreator
     ) external onlyOwner {
@@ -64,6 +67,7 @@ contract RollupCreator is Ownable {
         challengeManagerTemplate = _challengeManagerLogic;
         rollupAdminLogic = _rollupAdminLogic;
         rollupUserLogic = _rollupUserLogic;
+        upgradeExecutorLogic = _upgradeExecutorLogic;
         validatorUtils = _validatorUtils;
         validatorWalletCreator = _validatorWalletCreator;
         emit TemplatesUpdated();
@@ -90,6 +94,20 @@ contract RollupCreator is Ownable {
         address _nativeToken
     ) external returns (address) {
         ProxyAdmin proxyAdmin = new ProxyAdmin();
+
+        // deploy and init upgrade executor
+        UpgradeExecutor upgradeExecutor = UpgradeExecutor(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(upgradeExecutorLogic),
+                    address(proxyAdmin),
+                    bytes("")
+                )
+            )
+        );
+        address[] memory upgradeExecutors = new address[](1);
+        upgradeExecutors[0] = config.owner;
+        upgradeExecutor.initialize(address(upgradeExecutor), upgradeExecutors);
 
         // Create the rollup proxy to figure out the address and initialize it later
         RollupProxy rollup = new RollupProxy{salt: keccak256(abi.encode(config))}();
@@ -140,7 +158,7 @@ contract RollupCreator is Ownable {
             osp
         );
 
-        proxyAdmin.transferOwnership(config.owner);
+        proxyAdmin.transferOwnership(address(upgradeExecutor));
 
         // initialize the rollup with this contract as owner to set batch poster and validators
         // it will transfer the ownership back to the actual owner later

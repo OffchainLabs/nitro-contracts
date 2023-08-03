@@ -35,6 +35,8 @@ contract RollupCreatorTest is Test {
         BridgeCreator ethBridgeCreator = new BridgeCreator();
         ERC20BridgeCreator erc20BridgeCreator = new ERC20BridgeCreator();
 
+        UpgradeExecutor upgradeExecutorLogic = new UpgradeExecutor();
+
         (
             IOneStepProofEntry ospEntry,
             IChallengeManager challengeManager,
@@ -53,6 +55,7 @@ contract RollupCreatorTest is Test {
             challengeManager,
             _rollupAdmin,
             _rollupUser,
+            upgradeExecutorLogic,
             address(new ValidatorUtils()),
             address(new ValidatorWalletCreator())
         );
@@ -64,12 +67,8 @@ contract RollupCreatorTest is Test {
         vm.startPrank(deployer);
 
         // deployment params
-        ISequencerInbox.MaxTimeVariation memory timeVars = ISequencerInbox.MaxTimeVariation(
-            ((60 * 60 * 24) / 15),
-            12,
-            60 * 60 * 24,
-            60 * 60
-        );
+        ISequencerInbox.MaxTimeVariation memory timeVars =
+            ISequencerInbox.MaxTimeVariation(((60 * 60 * 24) / 15), 12, 60 * 60 * 24, 60 * 60);
         Config memory config = Config({
             confirmPeriodBlocks: 20,
             extraChallengeTimeBlocks: 200,
@@ -80,7 +79,7 @@ contract RollupCreatorTest is Test {
             loserStakeEscrow: address(200),
             chainId: 1337,
             chainConfig: "abc",
-            genesisBlockNum: 15000000,
+            genesisBlockNum: 15_000_000,
             sequencerInboxMaxTimeVariation: timeVars
         });
 
@@ -89,12 +88,8 @@ contract RollupCreatorTest is Test {
         address[] memory validators = new address[](2);
         validators[0] = makeAddr("validator1");
         validators[1] = makeAddr("validator2");
-        address rollupAddress = rollupCreator.createRollup(
-            config,
-            batchPoster,
-            validators,
-            address(0)
-        );
+        address rollupAddress =
+            rollupCreator.createRollup(config, batchPoster, validators, address(0));
 
         vm.stopPrank();
 
@@ -123,21 +118,59 @@ contract RollupCreatorTest is Test {
             ISequencerInbox(address(rollup.sequencerInbox())).isBatchPoster(batchPoster),
             "Invalid batch poster"
         );
+
+        // check proxy admin for non-rollup contracts
+        address proxyAdminExpectedAddress = computeCreateAddress(address(rollupCreator), 1);
+
+        assertEq(
+            _getProxyAdmin(address(rollup.sequencerInbox())),
+            proxyAdminExpectedAddress,
+            "Invalid seqInbox' proxyAdmin owner"
+        );
+        assertEq(
+            _getProxyAdmin(address(rollup.bridge())),
+            proxyAdminExpectedAddress,
+            "Invalid bridge's proxyAdmin owner"
+        );
+        assertEq(
+            _getProxyAdmin(address(rollup.inbox())),
+            proxyAdminExpectedAddress,
+            "Invalid inbox' proxyAdmin owner"
+        );
+        assertEq(
+            _getProxyAdmin(address(rollup.rollupEventInbox())),
+            proxyAdminExpectedAddress,
+            "Invalid rollupEventInbox' proxyAdmin owner"
+        );
+        assertEq(
+            _getProxyAdmin(address(rollup.challengeManager())),
+            proxyAdminExpectedAddress,
+            "Invalid challengeManager's proxyAdmin owner"
+        );
+
+        // check upgrade executor owns proxyAdmin
+        address upgradeExecutorExpectedAddress = computeCreateAddress(address(rollupCreator), 2);
+        assertEq(
+            ProxyAdmin(_getProxyAdmin(address(rollup.sequencerInbox()))).owner(),
+            upgradeExecutorExpectedAddress,
+            "Invalid proxyAdmin's owner"
+        );
+
+        // check rollupOwner has executor role
+        UpgradeExecutor executor = UpgradeExecutor(upgradeExecutorExpectedAddress);
+        assertTrue(
+            executor.hasRole(keccak256("EXECUTOR_ROLE"), rollupOwner), "Invalid executor role"
+        );
     }
 
     function test_createErc20Rollup() public {
         vm.startPrank(deployer);
-        address nativeToken = address(
-            new ERC20PresetFixedSupply("Appchain Token", "App", 1_000_000, address(this))
-        );
+        address nativeToken =
+            address(new ERC20PresetFixedSupply("Appchain Token", "App", 1_000_000, address(this)));
 
         // deployment params
-        ISequencerInbox.MaxTimeVariation memory timeVars = ISequencerInbox.MaxTimeVariation(
-            ((60 * 60 * 24) / 15),
-            12,
-            60 * 60 * 24,
-            60 * 60
-        );
+        ISequencerInbox.MaxTimeVariation memory timeVars =
+            ISequencerInbox.MaxTimeVariation(((60 * 60 * 24) / 15), 12, 60 * 60 * 24, 60 * 60);
         Config memory config = Config({
             confirmPeriodBlocks: 20,
             extraChallengeTimeBlocks: 200,
@@ -148,7 +181,7 @@ contract RollupCreatorTest is Test {
             loserStakeEscrow: address(200),
             chainId: 1337,
             chainConfig: "abc",
-            genesisBlockNum: 15000000,
+            genesisBlockNum: 15_000_000,
             sequencerInboxMaxTimeVariation: timeVars
         });
 
@@ -157,12 +190,8 @@ contract RollupCreatorTest is Test {
         address[] memory validators = new address[](2);
         validators[0] = makeAddr("validator1");
         validators[1] = makeAddr("validator2");
-        address rollupAddress = rollupCreator.createRollup(
-            config,
-            batchPoster,
-            validators,
-            nativeToken
-        );
+        address rollupAddress =
+            rollupCreator.createRollup(config, batchPoster, validators, nativeToken);
 
         vm.stopPrank();
 
@@ -194,9 +223,50 @@ contract RollupCreatorTest is Test {
         // native token check
         IBridge bridge = RollupCore(address(rollupAddress)).bridge();
         assertEq(
-            IERC20Bridge(address(bridge)).nativeToken(),
-            nativeToken,
-            "Invalid native token ref"
+            IERC20Bridge(address(bridge)).nativeToken(), nativeToken, "Invalid native token ref"
+        );
+
+        // check proxy admin for non-rollup contracts
+        address proxyAdminExpectedAddress = computeCreateAddress(address(rollupCreator), 1);
+
+        assertEq(
+            _getProxyAdmin(address(rollup.sequencerInbox())),
+            proxyAdminExpectedAddress,
+            "Invalid seqInbox' proxyAdmin owner"
+        );
+        assertEq(
+            _getProxyAdmin(address(rollup.bridge())),
+            proxyAdminExpectedAddress,
+            "Invalid bridge's proxyAdmin owner"
+        );
+        assertEq(
+            _getProxyAdmin(address(rollup.inbox())),
+            proxyAdminExpectedAddress,
+            "Invalid inbox' proxyAdmin owner"
+        );
+        assertEq(
+            _getProxyAdmin(address(rollup.rollupEventInbox())),
+            proxyAdminExpectedAddress,
+            "Invalid rollupEventInbox' proxyAdmin owner"
+        );
+        assertEq(
+            _getProxyAdmin(address(rollup.challengeManager())),
+            proxyAdminExpectedAddress,
+            "Invalid challengeManager's proxyAdmin owner"
+        );
+
+        // check upgrade executor owns proxyAdmin
+        address upgradeExecutorExpectedAddress = computeCreateAddress(address(rollupCreator), 2);
+        assertEq(
+            ProxyAdmin(_getProxyAdmin(address(rollup.sequencerInbox()))).owner(),
+            upgradeExecutorExpectedAddress,
+            "Invalid proxyAdmin's owner"
+        );
+
+        // check rollupOwner has executor role
+        UpgradeExecutor executor = UpgradeExecutor(upgradeExecutorExpectedAddress);
+        assertTrue(
+            executor.hasRole(keccak256("EXECUTOR_ROLE"), rollupOwner), "Invalid executor role"
         );
     }
 
@@ -236,9 +306,8 @@ contract RollupCreatorTest is Test {
     }
 
     function _getSecondary(address proxy) internal view returns (address) {
-        bytes32 secondarySlot = bytes32(
-            uint256(keccak256("eip1967.proxy.implementation.secondary")) - 1
-        );
+        bytes32 secondarySlot =
+            bytes32(uint256(keccak256("eip1967.proxy.implementation.secondary")) - 1);
         return address(uint160(uint256(vm.load(proxy, secondarySlot))));
     }
 }
