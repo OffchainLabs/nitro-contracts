@@ -23,7 +23,7 @@ import {
     NotForked
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
-import "./IInbox.sol";
+import "./IInboxBase.sol";
 import "./ISequencerInbox.sol";
 import "../rollup/IRollupLogic.sol";
 import "./Messages.sol";

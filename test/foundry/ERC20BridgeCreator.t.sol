@@ -68,7 +68,7 @@ contract ERC20BridgeCreatorTest is Test {
         (
             IBridge bridge,
             SequencerInbox seqInbox,
-            IInbox inbox,
+            IInboxBase inbox,
             IRollupEventInbox eventInbox,
             Outbox outbox
         ) = creator.createBridge(proxyAdmin, rollup, nativeToken, timeVars);

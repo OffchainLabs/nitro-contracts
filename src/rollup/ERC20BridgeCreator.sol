@@ -30,7 +30,7 @@ contract ERC20BridgeCreator is AbsBridgeCreator, IERC20BridgeCreator {
         returns (
             IBridge,
             SequencerInbox,
-            IInbox,
+            IInboxBase,
             IRollupEventInbox,
             Outbox
         )

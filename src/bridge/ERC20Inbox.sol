@@ -21,7 +21,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 contract ERC20Inbox is AbsInbox, IERC20Inbox {
     using SafeERC20 for IERC20;
 
-    /// @inheritdoc IInbox
+    /// @inheritdoc IInboxBase
     function initialize(IBridge _bridge, ISequencerInbox _sequencerInbox)
         external
         initializer
@@ -105,11 +105,11 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
             );
     }
 
-    /// @inheritdoc IInbox
+    /// @inheritdoc IInboxBase
     function calculateRetryableSubmissionFee(uint256, uint256)
         public
         pure
-        override(AbsInbox, IInbox)
+        override(AbsInbox, IInboxBase)
         returns (uint256)
     {
         // retryable ticket's submission fee is not charged when ERC20 token is used to pay for fees

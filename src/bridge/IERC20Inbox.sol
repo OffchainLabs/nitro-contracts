@@ -5,9 +5,9 @@
 // solhint-disable-next-line compiler-version
 pragma solidity >=0.6.9 <0.9.0;
 
-import "./IInbox.sol";
+import "./IInboxBase.sol";
 
-interface IERC20Inbox is IInbox {
+interface IERC20Inbox is IInboxBase {
     /**
      * @notice Deposit native token from L1 to L2 to address of the sender if sender is an EOA, and to its aliased address if the sender is a contract
      * @dev This does not trigger the fallback function when receiving in the L2 side.

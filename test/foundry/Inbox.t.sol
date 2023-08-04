@@ -4,19 +4,19 @@ pragma solidity ^0.8.4;
 import "./AbsInbox.t.sol";
 import "./util/TestUtil.sol";
 import "../../src/bridge/Inbox.sol";
-import "../../src/bridge/IEthInbox.sol";
+import "../../src/bridge/IInbox.sol";
 import "../../src/bridge/Bridge.sol";
 import "../../src/bridge/ISequencerInbox.sol";
 import "../../src/libraries/AddressAliasHelper.sol";
 
 contract InboxTest is AbsInboxTest {
-    IEthInbox public ethInbox;
+    IInbox public ethInbox;
 
     function setUp() public {
         // deploy token, bridge and inbox
         bridge = IBridge(TestUtil.deployProxy(address(new Bridge())));
-        inbox = IInbox(TestUtil.deployProxy(address(new Inbox())));
-        ethInbox = IEthInbox(address(inbox));
+        inbox = IInboxBase(TestUtil.deployProxy(address(new Inbox())));
+        ethInbox = IInbox(address(inbox));
 
         // init bridge and inbox
         IEthBridge(address(bridge)).initialize(IOwnable(rollup));

@@ -15,7 +15,7 @@ import {
     GasLimitTooLarge
 } from "../libraries/Error.sol";
 import "./AbsInbox.sol";
-import "./IEthInbox.sol";
+import "./IInbox.sol";
 import "./IBridge.sol";
 import "./IEthBridge.sol";
 import "../libraries/AddressAliasHelper.sol";
@@ -37,8 +37,8 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
  * @notice Messages created via this inbox are enqueued in the delayed accumulator
  * to await inclusion in the SequencerInbox
  */
-contract Inbox is AbsInbox, IEthInbox {
-    /// @inheritdoc IInbox
+contract Inbox is AbsInbox, IInbox {
+    /// @inheritdoc IInboxBase
     function initialize(IBridge _bridge, ISequencerInbox _sequencerInbox)
         external
         initializer
@@ -47,10 +47,10 @@ contract Inbox is AbsInbox, IEthInbox {
         __AbsInbox_init(_bridge, _sequencerInbox);
     }
 
-    /// @inheritdoc IEthInbox
+    /// @inheritdoc IInbox
     function postUpgradeInit(IBridge) external onlyDelegated onlyProxyOwner {}
 
-    /// @inheritdoc IEthInbox
+    /// @inheritdoc IInbox
     function sendL1FundedUnsignedTransaction(
         uint256 gasLimit,
         uint256 maxFeePerGas,
@@ -79,7 +79,7 @@ contract Inbox is AbsInbox, IEthInbox {
             );
     }
 
-    /// @inheritdoc IEthInbox
+    /// @inheritdoc IInbox
     function sendL1FundedContractTransaction(
         uint256 gasLimit,
         uint256 maxFeePerGas,
@@ -106,7 +106,7 @@ contract Inbox is AbsInbox, IEthInbox {
             );
     }
 
-    /// @inheritdoc IEthInbox
+    /// @inheritdoc IInbox
     function sendL1FundedUnsignedTransactionToFork(
         uint256 gasLimit,
         uint256 maxFeePerGas,
@@ -139,7 +139,7 @@ contract Inbox is AbsInbox, IEthInbox {
             );
     }
 
-    /// @inheritdoc IEthInbox
+    /// @inheritdoc IInbox
     function sendUnsignedTransactionToFork(
         uint256 gasLimit,
         uint256 maxFeePerGas,
@@ -173,7 +173,7 @@ contract Inbox is AbsInbox, IEthInbox {
             );
     }
 
-    /// @inheritdoc IEthInbox
+    /// @inheritdoc IInbox
     function sendWithdrawEthToFork(
         uint256 gasLimit,
         uint256 maxFeePerGas,
@@ -206,7 +206,7 @@ contract Inbox is AbsInbox, IEthInbox {
             );
     }
 
-    /// @inheritdoc IEthInbox
+    /// @inheritdoc IInbox
     function depositEth() public payable whenNotPaused onlyAllowed returns (uint256) {
         address dest = msg.sender;
 
@@ -268,7 +268,7 @@ contract Inbox is AbsInbox, IEthInbox {
             );
     }
 
-    /// @inheritdoc IEthInbox
+    /// @inheritdoc IInbox
     function createRetryableTicket(
         address to,
         uint256 l2CallValue,
@@ -293,7 +293,7 @@ contract Inbox is AbsInbox, IEthInbox {
             );
     }
 
-    /// @inheritdoc IEthInbox
+    /// @inheritdoc IInbox
     function unsafeCreateRetryableTicket(
         address to,
         uint256 l2CallValue,
@@ -318,11 +318,11 @@ contract Inbox is AbsInbox, IEthInbox {
             );
     }
 
-    /// @inheritdoc IInbox
+    /// @inheritdoc IInboxBase
     function calculateRetryableSubmissionFee(uint256 dataLength, uint256 baseFee)
         public
         view
-        override(AbsInbox, IInbox)
+        override(AbsInbox, IInboxBase)
         returns (uint256)
     {
         // Use current block basefee if baseFee parameter is 0
