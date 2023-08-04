@@ -12,7 +12,8 @@ interface ArbOwnerPublic {
 
     /**
      * @notice Rectify the list of chain owners
-     * If successful, emits ChainOwnerRectified event.
+     * If successful, emits ChainOwnerRectified event
+     * Available in ArbOS version 11
      */
     function rectifyChainOwner(address ownerToRectify) external;
 
