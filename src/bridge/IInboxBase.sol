@@ -77,7 +77,5 @@ interface IInboxBase is IDelayedMessageProvider {
     /// @notice check if allowList is enabled
     function allowListEnabled() external view returns (bool);
 
-
-
     function initialize(IBridge _bridge, ISequencerInbox _sequencerInbox) external;
 }
