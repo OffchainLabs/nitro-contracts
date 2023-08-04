@@ -23,7 +23,7 @@ interface IBridgeCreator {
 
     function sequencerInboxTemplate() external view returns (SequencerInbox);
 
-    function inboxTemplate() external view returns (IInbox);
+    function inboxTemplate() external view returns (IInboxBase);
 
     function rollupEventInboxTemplate() external view returns (IRollupEventInbox);
 
@@ -40,7 +40,7 @@ interface IEthBridgeCreator is IBridgeCreator {
         returns (
             IBridge,
             SequencerInbox,
-            IInbox,
+            IInboxBase,
             IRollupEventInbox,
             Outbox
         );
@@ -57,7 +57,7 @@ interface IERC20BridgeCreator is IBridgeCreator {
         returns (
             IBridge,
             SequencerInbox,
-            IInbox,
+            IInboxBase,
             IRollupEventInbox,
             Outbox
         );

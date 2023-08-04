@@ -7,7 +7,7 @@ pragma solidity ^0.8.0;
 import "./Node.sol";
 import "../bridge/IBridge.sol";
 import "../bridge/IOutbox.sol";
-import "../bridge/IInbox.sol";
+import "../bridge/IInboxBase.sol";
 import "./IRollupEventInbox.sol";
 import "../challenge/IChallengeManager.sol";
 

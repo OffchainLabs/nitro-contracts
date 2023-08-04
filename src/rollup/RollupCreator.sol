@@ -43,7 +43,7 @@ contract RollupCreator is Ownable {
     struct BridgeContracts {
         IBridge bridge;
         ISequencerInbox sequencerInbox;
-        IInbox inbox;
+        IInboxBase inbox;
         IRollupEventInbox rollupEventInbox;
         IOutbox outbox;
     }
