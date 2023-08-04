@@ -4,8 +4,8 @@
 
 pragma solidity ^0.8.0;
 
+import "../bridge/IInboxBase.sol";
 import "../bridge/IInbox.sol";
-import "../bridge/IEthInbox.sol";
 import "../bridge/IBridge.sol";
 import "../bridge/IEthBridge.sol";
 
@@ -19,7 +19,7 @@ import {
     L2MessageType_unsignedContractTx
 } from "../libraries/MessageTypes.sol";
 
-contract InboxStub is IInbox, IEthInbox {
+contract InboxStub is IInboxBase, IInbox {
     IBridge public override bridge;
     ISequencerInbox public override sequencerInbox;
 

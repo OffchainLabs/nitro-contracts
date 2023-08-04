@@ -26,7 +26,7 @@ contract BridgeCreator is AbsBridgeCreator, IEthBridgeCreator {
         returns (
             IBridge,
             SequencerInbox,
-            IInbox,
+            IInboxBase,
             IRollupEventInbox,
             Outbox
         )

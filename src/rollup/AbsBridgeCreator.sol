@@ -6,7 +6,7 @@ pragma solidity ^0.8.0;
 
 import "../bridge/IBridge.sol";
 import "../bridge/SequencerInbox.sol";
-import "../bridge/IInbox.sol";
+import "../bridge/IInboxBase.sol";
 import "../bridge/Outbox.sol";
 import "../rollup/IBridgeCreator.sol";
 import "./IRollupEventInbox.sol";
@@ -16,7 +16,7 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 abstract contract AbsBridgeCreator is Ownable, IBridgeCreator {
     IBridge public bridgeTemplate;
     SequencerInbox public sequencerInboxTemplate;
-    IInbox public inboxTemplate;
+    IInboxBase public inboxTemplate;
     IRollupEventInbox public rollupEventInboxTemplate;
     Outbox public outboxTemplate;
 
@@ -36,7 +36,7 @@ abstract contract AbsBridgeCreator is Ownable, IBridgeCreator {
     ) external onlyOwner {
         bridgeTemplate = IBridge(_bridgeTemplate);
         sequencerInboxTemplate = SequencerInbox(_sequencerInboxTemplate);
-        inboxTemplate = IInbox(_inboxTemplate);
+        inboxTemplate = IInboxBase(_inboxTemplate);
         rollupEventInboxTemplate = IRollupEventInbox(_rollupEventInboxTemplate);
         outboxTemplate = Outbox(_outboxTemplate);
 
@@ -47,7 +47,7 @@ abstract contract AbsBridgeCreator is Ownable, IBridgeCreator {
         ProxyAdmin admin;
         IBridge bridge;
         SequencerInbox sequencerInbox;
-        IInbox inbox;
+        IInboxBase inbox;
         IRollupEventInbox rollupEventInbox;
         Outbox outbox;
     }
@@ -62,7 +62,7 @@ abstract contract AbsBridgeCreator is Ownable, IBridgeCreator {
         returns (
             IBridge,
             SequencerInbox,
-            IInbox,
+            IInboxBase,
             IRollupEventInbox,
             Outbox
         )
@@ -77,7 +77,7 @@ abstract contract AbsBridgeCreator is Ownable, IBridgeCreator {
                     new TransparentUpgradeableProxy(address(sequencerInboxTemplate), adminProxy, "")
                 )
             );
-            frame.inbox = IInbox(
+            frame.inbox = IInboxBase(
                 address(new TransparentUpgradeableProxy(address(inboxTemplate), adminProxy, ""))
             );
             frame.rollupEventInbox = IRollupEventInbox(

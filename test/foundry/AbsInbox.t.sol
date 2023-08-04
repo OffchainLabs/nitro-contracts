@@ -12,7 +12,7 @@ import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 
 abstract contract AbsInboxTest is Test {
-    IInbox public inbox;
+    IInboxBase public inbox;
     IBridge public bridge;
 
     address public user = address(100);

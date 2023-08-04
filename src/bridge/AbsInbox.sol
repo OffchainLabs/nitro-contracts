@@ -15,7 +15,7 @@ import {
     NotRollupOrOwner,
     RetryableData
 } from "../libraries/Error.sol";
-import "./IInbox.sol";
+import "./IInboxBase.sol";
 import "./ISequencerInbox.sol";
 import "./IBridge.sol";
 import "../libraries/AddressAliasHelper.sol";
@@ -36,24 +36,24 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
  * @notice Messages created via this inbox are enqueued in the delayed accumulator
  * to await inclusion in the SequencerInbox
  */
-abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInbox {
-    /// @inheritdoc IInbox
+abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase {
+    /// @inheritdoc IInboxBase
     IBridge public bridge;
-    /// @inheritdoc IInbox
+    /// @inheritdoc IInboxBase
     ISequencerInbox public sequencerInbox;
 
     /// ------------------------------------ allow list start ------------------------------------ ///
 
-    /// @inheritdoc IInbox
+    /// @inheritdoc IInboxBase
     bool public allowListEnabled;
 
-    /// @inheritdoc IInbox
+    /// @inheritdoc IInboxBase
     mapping(address => bool) public isAllowed;
 
     event AllowListAddressSet(address indexed user, bool val);
     event AllowListEnabledUpdated(bool isEnabled);
 
-    /// @inheritdoc IInbox
+    /// @inheritdoc IInboxBase
     function setAllowList(address[] memory user, bool[] memory val) external onlyRollupOrOwner {
         require(user.length == val.length, "INVALID_INPUT");
 
@@ -63,7 +63,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInbox {
         }
     }
 
-    /// @inheritdoc IInbox
+    /// @inheritdoc IInboxBase
     function setAllowListEnabled(bool _allowListEnabled) external onlyRollupOrOwner {
         require(_allowListEnabled != allowListEnabled, "ALREADY_SET");
         allowListEnabled = _allowListEnabled;
@@ -99,12 +99,12 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInbox {
         return deployTimeChainId != block.chainid;
     }
 
-    /// @inheritdoc IInbox
+    /// @inheritdoc IInboxBase
     function pause() external onlyRollupOrOwner {
         _pause();
     }
 
-    /// @inheritdoc IInbox
+    /// @inheritdoc IInboxBase
     function unpause() external onlyRollupOrOwner {
         _unpause();
     }
@@ -120,7 +120,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInbox {
         __Pausable_init();
     }
 
-    /// @inheritdoc IInbox
+    /// @inheritdoc IInboxBase
     function sendL2MessageFromOrigin(bytes calldata messageData)
         external
         whenNotPaused
@@ -137,7 +137,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInbox {
         return msgNum;
     }
 
-    /// @inheritdoc IInbox
+    /// @inheritdoc IInboxBase
     function sendL2Message(bytes calldata messageData)
         external
         whenNotPaused
@@ -148,7 +148,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInbox {
         return _deliverMessage(L2_MSG, msg.sender, messageData, 0);
     }
 
-    /// @inheritdoc IInbox
+    /// @inheritdoc IInboxBase
     function sendUnsignedTransaction(
         uint256 gasLimit,
         uint256 maxFeePerGas,
@@ -178,7 +178,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInbox {
             );
     }
 
-    /// @inheritdoc IInbox
+    /// @inheritdoc IInboxBase
     function sendContractTransaction(
         uint256 gasLimit,
         uint256 maxFeePerGas,
