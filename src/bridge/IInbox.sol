@@ -123,9 +123,6 @@ interface IInbox is IInboxBase {
         bytes calldata data
     ) external payable returns (uint256);
 
-    /// @notice returns the current admin
-    function getProxyAdmin() external view returns (address);
-
     // ---------- initializer ----------
 
     /**

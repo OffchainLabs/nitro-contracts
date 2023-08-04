@@ -212,7 +212,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
             );
     }
 
-    /// @inheritdoc IInbox
+    /// @inheritdoc IInboxBase
     function getProxyAdmin() external view returns (address) {
         return StorageSlotUpgradeable.getAddressSlot(_ADMIN_SLOT).value;
     }

@@ -78,4 +78,7 @@ interface IInboxBase is IDelayedMessageProvider {
     function allowListEnabled() external view returns (bool);
 
     function initialize(IBridge _bridge, ISequencerInbox _sequencerInbox) external;
+
+    /// @notice returns the current admin
+    function getProxyAdmin() external view returns (address);
 }
