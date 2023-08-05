@@ -26,33 +26,33 @@ contract SdkStorage {
     struct Maps {
         mapping(uint256 => address) basic;
         mapping(address => bool[]) vects;
-        mapping(uint32 => address)[] array;
+        mapping(int32 => address)[] array;
         mapping(bytes1 => mapping(bool => uint256)) nested;
         mapping(string => Struct) structs;
     }
 
-    function test() external {
+    function populate() external {
         flag = true;
         owner = address(0x70);
         other = address(0x30);
 
         sub.num = 32;
         sub.other = type(int32).max;
-        sub.word = bytes32(uint(64));
+        sub.word = bytes32(uint256(64));
 
         for (uint64 i = 0; i < 32; i++) {
             vector.push(i);
         }
         vector[7] = 77;
 
-        for (uint w = 0; w < 10; w++) {
+        for (uint256 w = 0; w < 10; w++) {
             nested.push(new uint40[](w));
-            for (uint i = 0; i < w; i++) {
+            for (uint256 i = 0; i < w; i++) {
                 nested[w][i] = uint40(i);
             }
         }
-        for (uint w = 0; w < 10; w++) {
-            for (uint i = 0; i < w; i++) {
+        for (uint256 w = 0; w < 10; w++) {
+            for (uint256 i = 0; i < w; i++) {
                 nested[w][i] *= 2;
             }
         }
@@ -65,20 +65,20 @@ contract SdkStorage {
         }
         chars = "arbitrum stylus";
 
-        for (uint i = 0; i < 16; i++) {
+        for (uint256 i = 0; i < 16; i++) {
             maps.basic[i] = address(uint160(i));
         }
 
         for (uint160 a = 0; a < 4; a++) {
             maps.vects[address(a)] = new bool[](0);
-            for (uint i = 0; i <= a; i++) {
+            for (uint256 i = 0; i <= a; i++) {
                 maps.vects[address(a)].push(true);
             }
         }
 
-        for (uint32 i = 0; i < 4; i++) {
+        for (int32 i = 0; i < 4; i++) {
             maps.array.push();
-            maps.array[i][i] = address(uint160(i));
+            maps.array[uint256(uint32(i))][i] = address(uint160(uint32(i)));
         }
 
         for (uint8 i = 0; i < 4; i++) {
@@ -87,8 +87,10 @@ contract SdkStorage {
 
         maps.structs["stylus"] = sub;
 
-        for (uint i = 0; i < 4; i++) {
+        for (uint256 i = 0; i < 4; i++) {
             structs.push(sub);
         }
     }
+
+    function remove() external {}
 }
