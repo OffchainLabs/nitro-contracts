@@ -26,6 +26,11 @@ async function main() {
     )
     customFeeTokenAddress = await deployERC20Token(deployer)
   }
+  if (!ethers.utils.isAddress(customFeeTokenAddress)) {
+    throw new Error(
+      'Fee token address ' + customFeeTokenAddress + ' is not a valid address!'
+    )
+  }
 
   console.log('Creating new rollup with', customFeeTokenAddress, 'as fee token')
   await createRollup(customFeeTokenAddress)
