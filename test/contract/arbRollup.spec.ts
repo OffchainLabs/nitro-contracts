@@ -715,6 +715,7 @@ describe('ArbRollup', () => {
       .connect(validators[1])
       .addToDeposit(await validators[1].getAddress(), { value: 5 })
 
+    await rollupAdmin.pause()
     await rollup.connect(validators[1]).reduceDeposit(5)
 
     const prevBalance = await validators[1].getBalance()
@@ -741,6 +742,7 @@ describe('ArbRollup', () => {
       .connect(validators[1])
       .returnOldDeposit(await validators[1].getAddress())
     // all stake is now removed
+    await rollupAdmin.resume()
   })
 
   it('should allow removing zombies', async function () {
