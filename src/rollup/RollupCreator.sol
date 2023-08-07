@@ -24,6 +24,7 @@ contract RollupCreator is Ownable {
         address adminProxy,
         address sequencerInbox,
         address bridge,
+        address upgradeExecutor,
         address validatorUtils,
         address validatorWalletCreator
     );
@@ -161,8 +162,7 @@ contract RollupCreator is Ownable {
         proxyAdmin.transferOwnership(address(upgradeExecutor));
 
         // initialize the rollup with this contract as owner to set batch poster and validators
-        // it will transfer the ownership back to the actual owner later
-        address actualOwner = config.owner;
+        // it will transfer the ownership to the upgrade executor later
         config.owner = address(this);
         rollup.initializeProxy(
             config,
@@ -194,7 +194,7 @@ contract RollupCreator is Ownable {
             IRollupAdmin(address(rollup)).setValidator(_validators, _vals);
         }
 
-        IRollupAdmin(address(rollup)).setOwner(actualOwner);
+        IRollupAdmin(address(rollup)).setOwner(address(upgradeExecutor));
 
         emit RollupCreated(
             address(rollup),
@@ -206,6 +206,7 @@ contract RollupCreator is Ownable {
             address(proxyAdmin),
             address(bridgeContracts.sequencerInbox),
             address(bridgeContracts.bridge),
+            address(upgradeExecutor),
             address(validatorUtils),
             address(validatorWalletCreator)
         );

@@ -99,8 +99,6 @@ contract RollupCreatorTest is Test {
         assertEq(IOwnable(address(rollupCreator)).owner(), deployer, "Invalid rollupCreator owner");
 
         /// rollup proxy
-        assertEq(IOwnable(rollupAddress).owner(), rollupOwner, "Invalid rollup owner");
-        assertEq(_getProxyAdmin(rollupAddress), rollupOwner, "Invalid rollup's proxyAdmin owner");
         assertEq(_getPrimary(rollupAddress), address(rollupAdmin), "Invalid proxy primary impl");
         assertEq(_getSecondary(rollupAddress), address(rollupUser), "Invalid proxy secondary impl");
 
@@ -161,6 +159,16 @@ contract RollupCreatorTest is Test {
             "Invalid proxyAdmin's owner"
         );
 
+        // upgrade executor owns rollup
+        assertEq(
+            IOwnable(rollupAddress).owner(), upgradeExecutorExpectedAddress, "Invalid rollup owner"
+        );
+        assertEq(
+            _getProxyAdmin(rollupAddress),
+            upgradeExecutorExpectedAddress,
+            "Invalid rollup's proxyAdmin owner"
+        );
+
         // check rollupOwner has executor role
         UpgradeExecutor executor = UpgradeExecutor(upgradeExecutorExpectedAddress);
         assertTrue(
@@ -206,8 +214,6 @@ contract RollupCreatorTest is Test {
         assertEq(IOwnable(address(rollupCreator)).owner(), deployer, "Invalid rollupCreator owner");
 
         /// rollup proxy
-        assertEq(IOwnable(rollupAddress).owner(), rollupOwner, "Invalid rollup owner");
-        assertEq(_getProxyAdmin(rollupAddress), rollupOwner, "Invalid rollup's proxyAdmin owner");
         assertEq(_getPrimary(rollupAddress), address(rollupAdmin), "Invalid proxy primary impl");
         assertEq(_getSecondary(rollupAddress), address(rollupUser), "Invalid proxy secondary impl");
 
@@ -271,6 +277,16 @@ contract RollupCreatorTest is Test {
             ProxyAdmin(_getProxyAdmin(address(rollup.sequencerInbox()))).owner(),
             upgradeExecutorExpectedAddress,
             "Invalid proxyAdmin's owner"
+        );
+
+        // upgrade executor owns rollup
+        assertEq(
+            IOwnable(rollupAddress).owner(), upgradeExecutorExpectedAddress, "Invalid rollup owner"
+        );
+        assertEq(
+            _getProxyAdmin(rollupAddress),
+            upgradeExecutorExpectedAddress,
+            "Invalid rollup's proxyAdmin owner"
         );
 
         // check rollupOwner has executor role

@@ -15,7 +15,7 @@
  */
 
 /* eslint-env node, mocha */
-import { ethers, run } from 'hardhat'
+import { ethers, network, run } from 'hardhat'
 import { Signer } from '@ethersproject/abstract-signer'
 import { BigNumberish, BigNumber } from '@ethersproject/bignumber'
 import { BytesLike } from '@ethersproject/bytes'
@@ -79,6 +79,7 @@ let sequencerInbox: SequencerInbox
 let admin: Signer
 let sequencer: Signer
 let challengeManager: ChallengeManager
+let upgradeExecutor: string
 
 async function getDefaultConfig(
   _confirmPeriodBlocks = confirmationPeriodBlocks
@@ -239,6 +240,7 @@ const setup = async () => {
     delayedBridge: rollupCreatedEvent.bridge,
     delayedInbox: rollupCreatedEvent.inboxAddress,
     bridge: rollupCreatedEvent.bridge,
+    upgradeExecutorAddress: rollupCreatedEvent.upgradeExecutor,
   }
 }
 
@@ -392,6 +394,21 @@ const getDoubleLogicUUPSTarget = async (
     .toLowerCase()}`
 }
 
+const impersonateAccount = (address: string) =>
+  network.provider
+    .request({
+      // Fund inboxMock to send transaction
+      method: 'hardhat_setBalance',
+      params: [address, '0xffffffffffffffffffff'],
+    })
+    .then(() =>
+      network.provider.request({
+        method: 'hardhat_impersonateAccount',
+        params: [address],
+      })
+    )
+    .then(() => ethers.getSigner(address))
+
 describe('ArbRollup', () => {
   it('should deploy contracts', async function () {
     accounts = await initializeAccounts()
@@ -405,28 +422,32 @@ describe('ArbRollup', () => {
       rollupUser: rollupUserContract,
       admin: adminI,
       validators: validatorsI,
+      upgradeExecutorAddress,
     } = await setup()
     rollupAdmin = rollupAdminContract
     rollupUser = rollupUserContract
     admin = adminI
     validators = validatorsI
+    upgradeExecutor = upgradeExecutorAddress
     rollup = new RollupContract(rollupUser.connect(validators[0]))
   })
 
   it('should only initialize once', async function () {
     await expect(
-      rollupAdmin.initialize(await getDefaultConfig(), {
-        challengeManager: constants.AddressZero,
-        bridge: constants.AddressZero,
-        inbox: constants.AddressZero,
-        outbox: constants.AddressZero,
-        rollupAdminLogic: constants.AddressZero,
-        rollupEventInbox: constants.AddressZero,
-        rollupUserLogic: constants.AddressZero,
-        sequencerInbox: constants.AddressZero,
-        validatorUtils: constants.AddressZero,
-        validatorWalletCreator: constants.AddressZero,
-      })
+      rollupAdmin
+        .connect(await impersonateAccount(upgradeExecutor))
+        .initialize(await getDefaultConfig(), {
+          challengeManager: constants.AddressZero,
+          bridge: constants.AddressZero,
+          inbox: constants.AddressZero,
+          outbox: constants.AddressZero,
+          rollupAdminLogic: constants.AddressZero,
+          rollupEventInbox: constants.AddressZero,
+          rollupUserLogic: constants.AddressZero,
+          sequencerInbox: constants.AddressZero,
+          validatorUtils: constants.AddressZero,
+          validatorWalletCreator: constants.AddressZero,
+        })
     ).to.be.revertedWith('Initializable: contract is already initialized')
   })
 
@@ -754,7 +775,7 @@ describe('ArbRollup', () => {
     const prevIsPaused = await rollup.rollup.paused()
     expect(prevIsPaused).to.equal(false)
 
-    await rollupAdmin.pause()
+    await rollupAdmin.connect(await impersonateAccount(upgradeExecutor)).pause()
 
     const postIsPaused = await rollup.rollup.paused()
     expect(postIsPaused).to.equal(true)
@@ -765,7 +786,9 @@ describe('ArbRollup', () => {
         .addToDeposit(await validators[1].getAddress(), { value: 5 })
     ).to.be.revertedWith('Pausable: paused')
 
-    await rollupAdmin.resume()
+    await rollupAdmin
+      .connect(await impersonateAccount(upgradeExecutor))
+      .resume()
   })
 
   it('should allow admin to alter rollup while paused', async function () {
@@ -820,10 +843,12 @@ describe('ArbRollup', () => {
     ).to.eq(await validators[2].getAddress())
 
     await expect(
-      rollupAdmin.forceResolveChallenge(
-        [await validators[0].getAddress()],
-        [await validators[2].getAddress()]
-      ),
+      rollupAdmin
+        .connect(await impersonateAccount(upgradeExecutor))
+        .forceResolveChallenge(
+          [await validators[0].getAddress()],
+          [await validators[2].getAddress()]
+        ),
       'force resolve'
     ).to.be.revertedWith('Pausable: not paused')
 
@@ -837,12 +862,14 @@ describe('ArbRollup', () => {
       'create challenge'
     ).to.be.revertedWith('IN_CHAL')
 
-    await rollupAdmin.pause()
+    await rollupAdmin.connect(await impersonateAccount(upgradeExecutor)).pause()
 
-    await rollupAdmin.forceResolveChallenge(
-      [await validators[0].getAddress()],
-      [await validators[2].getAddress()]
-    )
+    await rollupAdmin
+      .connect(await impersonateAccount(upgradeExecutor))
+      .forceResolveChallenge(
+        [await validators[0].getAddress()],
+        [await validators[2].getAddress()]
+      )
 
     // challenge should have been destroyed
     expect(
@@ -860,14 +887,16 @@ describe('ArbRollup', () => {
     expect(challengeA).to.equal(ZERO_ADDR)
     expect(challengeB).to.equal(ZERO_ADDR)
 
-    await rollupAdmin.forceRefundStaker([
-      await validators[0].getAddress(),
-      await validators[2].getAddress(),
-    ])
+    await rollupAdmin
+      .connect(await impersonateAccount(upgradeExecutor))
+      .forceRefundStaker([
+        await validators[0].getAddress(),
+        await validators[2].getAddress(),
+      ])
 
     const adminAssertion = newRandomAssertion(prevNode.assertion.afterState)
     const { node: forceCreatedNode1 } = await forceCreateNode(
-      rollupAdmin,
+      rollupAdmin.connect(await impersonateAccount(upgradeExecutor)),
       sequencerInbox,
       prevNode,
       adminAssertion,
@@ -886,7 +915,7 @@ describe('ArbRollup', () => {
 
     const adminAssertion2 = newRandomAssertion(prevNode.assertion.afterState)
     const { node: forceCreatedNode2 } = await forceCreateNode(
-      rollupAdmin,
+      rollupAdmin.connect(await impersonateAccount(upgradeExecutor)),
       sequencerInbox,
       prevNode,
       adminAssertion2,
@@ -895,17 +924,21 @@ describe('ArbRollup', () => {
 
     const postLatestCreated = await rollup.rollup.latestNodeCreated()
 
-    await rollupAdmin.forceConfirmNode(
-      adminNodeNum,
-      adminAssertion.afterState.globalState.bytes32Vals[0],
-      adminAssertion.afterState.globalState.bytes32Vals[1]
-    )
+    await rollupAdmin
+      .connect(await impersonateAccount(upgradeExecutor))
+      .forceConfirmNode(
+        adminNodeNum,
+        adminAssertion.afterState.globalState.bytes32Vals[0],
+        adminAssertion.afterState.globalState.bytes32Vals[1]
+      )
 
     const postLatestConfirmed = await rollup.rollup.latestConfirmed()
     expect(postLatestCreated).to.equal(adminNodeNum.add(1))
     expect(postLatestConfirmed).to.equal(adminNodeNum)
 
-    await rollupAdmin.resume()
+    await rollupAdmin
+      .connect(await impersonateAccount(upgradeExecutor))
+      .resume()
 
     // should create node after resuming
 
@@ -946,11 +979,13 @@ describe('ArbRollup', () => {
       rollupUser: rollupUserContract,
       admin: adminI,
       validators: validatorsI,
+      upgradeExecutorAddress,
     } = await setup()
     rollupAdmin = rollupAdminContract
     rollupUser = rollupUserContract
     admin = adminI
     validators = validatorsI
+    upgradeExecutor = upgradeExecutorAddress
     rollup = new RollupContract(rollupUser.connect(validators[0]))
   })
 
@@ -1012,10 +1047,11 @@ describe('ArbRollup', () => {
     await expect(rollupAdmin.connect(user).upgradeTo(newAdminLogicImpl.address))
       .to.be.reverted
     // upgrade as admin
-    await expect(rollupAdmin.upgradeTo(newAdminLogicImpl.address)).to.emit(
-      rollupAdmin,
-      'Upgraded'
-    )
+    await expect(
+      rollupAdmin
+        .connect(await impersonateAccount(upgradeExecutor))
+        .upgradeTo(newAdminLogicImpl.address)
+    ).to.emit(rollupAdmin, 'Upgraded')
 
     // check the new implementation address is set
     const proxyPrimaryTarget = await getDoubleLogicUUPSTarget(
@@ -1060,7 +1096,9 @@ describe('ArbRollup', () => {
     ).to.be.reverted
     // upgrade as admin
     await expect(
-      rollupAdmin.upgradeSecondaryTo(newUserLogicImpl.address)
+      rollupAdmin
+        .connect(await impersonateAccount(upgradeExecutor))
+        .upgradeSecondaryTo(newUserLogicImpl.address)
     ).to.emit(rollupAdmin, 'UpgradedSecondary')
 
     // check the new implementation address is set
@@ -1087,10 +1125,12 @@ describe('ArbRollup', () => {
     )) as RollupAdminLogic__factory
     const newAdminLogicImpl = await rollupAdminLogicFac.deploy()
     // first pause the contract so we can unpause after upgrade
-    await rollupAdmin.pause()
+    await rollupAdmin.connect(await impersonateAccount(upgradeExecutor)).pause()
     // 0x046f7da2 - resume()
     await expect(
-      rollupAdmin.upgradeToAndCall(newAdminLogicImpl.address, '0x046f7da2')
+      rollupAdmin
+        .connect(await impersonateAccount(upgradeExecutor))
+        .upgradeToAndCall(newAdminLogicImpl.address, '0x046f7da2')
     ).to.emit(rollupAdmin, 'Unpaused')
   })
 
@@ -1101,14 +1141,15 @@ describe('ArbRollup', () => {
     const newUserLogicImpl = await rollupUserLogicFac.deploy()
     // this call should revert since the user logic don't have a fallback
     await expect(
-      rollupAdmin.upgradeSecondaryToAndCall(newUserLogicImpl.address, '0x')
+      rollupAdmin
+        .connect(await impersonateAccount(upgradeExecutor))
+        .upgradeSecondaryToAndCall(newUserLogicImpl.address, '0x')
     ).to.revertedWith('Address: low-level delegate call failed')
     // 0x8da5cb5b - owner() (some random function that will not revert)
     await expect(
-      rollupAdmin.upgradeSecondaryToAndCall(
-        newUserLogicImpl.address,
-        '0x8da5cb5b'
-      )
+      rollupAdmin
+        .connect(await impersonateAccount(upgradeExecutor))
+        .upgradeSecondaryToAndCall(newUserLogicImpl.address, '0x8da5cb5b')
     ).to.emit(rollupAdmin, 'UpgradedSecondary')
   })
 
@@ -1118,7 +1159,9 @@ describe('ArbRollup', () => {
     )) as RollupUserLogic__factory
     const newUserLogicImpl = await rollupUserLogicFac.deploy()
     await expect(
-      rollupAdmin.upgradeTo(newUserLogicImpl.address)
+      rollupAdmin
+        .connect(await impersonateAccount(upgradeExecutor))
+        .upgradeTo(newUserLogicImpl.address)
     ).to.revertedWith('ERC1967Upgrade: unsupported proxiableUUID')
   })
 
@@ -1128,19 +1171,25 @@ describe('ArbRollup', () => {
     )) as RollupAdminLogic__factory
     const newAdminLogicImpl = await rollupAdminLogicFac.deploy()
     await expect(
-      rollupAdmin.upgradeSecondaryTo(newAdminLogicImpl.address)
+      rollupAdmin
+        .connect(await impersonateAccount(upgradeExecutor))
+        .upgradeSecondaryTo(newAdminLogicImpl.address)
     ).to.revertedWith('ERC1967Upgrade: unsupported secondary proxiableUUID')
   })
 
   it('should fail upgrade to proxy primary logic', async function () {
-    await expect(rollupAdmin.upgradeTo(rollupAdmin.address)).to.revertedWith(
-      'ERC1967Upgrade: new implementation is not UUPS'
-    )
+    await expect(
+      rollupAdmin
+        .connect(await impersonateAccount(upgradeExecutor))
+        .upgradeTo(rollupAdmin.address)
+    ).to.revertedWith('ERC1967Upgrade: new implementation is not UUPS')
   })
 
   it('should fail upgrade to proxy secondary logic', async function () {
     await expect(
-      rollupAdmin.upgradeSecondaryTo(rollupAdmin.address)
+      rollupAdmin
+        .connect(await impersonateAccount(upgradeExecutor))
+        .upgradeSecondaryTo(rollupAdmin.address)
     ).to.revertedWith(
       'ERC1967Upgrade: new secondary implementation is not UUPS'
     )
