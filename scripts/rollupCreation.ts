@@ -21,7 +21,7 @@ interface RollupCreatedEvent {
   }
 }
 
-async function main() {
+export async function createRollup(feeToken?: string) {
   const rollupCreatorAddress = process.env.ROLLUP_CREATOR_ADDRESS
 
   if (!rollupCreatorAddress) {
@@ -39,11 +39,15 @@ async function main() {
 
   const [signer] = await ethers.getSigners()
 
-  const rollupCreator = await new ethers.Contract(
+  const rollupCreator = new ethers.Contract(
     rollupCreatorAddress,
     rollupCreatorAbi,
     signer
   )
+
+  if (!feeToken) {
+    feeToken = ethers.constants.AddressZero
+  }
 
   try {
     let vals: boolean[] = []
@@ -55,7 +59,8 @@ async function main() {
     const createRollupTx = await rollupCreator.createRollup(
       config.rollupConfig,
       config.batchPoster,
-      config.validators
+      config.validators,
+      feeToken
     )
     const createRollupReceipt = await createRollupTx.wait()
 
@@ -130,10 +135,3 @@ async function main() {
     )
   }
 }
-
-main()
-  .then(() => process.exit(0))
-  .catch((error: Error) => {
-    console.error(error)
-    process.exit(1)
-  })
