@@ -75,6 +75,7 @@ async function deployAllContracts(
   const challengeManager = await deployContract('ChallengeManager', signer)
   const rollupAdmin = await deployContract('RollupAdminLogic', signer)
   const rollupUser = await deployContract('RollupUserLogic', signer)
+  const upgradeExecutor = await deployContract('UpgradeExecutor', signer)
   const validatorUtils = await deployContract('ValidatorUtils', signer)
   const validatorWalletCreator = await deployContract(
     'ValidatorWalletCreator',
@@ -92,6 +93,7 @@ async function deployAllContracts(
     challengeManager,
     rollupAdmin,
     rollupUser,
+    upgradeExecutor,
     validatorUtils,
     validatorWalletCreator,
     rollupCreator,
@@ -114,6 +116,7 @@ async function main() {
       contracts.challengeManager.address,
       contracts.rollupAdmin.address,
       contracts.rollupUser.address,
+      contracts.upgradeExecutor.address,
       contracts.validatorUtils.address,
       contracts.validatorWalletCreator.address
     )
