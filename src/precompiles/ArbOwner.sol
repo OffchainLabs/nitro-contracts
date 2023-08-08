@@ -107,6 +107,9 @@ interface ArbOwner {
     // @notice sets the maximum number of pages a wasm may allocate
     function setWasmPageLimit(uint16 limit) external view;
 
+    // @notice sets the cost of calling 64kb wasm, cost is scaled according to actual wasm size
+    function setWasmCallScalar(uint16 gas) external view;
+
     /// @notice Sets serialized chain config in ArbOS state
     function setChainConfig(string calldata chainConfig) external;
 
