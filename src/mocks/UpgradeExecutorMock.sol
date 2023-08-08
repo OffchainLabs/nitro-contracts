@@ -21,8 +21,7 @@ contract UpgradeExecutorMock is
     /// @notice Emitted when an upgrade execution occurs
     event UpgradeExecuted(address indexed upgrade, uint256 value, bytes data);
 
-    constructor() initializer {
-    }
+    constructor() initializer {}
 
     /// @notice Initialise the upgrade executor
     /// @param admin The admin who can update other roles, and itself - ADMIN_ROLE
@@ -53,7 +52,8 @@ contract UpgradeExecutorMock is
     {
         // OZ Address library check if the address is a contract and bubble up inner revert reason
         address(upgrade).functionDelegateCall(
-            upgradeCallData, "UpgradeExecutor: inner delegate call failed without reason"
+            upgradeCallData,
+            "UpgradeExecutor: inner delegate call failed without reason"
         );
 
         emit UpgradeExecuted(upgrade, msg.value, upgradeCallData);

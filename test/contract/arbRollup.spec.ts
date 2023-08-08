@@ -162,8 +162,9 @@ const setup = async () => {
   )) as RollupUserLogic__factory
   const rollupUserLogicTemplate = await rollupUserLogicFac.deploy()
 
-  const upgradeExecutorLogicFac = (await ethers.getContractFactory(
-    UpgradeExecutorABI, UpgradeExecutorBytecode)
+  const upgradeExecutorLogicFac = await ethers.getContractFactory(
+    UpgradeExecutorABI,
+    UpgradeExecutorBytecode
   )
   const upgradeExecutorLogic = await upgradeExecutorLogicFac.deploy()
 
