@@ -1202,10 +1202,10 @@
     "@types/sinon-chai" "^3.2.3"
     "@types/web3" "1.0.19"
 
-"@offchainlabs/upgrade-executor@^1.0.0-beta.0":
-  version "1.0.0-beta.0"
-  resolved "https://registry.yarnpkg.com/@offchainlabs/upgrade-executor/-/upgrade-executor-1.0.0-beta.0.tgz#dbf1eddbe157f44a79740fdb65446415fa260eac"
-  integrity sha512-WappuSR9sjGxBLIYPpMLIj3lcTe3GsO3NukBoMmO+xxcjFZ3zMmnt7PpNfbxAEyWDXEfqI5W5F32gcWAnF60zA==
+"@offchainlabs/upgrade-executor@^1.0.0-beta.2":
+  version "1.0.0-beta.2"
+  resolved "https://registry.yarnpkg.com/@offchainlabs/upgrade-executor/-/upgrade-executor-1.0.0-beta.2.tgz#b3f9e1ba2e58edf17019249b4663d88567961fec"
+  integrity sha512-aSjWctspD2QTGXUv0fRHudFrl5oR42nRB/88JUnC9O5tujPyRksM6Y8WyrDNl3eZuqV+L1V76Ui2Av4NrUkd+g==
   dependencies:
     "@openzeppelin/contracts" "4.7.3"
     "@openzeppelin/contracts-upgradeable" "4.7.3"
