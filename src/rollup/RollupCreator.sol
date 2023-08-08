@@ -8,7 +8,7 @@ import "./RollupProxy.sol";
 import "./IRollupAdmin.sol";
 import "./BridgeCreator.sol";
 import "./ERC20BridgeCreator.sol";
-import "../libraries/UpgradeExecutor.sol";
+import "@offchainlabs/upgrade-executor/src/IUpgradeExecutor.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -36,7 +36,7 @@ contract RollupCreator is Ownable {
     IChallengeManager public challengeManagerTemplate;
     IRollupAdmin public rollupAdminLogic;
     IRollupUser public rollupUserLogic;
-    UpgradeExecutor public upgradeExecutorLogic;
+    IUpgradeExecutor public upgradeExecutorLogic;
 
     address public validatorUtils;
     address public validatorWalletCreator;
@@ -58,7 +58,7 @@ contract RollupCreator is Ownable {
         IChallengeManager _challengeManagerLogic,
         IRollupAdmin _rollupAdminLogic,
         IRollupUser _rollupUserLogic,
-        UpgradeExecutor _upgradeExecutorLogic,
+        IUpgradeExecutor _upgradeExecutorLogic,
         address _validatorUtils,
         address _validatorWalletCreator
     ) external onlyOwner {
@@ -97,7 +97,7 @@ contract RollupCreator is Ownable {
         ProxyAdmin proxyAdmin = new ProxyAdmin();
 
         // deploy and init upgrade executor
-        UpgradeExecutor upgradeExecutor = UpgradeExecutor(
+        IUpgradeExecutor upgradeExecutor = IUpgradeExecutor(
             address(
                 new TransparentUpgradeableProxy(
                     address(upgradeExecutorLogic),
