@@ -14,8 +14,10 @@ import "../../src/osp/OneStepProverMemory.sol";
 import "../../src/osp/OneStepProverMath.sol";
 import "../../src/osp/OneStepProverHostIo.sol";
 import "../../src/osp/OneStepProofEntry.sol";
+import "../../src/mocks/UpgradeExecutorMock.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 contract RollupCreatorTest is Test {
     RollupCreator public rollupCreator;
@@ -35,7 +37,7 @@ contract RollupCreatorTest is Test {
         BridgeCreator ethBridgeCreator = new BridgeCreator();
         ERC20BridgeCreator erc20BridgeCreator = new ERC20BridgeCreator();
 
-        UpgradeExecutor upgradeExecutorLogic = new UpgradeExecutor();
+        IUpgradeExecutor upgradeExecutorLogic = new UpgradeExecutorMock();
 
         (
             IOneStepProofEntry ospEntry,
@@ -170,7 +172,7 @@ contract RollupCreatorTest is Test {
         );
 
         // check rollupOwner has executor role
-        UpgradeExecutor executor = UpgradeExecutor(upgradeExecutorExpectedAddress);
+        AccessControlUpgradeable executor = AccessControlUpgradeable(upgradeExecutorExpectedAddress);
         assertTrue(
             executor.hasRole(keccak256("EXECUTOR_ROLE"), rollupOwner), "Invalid executor role"
         );
@@ -290,7 +292,7 @@ contract RollupCreatorTest is Test {
         );
 
         // check rollupOwner has executor role
-        UpgradeExecutor executor = UpgradeExecutor(upgradeExecutorExpectedAddress);
+        AccessControlUpgradeable executor = AccessControlUpgradeable(upgradeExecutorExpectedAddress);
         assertTrue(
             executor.hasRole(keccak256("EXECUTOR_ROLE"), rollupOwner), "Invalid executor role"
         );
@@ -330,8 +332,8 @@ contract RollupCreatorTest is Test {
         RollupCore rollup = RollupCore(rollupAddress);
         address inbox = address(rollup.inbox());
         address proxyAdmin = computeCreateAddress(address(rollupCreator), 1);
-        UpgradeExecutor upgradeExecutor =
-            UpgradeExecutor(computeCreateAddress(address(rollupCreator), 2));
+        IUpgradeExecutor upgradeExecutor =
+            IUpgradeExecutor(computeCreateAddress(address(rollupCreator), 2));
 
         Dummy newLogicImpl = new Dummy();
         bytes memory data = abi.encodeWithSelector(
