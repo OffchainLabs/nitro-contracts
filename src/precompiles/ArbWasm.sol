@@ -28,11 +28,11 @@ interface ArbWasm {
 
     // @notice gets the wasm stack size limit
     // @return depth the maximum depth (in wasm words) a wasm stack may grow
-    function wasmMaxDepth() external view returns (uint32 depth);
+    function maxStackDepth() external view returns (uint32 depth);
 
     // @notice gets the fixed-cost overhead needed to initiate a hostio call
     // @return ink the cost of starting a stylus hostio call
-    function wasmHostioInk() external view returns (uint64 ink);
+    function hostioInk() external view returns (uint64 ink);
 
     // @notice gets the number of free wasm pages a program gets
     // @return pages the number of wasm pages (2^16 bytes)
