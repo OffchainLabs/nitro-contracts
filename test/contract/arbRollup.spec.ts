@@ -37,8 +37,8 @@ import {
   RollupUserLogic__factory,
   SequencerInbox,
   SequencerInbox__factory,
-  UpgradeExecutor__factory,
 } from '../../build/types'
+import { UpgradeExecutor__factory } from '@offchainlabs/upgrade-executor/build/types/factories/src'
 import { initializeAccounts } from './utils'
 
 import {
