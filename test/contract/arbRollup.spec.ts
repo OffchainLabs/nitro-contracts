@@ -38,7 +38,11 @@ import {
   SequencerInbox,
   SequencerInbox__factory,
 } from '../../build/types'
-import { UpgradeExecutor__factory } from '@offchainlabs/upgrade-executor/build/types/factories/src'
+import {
+  abi as UpgradeExecutorABI,
+  bytecode as UpgradeExecutorBytecode,
+} from '@offchainlabs/upgrade-executor/build/contracts/src/UpgradeExecutor.sol/UpgradeExecutor.json'
+
 import { initializeAccounts } from './utils'
 
 import {
@@ -159,8 +163,8 @@ const setup = async () => {
   const rollupUserLogicTemplate = await rollupUserLogicFac.deploy()
 
   const upgradeExecutorLogicFac = (await ethers.getContractFactory(
-    'UpgradeExecutor'
-  )) as UpgradeExecutor__factory
+    UpgradeExecutorABI, UpgradeExecutorBytecode)
+  )
   const upgradeExecutorLogic = await upgradeExecutorLogicFac.deploy()
 
   const ethBridgeCreatorFac = (await ethers.getContractFactory(
