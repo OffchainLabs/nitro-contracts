@@ -86,20 +86,18 @@ interface ArbOwner {
     // @notice Releases surplus funds from L1PricerFundsPoolAddress for use
     function releaseL1PricerSurplusFunds(uint256 maxWeiToRelease) external returns (uint256);
 
-    // @notice sets the price (in evm gas basis points) of ink
-    function setInkPrice(uint64 price) external;
+    // @notice sets the amount of ink 1 gas buys
+    // @param price the conversion rate (must fit in a uint24)
+    function setInkPrice(uint32 price) external;
 
     // @notice sets the maximum depth (in wasm words) a wasm stack may grow
     function setWasmMaxDepth(uint32 depth) external;
-
-    // @notice sets the cost of starting a stylus hostio call
-    function setWasmHostioInk(uint64 ink) external;
 
     // @notice sets the number of free wasm pages a tx gets
     function setWasmFreePages(uint16 pages) external;
 
     // @notice sets the base cost of each additional wasm page
-    function setWasmPageGas(uint32 gas) external;
+    function setWasmPageGas(uint16 gas) external;
 
     // @notice sets the ramp that drives exponential wasm memory costs
     function setWasmPageRamp(uint64 ramp) external;
