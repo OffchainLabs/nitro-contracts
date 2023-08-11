@@ -91,7 +91,7 @@ interface ArbOwner {
     function setInkPrice(uint32 price) external;
 
     // @notice sets the maximum depth (in wasm words) a wasm stack may grow
-    function setWasmMaxDepth(uint32 depth) external;
+    function setWasmMaxStackDepth(uint32 depth) external;
 
     // @notice sets the number of free wasm pages a tx gets
     function setWasmFreePages(uint16 pages) external;
