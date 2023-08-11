@@ -60,7 +60,7 @@ contract SdkStorage {
         for (uint8 i = 0; i < 31; i++) {
             bytesFull = abi.encodePacked(bytesFull, i);
         }
-        for (uint8 i = 0; i < 34; i++) {
+        for (uint8 i = 0; i < 80; i++) {
             bytesLong = abi.encodePacked(bytesLong, i);
         }
         chars = "arbitrum stylus";
@@ -92,5 +92,32 @@ contract SdkStorage {
         }
     }
 
-    function remove() external {}
+    function remove() external {
+        while (bytesFull.length != 0) {
+            bytesFull.pop();
+        }
+
+        while (bytesLong.length > 16) {
+            bytesLong.pop();
+        }
+
+        chars = "wasm is cute <3";
+
+        while (vector.length != 0) {
+            vector.pop();
+        }
+
+        while (nested.length > 1) {
+            nested.pop();
+        }
+
+        for (uint256 i = 0; i < 8; i++) {
+            delete maps.basic[i];
+        }
+        maps.basic[8] = address(32);
+
+        for (uint160 i = 0; i < 4; i++) {
+            delete maps.vects[address(i)];
+        }
+    }
 }
