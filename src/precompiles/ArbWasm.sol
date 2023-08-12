@@ -46,9 +46,9 @@ interface ArbWasm {
     // @return limit the number of pages
     function pageLimit() external view returns (uint16 limit);
 
-    // @notice gets the call overhead priced per half of a kb of compressed wasm
-    // @return call overhead priced per half of a kb of compressed wasm
-    function callScalar() external view returns (uint16 limit);
+    // @notice gets the added wasm call cost based on binary size
+    // @return gas cost paid per half kb uncompressed.
+    function callScalar() external view returns (uint16 gas);
 
     error ProgramNotCompiled();
     error ProgramOutOfDate(uint16 version);
