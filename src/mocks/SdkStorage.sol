@@ -119,5 +119,7 @@ contract SdkStorage {
         for (uint160 i = 0; i < 4; i++) {
             delete maps.vects[address(i)];
         }
+
+        structs.pop();
     }
 }
