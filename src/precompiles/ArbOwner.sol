@@ -91,7 +91,7 @@ interface ArbOwner {
     function setInkPrice(uint32 price) external;
 
     // @notice sets the maximum depth (in wasm words) a wasm stack may grow
-    function setWasmMaxDepth(uint32 depth) external;
+    function setWasmMaxStackDepth(uint32 depth) external;
 
     // @notice sets the number of free wasm pages a tx gets
     function setWasmFreePages(uint16 pages) external;
@@ -104,6 +104,9 @@ interface ArbOwner {
 
     // @notice sets the maximum number of pages a wasm may allocate
     function setWasmPageLimit(uint16 limit) external view;
+
+    // @notice sets the added wasm call cost based on binary size
+    function setWasmCallScalar(uint16 gas) external view;
 
     /// @notice Sets serialized chain config in ArbOS state
     function setChainConfig(string calldata chainConfig) external;

@@ -28,7 +28,7 @@ interface ArbWasm {
 
     // @notice gets the wasm stack size limit
     // @return depth the maximum depth (in wasm words) a wasm stack may grow
-    function wasmMaxDepth() external view returns (uint32 depth);
+    function maxStackDepth() external view returns (uint32 depth);
 
     // @notice gets the number of free wasm pages a program gets
     // @return pages the number of wasm pages (2^16 bytes)
@@ -45,6 +45,10 @@ interface ArbWasm {
     // @notice gets the maximum number of pages a wasm may allocate
     // @return limit the number of pages
     function pageLimit() external view returns (uint16 limit);
+
+    // @notice gets the added wasm call cost based on binary size
+    // @return gas cost paid per half kb uncompressed.
+    function callScalar() external view returns (uint16 gas);
 
     error ProgramNotCompiled();
     error ProgramOutOfDate(uint16 version);
