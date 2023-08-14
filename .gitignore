@@ -1,5 +1,4 @@
 build/
-build/contracts/build-info
 cache/
 node_modules/
 deployments/
