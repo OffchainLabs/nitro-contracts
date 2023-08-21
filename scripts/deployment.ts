@@ -61,6 +61,7 @@ async function deployAllContracts(
   signer: any
 ): Promise<Record<string, Contract>> {
   const bridgeCreator = await deployContract('BridgeCreator', signer)
+  const erc20BridgeCreator = await deployContract('ERC20BridgeCreator', signer)
   const prover0 = await deployContract('OneStepProver0', signer)
   const proverMem = await deployContract('OneStepProverMemory', signer)
   const proverMath = await deployContract('OneStepProverMath', signer)
@@ -82,6 +83,7 @@ async function deployAllContracts(
   const rollupCreator = await deployContract('RollupCreator', signer)
   return {
     bridgeCreator,
+    erc20BridgeCreator,
     prover0,
     proverMem,
     proverMath,
@@ -107,6 +109,7 @@ async function main() {
     console.log('Waiting for the Template to be set on the Rollup Creator')
     await contracts.rollupCreator.setTemplates(
       contracts.bridgeCreator.address,
+      contracts.erc20BridgeCreator.address,
       contracts.osp.address,
       contracts.challengeManager.address,
       contracts.rollupAdmin.address,
