@@ -5,6 +5,8 @@ import '@nomiclabs/hardhat-etherscan'
 import '@typechain/hardhat'
 import 'solidity-coverage'
 import 'hardhat-gas-reporter'
+import * as dotenv from 'dotenv'
+dotenv.config()
 
 const solidity = {
   compilers: [
