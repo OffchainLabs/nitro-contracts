@@ -3,6 +3,9 @@ import '@nomiclabs/hardhat-ethers'
 import { run } from 'hardhat'
 import { abi as rollupCreatorAbi } from '../build/contracts/src/rollup/RollupCreator.sol/RollupCreator.json'
 import { config } from './config'
+import { DeployHelper__factory } from '../build/types'
+import * as dotenv from 'dotenv'
+dotenv.config()
 
 interface RollupCreatedEvent {
   event: string
@@ -23,10 +26,18 @@ interface RollupCreatedEvent {
 
 async function main() {
   const rollupCreatorAddress = process.env.ROLLUP_CREATOR_ADDRESS
+  const deployHelperAddress = process.env.DEPLOY_HELPER_ADDRESS
 
   if (!rollupCreatorAddress) {
     console.error(
       'Please provide ROLLUP_CREATOR_ADDRESS as an environment variable.'
+    )
+    process.exit(1)
+  }
+
+  if (!deployHelperAddress) {
+    console.error(
+      'Please provide DEPLOY_HELPER_ADDRESS as an environment variable.'
     )
     process.exit(1)
   }
@@ -78,6 +89,11 @@ async function main() {
       const validatorUtils = rollupCreatedEvent.args?.validatorUtils
       const validatorWalletCreator =
         rollupCreatedEvent.args?.validatorWalletCreator
+
+      await DeployHelper__factory.connect(deployHelperAddress, signer).perform(
+        inboxAddress,
+        { value: ethers.utils.parseEther('0.1') }
+      )
 
       console.log("Congratulations! 🎉🎉🎉 All DONE! Here's your addresses:")
       console.log('RollupProxy Contract created at address:', rollupAddress)

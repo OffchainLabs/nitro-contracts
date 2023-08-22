@@ -80,6 +80,7 @@ async function deployAllContracts(
     signer
   )
   const rollupCreator = await deployContract('RollupCreator', signer)
+  const deployHelper = await deployContract('DeployHelper', signer)
   return {
     bridgeCreator,
     prover0,
@@ -93,6 +94,7 @@ async function deployAllContracts(
     validatorUtils,
     validatorWalletCreator,
     rollupCreator,
+    deployHelper,
   }
 }
 
@@ -147,6 +149,7 @@ async function main() {
       outboxAddress
     )
     await verifyContract('Outbox', outboxAddress, [])
+    await verifyContract('deployHelper', contracts.deployHelper.address, [])
   } catch (error) {
     console.error(
       'Deployment failed:',
