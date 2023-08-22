@@ -12,7 +12,7 @@ interface ArbWasm {
     // @notice compile a wasm program
     // @param program the program to compile
     // @return version the stylus version the program was compiled against
-    function compileProgram(address program) external returns (uint16 version);
+    function activateProgram(address program) external returns (uint16 version);
 
     // @notice gets the latest stylus version
     // @return version the stylus version
