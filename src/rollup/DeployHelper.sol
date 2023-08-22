@@ -6,7 +6,7 @@ pragma solidity ^0.8.0;
 
 import {IInbox} from "../bridge/IInbox.sol";
 
-/// @notice Helper contract for deploying deterministic factories to Arbitrum using delayed inbox
+/// @notice Helper contract for deploying some keyless deployment to Arbitrum using delayed inbox
 contract DeployHelper {
     address public constant ANVIL_CREATE2FACTORY_DEPLOYER =
         0x3fAB184622Dc19b6109349B94811493BF2a45362;
