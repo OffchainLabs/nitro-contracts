@@ -52,10 +52,10 @@ contract DeployHelper {
     function perform(address _inbox) external payable {
         IInbox inbox = IInbox(_inbox);
 
-        _fundAndDeploy(inbox, 0.01 ether, ANVIL_CREATE2FACTORY_DEPLOYER, ANVIL_CREATE2FACTORY_PAYLOAD);
-        _fundAndDeploy(inbox, 0.01 ether, ERC2470_DEPLOYER, ERC2470_PAYLOAD);
-        _fundAndDeploy(inbox, 0.01 ether, ZOLTU_CREATE2FACTORY_DEPLOYER, ZOLTU_CREATE2FACTORY_PAYLOAD);
-        _fundAndDeploy(inbox, 0.10 ether, EIP1820_DEPLOYER, EIP1820_PAYLOAD);
+        _fundAndDeploy(inbox, 0.010 ether, ANVIL_CREATE2FACTORY_DEPLOYER, ANVIL_CREATE2FACTORY_PAYLOAD);
+        _fundAndDeploy(inbox, 0.025 ether, ERC2470_DEPLOYER, ERC2470_PAYLOAD);
+        _fundAndDeploy(inbox, 0.010 ether, ZOLTU_CREATE2FACTORY_DEPLOYER, ZOLTU_CREATE2FACTORY_PAYLOAD);
+        _fundAndDeploy(inbox, 0.080 ether, EIP1820_DEPLOYER, EIP1820_PAYLOAD);
 
         payable(msg.sender).transfer(address(this).balance);
     }
