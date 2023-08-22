@@ -36,7 +36,7 @@ contract DeployHelper {
         bytes memory payload
     ) internal {
         uint256 submissionCost = inbox.calculateRetryableSubmissionFee(0, block.basefee);
-        inbox.createRetryableTicket{value: 0.01 ether + submissionCost + GASLIMIT * MAXFEEPERGAS}({
+        inbox.createRetryableTicket{value: _value + submissionCost + GASLIMIT * MAXFEEPERGAS}({
             to: _l2Address,
             l2CallValue: _value,
             maxSubmissionCost: submissionCost,
