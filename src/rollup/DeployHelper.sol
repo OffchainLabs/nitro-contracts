@@ -31,13 +31,14 @@ contract DeployHelper {
 
     function _fundAndDeploy(
         IInbox inbox,
+        uint256 _value,
         address _l2Address,
         bytes memory payload
     ) internal {
         uint256 submissionCost = inbox.calculateRetryableSubmissionFee(0, block.basefee);
         inbox.createRetryableTicket{value: 0.01 ether + submissionCost + GASLIMIT * MAXFEEPERGAS}({
             to: _l2Address,
-            l2CallValue: 0.01 ether,
+            l2CallValue: _value,
             maxSubmissionCost: submissionCost,
             excessFeeRefundAddress: msg.sender,
             callValueRefundAddress: msg.sender,
@@ -51,10 +52,10 @@ contract DeployHelper {
     function perform(address _inbox) external payable {
         IInbox inbox = IInbox(_inbox);
 
-        _fundAndDeploy(inbox, ANVIL_CREATE2FACTORY_DEPLOYER, ANVIL_CREATE2FACTORY_PAYLOAD);
-        _fundAndDeploy(inbox, ERC2470_DEPLOYER, ERC2470_PAYLOAD);
-        _fundAndDeploy(inbox, ZOLTU_CREATE2FACTORY_DEPLOYER, ZOLTU_CREATE2FACTORY_PAYLOAD);
-        _fundAndDeploy(inbox, EIP1820_DEPLOYER, EIP1820_PAYLOAD);
+        _fundAndDeploy(inbox, 0.01 ether, ANVIL_CREATE2FACTORY_DEPLOYER, ANVIL_CREATE2FACTORY_PAYLOAD);
+        _fundAndDeploy(inbox, 0.01 ether, ERC2470_DEPLOYER, ERC2470_PAYLOAD);
+        _fundAndDeploy(inbox, 0.01 ether, ZOLTU_CREATE2FACTORY_DEPLOYER, ZOLTU_CREATE2FACTORY_PAYLOAD);
+        _fundAndDeploy(inbox, 0.10 ether, EIP1820_DEPLOYER, EIP1820_PAYLOAD);
 
         payable(msg.sender).transfer(address(this).balance);
     }
