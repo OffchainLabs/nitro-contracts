@@ -92,7 +92,8 @@ async function main() {
 
       await DeployHelper__factory.connect(deployHelperAddress, signer).perform(
         inboxAddress,
-        { value: ethers.utils.parseEther('0.1') }
+        { value: ethers.utils.parseEther('0.2') }
+        // send some extra for variable retryable submission cost, unused fund will be returned
       )
 
       console.log("Congratulations! 🎉🎉🎉 All DONE! Here's your addresses:")
