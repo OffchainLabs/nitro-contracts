@@ -50,6 +50,8 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
         uint256 value,
         bytes memory data
     ) internal override returns (bool success, bytes memory returnData) {
+        // we don't allow outgoing calls to native token contract because it could
+        // result in loss of native tokens which are escrowed by ERC20Bridge
         if (to == nativeToken) {
             revert CallTargetNotAllowed(nativeToken);
         }
