@@ -24,6 +24,7 @@ contract OutboxTest is AbsOutboxTest {
         bridge.setOutbox(address(outbox), true);
     }
 
+    /* solhint-disable func-name-mixedcase */
     function test_executeTransaction() public {
         // fund bridge with some ether
         vm.deal(address(bridge), 100 ether);

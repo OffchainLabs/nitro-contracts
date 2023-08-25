@@ -7,7 +7,6 @@ pragma solidity ^0.8.0;
 import "./RollupProxy.sol";
 import "./IRollupAdmin.sol";
 import "./BridgeCreator.sol";
-import "./ERC20BridgeCreator.sol";
 import "@offchainlabs/upgrade-executor/src/IUpgradeExecutor.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -30,8 +29,7 @@ contract RollupCreator is Ownable {
     );
     event TemplatesUpdated();
 
-    BridgeCreator public ethBridgeCreator;
-    ERC20BridgeCreator public erc20BridgeCreator;
+    BridgeCreator public bridgeCreator;
     IOneStepProofEntry public osp;
     IChallengeManager public challengeManagerTemplate;
     IRollupAdmin public rollupAdminLogic;
@@ -52,8 +50,7 @@ contract RollupCreator is Ownable {
     constructor() Ownable() {}
 
     function setTemplates(
-        BridgeCreator _ethBridgeCreator,
-        ERC20BridgeCreator _erc20BridgeCreator,
+        BridgeCreator _bridgeCreator,
         IOneStepProofEntry _osp,
         IChallengeManager _challengeManagerLogic,
         IRollupAdmin _rollupAdminLogic,
@@ -62,8 +59,7 @@ contract RollupCreator is Ownable {
         address _validatorUtils,
         address _validatorWalletCreator
     ) external onlyOwner {
-        ethBridgeCreator = _ethBridgeCreator;
-        erc20BridgeCreator = _erc20BridgeCreator;
+        bridgeCreator = _bridgeCreator;
         osp = _osp;
         challengeManagerTemplate = _challengeManagerLogic;
         rollupAdminLogic = _rollupAdminLogic;
@@ -114,34 +110,18 @@ contract RollupCreator is Ownable {
         RollupProxy rollup = new RollupProxy{salt: keccak256(abi.encode(config))}();
 
         BridgeContracts memory bridgeContracts;
-        if (_nativeToken == address(0)) {
-            // create ETH-based rollup if address zero is provided for native token
-            (
-                bridgeContracts.bridge,
-                bridgeContracts.sequencerInbox,
-                bridgeContracts.inbox,
-                bridgeContracts.rollupEventInbox,
-                bridgeContracts.outbox
-            ) = ethBridgeCreator.createBridge(
-                address(proxyAdmin),
-                address(rollup),
-                config.sequencerInboxMaxTimeVariation
-            );
-        } else {
-            // otherwise create ERC20-based rollup with custom fee token
-            (
-                bridgeContracts.bridge,
-                bridgeContracts.sequencerInbox,
-                bridgeContracts.inbox,
-                bridgeContracts.rollupEventInbox,
-                bridgeContracts.outbox
-            ) = erc20BridgeCreator.createBridge(
-                address(proxyAdmin),
-                address(rollup),
-                _nativeToken,
-                config.sequencerInboxMaxTimeVariation
-            );
-        }
+        (
+            bridgeContracts.bridge,
+            bridgeContracts.sequencerInbox,
+            bridgeContracts.inbox,
+            bridgeContracts.rollupEventInbox,
+            bridgeContracts.outbox
+        ) = bridgeCreator.createBridge(
+            address(proxyAdmin),
+            address(rollup),
+            _nativeToken,
+            config.sequencerInboxMaxTimeVariation
+        );
 
         IChallengeManager challengeManager = IChallengeManager(
             address(

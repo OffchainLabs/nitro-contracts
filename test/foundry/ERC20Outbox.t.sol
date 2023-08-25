@@ -31,6 +31,7 @@ contract ERC20OutboxTest is AbsOutboxTest {
         nativeToken.transfer(user, 1_000);
     }
 
+    /* solhint-disable func-name-mixedcase */
     function test_initialize_WithdrawalAmount() public {
         assertEq(erc20Outbox.l2ToL1WithdrawalAmount(), 0, "Invalid withdrawalAmount");
     }
