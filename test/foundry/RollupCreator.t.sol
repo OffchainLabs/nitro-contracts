@@ -14,8 +14,8 @@ import "../../src/osp/OneStepProverMemory.sol";
 import "../../src/osp/OneStepProverMath.sol";
 import "../../src/osp/OneStepProverHostIo.sol";
 import "../../src/osp/OneStepProofEntry.sol";
-
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 
 contract RollupCreatorTest is Test {
     RollupCreator public rollupCreator;
@@ -32,8 +32,7 @@ contract RollupCreatorTest is Test {
         rollupCreator = new RollupCreator();
 
         // deploy BridgeCreators
-        BridgeCreator ethBridgeCreator = new BridgeCreator();
-        ERC20BridgeCreator erc20BridgeCreator = new ERC20BridgeCreator();
+        BridgeCreator bridgeCreator = new BridgeCreator();
 
         (
             IOneStepProofEntry ospEntry,
@@ -47,8 +46,7 @@ contract RollupCreatorTest is Test {
 
         //// deploy creator and set logic
         rollupCreator.setTemplates(
-            ethBridgeCreator,
-            erc20BridgeCreator,
+            bridgeCreator,
             ospEntry,
             challengeManager,
             _rollupAdmin,
@@ -64,12 +62,8 @@ contract RollupCreatorTest is Test {
         vm.startPrank(deployer);
 
         // deployment params
-        ISequencerInbox.MaxTimeVariation memory timeVars = ISequencerInbox.MaxTimeVariation(
-            ((60 * 60 * 24) / 15),
-            12,
-            60 * 60 * 24,
-            60 * 60
-        );
+        ISequencerInbox.MaxTimeVariation memory timeVars =
+            ISequencerInbox.MaxTimeVariation(((60 * 60 * 24) / 15), 12, 60 * 60 * 24, 60 * 60);
         Config memory config = Config({
             confirmPeriodBlocks: 20,
             extraChallengeTimeBlocks: 200,
@@ -80,7 +74,7 @@ contract RollupCreatorTest is Test {
             loserStakeEscrow: address(200),
             chainId: 1337,
             chainConfig: "abc",
-            genesisBlockNum: 15000000,
+            genesisBlockNum: 15_000_000,
             sequencerInboxMaxTimeVariation: timeVars
         });
 
@@ -89,12 +83,8 @@ contract RollupCreatorTest is Test {
         address[] memory validators = new address[](2);
         validators[0] = makeAddr("validator1");
         validators[1] = makeAddr("validator2");
-        address rollupAddress = rollupCreator.createRollup(
-            config,
-            batchPoster,
-            validators,
-            address(0)
-        );
+        address rollupAddress =
+            rollupCreator.createRollup(config, batchPoster, validators, address(0));
 
         vm.stopPrank();
 
@@ -127,17 +117,12 @@ contract RollupCreatorTest is Test {
 
     function test_createErc20Rollup() public {
         vm.startPrank(deployer);
-        address nativeToken = address(
-            new ERC20PresetFixedSupply("Appchain Token", "App", 1_000_000, address(this))
-        );
+        address nativeToken =
+            address(new ERC20PresetFixedSupply("Appchain Token", "App", 1_000_000, address(this)));
 
         // deployment params
-        ISequencerInbox.MaxTimeVariation memory timeVars = ISequencerInbox.MaxTimeVariation(
-            ((60 * 60 * 24) / 15),
-            12,
-            60 * 60 * 24,
-            60 * 60
-        );
+        ISequencerInbox.MaxTimeVariation memory timeVars =
+            ISequencerInbox.MaxTimeVariation(((60 * 60 * 24) / 15), 12, 60 * 60 * 24, 60 * 60);
         Config memory config = Config({
             confirmPeriodBlocks: 20,
             extraChallengeTimeBlocks: 200,
@@ -148,7 +133,7 @@ contract RollupCreatorTest is Test {
             loserStakeEscrow: address(200),
             chainId: 1337,
             chainConfig: "abc",
-            genesisBlockNum: 15000000,
+            genesisBlockNum: 15_000_000,
             sequencerInboxMaxTimeVariation: timeVars
         });
 
@@ -157,12 +142,8 @@ contract RollupCreatorTest is Test {
         address[] memory validators = new address[](2);
         validators[0] = makeAddr("validator1");
         validators[1] = makeAddr("validator2");
-        address rollupAddress = rollupCreator.createRollup(
-            config,
-            batchPoster,
-            validators,
-            nativeToken
-        );
+        address rollupAddress =
+            rollupCreator.createRollup(config, batchPoster, validators, nativeToken);
 
         vm.stopPrank();
 
@@ -194,9 +175,7 @@ contract RollupCreatorTest is Test {
         // native token check
         IBridge bridge = RollupCore(address(rollupAddress)).bridge();
         assertEq(
-            IERC20Bridge(address(bridge)).nativeToken(),
-            nativeToken,
-            "Invalid native token ref"
+            IERC20Bridge(address(bridge)).nativeToken(), nativeToken, "Invalid native token ref"
         );
     }
 
@@ -211,11 +190,11 @@ contract RollupCreatorTest is Test {
     {
         //// deploy challenge stuff
         ospEntry = new OneStepProofEntry(
-            new OneStepProver0(),
-            new OneStepProverMemory(),
-            new OneStepProverMath(),
-            new OneStepProverHostIo()
-        );
+        new OneStepProver0(),
+        new OneStepProverMemory(),
+        new OneStepProverMath(),
+        new OneStepProverHostIo()
+    );
         challengeManager = new ChallengeManager();
 
         //// deploy rollup logic
@@ -236,9 +215,8 @@ contract RollupCreatorTest is Test {
     }
 
     function _getSecondary(address proxy) internal view returns (address) {
-        bytes32 secondarySlot = bytes32(
-            uint256(keccak256("eip1967.proxy.implementation.secondary")) - 1
-        );
+        bytes32 secondarySlot =
+            bytes32(uint256(keccak256("eip1967.proxy.implementation.secondary")) - 1);
         return address(uint160(uint256(vm.load(proxy, secondarySlot))));
     }
 }
