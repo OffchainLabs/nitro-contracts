@@ -15,20 +15,16 @@
  */
 
 /* eslint-env node, mocha */
-import { ethers, run, network } from 'hardhat'
+import { ethers, run } from 'hardhat'
 import { Signer } from '@ethersproject/abstract-signer'
 import { BigNumberish, BigNumber } from '@ethersproject/bignumber'
-import { BytesLike, hexConcat, zeroPad } from '@ethersproject/bytes'
+import { BytesLike } from '@ethersproject/bytes'
 import { ContractTransaction } from '@ethersproject/contracts'
 import { assert, expect } from 'chai'
 import {
-  Bridge,
   BridgeCreator__factory,
-  Bridge__factory,
   ChallengeManager,
   ChallengeManager__factory,
-  Inbox,
-  Inbox__factory,
   OneStepProofEntry__factory,
   OneStepProver0__factory,
   OneStepProverHostIo__factory,
@@ -82,8 +78,6 @@ let sequencerInbox: SequencerInbox
 let admin: Signer
 let sequencer: Signer
 let challengeManager: ChallengeManager
-let delayedInbox: Inbox
-let bridge: Bridge
 
 async function getDefaultConfig(
   _confirmPeriodBlocks = confirmationPeriodBlocks
@@ -182,7 +176,12 @@ const setup = async () => {
     ethers.constants.AddressZero
   )
 
-  const response = await rollupCreator.createRollup(await getDefaultConfig())
+  const response = await rollupCreator.createRollup(
+    await getDefaultConfig(),
+    await sequencer.getAddress(),
+    [await val1.getAddress(), await val2.getAddress(), await val3.getAddress()]
+  )
+
   const rec = await response.wait()
 
   const rollupCreatedEvent = rollupCreator.interface.parseLog(
@@ -196,32 +195,17 @@ const setup = async () => {
     .attach(rollupCreatedEvent.rollupAddress)
     .connect(user)
 
-  await rollupAdmin.setValidator(
-    [await val1.getAddress(), await val2.getAddress(), await val3.getAddress()],
-    [true, true, true]
-  )
-
   sequencerInbox = (
     (await ethers.getContractFactory(
       'SequencerInbox'
     )) as SequencerInbox__factory
   ).attach(rollupCreatedEvent.sequencerInbox)
 
-  await sequencerInbox.setIsBatchPoster(await sequencer.getAddress(), true)
-
   challengeManager = (
     (await ethers.getContractFactory(
       'ChallengeManager'
     )) as ChallengeManager__factory
   ).attach(await rollupUser.challengeManager())
-
-  delayedInbox = (
-    (await ethers.getContractFactory('Inbox')) as Inbox__factory
-  ).attach(rollupCreatedEvent.inboxAddress)
-
-  bridge = (
-    (await ethers.getContractFactory('Bridge')) as Bridge__factory
-  ).attach(rollupCreatedEvent.bridge)
 
   return {
     admin,
@@ -236,7 +220,7 @@ const setup = async () => {
     rollupUserLogicTemplate,
     blockChallengeFactory: challengeManagerTemplateFac,
     rollupEventBridge: await rollupAdmin.rollupEventInbox(),
-    outbox: await rollupAdmin.outbox(),
+    outbox: rollupCreatedEvent.outbox,
     sequencerInbox: rollupCreatedEvent.sequencerInbox,
     delayedBridge: rollupCreatedEvent.bridge,
     delayedInbox: rollupCreatedEvent.inboxAddress,
@@ -1225,83 +1209,5 @@ describe('ArbRollup', () => {
     await expect(rollupUser.removeWhitelistAfterValidatorAfk()).to.revertedWith(
       'VALIDATOR_NOT_AFK'
     )
-  })
-
-  it('should fail to call uniswapCreateRetryableTicket with random signer', async function () {
-    const maxSubmissionCost = 10000
-    await expect(
-      delayedInbox.uniswapCreateRetryableTicket(
-        ethers.constants.AddressZero,
-        0,
-        maxSubmissionCost,
-        ethers.constants.AddressZero,
-        ethers.constants.AddressZero,
-        0,
-        0,
-        '0x',
-        { value: maxSubmissionCost }
-      )
-    ).to.revertedWith('NOT_UNISWAP_L1_TIMELOCK')
-  })
-
-  it('should allow uniswap to call uniswapCreateRetryableTicket without aliasing to l2 factory only', async function () {
-    const uniswap_l1_timelock = '0x1a9C8182C09F50C8318d769245beA52c32BE35BC'
-    await network.provider.request({
-      method: 'hardhat_impersonateAccount',
-      params: [uniswap_l1_timelock],
-    })
-    await network.provider.send('hardhat_setBalance', [
-      uniswap_l1_timelock,
-      '0x10000000000000000000',
-    ])
-    const uniswap_signer = await ethers.getSigner(uniswap_l1_timelock)
-    const anyValue = () => true
-    const maxSubmissionCost = 10000
-    await expect(
-      delayedInbox
-        .connect(uniswap_signer)
-        .uniswapCreateRetryableTicket(
-          ethers.constants.AddressZero,
-          0,
-          maxSubmissionCost,
-          ethers.constants.AddressZero,
-          ethers.constants.AddressZero,
-          0,
-          0,
-          '0x',
-          { value: maxSubmissionCost }
-        )
-    ).to.revertedWith('NOT_TO_UNISWAP_L2_FACTORY')
-    const uniswap_l2_factory = '0x1F98431c8aD98523631AE4a59f267346ea31F984'
-    await expect(
-      delayedInbox
-        .connect(uniswap_signer)
-        .uniswapCreateRetryableTicket(
-          uniswap_l2_factory,
-          0,
-          maxSubmissionCost,
-          ethers.constants.AddressZero,
-          ethers.constants.AddressZero,
-          0,
-          0,
-          '0x',
-          { value: maxSubmissionCost }
-        )
-    )
-      .emit(bridge, 'MessageDelivered')
-      .withArgs(
-        anyValue,
-        anyValue,
-        anyValue,
-        anyValue,
-        uniswap_l1_timelock,
-        anyValue,
-        anyValue,
-        anyValue
-      )
-    await network.provider.request({
-      method: 'hardhat_stopImpersonatingAccount',
-      params: [uniswap_l1_timelock],
-    })
   })
 })
