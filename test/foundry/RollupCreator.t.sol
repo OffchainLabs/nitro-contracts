@@ -36,6 +36,8 @@ contract RollupCreatorTest is Test {
         // deploy BridgeCreators
         BridgeCreator bridgeCreator = new BridgeCreator();
 
+        IUpgradeExecutor upgradeExecutorLogic = new UpgradeExecutorMock();
+
         (
             IOneStepProofEntry ospEntry,
             IChallengeManager challengeManager,
@@ -77,7 +79,7 @@ contract RollupCreatorTest is Test {
             loserStakeEscrow: address(200),
             chainId: 1337,
             chainConfig: "abc",
-            genesisBlockNum: 15__000__000,
+            genesisBlockNum: 15_000_000,
             sequencerInboxMaxTimeVariation: timeVars
         });
 
