@@ -18,6 +18,10 @@ interface ArbWasm {
     // @return version the stylus version
     function stylusVersion() external view returns (uint16 version);
 
+    // @notice gets the stylus version the program with codehash was most recently compiled against.
+    // @return version the program version (0 for EVM contracts)
+    function codehashVersion(bytes32 codehash) external view returns (uint16 version);
+
     // @notice gets the stylus version the program was most recently compiled against.
     // @return version the program version (0 for EVM contracts)
     function programVersion(address program) external view returns (uint16 version);
