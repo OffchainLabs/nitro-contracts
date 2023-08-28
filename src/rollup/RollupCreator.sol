@@ -7,6 +7,7 @@ pragma solidity ^0.8.0;
 import "./RollupProxy.sol";
 import "./IRollupAdmin.sol";
 import "./BridgeCreator.sol";
+import "@offchainlabs/upgrade-executor/src/IUpgradeExecutor.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -22,6 +23,7 @@ contract RollupCreator is Ownable {
         address adminProxy,
         address sequencerInbox,
         address bridge,
+        address upgradeExecutor,
         address validatorUtils,
         address validatorWalletCreator
     );
@@ -32,6 +34,7 @@ contract RollupCreator is Ownable {
     IChallengeManager public challengeManagerTemplate;
     IRollupAdmin public rollupAdminLogic;
     IRollupUser public rollupUserLogic;
+    IUpgradeExecutor public upgradeExecutorLogic;
 
     address public validatorUtils;
     address public validatorWalletCreator;
@@ -52,6 +55,7 @@ contract RollupCreator is Ownable {
         IChallengeManager _challengeManagerLogic,
         IRollupAdmin _rollupAdminLogic,
         IRollupUser _rollupUserLogic,
+        IUpgradeExecutor _upgradeExecutorLogic,
         address _validatorUtils,
         address _validatorWalletCreator
     ) external onlyOwner {
@@ -60,6 +64,7 @@ contract RollupCreator is Ownable {
         challengeManagerTemplate = _challengeManagerLogic;
         rollupAdminLogic = _rollupAdminLogic;
         rollupUserLogic = _rollupUserLogic;
+        upgradeExecutorLogic = _upgradeExecutorLogic;
         validatorUtils = _validatorUtils;
         validatorWalletCreator = _validatorWalletCreator;
         emit TemplatesUpdated();
@@ -86,6 +91,20 @@ contract RollupCreator is Ownable {
         address _nativeToken
     ) external returns (address) {
         ProxyAdmin proxyAdmin = new ProxyAdmin();
+
+        // deploy and init upgrade executor
+        IUpgradeExecutor upgradeExecutor = IUpgradeExecutor(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(upgradeExecutorLogic),
+                    address(proxyAdmin),
+                    bytes("")
+                )
+            )
+        );
+        address[] memory executors = new address[](1);
+        executors[0] = config.owner;
+        upgradeExecutor.initialize(address(upgradeExecutor), executors);
 
         // Create the rollup proxy to figure out the address and initialize it later
         RollupProxy rollup = new RollupProxy{salt: keccak256(abi.encode(config))}();
@@ -120,11 +139,10 @@ contract RollupCreator is Ownable {
             osp
         );
 
-        proxyAdmin.transferOwnership(config.owner);
+        proxyAdmin.transferOwnership(address(upgradeExecutor));
 
         // initialize the rollup with this contract as owner to set batch poster and validators
-        // it will transfer the ownership back to the actual owner later
-        address actualOwner = config.owner;
+        // it will transfer the ownership to the upgrade executor later
         config.owner = address(this);
         rollup.initializeProxy(
             config,
@@ -156,7 +174,7 @@ contract RollupCreator is Ownable {
             IRollupAdmin(address(rollup)).setValidator(_validators, _vals);
         }
 
-        IRollupAdmin(address(rollup)).setOwner(actualOwner);
+        IRollupAdmin(address(rollup)).setOwner(address(upgradeExecutor));
 
         emit RollupCreated(
             address(rollup),
@@ -168,6 +186,7 @@ contract RollupCreator is Ownable {
             address(proxyAdmin),
             address(bridgeContracts.sequencerInbox),
             address(bridgeContracts.bridge),
+            address(upgradeExecutor),
             address(validatorUtils),
             address(validatorWalletCreator)
         );

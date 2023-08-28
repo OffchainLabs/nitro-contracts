@@ -19,15 +19,17 @@ export const getCustomNetworks = async (
   const l1Provider = new JsonRpcProvider(l1Url)
   const l2Provider = new JsonRpcProvider(l2Url)
   let deploymentData: string
-  try {
-    deploymentData = execSync(
-      'docker exec nitro_sequencer_1 cat /config/deployment.json'
-    ).toString()
-  } catch (e) {
-    deploymentData = execSync(
-      'docker exec nitro-sequencer-1 cat /config/deployment.json'
-    ).toString()
-  }
+
+  let sequencerContainer = execSync(
+    'docker ps --filter "name=sequencer" --format "{{.Names}}"'
+  )
+    .toString()
+    .trim()
+
+  deploymentData = execSync(
+    `docker exec ${sequencerContainer} cat /config/deployment.json`
+  ).toString()
+
   const parsedDeploymentData = JSON.parse(deploymentData) as {
     bridge: string
     inbox: string
