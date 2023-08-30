@@ -17,6 +17,7 @@
     "url": "https://github.com/offchainlabs/nitro-contracts/issues"
   },
   "scripts": {
+    "prepublishOnly": "hardhat clean && hardhat compile",
     "build": "hardhat compile",
     "lint:test": "eslint ./test",
     "solhint": "solhint -f table src/**/*.sol",
