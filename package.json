@@ -9,7 +9,9 @@
     "url": "git+https://github.com/offchainlabs/nitro-contracts.git"
   },
   "files": [
-    "src/"
+    "src/",
+    "build/contracts/src",
+    "build/contracts/@openzeppelin"
   ],
   "bugs": {
     "url": "https://github.com/offchainlabs/nitro-contracts/issues"
