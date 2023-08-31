@@ -179,4 +179,8 @@ contract BridgeStub is IBridge {
     function initialize(IOwnable) external pure {
         revert("NOT_IMPLEMENTED");
     }
+
+    function updateRollupAddress(IOwnable) external pure {
+        revert("NOT_IMPLEMENTED");
+    }
 }
