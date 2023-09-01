@@ -29,7 +29,6 @@
   "dependencies": {
     "@openzeppelin/contracts": "4.5.0",
     "@openzeppelin/contracts-upgradeable": "4.5.2",
-    "hardhat-ignore-warnings": "^0.2.9",
     "patch-package": "^6.4.7"
   },
   "private": false,
@@ -55,6 +54,7 @@
     "hardhat": "^2.17.2",
     "hardhat-deploy": "^0.11.37",
     "hardhat-gas-reporter": "^1.0.9",
+    "hardhat-ignore-warnings": "^0.2.9",
     "postinstall-postinstall": "^2.1.0",
     "prettier": "^2.5.1",
     "prettier-plugin-solidity": "^1.0.0-beta.19",
