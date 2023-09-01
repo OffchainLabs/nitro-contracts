@@ -68,7 +68,6 @@ contract Bridge is Initializable, DelegateCallAware, IBridge {
         rollup = _rollup;
     }
 
-
     modifier onlyRollupOrOwner() {
         if (msg.sender != address(rollup)) {
             address rollupOwner = rollup.owner();
