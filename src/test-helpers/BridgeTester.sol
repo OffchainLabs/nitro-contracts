@@ -73,6 +73,10 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge {
         rollup = rollup_;
     }
 
+    function updateRollupAddress(IOwnable _rollup) external onlyDelegated onlyProxyOwner {
+        rollup = _rollup;
+    }
+
     function activeOutbox() public view returns (address) {
         if (_activeOutbox == EMPTY_ACTIVEOUTBOX) return address(uint160(0));
         return _activeOutbox;
@@ -191,7 +195,7 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge {
         InOutInfo storage info = allowedInboxesMap[inbox];
         bool alreadyEnabled = info.allowed;
         emit InboxToggle(inbox, enabled);
-        if ((alreadyEnabled && enabled) || (!alreadyEnabled && !enabled)) {
+        if (alreadyEnabled == enabled) {
             return;
         }
         if (enabled) {
@@ -211,7 +215,7 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge {
         InOutInfo storage info = allowedOutboxesMap[outbox];
         bool alreadyEnabled = info.allowed;
         emit OutboxToggle(outbox, enabled);
-        if ((alreadyEnabled && enabled) || (!alreadyEnabled && !enabled)) {
+        if (alreadyEnabled == enabled) {
             return;
         }
         if (enabled) {

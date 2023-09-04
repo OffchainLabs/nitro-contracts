@@ -147,6 +147,4 @@ interface ArbSys {
         bytes32 indexed hash,
         uint256 indexed position
     );
-
-    error InvalidBlockNumber(uint256 requested, uint256 current);
 }
