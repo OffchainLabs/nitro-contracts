@@ -1,5 +1,5 @@
 // Copyright 2021-2022, Offchain Labs, Inc.
-// For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
+// For license information, see https://github.com/nitro/blob/master/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity ^0.8.0;
@@ -151,7 +151,7 @@ contract InboxStub is IInbox {
         address,
         uint256,
         bytes calldata
-    ) external pure returns (uint256) {
+    ) external returns (uint256) {
         revert("NOT_IMPLEMENTED");
     }
 
@@ -161,7 +161,7 @@ contract InboxStub is IInbox {
         uint256,
         uint256,
         address
-    ) external pure returns (uint256) {
+    ) external returns (uint256) {
         revert("NOT_IMPLEMENTED");
     }
 

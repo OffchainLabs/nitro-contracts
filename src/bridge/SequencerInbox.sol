@@ -1,5 +1,5 @@
 // Copyright 2021-2022, Offchain Labs, Inc.
-// For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
+// For license information, see https://github.com/nitro/blob/master/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity ^0.8.0;
@@ -27,10 +27,13 @@ import "./IInbox.sol";
 import "./ISequencerInbox.sol";
 import "../rollup/IRollupLogic.sol";
 import "./Messages.sol";
+import "../precompiles/ArbGasInfo.sol";
+import "../precompiles/ArbSys.sol";
 
 import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
 import {GasRefundEnabled, IGasRefunder} from "../libraries/IGasRefunder.sol";
 import "../libraries/DelegateCallAware.sol";
+import "../libraries/ArbitrumChecker.sol";
 import {MAX_DATA_SIZE} from "../libraries/Constants.sol";
 
 /**
@@ -66,6 +69,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     mapping(address => bool) public isSequencer;
 
+    // If the chain this SequencerInbox is deployed on is an Arbitrum chain.
+    bool internal immutable hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
+
     function _chainIdChanged() internal view returns (bool) {
         return deployTimeChainId != block.chainid;
     }
@@ -79,6 +85,11 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         bridge = bridge_;
         rollup = bridge_.rollup();
         maxTimeVariation = maxTimeVariation_;
+    }
+
+    /// @notice Allows the proxy owner to set the rollup address
+    function updateRollupAddress() external onlyDelegated onlyProxyOwner {
+        rollup = bridge.rollup();
     }
 
     function getTimeBounds() internal view virtual returns (TimeBounds memory) {
@@ -387,13 +398,29 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             // this msg isn't included in the current sequencer batch, but instead added to
             // the delayed messages queue that is yet to be included
             address batchPoster = msg.sender;
-            bytes memory spendingReportMsg = abi.encodePacked(
-                block.timestamp,
-                batchPoster,
-                dataHash,
-                seqMessageIndex,
-                block.basefee
-            );
+            bytes memory spendingReportMsg;
+            if (hostChainIsArbitrum) {
+                // Include extra gas for the host chain's L1 gas charging
+                uint256 l1Fees = ArbGasInfo(address(0x6c)).getCurrentTxL1GasFees();
+                uint256 extraGas = l1Fees / block.basefee;
+                require(extraGas <= type(uint64).max, "L1_GAS_NOT_UINT64");
+                spendingReportMsg = abi.encodePacked(
+                    block.timestamp,
+                    batchPoster,
+                    dataHash,
+                    seqMessageIndex,
+                    block.basefee,
+                    uint64(extraGas)
+                );
+            } else {
+                spendingReportMsg = abi.encodePacked(
+                    block.timestamp,
+                    batchPoster,
+                    dataHash,
+                    seqMessageIndex,
+                    block.basefee
+                );
+            }
             uint256 msgNum = bridge.submitBatchSpendingReport(
                 batchPoster,
                 keccak256(spendingReportMsg)
@@ -433,9 +460,13 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         require(keysetBytes.length < 64 * 1024, "keyset is too large");
 
         if (dasKeySetInfo[ksHash].isValidKeyset) revert AlreadyValidDASKeyset(ksHash);
+        uint256 creationBlock = block.number;
+        if (hostChainIsArbitrum) {
+            creationBlock = ArbSys(address(100)).arbBlockNumber();
+        }
         dasKeySetInfo[ksHash] = DasKeySetInfo({
             isValidKeyset: true,
-            creationBlock: uint64(block.number)
+            creationBlock: uint64(creationBlock)
         });
         emit SetValidKeyset(ksHash, keysetBytes);
         emit OwnerFunctionCalled(2);

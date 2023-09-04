@@ -1,5 +1,5 @@
 // Copyright 2021-2022, Offchain Labs, Inc.
-// For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
+// For license information, see https://github.com/nitro/blob/master/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity ^0.8.0;
@@ -12,11 +12,10 @@ import "../bridge/IOutbox.sol";
 import "../bridge/IInbox.sol";
 import "./IRollupEventInbox.sol";
 import "./IRollupLogic.sol";
-import "../challenge/IChallengeManager.sol";
+import "../challengeV2/EdgeChallengeManager.sol";
 
 struct Config {
     uint64 confirmPeriodBlocks;
-    uint64 extraChallengeTimeBlocks;
     address stakeToken;
     uint256 baseStake;
     bytes32 wasmModuleRoot;
@@ -24,8 +23,16 @@ struct Config {
     address loserStakeEscrow;
     uint256 chainId;
     string chainConfig;
-    uint64 genesisBlockNum;
+    uint256 miniStakeValue;
     ISequencerInbox.MaxTimeVariation sequencerInboxMaxTimeVariation;
+    uint256 layerZeroBlockEdgeHeight;
+    uint256 layerZeroBigStepEdgeHeight;
+    uint256 layerZeroSmallStepEdgeHeight;
+    /// @notice The execution state to be used in the genesis assertion
+    ExecutionState genesisExecutionState;
+    /// @notice The inbox size at the time the genesis execution state was created
+    uint256 genesisInboxCount;
+    address anyTrustFastConfirmer;
 }
 
 struct ContractDependencies {
@@ -34,10 +41,8 @@ struct ContractDependencies {
     IInbox inbox;
     IOutbox outbox;
     IRollupEventInbox rollupEventInbox;
-    IChallengeManager challengeManager;
-    address rollupAdminLogic;
+    IEdgeChallengeManager challengeManager;
+    address rollupAdminLogic; // this cannot be IRollupAdmin because of circular dependencies
     IRollupUser rollupUserLogic;
-    // misc contracts that are useful when interacting with the rollup
-    address validatorUtils;
     address validatorWalletCreator;
 }

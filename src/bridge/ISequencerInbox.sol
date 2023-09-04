@@ -1,5 +1,5 @@
 // Copyright 2021-2022, Offchain Labs, Inc.
-// For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
+// For license information, see https://github.com/nitro/blob/master/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
 // solhint-disable-next-line compiler-version
@@ -175,4 +175,6 @@ interface ISequencerInbox is IDelayedMessageProvider {
     // ---------- initializer ----------
 
     function initialize(IBridge bridge_, MaxTimeVariation calldata maxTimeVariation_) external;
+
+    function updateRollupAddress() external;
 }

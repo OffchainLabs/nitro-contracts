@@ -1,5 +1,5 @@
 // Copyright 2021-2022, Offchain Labs, Inc.
-// For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
+// For license information, see https://github.com/nitro/blob/master/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity ^0.8.4;
@@ -52,6 +52,10 @@ contract OutboxWithoutOptTester is DelegateCallAware, IOutbox {
         //if (msg.sender != rollup) revert NotRollup(msg.sender, rollup);  //test only!!!
         roots[root] = l2BlockHash;
         emit SendRootUpdated(root, l2BlockHash);
+    }
+
+    function updateRollupAddress() external onlyDelegated onlyProxyOwner {
+        rollup = address(bridge.rollup());
     }
 
     /// @notice When l2ToL1Sender returns a nonzero address, the message was originated by an L2 account

@@ -1,5 +1,5 @@
 // Copyright 2021-2022, Offchain Labs, Inc.
-// For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
+// For license information, see https://github.com/nitro/blob/master/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity >=0.4.21 <0.9.0;
@@ -10,6 +10,13 @@ interface ArbOwnerPublic {
     /// @notice See if the user is a chain owner
     function isChainOwner(address addr) external view returns (bool);
 
+    /**
+     * @notice Rectify the list of chain owners
+     * If successful, emits ChainOwnerRectified event
+     * Available in ArbOS version 11
+     */
+    function rectifyChainOwner(address ownerToRectify) external;
+
     /// @notice Retrieves the list of chain owners
     function getAllChainOwners() external view returns (address[] memory);
 
@@ -18,4 +25,6 @@ interface ArbOwnerPublic {
 
     /// @notice Get the infrastructure fee collector
     function getInfraFeeAccount() external view returns (address);
+
+    event ChainOwnerRectified(address rectifiedOwner);
 }

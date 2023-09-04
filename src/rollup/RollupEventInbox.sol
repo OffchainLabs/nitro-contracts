@@ -1,5 +1,5 @@
 // Copyright 2021-2022, Offchain Labs, Inc.
-// For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
+// For license information, see https://github.com/nitro/blob/master/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity ^0.8.0;
@@ -7,7 +7,9 @@ pragma solidity ^0.8.0;
 import "./IRollupEventInbox.sol";
 import "../bridge/IBridge.sol";
 import "../bridge/IDelayedMessageProvider.sol";
+import "../precompiles/ArbGasInfo.sol";
 import "../libraries/DelegateCallAware.sol";
+import "../libraries/ArbitrumChecker.sol";
 import {INITIALIZATION_MSG_TYPE} from "../libraries/MessageTypes.sol";
 import {AlreadyInit, HadZeroInit} from "../libraries/Error.sol";
 
@@ -30,13 +32,28 @@ contract RollupEventInbox is IRollupEventInbox, IDelayedMessageProvider, Delegat
         rollup = address(_bridge.rollup());
     }
 
+    /// @notice Allows the proxy owner to set the rollup address
+    function updateRollupAddress() external onlyDelegated onlyProxyOwner {
+        rollup = address(bridge.rollup());
+    }
+
     function rollupInitialized(uint256 chainId, string calldata chainConfig)
         external
         override
         onlyRollup
     {
         require(bytes(chainConfig).length > 0, "EMPTY_CHAIN_CONFIG");
-        bytes memory initMsg = abi.encodePacked(chainId, uint8(0), chainConfig);
+        uint8 initMsgVersion = 1;
+        uint256 currentDataCost = block.basefee;
+        if (ArbitrumChecker.runningOnArbitrum()) {
+            currentDataCost += ArbGasInfo(address(0x6c)).getL1BaseFeeEstimate();
+        }
+        bytes memory initMsg = abi.encodePacked(
+            chainId,
+            initMsgVersion,
+            currentDataCost,
+            chainConfig
+        );
         uint256 num = bridge.enqueueDelayedMessage(
             INITIALIZATION_MSG_TYPE,
             address(0),

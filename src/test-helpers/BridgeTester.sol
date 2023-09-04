@@ -1,5 +1,5 @@
 // Copyright 2021-2022, Offchain Labs, Inc.
-// For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
+// For license information, see https://github.com/nitro/blob/master/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity ^0.8.4;
@@ -71,6 +71,10 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge {
     function initialize(IOwnable rollup_) external initializer {
         _activeOutbox = EMPTY_ACTIVEOUTBOX;
         rollup = rollup_;
+    }
+
+    function updateRollupAddress(IOwnable _rollup) external onlyDelegated onlyProxyOwner {
+        rollup = _rollup;
     }
 
     function activeOutbox() public view returns (address) {
@@ -191,7 +195,7 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge {
         InOutInfo storage info = allowedInboxesMap[inbox];
         bool alreadyEnabled = info.allowed;
         emit InboxToggle(inbox, enabled);
-        if ((alreadyEnabled && enabled) || (!alreadyEnabled && !enabled)) {
+        if (alreadyEnabled == enabled) {
             return;
         }
         if (enabled) {
@@ -211,7 +215,7 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge {
         InOutInfo storage info = allowedOutboxesMap[outbox];
         bool alreadyEnabled = info.allowed;
         emit OutboxToggle(outbox, enabled);
-        if ((alreadyEnabled && enabled) || (!alreadyEnabled && !enabled)) {
+        if (alreadyEnabled == enabled) {
             return;
         }
         if (enabled) {

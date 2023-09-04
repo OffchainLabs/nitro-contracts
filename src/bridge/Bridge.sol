@@ -1,5 +1,5 @@
 // Copyright 2021-2022, Offchain Labs, Inc.
-// For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
+// For license information, see https://github.com/nitro/blob/master/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity ^0.8.4;
@@ -61,6 +61,11 @@ contract Bridge is Initializable, DelegateCallAware, IBridge {
     function initialize(IOwnable rollup_) external initializer onlyDelegated {
         _activeOutbox = EMPTY_ACTIVEOUTBOX;
         rollup = rollup_;
+    }
+
+    /// @notice Allows the proxy owner to set the rollup address
+    function updateRollupAddress(IOwnable _rollup) external onlyDelegated onlyProxyOwner {
+        rollup = _rollup;
     }
 
     modifier onlyRollupOrOwner() {
