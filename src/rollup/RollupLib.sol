@@ -1,19 +1,19 @@
 // Copyright 2021-2022, Offchain Labs, Inc.
-// For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
+// For license information, see https://github.com/nitro/blob/master/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity ^0.8.0;
 
-import "../challenge/IChallengeManager.sol";
-import "../challenge/ChallengeLib.sol";
+import "../challenge/OldChallengeLib.sol";
 import "../state/GlobalState.sol";
 import "../bridge/ISequencerInbox.sol";
 
 import "../bridge/IBridge.sol";
 import "../bridge/IOutbox.sol";
 import "../bridge/IInbox.sol";
-import "./Node.sol";
+import "./Assertion.sol";
 import "./IRollupEventInbox.sol";
+import "../challengeV2/EdgeChallengeManager.sol";
 
 library RollupLib {
     using GlobalStateLib for GlobalState;
@@ -49,65 +49,77 @@ library RollupLib {
             );
     }
 
-    function executionHash(Assertion memory assertion) internal pure returns (bytes32) {
-        MachineStatus[2] memory statuses;
-        statuses[0] = assertion.beforeState.machineStatus;
-        statuses[1] = assertion.afterState.machineStatus;
-        GlobalState[2] memory globalStates;
-        globalStates[0] = assertion.beforeState.globalState;
-        globalStates[1] = assertion.afterState.globalState;
-        // TODO: benchmark how much this abstraction adds of gas overhead
-        return executionHash(statuses, globalStates, assertion.numBlocks);
+    // Not the same as a machine hash for a given execution state
+    function executionStateHash(ExecutionState memory state) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(state.machineStatus, state.globalState.hash()));
     }
 
-    function executionHash(
-        MachineStatus[2] memory statuses,
-        GlobalState[2] memory globalStates,
-        uint64 numBlocks
+    // The `assertionHash` contains all the information needed to determine an assertion's validity.
+    // This helps protect validators against reorgs by letting them bind their assertion to the current chain state.
+    function assertionHash(
+        bytes32 parentAssertionHash,
+        ExecutionState memory afterState,
+        bytes32 inboxAcc
     ) internal pure returns (bytes32) {
-        bytes32[] memory segments = new bytes32[](2);
-        segments[0] = ChallengeLib.blockStateHash(statuses[0], globalStates[0].hash());
-        segments[1] = ChallengeLib.blockStateHash(statuses[1], globalStates[1].hash());
-        return ChallengeLib.hashChallengeState(0, numBlocks, segments);
+        // we can no longer have `hasSibling` in the assertion hash as it would allow identical assertions
+        return assertionHash(
+            parentAssertionHash,
+            executionStateHash(afterState),
+            inboxAcc
+        );
     }
 
-    function challengeRootHash(
-        bytes32 execution,
-        uint256 proposedTime,
-        bytes32 wasmModuleRoot
+    // Takes in a hash of the afterState instead of the afterState itself
+    function assertionHash(
+        bytes32 parentAssertionHash,
+        bytes32 afterStateHash,
+        bytes32 inboxAcc
     ) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(execution, proposedTime, wasmModuleRoot));
-    }
-
-    function confirmHash(Assertion memory assertion) internal pure returns (bytes32) {
-        return
-            confirmHash(
-                assertion.afterState.globalState.getBlockHash(),
-                assertion.afterState.globalState.getSendRoot()
-            );
-    }
-
-    function confirmHash(bytes32 blockHash, bytes32 sendRoot) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(blockHash, sendRoot));
-    }
-
-    function nodeHash(
-        bool hasSibling,
-        bytes32 lastHash,
-        bytes32 assertionExecHash,
-        bytes32 inboxAcc,
-        bytes32 wasmModuleRoot
-    ) internal pure returns (bytes32) {
-        uint8 hasSiblingInt = hasSibling ? 1 : 0;
+        // we can no longer have `hasSibling` in the assertion hash as it would allow identical assertions
         return
             keccak256(
                 abi.encodePacked(
-                    hasSiblingInt,
-                    lastHash,
-                    assertionExecHash,
-                    inboxAcc,
-                    wasmModuleRoot
+                    parentAssertionHash,
+                    afterStateHash,
+                    inboxAcc
                 )
             );
+    }
+
+    // All these should be emited in AssertionCreated event
+    function configHash(
+        bytes32 wasmModuleRoot,
+        uint256 requiredStake,
+        address challengeManager,
+        uint64 confirmPeriodBlocks,
+        uint64 nextInboxPosition
+    ) internal pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encodePacked(
+                    wasmModuleRoot,
+                    requiredStake,
+                    challengeManager,
+                    confirmPeriodBlocks,
+                    nextInboxPosition
+                )
+            );
+    }
+
+    function validateConfigHash(
+        ConfigData calldata configData,
+        bytes32 _configHash
+    ) internal pure {
+        require(
+            _configHash
+                == configHash(
+                    configData.wasmModuleRoot,
+                    configData.requiredStake,
+                    configData.challengeManager,
+                    configData.confirmPeriodBlocks,
+                    configData.nextInboxPosition
+                ),
+            "CONFIG_HASH_MISMATCH"
+        );
     }
 }

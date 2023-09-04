@@ -1,5 +1,5 @@
 // Copyright 2021-2022, Offchain Labs, Inc.
-// For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
+// For license information, see https://github.com/nitro/blob/master/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity ^0.8.4;
@@ -66,6 +66,11 @@ contract Outbox is DelegateCallAware, IOutbox {
         });
         bridge = _bridge;
         rollup = address(_bridge.rollup());
+    }
+
+    /// @notice Allows the proxy owner to set the rollup address
+    function updateRollupAddress() external onlyDelegated onlyProxyOwner {
+        rollup = address(bridge.rollup());
     }
 
     function updateSendRoot(bytes32 root, bytes32 l2BlockHash) external {

@@ -1,5 +1,5 @@
 // Copyright 2021-2022, Offchain Labs, Inc.
-// For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
+// For license information, see https://github.com/nitro/blob/master/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity ^0.8.0;
@@ -250,8 +250,6 @@ library Deserialize {
                 status = MachineStatus.FINISHED;
             } else if (statusU8 == 2) {
                 status = MachineStatus.ERRORED;
-            } else if (statusU8 == 3) {
-                status = MachineStatus.TOO_FAR;
             } else {
                 revert("UNKNOWN_MACH_STATUS");
             }
