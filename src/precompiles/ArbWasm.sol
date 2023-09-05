@@ -12,11 +12,15 @@ interface ArbWasm {
     // @notice compile a wasm program
     // @param program the program to compile
     // @return version the stylus version the program was compiled against
-    function compileProgram(address program) external returns (uint16 version);
+    function activateProgram(address program) external returns (uint16 version);
 
     // @notice gets the latest stylus version
     // @return version the stylus version
     function stylusVersion() external view returns (uint16 version);
+
+    // @notice gets the stylus version the program with codehash was most recently compiled against.
+    // @return version the program version (0 for EVM contracts)
+    function codehashVersion(bytes32 codehash) external view returns (uint16 version);
 
     // @notice gets the stylus version the program was most recently compiled against.
     // @return version the program version (0 for EVM contracts)
@@ -50,7 +54,7 @@ interface ArbWasm {
     // @return gas cost paid per half kb uncompressed.
     function callScalar() external view returns (uint16 gas);
 
-    error ProgramNotCompiled();
+    error ProgramNotActivated();
     error ProgramOutOfDate(uint16 version);
     error ProgramUpToDate();
 }
