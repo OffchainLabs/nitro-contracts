@@ -11,6 +11,7 @@ import "@offchainlabs/upgrade-executor/src/IUpgradeExecutor.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import {DeployHelper} from "./DeployHelper.sol";
 
 contract RollupCreator is Ownable {
     event RollupCreated(
@@ -39,6 +40,8 @@ contract RollupCreator is Ownable {
     address public validatorUtils;
     address public validatorWalletCreator;
 
+    DeployHelper public l2FactoriesDeployer;
+
     struct BridgeContracts {
         IBridge bridge;
         ISequencerInbox sequencerInbox;
@@ -49,6 +52,9 @@ contract RollupCreator is Ownable {
 
     constructor() Ownable() {}
 
+    // creator receives back excess fees (for deploying L2 factories) so it can refund the caller
+    receive() external payable {}
+
     function setTemplates(
         BridgeCreator _bridgeCreator,
         IOneStepProofEntry _osp,
@@ -57,7 +63,8 @@ contract RollupCreator is Ownable {
         IRollupUser _rollupUserLogic,
         IUpgradeExecutor _upgradeExecutorLogic,
         address _validatorUtils,
-        address _validatorWalletCreator
+        address _validatorWalletCreator,
+        DeployHelper _l2FactoriesDeployer
     ) external onlyOwner {
         bridgeCreator = _bridgeCreator;
         osp = _osp;
@@ -67,11 +74,12 @@ contract RollupCreator is Ownable {
         upgradeExecutorLogic = _upgradeExecutorLogic;
         validatorUtils = _validatorUtils;
         validatorWalletCreator = _validatorWalletCreator;
+        l2FactoriesDeployer = _l2FactoriesDeployer;
         emit TemplatesUpdated();
     }
 
     /**
-     * @notice Create a new rollup
+     * @notice Create a new rollup and deploy L2 factories via retryable tickets
      * @dev After this setup:
      * @dev - Rollup should be the owner of bridge
      * @dev - RollupOwner should be the owner of Rollup's ProxyAdmin
@@ -89,22 +97,36 @@ contract RollupCreator is Ownable {
         address _batchPoster,
         address[] calldata _validators,
         address _nativeToken
-    ) external returns (address) {
+    ) external payable returns (address) {
+        return createRollup(config, _batchPoster, _validators, _nativeToken, true);
+    }
+
+    /**
+     * @notice Create a new rollup
+     * @dev After this setup:
+     * @dev - Rollup should be the owner of bridge
+     * @dev - RollupOwner should be the owner of Rollup's ProxyAdmin
+     * @dev - RollupOwner should be the owner of Rollup
+     * @dev - Bridge should have a single inbox and outbox
+     * @dev - Validators and batch poster should be set if provided
+     * @param config       The configuration for the rollup
+     * @param _batchPoster The address of the batch poster, not used when set to zero address
+     * @param _validators  The list of validator addresses, not used when set to empty list
+     * @param _nativeToken Address of the custom fee token used by rollup. If rollup is ETH-based address(0) should be provided
+     * @param _deployL2Factories Wether to deploy L2 factories using retryable tickets. If true, retryables need to be paid for in native currency.
+     * @return The address of the newly created rollup
+     */
+    function createRollup(
+        Config memory config,
+        address _batchPoster,
+        address[] calldata _validators,
+        address _nativeToken,
+        bool _deployL2Factories
+    ) public payable returns (address) {
         ProxyAdmin proxyAdmin = new ProxyAdmin();
 
         // deploy and init upgrade executor
-        IUpgradeExecutor upgradeExecutor = IUpgradeExecutor(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(upgradeExecutorLogic),
-                    address(proxyAdmin),
-                    bytes("")
-                )
-            )
-        );
-        address[] memory executors = new address[](1);
-        executors[0] = config.owner;
-        upgradeExecutor.initialize(address(upgradeExecutor), executors);
+        address upgradeExecutor = _deployUpgradeExecutor(config.owner, proxyAdmin);
 
         // Create the rollup proxy to figure out the address and initialize it later
         RollupProxy rollup = new RollupProxy{salt: keccak256(abi.encode(config))}();
@@ -176,6 +198,10 @@ contract RollupCreator is Ownable {
 
         IRollupAdmin(address(rollup)).setOwner(address(upgradeExecutor));
 
+        if (_deployL2Factories) {
+            _deployDeterministicFactoriesUsingEth(address(bridgeContracts.inbox));
+        }
+
         emit RollupCreated(
             address(rollup),
             _nativeToken,
@@ -191,5 +217,37 @@ contract RollupCreator is Ownable {
             address(validatorWalletCreator)
         );
         return address(rollup);
+    }
+
+    function _deployUpgradeExecutor(address rollupOwner, ProxyAdmin proxyAdmin)
+        internal
+        returns (address)
+    {
+        IUpgradeExecutor upgradeExecutor = IUpgradeExecutor(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(upgradeExecutorLogic),
+                    address(proxyAdmin),
+                    bytes("")
+                )
+            )
+        );
+        address[] memory executors = new address[](1);
+        executors[0] = rollupOwner;
+        upgradeExecutor.initialize(address(upgradeExecutor), executors);
+
+        return address(upgradeExecutor);
+    }
+
+    function _deployDeterministicFactoriesUsingEth(address inbox) internal {
+        // we need to fund 4 retryable tickets
+        uint256 cost = l2FactoriesDeployer.getDeploymentTotalCost(IInbox(inbox));
+
+        // perform deployment
+        l2FactoriesDeployer.perform{value: cost}(inbox);
+
+        // refund the caller
+        (bool sent, ) = msg.sender.call{value: address(this).balance}("");
+        require(sent, "Refund failed");
     }
 }
