@@ -99,6 +99,7 @@ async function getDefaultConfig(
     wasmModuleRoot: wasmModuleRoot,
     loserStakeEscrow: ZERO_ADDR,
     genesisBlockNum: 0,
+    maxDataSize: 117964,
   }
 }
 

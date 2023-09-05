@@ -60,7 +60,8 @@ contract BridgeCreator is Ownable {
     function createBridge(
         address adminProxy,
         address rollup,
-        ISequencerInbox.MaxTimeVariation memory maxTimeVariation
+        ISequencerInbox.MaxTimeVariation memory maxTimeVariation,
+        uint256 maxDataSize
     )
         external
         returns (
@@ -98,7 +99,7 @@ contract BridgeCreator is Ownable {
             );
         }
 
-        frame.bridge.initialize(IOwnable(rollup));
+        frame.bridge.initialize(IOwnable(rollup), maxDataSize);
         frame.sequencerInbox.initialize(IBridge(frame.bridge), maxTimeVariation);
         frame.inbox.initialize(IBridge(frame.bridge), ISequencerInbox(frame.sequencerInbox));
         frame.rollupEventInbox.initialize(IBridge(frame.bridge));

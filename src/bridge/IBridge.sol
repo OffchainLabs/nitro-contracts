@@ -75,6 +75,8 @@ interface IBridge {
 
     function sequencerMessageCount() external view returns (uint256);
 
+    function maxDataSize() external view returns (uint256);
+
     // ---------- onlySequencerInbox functions ----------
 
     function enqueueSequencerMessage(
@@ -111,5 +113,5 @@ interface IBridge {
 
     // ---------- initializer ----------
 
-    function initialize(IOwnable rollup_) external;
+    function initialize(IOwnable rollup_, uint256 maxDataSize_) external;
 }

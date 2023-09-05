@@ -45,6 +45,8 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge {
     IOwnable public rollup;
     address public sequencerInbox;
 
+    uint256 public maxDataSize;
+
     modifier onlyRollupOrOwner() {
         if (msg.sender != address(rollup)) {
             address rollupOwner = rollup.owner();
@@ -68,9 +70,10 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge {
 
     address private constant EMPTY_ACTIVEOUTBOX = address(type(uint160).max);
 
-    function initialize(IOwnable rollup_) external initializer {
+    function initialize(IOwnable rollup_, uint256 maxDataSize_) external initializer {
         _activeOutbox = EMPTY_ACTIVEOUTBOX;
         rollup = rollup_;
+        maxDataSize = maxDataSize_;
     }
 
     function activeOutbox() public view returns (address) {

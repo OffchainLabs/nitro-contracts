@@ -74,7 +74,7 @@ contract RollupCreator is Ownable {
     function createRollup(
         Config memory config,
         address _batchPoster,
-        address[] calldata _validators
+        address[] memory _validators
     ) external returns (address) {
         ProxyAdmin proxyAdmin = new ProxyAdmin();
 
@@ -90,7 +90,8 @@ contract RollupCreator is Ownable {
         ) = bridgeCreator.createBridge(
                 address(proxyAdmin),
                 address(rollup),
-                config.sequencerInboxMaxTimeVariation
+                config.sequencerInboxMaxTimeVariation,
+                config.maxDataSize
             );
 
         IChallengeManager challengeManager = IChallengeManager(

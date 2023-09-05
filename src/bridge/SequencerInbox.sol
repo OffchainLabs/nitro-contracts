@@ -34,7 +34,6 @@ import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
 import {GasRefundEnabled, IGasRefunder} from "../libraries/IGasRefunder.sol";
 import "../libraries/DelegateCallAware.sol";
 import "../libraries/ArbitrumChecker.sol";
-import {MAX_DATA_SIZE} from "../libraries/Constants.sol";
 
 /**
  * @title Accepts batches from the sequencer and adds them to the rollup inbox.
@@ -310,7 +309,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     modifier validateBatchData(bytes calldata data) {
         uint256 fullDataLen = HEADER_LENGTH + data.length;
-        if (fullDataLen > MAX_DATA_SIZE) revert DataTooLarge(fullDataLen, MAX_DATA_SIZE);
+        if (fullDataLen > bridge.maxDataSize())
+            revert DataTooLarge(fullDataLen, bridge.maxDataSize());
         if (data.length > 0 && (data[0] & DATA_AUTHENTICATED_FLAG) == DATA_AUTHENTICATED_FLAG) {
             revert DataNotAuthenticated();
         }
