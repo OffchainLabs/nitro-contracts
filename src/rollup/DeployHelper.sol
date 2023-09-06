@@ -6,6 +6,8 @@ pragma solidity ^0.8.0;
 
 import {IInbox} from "../bridge/IInbox.sol";
 import {IInboxBase} from "../bridge/IInboxBase.sol";
+import {IERC20Bridge} from "../bridge/IERC20Bridge.sol";
+import {IERC20Inbox} from "../bridge/ERC20Inbox.sol";
 
 /// @notice Helper contract for deploying some keyless deployment to Arbitrum using delayed inbox
 contract DeployHelper {
@@ -43,37 +45,74 @@ contract DeployHelper {
     uint256 internal constant MAXFEEPERGAS = 1_000_000_000;
 
     function _fundAndDeploy(
-        IInbox inbox,
+        address inbox,
         uint256 _value,
         address _l2Address,
-        bytes memory payload
+        bytes memory payload,
+        bool _isUsingFeeToken
     ) internal {
-        uint256 submissionCost = inbox.calculateRetryableSubmissionFee(0, block.basefee);
-        inbox.createRetryableTicket{value: _value + submissionCost + GASLIMIT * MAXFEEPERGAS}({
-            to: _l2Address,
-            l2CallValue: _value,
-            maxSubmissionCost: submissionCost,
-            excessFeeRefundAddress: msg.sender,
-            callValueRefundAddress: msg.sender,
-            gasLimit: GASLIMIT,
-            maxFeePerGas: MAXFEEPERGAS,
-            data: ""
-        });
-        inbox.sendL2Message(payload);
+        uint256 submissionCost = IInboxBase(inbox).calculateRetryableSubmissionFee(
+            0,
+            block.basefee
+        );
+        uint256 feeAmount = _value + submissionCost + GASLIMIT * MAXFEEPERGAS;
+
+        // fund the target L2 address
+        if (_isUsingFeeToken) {
+            IERC20Inbox(inbox).createRetryableTicket({
+                to: _l2Address,
+                l2CallValue: _value,
+                maxSubmissionCost: submissionCost,
+                excessFeeRefundAddress: msg.sender,
+                callValueRefundAddress: msg.sender,
+                gasLimit: GASLIMIT,
+                maxFeePerGas: MAXFEEPERGAS,
+                tokenTotalFeeAmount: feeAmount,
+                data: ""
+            });
+        } else {
+            IInbox(inbox).createRetryableTicket{value: feeAmount}({
+                to: _l2Address,
+                l2CallValue: _value,
+                maxSubmissionCost: submissionCost,
+                excessFeeRefundAddress: msg.sender,
+                callValueRefundAddress: msg.sender,
+                gasLimit: GASLIMIT,
+                maxFeePerGas: MAXFEEPERGAS,
+                data: ""
+            });
+        }
+        // send L2 msg to execute deployment transaction
+        IInboxBase(inbox).sendL2Message(payload);
     }
 
-    function perform(address _inbox) external payable {
-        IInbox inbox = IInbox(_inbox);
+    function perform(address _inbox, address _nativeToken) external payable {
+        bool isUsingFeeToken = _nativeToken != address(0);
 
-        _fundAndDeploy(inbox, NICK_CREATE2_VALUE, NICK_CREATE2_DEPLOYER, NICK_CREATE2_PAYLOAD);
-        _fundAndDeploy(inbox, ERC2470_VALUE, ERC2470_DEPLOYER, ERC2470_PAYLOAD);
-        _fundAndDeploy(inbox, ZOLTU_VALUE, ZOLTU_CREATE2_DEPLOYER, ZOLTU_CREATE2_PAYLOAD);
-        _fundAndDeploy(inbox, ERC1820_VALUE, ERC1820_DEPLOYER, ERC1820_PAYLOAD);
+        _fundAndDeploy(
+            _inbox,
+            NICK_CREATE2_VALUE,
+            NICK_CREATE2_DEPLOYER,
+            NICK_CREATE2_PAYLOAD,
+            isUsingFeeToken
+        );
+        _fundAndDeploy(_inbox, ERC2470_VALUE, ERC2470_DEPLOYER, ERC2470_PAYLOAD, isUsingFeeToken);
+        _fundAndDeploy(
+            _inbox,
+            ZOLTU_VALUE,
+            ZOLTU_CREATE2_DEPLOYER,
+            ZOLTU_CREATE2_PAYLOAD,
+            isUsingFeeToken
+        );
+        _fundAndDeploy(_inbox, ERC1820_VALUE, ERC1820_DEPLOYER, ERC1820_PAYLOAD, isUsingFeeToken);
 
-        payable(msg.sender).transfer(address(this).balance);
+        // if paying with ETH refund the caller
+        if (!isUsingFeeToken) {
+            payable(msg.sender).transfer(address(this).balance);
+        }
     }
 
-    function getDeploymentTotalCost(IInboxBase inbox) external view returns (uint256) {
+    function getDeploymentTotalCost(IInboxBase inbox) public view returns (uint256) {
         uint256 submissionCost = inbox.calculateRetryableSubmissionFee(0, block.basefee);
         return
             NICK_CREATE2_VALUE +

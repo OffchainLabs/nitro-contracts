@@ -12,8 +12,11 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import {DeployHelper} from "./DeployHelper.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract RollupCreator is Ownable {
+    using SafeERC20 for IERC20;
+
     event RollupCreated(
         address indexed rollupAddress,
         address indexed nativeToken,
@@ -113,7 +116,7 @@ contract RollupCreator is Ownable {
      * @param _batchPoster The address of the batch poster, not used when set to zero address
      * @param _validators  The list of validator addresses, not used when set to empty list
      * @param _nativeToken Address of the custom fee token used by rollup. If rollup is ETH-based address(0) should be provided
-     * @param _deployL2Factories Wether to deploy L2 factories using retryable tickets. If true, retryables need to be paid for in native currency.
+     * @param _deployFactoriesToL2 Whether to deploy L2 factories using retryable tickets. If true, retryables need to be paid for in native currency.
      * @return The address of the newly created rollup
      */
     function createRollup(
@@ -121,7 +124,7 @@ contract RollupCreator is Ownable {
         address _batchPoster,
         address[] calldata _validators,
         address _nativeToken,
-        bool _deployL2Factories
+        bool _deployFactoriesToL2
     ) public payable returns (address) {
         ProxyAdmin proxyAdmin = new ProxyAdmin();
 
@@ -198,8 +201,8 @@ contract RollupCreator is Ownable {
 
         IRollupAdmin(address(rollup)).setOwner(address(upgradeExecutor));
 
-        if (_deployL2Factories) {
-            _deployDeterministicFactoriesUsingEth(address(bridgeContracts.inbox));
+        if (_deployFactoriesToL2) {
+            _deployFactories(address(bridgeContracts.inbox), _nativeToken);
         }
 
         emit RollupCreated(
@@ -239,15 +242,24 @@ contract RollupCreator is Ownable {
         return address(upgradeExecutor);
     }
 
-    function _deployDeterministicFactoriesUsingEth(address inbox) internal {
-        // we need to fund 4 retryable tickets
-        uint256 cost = l2FactoriesDeployer.getDeploymentTotalCost(IInbox(inbox));
+    function _deployFactories(address _inbox, address _nativeToken) internal {
+        if (_nativeToken == address(0)) {
+            // we need to fund 4 retryable tickets
+            uint256 cost = l2FactoriesDeployer.getDeploymentTotalCost(IInboxBase(_inbox));
 
-        // perform deployment
-        l2FactoriesDeployer.perform{value: cost}(inbox);
+            // do it
+            l2FactoriesDeployer.perform{value: cost}(_inbox, _nativeToken);
 
-        // refund the caller
-        (bool sent, ) = msg.sender.call{value: address(this).balance}("");
-        require(sent, "Refund failed");
+            // refund the caller
+            (bool sent, ) = msg.sender.call{value: address(this).balance}("");
+            require(sent, "Refund failed");
+        } else {
+            // Transfer fee token amount needed to pay for retryable fees to the inbox.
+            uint256 totalFee = l2FactoriesDeployer.getDeploymentTotalCost(IInboxBase(_inbox));
+            IERC20(_nativeToken).safeTransferFrom(msg.sender, _inbox, totalFee);
+
+            // do it
+            l2FactoriesDeployer.perform(_inbox, _nativeToken);
+        }
     }
 }

@@ -192,10 +192,10 @@ contract RollupCreatorTest is Test {
         assertEq(balanceBefore - balanceAfter, factoryDeploymentCost, "Invalid balance");
     }
 
-    function test_createErc20Rollup() private {
+    function test_createErc20Rollup() public {
         vm.startPrank(deployer);
         address nativeToken =
-            address(new ERC20PresetFixedSupply("Appchain Token", "App", 1_000_000, address(this)));
+            address(new ERC20PresetFixedSupply("Appchain Token", "App", 1_000_000 ether, deployer));
 
         // deployment params
         ISequencerInbox.MaxTimeVariation memory timeVars =
@@ -213,6 +213,10 @@ contract RollupCreatorTest is Test {
             genesisBlockNum: 15_000_000,
             sequencerInboxMaxTimeVariation: timeVars
         });
+
+        // approve fee token to pay for deployment of L2 factories
+        uint256 expectedCost = 0.1247 ether + 4 * (100_000 * 1_000_000_000);
+        IERC20(nativeToken).approve(address(rollupCreator), expectedCost);
 
         /// deploy rollup
         address batchPoster = makeAddr("batch poster");
@@ -333,7 +337,7 @@ contract RollupCreatorTest is Test {
         });
 
         // prepare funds
-        uint256 factoryDeploymentFunds = 0.13 ether;
+        uint256 factoryDeploymentFunds = 0.2 ether;
         vm.deal(deployer, factoryDeploymentFunds);
 
         /// deploy rollup
