@@ -179,7 +179,8 @@ const setup = async () => {
   const response = await rollupCreator.createRollup(
     await getDefaultConfig(),
     await sequencer.getAddress(),
-    [await val1.getAddress(), await val2.getAddress(), await val3.getAddress()]
+    [await val1.getAddress(), await val2.getAddress(), await val3.getAddress()],
+    117964
   )
 
   const rec = await response.wait()
