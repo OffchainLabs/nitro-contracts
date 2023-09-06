@@ -16,6 +16,7 @@ contract SdkStorage {
     bytes bytesLong;
     string chars;
     Maps maps;
+    Arrays arrays;
 
     struct Struct {
         uint16 num;
@@ -29,6 +30,18 @@ contract SdkStorage {
         mapping(int32 => address)[] array;
         mapping(bytes1 => mapping(bool => uint256)) nested;
         mapping(string => Struct) structs;
+    }
+
+    struct Arrays {
+        string[4] strings;
+        uint8 spacer;
+        uint24[5] packed;
+        uint8 trail;
+        address[2] spill;
+        uint8[2][4] matrix;
+        int96[4][] vector;
+        int96[][4] vectors;
+        Struct[3] structs;
     }
 
     function populate() external {
@@ -89,6 +102,39 @@ contract SdkStorage {
 
         for (uint256 i = 0; i < 4; i++) {
             structs.push(sub);
+        }
+
+        arrays.strings[2] = "L2 is for you!";
+
+        for (uint256 i = 0; i < 5; i++) {
+            arrays.packed[i] = uint24(i);
+        }
+
+        for (uint256 i = 0; i < 2; i++) {
+            arrays.spill[i] = address(uint160(i));
+        }
+
+        for (uint256 i = 0; i < 4; i++) {
+            arrays.matrix[i][0] = uint8(i);
+            arrays.matrix[i][1] = arrays.matrix[i][0] + 1;
+        }
+
+        for (uint256 w = 0; w < 3; w++) {
+            int96[4] memory array;
+            for (int256 i = 0; i < 4; i++) {
+                array[uint256(i)] = int96(i);
+            }
+            arrays.vector.push(array);
+        }
+
+        for (uint256 w = 0; w < 4; w++) {
+            for (int96 i = 0; i < 4; i++) {
+                arrays.vectors[w].push(i);
+            }
+        }
+
+        for (uint256 i = 0; i < 3; i++) {
+            arrays.structs[i] = sub;
         }
     }
 
