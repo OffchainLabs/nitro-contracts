@@ -31,8 +31,6 @@ contract BridgeStub is IBridge {
     address public sequencerInbox;
     uint256 public override sequencerReportedSubMessageCount;
 
-    uint256 public maxDataSize;
-
     function setSequencerInbox(address _sequencerInbox) external override {
         sequencerInbox = _sequencerInbox;
         emit SequencerInboxUpdated(_sequencerInbox);
@@ -178,7 +176,7 @@ contract BridgeStub is IBridge {
 
     function acceptFundsFromOldBridge() external payable {}
 
-    function initialize(IOwnable, uint256) external pure {
+    function initialize(IOwnable) external pure {
         revert("NOT_IMPLEMENTED");
     }
 }

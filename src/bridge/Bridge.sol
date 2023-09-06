@@ -56,15 +56,11 @@ contract Bridge is Initializable, DelegateCallAware, IBridge {
 
     uint256 public override sequencerReportedSubMessageCount;
 
-    // On L1 this should be set to 117964: 90% of Geth's 128KB tx size limit, leaving ~13KB for proving
-    uint256 public maxDataSize;
-
     address internal constant EMPTY_ACTIVEOUTBOX = address(type(uint160).max);
 
-    function initialize(IOwnable rollup_, uint256 maxDataSize_) external initializer onlyDelegated {
+    function initialize(IOwnable rollup_) external initializer onlyDelegated {
         _activeOutbox = EMPTY_ACTIVEOUTBOX;
         rollup = rollup_;
-        maxDataSize = maxDataSize_;
     }
 
     modifier onlyRollupOrOwner() {

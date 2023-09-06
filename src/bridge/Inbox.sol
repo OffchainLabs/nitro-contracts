@@ -95,7 +95,13 @@ contract Inbox is DelegateCallAware, PausableUpgradeable, IInbox {
         _;
     }
 
+    // On L1 this should be set to 117964: 90% of Geth's 128KB tx size limit, leaving ~13KB for proving
+    uint256 public immutable maxDataSize;
     uint256 internal immutable deployTimeChainId = block.chainid;
+
+    constructor(uint256 _maxDataSize) {
+        maxDataSize = _maxDataSize;
+    }
 
     function _chainIdChanged() internal view returns (bool) {
         return deployTimeChainId != block.chainid;
@@ -135,8 +141,7 @@ contract Inbox is DelegateCallAware, PausableUpgradeable, IInbox {
         if (_chainIdChanged()) revert L1Forked();
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
-        if (messageData.length > bridge.maxDataSize())
-            revert DataTooLarge(messageData.length, bridge.maxDataSize());
+        if (messageData.length > maxDataSize) revert DataTooLarge(messageData.length, maxDataSize);
         uint256 msgNum = deliverToBridge(L2_MSG, msg.sender, keccak256(messageData));
         emit InboxMessageDeliveredFromOrigin(msgNum);
         return msgNum;
@@ -531,8 +536,8 @@ contract Inbox is DelegateCallAware, PausableUpgradeable, IInbox {
         address _sender,
         bytes memory _messageData
     ) internal returns (uint256) {
-        if (_messageData.length > bridge.maxDataSize())
-            revert DataTooLarge(_messageData.length, bridge.maxDataSize());
+        if (_messageData.length > maxDataSize)
+            revert DataTooLarge(_messageData.length, maxDataSize);
         uint256 msgNum = deliverToBridge(_kind, _sender, keccak256(_messageData));
         emit InboxMessageDelivered(msgNum, _messageData);
         return msgNum;

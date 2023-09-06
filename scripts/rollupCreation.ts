@@ -2,7 +2,7 @@ import { ethers } from 'hardhat'
 import '@nomiclabs/hardhat-ethers'
 import { run } from 'hardhat'
 import { abi as rollupCreatorAbi } from '../build/contracts/src/rollup/RollupCreator.sol/RollupCreator.json'
-import { config } from './config'
+import { config, maxDataSize } from './config'
 
 interface RollupCreatedEvent {
   event: string
@@ -55,7 +55,8 @@ async function main() {
     const createRollupTx = await rollupCreator.createRollup(
       config.rollupConfig,
       config.batchPoster,
-      config.validators
+      config.validators,
+      maxDataSize
     )
     const createRollupReceipt = await createRollupTx.wait()
 

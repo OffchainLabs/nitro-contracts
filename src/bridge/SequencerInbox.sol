@@ -64,12 +64,17 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         _;
     }
 
-    uint256 internal immutable deployTimeChainId = block.chainid;
-
     mapping(address => bool) public isSequencer;
 
+    // On L1 this should be set to 117964: 90% of Geth's 128KB tx size limit, leaving ~13KB for proving
+    uint256 public immutable maxDataSize;
+    uint256 internal immutable deployTimeChainId = block.chainid;
     // If the chain this SequencerInbox is deployed on is an Arbitrum chain.
     bool internal immutable hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
+
+    constructor(uint256 _maxDataSize) {
+        maxDataSize = _maxDataSize;
+    }
 
     function _chainIdChanged() internal view returns (bool) {
         return deployTimeChainId != block.chainid;
@@ -309,8 +314,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     modifier validateBatchData(bytes calldata data) {
         uint256 fullDataLen = HEADER_LENGTH + data.length;
-        if (fullDataLen > bridge.maxDataSize())
-            revert DataTooLarge(fullDataLen, bridge.maxDataSize());
+        if (fullDataLen > maxDataSize) revert DataTooLarge(fullDataLen, maxDataSize);
         if (data.length > 0 && (data[0] & DATA_AUTHENTICATED_FLAG) == DATA_AUTHENTICATED_FLAG) {
             revert DataNotAuthenticated();
         }

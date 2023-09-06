@@ -74,8 +74,19 @@ contract RollupCreator is Ownable {
     function createRollup(
         Config memory config,
         address _batchPoster,
-        address[] memory _validators
+        address[] memory _validators,
+        uint256 maxDataSize
     ) external returns (address) {
+        // Make sure the immutable maxDataSize is as expected
+        require(
+            maxDataSize == bridgeCreator.sequencerInboxTemplate().maxDataSize(),
+            "SI_MAX_DATA_SIZE_MISMATCH"
+        );
+        require(
+            maxDataSize == bridgeCreator.inboxTemplate().maxDataSize(),
+            "I_MAX_DATA_SIZE_MISMATCH"
+        );
+
         ProxyAdmin proxyAdmin = new ProxyAdmin();
 
         // Create the rollup proxy to figure out the address and initialize it later
@@ -90,8 +101,7 @@ contract RollupCreator is Ownable {
         ) = bridgeCreator.createBridge(
                 address(proxyAdmin),
                 address(rollup),
-                config.sequencerInboxMaxTimeVariation,
-                config.maxDataSize
+                config.sequencerInboxMaxTimeVariation
             );
 
         IChallengeManager challengeManager = IChallengeManager(

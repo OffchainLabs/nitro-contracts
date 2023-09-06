@@ -2,6 +2,7 @@ import { ethers } from 'hardhat'
 import { ContractFactory, Contract } from 'ethers'
 import '@nomiclabs/hardhat-ethers'
 import { run } from 'hardhat'
+import { maxDataSize } from './config'
 
 // Define a verification function
 async function verifyContract(
@@ -60,7 +61,9 @@ async function deployContract(
 async function deployAllContracts(
   signer: any
 ): Promise<Record<string, Contract>> {
-  const bridgeCreator = await deployContract('BridgeCreator', signer)
+  const bridgeCreator = await deployContract('BridgeCreator', signer, [
+    maxDataSize,
+  ])
   const prover0 = await deployContract('OneStepProver0', signer)
   const proverMem = await deployContract('OneStepProverMemory', signer)
   const proverMath = await deployContract('OneStepProverMath', signer)
