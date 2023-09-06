@@ -167,5 +167,10 @@ contract SdkStorage {
         }
 
         structs.pop();
+
+        delete arrays.matrix;
+        delete arrays.vector;
+        delete arrays.vectors;
+        delete arrays.structs;
     }
 }
