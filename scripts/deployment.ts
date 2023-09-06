@@ -139,12 +139,12 @@ async function main() {
       `"sequencerInbox implementation contract" created at address:`,
       sequencerInboxAddress
     )
-    await verifyContract('SequencerInbox', sequencerInboxAddress, [])
+    await verifyContract('SequencerInbox', sequencerInboxAddress, [maxDataSize])
     console.log(
       `"inbox implementation contract" created at address:`,
       inboxAddress
     )
-    await verifyContract('Inbox', inboxAddress, [])
+    await verifyContract('Inbox', inboxAddress, [maxDataSize])
     console.log(
       `"outbox implementation contract" created at address:`,
       outboxAddress
