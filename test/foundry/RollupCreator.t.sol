@@ -215,7 +215,7 @@ contract RollupCreatorTest is Test {
         });
 
         // approve fee token to pay for deployment of L2 factories
-        uint256 expectedCost = 0.1247 ether + 4 * (100_000 * 1_000_000_000);
+        uint256 expectedCost = 0.1247 ether + 4 * (1400 * 100_000_000_000 + 100_000 * 1_000_000_000);
         IERC20(nativeToken).approve(address(rollupCreator), expectedCost);
 
         /// deploy rollup

@@ -3,6 +3,9 @@ import '@nomiclabs/hardhat-ethers'
 import { run } from 'hardhat'
 import { abi as rollupCreatorAbi } from '../build/contracts/src/rollup/RollupCreator.sol/RollupCreator.json'
 import { config } from './config'
+import { BigNumber } from 'ethers'
+import { IERC20__factory } from '../build/types'
+import { sleep } from './testSetup'
 
 interface RollupCreatedEvent {
   event: string
@@ -54,14 +57,29 @@ export async function createRollup(feeToken?: string) {
     for (let i = 0; i < config.validators.length; i++) {
       vals.push(true)
     }
+
+    //// funds for deploying L2 factories
+
+    // 0.13 ETH is enough to deploy L2 factories via retryables. Excess is refunded
+    let feeCost = ethers.utils.parseEther('0.13')
+    if (feeToken != ethers.constants.AddressZero) {
+      // in case fees are paid via fee token, then approve rollup cretor to spend required amount
+      await (
+        await IERC20__factory.connect(feeToken, signer).approve(
+          rollupCreator.address,
+          feeCost
+        )
+      ).wait()
+      feeCost = BigNumber.from(0)
+    }
+
     // Call the createRollup function
     console.log('Calling createRollup to generate a new rollup ...')
-    const createRollupTx = await rollupCreator.createRollup(
-      config.rollupConfig,
-      config.batchPoster,
-      config.validators,
-      feeToken
-    )
+    const createRollupTx = await rollupCreator[
+      'createRollup((uint64,uint64,address,uint256,bytes32,address,address,uint256,string,uint64,(uint256,uint256,uint256,uint256)),address,address[],address)'
+    ](config.rollupConfig, config.batchPoster, config.validators, feeToken, {
+      value: feeCost,
+    })
     const createRollupReceipt = await createRollupTx.wait()
 
     const rollupCreatedEvent = createRollupReceipt.events?.find(
@@ -86,6 +104,8 @@ export async function createRollup(feeToken?: string) {
 
       console.log("Congratulations! 🎉🎉🎉 All DONE! Here's your addresses:")
       console.log('RollupProxy Contract created at address:', rollupAddress)
+      console.log('Wait a minute before starting the contract verification')
+      await sleep(2 * 60 * 1000)
       console.log(
         `Attempting to verify Rollup contract at address ${rollupAddress}...`
       )

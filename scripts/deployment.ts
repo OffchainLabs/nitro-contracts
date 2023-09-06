@@ -6,6 +6,7 @@ import {
   abi as UpgradeExecutorABI,
   bytecode as UpgradeExecutorBytecode,
 } from '@offchainlabs/upgrade-executor/build/contracts/src/UpgradeExecutor.sol/UpgradeExecutor.json'
+import { sleep } from './testSetup'
 
 // Define a verification function
 async function verifyContract(
@@ -95,6 +96,7 @@ async function deployAllContracts(
     signer
   )
   const rollupCreator = await deployContract('RollupCreator', signer)
+  const deployHelper = await deployContract('DeployHelper', signer)
   return {
     bridgeCreator,
     prover0,
@@ -109,6 +111,7 @@ async function deployAllContracts(
     validatorUtils,
     validatorWalletCreator,
     rollupCreator,
+    deployHelper,
   }
 }
 
@@ -129,13 +132,17 @@ async function main() {
       contracts.rollupUser.address,
       contracts.upgradeExecutor.address,
       contracts.validatorUtils.address,
-      contracts.validatorWalletCreator.address
+      contracts.validatorWalletCreator.address,
+      contracts.deployHelper.address
     )
     console.log('Template is set on the Rollup Creator')
 
     // get and verify ETH-based bridge contracts
     const { bridge, sequencerInbox, inbox, outbox } =
       await contracts.bridgeCreator.ethBasedTemplates()
+
+    console.log('Wait a minute before starting contract verification')
+    await sleep(60 * 1000)
 
     console.log(`"bridge implementation contract" created at address:`, bridge)
     await verifyContract('Bridge', bridge, [], 'src/bridge/Bridge.sol:Bridge')
