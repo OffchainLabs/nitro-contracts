@@ -7,6 +7,9 @@ import { BigNumber } from 'ethers'
 import { IERC20__factory } from '../build/types'
 import { sleep } from './testSetup'
 
+// 1 gwei
+const MAX_FER_PER_GAS = BigNumber.from('1000000000')
+
 interface RollupCreatedEvent {
   event: string
   address: string
@@ -75,11 +78,17 @@ export async function createRollup(feeToken?: string) {
 
     // Call the createRollup function
     console.log('Calling createRollup to generate a new rollup ...')
-    const createRollupTx = await rollupCreator[
-      'createRollup((uint64,uint64,address,uint256,bytes32,address,address,uint256,string,uint64,(uint256,uint256,uint256,uint256)),address,address[],address)'
-    ](config.rollupConfig, config.batchPoster, config.validators, feeToken, {
-      value: feeCost,
-    })
+    const createRollupTx = await rollupCreator.createRollup(
+      config.rollupConfig,
+      config.batchPoster,
+      config.validators,
+      feeToken,
+      true,
+      MAX_FER_PER_GAS,
+      {
+        value: feeCost,
+      }
+    )
     const createRollupReceipt = await createRollupTx.wait()
 
     const rollupCreatedEvent = createRollupReceipt.events?.find(

@@ -28,6 +28,9 @@ contract RollupCreatorTest is Test {
     IRollupUser public rollupUser;
     DeployHelper public deployHelper;
 
+    // 1 gwei
+    uint256 MAX_FEE_PER_GAS = 1_000_000_000;
+
     /* solhint-disable func-name-mixedcase */
 
     function setUp() public {
@@ -99,7 +102,7 @@ contract RollupCreatorTest is Test {
         validators[1] = makeAddr("validator2");
 
         address rollupAddress = rollupCreator.createRollup{value: factoryDeploymentFunds}(
-            config, batchPoster, validators, address(0)
+            config, batchPoster, validators, address(0), true, MAX_FEE_PER_GAS
         );
 
         vm.stopPrank();
@@ -163,7 +166,7 @@ contract RollupCreatorTest is Test {
         );
 
         // check upgrade executor owns proxyAdmin
-        address upgradeExecutorExpectedAddress = computeCreateAddress(address(rollupCreator), 2);
+        address upgradeExecutorExpectedAddress = computeCreateAddress(address(rollupCreator), 4);
         assertEq(
             ProxyAdmin(_getProxyAdmin(address(rollup.sequencerInbox()))).owner(),
             upgradeExecutorExpectedAddress,
@@ -188,7 +191,8 @@ contract RollupCreatorTest is Test {
 
         // check funds are refunded
         uint256 balanceAfter = deployer.balance;
-        uint256 factoryDeploymentCost = deployHelper.getDeploymentTotalCost(rollup.inbox());
+        uint256 factoryDeploymentCost =
+            deployHelper.getDeploymentTotalCost(rollup.inbox(), MAX_FEE_PER_GAS);
         assertEq(balanceBefore - balanceAfter, factoryDeploymentCost, "Invalid balance");
     }
 
@@ -223,8 +227,9 @@ contract RollupCreatorTest is Test {
         address[] memory validators = new address[](2);
         validators[0] = makeAddr("validator1");
         validators[1] = makeAddr("validator2");
-        address rollupAddress =
-            rollupCreator.createRollup(config, batchPoster, validators, nativeToken);
+        address rollupAddress = rollupCreator.createRollup(
+            config, batchPoster, validators, nativeToken, true, MAX_FEE_PER_GAS
+        );
 
         vm.stopPrank();
 
@@ -292,7 +297,7 @@ contract RollupCreatorTest is Test {
         );
 
         // check upgrade executor owns proxyAdmin
-        address upgradeExecutorExpectedAddress = computeCreateAddress(address(rollupCreator), 2);
+        address upgradeExecutorExpectedAddress = computeCreateAddress(address(rollupCreator), 4);
         assertEq(
             ProxyAdmin(_getProxyAdmin(address(rollup.sequencerInbox()))).owner(),
             upgradeExecutorExpectedAddress,
@@ -346,7 +351,7 @@ contract RollupCreatorTest is Test {
         validators[0] = makeAddr("validator1");
         validators[1] = makeAddr("validator2");
         address rollupAddress = rollupCreator.createRollup{value: factoryDeploymentFunds}(
-            config, batchPoster, validators, address(0)
+            config, batchPoster, validators, address(0), true, MAX_FEE_PER_GAS
         );
 
         vm.stopPrank();
@@ -356,7 +361,7 @@ contract RollupCreatorTest is Test {
         address inbox = address(rollup.inbox());
         address proxyAdmin = computeCreateAddress(address(rollupCreator), 1);
         IUpgradeExecutor upgradeExecutor =
-            IUpgradeExecutor(computeCreateAddress(address(rollupCreator), 2));
+            IUpgradeExecutor(computeCreateAddress(address(rollupCreator), 4));
 
         Dummy newLogicImpl = new Dummy();
         bytes memory data = abi.encodeWithSelector(

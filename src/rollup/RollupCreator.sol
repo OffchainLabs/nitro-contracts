@@ -82,29 +82,6 @@ contract RollupCreator is Ownable {
     }
 
     /**
-     * @notice Create a new rollup and deploy L2 factories via retryable tickets
-     * @dev After this setup:
-     * @dev - Rollup should be the owner of bridge
-     * @dev - RollupOwner should be the owner of Rollup's ProxyAdmin
-     * @dev - RollupOwner should be the owner of Rollup
-     * @dev - Bridge should have a single inbox and outbox
-     * @dev - Validators and batch poster should be set if provided
-     * @param config       The configuration for the rollup
-     * @param _batchPoster The address of the batch poster, not used when set to zero address
-     * @param _validators  The list of validator addresses, not used when set to empty list
-     * @param _nativeToken Address of the custom fee token used by rollup. If rollup is ETH-based address(0) should be provided
-     * @return The address of the newly created rollup
-     */
-    function createRollup(
-        Config memory config,
-        address _batchPoster,
-        address[] calldata _validators,
-        address _nativeToken
-    ) external payable returns (address) {
-        return createRollup(config, _batchPoster, _validators, _nativeToken, true);
-    }
-
-    /**
      * @notice Create a new rollup
      * @dev After this setup:
      * @dev - Rollup should be the owner of bridge
@@ -121,6 +98,7 @@ contract RollupCreator is Ownable {
      *                             doesn't require paying the L1 gas. If deployment is instead done directly via L2 TX, there is a risk of gas price
      *                             spike which results in burned nonce 0. That would mean we permanently lost capability to deploy deterministic
      *                             factory at expected canonical address.
+     * @param _maxFeePerGasForRetryables price bid for L2 execution.
      * @return The address of the newly created rollup
      */
     function createRollup(
@@ -128,12 +106,10 @@ contract RollupCreator is Ownable {
         address _batchPoster,
         address[] calldata _validators,
         address _nativeToken,
-        bool _deployFactoriesToL2
+        bool _deployFactoriesToL2,
+        uint256 _maxFeePerGasForRetryables
     ) public payable returns (address) {
         ProxyAdmin proxyAdmin = new ProxyAdmin();
-
-        // deploy and init upgrade executor
-        address upgradeExecutor = _deployUpgradeExecutor(config.owner, proxyAdmin);
 
         // Create the rollup proxy to figure out the address and initialize it later
         RollupProxy rollup = new RollupProxy{salt: keccak256(abi.encode(config))}();
@@ -168,6 +144,10 @@ contract RollupCreator is Ownable {
             osp
         );
 
+        // deploy and init upgrade executor
+        address upgradeExecutor = _deployUpgradeExecutor(config.owner, proxyAdmin);
+
+        // upgradeExecutor shall be proxyAdmin's owner
         proxyAdmin.transferOwnership(address(upgradeExecutor));
 
         // initialize the rollup with this contract as owner to set batch poster and validators
@@ -206,7 +186,9 @@ contract RollupCreator is Ownable {
         IRollupAdmin(address(rollup)).setOwner(address(upgradeExecutor));
 
         if (_deployFactoriesToL2) {
-            _deployFactories(address(bridgeContracts.inbox), _nativeToken);
+            _deployFactories(
+                address(bridgeContracts.inbox), _nativeToken, _maxFeePerGasForRetryables
+            );
         }
 
         emit RollupCreated(
@@ -246,24 +228,28 @@ contract RollupCreator is Ownable {
         return address(upgradeExecutor);
     }
 
-    function _deployFactories(address _inbox, address _nativeToken) internal {
+    function _deployFactories(address _inbox, address _nativeToken, uint256 _maxFeePerGas)
+        internal
+    {
         if (_nativeToken == address(0)) {
             // we need to fund 4 retryable tickets
-            uint256 cost = l2FactoriesDeployer.getDeploymentTotalCost(IInboxBase(_inbox));
+            uint256 cost =
+                l2FactoriesDeployer.getDeploymentTotalCost(IInboxBase(_inbox), _maxFeePerGas);
 
             // do it
-            l2FactoriesDeployer.perform{value: cost}(_inbox, _nativeToken);
+            l2FactoriesDeployer.perform{value: cost}(_inbox, _nativeToken, _maxFeePerGas);
 
             // refund the caller
-            (bool sent, ) = msg.sender.call{value: address(this).balance}("");
+            (bool sent,) = msg.sender.call{value: address(this).balance}("");
             require(sent, "Refund failed");
         } else {
             // Transfer fee token amount needed to pay for retryable fees to the inbox.
-            uint256 totalFee = l2FactoriesDeployer.getDeploymentTotalCost(IInboxBase(_inbox));
+            uint256 totalFee =
+                l2FactoriesDeployer.getDeploymentTotalCost(IInboxBase(_inbox), _maxFeePerGas);
             IERC20(_nativeToken).safeTransferFrom(msg.sender, _inbox, totalFee);
 
             // do it
-            l2FactoriesDeployer.perform(_inbox, _nativeToken);
+            l2FactoriesDeployer.perform(_inbox, _nativeToken, _maxFeePerGas);
         }
     }
 }
