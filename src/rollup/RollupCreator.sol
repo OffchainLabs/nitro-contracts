@@ -117,6 +117,10 @@ contract RollupCreator is Ownable {
      * @param _validators  The list of validator addresses, not used when set to empty list
      * @param _nativeToken Address of the custom fee token used by rollup. If rollup is ETH-based address(0) should be provided
      * @param _deployFactoriesToL2 Whether to deploy L2 factories using retryable tickets. If true, retryables need to be paid for in native currency.
+     *                             Deploying factories via retyrable tickets at rollup creation time is the most reliable method to do it since it
+     *                             doesn't require paying the L1 gas. If deployment is instead done directly via L2 TX, there is a risk of gas price
+     *                             spike which results in burned nonce 0. That would mean we permanently lost capability to deploy deterministic
+     *                             factory at expected canonical address.
      * @return The address of the newly created rollup
      */
     function createRollup(
