@@ -196,13 +196,14 @@ const setup = async () => {
     deployHelper.address
   )
 
-  const response = await rollupCreator[
-    'createRollup((uint64,uint64,address,uint256,bytes32,address,address,uint256,string,uint64,(uint256,uint256,uint256,uint256)),address,address[],address)'
-  ](
+  const maxFeePerGas = BigNumber.from('1000000000')
+  const response = await rollupCreator.createRollup(
     await getDefaultConfig(),
     await sequencer.getAddress(),
     [await val1.getAddress(), await val2.getAddress(), await val3.getAddress()],
     ethers.constants.AddressZero,
+    true,
+    maxFeePerGas,
     { value: ethers.utils.parseEther('0.2') }
   )
 
