@@ -95,9 +95,9 @@ contract RollupCreator is Ownable {
      * @param _nativeToken Address of the custom fee token used by rollup. If rollup is ETH-based address(0) should be provided
      * @param _deployFactoriesToL2 Whether to deploy L2 factories using retryable tickets. If true, retryables need to be paid for in native currency.
      *                             Deploying factories via retyrable tickets at rollup creation time is the most reliable method to do it since it
-     *                             doesn't require paying the L1 gas. If deployment is instead done directly via L2 TX, there is a risk of gas price
-     *                             spike which results in burned nonce 0. That would mean we permanently lost capability to deploy deterministic
-     *                             factory at expected canonical address.
+     *                             doesn't require paying the L1 gas. If deployment is not done as part of rollup creation TX, there is a risk that
+     *                             anyone can try to deploy factories and potentially burn the nonce 0 (ie. due to gas price spike when doing direct
+     *                             L2 TX). That would mean we permanently lost capability to deploy deterministic factory at expected address.
      * @param _maxFeePerGasForRetryables price bid for L2 execution.
      * @return The address of the newly created rollup
      */
