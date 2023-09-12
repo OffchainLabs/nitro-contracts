@@ -298,5 +298,5 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[50] private __gap;
+    uint256[40] private __gap;
 }

@@ -292,4 +292,11 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
     ///         rollup this amount shall always be 0, because amount of ETH being withdrawn can be read from msg.value.
     /// @return amount of native token being withdrawn in case of ERC20-based rollup, or 0 in case of ETH-based rollup
     function _amountToSetInContext(uint256 value) internal pure virtual returns (uint256);
+
+    /**
+     * @dev This empty reserved space is put in place to allow future versions to add new
+     * variables without shifting down storage in the inheritance chain.
+     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[42] private __gap;
 }
