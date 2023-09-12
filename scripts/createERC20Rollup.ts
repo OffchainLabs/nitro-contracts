@@ -1,15 +1,12 @@
 import { ethers } from 'hardhat'
 import '@nomiclabs/hardhat-ethers'
 import { Signer } from 'ethers'
-import { ERC20PresetFixedSupply__factory } from '../build/types/factories/@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply__factory'
 import { createRollup } from './rollupCreation'
+import { TestToken__factory } from '../build/types'
 
 async function deployERC20Token(deployer: Signer): Promise<string> {
-  const factory = await new ERC20PresetFixedSupply__factory(deployer).deploy(
-    'FeeToken',
-    'FEE',
-    ethers.utils.parseEther('1000000000'),
-    await deployer.getAddress()
+  const factory = await new TestToken__factory(deployer).deploy(
+    ethers.utils.parseEther('1000000000')
   )
   const feeToken = await factory.deployed()
 

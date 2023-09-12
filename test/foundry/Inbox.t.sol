@@ -132,7 +132,7 @@ contract InboxTest is AbsInboxTest {
 
         uint256 ethToSend = 0.3 ether;
 
-        // retyrable params
+        // retryable params
         uint256 l2CallValue = 0.1 ether;
         uint256 maxSubmissionCost = 0.1 ether;
         uint256 gasLimit = 100_000;
@@ -198,7 +198,7 @@ contract InboxTest is AbsInboxTest {
 
         uint256 ethToSend = 0.3 ether;
 
-        // retyrable params
+        // retryable params
         uint256 l2CallValue = 0.1 ether;
         uint256 maxSubmissionCost = 0.1 ether;
         uint256 gasLimit = 100_000;
@@ -441,7 +441,7 @@ contract InboxTest is AbsInboxTest {
 
         uint256 ethToSend = 0.3 ether;
 
-        // retyrable params
+        // retryable params
         uint256 l2CallValue = 0.1 ether;
         uint256 maxSubmissionCost = 0.1 ether;
         uint256 gasLimit = 100_000;
@@ -507,7 +507,7 @@ contract InboxTest is AbsInboxTest {
 
         uint256 ethToSend = 0.3 ether;
 
-        // retyrable params
+        // retryable params
         uint256 l2CallValue = 0.1 ether;
         uint256 maxSubmissionCost = 0.1 ether;
         uint256 gasLimit = 100_000;

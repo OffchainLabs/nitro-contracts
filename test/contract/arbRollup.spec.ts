@@ -25,6 +25,7 @@ import {
   BridgeCreator__factory,
   ChallengeManager,
   ChallengeManager__factory,
+  DeployHelper__factory,
   OneStepProofEntry__factory,
   OneStepProver0__factory,
   OneStepProverHostIo__factory,
@@ -178,6 +179,11 @@ const setup = async () => {
   )) as RollupCreator__factory
   const rollupCreator = await rollupCreatorFac.deploy()
 
+  const deployHelperFac = (await ethers.getContractFactory(
+    'DeployHelper'
+  )) as DeployHelper__factory
+  const deployHelper = await deployHelperFac.deploy()
+
   await rollupCreator.setTemplates(
     bridgeCreator.address,
     oneStepProofEntry.address,
@@ -186,14 +192,19 @@ const setup = async () => {
     rollupUserLogicTemplate.address,
     upgradeExecutorLogic.address,
     ethers.constants.AddressZero,
-    ethers.constants.AddressZero
+    ethers.constants.AddressZero,
+    deployHelper.address
   )
 
+  const maxFeePerGas = BigNumber.from('1000000000')
   const response = await rollupCreator.createRollup(
     await getDefaultConfig(),
     await sequencer.getAddress(),
     [await val1.getAddress(), await val2.getAddress(), await val3.getAddress()],
-    ethers.constants.AddressZero
+    ethers.constants.AddressZero,
+    true,
+    maxFeePerGas,
+    { value: ethers.utils.parseEther('0.2') }
   )
 
   const rec = await response.wait()

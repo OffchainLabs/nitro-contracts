@@ -6,6 +6,7 @@ import {
   abi as UpgradeExecutorABI,
   bytecode as UpgradeExecutorBytecode,
 } from '@offchainlabs/upgrade-executor/build/contracts/src/UpgradeExecutor.sol/UpgradeExecutor.json'
+import { sleep } from './testSetup'
 
 // Define a verification function
 async function verifyContract(
@@ -95,6 +96,7 @@ async function deployAllContracts(
     signer
   )
   const rollupCreator = await deployContract('RollupCreator', signer)
+  const deployHelper = await deployContract('DeployHelper', signer)
   return {
     bridgeCreator,
     prover0,
@@ -109,6 +111,7 @@ async function deployAllContracts(
     validatorUtils,
     validatorWalletCreator,
     rollupCreator,
+    deployHelper,
   }
 }
 
@@ -129,13 +132,17 @@ async function main() {
       contracts.rollupUser.address,
       contracts.upgradeExecutor.address,
       contracts.validatorUtils.address,
-      contracts.validatorWalletCreator.address
+      contracts.validatorWalletCreator.address,
+      contracts.deployHelper.address
     )
     console.log('Template is set on the Rollup Creator')
 
     // get and verify ETH-based bridge contracts
-    const { bridge, sequencerInbox, inbox, outbox } =
+    const { bridge, sequencerInbox, inbox, rollupEventInbox, outbox } =
       await contracts.bridgeCreator.ethBasedTemplates()
+
+    console.log('Wait a minute before starting contract verification')
+    await sleep(60 * 1000)
 
     console.log(`"bridge implementation contract" created at address:`, bridge)
     await verifyContract('Bridge', bridge, [], 'src/bridge/Bridge.sol:Bridge')
@@ -151,6 +158,18 @@ async function main() {
     )
     console.log(`"inbox implementation contract" created at address:`, inbox)
     await verifyContract('Inbox', inbox, [], 'src/bridge/Inbox.sol:Inbox')
+
+    console.log(
+      `"rollupEventInbox implementation contract" created at address:`,
+      rollupEventInbox
+    )
+    await verifyContract(
+      'RollupEventInbox',
+      rollupEventInbox,
+      [],
+      'src/bridge/RollupEventInbox.sol:RollupEventInbox'
+    )
+
     console.log(`"outbox implementation contract" created at address:`, outbox)
     await verifyContract('Outbox', outbox, [], 'src/bridge/Outbox.sol:Outbox')
 
@@ -159,6 +178,7 @@ async function main() {
       bridge: erc20Bridge,
       sequencerInbox: erc20SeqInbox,
       inbox: erc20Inbox,
+      rollupEventInbox: erc20RollupEventInbox,
       outbox: erc20Outbox,
     } = await contracts.bridgeCreator.erc20BasedTemplates()
 
@@ -192,6 +212,18 @@ async function main() {
       [],
       'src/bridge/ERC20Inbox.sol:ERC20Inbox'
     )
+
+    console.log(
+      `"erc20 rollupEventInbox implementation contract" created at address:`,
+      erc20RollupEventInbox
+    )
+    await verifyContract(
+      'ERC20RollupEventInbox',
+      erc20RollupEventInbox,
+      [],
+      'src/bridge/ERC20RollupEventInbox.sol:ERC20RollupEventInbox'
+    )
+
     console.log(
       `"erc20 outbox implementation contract" created at address:`,
       outbox
