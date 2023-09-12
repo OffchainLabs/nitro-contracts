@@ -114,7 +114,7 @@ export async function createRollup(feeToken?: string) {
       console.log("Congratulations! 🎉🎉🎉 All DONE! Here's your addresses:")
       console.log('RollupProxy Contract created at address:', rollupAddress)
       console.log('Wait a minute before starting the contract verification')
-      await sleep(2 * 60 * 1000)
+      await sleep(1 * 60 * 1000)
       console.log(
         `Attempting to verify Rollup contract at address ${rollupAddress}...`
       )
