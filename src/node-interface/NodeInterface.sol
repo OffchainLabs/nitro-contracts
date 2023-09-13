@@ -155,4 +155,14 @@ interface NodeInterface {
     // @dev returns 0 for chains like Nova that don't contain classic blocks
     // @return number the block number
     function nitroGenesisBlock() external pure returns (uint256 number);
+
+    /**
+     * @notice Finds the L2 block number range that have the given L1 block number
+     * @param blockNum The L1 block number to search for the range
+     * @return blockRange The range containing the first and last L2 block numbers
+     */
+    function getL2BlockRangeForL1(uint64 blockNum)
+        external
+        view
+        returns (uint64[] memory blockRange);
 }
