@@ -84,9 +84,9 @@ contract RollupCreator is Ownable {
     /**
      * @notice Create a new rollup
      * @dev After this setup:
-     * @dev - Rollup should be the owner of bridge
-     * @dev - RollupOwner should be the owner of Rollup's ProxyAdmin
-     * @dev - RollupOwner should be the owner of Rollup
+     * @dev - UpgradeExecutor should be the owner of rollup
+     * @dev - UpgradeExecutor should be the owner of proxyAdmin which manages bridge contracts
+     * @dev - config.rollupOwner should have executor role on upgradeExecutor
      * @dev - Bridge should have a single inbox and outbox
      * @dev - Validators and batch poster should be set if provided
      * @param config       The configuration for the rollup
