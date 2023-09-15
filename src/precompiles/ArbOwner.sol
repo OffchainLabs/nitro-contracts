@@ -80,7 +80,7 @@ interface ArbOwner {
 
     /**
      * @notice Sets the Brotli compression level used for fast compression
-     * Available in ArbOS version 12
+     * Available in ArbOS version 12 with default level as 1
      */
     function setBrotliCompressionLevel(uint64 level) external;
 
