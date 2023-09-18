@@ -157,12 +157,14 @@ interface NodeInterface {
     function nitroGenesisBlock() external pure returns (uint256 number);
 
     /**
-     * @notice Finds the L2 block number range that have the given L1 block number
+     * @notice Finds the L2 block number range that has the given L1 block number
      * @param blockNum The L1 block number to search for the range
-     * @return blockRange The range containing the first and last L2 block numbers
+     * Throws if no L2 block exist with the given L1 block number
+     * @return firstBlock The first L2 block number with the given L1 block number
+     * @return lastBlock The last L2 block number with the given L1 block number
      */
-    function getL2BlockRangeForL1(uint64 blockNum)
+    function l2BlockRangeForL1(uint64 blockNum)
         external
         view
-        returns (uint64[] memory blockRange);
+        returns (uint64 firstBlock, uint64 lastBlock);
 }
