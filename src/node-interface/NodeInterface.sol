@@ -156,6 +156,10 @@ interface NodeInterface {
     // @return number the block number
     function nitroGenesisBlock() external pure returns (uint256 number);
 
+    // @notice Returns the L1 block number of the L2 block
+    // @return l1BlockNum The L1 block number
+    function blockL1Num(uint64 l2BlockNum) external view returns (uint64 l1BlockNum);
+
     /**
      * @notice Finds the L2 block number range that has the given L1 block number
      * @param blockNum The L1 block number to search for the range
