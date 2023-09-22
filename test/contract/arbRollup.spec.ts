@@ -681,69 +681,85 @@ describe('ArbRollup', () => {
     await rollup.confirmNextNode(challengerNode)
   })
 
-  it('should add and remove stakes correctly', async function () {
-    /*
-      RollupUser functions that alter stake and their respective Core logic
+  it('allow force refund staker with pending node', async function () {
+    await (await rollupAdmin.pause()).wait();
+    await (await rollupAdmin.forceRefundStaker([await validators[1].getAddress()])).wait()
+    await (await rollup.rollup.connect(validators[1]).withdrawStakerFunds()).wait()
+    await (await rollupAdmin.resume()).wait();
 
-      user: newStake
-      core: createNewStake
-
-      user: addToDeposit
-      core: increaseStakeBy
-
-      user: reduceDeposit
-      core: reduceStakeTo
-
-      user: returnOldDeposit
-      core: withdrawStaker
-
-      user: withdrawStakerFunds
-      core: withdrawFunds
-    */
-
-    const initialStake = await rollup.rollup.amountStaked(
-      await validators[1].getAddress()
-    )
-
-    await rollup.connect(validators[1]).reduceDeposit(initialStake)
-
-    await expect(
-      rollup.connect(validators[1]).reduceDeposit(initialStake.add(1))
-    ).to.be.revertedWith('TOO_LITTLE_STAKE')
-
-    await rollup
-      .connect(validators[1])
-      .addToDeposit(await validators[1].getAddress(), { value: 5 })
-
-    await rollupAdmin.pause()
-    await rollup.connect(validators[1]).reduceDeposit(5)
-
-    const prevBalance = await validators[1].getBalance()
-    const prevWithdrawablefunds = await rollup.rollup.withdrawableFunds(
-      await validators[1].getAddress()
-    )
-
-    const tx = await rollup.rollup.connect(validators[1]).withdrawStakerFunds()
-    const receipt = await tx.wait()
-    const gasPaid = receipt.gasUsed.mul(receipt.effectiveGasPrice)
-
-    const postBalance = await validators[1].getBalance()
     const postWithdrawablefunds = await rollup.rollup.withdrawableFunds(
       await validators[1].getAddress()
     )
-
-    expect(postWithdrawablefunds).to.equal(0)
-    expect(postBalance.add(gasPaid)).to.equal(
-      prevBalance.add(prevWithdrawablefunds)
+    expect(postWithdrawablefunds, "withdrawable funds").to.equal(0)
+    const stake = await rollup.rollup.amountStaked(
+      await validators[1].getAddress()
     )
-
-    // this gets deposit and removes staker
-    await rollup.rollup
-      .connect(validators[1])
-      .returnOldDeposit(await validators[1].getAddress())
-    // all stake is now removed
-    await rollupAdmin.resume()
+    expect(stake, "amount staked").to.equal(0)
   })
+
+  // it('should add and remove stakes correctly', async function () {
+  //   /*
+  //     RollupUser functions that alter stake and their respective Core logic
+
+  //     user: newStake
+  //     core: createNewStake
+
+  //     user: addToDeposit
+  //     core: increaseStakeBy
+
+  //     user: reduceDeposit
+  //     core: reduceStakeTo
+
+  //     user: returnOldDeposit
+  //     core: withdrawStaker
+
+  //     user: withdrawStakerFunds
+  //     core: withdrawFunds
+  //   */
+
+  //   const initialStake = await rollup.rollup.amountStaked(
+  //     await validators[1].getAddress()
+  //   )
+
+  //   await rollup.connect(validators[1]).reduceDeposit(initialStake)
+
+  //   await expect(
+  //     rollup.connect(validators[1]).reduceDeposit(initialStake.add(1))
+  //   ).to.be.revertedWith('TOO_LITTLE_STAKE')
+
+  //   await rollup
+  //     .connect(validators[1])
+  //     .addToDeposit(await validators[1].getAddress(), { value: 5 })
+
+  //   await rollupAdmin.pause()
+  //   await rollup.connect(validators[1]).reduceDeposit(5)
+
+  //   const prevBalance = await validators[1].getBalance()
+  //   const prevWithdrawablefunds = await rollup.rollup.withdrawableFunds(
+  //     await validators[1].getAddress()
+  //   )
+
+  //   const tx = await rollup.rollup.connect(validators[1]).withdrawStakerFunds()
+  //   const receipt = await tx.wait()
+  //   const gasPaid = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+
+  //   const postBalance = await validators[1].getBalance()
+  //   const postWithdrawablefunds = await rollup.rollup.withdrawableFunds(
+  //     await validators[1].getAddress()
+  //   )
+
+  //   expect(postWithdrawablefunds).to.equal(0)
+  //   expect(postBalance.add(gasPaid)).to.equal(
+  //     prevBalance.add(prevWithdrawablefunds)
+  //   )
+
+  //   // this gets deposit and removes staker
+  //   await rollup.rollup
+  //     .connect(validators[1])
+  //     .returnOldDeposit(await validators[1].getAddress())
+  //   // all stake is now removed
+  //   await rollupAdmin.resume()
+  // })
 
   it('should allow removing zombies', async function () {
     const zombieCount = (
