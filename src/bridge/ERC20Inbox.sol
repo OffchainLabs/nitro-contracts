@@ -10,8 +10,9 @@ import "./IERC20Bridge.sol";
 import "../libraries/AddressAliasHelper.sol";
 import {L1MessageType_ethDeposit} from "../libraries/MessageTypes.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {IERC20, ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {BytesLib} from "../libraries/BytesLib.sol";
 
 /**
  * @title Inbox for user and contract originated messages
@@ -44,13 +45,16 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
             dest = AddressAliasHelper.applyL1ToL2Alias(msg.sender);
         }
 
-        return
-            _deliverMessage(
-                L1MessageType_ethDeposit,
-                msg.sender,
-                abi.encodePacked(dest, amount),
-                amount
-            );
+        // In order to keep compatibility of child chain's native currency with external 3rd party tooling we
+        // expect 18 decimals to be always used for native currency. If native token uses different number of
+        // decimals then here it will be normalized to 18. Keep in mind, when withdrawing from child chain back
+        // to parent chain then the amount has to match native token's granularity, otherwise it will be rounded
+        // down.
+        uint256 amountToMintOnL2 = _normalizeAmountTo18Decimals(amount);
+
+        return _deliverMessage(
+            L1MessageType_ethDeposit, msg.sender, abi.encodePacked(dest, amountToMintOnL2), amount
+        );
     }
 
     /// @inheritdoc IERC20Inbox
@@ -138,5 +142,33 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
                 messageDataHash,
                 tokenAmount
             );
+    }
+
+    /// @dev use static call to get number of decimals used by token. Returns 0 if static call is unsuccessful.
+    function _normalizeAmountTo18Decimals(uint256 amount) internal view returns (uint256) {
+        // get decimals
+        address nativeToken = IERC20Bridge(address(bridge)).nativeToken();
+        uint8 nativeTokenDecimals = _getDecimals(nativeToken);
+
+        // normalize
+        if (nativeTokenDecimals < 18) {
+            amount = amount * 10 ** (18 - nativeTokenDecimals);
+        } else if (nativeTokenDecimals > 18) {
+            amount = amount / (10 ** (nativeTokenDecimals - 18));
+        }
+
+        return amount;
+    }
+
+    /// @dev use static call to get number of decimals used by token. Returns 0 if call fails.
+    function _getDecimals(address token) internal view returns (uint8) {
+        (bool success, bytes memory decimalsData) =
+            token.staticcall(abi.encodeWithSelector(ERC20.decimals.selector));
+        if (success && decimalsData.length == 32) {
+            // decimals() returns uint8
+            return BytesLib.toUint8(decimalsData, 31);
+        }
+
+        return 0;
     }
 }
