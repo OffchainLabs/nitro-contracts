@@ -10,6 +10,7 @@ import "../../src/libraries/AddressAliasHelper.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 
+
 contract ERC20InboxTest is AbsInboxTest {
     IERC20 public nativeToken;
     IERC20Inbox public erc20Inbox;
@@ -151,7 +152,7 @@ contract ERC20InboxTest is AbsInboxTest {
         _bridge.setDelayedInbox(address(_inbox), true);
 
         // fund user account
-        ERC20_6Decimals(address(_nativeToken)).mint(user, 1000 * 10 ** decimals);
+        ERC20_20Decimals(address(_nativeToken)).mint(user, 1000 * 10 ** decimals);
 
         uint256 depositAmount = 300 * 10 ** decimals;
 
@@ -193,7 +194,6 @@ contract ERC20InboxTest is AbsInboxTest {
     }
 
     function test_depositERC20_FromEOA_NoDecimals() public {
-        uint8 decimals = 0;
         ERC20 _nativeToken = new ERC20NoDecimals();
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
@@ -207,9 +207,9 @@ contract ERC20InboxTest is AbsInboxTest {
         _bridge.setDelayedInbox(address(_inbox), true);
 
         // fund user account
-        ERC20_6Decimals(address(_nativeToken)).mint(user, 1000 * 10 ** decimals);
+        ERC20NoDecimals(address(_nativeToken)).mint(user, 1000);
 
-        uint256 depositAmount = 300 * 10 ** decimals;
+        uint256 depositAmount = 300;
 
         uint256 bridgeTokenBalanceBefore = _nativeToken.balanceOf(address(_bridge));
         uint256 userTokenBalanceBefore = _nativeToken.balanceOf(address(user));
@@ -856,6 +856,9 @@ contract ERC20_20Decimals is ERC20 {
 contract ERC20NoDecimals is ERC20 {
     constructor() ERC20("XY", "xy") {}
 
+    function decimals() public pure override returns (uint8) {
+        revert("not supported");
+    }
     function mint(address to, uint256 amount) public virtual {
         _mint(to, amount);
     }
