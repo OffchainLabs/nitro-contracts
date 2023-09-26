@@ -24,9 +24,9 @@ library DecimalsNormalizationHelper {
 
         // normalize
         if (tokenDecimals < 18) {
-            amount = amount * 10 ** (18 - tokenDecimals);
+            amount = amount * 10**(18 - tokenDecimals);
         } else if (tokenDecimals > 18) {
-            amount = amount / (10 ** (tokenDecimals - 18));
+            amount = amount / (10**(tokenDecimals - 18));
         }
 
         return amount;
@@ -34,7 +34,7 @@ library DecimalsNormalizationHelper {
 
     /// @notice convert the amount from normalized 18 decimals back to token's actual number of decimals.
     /// @dev This process is opposite to the one used in normalization function. It's important to notice
-    ///      that amount is always rounded down when conversion is performed. 
+    ///      that amount is always rounded down when conversion is performed.
     /// @param amount amount to convert
     /// @return amount normalized to 18 decimals
     function convertToNativeTokenDecimals(address token, uint256 amount)
@@ -47,9 +47,9 @@ library DecimalsNormalizationHelper {
 
         // convert back
         if (tokenDecimals < 18) {
-            amount = amount / 10 ** (18 - tokenDecimals);
+            amount = amount / 10**(18 - tokenDecimals);
         } else if (tokenDecimals > 18) {
-            amount = amount * (10 ** (tokenDecimals - 18));
+            amount = amount * (10**(tokenDecimals - 18));
         }
 
         return amount;
@@ -59,8 +59,9 @@ library DecimalsNormalizationHelper {
     /// @param token address of the token
     /// @return number of decimals used by token. Returns 0 if static call is unsuccessful.
     function getDecimals(address token) internal view returns (uint8) {
-        (bool success, bytes memory decimalsData) =
-            token.staticcall(abi.encodeWithSelector(ERC20.decimals.selector));
+        (bool success, bytes memory decimalsData) = token.staticcall(
+            abi.encodeWithSelector(ERC20.decimals.selector)
+        );
         if (success && decimalsData.length == 32) {
             // decimals() returns uint8
             return BytesLib.toUint8(decimalsData, 31);
