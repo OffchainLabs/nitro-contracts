@@ -342,4 +342,9 @@ contract Inbox is AbsInbox, IInbox {
                 messageDataHash
             );
     }
+
+    /// @inheritdoc AbsInbox
+    function _fromNativeTo18Decimals(uint256 value) internal view override returns (uint256) {
+        return value;
+    }
 }

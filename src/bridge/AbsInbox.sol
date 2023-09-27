@@ -167,6 +167,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         if (gasLimit > type(uint64).max) {
             revert GasLimitTooLarge();
         }
+        uint256 l2CallValue18Decimals = _fromNativeTo18Decimals(value);
         return
             _deliverMessage(
                 L2_MSG,
@@ -177,7 +178,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
                     maxFeePerGas,
                     nonce,
                     uint256(uint160(to)),
-                    value,
+                    l2CallValue18Decimals,
                     data
                 ),
                 0
@@ -196,6 +197,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         if (gasLimit > type(uint64).max) {
             revert GasLimitTooLarge();
         }
+        uint256 l2CallValue18Decimals = _fromNativeTo18Decimals(value);
         return
             _deliverMessage(
                 L2_MSG,
@@ -205,7 +207,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
                     gasLimit,
                     maxFeePerGas,
                     uint256(uint160(to)),
-                    value,
+                    l2CallValue18Decimals,
                     data
                 ),
                 0
@@ -304,8 +306,8 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
                 msg.sender,
                 abi.encodePacked(
                     uint256(uint160(to)),
-                    l2CallValue,
-                    amount,
+                    _fromNativeTo18Decimals(l2CallValue),
+                    _fromNativeTo18Decimals(amount),
                     maxSubmissionCost,
                     uint256(uint160(excessFeeRefundAddress)),
                     uint256(uint160(callValueRefundAddress)),
@@ -343,6 +345,13 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         view
         virtual
         returns (uint256);
+
+    /// @notice get amount of ETH/token to mint on child chain based on provided value.
+    ///         In case of ETH-based rollup this amount will always equal the provided
+    ///         value. In case of ERC20-based rollup where native token has number of
+    ///         decimals different thatn 18, amount will be re-adjusted to reflect 18
+    ///         decimals used for native currency on child chain.
+    function _fromNativeTo18Decimals(uint256 value) internal view virtual returns (uint256);
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new

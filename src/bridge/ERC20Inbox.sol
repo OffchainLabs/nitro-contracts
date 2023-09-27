@@ -45,17 +45,7 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
             dest = AddressAliasHelper.applyL1ToL2Alias(msg.sender);
         }
 
-        // In order to keep compatibility of child chain's native currency with external 3rd party tooling we
-        // expect 18 decimals to be always used for native currency. If native token uses different number of
-        // decimals then here it will be normalized to 18. Keep in mind, when withdrawing from child chain back
-        // to parent chain then the amount has to match native token's granularity, otherwise it will be rounded
-        // down.
-        address nativeToken = IERC20Bridge(address(bridge)).nativeToken();
-        uint256 amountToMintOnL2 = DecimalsNormalizationHelper.normalizeAmountTo18Decimals(
-            nativeToken,
-            amount
-        );
-
+        uint256 amountToMintOnL2 = _fromNativeTo18Decimals(amount);
         return
             _deliverMessage(
                 L1MessageType_ethDeposit,
@@ -150,5 +140,16 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
                 messageDataHash,
                 tokenAmount
             );
+    }
+
+    /// @inheritdoc AbsInbox
+    function _fromNativeTo18Decimals(uint256 value) internal view override returns (uint256) {
+        // In order to keep compatibility of child chain's native currency with external 3rd party tooling we
+        // expect 18 decimals to be always used for native currency. If native token uses different number of
+        // decimals then here it will be normalized to 18. Keep in mind, when withdrawing from child chain back
+        // to parent chain then the amount has to match native token's granularity, otherwise it will be rounded
+        // down.
+        address nativeToken = IERC20Bridge(address(bridge)).nativeToken();
+        return DecimalsNormalizationHelper.normalizeAmountTo18Decimals(nativeToken, value);
     }
 }
