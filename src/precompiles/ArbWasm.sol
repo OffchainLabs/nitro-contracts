@@ -26,6 +26,14 @@ interface ArbWasm {
     // @return version the program version (0 for EVM contracts)
     function programVersion(address program) external view returns (uint16 version);
 
+    // @notice gets the uncompressed size of the program at the given address in bytes
+    // @return size the size of the program in bytes rounded up to a multiple of 512
+    function programSize(address program) external view returns (uint32 size);
+
+    // @notice gets the memory footprint of the program at the given address in pages
+    // @return footprint the memory footprint of program in pages
+    function programMemoryFootprint(address program) external view returns (uint16 footprint);
+
     // @notice gets the conversion rate between gas and ink
     // @return price the amount of ink 1 gas buys
     function inkPrice() external view returns (uint32 price);
