@@ -7,26 +7,26 @@ pragma solidity ^0.8.0;
 import {BytesLib} from "./BytesLib.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-library DecimalsNormalizationHelper {
-    /// @notice normalize the amount as if token had 18 decimals.
-    /// @dev Ie. let's say amount is 752. If token has 16 decimals normalized
-    ///      amount is 75200. If token has 20 decimals normalized amount is 7.
-    ///      If token uses no decimals normalized amount is 752*10^18.
-    /// @param amount amount to normalize
-    /// @return amount normalized to 18 decimals
+library DecimalsConverterHelper {
+    /// @notice convert the amount as if token had 18 decimals.
+    /// @dev Ie. let's say amount is 752. If token has 16 decimals converted
+    ///      amount is 75200. If token has 20 decimals converted amount is 7.
+    ///      If token uses no decimals converted amount is 752*10^18.
+    /// @param amount amount to convert
+    /// @return amount converted to 18 decimals
     function fromNativeTo18Decimals(address token, uint256 amount) internal view returns (uint256) {
         // get decimals
         uint8 tokenDecimals = getDecimals(token);
 
-        // normalize
+        // conver
         return adjustDecimals(amount, tokenDecimals, 18);
     }
 
-    /// @notice convert the amount from normalized 18 decimals back to token's actual number of decimals.
-    /// @dev This process is opposite to the one used in normalization function. It's important to notice
-    ///      that amount is always rounded down when conversion is performed.
+    /// @notice convert the amount from 18 decimals back to token's actual number of decimals.
+    /// @dev This process is opposite to the one used in fromNativeTo18Decimals function. It's
+    ///      important to notice that amount is always rounded down when conversion is performed.
     /// @param amount amount to convert
-    /// @return amount normalized to 18 decimals
+    /// @return amount converted to 18 decimals
     function from18ToNativeDecimals(address token, uint256 amount) internal view returns (uint256) {
         // get decimals
         uint8 tokenDecimals = getDecimals(token);
@@ -39,7 +39,7 @@ library DecimalsNormalizationHelper {
     /// @param amount amount to convert
     /// @param decimalsIn current decimals
     /// @param decimalsOut target decimals
-    /// @return amount normalized to 'decimalsOut' decimals
+    /// @return amount converted to 'decimalsOut' decimals
     function adjustDecimals(
         uint256 amount,
         uint8 decimalsIn,

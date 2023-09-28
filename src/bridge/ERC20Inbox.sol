@@ -12,7 +12,7 @@ import {L1MessageType_ethDeposit} from "../libraries/MessageTypes.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {DecimalsNormalizationHelper} from "../libraries/DecimalsNormalizationHelper.sol";
+import {DecimalsConverterHelper} from "../libraries/DecimalsConverterHelper.sol";
 
 /**
  * @title Inbox for user and contract originated messages
@@ -150,6 +150,6 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
         // to parent chain then the amount has to match native token's granularity, otherwise it will be rounded
         // down.
         address nativeToken = IERC20Bridge(address(bridge)).nativeToken();
-        return DecimalsNormalizationHelper.fromNativeTo18Decimals(nativeToken, value);
+        return DecimalsConverterHelper.fromNativeTo18Decimals(nativeToken, value);
     }
 }

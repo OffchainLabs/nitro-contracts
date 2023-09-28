@@ -6,7 +6,7 @@ pragma solidity ^0.8.4;
 
 import "./AbsOutbox.sol";
 import {IERC20Bridge} from "./IERC20Bridge.sol";
-import {DecimalsNormalizationHelper} from "../libraries/DecimalsNormalizationHelper.sol";
+import {DecimalsConverterHelper} from "../libraries/DecimalsConverterHelper.sol";
 
 contract ERC20Outbox is AbsOutbox {
     // it is assumed that arb-os never assigns this value to a valid leaf to be redeemed
@@ -27,7 +27,7 @@ contract ERC20Outbox is AbsOutbox {
     /// @inheritdoc AbsOutbox
     function _getAmountToUnlock(uint256 value) internal view override returns (uint256) {
         address nativeToken = IERC20Bridge(address(bridge)).nativeToken();
-        return DecimalsNormalizationHelper.from18ToNativeDecimals(nativeToken, value);
+        return DecimalsConverterHelper.from18ToNativeDecimals(nativeToken, value);
     }
 
     /// @inheritdoc AbsOutbox
