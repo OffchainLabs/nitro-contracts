@@ -150,6 +150,6 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
         // to parent chain then the amount has to match native token's granularity, otherwise it will be rounded
         // down.
         address nativeToken = IERC20Bridge(address(bridge)).nativeToken();
-        return DecimalsNormalizationHelper.normalizeAmountTo18Decimals(nativeToken, value);
+        return DecimalsNormalizationHelper.fromNativeTo18Decimals(nativeToken, value);
     }
 }

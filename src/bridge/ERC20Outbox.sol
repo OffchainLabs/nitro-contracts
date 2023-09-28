@@ -27,7 +27,7 @@ contract ERC20Outbox is AbsOutbox {
     /// @inheritdoc AbsOutbox
     function _getAmountToUnlock(uint256 value) internal view override returns (uint256) {
         address nativeToken = IERC20Bridge(address(bridge)).nativeToken();
-        return DecimalsNormalizationHelper.convertToNativeTokenDecimals(nativeToken, value);
+        return DecimalsNormalizationHelper.from18ToNativeDecimals(nativeToken, value);
     }
 
     /// @inheritdoc AbsOutbox

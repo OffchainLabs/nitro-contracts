@@ -14,22 +14,12 @@ library DecimalsNormalizationHelper {
     ///      If token uses no decimals normalized amount is 752*10^18.
     /// @param amount amount to normalize
     /// @return amount normalized to 18 decimals
-    function normalizeAmountTo18Decimals(address token, uint256 amount)
-        internal
-        view
-        returns (uint256)
-    {
+    function fromNativeTo18Decimals(address token, uint256 amount) internal view returns (uint256) {
         // get decimals
         uint8 tokenDecimals = getDecimals(token);
 
         // normalize
-        if (tokenDecimals < 18) {
-            amount = amount * 10**(18 - tokenDecimals);
-        } else if (tokenDecimals > 18) {
-            amount = amount / (10**(tokenDecimals - 18));
-        }
-
-        return amount;
+        return adjustDecimals(amount, tokenDecimals, 18);
     }
 
     /// @notice convert the amount from normalized 18 decimals back to token's actual number of decimals.
@@ -37,22 +27,31 @@ library DecimalsNormalizationHelper {
     ///      that amount is always rounded down when conversion is performed.
     /// @param amount amount to convert
     /// @return amount normalized to 18 decimals
-    function convertToNativeTokenDecimals(address token, uint256 amount)
-        internal
-        view
-        returns (uint256)
-    {
+    function from18ToNativeDecimals(address token, uint256 amount) internal view returns (uint256) {
         // get decimals
         uint8 tokenDecimals = getDecimals(token);
 
-        // convert back
-        if (tokenDecimals < 18) {
-            amount = amount / 10**(18 - tokenDecimals);
-        } else if (tokenDecimals > 18) {
-            amount = amount * (10**(tokenDecimals - 18));
-        }
+        // convert back to native decimals
+        return adjustDecimals(amount, 18, tokenDecimals);
+    }
 
-        return amount;
+    /// @notice generic function for mapping amount from one decimal denomination to another
+    /// @param amount amount to convert
+    /// @param decimalsIn current decimals
+    /// @param decimalsOut target decimals
+    /// @return amount normalized to 'decimalsOut' decimals
+    function adjustDecimals(
+        uint256 amount,
+        uint8 decimalsIn,
+        uint8 decimalsOut
+    ) internal pure returns (uint256) {
+        if (decimalsIn < decimalsOut) {
+            return amount * 10**(decimalsOut - decimalsIn);
+        } else if (decimalsOut < decimalsIn) {
+            return amount / 10**(decimalsIn - decimalsOut);
+        } else {
+            return amount;
+        }
     }
 
     /// @notice use static call to get number of decimals used by token.
