@@ -10,6 +10,11 @@
 
 pragma solidity ^0.8.0;
 
+/**
+ * This file is copied over from offchainlabs/token-bridge-contracts repo.
+ * Ref: https://github.com/OffchainLabs/token-bridge-contracts/blob/main/contracts/tokenbridge/libraries/BytesLib.sol
+ */
+
 /* solhint-disable no-inline-assembly */
 library BytesLib {
     function toAddress(bytes memory _bytes, uint256 _start) internal pure returns (address) {
