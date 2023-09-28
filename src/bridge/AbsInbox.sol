@@ -167,7 +167,6 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         if (gasLimit > type(uint64).max) {
             revert GasLimitTooLarge();
         }
-        uint256 l2CallValue18Decimals = _fromNativeTo18Decimals(value);
         return
             _deliverMessage(
                 L2_MSG,
@@ -178,7 +177,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
                     maxFeePerGas,
                     nonce,
                     uint256(uint160(to)),
-                    l2CallValue18Decimals,
+                    value,
                     data
                 ),
                 0
@@ -197,7 +196,6 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         if (gasLimit > type(uint64).max) {
             revert GasLimitTooLarge();
         }
-        uint256 l2CallValue18Decimals = _fromNativeTo18Decimals(value);
         return
             _deliverMessage(
                 L2_MSG,
@@ -207,7 +205,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
                     gasLimit,
                     maxFeePerGas,
                     uint256(uint160(to)),
-                    l2CallValue18Decimals,
+                    value,
                     data
                 ),
                 0
@@ -306,7 +304,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
                 msg.sender,
                 abi.encodePacked(
                     uint256(uint160(to)),
-                    _fromNativeTo18Decimals(l2CallValue),
+                    l2CallValue,
                     _fromNativeTo18Decimals(amount),
                     maxSubmissionCost,
                     uint256(uint160(excessFeeRefundAddress)),

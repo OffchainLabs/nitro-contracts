@@ -449,14 +449,13 @@ contract ERC20InboxTest is AbsInboxTest {
 
         {
             // expect event
-            uint256 expectedL2CallValueTo18Dec = l2CallValue * 10 ** (18 - decimals);
             uint256 expectedTokenTotalFeeAmount18Dec = tokenTotalFeeAmount * 10 ** (18 - decimals);
             vm.expectEmit(true, true, true, true);
             emit InboxMessageDelivered(
                 0,
                 abi.encodePacked(
                     uint256(uint160(user)),
-                    expectedL2CallValueTo18Dec,
+                    l2CallValue,
                     expectedTokenTotalFeeAmount18Dec,
                     maxSubmissionCost,
                     uint256(uint160(user)),
@@ -542,14 +541,13 @@ contract ERC20InboxTest is AbsInboxTest {
 
         {
             // expect event
-            uint256 expectedL2CallValueTo18Dec = l2CallValue / 10 ** (decimals - 18);
             uint256 expectedTokenTotalFeeAmount18Dec = tokenTotalFeeAmount / 10 ** (decimals - 18);
             vm.expectEmit(true, true, true, true);
             emit InboxMessageDelivered(
                 0,
                 abi.encodePacked(
                     uint256(uint160(user)),
-                    expectedL2CallValueTo18Dec,
+                    l2CallValue,
                     expectedTokenTotalFeeAmount18Dec,
                     maxSubmissionCost,
                     uint256(uint160(user)),
@@ -1035,7 +1033,6 @@ contract ERC20InboxTest is AbsInboxTest {
         bytes memory data = abi.encodePacked("7");
 
         // expect event
-        uint256 expectedL2CallValueTo18Dec = l2CallValue * 10 ** (18 - decimals);
         vm.expectEmit(true, true, true, true);
         emit InboxMessageDelivered(
             0,
@@ -1045,7 +1042,7 @@ contract ERC20InboxTest is AbsInboxTest {
                 maxFeePerGas,
                 nonce,
                 uint256(uint160(user)),
-                expectedL2CallValueTo18Dec,
+                l2CallValue,
                 data
             )
         );
@@ -1086,7 +1083,6 @@ contract ERC20InboxTest is AbsInboxTest {
         bytes memory data = abi.encodePacked("7");
 
         // expect event
-        uint256 expectedL2CallValueTo18Dec = l2CallValue / 10 ** (decimals - 18);
         vm.expectEmit(true, true, true, true);
         emit InboxMessageDelivered(
             0,
@@ -1096,7 +1092,7 @@ contract ERC20InboxTest is AbsInboxTest {
                 maxFeePerGas,
                 nonce,
                 uint256(uint160(user)),
-                expectedL2CallValueTo18Dec,
+                l2CallValue,
                 data
             )
         );
@@ -1136,8 +1132,6 @@ contract ERC20InboxTest is AbsInboxTest {
         bytes memory data = abi.encodePacked("test data");
 
         // expect event
-        uint256 expectedL2CallValueTo18Dec = l2CallValue * 10 ** (18 - decimals);
-
         vm.expectEmit(true, true, true, true);
         emit InboxMessageDelivered(
             0,
@@ -1146,7 +1140,7 @@ contract ERC20InboxTest is AbsInboxTest {
                 gasLimit,
                 maxFeePerGas,
                 uint256(uint160(user)),
-                expectedL2CallValueTo18Dec,
+                l2CallValue,
                 data
             )
         );
@@ -1186,8 +1180,6 @@ contract ERC20InboxTest is AbsInboxTest {
         bytes memory data = abi.encodePacked("test data");
 
         // expect event
-        uint256 expectedL2CallValueTo18Dec = l2CallValue / 10 ** (decimals - 18);
-
         vm.expectEmit(true, true, true, true);
         emit InboxMessageDelivered(
             0,
@@ -1196,7 +1188,7 @@ contract ERC20InboxTest is AbsInboxTest {
                 gasLimit,
                 maxFeePerGas,
                 uint256(uint160(user)),
-                expectedL2CallValueTo18Dec,
+                l2CallValue,
                 data
             )
         );
