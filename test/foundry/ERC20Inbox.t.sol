@@ -529,7 +529,7 @@ contract ERC20InboxTest is AbsInboxTest {
         _nativeToken.approve(address(_inbox), tokenTotalFeeAmount);
 
         // retyrable params
-        uint256 l2CallValue = 20 * 10 ** decimals;
+        uint256 l2CallValue = 20 * 10 ** 18;
         uint256 maxSubmissionCost = 0;
         uint256 gasLimit = 100;
         uint256 maxFeePerGas = 2;
@@ -794,7 +794,7 @@ contract ERC20InboxTest is AbsInboxTest {
 
         //// create ticket
 
-        uint256 tooSmallTokenTotalFeeAmount = 20 * 10 ** 20;
+        uint256 tooSmallTokenTotalFeeAmount = 2 * 10 ** 20;
 
         uint256 l2CallValue = 2 * 10 ** 18;
         uint256 maxSubmissionCost = 0;
