@@ -518,11 +518,7 @@ contract ERC20InboxTest is AbsInboxTest {
         // fund user account
         ERC20_20Decimals(address(_nativeToken)).mint(user, 1000 * 10 ** decimals);
 
-        ////////////////////////
-        ////////////////////////
-        ////////////////////////
-        ////////////////////////
-
+        // snapshot
         uint256 bridgeTokenBalanceBefore = _nativeToken.balanceOf(address(_bridge));
         uint256 userTokenBalanceBefore = _nativeToken.balanceOf(address(user));
 
@@ -718,6 +714,104 @@ contract ERC20InboxTest is AbsInboxTest {
             )
         );
         erc20Inbox.createRetryableTicket({
+            to: user,
+            l2CallValue: l2CallValue,
+            maxSubmissionCost: maxSubmissionCost,
+            excessFeeRefundAddress: user,
+            callValueRefundAddress: user,
+            gasLimit: gasLimit,
+            maxFeePerGas: maxFeePerGas,
+            tokenTotalFeeAmount: tooSmallTokenTotalFeeAmount,
+            data: abi.encodePacked("data")
+        });
+    }
+
+    function test_createRetryableTicket_revert_InsufficientValue_LessThan18Decimal() public {
+        uint8 decimals = 6;
+        ERC20 _nativeToken = new ERC20_6Decimals();
+
+        IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
+        IERC20Inbox _inbox = IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox())));
+
+        // init bridge and inbox
+        address _rollup = makeAddr("_rollup");
+        _bridge.initialize(IOwnable(_rollup), address(_nativeToken));
+        _inbox.initialize(_bridge, ISequencerInbox(makeAddr("_seqInbox")));
+        vm.prank(_rollup);
+        _bridge.setDelayedInbox(address(_inbox), true);
+
+        // fund user account
+        ERC20_6Decimals(address(_nativeToken)).mint(user, 1_000_000 * 10 ** decimals);
+
+        //// create ticket
+
+        uint256 tooSmallTokenTotalFeeAmount = 2 * 10 ** 6; // 2 USDC becomes 2*10^18 on child chain
+
+        uint256 l2CallValue = 2 * 10 ** 18;
+        uint256 maxSubmissionCost = 0;
+        uint256 gasLimit = 80_000;
+        uint256 maxFeePerGas = 10 ** 9; //1 gwei
+        /// provided: 2USDC on parent chain = 2*10^18 on child chain
+        /// needed: 2.00008*10^18 on child chain
+
+        vm.prank(user, user);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                InsufficientValue.selector,
+                maxSubmissionCost + l2CallValue + gasLimit * maxFeePerGas,
+                tooSmallTokenTotalFeeAmount * 10 ** (18 - decimals)
+            )
+        );
+        _inbox.createRetryableTicket({
+            to: user,
+            l2CallValue: l2CallValue,
+            maxSubmissionCost: maxSubmissionCost,
+            excessFeeRefundAddress: user,
+            callValueRefundAddress: user,
+            gasLimit: gasLimit,
+            maxFeePerGas: maxFeePerGas,
+            tokenTotalFeeAmount: tooSmallTokenTotalFeeAmount,
+            data: abi.encodePacked("data")
+        });
+    }
+
+    function test_createRetryableTicket_revert_InsufficientValue_MoreThan18Decimal() public {
+        uint8 decimals = 20;
+        ERC20 _nativeToken = new ERC20_20Decimals();
+
+        IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
+        IERC20Inbox _inbox = IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox())));
+
+        // init bridge and inbox
+        address _rollup = makeAddr("_rollup");
+        _bridge.initialize(IOwnable(_rollup), address(_nativeToken));
+        _inbox.initialize(_bridge, ISequencerInbox(makeAddr("_seqInbox")));
+        vm.prank(_rollup);
+        _bridge.setDelayedInbox(address(_inbox), true);
+
+        // fund user account
+        ERC20_20Decimals(address(_nativeToken)).mint(user, 1_000_000 * 10 ** decimals);
+
+        //// create ticket
+
+        uint256 tooSmallTokenTotalFeeAmount = 20 * 10 ** 20;
+
+        uint256 l2CallValue = 2 * 10 ** 18;
+        uint256 maxSubmissionCost = 0;
+        uint256 gasLimit = 80_000;
+        uint256 maxFeePerGas = 10 ** 9; //1 gwei
+        /// provided: 2 * 10 ** 20 on parent chain = 2*10^18 on child chain
+        /// needed: 2.00008*10^18 on child chain
+
+        vm.prank(user, user);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                InsufficientValue.selector,
+                maxSubmissionCost + l2CallValue + gasLimit * maxFeePerGas,
+                tooSmallTokenTotalFeeAmount / 10 ** (decimals - 18)
+            )
+        );
+        _inbox.createRetryableTicket({
             to: user,
             l2CallValue: l2CallValue,
             maxSubmissionCost: maxSubmissionCost,

@@ -229,10 +229,11 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         bytes calldata data
     ) internal returns (uint256) {
         // ensure the user's deposit alone will make submission succeed
-        if (amount < (maxSubmissionCost + l2CallValue + gasLimit * maxFeePerGas)) {
+        uint256 amountToBeMintedOnL2 = _fromNativeTo18Decimals(amount);
+        if (amountToBeMintedOnL2 < (maxSubmissionCost + l2CallValue + gasLimit * maxFeePerGas)) {
             revert InsufficientValue(
                 maxSubmissionCost + l2CallValue + gasLimit * maxFeePerGas,
-                amount
+                amountToBeMintedOnL2
             );
         }
 
