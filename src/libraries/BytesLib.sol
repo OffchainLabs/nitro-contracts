@@ -12,7 +12,7 @@ pragma solidity ^0.8.0;
 
 /**
  * This file is copied over from offchainlabs/token-bridge-contracts repo.
- * Ref: https://github.com/OffchainLabs/token-bridge-contracts/blob/main/contracts/tokenbridge/libraries/BytesLib.sol
+ * Ref: https://github.com/OffchainLabs/token-bridge-contracts/blob/6396a178e001da2b86509bb21c775488530fd541/contracts/tokenbridge/libraries/BytesLib.sol
  */
 
 /* solhint-disable no-inline-assembly */
