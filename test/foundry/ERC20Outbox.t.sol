@@ -64,12 +64,12 @@ contract ERC20OutboxTest is AbsOutboxTest {
     }
 
     function test_initialize_revert_DecimalsTooLarge() public {
-        ERC20 _nativeToken = new ERC20_96Decimals();
+        ERC20 _nativeToken = new ERC20_37Decimals();
         ERC20Bridge _bridge = ERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
         ERC20Outbox _outbox = ERC20Outbox(TestUtil.deployProxy(address(new ERC20Outbox())));
         _bridge.initialize(IOwnable(makeAddr("rollup")), address(_nativeToken));
 
-        vm.expectRevert(abi.encodeWithSelector(NativeTokenDecimalsTooLarge.selector, 96));
+        vm.expectRevert(abi.encodeWithSelector(NativeTokenDecimalsTooLarge.selector, 37));
         _outbox.initialize(IBridge(_bridge));
     }
 
@@ -382,9 +382,9 @@ contract ERC20OutboxTest is AbsOutboxTest {
         );
     }
 
-    function test_executeTransaction_revert_DecimalsTooLarge() public {
+    function test_executeTransaction_revert_AmountTooLarge() public {
         // create token/bridge/inbox
-        ERC20 _nativeToken = new ERC20_95Decimals();
+        ERC20 _nativeToken = new ERC20_36Decimals();
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
         IERC20Inbox _inbox = IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox())));
@@ -399,13 +399,13 @@ contract ERC20OutboxTest is AbsOutboxTest {
         _bridge.setOutbox(address(_outbox), true);
 
         // fund bridge with some tokens
-        ERC20_95Decimals(address(_nativeToken)).mint(address(_bridge), type(uint256).max / 100);
+        ERC20_36Decimals(address(_nativeToken)).mint(address(_bridge), type(uint256).max / 100);
 
         // store root
         vm.prank(_rollup);
         _outbox.updateSendRoot(
-            0x3c66096729d57a3c7528dc23097e4a7b800e7e52d4a8d71105f07e94177ae2a1,
-            0x3c66096729d57a3c7528dc23097e4a7b800e7e52d4a8d71105f07e94177ae2a1
+            0xcf78d107811be83d3ec56f935417458a3178dd76f3a96f9b92cbff0d1a8dd106,
+            0xcf78d107811be83d3ec56f935417458a3178dd76f3a96f9b92cbff0d1a8dd106
         );
 
         // create msg receiver on L1
@@ -432,11 +432,11 @@ contract ERC20OutboxTest is AbsOutboxTest {
         proof[15] = bytes32(0x0000000000000000000000000000000000000000000000000000000000000000);
         proof[16] = bytes32(0xb43a6b28077d49f37d58c87aec0b51f7bce13b648143f3295385f3b3d5ac3b9b);
 
-        uint256 withdrawalAmount = 188_394_098_124_747_940;
+        uint256 tooLargeWithdrawalAmount = type(uint256).max / 10 ** 18 + 1;
 
         bytes memory data = abi.encodeWithSignature("receiveHook()");
 
-        vm.expectRevert(abi.encodeWithSelector(AmountTooLarge.selector, withdrawalAmount));
+        vm.expectRevert(abi.encodeWithSelector(AmountTooLarge.selector, tooLargeWithdrawalAmount));
         _outbox.executeTransaction({
             proof: proof,
             index: 12,
@@ -445,7 +445,7 @@ contract ERC20OutboxTest is AbsOutboxTest {
             l2Block: 300,
             l1Block: 20,
             l2Timestamp: 1234,
-            value: withdrawalAmount,
+            value: tooLargeWithdrawalAmount,
             data: data
         });
     }

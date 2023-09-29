@@ -53,7 +53,7 @@ contract DecimalsConverterHelperTest is Test {
     {
         uint8 decimalsOut = 18;
 
-        vm.assume(decimalsIn <= 95);
+        vm.assume(decimalsIn <= 36);
         vm.assume(decimalsIn > decimalsOut);
         assertEq(
             DecimalsConverterHelper.adjustDecimals(amount, decimalsIn, decimalsOut),

@@ -10,16 +10,22 @@ import {DecimalsConverterHelper} from "../libraries/DecimalsConverterHelper.sol"
 import {AmountTooLarge, NativeTokenDecimalsTooLarge} from "../libraries/Error.sol";
 
 contract ERC20Outbox is AbsOutbox {
-    // it is assumed that arb-os never assigns this value to a valid leaf to be redeemed
-    uint256 private constant AMOUNT_DEFAULT_CONTEXT = type(uint256).max;
-
     // number of decimals used by native token
     uint8 public nativeTokenDecimals;
 
-    // if nativeTokenDecimals is greater than 18, we divide token amount by 10**(decimals-18) when
-    // adjusting to 18 decimals. In order to avoid overflow of 10**(decimals-18) we need to restrict
-    // number of native token's decimals to 95 at most
-    uint8 public constant MAX_ALLOWED_NATIVE_TOKEN_DECIMALS = uint8(95);
+    // it is assumed that arb-os never assigns this value to a valid leaf to be redeemed
+    uint256 private constant AMOUNT_DEFAULT_CONTEXT = type(uint256).max;
+
+    // If nativeTokenDecimals is different than 18 decimals, bridge will inflate or deflate token amounts
+    // when depositing to child chain to match 18 decimal denomination. Opposite process happens when
+    // amount is withdrawn back to parent chain. In order to avoid uint256 overflows we restrict max number
+    // of decimals to 36 which should be enough for most practical use-cases.
+    uint8 public constant MAX_ALLOWED_NATIVE_TOKEN_DECIMALS = uint8(36);
+
+    // Max amount that can be moved from parent chain to child chain. Also the max amount that can be
+    // claimed on parent chain after withdrawing it from child chain. Amounts higher than this would
+    // risk uint256 overflows.
+    uint256 public constant MAX_BRIDGEABLE_AMOUNT = type(uint256).max / 10**18;
 
     function initialize(IBridge _bridge) external onlyDelegated {
         __AbsOutbox_init(_bridge);
@@ -48,7 +54,7 @@ contract ERC20Outbox is AbsOutbox {
     function _getAmountToUnlock(uint256 value) internal view override returns (uint256) {
         // make sure that inflated amount does not overflow uint256
         if (nativeTokenDecimals > 18) {
-            if (value > type(uint256).max / 10**(nativeTokenDecimals - 18)) {
+            if (value > MAX_BRIDGEABLE_AMOUNT) {
                 revert AmountTooLarge(value);
             }
         }

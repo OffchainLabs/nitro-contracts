@@ -69,14 +69,14 @@ contract ERC20InboxTest is AbsInboxTest {
         assertEq(_inbox.nativeTokenDecimals(), 0, "Invalid native token decimals");
     }
 
-    function test_initialize_revert_96Decimals() public {
-        ERC20_96Decimals _nativeToken = new ERC20_96Decimals();
+    function test_initialize_revert_37Decimals() public {
+        ERC20_37Decimals _nativeToken = new ERC20_37Decimals();
         ERC20Bridge _bridge = ERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
         ERC20Inbox _inbox = ERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox())));
 
         _bridge.initialize(IOwnable(makeAddr("_rollup")), address(_nativeToken));
 
-        vm.expectRevert(abi.encodeWithSelector(NativeTokenDecimalsTooLarge.selector, 96));
+        vm.expectRevert(abi.encodeWithSelector(NativeTokenDecimalsTooLarge.selector,37));
         _inbox.initialize(_bridge, ISequencerInbox(makeAddr("_seqInbox")));
     }
 
@@ -1389,11 +1389,11 @@ contract ERC20_20Decimals is ERC20 {
 }
 
 /* solhint-disable contract-name-camelcase */
-contract ERC20_96Decimals is ERC20 {
+contract ERC20_37Decimals is ERC20 {
     constructor() ERC20("XY", "xy") {}
 
     function decimals() public pure override returns (uint8) {
-        return 96;
+        return 37;
     }
 
     function mint(address to, uint256 amount) public virtual {
@@ -1402,11 +1402,11 @@ contract ERC20_96Decimals is ERC20 {
 }
 
 /* solhint-disable contract-name-camelcase */
-contract ERC20_95Decimals is ERC20 {
+contract ERC20_36Decimals is ERC20 {
     constructor() ERC20("XY", "xy") {}
 
     function decimals() public pure override returns (uint8) {
-        return 95;
+        return 36;
     }
 
     function mint(address to, uint256 amount) public virtual {
