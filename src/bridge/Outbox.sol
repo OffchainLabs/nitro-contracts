@@ -7,6 +7,10 @@ pragma solidity ^0.8.4;
 import "./AbsOutbox.sol";
 
 contract Outbox is AbsOutbox {
+    function initialize(IBridge _bridge) external onlyDelegated {
+        __AbsOutbox_init(_bridge);
+    }
+
     /// @inheritdoc AbsOutbox
     function _defaultContextAmount() internal pure override returns (uint256) {
         // In ETH-based chains withdrawal amount can be read from msg.value. For that reason

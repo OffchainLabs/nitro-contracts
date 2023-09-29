@@ -8,34 +8,12 @@ import {BytesLib} from "./BytesLib.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 library DecimalsConverterHelper {
-    /// @notice convert the amount as if token had 18 decimals.
-    /// @dev Ie. let's say amount is 752. If token has 16 decimals converted
-    ///      amount is 75200. If token has 20 decimals converted amount is 7.
-    ///      If token uses no decimals converted amount is 752*10^18.
-    /// @param amount amount to convert
-    /// @return amount converted to 18 decimals
-    function fromNativeTo18Decimals(address token, uint256 amount) internal view returns (uint256) {
-        // get decimals
-        uint8 tokenDecimals = getDecimals(token);
-
-        // conver
-        return adjustDecimals(amount, tokenDecimals, 18);
-    }
-
-    /// @notice convert the amount from 18 decimals back to token's actual number of decimals.
-    /// @dev This process is opposite to the one used in fromNativeTo18Decimals function. It's
-    ///      important to notice that amount is always rounded down when conversion is performed.
-    /// @param amount amount to convert
-    /// @return amount converted to 18 decimals
-    function from18ToNativeDecimals(address token, uint256 amount) internal view returns (uint256) {
-        // get decimals
-        uint8 tokenDecimals = getDecimals(token);
-
-        // convert back to native decimals
-        return adjustDecimals(amount, 18, tokenDecimals);
-    }
-
     /// @notice generic function for mapping amount from one decimal denomination to another
+    /// @dev Ie. let's say amount is 752. If token has 16 decimals and is being adjusted to
+    ///      18 decimals then amount will be 75200. If token has 20 decimals adjusted amount
+    ///      is 7. If token uses no decimals converted amount is 752*10^18.
+    ///      When amount is adjusted from 18 decimals back to native token decimals, opposite
+    ///      process is performed.
     /// @param amount amount to convert
     /// @param decimalsIn current decimals
     /// @param decimalsOut target decimals

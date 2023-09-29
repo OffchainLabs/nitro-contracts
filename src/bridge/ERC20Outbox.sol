@@ -12,6 +12,17 @@ contract ERC20Outbox is AbsOutbox {
     // it is assumed that arb-os never assigns this value to a valid leaf to be redeemed
     uint256 private constant AMOUNT_DEFAULT_CONTEXT = type(uint256).max;
 
+    // number of decimals used by native token
+    uint8 public nativeTokenDecimals;
+
+    function initialize(IBridge _bridge) external onlyDelegated {
+        __AbsOutbox_init(_bridge);
+
+        // store number of decimals used by native token
+        address nativeToken = IERC20Bridge(address(bridge)).nativeToken();
+        nativeTokenDecimals = DecimalsConverterHelper.getDecimals(nativeToken);
+    }
+
     function l2ToL1WithdrawalAmount() external view returns (uint256) {
         uint256 amount = context.withdrawalAmount;
         if (amount == AMOUNT_DEFAULT_CONTEXT) return 0;
@@ -26,8 +37,7 @@ contract ERC20Outbox is AbsOutbox {
 
     /// @inheritdoc AbsOutbox
     function _getAmountToUnlock(uint256 value) internal view override returns (uint256) {
-        address nativeToken = IERC20Bridge(address(bridge)).nativeToken();
-        return DecimalsConverterHelper.from18ToNativeDecimals(nativeToken, value);
+        return DecimalsConverterHelper.adjustDecimals(value, 18, nativeTokenDecimals);
     }
 
     /// @inheritdoc AbsOutbox

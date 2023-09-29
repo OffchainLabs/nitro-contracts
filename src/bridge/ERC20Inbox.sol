@@ -22,6 +22,9 @@ import {DecimalsConverterHelper} from "../libraries/DecimalsConverterHelper.sol"
 contract ERC20Inbox is AbsInbox, IERC20Inbox {
     using SafeERC20 for IERC20;
 
+    // number of decimals used by native token
+    uint8 public nativeTokenDecimals;
+
     /// @inheritdoc IInboxBase
     function initialize(IBridge _bridge, ISequencerInbox _sequencerInbox)
         external
@@ -33,6 +36,9 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
         // inbox holds native token in transit used to pay for retryable tickets, approve bridge to use it
         address nativeToken = IERC20Bridge(address(bridge)).nativeToken();
         IERC20(nativeToken).approve(address(bridge), type(uint256).max);
+
+        // store number of decimals used by native token
+        nativeTokenDecimals = DecimalsConverterHelper.getDecimals(nativeToken);
     }
 
     /// @inheritdoc IERC20Inbox
@@ -149,7 +155,6 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
         // decimals then here it will be normalized to 18. Keep in mind, when withdrawing from child chain back
         // to parent chain then the amount has to match native token's granularity, otherwise it will be rounded
         // down.
-        address nativeToken = IERC20Bridge(address(bridge)).nativeToken();
-        return DecimalsConverterHelper.fromNativeTo18Decimals(nativeToken, value);
+        return DecimalsConverterHelper.adjustDecimals(value, nativeTokenDecimals, 18);
     }
 }

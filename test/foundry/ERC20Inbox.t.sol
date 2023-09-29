@@ -39,6 +39,33 @@ contract ERC20InboxTest is AbsInboxTest {
         assertEq((PausableUpgradeable(address(inbox))).paused(), false, "Invalid paused state");
 
         assertEq(IERC20(nativeToken).allowance(address(inbox), address(bridge)), type(uint256).max);
+        assertEq(
+            ERC20Inbox(address(erc20Inbox)).nativeTokenDecimals(),
+            18,
+            "Invalid native token decimals"
+        );
+    }
+
+    function test_initialize_ERC20_LessThan18Decimals() public {
+        ERC20 _nativeToken = new ERC20_6Decimals();
+        ERC20Bridge _bridge = ERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
+        ERC20Inbox _inbox = ERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox())));
+
+        _bridge.initialize(IOwnable(makeAddr("_rollup")), address(_nativeToken));
+        _inbox.initialize(_bridge, ISequencerInbox(makeAddr("_seqInbox")));
+
+        assertEq(_inbox.nativeTokenDecimals(), 6, "Invalid native token decimals");
+    }
+
+    function test_initialize_ERC20_NoDecimals() public {
+        ERC20NoDecimals _nativeToken = new ERC20NoDecimals();
+        ERC20Bridge _bridge = ERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
+        ERC20Inbox _inbox = ERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox())));
+
+        _bridge.initialize(IOwnable(makeAddr("_rollup")), address(_nativeToken));
+        _inbox.initialize(_bridge, ISequencerInbox(makeAddr("_seqInbox")));
+
+        assertEq(_inbox.nativeTokenDecimals(), 0, "Invalid native token decimals");
     }
 
     function test_depositERC20_FromEOA() public {
