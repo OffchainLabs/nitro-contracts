@@ -2,6 +2,8 @@
 pragma solidity ^0.8.4;
 
 import "forge-std/Test.sol";
+import "./ERC20Inbox.t.sol";
+
 import {DecimalsConverterHelper} from "../../src/libraries/DecimalsConverterHelper.sol";
 
 contract DecimalsConverterHelperTest is Test {
@@ -59,6 +61,29 @@ contract DecimalsConverterHelperTest is Test {
             DecimalsConverterHelper.adjustDecimals(amount, decimalsIn, decimalsOut),
             amount / 10 ** (decimalsIn - decimalsOut),
             "Invalid 10"
+        );
+    }
+
+    function test_getDecimals() public {
+        assertEq(
+            DecimalsConverterHelper.getDecimals(address(new ERC20_6Decimals())),
+            6,
+            "Invalid decimals 1"
+        );
+        assertEq(
+            DecimalsConverterHelper.getDecimals(address(new ERC20_20Decimals())),
+            20,
+            "Invalid decimals 2"
+        );
+        assertEq(
+            DecimalsConverterHelper.getDecimals(address(new ERC20_37Decimals())),
+            37,
+            "Invalid decimals 3"
+        );
+        assertEq(
+            DecimalsConverterHelper.getDecimals(address(new ERC20NoDecimals())),
+            0,
+            "Invalid decimals 4"
         );
     }
 }
