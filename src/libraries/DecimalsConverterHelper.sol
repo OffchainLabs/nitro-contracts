@@ -23,12 +23,12 @@ library DecimalsConverterHelper {
         uint8 decimalsIn,
         uint8 decimalsOut
     ) internal pure returns (uint256) {
-        if (decimalsIn < decimalsOut) {
-            return amount * 10**(decimalsOut - decimalsIn);
-        } else if (decimalsOut < decimalsIn) {
-            return amount / 10**(decimalsIn - decimalsOut);
-        } else {
+        if (decimalsIn == decimalsOut) {
             return amount;
+        } else if (decimalsIn < decimalsOut) {
+            return amount * 10**(decimalsOut - decimalsIn);
+        } else {
+            return amount / 10**(decimalsIn - decimalsOut);
         }
     }
 

@@ -7,6 +7,7 @@ import "../../src/bridge/ERC20Bridge.sol";
 import "../../src/bridge/ERC20Inbox.sol";
 import "../../src/bridge/ISequencerInbox.sol";
 import "../../src/libraries/AddressAliasHelper.sol";
+import "../../src/libraries/Error.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 
@@ -66,6 +67,17 @@ contract ERC20InboxTest is AbsInboxTest {
         _inbox.initialize(_bridge, ISequencerInbox(makeAddr("_seqInbox")));
 
         assertEq(_inbox.nativeTokenDecimals(), 0, "Invalid native token decimals");
+    }
+
+    function test_initialize_revert_96Decimals() public {
+        ERC20_96Decimals _nativeToken = new ERC20_96Decimals();
+        ERC20Bridge _bridge = ERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
+        ERC20Inbox _inbox = ERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox())));
+
+        _bridge.initialize(IOwnable(makeAddr("_rollup")), address(_nativeToken));
+
+        vm.expectRevert(abi.encodeWithSelector(NativeTokenDecimalsTooLarge.selector, 96));
+        _inbox.initialize(_bridge, ISequencerInbox(makeAddr("_seqInbox")));
     }
 
     function test_depositERC20_FromEOA() public {
@@ -347,6 +359,31 @@ contract ERC20InboxTest is AbsInboxTest {
 
         uint256 delayedMsgCountAfter = bridge.delayedMessageCount();
         assertEq(delayedMsgCountAfter - delayedMsgCountBefore, 1, "Invalid delayed message count");
+    }
+
+    function test_depositERC20_revert_DepositAmountTooLarge() public {
+        ERC20 _nativeToken = new ERC20_6Decimals();
+
+        IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
+        IERC20Inbox _inbox = IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox())));
+
+        // init bridge and inbox
+        address _rollup = makeAddr("_rollup");
+        _bridge.initialize(IOwnable(_rollup), address(_nativeToken));
+        _inbox.initialize(_bridge, ISequencerInbox(makeAddr("_seqInbox")));
+        vm.prank(_rollup);
+        _bridge.setDelayedInbox(address(_inbox), true);
+
+        // fund user account
+        ERC20_6Decimals(address(_nativeToken)).mint(user, type(uint256).max - 10);
+
+        uint256 depositAmountTooHigh = type(uint256).max / 10;
+
+        vm.expectRevert(
+            abi.encodeWithSelector(AmountTooLarge.selector, depositAmountTooHigh)
+        );
+        vm.prank(user, user);
+        _inbox.depositERC20(depositAmountTooHigh);
     }
 
     function test_depositERC20_revert_NativeTokenTransferFails() public {
@@ -1344,6 +1381,32 @@ contract ERC20_20Decimals is ERC20 {
 
     function decimals() public pure override returns (uint8) {
         return 20;
+    }
+
+    function mint(address to, uint256 amount) public virtual {
+        _mint(to, amount);
+    }
+}
+
+/* solhint-disable contract-name-camelcase */
+contract ERC20_96Decimals is ERC20 {
+    constructor() ERC20("XY", "xy") {}
+
+    function decimals() public pure override returns (uint8) {
+        return 96;
+    }
+
+    function mint(address to, uint256 amount) public virtual {
+        _mint(to, amount);
+    }
+}
+
+/* solhint-disable contract-name-camelcase */
+contract ERC20_95Decimals is ERC20 {
+    constructor() ERC20("XY", "xy") {}
+
+    function decimals() public pure override returns (uint8) {
+        return 95;
     }
 
     function mint(address to, uint256 amount) public virtual {

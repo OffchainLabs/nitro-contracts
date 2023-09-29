@@ -63,6 +63,16 @@ contract ERC20OutboxTest is AbsOutboxTest {
         erc20Outbox.initialize(IBridge(bridge));
     }
 
+    function test_initialize_revert_DecimalsTooLarge() public {
+        ERC20 _nativeToken = new ERC20_96Decimals();
+        ERC20Bridge _bridge = ERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
+        ERC20Outbox _outbox = ERC20Outbox(TestUtil.deployProxy(address(new ERC20Outbox())));
+        _bridge.initialize(IOwnable(makeAddr("rollup")), address(_nativeToken));
+
+        vm.expectRevert(abi.encodeWithSelector(NativeTokenDecimalsTooLarge.selector, 96));
+        _outbox.initialize(IBridge(_bridge));
+    }
+
     function test_executeTransaction() public {
         // fund bridge with some tokens
         vm.startPrank(user);
@@ -370,6 +380,74 @@ contract ERC20OutboxTest is AbsOutboxTest {
             expetedAmountToUnlock,
             "Invalid expetedAmountToUnlock"
         );
+    }
+
+    function test_executeTransaction_revert_DecimalsTooLarge() public {
+        // create token/bridge/inbox
+        ERC20 _nativeToken = new ERC20_95Decimals();
+
+        IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
+        IERC20Inbox _inbox = IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox())));
+        ERC20Outbox _outbox = ERC20Outbox(TestUtil.deployProxy(address(new ERC20Outbox())));
+
+        // init bridge and inbox
+        address _rollup = makeAddr("_rollup");
+        _bridge.initialize(IOwnable(_rollup), address(_nativeToken));
+        _inbox.initialize(_bridge, ISequencerInbox(makeAddr("_seqInbox")));
+        _outbox.initialize(IBridge(address(_bridge)));
+        vm.prank(_rollup);
+        _bridge.setOutbox(address(_outbox), true);
+
+        // fund bridge with some tokens
+        ERC20_95Decimals(address(_nativeToken)).mint(address(_bridge), type(uint256).max / 100);
+
+        // store root
+        vm.prank(_rollup);
+        _outbox.updateSendRoot(
+            0x3c66096729d57a3c7528dc23097e4a7b800e7e52d4a8d71105f07e94177ae2a1,
+            0x3c66096729d57a3c7528dc23097e4a7b800e7e52d4a8d71105f07e94177ae2a1
+        );
+
+        // create msg receiver on L1
+        ERC20L2ToL1Target target = new ERC20L2ToL1Target();
+        target.setOutbox(address(_outbox));
+
+        //// execute transaction
+        bytes32[] memory proof = new bytes32[](17);
+        proof[0] = bytes32(0x374de32809f4525d60cb461de130464fddfccb4684cfdbce7016f11f3a2118cf);
+        proof[1] = bytes32(0x08ea4de37e43c6407da28848d26b37a56661caf119ab1d67d9af8ec76bca2d0d);
+        proof[2] = bytes32(0x934fbafba47f664a03dde194b1d8a8211a39ae0c07d6ecc903252576e261307c);
+        proof[3] = bytes32(0xf76d8c825305d7a261a874e863922214f1ad9b2fa833725080d4b2de6678d948);
+        proof[4] = bytes32(0xdf1a4d32f399d99a9c2a633d63c7bfc15ee39bb8d51ee9e30328965b70248387);
+        proof[5] = bytes32(0xe0a0781562562fca15375998f0c80ed72aa6cf5ed772c061150f1d3f0284f9cb);
+        proof[6] = bytes32(0x190e26dd23006cce5d90fced90b381385517ca7f189af5a409343a6d50d52c14);
+        proof[7] = bytes32(0xbf38be925e8044790f45f3a52cb13606b61a3a3d35823d2e304f50755107eeb9);
+        proof[8] = bytes32(0x0000000000000000000000000000000000000000000000000000000000000000);
+        proof[9] = bytes32(0x0000000000000000000000000000000000000000000000000000000000000000);
+        proof[10] = bytes32(0x133461b685bb3ae4afeb28d936f6c0e63983ba34bf4bd5d8f9e39d8ab5920590);
+        proof[11] = bytes32(0x0000000000000000000000000000000000000000000000000000000000000000);
+        proof[12] = bytes32(0x0000000000000000000000000000000000000000000000000000000000000000);
+        proof[13] = bytes32(0x51ec1883dd92281b382a85bee8276c6e21ae9d50349b8f2734ca6a894f69bc38);
+        proof[14] = bytes32(0x822570b03bcf3f26ff2aba5ca9779f8756f855c940c904d00a11ebcab9f739c9);
+        proof[15] = bytes32(0x0000000000000000000000000000000000000000000000000000000000000000);
+        proof[16] = bytes32(0xb43a6b28077d49f37d58c87aec0b51f7bce13b648143f3295385f3b3d5ac3b9b);
+
+        uint256 withdrawalAmount = 188_394_098_124_747_940;
+
+        bytes memory data = abi.encodeWithSignature("receiveHook()");
+
+        vm.expectRevert(abi.encodeWithSelector(AmountTooLarge.selector, withdrawalAmount));
+        _outbox.executeTransaction({
+            proof: proof,
+            index: 12,
+            l2Sender: user,
+            to: address(target),
+            l2Block: 300,
+            l1Block: 20,
+            l2Timestamp: 1234,
+            value: withdrawalAmount,
+            data: data
+        });
     }
 }
 

@@ -12,6 +12,7 @@ import {L1MessageType_ethDeposit} from "../libraries/MessageTypes.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {AmountTooLarge, NativeTokenDecimalsTooLarge} from "../libraries/Error.sol";
 import {DecimalsConverterHelper} from "../libraries/DecimalsConverterHelper.sol";
 
 /**
@@ -24,6 +25,11 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
 
     // number of decimals used by native token
     uint8 public nativeTokenDecimals;
+
+    // if nativeTokenDecimals is greater than 18, we divide token amount by 10**(decimals-18) when
+    // adjusting to 18 decimals. In order to avoid overflow of 10**(decimals-18) we need to restrict
+    // number of native token's decimals to 95 at most
+    uint8 public constant MAX_ALLOWED_NATIVE_TOKEN_DECIMALS = uint8(95);
 
     /// @inheritdoc IInboxBase
     function initialize(IBridge _bridge, ISequencerInbox _sequencerInbox)
@@ -39,6 +45,9 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
 
         // store number of decimals used by native token
         nativeTokenDecimals = DecimalsConverterHelper.getDecimals(nativeToken);
+        if (nativeTokenDecimals > MAX_ALLOWED_NATIVE_TOKEN_DECIMALS) {
+            revert NativeTokenDecimalsTooLarge(nativeTokenDecimals);
+        }
     }
 
     /// @inheritdoc IERC20Inbox
@@ -155,6 +164,13 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
         // decimals then here it will be normalized to 18. Keep in mind, when withdrawing from child chain back
         // to parent chain then the amount has to match native token's granularity, otherwise it will be rounded
         // down.
+
+        // Also make sure that inflated amount does not overflow uint256
+        if (nativeTokenDecimals < 18) {
+            if (value > type(uint256).max / 10**(18 - nativeTokenDecimals)) {
+                revert AmountTooLarge(value);
+            }
+        }
         return DecimalsConverterHelper.adjustDecimals(value, nativeTokenDecimals, 18);
     }
 }

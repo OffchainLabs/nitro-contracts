@@ -350,6 +350,8 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
     ///         value. In case of ERC20-based rollup where native token has number of
     ///         decimals different thatn 18, amount will be re-adjusted to reflect 18
     ///         decimals used for native currency on child chain.
+    /// @dev    provided value has to be less than 'type(uint256).max/10**(18-decimalsIn)'
+    ///         or otherwise it will overflow.
     function _fromNativeTo18Decimals(uint256 value) internal view virtual returns (uint256);
 
     /**
