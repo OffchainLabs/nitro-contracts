@@ -20,59 +20,31 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract BridgeCreator is Ownable {
-    ContractTemplates public ethBasedTemplates;
-    ContractERC20Templates public erc20BasedTemplates;
+    BridgeContracts public ethBasedTemplates;
+    BridgeContracts public erc20BasedTemplates;
 
     event TemplatesUpdated();
     event ERC20TemplatesUpdated();
 
-    struct ContractTemplates {
-        Bridge bridge;
-        SequencerInbox sequencerInbox;
-        Inbox inbox;
-        RollupEventInbox rollupEventInbox;
-        Outbox outbox;
-    }
-
-    struct ContractERC20Templates {
-        ERC20Bridge bridge;
-        SequencerInbox sequencerInbox;
-        ERC20Inbox inbox;
-        ERC20RollupEventInbox rollupEventInbox;
-        ERC20Outbox outbox;
-    }
-
-    struct CreateBridgeFrame {
-        ProxyAdmin admin;
+    struct BridgeContracts {
         IBridge bridge;
-        SequencerInbox sequencerInbox;
+        ISequencerInbox sequencerInbox;
         IInboxBase inbox;
         IRollupEventInbox rollupEventInbox;
-        Outbox outbox;
+        IOutbox outbox;
     }
 
-    constructor() Ownable() {
-        SequencerInbox seqInbox = new SequencerInbox();
-
-        ethBasedTemplates.bridge = new Bridge();
-        ethBasedTemplates.sequencerInbox = seqInbox;
-        ethBasedTemplates.inbox = new Inbox();
-        ethBasedTemplates.rollupEventInbox = new RollupEventInbox();
-        ethBasedTemplates.outbox = new Outbox();
-
-        erc20BasedTemplates.bridge = new ERC20Bridge();
-        erc20BasedTemplates.sequencerInbox = seqInbox;
-        erc20BasedTemplates.inbox = new ERC20Inbox();
-        erc20BasedTemplates.rollupEventInbox = new ERC20RollupEventInbox();
-        erc20BasedTemplates.outbox = new ERC20Outbox();
+    constructor(BridgeContracts memory _ethBasedTemplates, BridgeContracts memory _erc20BasedTemplates) Ownable() {
+        ethBasedTemplates = _ethBasedTemplates;
+        erc20BasedTemplates = _erc20BasedTemplates;
     }
 
-    function updateTemplates(ContractTemplates calldata _newTemplates) external onlyOwner {
+    function updateTemplates(BridgeContracts calldata _newTemplates) external onlyOwner {
         ethBasedTemplates = _newTemplates;
         emit TemplatesUpdated();
     }
 
-    function updateERC20Templates(ContractERC20Templates calldata _newTemplates)
+    function updateERC20Templates(BridgeContracts calldata _newTemplates)
         external
         onlyOwner
     {
@@ -80,117 +52,74 @@ contract BridgeCreator is Ownable {
         emit ERC20TemplatesUpdated();
     }
 
+    function _createBridge(address adminProxy, BridgeContracts storage templates) internal returns (BridgeContracts memory)
+    {
+        BridgeContracts memory frame;
+        frame.bridge = IBridge(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(templates.bridge),
+                    adminProxy,
+                    ""
+                )
+            )
+        );
+        frame.sequencerInbox = ISequencerInbox(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(templates.sequencerInbox),
+                    adminProxy,
+                    ""
+                )
+            )
+        );
+        frame.inbox = IInboxBase(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(templates.inbox),
+                    adminProxy,
+                    ""
+                )
+            )
+        );
+        frame.rollupEventInbox = IRollupEventInbox(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(templates.rollupEventInbox),
+                    adminProxy,
+                    ""
+                )
+            )
+        );
+        frame.outbox = IOutbox(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(templates.outbox),
+                    adminProxy,
+                    ""
+                )
+            )
+        );
+        return frame;
+    }
+
     function createBridge(
         address adminProxy,
         address rollup,
         address nativeToken,
-        ISequencerInbox.MaxTimeVariation memory maxTimeVariation
+        ISequencerInbox.MaxTimeVariation calldata maxTimeVariation
     )
         external
         returns (
             IBridge,
-            SequencerInbox,
+            ISequencerInbox,
             IInboxBase,
             IRollupEventInbox,
-            Outbox
+            IOutbox
         )
     {
-        CreateBridgeFrame memory frame;
-
         // create ETH-based bridge if address zero is provided for native token, otherwise create ERC20-based bridge
-        if (nativeToken == address(0)) {
-            frame.bridge = Bridge(
-                address(
-                    new TransparentUpgradeableProxy(
-                        address(ethBasedTemplates.bridge),
-                        adminProxy,
-                        ""
-                    )
-                )
-            );
-            frame.sequencerInbox = SequencerInbox(
-                address(
-                    new TransparentUpgradeableProxy(
-                        address(ethBasedTemplates.sequencerInbox),
-                        adminProxy,
-                        ""
-                    )
-                )
-            );
-            frame.inbox = Inbox(
-                address(
-                    new TransparentUpgradeableProxy(
-                        address(ethBasedTemplates.inbox),
-                        adminProxy,
-                        ""
-                    )
-                )
-            );
-            frame.rollupEventInbox = RollupEventInbox(
-                address(
-                    new TransparentUpgradeableProxy(
-                        address(ethBasedTemplates.rollupEventInbox),
-                        adminProxy,
-                        ""
-                    )
-                )
-            );
-            frame.outbox = Outbox(
-                address(
-                    new TransparentUpgradeableProxy(
-                        address(ethBasedTemplates.outbox),
-                        adminProxy,
-                        ""
-                    )
-                )
-            );
-        } else {
-            frame.bridge = Bridge(
-                address(
-                    new TransparentUpgradeableProxy(
-                        address(erc20BasedTemplates.bridge),
-                        adminProxy,
-                        ""
-                    )
-                )
-            );
-            frame.sequencerInbox = SequencerInbox(
-                address(
-                    new TransparentUpgradeableProxy(
-                        address(erc20BasedTemplates.sequencerInbox),
-                        adminProxy,
-                        ""
-                    )
-                )
-            );
-            frame.inbox = Inbox(
-                address(
-                    new TransparentUpgradeableProxy(
-                        address(erc20BasedTemplates.inbox),
-                        adminProxy,
-                        ""
-                    )
-                )
-            );
-            frame.rollupEventInbox = RollupEventInbox(
-                address(
-                    new TransparentUpgradeableProxy(
-                        address(erc20BasedTemplates.rollupEventInbox),
-                        adminProxy,
-                        ""
-                    )
-                )
-            );
-            frame.outbox = Outbox(
-                address(
-                    new TransparentUpgradeableProxy(
-                        address(erc20BasedTemplates.outbox),
-                        adminProxy,
-                        ""
-                    )
-                )
-            );
-        }
+        BridgeContracts memory frame = _createBridge(adminProxy, nativeToken == address(0) ? ethBasedTemplates : erc20BasedTemplates);
 
         // init contracts
         if (nativeToken == address(0)) {

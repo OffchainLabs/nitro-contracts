@@ -16,6 +16,8 @@ async function verifyContract(
   contractPathAndName?: string // optional
 ): Promise<void> {
   try {
+    if (process.env.DISABLE_VERIFICATION)
+      return
     // Define the verification options with possible 'contract' property
     const verificationOptions: {
       contract?: string
@@ -48,7 +50,8 @@ async function verifyContract(
 async function deployContract(
   contractName: string,
   signer: any,
-  constructorArgs: any[] = []
+  constructorArgs: any[] = [],
+  verify: boolean = true
 ): Promise<Contract> {
   const factory: ContractFactory = await ethers.getContractFactory(contractName)
   const connectedFactory: ContractFactory = factory.connect(signer)
@@ -56,7 +59,8 @@ async function deployContract(
   await contract.deployTransaction.wait()
   console.log(`New ${contractName} created at address:`, contract.address)
 
-  await verifyContract(contractName, contract.address, constructorArgs)
+  if (verify)
+    await verifyContract(contractName, contract.address, constructorArgs)
 
   return contract
 }
@@ -75,7 +79,22 @@ async function deployUpgradeExecutor(): Promise<Contract> {
 async function deployAllContracts(
   signer: any
 ): Promise<Record<string, Contract>> {
-  const bridgeCreator = await deployContract('BridgeCreator', signer)
+  const ethBridge = await deployContract('Bridge', signer, [], false)
+  const ethSequencerInbox = await deployContract('SequencerInbox', signer, [], false)
+  const ethInbox = await deployContract('Inbox', signer, [], false)
+  const ethRollupEventInbox = await deployContract('RollupEventInbox', signer, [], false)
+  const ethOutbox = await deployContract('Outbox', signer, [], false)
+
+  const erc20Bridge = await deployContract('ERC20Bridge', signer, [], false)
+  const erc20SequencerInbox = ethSequencerInbox
+  const erc20Inbox = await deployContract('ERC20Inbox', signer, [], false)
+  const erc20RollupEventInbox = await deployContract('ERC20RollupEventInbox', signer, [], false)
+  const erc20Outbox = await deployContract('ERC20Outbox', signer, [], false)
+
+  const bridgeCreator = await deployContract('BridgeCreator', signer, [
+    [ethBridge.address, ethSequencerInbox.address, ethInbox.address, ethRollupEventInbox.address, ethOutbox.address],
+    [erc20Bridge.address, erc20SequencerInbox.address, erc20Inbox.address, erc20RollupEventInbox.address, erc20Outbox.address]
+  ])
   const prover0 = await deployContract('OneStepProver0', signer)
   const proverMem = await deployContract('OneStepProverMemory', signer)
   const proverMath = await deployContract('OneStepProverMath', signer)
@@ -141,6 +160,9 @@ async function main() {
     const { bridge, sequencerInbox, inbox, rollupEventInbox, outbox } =
       await contracts.bridgeCreator.ethBasedTemplates()
 
+    if (process.env.DISABLE_VERIFICATION)
+      return
+
     console.log('Wait a minute before starting contract verification')
     await sleep(60 * 1000)
 
@@ -167,7 +189,7 @@ async function main() {
       'RollupEventInbox',
       rollupEventInbox,
       [],
-      'src/bridge/RollupEventInbox.sol:RollupEventInbox'
+      'src/rollup/RollupEventInbox.sol:RollupEventInbox'
     )
 
     console.log(`"outbox implementation contract" created at address:`, outbox)
@@ -221,7 +243,7 @@ async function main() {
       'ERC20RollupEventInbox',
       erc20RollupEventInbox,
       [],
-      'src/bridge/ERC20RollupEventInbox.sol:ERC20RollupEventInbox'
+      'src/rollup/ERC20RollupEventInbox.sol:ERC20RollupEventInbox'
     )
 
     console.log(
