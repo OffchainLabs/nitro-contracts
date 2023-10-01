@@ -16,6 +16,8 @@ interface IOutbox {
         uint256 transactionIndex
     );
 
+    function initialize(IBridge _bridge) external;
+
     function rollup() external view returns (address); // the rollup contract
 
     function bridge() external view returns (IBridge); // the bridge contract
