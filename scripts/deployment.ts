@@ -16,8 +16,7 @@ async function verifyContract(
   contractPathAndName?: string // optional
 ): Promise<void> {
   try {
-    if (process.env.DISABLE_VERIFICATION)
-      return
+    if (process.env.DISABLE_VERIFICATION) return
     // Define the verification options with possible 'contract' property
     const verificationOptions: {
       contract?: string
@@ -80,20 +79,47 @@ async function deployAllContracts(
   signer: any
 ): Promise<Record<string, Contract>> {
   const ethBridge = await deployContract('Bridge', signer, [], false)
-  const ethSequencerInbox = await deployContract('SequencerInbox', signer, [], false)
+  const ethSequencerInbox = await deployContract(
+    'SequencerInbox',
+    signer,
+    [],
+    false
+  )
   const ethInbox = await deployContract('Inbox', signer, [], false)
-  const ethRollupEventInbox = await deployContract('RollupEventInbox', signer, [], false)
+  const ethRollupEventInbox = await deployContract(
+    'RollupEventInbox',
+    signer,
+    [],
+    false
+  )
   const ethOutbox = await deployContract('Outbox', signer, [], false)
 
   const erc20Bridge = await deployContract('ERC20Bridge', signer, [], false)
   const erc20SequencerInbox = ethSequencerInbox
   const erc20Inbox = await deployContract('ERC20Inbox', signer, [], false)
-  const erc20RollupEventInbox = await deployContract('ERC20RollupEventInbox', signer, [], false)
+  const erc20RollupEventInbox = await deployContract(
+    'ERC20RollupEventInbox',
+    signer,
+    [],
+    false
+  )
   const erc20Outbox = await deployContract('ERC20Outbox', signer, [], false)
 
   const bridgeCreator = await deployContract('BridgeCreator', signer, [
-    [ethBridge.address, ethSequencerInbox.address, ethInbox.address, ethRollupEventInbox.address, ethOutbox.address],
-    [erc20Bridge.address, erc20SequencerInbox.address, erc20Inbox.address, erc20RollupEventInbox.address, erc20Outbox.address]
+    [
+      ethBridge.address,
+      ethSequencerInbox.address,
+      ethInbox.address,
+      ethRollupEventInbox.address,
+      ethOutbox.address,
+    ],
+    [
+      erc20Bridge.address,
+      erc20SequencerInbox.address,
+      erc20Inbox.address,
+      erc20RollupEventInbox.address,
+      erc20Outbox.address,
+    ],
   ])
   const prover0 = await deployContract('OneStepProver0', signer)
   const proverMem = await deployContract('OneStepProverMemory', signer)
@@ -160,8 +186,7 @@ async function main() {
     const { bridge, sequencerInbox, inbox, rollupEventInbox, outbox } =
       await contracts.bridgeCreator.ethBasedTemplates()
 
-    if (process.env.DISABLE_VERIFICATION)
-      return
+    if (process.env.DISABLE_VERIFICATION) return
 
     console.log('Wait a minute before starting contract verification')
     await sleep(60 * 1000)
