@@ -33,7 +33,10 @@ contract BridgeCreator is Ownable {
         IOutbox outbox;
     }
 
-    constructor(BridgeContracts memory _ethBasedTemplates, BridgeContracts memory _erc20BasedTemplates) Ownable() {
+    constructor(
+        BridgeContracts memory _ethBasedTemplates,
+        BridgeContracts memory _erc20BasedTemplates
+    ) Ownable() {
         ethBasedTemplates = _ethBasedTemplates;
         erc20BasedTemplates = _erc20BasedTemplates;
     }
@@ -43,61 +46,34 @@ contract BridgeCreator is Ownable {
         emit TemplatesUpdated();
     }
 
-    function updateERC20Templates(BridgeContracts calldata _newTemplates)
-        external
-        onlyOwner
-    {
+    function updateERC20Templates(BridgeContracts calldata _newTemplates) external onlyOwner {
         erc20BasedTemplates = _newTemplates;
         emit ERC20TemplatesUpdated();
     }
 
-    function _createBridge(address adminProxy, BridgeContracts storage templates) internal returns (BridgeContracts memory)
+    function _createBridge(address adminProxy, BridgeContracts storage templates)
+        internal
+        returns (BridgeContracts memory)
     {
         BridgeContracts memory frame;
         frame.bridge = IBridge(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(templates.bridge),
-                    adminProxy,
-                    ""
-                )
-            )
+            address(new TransparentUpgradeableProxy(address(templates.bridge), adminProxy, ""))
         );
         frame.sequencerInbox = ISequencerInbox(
             address(
-                new TransparentUpgradeableProxy(
-                    address(templates.sequencerInbox),
-                    adminProxy,
-                    ""
-                )
+                new TransparentUpgradeableProxy(address(templates.sequencerInbox), adminProxy, "")
             )
         );
         frame.inbox = IInboxBase(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(templates.inbox),
-                    adminProxy,
-                    ""
-                )
-            )
+            address(new TransparentUpgradeableProxy(address(templates.inbox), adminProxy, ""))
         );
         frame.rollupEventInbox = IRollupEventInbox(
             address(
-                new TransparentUpgradeableProxy(
-                    address(templates.rollupEventInbox),
-                    adminProxy,
-                    ""
-                )
+                new TransparentUpgradeableProxy(address(templates.rollupEventInbox), adminProxy, "")
             )
         );
         frame.outbox = IOutbox(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(templates.outbox),
-                    adminProxy,
-                    ""
-                )
-            )
+            address(new TransparentUpgradeableProxy(address(templates.outbox), adminProxy, ""))
         );
         return frame;
     }
@@ -107,18 +83,12 @@ contract BridgeCreator is Ownable {
         address rollup,
         address nativeToken,
         ISequencerInbox.MaxTimeVariation calldata maxTimeVariation
-    )
-        external
-        returns (
-            IBridge,
-            ISequencerInbox,
-            IInboxBase,
-            IRollupEventInbox,
-            IOutbox
-        )
-    {
+    ) external returns (BridgeContracts memory) {
         // create ETH-based bridge if address zero is provided for native token, otherwise create ERC20-based bridge
-        BridgeContracts memory frame = _createBridge(adminProxy, nativeToken == address(0) ? ethBasedTemplates : erc20BasedTemplates);
+        BridgeContracts memory frame = _createBridge(
+            adminProxy,
+            nativeToken == address(0) ? ethBasedTemplates : erc20BasedTemplates
+        );
 
         // init contracts
         if (nativeToken == address(0)) {
@@ -126,17 +96,11 @@ contract BridgeCreator is Ownable {
         } else {
             IERC20Bridge(address(frame.bridge)).initialize(IOwnable(rollup), nativeToken);
         }
-        frame.sequencerInbox.initialize(IBridge(frame.bridge), maxTimeVariation);
-        frame.inbox.initialize(IBridge(frame.bridge), ISequencerInbox(frame.sequencerInbox));
-        frame.rollupEventInbox.initialize(IBridge(frame.bridge));
-        frame.outbox.initialize(IBridge(frame.bridge));
+        frame.sequencerInbox.initialize(frame.bridge, maxTimeVariation);
+        frame.inbox.initialize(frame.bridge, frame.sequencerInbox);
+        frame.rollupEventInbox.initialize(frame.bridge);
+        frame.outbox.initialize(frame.bridge);
 
-        return (
-            frame.bridge,
-            frame.sequencerInbox,
-            frame.inbox,
-            frame.rollupEventInbox,
-            frame.outbox
-        );
+        return frame;
     }
 }

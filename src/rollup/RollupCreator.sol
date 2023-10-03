@@ -45,14 +45,6 @@ contract RollupCreator is Ownable {
 
     DeployHelper public l2FactoriesDeployer;
 
-    struct BridgeContracts {
-        IBridge bridge;
-        ISequencerInbox sequencerInbox;
-        IInboxBase inbox;
-        IRollupEventInbox rollupEventInbox;
-        IOutbox outbox;
-    }
-
     constructor() Ownable() {}
 
     // creator receives back excess fees (for deploying L2 factories) so it can refund the caller
@@ -131,14 +123,7 @@ contract RollupCreator is Ownable {
             salt: keccak256(abi.encode(config, _batchPoster, _validators, _maxDataSize))
         }();
 
-        BridgeContracts memory bridgeContracts;
-        (
-            bridgeContracts.bridge,
-            bridgeContracts.sequencerInbox,
-            bridgeContracts.inbox,
-            bridgeContracts.rollupEventInbox,
-            bridgeContracts.outbox
-        ) = bridgeCreator.createBridge(
+        BridgeCreator.BridgeContracts memory bridgeContracts = bridgeCreator.createBridge(
             address(proxyAdmin),
             address(rollup),
             _nativeToken,

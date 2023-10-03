@@ -13,7 +13,7 @@ interface IBridge {
         bytes32 indexed beforeInboxAcc,
         address inbox,
         uint8 kind,
-        address indexed sender,
+        address sender,
         bytes32 messageDataHash,
         uint256 baseFeeL1,
         uint64 timestamp
