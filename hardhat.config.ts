@@ -5,6 +5,7 @@ import '@nomiclabs/hardhat-etherscan'
 import '@typechain/hardhat'
 import 'solidity-coverage'
 import 'hardhat-gas-reporter'
+import 'hardhat-ignore-warnings'
 
 const solidity = {
   compilers: [
