@@ -56,7 +56,7 @@ contract SequencerInboxOpt is GasRefundEnabled, ISequencerInboxOpt {
 
     IOwnable public immutable rollup;
     mapping(address => bool) public isBatchPoster;
-    // CHRIS: TODO: docs
+    // see ISequencerInbox.maxTimeVariation
     uint256 internal immutable delayBlocks;
     uint256 internal immutable futureBlocks;
     uint256 internal immutable delaySeconds;
@@ -122,7 +122,6 @@ contract SequencerInboxOpt is GasRefundEnabled, ISequencerInboxOpt {
         uint256,
         uint256
     ) {
-        // CHRIS: TODO: test for this?
         if (_chainIdChanged()) {
            return (
                 1,
