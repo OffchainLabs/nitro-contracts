@@ -62,8 +62,6 @@ interface ISequencerInboxOpt is IDelayedMessageProvider {
 
     function isBatchPoster(address) external view returns (bool);
 
-    function isSequencer(address) external view returns (bool);
-
     struct DasKeySetInfo {
         bool isValidKeyset;
         uint64 creationBlock;
@@ -120,7 +118,9 @@ interface ISequencerInboxOpt is IDelayedMessageProvider {
         uint256 sequenceNumber,
         bytes calldata data,
         uint256 afterDelayedMessagesRead,
-        IGasRefunder gasRefunder
+        IGasRefunder gasRefunder,
+        uint256 prevMessageCount,
+        uint256 newMessageCount
     ) external;
 
     function addSequencerL2Batch(
