@@ -26,7 +26,8 @@
     "test:storage": "./test/storage/test.bash",
     "postinstall": "patch-package",
     "deploy-factory": "hardhat run scripts/deployment.ts",
-    "deploy-rollup": "hardhat run scripts/rollupCreation.ts"
+    "deploy-rollup": "hardhat run scripts/rollupCreation.ts",
+    "test": "hardhat --network hardhat test test/contract/*.spec.ts"
   },
   "dependencies": {
     "@openzeppelin/contracts": "4.5.0",
