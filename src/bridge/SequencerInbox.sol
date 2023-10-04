@@ -80,10 +80,7 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         return deployTimeChainId != block.chainid;
     }
 
-    constructor(
-        IBridge bridge_,
-        ISequencerInbox.MaxTimeVariation memory maxTimeVariation_
-    ) {
+    constructor(IBridge bridge_, ISequencerInbox.MaxTimeVariation memory maxTimeVariation_) {
         if (bridge_ == IBridge(address(0))) revert HadZeroInit();
         bridge = bridge_;
         rollup = bridge_.rollup();
@@ -107,23 +104,23 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         return bounds;
     }
 
-    function maxTimeVariation() public view returns(
-        ISequencerInbox.MaxTimeVariation memory
-    ) {
+    function maxTimeVariation() public view returns (ISequencerInbox.MaxTimeVariation memory) {
         if (_chainIdChanged()) {
-           return ISequencerInbox.MaxTimeVariation({
-                delayBlocks: 1,
-                futureBlocks: 1,
-                delaySeconds: 1,
-                futureSeconds: 1
-            }); 
+            return
+                ISequencerInbox.MaxTimeVariation({
+                    delayBlocks: 1,
+                    futureBlocks: 1,
+                    delaySeconds: 1,
+                    futureSeconds: 1
+                });
         } else {
-            return ISequencerInbox.MaxTimeVariation({
-                delayBlocks: delayBlocks,
-                futureBlocks: futureBlocks,
-                delaySeconds: delaySeconds,
-                futureSeconds: futureSeconds
-            });
+            return
+                ISequencerInbox.MaxTimeVariation({
+                    delayBlocks: delayBlocks,
+                    futureBlocks: futureBlocks,
+                    delaySeconds: delaySeconds,
+                    futureSeconds: futureSeconds
+                });
         }
     }
 
@@ -193,7 +190,7 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
             BatchDataLocation.NoData
         );
     }
-    
+
     function addSequencerL2BatchFromOrigin(
         uint256 sequenceNumber,
         bytes calldata data,

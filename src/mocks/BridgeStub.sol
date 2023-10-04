@@ -31,7 +31,7 @@ contract BridgeStub is IBridge {
     address public sequencerInbox;
     uint256 public override sequencerReportedSubMessageCount;
     IOwnable public rollup;
-    
+
     constructor(IOwnable rollup_) {
         rollup = rollup_;
     }
@@ -40,7 +40,6 @@ contract BridgeStub is IBridge {
         sequencerInbox = _sequencerInbox;
         emit SequencerInboxUpdated(_sequencerInbox);
     }
-
 
     function allowedDelayedInboxes(address inbox) external view override returns (bool) {
         return allowedDelayedInboxesMap[inbox].allowed;

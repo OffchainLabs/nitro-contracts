@@ -12,10 +12,7 @@ contract SequencerInboxStub is SequencerInbox {
         IBridge bridge_,
         address sequencer_,
         ISequencerInbox.MaxTimeVariation memory maxTimeVariation_
-    ) SequencerInbox(
-        bridge_,
-        maxTimeVariation_
-    ) {
+    ) SequencerInbox(bridge_, maxTimeVariation_) {
         isBatchPoster[sequencer_] = true;
     }
 
