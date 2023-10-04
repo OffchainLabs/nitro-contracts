@@ -17,7 +17,6 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract BridgeCreator is Ownable {
     Bridge public bridgeTemplate;
-    SequencerInbox public sequencerInboxTemplate;
     Inbox public inboxTemplate;
     RollupEventInbox public rollupEventInboxTemplate;
     Outbox public outboxTemplate;
@@ -26,7 +25,6 @@ contract BridgeCreator is Ownable {
 
     constructor() Ownable() {
         bridgeTemplate = new Bridge();
-        sequencerInboxTemplate = new SequencerInbox();
         inboxTemplate = new Inbox();
         rollupEventInboxTemplate = new RollupEventInbox();
         outboxTemplate = new Outbox();
@@ -34,13 +32,11 @@ contract BridgeCreator is Ownable {
 
     function updateTemplates(
         address _bridgeTemplate,
-        address _sequencerInboxTemplate,
         address _inboxTemplate,
         address _rollupEventInboxTemplate,
         address _outboxTemplate
     ) external onlyOwner {
         bridgeTemplate = Bridge(_bridgeTemplate);
-        sequencerInboxTemplate = SequencerInbox(_sequencerInboxTemplate);
         inboxTemplate = Inbox(_inboxTemplate);
         rollupEventInboxTemplate = RollupEventInbox(_rollupEventInboxTemplate);
         outboxTemplate = Outbox(_outboxTemplate);
@@ -76,11 +72,6 @@ contract BridgeCreator is Ownable {
             frame.bridge = Bridge(
                 address(new TransparentUpgradeableProxy(address(bridgeTemplate), adminProxy, ""))
             );
-            frame.sequencerInbox = SequencerInbox(
-                address(
-                    new TransparentUpgradeableProxy(address(sequencerInboxTemplate), adminProxy, "")
-                )
-            );
             frame.inbox = Inbox(
                 address(new TransparentUpgradeableProxy(address(inboxTemplate), adminProxy, ""))
             );
@@ -99,7 +90,7 @@ contract BridgeCreator is Ownable {
         }
 
         frame.bridge.initialize(IOwnable(rollup));
-        frame.sequencerInbox.initialize(IBridge(frame.bridge), maxTimeVariation);
+        frame.sequencerInbox = new SequencerInbox(IBridge(frame.bridge), maxTimeVariation);
         frame.inbox.initialize(IBridge(frame.bridge), ISequencerInbox(frame.sequencerInbox));
         frame.rollupEventInbox.initialize(IBridge(frame.bridge));
         frame.outbox.initialize(IBridge(frame.bridge));

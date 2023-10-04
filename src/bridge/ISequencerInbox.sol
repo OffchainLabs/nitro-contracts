@@ -69,27 +69,24 @@ interface ISequencerInbox is IDelayedMessageProvider {
 
     function isBatchPoster(address) external view returns (bool);
 
-    function isSequencer(address) external view returns (bool);
-
     struct DasKeySetInfo {
         bool isValidKeyset;
         uint64 creationBlock;
     }
 
+    /// @notice Returns the max time variation settings for this sequencer inbox
+    // /// @return delayBlocks The max amount of blocks in the past that a message can be received on L2
+    // /// @return futureBlocks The max amount of blocks in the future that a message can be received on L2
+    // /// @return delaySeconds The max amount of seconds in the past that a message can be received on L2
+    // /// @return futureSeconds The max amount of seconds in the future that a message can be received on L2
     function maxTimeVariation()
         external
         view
         returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256
+            ISequencerInbox.MaxTimeVariation memory
         );
 
     function dasKeySetInfo(bytes32) external view returns (bool, uint64);
-
-    /// @notice Remove force inclusion delay after a L1 chainId fork
-    function removeDelayAfterFork() external;
 
     /// @notice Force messages from the delayed inbox to be included in the chain
     ///         Callable by any address, but message can only be force-included after maxTimeVariation.delayBlocks and
@@ -125,7 +122,9 @@ interface ISequencerInbox is IDelayedMessageProvider {
         uint256 sequenceNumber,
         bytes calldata data,
         uint256 afterDelayedMessagesRead,
-        IGasRefunder gasRefunder
+        IGasRefunder gasRefunder,
+        uint256 prevMessageCount,
+        uint256 newMessageCount
     ) external;
 
     function addSequencerL2Batch(
@@ -138,12 +137,6 @@ interface ISequencerInbox is IDelayedMessageProvider {
     ) external;
 
     // ---------- onlyRollupOrOwner functions ----------
-
-    /**
-     * @notice Set max delay for sequencer inbox
-     * @param maxTimeVariation_ the maximum time variation parameters
-     */
-    function setMaxTimeVariation(MaxTimeVariation memory maxTimeVariation_) external;
 
     /**
      * @notice Updates whether an address is authorized to be a batch poster at the sequencer inbox
@@ -171,8 +164,4 @@ interface ISequencerInbox is IDelayedMessageProvider {
      * @param isSequencer_ if the specified address should be authorized as a sequencer
      */
     function setIsSequencer(address addr, bool isSequencer_) external;
-
-    // ---------- initializer ----------
-
-    function initialize(IBridge bridge_, MaxTimeVariation calldata maxTimeVariation_) external;
 }
