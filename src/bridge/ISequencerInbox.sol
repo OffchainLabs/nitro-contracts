@@ -12,9 +12,13 @@ import "./IBridge.sol";
 
 interface ISequencerInbox is IDelayedMessageProvider {
     struct MaxTimeVariation {
+        /// @notice delayBlocks The max amount of blocks in the past that a message can be received on L2
         uint256 delayBlocks;
+        /// @notice futureBlocks The max amount of blocks in the future that a message can be received on L2
         uint256 futureBlocks;
+        /// @notice delaySeconds The max amount of seconds in the past that a message can be received on L2
         uint256 delaySeconds;
+        /// @notice futureSeconds The max amount of seconds in the future that a message can be received on L2
         uint256 futureSeconds;
     }
 
@@ -75,10 +79,6 @@ interface ISequencerInbox is IDelayedMessageProvider {
     }
 
     /// @notice Returns the max time variation settings for this sequencer inbox
-    // /// @return delayBlocks The max amount of blocks in the past that a message can be received on L2
-    // /// @return futureBlocks The max amount of blocks in the future that a message can be received on L2
-    // /// @return delaySeconds The max amount of seconds in the past that a message can be received on L2
-    // /// @return futureSeconds The max amount of seconds in the future that a message can be received on L2
     function maxTimeVariation()
         external
         view
