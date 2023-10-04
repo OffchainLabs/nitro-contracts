@@ -203,6 +203,7 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
             baseFeeL1,
             blockTimestamp
         );
+        emit MessageDeliveredV2(kind, sender);
         return count;
     }
 
