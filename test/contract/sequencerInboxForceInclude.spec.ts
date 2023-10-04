@@ -28,6 +28,7 @@ import {
   MessageTester,
   RollupMock__factory,
   SequencerInbox,
+  SequencerInboxOpt__factory,
   SequencerInbox__factory,
   TransparentUpgradeableProxy__factory,
 } from '../../build/types'
@@ -39,6 +40,7 @@ import {
   MessageDeliveredEvent,
 } from '../../build/types/src/bridge/Bridge'
 import { Signer } from 'ethers'
+import { data } from './batchData.json'
 
 const mineBlocks = async (count: number, timeDiffPerBlock = 14) => {
   const block = (await network.provider.send('eth_getBlockByNumber', [
@@ -265,12 +267,13 @@ describe('SequencerInboxForceInclude', async () => {
       const sequencerInboxFac = (await ethers.getContractFactory(
         'SequencerInboxOpt'
       )) as SequencerInboxOpt__factory
-      sequencerInbox = await sequencerInboxFac.deploy(bridgeProxy.address, {
-        delayBlocks: maxDelayBlocks,
-        delaySeconds: maxDelayTime,
-        futureBlocks: 10,
-        futureSeconds: 3000,
-      })
+      sequencerInbox = await sequencerInboxFac.deploy(
+        bridgeProxy.address,
+        maxDelayBlocks,
+        maxDelayTime,
+        10,
+        3000
+      )
     } else {
       const sequencerInboxFac = (await ethers.getContractFactory(
         'SequencerInbox'
@@ -396,7 +399,10 @@ describe('SequencerInboxForceInclude', async () => {
         )
     ).wait()
 
-    console.log('saved', res1.gasUsed.toNumber() - res2.gasUsed.toNumber() - 44455 - 8175)
+    console.log(
+      'saved',
+      res1.gasUsed.toNumber() - res2.gasUsed.toNumber() - 44455 - 8175
+    )
   })
 
   it('can force-include', async () => {

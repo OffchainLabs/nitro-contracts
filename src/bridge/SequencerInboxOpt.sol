@@ -46,7 +46,7 @@ import {MAX_DATA_SIZE} from "../libraries/Constants.sol";
 contract SequencerInboxOpt is GasRefundEnabled, ISequencerInboxOpt {
     uint256 public totalDelayedMessagesRead;
 
-    IBridge public bridge;
+    IBridge public immutable bridge;
 
     /// @inheritdoc ISequencerInboxOpt
     uint256 public constant HEADER_LENGTH = 40;
@@ -54,9 +54,13 @@ contract SequencerInboxOpt is GasRefundEnabled, ISequencerInboxOpt {
     /// @inheritdoc ISequencerInboxOpt
     bytes1 public constant DATA_AUTHENTICATED_FLAG = 0x40;
 
-    IOwnable public rollup;
+    IOwnable public immutable rollup;
     mapping(address => bool) public isBatchPoster;
-    ISequencerInboxOpt.MaxTimeVariation public maxTimeVariation;
+    // CHRIS: TODO: docs
+    uint256 internal immutable delayBlocks;
+    uint256 internal immutable futureBlocks;
+    uint256 internal immutable delaySeconds;
+    uint256 internal immutable futureSeconds;
 
     mapping(bytes32 => DasKeySetInfo) public dasKeySetInfo;
 
@@ -78,37 +82,62 @@ contract SequencerInboxOpt is GasRefundEnabled, ISequencerInboxOpt {
 
     constructor(
         IBridge bridge_,
-        ISequencerInboxOpt.MaxTimeVariation memory maxTimeVariation_
+        uint256 delayBlocks_,
+        uint256 futureBlocks_,
+        uint256 delaySeconds_,
+        uint256 futureSeconds_
     ) {
-        if (bridge != IBridge(address(0))) revert AlreadyInit();
         if (bridge_ == IBridge(address(0))) revert HadZeroInit();
         bridge = bridge_;
         rollup = bridge_.rollup();
-        maxTimeVariation = maxTimeVariation_;
+        delayBlocks = delayBlocks_;
+        futureBlocks = futureBlocks_;
+        delaySeconds = delaySeconds_;
+        futureSeconds = futureSeconds_;
     }
 
     function getTimeBounds() internal view virtual returns (TimeBounds memory) {
         TimeBounds memory bounds;
-        if (block.timestamp > maxTimeVariation.delaySeconds) {
-            bounds.minTimestamp = uint64(block.timestamp - maxTimeVariation.delaySeconds);
+        (
+            uint256 delayBlocks_,
+            uint256 futureBlocks_,
+            uint256 delaySeconds_,
+            uint256 futureSeconds_
+        ) = maxTimeVariation();
+
+        if (block.timestamp > delaySeconds_) {
+            bounds.minTimestamp = uint64(block.timestamp - delaySeconds_);
         }
-        bounds.maxTimestamp = uint64(block.timestamp + maxTimeVariation.futureSeconds);
-        if (block.number > maxTimeVariation.delayBlocks) {
-            bounds.minBlockNumber = uint64(block.number - maxTimeVariation.delayBlocks);
+        bounds.maxTimestamp = uint64(block.timestamp + futureSeconds_);
+        if (block.number > delayBlocks_) {
+            bounds.minBlockNumber = uint64(block.number - delayBlocks_);
         }
-        bounds.maxBlockNumber = uint64(block.number + maxTimeVariation.futureBlocks);
+        bounds.maxBlockNumber = uint64(block.number + futureBlocks_);
         return bounds;
     }
 
-    /// @inheritdoc ISequencerInboxOpt
-    function removeDelayAfterFork() external {
-        if (!_chainIdChanged()) revert NotForked();
-        maxTimeVariation = ISequencerInboxOpt.MaxTimeVariation({
-            delayBlocks: 1,
-            futureBlocks: 1,
-            delaySeconds: 1,
-            futureSeconds: 1
-        });
+    function maxTimeVariation() public view returns(
+        uint256,
+        uint256,
+        uint256,
+        uint256
+    ) {
+        // CHRIS: TODO: test for this?
+        if (_chainIdChanged()) {
+           return (
+                1,
+                1,
+                1,
+                1
+            ); 
+        } else {
+            return (
+                delayBlocks,
+                futureBlocks,
+                delaySeconds,
+                futureSeconds
+            );
+        }
     }
 
     /// @inheritdoc ISequencerInboxOpt
@@ -130,10 +159,13 @@ contract SequencerInboxOpt is GasRefundEnabled, ISequencerInboxOpt {
             baseFeeL1,
             messageDataHash
         );
+        (
+            uint256 delayBlocks_,,uint256 delaySeconds_,
+        ) = maxTimeVariation();
         // Can only force-include after the Sequencer-only window has expired.
-        if (l1BlockAndTime[0] + maxTimeVariation.delayBlocks >= block.number)
+        if (l1BlockAndTime[0] + delayBlocks_ >= block.number)
             revert ForceIncludeBlockTooSoon();
-        if (l1BlockAndTime[1] + maxTimeVariation.delaySeconds >= block.timestamp)
+        if (l1BlockAndTime[1] + delaySeconds_ >= block.timestamp)
             revert ForceIncludeTimeTooSoon();
 
         // Verify that message hash represents the last message sequence of delayed message to be included
@@ -434,17 +466,11 @@ contract SequencerInboxOpt is GasRefundEnabled, ISequencerInboxOpt {
     }
 
     /// @inheritdoc ISequencerInboxOpt
-    function setMaxTimeVariation(ISequencerInboxOpt.MaxTimeVariation memory maxTimeVariation_)
-        external
-        onlyRollupOwner
-    {
-        maxTimeVariation = maxTimeVariation_;
-        emit OwnerFunctionCalled(0);
-    }
-
-    /// @inheritdoc ISequencerInboxOpt
     function setIsBatchPoster(address addr, bool isBatchPoster_) external onlyRollupOwner {
         isBatchPoster[addr] = isBatchPoster_;
+        // we used to have OwnerFunctionCalled(0) for setting the maxTimeVariation
+        // so we dont use index = 0 here, even though this is the first owner function
+        // to stay compatible with legacy events
         emit OwnerFunctionCalled(1);
     }
 
