@@ -55,9 +55,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     bytes1 public constant DATA_AUTHENTICATED_FLAG = 0x40;
 
     IOwnable public rollup;
-    /// @notice The batch poster manager has the ability to change the batch poster addresses
-    ///         This enables the batch poster to do key rotation
-    address public batchPosterManager;
+
     mapping(address => bool) public isBatchPoster;
     ISequencerInbox.MaxTimeVariation public maxTimeVariation;
 
@@ -69,6 +67,10 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     mapping(address => bool) public isSequencer;
+
+    /// @notice The batch poster manager has the ability to change the batch poster addresses
+    ///         This enables the batch poster to do key rotation
+    address public batchPosterManager;
 
     // On L1 this should be set to 117964: 90% of Geth's 128KB tx size limit, leaving ~13KB for proving
     uint256 public immutable maxDataSize;
