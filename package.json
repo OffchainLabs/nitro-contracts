@@ -16,6 +16,7 @@
   },
   "scripts": {
     "build": "hardhat compile",
+    "test": "hardhat --network hardhat test test/contract/*.spec.ts",
     "lint:test": "eslint ./test",
     "solhint": "solhint -f table src/**/*.sol",
     "prettier:solidity": "prettier --write src/**/*.sol",

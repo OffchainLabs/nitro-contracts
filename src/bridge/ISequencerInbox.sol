@@ -174,6 +174,12 @@ interface ISequencerInbox is IDelayedMessageProvider {
      */
     function setIsSequencer(address addr, bool isSequencer_) external;
 
+    /**
+     * @notice Updates the batch poster manager, the address which has the ability to rotate batch poster keys
+     * @param newBatchPosterManager The new batch poster manager to be set
+     */
+    function setBatchPosterManager(address newBatchPosterManager) external;
+
     // ---------- initializer ----------
 
     function initialize(

@@ -499,6 +499,12 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         emit OwnerFunctionCalled(4);
     }
 
+    /// @inheritdoc ISequencerInbox
+    function setBatchPosterManager(address newBatchPosterManager) external onlyRollupOwner {   
+        batchPosterManager = newBatchPosterManager;
+        emit OwnerFunctionCalled(1);
+    }
+
     function isValidKeysetHash(bytes32 ksHash) external view returns (bool) {
         return dasKeySetInfo[ksHash].isValidKeyset;
     }

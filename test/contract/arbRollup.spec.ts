@@ -1218,6 +1218,23 @@ describe('ArbRollup', () => {
     expect(await sequencerInbox.isBatchPoster(testAddress)).to.be.false
   })
 
+  it('can set batch poster manager', async function () {
+    const testManager = await accounts[8].getAddress()
+    expect(await sequencerInbox.batchPosterManager()).to.eq(
+      await batchPosterManager.getAddress()
+    )
+    await expect(
+      sequencerInbox.connect(accounts[8]).setBatchPosterManager(testManager)
+    ).to.revertedWith(`NotOwner("${testManager}", "${rollupUser.address}")`)
+    expect(await sequencerInbox.batchPosterManager()).to.eq(
+      await batchPosterManager.getAddress()
+    )
+
+    await (await sequencerInbox.setBatchPosterManager(testManager)).wait()
+
+    expect(await sequencerInbox.batchPosterManager()).to.eq(testManager)
+  })
+
   it('should fail the batch poster check', async function () {
     await expect(
       sequencerInbox.addSequencerL2Batch(
