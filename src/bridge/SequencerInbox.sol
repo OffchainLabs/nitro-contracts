@@ -496,7 +496,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @inheritdoc ISequencerInbox
-    function setIsSequencer(address addr, bool isSequencer_) external onlyRollupOwner {
+    function setIsSequencer(address addr, bool isSequencer_) external {
+        if (msg.sender != batchPosterManager) revert NotBatchPosterManager(msg.sender);
         isSequencer[addr] = isSequencer_;
         emit OwnerFunctionCalled(4);
     }
@@ -504,7 +505,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     /// @inheritdoc ISequencerInbox
     function setBatchPosterManager(address newBatchPosterManager) external onlyRollupOwner {
         batchPosterManager = newBatchPosterManager;
-        emit OwnerFunctionCalled(1);
+        emit OwnerFunctionCalled(5);
     }
 
     function isValidKeysetHash(bytes32 ksHash) external view returns (bool) {
