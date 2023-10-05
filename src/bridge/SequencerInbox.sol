@@ -500,7 +500,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @inheritdoc ISequencerInbox
-    function setBatchPosterManager(address newBatchPosterManager) external onlyRollupOwner {   
+    function setBatchPosterManager(address newBatchPosterManager) external onlyRollupOwner {
         batchPosterManager = newBatchPosterManager;
         emit OwnerFunctionCalled(1);
     }
