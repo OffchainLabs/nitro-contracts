@@ -68,7 +68,7 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
         success = true;
 
         // if there's data do additional contract call. Make sure that call is not used to
-        // change bridge contract's balance of the native token
+        // decrease bridge contract's balance of the native token
         if (data.length > 0) {
             uint256 bridgeBalanceBefore = IERC20(_nativeToken).balanceOf(address(this));
 
@@ -76,7 +76,7 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
             (success, returnData) = to.call(data);
 
             uint256 bridgeBalanceAfter = IERC20(_nativeToken).balanceOf(address(this));
-            if (bridgeBalanceAfter != bridgeBalanceBefore) {
+            if (bridgeBalanceAfter < bridgeBalanceBefore) {
                 revert CallNotAllowed();
             }
         }
