@@ -11,9 +11,11 @@ import "./IBridge.sol";
 interface IERC20Bridge is IBridge {
     /**
      * @dev token that is escrowed in bridge on L1 side and minted on L2 as native currency.
-     * Also fees are paid in this token. ERC777, fee on transfer tokens and rebasing tokens
-     * are not supported to be used as chain's native token, as they can break collateralization
-     * invariants.
+     * Fees are paid in this token. There are certain restrictions on the native token:
+     *  - The token can't be rebasing or have a transfer fee
+     *  - The token must only be transferrable via a call to the token address itself
+     *  - The token must only be able to set allowance via a call to the token address itself
+     *  - The token must not have a callback on transfer, and more generally a user must not be able to make a transfer to themselves revert
      */
     function nativeToken() external view returns (address);
 

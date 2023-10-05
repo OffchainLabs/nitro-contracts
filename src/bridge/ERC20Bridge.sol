@@ -15,6 +15,11 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  * @title Staging ground for incoming and outgoing messages
  * @notice Unlike the standard Eth bridge, native token bridge escrows the custom ERC20 token which is
  * used as native currency on L2.
+ * @dev Fees are paid in this token. There are certain restrictions on the native token:
+ *       - The token can't be rebasing or have a transfer fee
+ *       - The token must only be transferrable via a call to the token address itself
+ *       - The token must only be able to set allowance via a call to the token address itself
+ *       - The token must not have a callback on transfer, and more generally a user must not be able to make a transfer to themselves revert
  */
 contract ERC20Bridge is AbsBridge, IERC20Bridge {
     using SafeERC20 for IERC20;
