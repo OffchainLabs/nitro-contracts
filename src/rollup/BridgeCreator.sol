@@ -60,7 +60,9 @@ contract BridgeCreator is Ownable {
     function createBridge(
         address adminProxy,
         address rollup,
-        ISequencerInbox.MaxTimeVariation memory maxTimeVariation
+        ISequencerInbox.MaxTimeVariation memory maxTimeVariation,
+        address[] memory batchPosters,
+        address batchPosterManager
     )
         external
         returns (
@@ -99,7 +101,12 @@ contract BridgeCreator is Ownable {
         }
 
         frame.bridge.initialize(IOwnable(rollup));
-        frame.sequencerInbox.initialize(IBridge(frame.bridge), maxTimeVariation);
+        frame.sequencerInbox.initialize(
+            IBridge(frame.bridge),
+            maxTimeVariation,
+            batchPosters,
+            batchPosterManager
+        );
         frame.inbox.initialize(IBridge(frame.bridge), ISequencerInbox(frame.sequencerInbox));
         frame.rollupEventInbox.initialize(IBridge(frame.bridge));
         frame.outbox.initialize(IBridge(frame.bridge));

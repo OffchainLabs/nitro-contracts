@@ -161,3 +161,6 @@ error AlreadyValidDASKeyset(bytes32);
 
 /// @dev Tried to use or invalidate an already invalid Data Availability Service keyset
 error NoSuchKeyset(bytes32);
+
+/// @dev Thrown when the provided address is not the designated batch poster manager
+error NotBatchPosterManager(address);

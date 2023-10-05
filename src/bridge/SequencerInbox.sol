@@ -20,7 +20,8 @@ import {
     DataNotAuthenticated,
     AlreadyValidDASKeyset,
     NoSuchKeyset,
-    NotForked
+    NotForked,
+    NotBatchPosterManager
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./IInbox.sol";
@@ -54,6 +55,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     bytes1 public constant DATA_AUTHENTICATED_FLAG = 0x40;
 
     IOwnable public rollup;
+    /// @notice The batch poster manager has the ability to change the batch poster addresses
+    ///         This enables the patch poster to do key rotation
+    address public batchPosterManager;
     mapping(address => bool) public isBatchPoster;
     ISequencerInbox.MaxTimeVariation public maxTimeVariation;
 
@@ -82,13 +86,19 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     function initialize(
         IBridge bridge_,
-        ISequencerInbox.MaxTimeVariation calldata maxTimeVariation_
+        ISequencerInbox.MaxTimeVariation calldata maxTimeVariation_,
+        address[] calldata batchPosters_,
+        address batchPosterManager_
     ) external onlyDelegated {
         if (bridge != IBridge(address(0))) revert AlreadyInit();
         if (bridge_ == IBridge(address(0))) revert HadZeroInit();
         bridge = bridge_;
         rollup = bridge_.rollup();
         maxTimeVariation = maxTimeVariation_;
+        for (uint256 i = 0; i < batchPosters_.length; i++) {
+            isBatchPoster[batchPosters_[i]] = true;
+        }
+        batchPosterManager = batchPosterManager_;
     }
 
     function getTimeBounds() internal view virtual returns (TimeBounds memory) {
@@ -447,7 +457,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @inheritdoc ISequencerInbox
-    function setIsBatchPoster(address addr, bool isBatchPoster_) external onlyRollupOwner {
+    function setIsBatchPoster(address addr, bool isBatchPoster_) external {
+        if (msg.sender != batchPosterManager) revert NotBatchPosterManager(msg.sender);
         isBatchPoster[addr] = isBatchPoster_;
         emit OwnerFunctionCalled(1);
     }

@@ -70,6 +70,7 @@ const wasmModuleRoot =
 
 // let rollup: RollupContract
 let rollup: RollupContract
+let batchPosterManager: Signer
 let rollupUser: RollupUserLogic
 let rollupAdmin: RollupAdminLogic
 let accounts: Signer[]
@@ -113,6 +114,7 @@ const setup = async () => {
   const val3 = accounts[4]
   const val4 = accounts[5]
   sequencer = accounts[6]
+  const batchPosterManager = accounts[7]
 
   const oneStep0Fac = (await ethers.getContractFactory(
     'OneStepProver0'
@@ -176,12 +178,17 @@ const setup = async () => {
     ethers.constants.AddressZero
   )
 
-  const response = await rollupCreator.createRollup(
-    await getDefaultConfig(),
-    await sequencer.getAddress(),
-    [await val1.getAddress(), await val2.getAddress(), await val3.getAddress()],
-    117964
-  )
+  const response = await rollupCreator.createRollup({
+    config: await getDefaultConfig(),
+    _batchPosters: [await sequencer.getAddress()],
+    _validators: [
+      await val1.getAddress(),
+      await val2.getAddress(),
+      await val3.getAddress(),
+    ],
+    maxDataSize: 117964,
+    batchPosterManager: await batchPosterManager.getAddress(),
+  })
 
   const rec = await response.wait()
 
@@ -226,6 +233,7 @@ const setup = async () => {
     delayedBridge: rollupCreatedEvent.bridge,
     delayedInbox: rollupCreatedEvent.inboxAddress,
     bridge: rollupCreatedEvent.bridge,
+    batchPosterManager,
   }
 }
 
@@ -392,12 +400,14 @@ describe('ArbRollup', () => {
       rollupUser: rollupUserContract,
       admin: adminI,
       validators: validatorsI,
+      batchPosterManager: batchPosterManagerI,
     } = await setup()
     rollupAdmin = rollupAdminContract
     rollupUser = rollupUserContract
     admin = adminI
     validators = validatorsI
     rollup = new RollupContract(rollupUser.connect(validators[0]))
+    batchPosterManager = batchPosterManagerI
   })
 
   it('should only initialize once', async function () {
@@ -1179,6 +1189,33 @@ describe('ArbRollup', () => {
     await expect(sequencerInbox.removeDelayAfterFork()).to.revertedWith(
       'NotForked()'
     )
+  })
+
+  it('can set a batch poster', async function () {
+    const testAddress = await accounts[9].getAddress()
+    expect(await sequencerInbox.isBatchPoster(testAddress)).to.be.false
+    await expect(
+      sequencerInbox.setIsBatchPoster(testAddress, true)
+    ).to.revertedWith(
+      `NotBatchPosterManager("${await sequencerInbox.signer.getAddress()}")`
+    )
+    expect(await sequencerInbox.isBatchPoster(testAddress)).to.be.false
+
+    await (
+      await sequencerInbox
+        .connect(batchPosterManager)
+        .setIsBatchPoster(testAddress, true)
+    ).wait()
+
+    expect(await sequencerInbox.isBatchPoster(testAddress)).to.be.true
+
+    await (
+      await sequencerInbox
+        .connect(batchPosterManager)
+        .setIsBatchPoster(testAddress, false)
+    ).wait()
+
+    expect(await sequencerInbox.isBatchPoster(testAddress)).to.be.false
   })
 
   it('should fail the batch poster check', async function () {

@@ -28,6 +28,16 @@ contract RollupCreator is Ownable {
     );
     event TemplatesUpdated();
 
+    struct RollupCreatorConfig {
+        Config config;
+        //// @dev The address of the batch poster, not used when set to zero address
+        address[] _batchPosters;
+        /// @dev  The list of validator addresses, not used when set to empty list
+        address[] _validators;
+        uint256 maxDataSize;
+        address batchPosterManager;
+    }
+
     BridgeCreator public bridgeCreator;
     IOneStepProofEntry public osp;
     IChallengeManager public challengeManagerTemplate;
@@ -66,31 +76,29 @@ contract RollupCreator is Ownable {
      * @dev - RollupOwner should be the owner of Rollup
      * @dev - Bridge should have a single inbox and outbox
      * @dev - Validators and batch poster should be set if provided
-     * @param config       The configuration for the rollup
-     * @param _batchPoster The address of the batch poster, not used when set to zero address
-     * @param _validators  The list of validator addresses, not used when set to empty list
+     * @param rollupCreatorConfig   The configuration for the rollup creator
      * @return The address of the newly created rollup
      */
-    function createRollup(
-        Config memory config,
-        address _batchPoster,
-        address[] memory _validators,
-        uint256 maxDataSize
-    ) external returns (address) {
+    function createRollup(RollupCreatorConfig memory rollupCreatorConfig)
+        external
+        returns (address)
+    {
         // Make sure the immutable maxDataSize is as expected
         require(
-            maxDataSize == bridgeCreator.sequencerInboxTemplate().maxDataSize(),
+            rollupCreatorConfig.maxDataSize == bridgeCreator.sequencerInboxTemplate().maxDataSize(),
             "SI_MAX_DATA_SIZE_MISMATCH"
         );
         require(
-            maxDataSize == bridgeCreator.inboxTemplate().maxDataSize(),
+            rollupCreatorConfig.maxDataSize == bridgeCreator.inboxTemplate().maxDataSize(),
             "I_MAX_DATA_SIZE_MISMATCH"
         );
 
         ProxyAdmin proxyAdmin = new ProxyAdmin();
 
         // Create the rollup proxy to figure out the address and initialize it later
-        RollupProxy rollup = new RollupProxy{salt: keccak256(abi.encode(config))}();
+        RollupProxy rollup = new RollupProxy{
+            salt: keccak256(abi.encode(rollupCreatorConfig.config))
+        }();
 
         (
             IBridge bridge,
@@ -101,7 +109,9 @@ contract RollupCreator is Ownable {
         ) = bridgeCreator.createBridge(
                 address(proxyAdmin),
                 address(rollup),
-                config.sequencerInboxMaxTimeVariation
+                rollupCreatorConfig.config.sequencerInboxMaxTimeVariation,
+                rollupCreatorConfig._batchPosters,
+                rollupCreatorConfig.batchPosterManager
             );
 
         IChallengeManager challengeManager = IChallengeManager(
@@ -120,14 +130,14 @@ contract RollupCreator is Ownable {
             osp
         );
 
-        proxyAdmin.transferOwnership(config.owner);
+        proxyAdmin.transferOwnership(rollupCreatorConfig.config.owner);
 
         // initialize the rollup with this contract as owner to set batch poster and validators
         // it will transfer the ownership back to the actual owner later
-        address actualOwner = config.owner;
-        config.owner = address(this);
+        address actualOwner = rollupCreatorConfig.config.owner;
+        rollupCreatorConfig.config.owner = address(this);
         rollup.initializeProxy(
-            config,
+            rollupCreatorConfig.config,
             ContractDependencies({
                 bridge: bridge,
                 sequencerInbox: sequencerInbox,
@@ -142,18 +152,13 @@ contract RollupCreator is Ownable {
             })
         );
 
-        // setting batch poster, if the address provided is not zero address
-        if (_batchPoster != address(0)) {
-            sequencerInbox.setIsBatchPoster(_batchPoster, true);
-        }
-
         // Call setValidator on the newly created rollup contract just if validator set is not empty
-        if (_validators.length != 0) {
-            bool[] memory _vals = new bool[](_validators.length);
-            for (uint256 i = 0; i < _validators.length; i++) {
+        if (rollupCreatorConfig._validators.length != 0) {
+            bool[] memory _vals = new bool[](rollupCreatorConfig._validators.length);
+            for (uint256 i = 0; i < rollupCreatorConfig._validators.length; i++) {
                 _vals[i] = true;
             }
-            IRollupAdmin(address(rollup)).setValidator(_validators, _vals);
+            IRollupAdmin(address(rollup)).setValidator(rollupCreatorConfig._validators, _vals);
         }
 
         IRollupAdmin(address(rollup)).setOwner(actualOwner);

@@ -53,10 +53,12 @@ async function main() {
     // Call the createRollup function
     console.log('Calling createRollup to generate a new rollup ...')
     const createRollupTx = await rollupCreator.createRollup(
-      config.rollupConfig,
-      config.batchPoster,
-      config.validators,
-      maxDataSize
+      {
+        config: config.rollupConfig,
+        _batchPoster: config.batchPosters,
+        _validators: config.validators,
+        maxDataSize
+      }
     )
     const createRollupReceipt = await createRollupTx.wait()
 
