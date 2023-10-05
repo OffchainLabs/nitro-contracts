@@ -75,8 +75,12 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
     uint256 internal immutable deployTimeChainId = block.chainid;
     // If the chain this SequencerInbox is deployed on is an Arbitrum chain.
     bool internal immutable hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
-    
-    constructor(IBridge bridge_, ISequencerInbox.MaxTimeVariation memory maxTimeVariation_, uint256 _maxDataSize) {
+
+    constructor(
+        IBridge bridge_,
+        ISequencerInbox.MaxTimeVariation memory maxTimeVariation_,
+        uint256 _maxDataSize
+    ) {
         if (bridge_ == IBridge(address(0))) revert HadZeroInit();
         bridge = bridge_;
         rollup = bridge_.rollup();

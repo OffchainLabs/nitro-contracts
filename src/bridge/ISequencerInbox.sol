@@ -11,14 +11,15 @@ import "./IDelayedMessageProvider.sol";
 import "./IBridge.sol";
 
 interface ISequencerInbox is IDelayedMessageProvider {
+    /// @notice The maximum amount of time variatin between a message being posted on the L1 and being executed on the L2
+    /// @param delayBlocks The max amount of blocks in the past that a message can be received on L2
+    /// @param futureBlocks The max amount of blocks in the future that a message can be received on L2
+    /// @param delaySeconds The max amount of seconds in the past that a message can be received on L2
+    /// @param futureSeconds The max amount of seconds in the future that a message can be received on L2
     struct MaxTimeVariation {
-        /// @notice delayBlocks The max amount of blocks in the past that a message can be received on L2
         uint256 delayBlocks;
-        /// @notice futureBlocks The max amount of blocks in the future that a message can be received on L2
         uint256 futureBlocks;
-        /// @notice delaySeconds The max amount of seconds in the past that a message can be received on L2
         uint256 delaySeconds;
-        /// @notice futureSeconds The max amount of seconds in the future that a message can be received on L2
         uint256 futureSeconds;
     }
 

@@ -21,7 +21,6 @@ contract BridgeCreator is Ownable {
     RollupEventInbox public rollupEventInboxTemplate;
     Outbox public outboxTemplate;
 
-
     event TemplatesUpdated();
 
     constructor(uint256 maxDataSize) Ownable() {
@@ -92,7 +91,11 @@ contract BridgeCreator is Ownable {
         }
 
         frame.bridge.initialize(IOwnable(rollup));
-        frame.sequencerInbox = new SequencerInbox(IBridge(frame.bridge), maxTimeVariation, maxDataSize);
+        frame.sequencerInbox = new SequencerInbox(
+            IBridge(frame.bridge),
+            maxTimeVariation,
+            maxDataSize
+        );
         frame.inbox.initialize(IBridge(frame.bridge), ISequencerInbox(frame.sequencerInbox));
         frame.rollupEventInbox.initialize(IBridge(frame.bridge));
         frame.outbox.initialize(IBridge(frame.bridge));
