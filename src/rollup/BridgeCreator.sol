@@ -6,7 +6,6 @@ pragma solidity ^0.8.0;
 
 import "../bridge/Bridge.sol";
 import "../bridge/SequencerInbox.sol";
-import "../bridge/ISequencerInbox.sol";
 import "../bridge/Inbox.sol";
 import "../bridge/Outbox.sol";
 import "./RollupEventInbox.sol";
@@ -28,16 +27,16 @@ contract BridgeCreator is Ownable {
 
     struct ContractTemplates {
         Bridge bridge;
-        SequencerInbox sequencerInbox;
-        Inbox inbox;
+        ISequencerInbox sequencerInbox;
+        IInboxBase inbox;
         RollupEventInbox rollupEventInbox;
         Outbox outbox;
     }
 
     struct ContractERC20Templates {
         ERC20Bridge bridge;
-        SequencerInbox sequencerInbox;
-        ERC20Inbox inbox;
+        ISequencerInbox sequencerInbox;
+        IInboxBase inbox;
         ERC20RollupEventInbox rollupEventInbox;
         ERC20Outbox outbox;
     }
@@ -51,18 +50,18 @@ contract BridgeCreator is Ownable {
         Outbox outbox;
     }
 
-    constructor() Ownable() {
-        SequencerInbox seqInbox = new SequencerInbox();
+    constructor(uint256 maxDataSize) Ownable() {
+        SequencerInbox seqInbox = new SequencerInbox(maxDataSize);
 
         ethBasedTemplates.bridge = new Bridge();
         ethBasedTemplates.sequencerInbox = seqInbox;
-        ethBasedTemplates.inbox = new Inbox();
+        ethBasedTemplates.inbox = new Inbox(maxDataSize);
         ethBasedTemplates.rollupEventInbox = new RollupEventInbox();
         ethBasedTemplates.outbox = new Outbox();
 
         erc20BasedTemplates.bridge = new ERC20Bridge();
         erc20BasedTemplates.sequencerInbox = seqInbox;
-        erc20BasedTemplates.inbox = new ERC20Inbox();
+        erc20BasedTemplates.inbox = new ERC20Inbox(maxDataSize);
         erc20BasedTemplates.rollupEventInbox = new ERC20RollupEventInbox();
         erc20BasedTemplates.outbox = new ERC20Outbox();
     }

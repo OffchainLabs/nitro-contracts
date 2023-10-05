@@ -18,7 +18,7 @@ contract ERC20InboxTest is AbsInboxTest {
         // deploy token, bridge and inbox
         nativeToken = new ERC20PresetMinterPauser("Appchain Token", "App");
         bridge = IBridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        inbox = IInboxBase(TestUtil.deployProxy(address(new ERC20Inbox())));
+        inbox = IInboxBase(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
         erc20Inbox = IERC20Inbox(address(inbox));
 
         // init bridge and inbox
@@ -28,7 +28,7 @@ contract ERC20InboxTest is AbsInboxTest {
         bridge.setDelayedInbox(address(inbox), true);
 
         // fund user account
-        ERC20PresetMinterPauser(address(nativeToken)).mint(user, 1_000 ether);
+        ERC20PresetMinterPauser(address(nativeToken)).mint(user, 1000 ether);
     }
 
     /* solhint-disable func-name-mixedcase */
@@ -128,8 +128,7 @@ contract ERC20InboxTest is AbsInboxTest {
         // expect event
         vm.expectEmit(true, true, true, true);
         emit InboxMessageDelivered(
-            0,
-            abi.encodePacked(AddressAliasHelper.applyL1ToL2Alias(user), depositAmount)
+            0, abi.encodePacked(AddressAliasHelper.applyL1ToL2Alias(user), depositAmount)
         );
 
         // deposit tokens -> tx.origin != msg.sender
@@ -247,7 +246,7 @@ contract ERC20InboxTest is AbsInboxTest {
 
     function test_createRetryableTicket_FromContract() public {
         address sender = address(new Sender());
-        ERC20PresetMinterPauser(address(nativeToken)).mint(address(sender), 1_000);
+        ERC20PresetMinterPauser(address(nativeToken)).mint(address(sender), 1000);
 
         uint256 bridgeTokenBalanceBefore = nativeToken.balanceOf(address(bridge));
         uint256 senderTokenBalanceBefore = nativeToken.balanceOf(address(sender));
@@ -540,7 +539,7 @@ contract ERC20InboxTest is AbsInboxTest {
 
     function test_unsafeCreateRetryableTicket_FromContract() public {
         address sender = address(new Sender());
-        ERC20PresetMinterPauser(address(nativeToken)).mint(address(sender), 1_000);
+        ERC20PresetMinterPauser(address(nativeToken)).mint(address(sender), 1000);
 
         uint256 bridgeTokenBalanceBefore = nativeToken.balanceOf(address(bridge));
         uint256 senderTokenBalanceBefore = nativeToken.balanceOf(address(sender));

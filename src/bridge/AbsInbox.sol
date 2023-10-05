@@ -26,8 +26,6 @@ import {
     L2MessageType_unsignedEOATx,
     L2_MSG
 } from "../libraries/MessageTypes.sol";
-import {MAX_DATA_SIZE} from "../libraries/Constants.sol";
-
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/StorageSlotUpgradeable.sol";
@@ -99,7 +97,13 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         _;
     }
 
+    // On L1 this should be set to 117964: 90% of Geth's 128KB tx size limit, leaving ~13KB for proving
+    uint256 public immutable maxDataSize;
     uint256 internal immutable deployTimeChainId = block.chainid;
+
+    constructor(uint256 _maxDataSize) {
+        maxDataSize = _maxDataSize;
+    }
 
     function _chainIdChanged() internal view returns (bool) {
         return deployTimeChainId != block.chainid;
@@ -136,8 +140,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         if (_chainIdChanged()) revert L1Forked();
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
-        if (messageData.length > MAX_DATA_SIZE)
-            revert DataTooLarge(messageData.length, MAX_DATA_SIZE);
+        if (messageData.length > maxDataSize) revert DataTooLarge(messageData.length, maxDataSize);
         uint256 msgNum = _deliverToBridge(L2_MSG, msg.sender, keccak256(messageData), 0);
         emit InboxMessageDeliveredFromOrigin(msgNum);
         return msgNum;
@@ -324,8 +327,8 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         bytes memory _messageData,
         uint256 amount
     ) internal returns (uint256) {
-        if (_messageData.length > MAX_DATA_SIZE)
-            revert DataTooLarge(_messageData.length, MAX_DATA_SIZE);
+        if (_messageData.length > maxDataSize)
+            revert DataTooLarge(_messageData.length, maxDataSize);
         uint256 msgNum = _deliverToBridge(_kind, _sender, keccak256(_messageData), amount);
         emit InboxMessageDelivered(msgNum, _messageData);
         return msgNum;

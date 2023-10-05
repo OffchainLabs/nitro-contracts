@@ -21,6 +21,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 contract ERC20Inbox is AbsInbox, IERC20Inbox {
     using SafeERC20 for IERC20;
 
+    constructor(uint256 _maxDataSize) AbsInbox(_maxDataSize) {}
+
     /// @inheritdoc IInboxBase
     function initialize(IBridge _bridge, ISequencerInbox _sequencerInbox)
         external

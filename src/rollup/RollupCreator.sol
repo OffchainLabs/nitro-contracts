@@ -104,11 +104,26 @@ contract RollupCreator is Ownable {
     function createRollup(
         Config memory config,
         address _batchPoster,
-        address[] calldata _validators,
+        address[] memory _validators,
+        uint256 _maxDataSize,
         address _nativeToken,
         bool _deployFactoriesToL2,
         uint256 _maxFeePerGasForRetryables
     ) public payable returns (address) {
+        {
+            // Make sure the immutable maxDataSize is as expected
+            (, ISequencerInbox ethSequencerInbox, IInboxBase ethInbox, , ) = bridgeCreator
+                .ethBasedTemplates();
+            require(_maxDataSize == ethSequencerInbox.maxDataSize(), "SI_MAX_DATA_SIZE_MISMATCH");
+            require(_maxDataSize == ethInbox.maxDataSize(), "I_MAX_DATA_SIZE_MISMATCH");
+
+            (, ISequencerInbox erc20SequencerInbox, IInboxBase erc20Inbox, , ) = bridgeCreator
+                .erc20BasedTemplates();
+            require(_maxDataSize == erc20SequencerInbox.maxDataSize(), "SI_MAX_DATA_SIZE_MISMATCH");
+            require(_maxDataSize == erc20Inbox.maxDataSize(), "I_MAX_DATA_SIZE_MISMATCH");
+        }
+
+        // create proxy admin which will manage bridge contracts
         ProxyAdmin proxyAdmin = new ProxyAdmin();
 
         // Create the rollup proxy to figure out the address and initialize it later

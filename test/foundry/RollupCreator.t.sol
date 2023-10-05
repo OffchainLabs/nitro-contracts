@@ -29,7 +29,8 @@ contract RollupCreatorTest is Test {
     DeployHelper public deployHelper;
 
     // 1 gwei
-    uint256 MAX_FEE_PER_GAS = 1_000_000_000;
+    uint256 public constant MAX_FEE_PER_GAS = 1_000_000_000;
+    uint256 public constant MAX_DATA_SIZE = 117_964;
 
     /* solhint-disable func-name-mixedcase */
 
@@ -40,7 +41,7 @@ contract RollupCreatorTest is Test {
         deployHelper = new DeployHelper();
 
         // deploy BridgeCreators
-        BridgeCreator bridgeCreator = new BridgeCreator();
+        BridgeCreator bridgeCreator = new BridgeCreator(MAX_DATA_SIZE);
 
         IUpgradeExecutor upgradeExecutorLogic = new UpgradeExecutorMock();
 
@@ -102,7 +103,7 @@ contract RollupCreatorTest is Test {
         validators[1] = makeAddr("validator2");
 
         address rollupAddress = rollupCreator.createRollup{value: factoryDeploymentFunds}(
-            config, batchPoster, validators, address(0), true, MAX_FEE_PER_GAS
+            config, batchPoster, validators, MAX_DATA_SIZE, address(0), true, MAX_FEE_PER_GAS
         );
 
         vm.stopPrank();
@@ -228,7 +229,7 @@ contract RollupCreatorTest is Test {
         validators[0] = makeAddr("validator1");
         validators[1] = makeAddr("validator2");
         address rollupAddress = rollupCreator.createRollup(
-            config, batchPoster, validators, nativeToken, true, MAX_FEE_PER_GAS
+            config, batchPoster, validators, MAX_DATA_SIZE, nativeToken, true, MAX_FEE_PER_GAS
         );
 
         vm.stopPrank();
@@ -351,7 +352,7 @@ contract RollupCreatorTest is Test {
         validators[0] = makeAddr("validator1");
         validators[1] = makeAddr("validator2");
         address rollupAddress = rollupCreator.createRollup{value: factoryDeploymentFunds}(
-            config, batchPoster, validators, address(0), true, MAX_FEE_PER_GAS
+            config, batchPoster, validators, MAX_DATA_SIZE, address(0), true, MAX_FEE_PER_GAS
         );
 
         vm.stopPrank();

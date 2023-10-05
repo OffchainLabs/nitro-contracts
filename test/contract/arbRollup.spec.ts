@@ -172,7 +172,7 @@ const setup = async () => {
   const bridgeCreatorFac = (await ethers.getContractFactory(
     'BridgeCreator'
   )) as BridgeCreator__factory
-  const bridgeCreator = await bridgeCreatorFac.deploy()
+  const bridgeCreator = await bridgeCreatorFac.deploy(117964)
 
   const rollupCreatorFac = (await ethers.getContractFactory(
     'RollupCreator'
@@ -201,6 +201,7 @@ const setup = async () => {
     await getDefaultConfig(),
     await sequencer.getAddress(),
     [await val1.getAddress(), await val2.getAddress(), await val3.getAddress()],
+    117964,
     ethers.constants.AddressZero,
     true,
     maxFeePerGas,

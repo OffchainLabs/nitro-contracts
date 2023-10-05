@@ -13,17 +13,19 @@ contract BridgeCreatorTest is Test {
     BridgeCreator public creator;
     address public owner = address(100);
 
+    uint256 public constant MAX_DATA_SIZE = 117_964;
+
     function setUp() public {
         vm.prank(owner);
-        creator = new BridgeCreator();
+        creator = new BridgeCreator(MAX_DATA_SIZE);
     }
 
     /* solhint-disable func-name-mixedcase */
     function test_constructor() public {
         (
             Bridge bridgeTemplate,
-            SequencerInbox sequencerInboxTemplate,
-            Inbox inboxTemplate,
+            ISequencerInbox sequencerInboxTemplate,
+            IInboxBase inboxTemplate,
             RollupEventInbox rollupEventInboxTemplate,
             Outbox outboxTemplate
         ) = creator.ethBasedTemplates();
@@ -35,8 +37,8 @@ contract BridgeCreatorTest is Test {
 
         (
             ERC20Bridge erc20BridgeTemplate,
-            SequencerInbox erc20SequencerInboxTemplate,
-            ERC20Inbox erc20InboxTemplate,
+            ISequencerInbox erc20SequencerInboxTemplate,
+            IInboxBase erc20InboxTemplate,
             ERC20RollupEventInbox erc20RollupEventInboxTemplate,
             ERC20Outbox erc20OutboxTemplate
         ) = creator.erc20BasedTemplates();
@@ -61,8 +63,8 @@ contract BridgeCreatorTest is Test {
 
         (
             Bridge bridgeTemplate,
-            SequencerInbox sequencerInboxTemplate,
-            Inbox inboxTemplate,
+            ISequencerInbox sequencerInboxTemplate,
+            IInboxBase inboxTemplate,
             RollupEventInbox rollupEventInboxTemplate,
             Outbox outboxTemplate
         ) = creator.ethBasedTemplates();
@@ -93,8 +95,8 @@ contract BridgeCreatorTest is Test {
 
         (
             ERC20Bridge bridgeTemplate,
-            SequencerInbox sequencerInboxTemplate,
-            ERC20Inbox inboxTemplate,
+            ISequencerInbox sequencerInboxTemplate,
+            IInboxBase inboxTemplate,
             ERC20RollupEventInbox rollupEventInboxTemplate,
             ERC20Outbox outboxTemplate
         ) = creator.erc20BasedTemplates();

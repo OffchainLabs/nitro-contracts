@@ -7,6 +7,7 @@ import {
   bytecode as UpgradeExecutorBytecode,
 } from '@offchainlabs/upgrade-executor/build/contracts/src/UpgradeExecutor.sol/UpgradeExecutor.json'
 import { sleep } from './testSetup'
+import { maxDataSize } from './config'
 
 // Define a verification function
 async function verifyContract(
@@ -75,7 +76,9 @@ async function deployUpgradeExecutor(): Promise<Contract> {
 async function deployAllContracts(
   signer: any
 ): Promise<Record<string, Contract>> {
-  const bridgeCreator = await deployContract('BridgeCreator', signer)
+  const bridgeCreator = await deployContract('BridgeCreator', signer, [
+    maxDataSize,
+  ])
   const prover0 = await deployContract('OneStepProver0', signer)
   const proverMem = await deployContract('OneStepProverMemory', signer)
   const proverMath = await deployContract('OneStepProverMath', signer)
@@ -153,11 +156,16 @@ async function main() {
     await verifyContract(
       'SequencerInbox',
       sequencerInbox,
-      [],
+      [maxDataSize],
       'src/bridge/SequencerInbox.sol:SequencerInbox'
     )
     console.log(`"inbox implementation contract" created at address:`, inbox)
-    await verifyContract('Inbox', inbox, [], 'src/bridge/Inbox.sol:Inbox')
+    await verifyContract(
+      'Inbox',
+      inbox,
+      [maxDataSize],
+      'src/bridge/Inbox.sol:Inbox'
+    )
 
     console.log(
       `"rollupEventInbox implementation contract" created at address:`,

@@ -27,7 +27,6 @@ import {
     L2MessageType_unsignedEOATx,
     L2MessageType_unsignedContractTx
 } from "../libraries/MessageTypes.sol";
-import {MAX_DATA_SIZE} from "../libraries/Constants.sol";
 import "../precompiles/ArbSys.sol";
 
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
@@ -38,6 +37,8 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
  * to await inclusion in the SequencerInbox
  */
 contract Inbox is AbsInbox, IInbox {
+    constructor(uint256 _maxDataSize) AbsInbox(_maxDataSize) {}
+
     /// @inheritdoc IInboxBase
     function initialize(IBridge _bridge, ISequencerInbox _sequencerInbox)
         external

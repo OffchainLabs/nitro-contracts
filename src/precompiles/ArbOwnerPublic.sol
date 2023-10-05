@@ -26,5 +26,8 @@ interface ArbOwnerPublic {
     /// @notice Get the infrastructure fee collector
     function getInfraFeeAccount() external view returns (address);
 
+    /// @notice Get the Brotli compression level used for fast compression
+    function getBrotliCompressionLevel() external view returns (uint64);
+
     event ChainOwnerRectified(address rectifiedOwner);
 }
