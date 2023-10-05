@@ -231,7 +231,7 @@ describe('SequencerInboxForceInclude', async () => {
     const inboxFac = (await ethers.getContractFactory(
       'Inbox'
     )) as Inbox__factory
-    const inboxTemplate = await inboxFac.deploy()
+    const inboxTemplate = await inboxFac.deploy(117964)
     const bridgeFac = (await ethers.getContractFactory(
       'Bridge'
     )) as Bridge__factory

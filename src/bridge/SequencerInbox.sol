@@ -34,7 +34,6 @@ import "../precompiles/ArbSys.sol";
 import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
 import {GasRefundEnabled, IGasRefunder} from "../libraries/IGasRefunder.sol";
 import "../libraries/ArbitrumChecker.sol";
-import {MAX_DATA_SIZE} from "../libraries/Constants.sol";
 
 /**
  * @title Accepts batches from the sequencer and adds them to the rollup inbox.
@@ -69,18 +68,15 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         _;
     }
 
-    uint256 internal immutable deployTimeChainId = block.chainid;
-
     mapping(address => bool) public isSequencer;
 
+    // On L1 this should be set to 117964: 90% of Geth's 128KB tx size limit, leaving ~13KB for proving
+    uint256 public immutable maxDataSize;
+    uint256 internal immutable deployTimeChainId = block.chainid;
     // If the chain this SequencerInbox is deployed on is an Arbitrum chain.
     bool internal immutable hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
-
-    function _chainIdChanged() internal view returns (bool) {
-        return deployTimeChainId != block.chainid;
-    }
-
-    constructor(IBridge bridge_, ISequencerInbox.MaxTimeVariation memory maxTimeVariation_) {
+    
+    constructor(IBridge bridge_, ISequencerInbox.MaxTimeVariation memory maxTimeVariation_, uint256 _maxDataSize) {
         if (bridge_ == IBridge(address(0))) revert HadZeroInit();
         bridge = bridge_;
         rollup = bridge_.rollup();
@@ -88,6 +84,11 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         futureBlocks = maxTimeVariation_.futureBlocks;
         delaySeconds = maxTimeVariation_.delaySeconds;
         futureSeconds = maxTimeVariation_.futureSeconds;
+        maxDataSize = _maxDataSize;
+    }
+
+    function _chainIdChanged() internal view returns (bool) {
+        return deployTimeChainId != block.chainid;
     }
 
     function getTimeBounds() internal view virtual returns (TimeBounds memory) {
@@ -290,7 +291,7 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
 
     modifier validateBatchData(bytes calldata data) {
         uint256 fullDataLen = HEADER_LENGTH + data.length;
-        if (fullDataLen > MAX_DATA_SIZE) revert DataTooLarge(fullDataLen, MAX_DATA_SIZE);
+        if (fullDataLen > maxDataSize) revert DataTooLarge(fullDataLen, maxDataSize);
         if (data.length > 0 && (data[0] & DATA_AUTHENTICATED_FLAG) == DATA_AUTHENTICATED_FLAG) {
             revert DataNotAuthenticated();
         }
