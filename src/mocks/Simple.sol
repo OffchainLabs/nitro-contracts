@@ -126,11 +126,22 @@ contract Simple {
         return before - gasleft();
     }
 
-    function postManyBatches(ISequencerInbox sequencerInbox, bytes memory batchData, uint256 numberToPost) external {
+    function postManyBatches(
+        ISequencerInbox sequencerInbox,
+        bytes memory batchData,
+        uint256 numberToPost
+    ) external {
         uint256 sequenceNumber = sequencerInbox.batchCount();
         uint256 delayedMessagesRead = sequencerInbox.totalDelayedMessagesRead();
         for (uint256 i = 0; i < numberToPost; i++) {
-            sequencerInbox.addSequencerL2Batch(sequenceNumber, batchData, delayedMessagesRead, IGasRefunder(address(0)), 0, 0);
+            sequencerInbox.addSequencerL2Batch(
+                sequenceNumber,
+                batchData,
+                delayedMessagesRead,
+                IGasRefunder(address(0)),
+                0,
+                0
+            );
             sequenceNumber++;
         }
     }
