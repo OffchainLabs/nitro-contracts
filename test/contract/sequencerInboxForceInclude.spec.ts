@@ -220,6 +220,8 @@ describe('SequencerInboxForceInclude', async () => {
     const adminAddr = await admin.getAddress()
     const user = accounts[1]
     const dummyRollup = accounts[2]
+    const batchPoster = accounts[3]
+    const batchPosterManager = accounts[4]
 
     const sequencerInboxFac = (await ethers.getContractFactory(
       'SequencerInbox'
@@ -264,12 +266,17 @@ describe('SequencerInboxForceInclude', async () => {
 
     await bridge.initialize(await dummyRollup.getAddress())
 
-    await sequencerInbox.initialize(bridgeProxy.address, {
-      delayBlocks: maxDelayBlocks,
-      delaySeconds: maxDelayTime,
-      futureBlocks: 10,
-      futureSeconds: 3000,
-    })
+    await sequencerInbox.initialize(
+      bridgeProxy.address,
+      {
+        delayBlocks: maxDelayBlocks,
+        delaySeconds: maxDelayTime,
+        futureBlocks: 10,
+        futureSeconds: 3000,
+      },
+      [await batchPoster.getAddress()],
+      await batchPosterManager.getAddress()
+    )
     await inbox.initialize(bridgeProxy.address, sequencerInbox.address)
 
     await bridgeAdmin.setDelayedInbox(inbox.address, true)

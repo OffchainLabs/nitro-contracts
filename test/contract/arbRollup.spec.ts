@@ -943,12 +943,14 @@ describe('ArbRollup', () => {
       rollupUser: rollupUserContract,
       admin: adminI,
       validators: validatorsI,
+      batchPosterManager: batchPosterManagerI,
     } = await setup()
     rollupAdmin = rollupAdminContract
     rollupUser = rollupUserContract
     admin = adminI
     validators = validatorsI
     rollup = new RollupContract(rollupUser.connect(validators[0]))
+    batchPosterManager = batchPosterManagerI
   })
 
   it('should stake on initial node again', async function () {
