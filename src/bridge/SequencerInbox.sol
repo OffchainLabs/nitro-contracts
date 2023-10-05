@@ -56,7 +56,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     IOwnable public rollup;
     /// @notice The batch poster manager has the ability to change the batch poster addresses
-    ///         This enables the patch poster to do key rotation
+    ///         This enables the batch poster to do key rotation
     address public batchPosterManager;
     mapping(address => bool) public isBatchPoster;
     ISequencerInbox.MaxTimeVariation public maxTimeVariation;
