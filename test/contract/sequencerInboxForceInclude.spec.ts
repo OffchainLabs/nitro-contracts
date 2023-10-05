@@ -260,12 +260,16 @@ describe('SequencerInboxForceInclude', async () => {
     const sequencerInboxFac = (await ethers.getContractFactory(
       'SequencerInbox'
     )) as SequencerInbox__factory
-    const sequencerInbox = await sequencerInboxFac.deploy(bridgeProxy.address, {
-      delayBlocks: maxDelayBlocks,
-      delaySeconds: maxDelayTime,
-      futureBlocks: 10,
-      futureSeconds: 3000,
-    })
+    const sequencerInbox = await sequencerInboxFac.deploy(
+      bridgeProxy.address,
+      {
+        delayBlocks: maxDelayBlocks,
+        delaySeconds: maxDelayTime,
+        futureBlocks: 10,
+        futureSeconds: 3000,
+      },
+      117964
+    )
 
     const inbox = await inboxFac.attach(inboxProxy.address).connect(user)
 
@@ -319,7 +323,7 @@ describe('SequencerInboxForceInclude', async () => {
     const messagesRead = await bridge.delayedMessageCount()
     const seqReportedMessageSubCount =
       await bridge.sequencerReportedSubMessageCount()
-    const res1 = await (
+    await (
       await sequencerInbox
         .connect(batchPoster)
         .addSequencerL2BatchFromOrigin(
