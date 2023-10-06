@@ -127,7 +127,9 @@ contract RollupCreator is Ownable {
         ProxyAdmin proxyAdmin = new ProxyAdmin();
 
         // Create the rollup proxy to figure out the address and initialize it later
-        RollupProxy rollup = new RollupProxy{salt: keccak256(abi.encode(config))}();
+        RollupProxy rollup = new RollupProxy{
+            salt: keccak256(abi.encode(config, _batchPoster, _validators, _maxDataSize))
+        }();
 
         BridgeContracts memory bridgeContracts;
         (
