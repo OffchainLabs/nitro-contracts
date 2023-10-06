@@ -1193,6 +1193,33 @@ describe('ArbRollup', () => {
     )
   })
 
+  it('can set is sequencer', async function () {
+    const testAddress = await accounts[9].getAddress()
+    expect(await sequencerInbox.isSequencer(testAddress)).to.be.false
+    await expect(
+      sequencerInbox.setIsSequencer(testAddress, true)
+    ).to.revertedWith(
+      `NotBatchPosterManager("${await sequencerInbox.signer.getAddress()}")`
+    )
+    expect(await sequencerInbox.isSequencer(testAddress)).to.be.false
+
+    await (
+      await sequencerInbox
+        .connect(batchPosterManager)
+        .setIsSequencer(testAddress, true)
+    ).wait()
+
+    expect(await sequencerInbox.isSequencer(testAddress)).to.be.true
+
+    await (
+      await sequencerInbox
+        .connect(batchPosterManager)
+        .setIsSequencer(testAddress, false)
+    ).wait()
+
+    expect(await sequencerInbox.isSequencer(testAddress)).to.be.false
+  })
+
   it('can set a batch poster', async function () {
     const testAddress = await accounts[9].getAddress()
     expect(await sequencerInbox.isBatchPoster(testAddress)).to.be.false
