@@ -32,7 +32,7 @@ contract RollupCreatorTest is Test {
     uint256 public constant MAX_FEE_PER_GAS = 1_000_000_000;
     uint256 public constant MAX_DATA_SIZE = 117_964;
 
-    BridgeCreator.BridgeContracts ethBasedTemplates =
+    BridgeCreator.BridgeContracts public ethBasedTemplates =
         BridgeCreator.BridgeContracts({
             bridge: new Bridge(),
             sequencerInbox: new SequencerInbox(MAX_DATA_SIZE),
@@ -40,7 +40,7 @@ contract RollupCreatorTest is Test {
             rollupEventInbox: new RollupEventInbox(),
             outbox: new Outbox()
         });
-    BridgeCreator.BridgeContracts erc20BasedTemplates =
+    BridgeCreator.BridgeContracts public erc20BasedTemplates =
         BridgeCreator.BridgeContracts({
             bridge: new ERC20Bridge(),
             sequencerInbox: ethBasedTemplates.sequencerInbox,
@@ -49,25 +49,8 @@ contract RollupCreatorTest is Test {
             outbox: new ERC20Outbox()
         });
 
-    BridgeCreator.BridgeContracts ethBasedTemplates =
-        BridgeCreator.BridgeContracts({
-            bridge: new Bridge(),
-            sequencerInbox: new SequencerInbox(),
-            inbox: new Inbox(),
-            rollupEventInbox: new RollupEventInbox(),
-            outbox: new Outbox()
-        });
-    BridgeCreator.BridgeContracts erc20BasedTemplates =
-        BridgeCreator.BridgeContracts({
-            bridge: new ERC20Bridge(),
-            sequencerInbox: ethBasedTemplates.sequencerInbox,
-            inbox: new ERC20Inbox(),
-            rollupEventInbox: new ERC20RollupEventInbox(),
-            outbox: new ERC20Outbox()
-        });
 
     /* solhint-disable func-name-mixedcase */
-
     function setUp() public {
         //// deploy rollup creator and set templates
         vm.startPrank(deployer);
