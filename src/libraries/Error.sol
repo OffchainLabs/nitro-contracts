@@ -61,6 +61,17 @@ error NotOutbox(address sender);
 /// @param outbox address of outbox being set
 error InvalidOutboxSet(address outbox);
 
+/// @dev The provided token address isn't valid
+/// @param token address of token being set
+error InvalidTokenSet(address token);
+
+/// @dev Call to this specific address is not allowed
+/// @param target address of the call receiver
+error CallTargetNotAllowed(address target);
+
+/// @dev Call that changes the balance of ERC20Bridge is not allowed
+error CallNotAllowed();
+
 // Inbox Errors
 
 /// @dev The contract is paused, so cannot be paused

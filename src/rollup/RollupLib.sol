@@ -11,7 +11,7 @@ import "../bridge/ISequencerInbox.sol";
 
 import "../bridge/IBridge.sol";
 import "../bridge/IOutbox.sol";
-import "../bridge/IInbox.sol";
+import "../bridge/IInboxBase.sol";
 import "./Node.sol";
 import "./IRollupEventInbox.sol";
 
