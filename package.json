@@ -10,9 +10,8 @@
   },
   "files": [
     "src/",
-    "build/types",
-    "build/contracts/@openzeppelin",
-    "build/contracts/src"
+    "build/contracts/src",
+    "build/contracts/@openzeppelin"
   ],
   "bugs": {
     "url": "https://github.com/offchainlabs/nitro-contracts/issues"
