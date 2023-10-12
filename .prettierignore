@@ -5,4 +5,5 @@ coverage/**
 deployments/**
 src/lib/abi/**
 .nyc_output
+out/**
 lib/**
