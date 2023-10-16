@@ -55,10 +55,8 @@ contract ERC20Outbox is AbsOutbox {
     /// @inheritdoc AbsOutbox
     function _getAmountToUnlock(uint256 value) internal view override returns (uint256) {
         // make sure that inflated amount does not overflow uint256
-        if (nativeTokenDecimals > 18) {
-            if (value > MAX_BRIDGEABLE_AMOUNT) {
-                revert AmountTooLarge(value);
-            }
+        if (value > MAX_BRIDGEABLE_AMOUNT && nativeTokenDecimals > 18) {
+            revert AmountTooLarge(value);
         }
 
         return DecimalsConverterHelper.adjustDecimals(value, 18, nativeTokenDecimals);
