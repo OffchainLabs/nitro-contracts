@@ -164,15 +164,25 @@ contract OneStepProver0 is IOneStepProver {
         mach.functionPc = 0;
     }
 
-    function executeCrossModuleDynamicCall(
+    function executeCrossModuleInternalCall(
         Machine memory mach,
         Module memory mod,
         Instruction calldata inst,
-        bytes calldata
+        bytes calldata proof
     ) internal pure {
         // Get the target from the stack
-        uint32 func = mach.valueStack.pop().assumeI32();
-        uint32 module = mach.valueStack.pop().assumeI32();
+        uint32 internalIndex = uint32(inst.argumentData);
+        uint32 moduleIndex = mach.valueStack.pop().assumeI32();
+        Module memory calledMod;
+
+        MerkleProof memory modProof;
+        uint256 offset = 0;
+        (calledMod, offset) = Deserialize.module(proof, offset);
+        (modProof, offset) = Deserialize.merkleProof(proof, offset);
+        require(
+            modProof.computeRootFromModule(moduleIndex, calledMod) == mach.modulesRoot,
+            "CROSS_MODULE_INTERNAL_MODULES_ROOT"
+        );
 
         // Push the return pc to the stack
         mach.valueStack.push(createReturnValue(mach));
@@ -182,8 +192,8 @@ contract OneStepProver0 is IOneStepProver {
         mach.valueStack.push(ValueLib.newI32(mod.internalsOffset));
 
         // Jump to the target
-        mach.moduleIdx = module;
-        mach.functionIdx = func;
+        mach.moduleIdx = moduleIndex;
+        mach.functionIdx = internalIndex + calledMod.internalsOffset;
         mach.functionPc = 0;
     }
 
@@ -486,8 +496,8 @@ contract OneStepProver0 is IOneStepProver {
             impl = executeCrossModuleCall;
         } else if (opcode == Instructions.CROSS_MODULE_FORWARD) {
             impl = executeCrossModuleForward;
-        } else if (opcode == Instructions.CROSS_MODULE_DYNAMIC_CALL) {
-            impl = executeCrossModuleDynamicCall;
+        } else if (opcode == Instructions.CROSS_MODULE_INTERNAL_CALL) {
+            impl = executeCrossModuleInternalCall;
         } else if (opcode == Instructions.CALLER_MODULE_INTERNAL_CALL) {
             impl = executeCallerModuleInternalCall;
         } else if (opcode == Instructions.CALL_INDIRECT) {

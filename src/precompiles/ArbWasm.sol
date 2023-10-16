@@ -62,6 +62,8 @@ interface ArbWasm {
     // @return gas cost paid per half kb uncompressed.
     function callScalar() external view returns (uint16 gas);
 
+    event ProgramActivated(bytes32 indexed codehash, address program, uint16 version);
+
     error ProgramNotActivated();
     error ProgramOutOfDate(uint16 version);
     error ProgramUpToDate();
