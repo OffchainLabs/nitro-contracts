@@ -6,7 +6,7 @@ import {
   abi as UpgradeExecutorABI,
   bytecode as UpgradeExecutorBytecode,
 } from '@offchainlabs/upgrade-executor/build/contracts/src/UpgradeExecutor.sol/UpgradeExecutor.json'
-import { sleep } from './testSetup'
+import { maxDataSize } from './config'
 
 // Define a verification function
 async function verifyContract(
@@ -16,6 +16,7 @@ async function verifyContract(
   contractPathAndName?: string // optional
 ): Promise<void> {
   try {
+    if (process.env.DISABLE_VERIFICATION) return
     // Define the verification options with possible 'contract' property
     const verificationOptions: {
       contract?: string
@@ -48,7 +49,8 @@ async function verifyContract(
 async function deployContract(
   contractName: string,
   signer: any,
-  constructorArgs: any[] = []
+  constructorArgs: any[] = [],
+  verify: boolean = true
 ): Promise<Contract> {
   const factory: ContractFactory = await ethers.getContractFactory(contractName)
   const connectedFactory: ContractFactory = factory.connect(signer)
@@ -56,7 +58,8 @@ async function deployContract(
   await contract.deployTransaction.wait()
   console.log(`New ${contractName} created at address:`, contract.address)
 
-  await verifyContract(contractName, contract.address, constructorArgs)
+  if (verify)
+    await verifyContract(contractName, contract.address, constructorArgs)
 
   return contract
 }
@@ -75,7 +78,44 @@ async function deployUpgradeExecutor(): Promise<Contract> {
 async function deployAllContracts(
   signer: any
 ): Promise<Record<string, Contract>> {
-  const bridgeCreator = await deployContract('BridgeCreator', signer)
+  const ethBridge = await deployContract('Bridge', signer, [])
+  const ethSequencerInbox = await deployContract('SequencerInbox', signer, [
+    maxDataSize,
+  ])
+  const ethInbox = await deployContract('Inbox', signer, [maxDataSize])
+  const ethRollupEventInbox = await deployContract(
+    'RollupEventInbox',
+    signer,
+    []
+  )
+  const ethOutbox = await deployContract('Outbox', signer, [])
+
+  const erc20Bridge = await deployContract('ERC20Bridge', signer, [])
+  const erc20SequencerInbox = ethSequencerInbox
+  const erc20Inbox = await deployContract('ERC20Inbox', signer, [maxDataSize])
+  const erc20RollupEventInbox = await deployContract(
+    'ERC20RollupEventInbox',
+    signer,
+    []
+  )
+  const erc20Outbox = await deployContract('ERC20Outbox', signer, [])
+
+  const bridgeCreator = await deployContract('BridgeCreator', signer, [
+    [
+      ethBridge.address,
+      ethSequencerInbox.address,
+      ethInbox.address,
+      ethRollupEventInbox.address,
+      ethOutbox.address,
+    ],
+    [
+      erc20Bridge.address,
+      erc20SequencerInbox.address,
+      erc20Inbox.address,
+      erc20RollupEventInbox.address,
+      erc20Outbox.address,
+    ],
+  ])
   const prover0 = await deployContract('OneStepProver0', signer)
   const proverMem = await deployContract('OneStepProverMemory', signer)
   const proverMath = await deployContract('OneStepProverMath', signer)
@@ -136,104 +176,6 @@ async function main() {
       contracts.deployHelper.address
     )
     console.log('Template is set on the Rollup Creator')
-
-    // get and verify ETH-based bridge contracts
-    const { bridge, sequencerInbox, inbox, rollupEventInbox, outbox } =
-      await contracts.bridgeCreator.ethBasedTemplates()
-
-    console.log('Wait a minute before starting contract verification')
-    await sleep(60 * 1000)
-
-    console.log(`"bridge implementation contract" created at address:`, bridge)
-    await verifyContract('Bridge', bridge, [], 'src/bridge/Bridge.sol:Bridge')
-    console.log(
-      `"sequencerInbox implementation contract" created at address:`,
-      sequencerInbox
-    )
-    await verifyContract(
-      'SequencerInbox',
-      sequencerInbox,
-      [],
-      'src/bridge/SequencerInbox.sol:SequencerInbox'
-    )
-    console.log(`"inbox implementation contract" created at address:`, inbox)
-    await verifyContract('Inbox', inbox, [], 'src/bridge/Inbox.sol:Inbox')
-
-    console.log(
-      `"rollupEventInbox implementation contract" created at address:`,
-      rollupEventInbox
-    )
-    await verifyContract(
-      'RollupEventInbox',
-      rollupEventInbox,
-      [],
-      'src/bridge/RollupEventInbox.sol:RollupEventInbox'
-    )
-
-    console.log(`"outbox implementation contract" created at address:`, outbox)
-    await verifyContract('Outbox', outbox, [], 'src/bridge/Outbox.sol:Outbox')
-
-    // get and verify ERC20-based bridge contracts
-    const {
-      bridge: erc20Bridge,
-      sequencerInbox: erc20SeqInbox,
-      inbox: erc20Inbox,
-      rollupEventInbox: erc20RollupEventInbox,
-      outbox: erc20Outbox,
-    } = await contracts.bridgeCreator.erc20BasedTemplates()
-
-    console.log(
-      `"erc20 bridge implementation contract" created at address:`,
-      bridge
-    )
-    await verifyContract(
-      'ERC20Bridge',
-      erc20Bridge,
-      [],
-      'src/bridge/ERC20Bridge.sol:ERC20Bridge'
-    )
-    console.log(
-      `"erc20 sequencerInbox implementation contract" created at address:`,
-      erc20SeqInbox
-    )
-    await verifyContract(
-      'SequencerInbox',
-      erc20SeqInbox,
-      [],
-      'src/bridge/SequencerInbox.sol:SequencerInbox'
-    )
-    console.log(
-      `"erc20 inbox implementation contract" created at address:`,
-      inbox
-    )
-    await verifyContract(
-      'ERC20Inbox',
-      erc20Inbox,
-      [],
-      'src/bridge/ERC20Inbox.sol:ERC20Inbox'
-    )
-
-    console.log(
-      `"erc20 rollupEventInbox implementation contract" created at address:`,
-      erc20RollupEventInbox
-    )
-    await verifyContract(
-      'ERC20RollupEventInbox',
-      erc20RollupEventInbox,
-      [],
-      'src/bridge/ERC20RollupEventInbox.sol:ERC20RollupEventInbox'
-    )
-
-    console.log(
-      `"erc20 outbox implementation contract" created at address:`,
-      outbox
-    )
-    await verifyContract(
-      'ERC20Outbox',
-      erc20Outbox,
-      [],
-      'src/bridge/ERC20Outbox.sol:ERC20Outbox'
-    )
   } catch (error) {
     console.error(
       'Deployment failed:',

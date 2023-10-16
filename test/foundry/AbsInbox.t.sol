@@ -15,6 +15,8 @@ abstract contract AbsInboxTest is Test {
     IInboxBase public inbox;
     IBridge public bridge;
 
+    uint256 public constant MAX_DATA_SIZE = 117_964;
+
     address public user = address(100);
     address public rollup = address(1000);
     address public seqInbox = address(1001);
@@ -59,20 +61,15 @@ abstract contract AbsInboxTest is Test {
 
     function test_setOutbox_revert_NonOwnerCall() public {
         // mock the owner() call on rollup
-        address mockRollupOwner = address(10000);
+        address mockRollupOwner = address(10_000);
         vm.mockCall(
-            rollup,
-            abi.encodeWithSelector(IOwnable.owner.selector),
-            abi.encode(mockRollupOwner)
+            rollup, abi.encodeWithSelector(IOwnable.owner.selector), abi.encode(mockRollupOwner)
         );
 
         // setAllowList shall revert
         vm.expectRevert(
             abi.encodeWithSelector(
-                NotRollupOrOwner.selector,
-                address(this),
-                rollup,
-                mockRollupOwner
+                NotRollupOrOwner.selector, address(this), rollup, mockRollupOwner
             )
         );
 
@@ -127,20 +124,15 @@ abstract contract AbsInboxTest is Test {
 
     function test_setAllowListEnabled_revert_NonOwnerCall() public {
         // mock the owner() call on rollup
-        address mockRollupOwner = address(10000);
+        address mockRollupOwner = address(10_000);
         vm.mockCall(
-            rollup,
-            abi.encodeWithSelector(IOwnable.owner.selector),
-            abi.encode(mockRollupOwner)
+            rollup, abi.encodeWithSelector(IOwnable.owner.selector), abi.encode(mockRollupOwner)
         );
 
         // setAllowListEnabled shall revert
         vm.expectRevert(
             abi.encodeWithSelector(
-                NotRollupOrOwner.selector,
-                address(this),
-                rollup,
-                mockRollupOwner
+                NotRollupOrOwner.selector, address(this), rollup, mockRollupOwner
             )
         );
 
@@ -149,9 +141,7 @@ abstract contract AbsInboxTest is Test {
 
     function test_pause() public {
         assertEq(
-            (PausableUpgradeable(address(inbox))).paused(),
-            false,
-            "Invalid initial paused state"
+            (PausableUpgradeable(address(inbox))).paused(), false, "Invalid initial paused state"
         );
 
         vm.prank(rollup);
@@ -164,9 +154,7 @@ abstract contract AbsInboxTest is Test {
         vm.prank(rollup);
         inbox.pause();
         assertEq(
-            (PausableUpgradeable(address(inbox))).paused(),
-            true,
-            "Invalid initial paused state"
+            (PausableUpgradeable(address(inbox))).paused(), true, "Invalid initial paused state"
         );
         vm.prank(rollup);
         inbox.unpause();
@@ -180,7 +168,7 @@ abstract contract AbsInboxTest is Test {
     }
 
     function test_initialize_revert_NonDelegated() public {
-        ERC20Inbox inb = new ERC20Inbox();
+        ERC20Inbox inb = new ERC20Inbox(MAX_DATA_SIZE);
         vm.expectRevert("Function must be called through delegatecall");
         inb.initialize(bridge, ISequencerInbox(seqInbox));
     }
@@ -299,14 +287,8 @@ abstract contract AbsInboxTest is Test {
 
         // send TX
         vm.prank(user, user);
-        uint256 msgNum = inbox.sendUnsignedTransaction(
-            gasLimit,
-            maxFeePerGas,
-            nonce,
-            user,
-            value,
-            data
-        );
+        uint256 msgNum =
+            inbox.sendUnsignedTransaction(gasLimit, maxFeePerGas, nonce, user, value, data);
 
         //// checks
         assertEq(msgNum, 0, "Invalid msgNum");
@@ -394,9 +376,11 @@ abstract contract AbsInboxTest is Test {
         inbox.sendContractTransaction(tooBigGasLimit, 10, user, 10, abi.encodePacked("data"));
     }
 
-    /****
-     **** Event declarations
-     ***/
+    /**
+     *
+     * Event declarations
+     *
+     */
 
     event AllowListAddressSet(address indexed user, bool val);
     event AllowListEnabledUpdated(bool isEnabled);

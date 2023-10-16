@@ -7,7 +7,7 @@ pragma solidity ^0.8.4;
 import "./AbsBridge.sol";
 import "./IERC20Bridge.sol";
 import "../libraries/AddressAliasHelper.sol";
-import {InvalidTokenSet, CallTargetNotAllowed} from "../libraries/Error.sol";
+import {InvalidTokenSet, CallTargetNotAllowed, CallNotAllowed} from "../libraries/Error.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -15,6 +15,11 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  * @title Staging ground for incoming and outgoing messages
  * @notice Unlike the standard Eth bridge, native token bridge escrows the custom ERC20 token which is
  * used as native currency on L2.
+ * @dev Fees are paid in this token. There are certain restrictions on the native token:
+ *       - The token can't be rebasing or have a transfer fee
+ *       - The token must only be transferrable via a call to the token address itself
+ *       - The token must only be able to set allowance via a call to the token address itself
+ *       - The token must not have a callback on transfer, and more generally a user must not be able to make a transfer to themselves revert
  */
 contract ERC20Bridge is AbsBridge, IERC20Bridge {
     using SafeERC20 for IERC20;
@@ -50,20 +55,30 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
         uint256 value,
         bytes memory data
     ) internal override returns (bool success, bytes memory returnData) {
+        address _nativeToken = nativeToken;
+
         // we don't allow outgoing calls to native token contract because it could
         // result in loss of native tokens which are escrowed by ERC20Bridge
-        if (to == nativeToken) {
-            revert CallTargetNotAllowed(nativeToken);
+        if (to == _nativeToken) {
+            revert CallTargetNotAllowed(_nativeToken);
         }
 
         // first release native token
-        IERC20(nativeToken).safeTransfer(to, value);
+        IERC20(_nativeToken).safeTransfer(to, value);
         success = true;
 
-        // if there's data do additional contract call
+        // if there's data do additional contract call. Make sure that call is not used to
+        // decrease bridge contract's balance of the native token
         if (data.length > 0) {
+            uint256 bridgeBalanceBefore = IERC20(_nativeToken).balanceOf(address(this));
+
             // solhint-disable-next-line avoid-low-level-calls
             (success, returnData) = to.call(data);
+
+            uint256 bridgeBalanceAfter = IERC20(_nativeToken).balanceOf(address(this));
+            if (bridgeBalanceAfter < bridgeBalanceBefore) {
+                revert CallNotAllowed();
+            }
         }
     }
 

@@ -39,6 +39,8 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
     ///      equals to ~1.1*10^59 tokens
     uint256 public constant MAX_BRIDGEABLE_AMOUNT = type(uint256).max / 10**18;
 
+    constructor(uint256 _maxDataSize) AbsInbox(_maxDataSize) {}
+
     /// @inheritdoc IInboxBase
     function initialize(IBridge _bridge, ISequencerInbox _sequencerInbox)
         external

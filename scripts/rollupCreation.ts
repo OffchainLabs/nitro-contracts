@@ -2,7 +2,7 @@ import { ethers } from 'hardhat'
 import '@nomiclabs/hardhat-ethers'
 import { run } from 'hardhat'
 import { abi as rollupCreatorAbi } from '../build/contracts/src/rollup/RollupCreator.sol/RollupCreator.json'
-import { config } from './config'
+import { config, maxDataSize } from './config'
 import { BigNumber } from 'ethers'
 import { IERC20__factory } from '../build/types'
 import { sleep } from './testSetup'
@@ -82,12 +82,14 @@ export async function createRollup(feeToken?: string) {
       config.rollupConfig,
       config.batchPoster,
       config.validators,
+      maxDataSize,
       feeToken,
       true,
       MAX_FER_PER_GAS,
       {
         value: feeCost,
       }
+      
     )
     const createRollupReceipt = await createRollupTx.wait()
 

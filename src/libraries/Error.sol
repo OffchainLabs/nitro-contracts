@@ -69,6 +69,9 @@ error InvalidTokenSet(address token);
 /// @param target address of the call receiver
 error CallTargetNotAllowed(address target);
 
+/// @dev Call that changes the balance of ERC20Bridge is not allowed
+error CallNotAllowed();
+
 // Inbox Errors
 
 /// @dev The contract is paused, so cannot be paused
