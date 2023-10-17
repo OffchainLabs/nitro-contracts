@@ -46,7 +46,6 @@ import {
   RollupUserLogic__factory,
   SequencerInbox,
   SequencerInbox__factory,
-  ToySequencerInbox__factory,
 } from '../../build/types'
 import {
   abi as UpgradeExecutorABI,
@@ -63,18 +62,15 @@ import {
 } from './common/rolluplib'
 import { AssertionStruct } from '../../build/types/src/rollup/RollupCore'
 import { ExecutionStateStruct } from '../../build/types/src/rollup/RollupCore'
-import { fetchJson, keccak256 } from 'ethers/lib/utils'
+import { keccak256 } from 'ethers/lib/utils'
 import {
   ConfigStruct,
   RollupCreatedEvent,
 } from '../../build/types/src/rollup/RollupCreator'
-import { ContractFactory, Wallet, constants, providers } from 'ethers'
+import { constants, providers } from 'ethers'
 import { blockStateHash, MachineStatus } from './common/challengeLib'
 import * as globalStateLib from './common/globalStateLib'
 import { RollupChallengeStartedEvent } from '../../build/types/src/rollup/IRollupCore'
-import { execSync } from 'child_process'
-import { JsonRpcProvider } from '@ethersproject/providers'
-import { Toolkit4844 } from './4844tools'
 
 const zerobytes32 = ethers.constants.HashZero
 const stakeRequirement = 10
@@ -284,6 +280,7 @@ const setup = async () => {
     nativeToken: ethers.constants.AddressZero,
     deployFactoriesToL2: true,
     maxFeePerGasForRetryables: maxFeePerGas,
+    dataHashReader: ethers.constants.AddressZero,
   }
 
   const response = await rollupCreator.createRollup(deployParams, {
