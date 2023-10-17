@@ -267,14 +267,19 @@ const setup = async () => {
   )
 
   const maxFeePerGas = BigNumber.from('1000000000')
+
+  const deployParams = {
+    config: await getDefaultConfig(),
+    batchPoster: await sequencer.getAddress(),
+    validators: [await val1.getAddress(), await val2.getAddress(), await val3.getAddress()],
+    maxDataSize: 117964,
+    nativeToken: ethers.constants.AddressZero,
+    deployFactoriesToL2: true,
+    maxFeePerGasForRetryables: maxFeePerGas,
+  }
+
   const response = await rollupCreator.createRollup(
-    await getDefaultConfig(),
-    await sequencer.getAddress(),
-    [await val1.getAddress(), await val2.getAddress(), await val3.getAddress()],
-    117964,
-    ethers.constants.AddressZero,
-    true,
-    maxFeePerGas,
+    deployParams,
     { value: ethers.utils.parseEther('0.2') }
   )
 

@@ -33,6 +33,16 @@ contract RollupCreator is Ownable {
     );
     event TemplatesUpdated();
 
+    struct RollupDeploymentParams {
+        Config config;
+        address batchPoster;
+        address[] validators;
+        uint256 maxDataSize;
+        address nativeToken;
+        bool deployFactoriesToL2;
+        uint256 maxFeePerGasForRetryables;
+    }
+
     BridgeCreator public bridgeCreator;
     IOneStepProofEntry public osp;
     IChallengeManager public challengeManagerTemplate;
@@ -81,53 +91,57 @@ contract RollupCreator is Ownable {
      * @dev - config.rollupOwner should have executor role on upgradeExecutor
      * @dev - Bridge should have a single inbox and outbox
      * @dev - Validators and batch poster should be set if provided
-     * @param config       The configuration for the rollup
-     * @param _batchPoster The address of the batch poster, not used when set to zero address
-     * @param _validators  The list of validator addresses, not used when set to empty list
-     * @param _nativeToken Address of the custom fee token used by rollup. If rollup is ETH-based address(0) should be provided
-     * @param _deployFactoriesToL2 Whether to deploy L2 factories using retryable tickets. If true, retryables need to be paid for in native currency.
-     *                             Deploying factories via retryable tickets at rollup creation time is the most reliable method to do it since it
-     *                             doesn't require paying the L1 gas. If deployment is not done as part of rollup creation TX, there is a risk that
-     *                             anyone can try to deploy factories and potentially burn the nonce 0 (ie. due to gas price spike when doing direct
-     *                             L2 TX). That would mean we permanently lost capability to deploy deterministic factory at expected address.
-     * @param _maxFeePerGasForRetryables price bid for L2 execution.
+     * @param deployParams The parameters for the rollup deployment. It consists of:
+     *          - config        The configuration for the rollup
+     *          - batchPoster   The address of the batch poster, not used when set to zero address
+     *          - validators    The list of validator addresses, not used when set to empty list
+     *          - nativeToken   Address of the custom fee token used by rollup. If rollup is ETH-based address(0) should be provided
+     *          - deployFactoriesToL2 Whether to deploy L2 factories using retryable tickets. If true, retryables need to be paid for in native currency.
+     *                        Deploying factories via retryable tickets at rollup creation time is the most reliable method to do it since it
+     *                        doesn't require paying the L1 gas. If deployment is not done as part of rollup creation TX, there is a risk that
+     *                        anyone can try to deploy factories and potentially burn the nonce 0 (ie. due to gas price spike when doing direct
+     *                        L2 TX). That would mean we permanently lost capability to deploy deterministic factory at expected address.
+     *          - maxFeePerGasForRetryables price bid for L2 execution.
      * @return The address of the newly created rollup
      */
-    function createRollup(
-        Config memory config,
-        address _batchPoster,
-        address[] memory _validators,
-        uint256 _maxDataSize,
-        address _nativeToken,
-        bool _deployFactoriesToL2,
-        uint256 _maxFeePerGasForRetryables
-    ) public payable returns (address) {
+    function createRollup(RollupDeploymentParams memory deployParams)
+        public
+        payable
+        returns (address)
+    {
         {
             // Make sure the immutable maxDataSize is as expected
             (, ISequencerInbox ethSequencerInbox, IInboxBase ethInbox, , ) = bridgeCreator
                 .ethBasedTemplates();
-            require(_maxDataSize == ethSequencerInbox.maxDataSize(), "SI_MAX_DATA_SIZE_MISMATCH");
-            require(_maxDataSize == ethInbox.maxDataSize(), "I_MAX_DATA_SIZE_MISMATCH");
+            require(
+                deployParams.maxDataSize == ethSequencerInbox.maxDataSize(),
+                "SI_MAX_DATA_SIZE_MISMATCH"
+            );
+            require(deployParams.maxDataSize == ethInbox.maxDataSize(), "I_MAX_DATA_SIZE_MISMATCH");
 
             (, ISequencerInbox erc20SequencerInbox, IInboxBase erc20Inbox, , ) = bridgeCreator
                 .erc20BasedTemplates();
-            require(_maxDataSize == erc20SequencerInbox.maxDataSize(), "SI_MAX_DATA_SIZE_MISMATCH");
-            require(_maxDataSize == erc20Inbox.maxDataSize(), "I_MAX_DATA_SIZE_MISMATCH");
+            require(
+                deployParams.maxDataSize == erc20SequencerInbox.maxDataSize(),
+                "SI_MAX_DATA_SIZE_MISMATCH"
+            );
+            require(
+                deployParams.maxDataSize == erc20Inbox.maxDataSize(),
+                "I_MAX_DATA_SIZE_MISMATCH"
+            );
         }
 
         // create proxy admin which will manage bridge contracts
         ProxyAdmin proxyAdmin = new ProxyAdmin();
 
         // Create the rollup proxy to figure out the address and initialize it later
-        RollupProxy rollup = new RollupProxy{
-            salt: keccak256(abi.encode(config, _batchPoster, _validators, _maxDataSize))
-        }();
+        RollupProxy rollup = new RollupProxy{salt: keccak256(abi.encode(deployParams))}();
 
         BridgeCreator.BridgeContracts memory bridgeContracts = bridgeCreator.createBridge(
             address(proxyAdmin),
             address(rollup),
-            _nativeToken,
-            config.sequencerInboxMaxTimeVariation
+            deployParams.nativeToken,
+            deployParams.config.sequencerInboxMaxTimeVariation
         );
 
         IChallengeManager challengeManager = IChallengeManager(
@@ -147,16 +161,16 @@ contract RollupCreator is Ownable {
         );
 
         // deploy and init upgrade executor
-        address upgradeExecutor = _deployUpgradeExecutor(config.owner, proxyAdmin);
+        address upgradeExecutor = _deployUpgradeExecutor(deployParams.config.owner, proxyAdmin);
 
         // upgradeExecutor shall be proxyAdmin's owner
         proxyAdmin.transferOwnership(address(upgradeExecutor));
 
         // initialize the rollup with this contract as owner to set batch poster and validators
         // it will transfer the ownership to the upgrade executor later
-        config.owner = address(this);
+        deployParams.config.owner = address(this);
         rollup.initializeProxy(
-            config,
+            deployParams.config,
             ContractDependencies({
                 bridge: bridgeContracts.bridge,
                 sequencerInbox: bridgeContracts.sequencerInbox,
@@ -172,32 +186,32 @@ contract RollupCreator is Ownable {
         );
 
         // setting batch poster, if the address provided is not zero address
-        if (_batchPoster != address(0)) {
-            bridgeContracts.sequencerInbox.setIsBatchPoster(_batchPoster, true);
+        if (deployParams.batchPoster != address(0)) {
+            bridgeContracts.sequencerInbox.setIsBatchPoster(deployParams.batchPoster, true);
         }
 
         // Call setValidator on the newly created rollup contract just if validator set is not empty
-        if (_validators.length != 0) {
-            bool[] memory _vals = new bool[](_validators.length);
-            for (uint256 i = 0; i < _validators.length; i++) {
+        if (deployParams.validators.length != 0) {
+            bool[] memory _vals = new bool[](deployParams.validators.length);
+            for (uint256 i = 0; i < deployParams.validators.length; i++) {
                 _vals[i] = true;
             }
-            IRollupAdmin(address(rollup)).setValidator(_validators, _vals);
+            IRollupAdmin(address(rollup)).setValidator(deployParams.validators, _vals);
         }
 
         IRollupAdmin(address(rollup)).setOwner(address(upgradeExecutor));
 
-        if (_deployFactoriesToL2) {
+        if (deployParams.deployFactoriesToL2) {
             _deployFactories(
                 address(bridgeContracts.inbox),
-                _nativeToken,
-                _maxFeePerGasForRetryables
+                deployParams.nativeToken,
+                deployParams.maxFeePerGasForRetryables
             );
         }
 
         emit RollupCreated(
             address(rollup),
-            _nativeToken,
+            deployParams.nativeToken,
             address(bridgeContracts.inbox),
             address(bridgeContracts.outbox),
             address(bridgeContracts.rollupEventInbox),
