@@ -26,6 +26,7 @@ import {
   Inbox,
   Inbox__factory,
   MessageTester,
+  RollupMock__factory,
   SequencerInbox,
   SequencerInbox__factory,
   TransparentUpgradeableProxy__factory,
@@ -37,7 +38,8 @@ import {
   BridgeInterface,
   MessageDeliveredEvent,
 } from '../../build/types/src/bridge/Bridge'
-import { Signer } from 'ethers'
+import { Signer, constants, utils } from 'ethers'
+import { Toolkit4844 } from './toolkit4844'
 
 const mineBlocks = async (count: number, timeDiffPerBlock = 14) => {
   const block = (await network.provider.send('eth_getBlockByNumber', [
@@ -220,6 +222,15 @@ describe('SequencerInboxForceInclude', async () => {
     const adminAddr = await admin.getAddress()
     const user = accounts[1]
     const dummyRollup = accounts[2]
+    const rollupOwner = accounts[3]
+    const batchPoster = accounts[4]
+
+    const rollupMockFac = (await ethers.getContractFactory(
+      'RollupMock'
+    )) as RollupMock__factory
+    const rollupMock = await rollupMockFac.deploy(
+      await rollupOwner.getAddress()
+    )
 
     const sequencerInboxFac = (await ethers.getContractFactory(
       'SequencerInbox'
@@ -256,20 +267,26 @@ describe('SequencerInboxForceInclude', async () => {
     const bridge = await bridgeFac.attach(bridgeProxy.address).connect(user)
     const bridgeAdmin = await bridgeFac
       .attach(bridgeProxy.address)
-      .connect(dummyRollup)
+      .connect(rollupOwner)
     const sequencerInbox = await sequencerInboxFac
       .attach(sequencerInboxProxy.address)
       .connect(user)
     const inbox = await inboxFac.attach(inboxProxy.address).connect(user)
+    const dataHashReader = await Toolkit4844.deployDataHashReader(admin)
 
-    await bridge.initialize(await dummyRollup.getAddress())
+    await bridge.initialize(rollupMock.address)
 
     await sequencerInbox.initialize(bridgeProxy.address, {
       delayBlocks: maxDelayBlocks,
       delaySeconds: maxDelayTime,
       futureBlocks: 10,
       futureSeconds: 3000,
-    })
+    }, dataHashReader.address)
+    await (
+      await sequencerInbox
+        .connect(rollupOwner)
+        .setIsBatchPoster(await batchPoster.getAddress(), true)
+    ).wait()
     await inbox.initialize(bridgeProxy.address, sequencerInbox.address)
 
     await bridgeAdmin.setDelayedInbox(inbox.address, true)
@@ -287,6 +304,7 @@ describe('SequencerInboxForceInclude', async () => {
       messageTester,
       inboxProxy,
       inboxTemplate,
+      batchPoster,
       bridgeProxy,
     }
   }

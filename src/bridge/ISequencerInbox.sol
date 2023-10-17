@@ -28,7 +28,8 @@ interface ISequencerInbox is IDelayedMessageProvider {
     enum BatchDataLocation {
         TxInput,
         SeparateBatchEvent,
-        NoData
+        NoData,
+        DataBlob
     }
 
     event SequencerBatchDelivered(
@@ -176,5 +177,14 @@ interface ISequencerInbox is IDelayedMessageProvider {
 
     // ---------- initializer ----------
 
-    function initialize(IBridge bridge_, MaxTimeVariation calldata maxTimeVariation_) external;
+    function initialize(
+        IBridge bridge_,
+        MaxTimeVariation calldata maxTimeVariation_,
+        IDataHashReader dataHashReader_
+    ) external;
+}
+
+// CHRIS: TODO: where to put this?
+interface IDataHashReader {
+    function getDataHashes() external view returns (bytes32[] memory);
 }

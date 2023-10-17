@@ -71,6 +71,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     uint256 internal immutable deployTimeChainId = block.chainid;
     // If the chain this SequencerInbox is deployed on is an Arbitrum chain.
     bool internal immutable hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
+    IDataHashReader dataHashReader;
 
     constructor(uint256 _maxDataSize) {
         maxDataSize = _maxDataSize;
@@ -82,13 +83,16 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     function initialize(
         IBridge bridge_,
-        ISequencerInbox.MaxTimeVariation calldata maxTimeVariation_
+        ISequencerInbox.MaxTimeVariation calldata maxTimeVariation_,
+        IDataHashReader dataHashReader_
     ) external onlyDelegated {
         if (bridge != IBridge(address(0))) revert AlreadyInit();
         if (bridge_ == IBridge(address(0))) revert HadZeroInit();
         bridge = bridge_;
         rollup = bridge_.rollup();
         maxTimeVariation = maxTimeVariation_;
+        // CHRIS: TODO: check that this is not empty?
+        dataHashReader = dataHashReader_;
     }
 
     function getTimeBounds() internal view virtual returns (TimeBounds memory) {
@@ -263,6 +267,47 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         );
     }
 
+    // CHRIS: TODO: add to interface if we keep this
+    function addSequencerL2BatchBlob(
+        uint256 sequenceNumber,
+        bytes calldata data,
+        uint256 afterDelayedMessagesRead,
+        IGasRefunder gasRefunder,
+        uint256 prevMessageCount,
+        uint256 newMessageCount
+    ) external refundsGas(gasRefunder) {
+        if (!isBatchPoster[msg.sender] && msg.sender != address(rollup)) revert NotBatchPoster();
+        (bytes32 dataHash, TimeBounds memory timeBounds) = formDataBlobHash(
+            data,
+            afterDelayedMessagesRead
+        );
+
+        (
+            uint256 seqMessageIndex,
+            bytes32 beforeAcc,
+            bytes32 delayedAcc,
+            bytes32 afterAcc
+        ) = addSequencerL2BatchImpl(
+                dataHash,
+                afterDelayedMessagesRead,
+                // CHRIS: TODO: implement blob fees
+                0,
+                prevMessageCount,
+                newMessageCount
+            );
+        if (seqMessageIndex != sequenceNumber && sequenceNumber != ~uint256(0))
+            revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
+        emit SequencerBatchDelivered(
+            seqMessageIndex,
+            beforeAcc,
+            afterAcc,
+            delayedAcc,
+            totalDelayedMessagesRead,
+            timeBounds,
+            BatchDataLocation.DataBlob
+        );
+    }
+
     function addSequencerL2Batch(
         uint256 sequenceNumber,
         bytes calldata data,
@@ -276,39 +321,26 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             data,
             afterDelayedMessagesRead
         );
-        uint256 seqMessageIndex;
-        {
-            // Reformat the stack to prevent "Stack too deep"
-            uint256 sequenceNumber_ = sequenceNumber;
-            TimeBounds memory timeBounds_ = timeBounds;
-            bytes32 dataHash_ = dataHash;
-            uint256 afterDelayedMessagesRead_ = afterDelayedMessagesRead;
-            uint256 prevMessageCount_ = prevMessageCount;
-            uint256 newMessageCount_ = newMessageCount;
-            // we set the calldata length posted to 0 here since the caller isn't the origin
-            // of the tx, so they might have not paid tx input cost for the calldata
-            bytes32 beforeAcc;
-            bytes32 delayedAcc;
-            bytes32 afterAcc;
-            (seqMessageIndex, beforeAcc, delayedAcc, afterAcc) = addSequencerL2BatchImpl(
-                dataHash_,
-                afterDelayedMessagesRead_,
-                0,
-                prevMessageCount_,
-                newMessageCount_
-            );
-            if (seqMessageIndex != sequenceNumber_ && sequenceNumber_ != ~uint256(0))
-                revert BadSequencerNumber(seqMessageIndex, sequenceNumber_);
-            emit SequencerBatchDelivered(
-                seqMessageIndex,
-                beforeAcc,
-                afterAcc,
-                delayedAcc,
-                totalDelayedMessagesRead,
-                timeBounds_,
-                BatchDataLocation.SeparateBatchEvent
-            );
-        }
+        // we set the calldata length posted to 0 here since the caller isn't the origin
+        // of the tx, so they might have not paid tx input cost for the calldata
+        (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 afterAcc) = addSequencerL2BatchImpl(
+            dataHash,
+            afterDelayedMessagesRead,
+            0,
+            prevMessageCount,
+            newMessageCount
+        );
+        if (seqMessageIndex != sequenceNumber && sequenceNumber != ~uint256(0))
+            revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
+        emit SequencerBatchDelivered(
+            seqMessageIndex,
+            beforeAcc,
+            afterAcc,
+            delayedAcc,
+            totalDelayedMessagesRead,
+            timeBounds,
+            BatchDataLocation.SeparateBatchEvent
+        );
         emit SequencerBatchData(seqMessageIndex, data);
     }
 
@@ -325,6 +357,10 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             bytes32 dasKeysetHash = bytes32(data[1:33]);
             if (!dasKeySetInfo[dasKeysetHash].isValidKeyset) revert NoSuchKeyset(dasKeysetHash);
         }
+
+        // CHRIS: TODO:
+        // no data - where do we have this? shouldn't we have a check that all supplied data is well formed?
+        // perhaps this is we should put this indices
         _;
     }
 
@@ -344,6 +380,34 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         // This must always be true from the packed encoding
         assert(header.length == HEADER_LENGTH);
         return (header, timeBounds);
+    }
+
+    function formDataBlobHash(bytes calldata data, uint256 afterDelayedMessagesRead, bytes32[] memory versionedHashes)
+        internal
+        view
+        validateBatchData(data)
+        returns (bytes32, TimeBounds memory)
+    {
+        (bytes memory header, TimeBounds memory timeBounds) = packHeader(afterDelayedMessagesRead);
+        // CHRIS: TODO: encode or encode packed?
+        bytes32 dataHash = keccak256(bytes.concat(header, abi.encodePacked(versionedHashes)));
+        return (dataHash, timeBounds);
+    }
+
+
+    function formDataBlobHash(bytes calldata data, uint256 afterDelayedMessagesRead)
+        internal
+        view
+        validateBatchData(data)
+        returns (bytes32, TimeBounds memory)
+    {
+        (bytes memory header, TimeBounds memory timeBounds) = packHeader(afterDelayedMessagesRead);
+        bytes32[] memory dataHashes = dataHashReader.getDataHashes();
+        // CHRIS: TODO: should be a custom error
+        require(dataHashes.length != 0, "Missing data hashes");
+        // CHRIS: TODO: encode or encode packed?
+        bytes32 dataHash = keccak256(bytes.concat(header, abi.encodePacked(dataHashes)));
+        return (dataHash, timeBounds);
     }
 
     function formDataHash(bytes calldata data, uint256 afterDelayedMessagesRead)
