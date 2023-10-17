@@ -271,17 +271,20 @@ const setup = async () => {
   const deployParams = {
     config: await getDefaultConfig(),
     batchPoster: await sequencer.getAddress(),
-    validators: [await val1.getAddress(), await val2.getAddress(), await val3.getAddress()],
+    validators: [
+      await val1.getAddress(),
+      await val2.getAddress(),
+      await val3.getAddress(),
+    ],
     maxDataSize: 117964,
     nativeToken: ethers.constants.AddressZero,
     deployFactoriesToL2: true,
     maxFeePerGasForRetryables: maxFeePerGas,
   }
 
-  const response = await rollupCreator.createRollup(
-    deployParams,
-    { value: ethers.utils.parseEther('0.2') }
-  )
+  const response = await rollupCreator.createRollup(deployParams, {
+    value: ethers.utils.parseEther('0.2'),
+  })
 
   const rec = await response.wait()
 
