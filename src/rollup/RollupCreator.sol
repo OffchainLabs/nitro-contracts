@@ -109,27 +109,22 @@ contract RollupCreator is Ownable {
         payable
         returns (address)
     {
-        {
-            // Make sure the immutable maxDataSize is as expected
-            (, ISequencerInbox ethSequencerInbox, IInboxBase ethInbox, , ) = bridgeCreator
-                .ethBasedTemplates();
-            require(
-                deployParams.maxDataSize == ethSequencerInbox.maxDataSize(),
-                "SI_MAX_DATA_SIZE_MISMATCH"
-            );
-            require(deployParams.maxDataSize == ethInbox.maxDataSize(), "I_MAX_DATA_SIZE_MISMATCH");
+        // Make sure the immutable maxDataSize is as expected
+        (, ISequencerInbox ethSequencerInbox, IInboxBase ethInbox, , ) = bridgeCreator
+            .ethBasedTemplates();
+        require(
+            deployParams.maxDataSize == ethSequencerInbox.maxDataSize(),
+            "SI_MAX_DATA_SIZE_MISMATCH"
+        );
+        require(deployParams.maxDataSize == ethInbox.maxDataSize(), "I_MAX_DATA_SIZE_MISMATCH");
 
-            (, ISequencerInbox erc20SequencerInbox, IInboxBase erc20Inbox, , ) = bridgeCreator
-                .erc20BasedTemplates();
-            require(
-                deployParams.maxDataSize == erc20SequencerInbox.maxDataSize(),
-                "SI_MAX_DATA_SIZE_MISMATCH"
-            );
-            require(
-                deployParams.maxDataSize == erc20Inbox.maxDataSize(),
-                "I_MAX_DATA_SIZE_MISMATCH"
-            );
-        }
+        (, ISequencerInbox erc20SequencerInbox, IInboxBase erc20Inbox, , ) = bridgeCreator
+            .erc20BasedTemplates();
+        require(
+            deployParams.maxDataSize == erc20SequencerInbox.maxDataSize(),
+            "SI_MAX_DATA_SIZE_MISMATCH"
+        );
+        require(deployParams.maxDataSize == erc20Inbox.maxDataSize(), "I_MAX_DATA_SIZE_MISMATCH");
 
         // create proxy admin which will manage bridge contracts
         ProxyAdmin proxyAdmin = new ProxyAdmin();
