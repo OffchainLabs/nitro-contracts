@@ -6,7 +6,6 @@ import {
   abi as UpgradeExecutorABI,
   bytecode as UpgradeExecutorBytecode,
 } from '@offchainlabs/upgrade-executor/build/contracts/src/UpgradeExecutor.sol/UpgradeExecutor.json'
-import { sleep } from './testSetup'
 import { maxDataSize } from './config'
 
 // Define a verification function
@@ -79,27 +78,27 @@ async function deployUpgradeExecutor(): Promise<Contract> {
 async function deployAllContracts(
   signer: any
 ): Promise<Record<string, Contract>> {
-  const ethBridge = await deployContract('Bridge', signer, [], false)
-  const ethSequencerInbox = await deployContract(
-    'SequencerInbox',
-    signer,
-    [maxDataSize],
-    false
-  )
-  const ethInbox = await deployContract('Inbox', signer, [maxDataSize], false)
+  const ethBridge = await deployContract('Bridge', signer, [])
+  const ethSequencerInbox = await deployContract('SequencerInbox', signer, [
+    maxDataSize,
+  ])
+  const ethInbox = await deployContract('Inbox', signer, [maxDataSize])
   const ethRollupEventInbox = await deployContract(
     'RollupEventInbox',
     signer,
-    [],
-    false
+    []
   )
-  const ethOutbox = await deployContract('Outbox', signer, [], false)
+  const ethOutbox = await deployContract('Outbox', signer, [])
 
-  const erc20Bridge = await deployContract('ERC20Bridge', signer, [], false)
+  const erc20Bridge = await deployContract('ERC20Bridge', signer, [])
   const erc20SequencerInbox = ethSequencerInbox
-  const erc20Inbox = await deployContract('ERC20Inbox', signer, [maxDataSize], false)
-  const erc20RollupEventInbox = await deployContract('ERC20RollupEventInbox', signer, [], false)
-  const erc20Outbox = await deployContract('ERC20Outbox', signer, [], false)
+  const erc20Inbox = await deployContract('ERC20Inbox', signer, [maxDataSize])
+  const erc20RollupEventInbox = await deployContract(
+    'ERC20RollupEventInbox',
+    signer,
+    []
+  )
+  const erc20Outbox = await deployContract('ERC20Outbox', signer, [])
 
   const bridgeCreator = await deployContract('BridgeCreator', signer, [
     [
@@ -177,111 +176,6 @@ async function main() {
       contracts.deployHelper.address
     )
     console.log('Template is set on the Rollup Creator')
-
-    // get and verify ETH-based bridge contracts
-    const { bridge, sequencerInbox, inbox, rollupEventInbox, outbox } =
-      await contracts.bridgeCreator.ethBasedTemplates()
-
-    if (process.env.DISABLE_VERIFICATION) return
-
-    console.log('Wait a minute before starting contract verification')
-    await sleep(60 * 1000)
-
-    console.log(`"bridge implementation contract" created at address:`, bridge)
-    await verifyContract('Bridge', bridge, [], 'src/bridge/Bridge.sol:Bridge')
-    console.log(
-      `"sequencerInbox implementation contract" created at address:`,
-      sequencerInbox
-    )
-    await verifyContract(
-      'SequencerInbox',
-      sequencerInbox,
-      [maxDataSize],
-      'src/bridge/SequencerInbox.sol:SequencerInbox'
-    )
-    console.log(`"inbox implementation contract" created at address:`, inbox)
-    await verifyContract(
-      'Inbox',
-      inbox,
-      [maxDataSize],
-      'src/bridge/Inbox.sol:Inbox'
-    )
-
-    console.log(
-      `"rollupEventInbox implementation contract" created at address:`,
-      rollupEventInbox
-    )
-    await verifyContract(
-      'RollupEventInbox',
-      rollupEventInbox,
-      [],
-      'src/rollup/RollupEventInbox.sol:RollupEventInbox'
-    )
-
-    console.log(`"outbox implementation contract" created at address:`, outbox)
-    await verifyContract('Outbox', outbox, [], 'src/bridge/Outbox.sol:Outbox')
-
-    // get and verify ERC20-based bridge contracts
-    const {
-      bridge: erc20Bridge,
-      sequencerInbox: erc20SeqInbox,
-      inbox: erc20Inbox,
-      rollupEventInbox: erc20RollupEventInbox,
-      outbox: erc20Outbox,
-    } = await contracts.bridgeCreator.erc20BasedTemplates()
-
-    console.log(
-      `"erc20 bridge implementation contract" created at address:`,
-      bridge
-    )
-    await verifyContract(
-      'ERC20Bridge',
-      erc20Bridge,
-      [],
-      'src/bridge/ERC20Bridge.sol:ERC20Bridge'
-    )
-    console.log(
-      `"erc20 sequencerInbox implementation contract" created at address:`,
-      erc20SeqInbox
-    )
-    await verifyContract(
-      'SequencerInbox',
-      erc20SeqInbox,
-      [],
-      'src/bridge/SequencerInbox.sol:SequencerInbox'
-    )
-    console.log(
-      `"erc20 inbox implementation contract" created at address:`,
-      inbox
-    )
-    await verifyContract(
-      'ERC20Inbox',
-      erc20Inbox,
-      [],
-      'src/bridge/ERC20Inbox.sol:ERC20Inbox'
-    )
-
-    console.log(
-      `"erc20 rollupEventInbox implementation contract" created at address:`,
-      erc20RollupEventInbox
-    )
-    await verifyContract(
-      'ERC20RollupEventInbox',
-      erc20RollupEventInbox,
-      [],
-      'src/rollup/ERC20RollupEventInbox.sol:ERC20RollupEventInbox'
-    )
-
-    console.log(
-      `"erc20 outbox implementation contract" created at address:`,
-      outbox
-    )
-    await verifyContract(
-      'ERC20Outbox',
-      erc20Outbox,
-      [],
-      'src/bridge/ERC20Outbox.sol:ERC20Outbox'
-    )
   } catch (error) {
     console.error(
       'Deployment failed:',
