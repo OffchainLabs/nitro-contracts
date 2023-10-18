@@ -27,6 +27,7 @@ contract RollupCreatorTest is Test {
     IRollupAdmin public rollupAdmin;
     IRollupUser public rollupUser;
     DeployHelper public deployHelper;
+    IDataHashReader dummyDataHashReader = IDataHashReader(address(137));
 
     // 1 gwei
     uint256 public constant MAX_FEE_PER_GAS = 1_000_000_000;
@@ -124,7 +125,8 @@ contract RollupCreatorTest is Test {
             maxDataSize: MAX_DATA_SIZE,
             nativeToken: address(0),
             deployFactoriesToL2: true,
-            maxFeePerGasForRetryables: MAX_FEE_PER_GAS
+            maxFeePerGasForRetryables: MAX_FEE_PER_GAS,
+            dataHashReader: dummyDataHashReader
         });
         address rollupAddress =
             rollupCreator.createRollup{value: factoryDeploymentFunds}(deployParams);
@@ -260,7 +262,8 @@ contract RollupCreatorTest is Test {
             maxDataSize: MAX_DATA_SIZE,
             nativeToken: nativeToken,
             deployFactoriesToL2: true,
-            maxFeePerGasForRetryables: MAX_FEE_PER_GAS
+            maxFeePerGasForRetryables: MAX_FEE_PER_GAS,
+            dataHashReader: dummyDataHashReader
         });
 
         address rollupAddress = rollupCreator.createRollup(deployParams);
@@ -393,7 +396,8 @@ contract RollupCreatorTest is Test {
             maxDataSize: MAX_DATA_SIZE,
             nativeToken: address(0),
             deployFactoriesToL2: true,
-            maxFeePerGasForRetryables: MAX_FEE_PER_GAS
+            maxFeePerGasForRetryables: MAX_FEE_PER_GAS,
+            dataHashReader: dummyDataHashReader
         });
         address rollupAddress =
             rollupCreator.createRollup{value: factoryDeploymentFunds}(deployParams);
