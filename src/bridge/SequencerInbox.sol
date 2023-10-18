@@ -361,6 +361,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         // CHRIS: TODO:
         // no data - where do we have this? shouldn't we have a check that all supplied data is well formed?
         // perhaps this is we should put this indices
+
         _;
     }
 

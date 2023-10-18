@@ -36,7 +36,7 @@ contract SequencerInboxStub is SequencerInbox {
             bytes32 beforeAcc,
             bytes32 delayedAcc,
             bytes32 afterAcc
-        ) = addSequencerL2BatchImpl(dataHash, 1, 0, 0, 1);
+        ) = addSequencerL2BatchImpl(dataHash, 1, 0, 0, 1, BatchDataLocation.NoData);
         require(sequencerMessageCount == 0, "ALREADY_SEQ_INIT");
         emit SequencerBatchDelivered(
             sequencerMessageCount,
