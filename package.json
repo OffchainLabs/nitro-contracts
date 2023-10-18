@@ -26,6 +26,7 @@
     "build:0.6": "INTERFACE_TESTER_SOLC_VERSION=0.6.9 yarn run build",
     "build:0.7": "INTERFACE_TESTER_SOLC_VERSION=0.7.0 yarn run build",
     "test": "DISABLE_GAS_REPORTER=true hardhat --network hardhat test test/contract/*.spec.ts",
+    "test:4844": "DISABLE_GAS_REPORTER=true hardhat --network hardhat test test/contract/*.spec.4844.ts",
     "test:compatibility": "yarn run build:0.6 && yarn run build:0.7",
     "test:storage": "./test/storage/test.bash",
     "test:e2e": "hardhat test test/e2e/*.ts",
