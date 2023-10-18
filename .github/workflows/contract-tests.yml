@@ -90,7 +90,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-      - uses: OffchainLabs/actions/run-nitro-test-node@deneb-integration
+      - uses: OffchainLabs/actions/run-nitro-test-node@yes
 
       - name: Setup nodejs
         uses: actions/setup-node@v2
