@@ -276,12 +276,16 @@ describe('SequencerInboxForceInclude', async () => {
 
     await bridge.initialize(rollupMock.address)
 
-    await sequencerInbox.initialize(bridgeProxy.address, {
-      delayBlocks: maxDelayBlocks,
-      delaySeconds: maxDelayTime,
-      futureBlocks: 10,
-      futureSeconds: 3000,
-    }, dataHashReader.address)
+    await sequencerInbox.initialize(
+      bridgeProxy.address,
+      {
+        delayBlocks: maxDelayBlocks,
+        delaySeconds: maxDelayTime,
+        futureBlocks: 10,
+        futureSeconds: 3000,
+      },
+      dataHashReader.address
+    )
     await (
       await sequencerInbox
         .connect(rollupOwner)

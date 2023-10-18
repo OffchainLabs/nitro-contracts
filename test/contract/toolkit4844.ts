@@ -60,7 +60,9 @@ export class Toolkit4844 {
     })
   }
 
-  public static async getTx(txHash: string): Promise<ethers.providers.TransactionResponse> {
+  public static async getTx(
+    txHash: string
+  ): Promise<ethers.providers.TransactionResponse> {
     const body = {
       method: 'eth_getTransactionByHash',
       params: [txHash],
@@ -70,7 +72,9 @@ export class Toolkit4844 {
     return (await this.postDataToGeth(body))['result']
   }
 
-  public static async getTxReceipt(txHash: string): Promise<ethers.providers.TransactionReceipt> {
+  public static async getTxReceipt(
+    txHash: string
+  ): Promise<ethers.providers.TransactionReceipt> {
     const body = {
       method: 'eth_getTransactionReceipt',
       params: [txHash],
@@ -92,9 +96,9 @@ export class Toolkit4844 {
 
   public static isReplacementError(err: string) {
     const errRegex =
-      /Error while sending transaction\: replacement transaction underpriced\:/
+      /Error while sending transaction: replacement transaction underpriced:/
     const match = err.match(errRegex)
-    return !!match
+    return Boolean(match)
   }
 
   public static async sendBlobTx(
@@ -103,7 +107,7 @@ export class Toolkit4844 {
     blobs: string[],
     data: string
   ) {
-    const blobStr = blobs.reduce((acc, blob) => acc + " -b " + blob, "")
+    const blobStr = blobs.reduce((acc, blob) => acc + ' -b ' + blob, '')
     const blobCommand = `docker run --network=nitro-testnode_default ethpandaops/goomy-blob:master blob-sender -p ${privKey} -r http://geth:8545 -t ${to} -d ${data} --gaslimit 1000000${blobStr} 2>&1`
     const res = execSync(blobCommand).toString()
     const txHashRegex = /0x[a-fA-F0-9]{64}/
