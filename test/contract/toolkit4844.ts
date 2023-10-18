@@ -1,7 +1,7 @@
 import { execSync } from 'child_process'
 import { ContractFactory, Signer, Wallet, ethers } from 'ethers'
 import * as http from 'http'
-import { DataHashReader, DataHashReader__factory } from '../../build/types'
+import { IDataHashReader, IDataHashReader__factory } from '../../build/types'
 
 const dataHashReaderJson = {
   _format: 'hh-sol-artifact-1',
@@ -118,7 +118,7 @@ export class Toolkit4844 {
 
   public static async deployDataHashReader(
     wallet: Signer
-  ): Promise<DataHashReader> {
+  ): Promise<IDataHashReader> {
     const contractFactory = new ContractFactory(
       dataHashReaderJson.abi,
       dataHashReaderJson.bytecode,
@@ -127,6 +127,6 @@ export class Toolkit4844 {
     const dataHashReader = await contractFactory.deploy()
     await dataHashReader.deployed()
 
-    return DataHashReader__factory.connect(dataHashReader.address, wallet)
+    return IDataHashReader__factory.connect(dataHashReader.address, wallet)
   }
 }

@@ -282,19 +282,14 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             afterDelayedMessagesRead
         );
 
-        (
-            uint256 seqMessageIndex,
-            bytes32 beforeAcc,
-            bytes32 delayedAcc,
-            bytes32 afterAcc
-        ) = addSequencerL2BatchImpl(
-                dataHash,
-                afterDelayedMessagesRead,
-                // CHRIS: TODO: implement blob fees
-                0,
-                prevMessageCount,
-                newMessageCount
-            );
+        (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 afterAcc) = addSequencerL2BatchImpl(
+            dataHash,
+            afterDelayedMessagesRead,
+            // CHRIS: TODO: implement blob fees
+            0,
+            prevMessageCount,
+            newMessageCount
+        );
         if (seqMessageIndex != sequenceNumber && sequenceNumber != ~uint256(0))
             revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
         emit SequencerBatchDelivered(
@@ -323,13 +318,18 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         );
         // we set the calldata length posted to 0 here since the caller isn't the origin
         // of the tx, so they might have not paid tx input cost for the calldata
-        (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 afterAcc) = addSequencerL2BatchImpl(
-            dataHash,
-            afterDelayedMessagesRead,
-            0,
-            prevMessageCount,
-            newMessageCount
-        );
+        (
+            uint256 seqMessageIndex,
+            bytes32 beforeAcc,
+            bytes32 delayedAcc,
+            bytes32 afterAcc
+        ) = addSequencerL2BatchImpl(
+                dataHash,
+                afterDelayedMessagesRead,
+                0,
+                prevMessageCount,
+                newMessageCount
+            );
         if (seqMessageIndex != sequenceNumber && sequenceNumber != ~uint256(0))
             revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
         emit SequencerBatchDelivered(
@@ -382,18 +382,16 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         return (header, timeBounds);
     }
 
-    function formDataBlobHash(bytes calldata data, uint256 afterDelayedMessagesRead, bytes32[] memory versionedHashes)
-        internal
-        view
-        validateBatchData(data)
-        returns (bytes32, TimeBounds memory)
-    {
+    function formDataBlobHash(
+        bytes calldata data,
+        uint256 afterDelayedMessagesRead,
+        bytes32[] memory versionedHashes
+    ) internal view validateBatchData(data) returns (bytes32, TimeBounds memory) {
         (bytes memory header, TimeBounds memory timeBounds) = packHeader(afterDelayedMessagesRead);
         // CHRIS: TODO: encode or encode packed?
         bytes32 dataHash = keccak256(bytes.concat(header, abi.encodePacked(versionedHashes)));
         return (dataHash, timeBounds);
     }
-
 
     function formDataBlobHash(bytes calldata data, uint256 afterDelayedMessagesRead)
         internal
