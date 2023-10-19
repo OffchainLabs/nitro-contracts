@@ -91,7 +91,7 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: OffchainLabs/actions/run-nitro-test-node@main
+      - uses: OffchainLabs/actions/run-nitro-test-node@test-node-args
         with:
           nitro-testnode-ref: deneb-integration
           args: --pos
