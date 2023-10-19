@@ -49,6 +49,7 @@ import {
   SequencerBatchDeliveredEvent,
   SequencerInbox,
 } from '../../build/types/src/bridge/SequencerInbox'
+import { execSync } from 'child_process'
 
 const mineBlocks = async (
   wallet: Wallet,
@@ -417,7 +418,12 @@ describe('SequencerInbox', async () => {
       'cb5790da63720727af975f42c79f69918580209889225fa7128c92402a6d3a65'
     const prov = new JsonRpcProvider('http://localhost:8545')
     console.log('a')
-    console.log(await prov.getNetwork());
+    console.log(
+      execSync(
+        `curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":45678,"method":"eth_chainId","params":[]}' 'http://localhost:8547'`
+      )
+    )
+    console.log(await prov.getNetwork())
     const wallet = new Wallet(privKey).connect(prov)
 
     const { user, inbox, bridge, messageTester, sequencerInbox, batchPoster } =
