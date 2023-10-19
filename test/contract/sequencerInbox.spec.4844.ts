@@ -436,7 +436,7 @@ describe('SequencerInbox', async () => {
       ['0x0142', '0x0143'],
       sequencerInbox.interface.encodeFunctionData('addSequencerL2BatchBlob', [
         sequenceNumber,
-        '0x0142',
+        '0x04',
         afterDelayedMessagesRead,
         constants.AddressZero,
         subMessageCount,
