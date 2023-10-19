@@ -196,16 +196,21 @@ describe('SequencerInbox', async () => {
     let key = wallet.privateKey
     const wallets: Wallet[] = []
 
+    console.log("a10")
+
     for (let index = 0; index < length; index++) {
+      console.log("a11", index)
       key = keccak256(key)
       const nextWallet = new Wallet(key).connect(wallet.provider)
       if ((await nextWallet.getBalance()).lt(amount)) {
+        console.log("a12", index)
         await (
           await wallet.sendTransaction({
             to: nextWallet.address,
             value: amount,
           })
         ).wait()
+        console.log("a13", index)
       }
       wallets.push(nextWallet)
     }
@@ -247,7 +252,9 @@ describe('SequencerInbox', async () => {
     maxDelayBlocks = 10,
     maxDelayTime = 0
   ) => {
+    console.log("a1")
     const accounts = await fundAccounts(fundingWallet, 5, utils.parseEther('1'))
+    console.log("a2")
 
     const admin = accounts[0]
     const adminAddr = await admin.getAddress()
@@ -270,6 +277,7 @@ describe('SequencerInbox', async () => {
     const rollupMock = await rollupMockFac.deploy(
       await rollupOwner.getAddress()
     )
+    console.log("a3")
 
     const sequencerInboxFac = new SequencerInbox__factory(deployer)
     const seqInboxTemplate = await sequencerInboxFac.deploy(117964)
@@ -408,10 +416,13 @@ describe('SequencerInbox', async () => {
     const privKey =
       'cb5790da63720727af975f42c79f69918580209889225fa7128c92402a6d3a65'
     const prov = new JsonRpcProvider('http://localhost:8545')
+    console.log("a")
     const wallet = new Wallet(privKey).connect(prov)
 
     const { user, inbox, bridge, messageTester, sequencerInbox, batchPoster } =
       await setupSequencerInbox(wallet)
+
+      console.log("b")
 
     await sendDelayedTx(
       user,
@@ -425,6 +436,7 @@ describe('SequencerInbox', async () => {
       BigNumber.from(10),
       '0x1010'
     )
+    console.log("c")
 
     const subMessageCount = await bridge.sequencerReportedSubMessageCount()
     const afterDelayedMessagesRead = await bridge.delayedMessageCount()
@@ -434,7 +446,7 @@ describe('SequencerInbox', async () => {
       batchPoster.privateKey.substring(2),
       sequencerInbox.address,
       ['0x0142', '0x0143'],
-      sequencerInbox.interface.encodeFunctionData('addSequencerL2BatchBlob', [
+      sequencerInbox.interface.encodeFunctionData('addSequencerL2BatchFromBlob', [
         sequenceNumber,
         '0x04',
         afterDelayedMessagesRead,
@@ -443,6 +455,7 @@ describe('SequencerInbox', async () => {
         subMessageCount.add(1),
       ])
     )
+    console.log("d")
 
     const batchSendTx = await Toolkit4844.getTx(txHash)
     const blobHashes = (batchSendTx as any)['blobVersionedHashes'] as string[]
