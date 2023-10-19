@@ -427,6 +427,7 @@ describe('SequencerInbox', async () => {
         )
         console.log(res.toString())
         const prov2 = new JsonRpcProvider('http://127.0.0.1:8545')
+        
         console.log('prov send', await prov2.send('eth_chainId', []))
         console.log(await prov.getBlockNumber())
         console.log(await prov.getNetwork())
