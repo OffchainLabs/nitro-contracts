@@ -442,7 +442,6 @@ describe('SequencerInbox', async () => {
         subMessageCount,
         subMessageCount.add(1),
       ])
-      
     )
 
     const batchSendTx = await Toolkit4844.getTx(txHash)
