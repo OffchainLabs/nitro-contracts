@@ -29,7 +29,7 @@ interface ISequencerInbox is IDelayedMessageProvider {
         TxInput,
         SeparateBatchEvent,
         NoData,
-        DataBlob
+        Blob
     }
 
     event SequencerBatchDelivered(

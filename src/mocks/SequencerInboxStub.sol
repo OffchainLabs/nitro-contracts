@@ -31,15 +31,12 @@ contract SequencerInboxStub is SequencerInbox {
         require(num == 0, "ALREADY_DELAYED_INIT");
         emit InboxMessageDelivered(num, initMsg);
         (bytes32 dataHash, TimeBounds memory timeBounds) = formEmptyDataHash(1);
-        (
-            uint256 sequencerMessageCount,
-            bytes32 beforeAcc,
-            bytes32 delayedAcc,
-            bytes32 afterAcc
-        ) = addSequencerL2BatchImpl(dataHash, 1, 0, 0, 1, BatchDataLocation.NoData);
-        require(sequencerMessageCount == 0, "ALREADY_SEQ_INIT");
+        checkAndSetDelayedMessagesRead(1);
+        (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 afterAcc) = bridge
+            .enqueueSequencerMessage(dataHash, 1, 0, 0);
+        require(seqMessageIndex == 0, "ALREADY_SEQ_INIT");
         emit SequencerBatchDelivered(
-            sequencerMessageCount,
+            seqMessageIndex,
             beforeAcc,
             afterAcc,
             delayedAcc,

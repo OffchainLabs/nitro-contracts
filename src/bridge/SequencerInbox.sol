@@ -154,23 +154,21 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             Messages.accumulateInboxMessage(prevDelayedAcc, messageHash)
         ) revert IncorrectMessagePreimage();
 
-        (bytes32 dataHash, TimeBounds memory timeBounds) = formEmptyDataHash(
-            _totalDelayedMessagesRead
-        );
+        // CHRIS: TODO: why this assign??
         uint256 __totalDelayedMessagesRead = _totalDelayedMessagesRead;
         uint256 prevSeqMsgCount = bridge.sequencerReportedSubMessageCount();
         uint256 newSeqMsgCount = prevSeqMsgCount +
             _totalDelayedMessagesRead -
             totalDelayedMessagesRead;
-        (
-            uint256 seqMessageIndex,
-            bytes32 beforeAcc,
-            bytes32 delayedAcc,
-            bytes32 afterAcc
-        ) = addSequencerL2BatchImpl(
+
+        (bytes32 dataHash, TimeBounds memory timeBounds) = formEmptyDataHash(
+            __totalDelayedMessagesRead
+        );
+        checkAndSetDelayedMessagesRead(__totalDelayedMessagesRead);
+        (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 afterAcc) = bridge
+            .enqueueSequencerMessage(
                 dataHash,
                 __totalDelayedMessagesRead,
-                0,
                 prevSeqMsgCount,
                 newSeqMsgCount
             );
@@ -195,26 +193,12 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
-
-        (bytes32 dataHash, TimeBounds memory timeBounds) = formDataHash(
-            data,
-            afterDelayedMessagesRead
-        );
-        (
-            uint256 seqMessageIndex,
-            bytes32 beforeAcc,
-            bytes32 delayedAcc,
-            bytes32 afterAcc
-        ) = addSequencerL2BatchImpl(dataHash, afterDelayedMessagesRead, data.length, 0, 0);
-        if (seqMessageIndex != sequenceNumber)
-            revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
-        emit SequencerBatchDelivered(
+        addSequencerL2BatchImpl(
             sequenceNumber,
-            beforeAcc,
-            afterAcc,
-            delayedAcc,
-            totalDelayedMessagesRead,
-            timeBounds,
+            data,
+            afterDelayedMessagesRead,
+            0,
+            0,
             BatchDataLocation.TxInput
         );
     }
@@ -230,45 +214,17 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
-        (bytes32 dataHash, TimeBounds memory timeBounds) = formDataHash(
+        addSequencerL2BatchImpl(
+            sequenceNumber,
             data,
-            afterDelayedMessagesRead
-        );
-        // Reformat the stack to prevent "Stack too deep"
-        uint256 sequenceNumber_ = sequenceNumber;
-        TimeBounds memory timeBounds_ = timeBounds;
-        bytes32 dataHash_ = dataHash;
-        uint256 dataLength = data.length;
-        uint256 afterDelayedMessagesRead_ = afterDelayedMessagesRead;
-        uint256 prevMessageCount_ = prevMessageCount;
-        uint256 newMessageCount_ = newMessageCount;
-        (
-            uint256 seqMessageIndex,
-            bytes32 beforeAcc,
-            bytes32 delayedAcc,
-            bytes32 afterAcc
-        ) = addSequencerL2BatchImpl(
-                dataHash_,
-                afterDelayedMessagesRead_,
-                dataLength,
-                prevMessageCount_,
-                newMessageCount_
-            );
-        if (seqMessageIndex != sequenceNumber_ && sequenceNumber_ != ~uint256(0))
-            revert BadSequencerNumber(seqMessageIndex, sequenceNumber_);
-        emit SequencerBatchDelivered(
-            seqMessageIndex,
-            beforeAcc,
-            afterAcc,
-            delayedAcc,
-            totalDelayedMessagesRead,
-            timeBounds_,
+            afterDelayedMessagesRead,
+            prevMessageCount,
+            newMessageCount,
             BatchDataLocation.TxInput
         );
     }
 
-    // CHRIS: TODO: add to interface if we keep this
-    function addSequencerL2BatchBlob(
+    function addSequencerL2BatchFromBlob(
         uint256 sequenceNumber,
         bytes calldata data,
         uint256 afterDelayedMessagesRead,
@@ -276,31 +232,16 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 prevMessageCount,
         uint256 newMessageCount
     ) external refundsGas(gasRefunder) {
-        if (!isBatchPoster[msg.sender] && msg.sender != address(rollup)) revert NotBatchPoster();
-        (bytes32 dataHash, TimeBounds memory timeBounds) = formDataBlobHash(
+        if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
+        addSequencerL2BatchImpl(
+            sequenceNumber,
             data,
-            afterDelayedMessagesRead
-        );
-
-        (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 afterAcc) = addSequencerL2BatchImpl(
-            dataHash,
             afterDelayedMessagesRead,
-            // CHRIS: TODO: implement blob fees
-            0,
             prevMessageCount,
-            newMessageCount
+            newMessageCount,
+            BatchDataLocation.Blob
         );
-        if (seqMessageIndex != sequenceNumber && sequenceNumber != ~uint256(0))
-            revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
-        emit SequencerBatchDelivered(
-            seqMessageIndex,
-            beforeAcc,
-            afterAcc,
-            delayedAcc,
-            totalDelayedMessagesRead,
-            timeBounds,
-            BatchDataLocation.DataBlob
-        );
+        emit SequencerBatchData(sequenceNumber, data);
     }
 
     function addSequencerL2Batch(
@@ -312,57 +253,15 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 newMessageCount
     ) external override refundsGas(gasRefunder) {
         if (!isBatchPoster[msg.sender] && msg.sender != address(rollup)) revert NotBatchPoster();
-        (bytes32 dataHash, TimeBounds memory timeBounds) = formDataHash(
+        addSequencerL2BatchImpl(
+            sequenceNumber,
             data,
-            afterDelayedMessagesRead
-        );
-        // we set the calldata length posted to 0 here since the caller isn't the origin
-        // of the tx, so they might have not paid tx input cost for the calldata
-        (
-            uint256 seqMessageIndex,
-            bytes32 beforeAcc,
-            bytes32 delayedAcc,
-            bytes32 afterAcc
-        ) = addSequencerL2BatchImpl(
-                dataHash,
-                afterDelayedMessagesRead,
-                0,
-                prevMessageCount,
-                newMessageCount
-            );
-        if (seqMessageIndex != sequenceNumber && sequenceNumber != ~uint256(0))
-            revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
-        emit SequencerBatchDelivered(
-            seqMessageIndex,
-            beforeAcc,
-            afterAcc,
-            delayedAcc,
-            totalDelayedMessagesRead,
-            timeBounds,
+            afterDelayedMessagesRead,
+            prevMessageCount,
+            newMessageCount,
             BatchDataLocation.SeparateBatchEvent
         );
-        emit SequencerBatchData(seqMessageIndex, data);
-    }
-
-    modifier validateBatchData(bytes calldata data) {
-        uint256 fullDataLen = HEADER_LENGTH + data.length;
-        if (fullDataLen > maxDataSize) revert DataTooLarge(fullDataLen, maxDataSize);
-        if (data.length > 0 && (data[0] & DATA_AUTHENTICATED_FLAG) == DATA_AUTHENTICATED_FLAG) {
-            revert DataNotAuthenticated();
-        }
-        // the first byte is used to identify the type of batch data
-        // das batches expect to have the type byte set, followed by the keyset (so they should have at least 33 bytes)
-        if (data.length >= 33 && data[0] & 0x80 != 0) {
-            // we skip the first byte, then read the next 32 bytes for the keyset
-            bytes32 dasKeysetHash = bytes32(data[1:33]);
-            if (!dasKeySetInfo[dasKeysetHash].isValidKeyset) revert NoSuchKeyset(dasKeysetHash);
-        }
-
-        // CHRIS: TODO:
-        // no data - where do we have this? shouldn't we have a check that all supplied data is well formed?
-        // perhaps this is we should put this indices
-
-        _;
+        emit SequencerBatchData(sequenceNumber, data);
     }
 
     function packHeader(uint256 afterDelayedMessagesRead)
@@ -383,43 +282,6 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         return (header, timeBounds);
     }
 
-    function formDataBlobHash(
-        bytes calldata data,
-        uint256 afterDelayedMessagesRead,
-        bytes32[] memory versionedHashes
-    ) internal view validateBatchData(data) returns (bytes32, TimeBounds memory) {
-        (bytes memory header, TimeBounds memory timeBounds) = packHeader(afterDelayedMessagesRead);
-        // CHRIS: TODO: encode or encode packed?
-        bytes32 dataHash = keccak256(bytes.concat(header, abi.encodePacked(versionedHashes)));
-        return (dataHash, timeBounds);
-    }
-
-    function formDataBlobHash(bytes calldata data, uint256 afterDelayedMessagesRead)
-        internal
-        view
-        validateBatchData(data)
-        returns (bytes32, TimeBounds memory)
-    {
-        (bytes memory header, TimeBounds memory timeBounds) = packHeader(afterDelayedMessagesRead);
-        bytes32[] memory dataHashes = dataHashReader.getDataHashes();
-        // CHRIS: TODO: should be a custom error
-        require(dataHashes.length != 0, "Missing data hashes");
-        // CHRIS: TODO: encode or encode packed?
-        bytes32 dataHash = keccak256(bytes.concat(header, abi.encodePacked(dataHashes)));
-        return (dataHash, timeBounds);
-    }
-
-    function formDataHash(bytes calldata data, uint256 afterDelayedMessagesRead)
-        internal
-        view
-        validateBatchData(data)
-        returns (bytes32, TimeBounds memory)
-    {
-        (bytes memory header, TimeBounds memory timeBounds) = packHeader(afterDelayedMessagesRead);
-        bytes32 dataHash = keccak256(bytes.concat(header, data));
-        return (dataHash, timeBounds);
-    }
-
     function formEmptyDataHash(uint256 afterDelayedMessagesRead)
         internal
         view
@@ -429,34 +291,88 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         return (keccak256(header), timeBounds);
     }
 
-    function addSequencerL2BatchImpl(
-        bytes32 dataHash,
+    function formDataHash(
+        bytes calldata data,
         uint256 afterDelayedMessagesRead,
-        uint256 calldataLengthPosted,
+        BatchDataLocation dataLocation
+    ) internal view returns (bytes32, TimeBounds memory) {
+        uint256 fullDataLen = HEADER_LENGTH + data.length;
+        if (fullDataLen > maxDataSize) revert DataTooLarge(fullDataLen, maxDataSize);
+        if (data.length > 0 && (data[0] & DATA_AUTHENTICATED_FLAG) == DATA_AUTHENTICATED_FLAG) {
+            revert DataNotAuthenticated();
+        }
+
+        // CHRIS: TODO: ensure this flag isnt used
+        (bytes memory header, TimeBounds memory timeBounds) = packHeader(afterDelayedMessagesRead);
+        if (dataLocation == BatchDataLocation.Blob) {
+            bytes32[] memory dataHashes = dataHashReader.getDataHashes();
+            // CHRIS: TODO: switch all requires to custom errors
+            require(dataHashes.length != 0, "Missing data hashes");
+            require(data.length > 0 && data[0] & 0x04 != 0, "Invalid blob data");
+
+            return (
+                keccak256(bytes.concat(header, data, abi.encodePacked(dataHashes))),
+                timeBounds
+            );
+        } else {
+            // the first byte is used to identify the type of batch data
+            // das batches expect to have the type byte set, followed by the keyset (so they should have at least 33 bytes)
+            // CHRIS: TODO: what if it's less than 33?
+            if (data.length >= 33 && data[0] & 0x80 != 0) {
+                // we skip the first byte, then read the next 32 bytes for the keyset
+                bytes32 dasKeysetHash = bytes32(data[1:33]);
+                if (!dasKeySetInfo[dasKeysetHash].isValidKeyset) revert NoSuchKeyset(dasKeysetHash);
+            }
+            // CHRIS: TODO: consider more if-else stuff here
+            return (keccak256(bytes.concat(header, data)), timeBounds);
+        }
+    }
+
+    function addSequencerL2BatchImpl(
+        uint256 sequenceNumber,
+        bytes calldata data,
+        uint256 afterDelayedMessagesRead,
         uint256 prevMessageCount,
-        uint256 newMessageCount
-    )
-        internal
-        returns (
-            uint256 seqMessageIndex,
-            bytes32 beforeAcc,
-            bytes32 delayedAcc,
-            bytes32 acc
-        )
-    {
-        if (afterDelayedMessagesRead < totalDelayedMessagesRead) revert DelayedBackwards();
-        if (afterDelayedMessagesRead > bridge.delayedMessageCount()) revert DelayedTooFar();
-
-        (seqMessageIndex, beforeAcc, delayedAcc, acc) = bridge.enqueueSequencerMessage(
-            dataHash,
+        uint256 newMessageCount,
+        BatchDataLocation dataLocation
+    ) internal {
+        (bytes32 dataHash, TimeBounds memory timeBounds) = formDataHash(
+            data,
             afterDelayedMessagesRead,
-            prevMessageCount,
-            newMessageCount
+            dataLocation
         );
+        checkAndSetDelayedMessagesRead(afterDelayedMessagesRead);
+        (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 afterAcc) = bridge
+            .enqueueSequencerMessage(
+                dataHash,
+                afterDelayedMessagesRead,
+                prevMessageCount,
+                newMessageCount
+            );
+        if (dataLocation == BatchDataLocation.TxInput || dataLocation == BatchDataLocation.Blob) {
+            submitBatchSpendingReport(dataHash, seqMessageIndex, dataLocation);
+        }
+        if (seqMessageIndex != sequenceNumber && sequenceNumber != ~uint256(0)) {
+            revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
+        }
 
-        totalDelayedMessagesRead = afterDelayedMessagesRead;
+        emit SequencerBatchDelivered(
+            seqMessageIndex,
+            beforeAcc,
+            afterAcc,
+            delayedAcc,
+            totalDelayedMessagesRead,
+            timeBounds,
+            dataLocation
+        );
+    }
 
-        if (calldataLengthPosted > 0) {
+    function submitBatchSpendingReport(
+        bytes32 dataHash,
+        uint256 seqMessageIndex,
+        BatchDataLocation bType
+    ) internal {
+        if (bType == BatchDataLocation.TxInput) {
             // this msg isn't included in the current sequencer batch, but instead added to
             // the delayed messages queue that is yet to be included
             address batchPoster = msg.sender;
@@ -489,7 +405,19 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             );
             // this is the same event used by Inbox.sol after including a message to the delayed message accumulator
             emit InboxMessageDelivered(msgNum, spendingReportMsg);
+        } else if (bType == BatchDataLocation.Blob) {
+            // CHRIS: TODO: add blob charging report
+        } else {
+            // CHRIS: TODO: add custom error
+            revert("Unrecognised batch data type");
         }
+    }
+
+    // CHRIS: TODO: docs and inline it?
+    function checkAndSetDelayedMessagesRead(uint256 afterDelayedMessagesRead) internal {
+        if (afterDelayedMessagesRead < totalDelayedMessagesRead) revert DelayedBackwards();
+        if (afterDelayedMessagesRead > bridge.delayedMessageCount()) revert DelayedTooFar();
+        totalDelayedMessagesRead = afterDelayedMessagesRead;
     }
 
     function inboxAccs(uint256 index) external view returns (bytes32) {
