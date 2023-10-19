@@ -252,7 +252,7 @@ describe('SequencerInbox', async () => {
     maxDelayBlocks = 10,
     maxDelayTime = 0
   ) => {
-    console.log('a1')
+    console.log('a1a')
     const accounts = await fundAccounts(fundingWallet, 5, utils.parseEther('1'))
     console.log('a2')
 
