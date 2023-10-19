@@ -108,7 +108,7 @@ export class Toolkit4844 {
     data: string
   ) {
     const blobStr = blobs.reduce((acc, blob) => acc + ' -b ' + blob, '')
-    const blobCommand = `docker run --network=nitro-testnode_default ethpandaops/goomy-blob:master blob-sender -p ${privKey} -r http://geth:8545 -t ${to} -d ${data} --gaslimit 1000000${blobStr} 2>&1`
+    const blobCommand = `docker run --network=nitro-testnode_default ethpandaops/goomy-blob:master blob-sender -p ${privKey} -r http://127.0.0.1:8545 -t ${to} -d ${data} --gaslimit 1000000${blobStr} 2>&1`
     const res = execSync(blobCommand).toString()
     const txHashRegex = /0x[a-fA-F0-9]{64}/
     const match = res.match(txHashRegex)
