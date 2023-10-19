@@ -420,6 +420,11 @@ describe('SequencerInbox', async () => {
     console.log('a')
     console.log(
       execSync(
+        `curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":45678,"method":"eth_chainId","params":[]}' 'http://localhost:8545'`
+      )
+    )
+    console.log(
+      execSync(
         `curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":45678,"method":"eth_chainId","params":[]}' 'http://localhost:8547'`
       )
     )
