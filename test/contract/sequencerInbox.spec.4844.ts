@@ -493,7 +493,7 @@ describe('SequencerInbox', async () => {
     console.log('g')
     const { timestamp: blockTimestamp, number: blockNumber } =
       await wallet.provider.getBlock(batchSendReceipt.blockNumber)
-      console.log('h')
+    console.log('h')
 
     const timeBounds = await getTimeBounds(
       blockNumber,
@@ -519,7 +519,7 @@ describe('SequencerInbox', async () => {
         (l: any) => sequencerInbox.interface.parseLog(l).args
       )[0] as SequencerBatchDeliveredEvent['args']
 
-      console.log('j')
+    console.log('j')
     const seqMessageCountAfter = (
       await bridge.sequencerMessageCount()
     ).toNumber()
@@ -596,8 +596,8 @@ describe('SequencerInbox', async () => {
 
     return keccak256(
       solidityPack(
-        ['bytes', 'bytes'],
-        [header, solidityPack(['bytes32[]'], [blobHashes])]
+        ['bytes', 'bytes', 'bytes'],
+        [header, '0x04', solidityPack(['bytes32[]'], [blobHashes])]
       )
     )
   }
