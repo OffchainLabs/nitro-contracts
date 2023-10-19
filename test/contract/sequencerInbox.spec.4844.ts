@@ -432,17 +432,17 @@ describe('SequencerInbox', async () => {
         )
         console.log(res.toString());
         console.log(await prov.getNetwork())
+        console.log(
+          execSync(
+            `curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":45678,"method":"eth_chainId","params":[]}' 'http://localhost:8547'`
+          )
+        )
         break
       } catch (e) {
         console.log('fail, try again soon', (e as Error).message)
         await wait(10000)
       }
     }
-    console.log(
-      execSync(
-        `curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":45678,"method":"eth_chainId","params":[]}' 'http://localhost:8547'`
-      )
-    )
     const wallet = new Wallet(privKey).connect(prov)
 
     const { user, inbox, bridge, messageTester, sequencerInbox, batchPoster } =
