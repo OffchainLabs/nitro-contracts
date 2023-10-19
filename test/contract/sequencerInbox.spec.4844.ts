@@ -419,18 +419,15 @@ describe('SequencerInbox', async () => {
       'cb5790da63720727af975f42c79f69918580209889225fa7128c92402a6d3a65'
     const prov = new JsonRpcProvider('http://localhost:8545')
     console.log('a')
-    console.log(
-      execSync(
-        `curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":45678,"method":"eth_chainId","params":[]}' 'http://localhost:8545'`
-      )
-    )
     console.log('b1')
     while (true) {
       try {
         const res = execSync(
           `curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":45678,"method":"eth_chainId","params":[]}' 'http://localhost:8545'`
         )
-        console.log(res.toString());
+        console.log(res.toString())
+        console.log('prov send', await prov.send('eth_chainId', []))
+        console.log(await prov.getBlockNumber())
         console.log(await prov.getNetwork())
         console.log(
           execSync(
