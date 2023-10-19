@@ -486,16 +486,22 @@ describe('SequencerInbox', async () => {
     console.log('d')
 
     const batchSendTx = await Toolkit4844.getTx(txHash)
+    console.log('e')
     const blobHashes = (batchSendTx as any)['blobVersionedHashes'] as string[]
+    console.log('f')
     const batchSendReceipt = await Toolkit4844.getTxReceipt(txHash)
+    console.log('g')
     const { timestamp: blockTimestamp, number: blockNumber } =
       await wallet.provider.getBlock(batchSendReceipt.blockNumber)
+      console.log('h')
 
     const timeBounds = await getTimeBounds(
       blockNumber,
       blockTimestamp,
       sequencerInbox
     )
+    console.log('i')
+
     const dataHash = formDataBlobHash(
       timeBounds,
       afterDelayedMessagesRead.toNumber(),
@@ -513,23 +519,28 @@ describe('SequencerInbox', async () => {
         (l: any) => sequencerInbox.interface.parseLog(l).args
       )[0] as SequencerBatchDeliveredEvent['args']
 
+      console.log('j')
     const seqMessageCountAfter = (
       await bridge.sequencerMessageCount()
     ).toNumber()
+    console.log('k')
     const delayedMessageCountAfter = (
       await bridge.delayedMessageCount()
     ).toNumber()
+    console.log('l')
 
     const beforeAcc =
       seqMessageCountAfter > 1
         ? await bridge.sequencerInboxAccs(seqMessageCountAfter - 2)
         : constants.HashZero
     expect(batchDeliveredEvent.beforeAcc, 'before acc').to.eq(beforeAcc)
+    console.log('m')
     const delayedAcc =
       delayedMessageCountAfter > 0
         ? await bridge.delayedInboxAccs(delayedMessageCountAfter - 1)
         : constants.HashZero
     expect(batchDeliveredEvent.delayedAcc, 'delayed acc').to.eq(delayedAcc)
+    console.log('n')
     const afterAcc = solidityKeccak256(
       ['bytes32', 'bytes32', 'bytes32'],
       [beforeAcc, dataHash, delayedAcc]
