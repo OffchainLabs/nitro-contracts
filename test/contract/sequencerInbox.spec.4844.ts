@@ -417,6 +417,7 @@ describe('SequencerInbox', async () => {
       'cb5790da63720727af975f42c79f69918580209889225fa7128c92402a6d3a65'
     const prov = new JsonRpcProvider('http://localhost:8545')
     console.log('a')
+    console.log(await prov.getNetwork());
     const wallet = new Wallet(privKey).connect(prov)
 
     const { user, inbox, bridge, messageTester, sequencerInbox, batchPoster } =
