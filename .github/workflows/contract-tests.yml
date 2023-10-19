@@ -94,7 +94,8 @@ jobs:
       - uses: OffchainLabs/actions/run-nitro-test-node@test-node-args
         with:
           nitro-testnode-ref: deneb-integration
-          args: --pos --no-tokenbridge
+          args: --pos
+          no-token-bridge: true
 
       - name: Setup nodejs
         uses: actions/setup-node@v2
