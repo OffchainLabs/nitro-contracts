@@ -50,6 +50,7 @@ import {
   SequencerInbox,
 } from '../../build/types/src/bridge/SequencerInbox'
 import { execSync } from 'child_process'
+import { wait } from '@arbitrum/sdk/dist/lib/utils/lib'
 
 const mineBlocks = async (
   wallet: Wallet,
@@ -423,7 +424,18 @@ describe('SequencerInbox', async () => {
         `curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":45678,"method":"eth_chainId","params":[]}' 'http://localhost:8545'`
       )
     )
-    console.log(await prov.getNetwork())
+    console.log("b1");
+    while(true) {
+      try {
+
+        console.log(await prov.getNetwork())
+        break;
+      } catch(e) {
+        console.log("fail, try again soon")
+        await wait(10000);
+      }
+      
+    }
     console.log(
       execSync(
         `curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":45678,"method":"eth_chainId","params":[]}' 'http://localhost:8547'`
