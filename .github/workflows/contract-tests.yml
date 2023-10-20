@@ -97,9 +97,6 @@ jobs:
           args: --pos
           no-token-bridge: true
 
-      - name: cat hosts
-        run: cat /etc/hosts
-
       - name: Setup nodejs
         uses: actions/setup-node@v2
         with:
