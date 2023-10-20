@@ -180,11 +180,16 @@ interface ISequencerInbox is IDelayedMessageProvider {
     function initialize(
         IBridge bridge_,
         MaxTimeVariation calldata maxTimeVariation_,
-        IDataHashReader dataHashReader_
+        IDataHashReader dataHashReader_,
+        IBlobBasefeeReader blobBasefeeReader_
     ) external;
 }
 
-// CHRIS: TODO: where to put this?
+// CHRIS: TODO: where to put these?
 interface IDataHashReader {
     function getDataHashes() external view returns (bytes32[] memory);
+}
+
+interface IBlobBasefeeReader {
+    function getBlobBaseFee() external view returns (uint256);
 }

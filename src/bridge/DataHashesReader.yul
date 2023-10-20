@@ -9,7 +9,6 @@ object "DataHashesReader" {
          // Match against the keccak of the ABI function signature needed.
          switch shr(0xe0,calldataload(0))
             // bytes4(keccak("getDataHashes()"))
-            // case 0x46115383 - submit batch
             case 0xe83a2d82 {
                 // DATAHASH opcode has hex value 0x49
                 let i := 0

@@ -23,7 +23,7 @@ import {
   JsonRpcProvider,
   TransactionReceipt,
 } from '@ethersproject/providers'
-import { expect } from 'chai'
+import { expect, util } from 'chai'
 import {
   Bridge,
   Bridge__factory,
@@ -51,6 +51,7 @@ import {
 } from '../../build/types/src/bridge/SequencerInbox'
 import { execSync } from 'child_process'
 import { wait } from '@arbitrum/sdk/dist/lib/utils/lib'
+import { InboxMessageDeliveredEvent } from '../../build/types/src/bridge/AbsInbox'
 
 const mineBlocks = async (
   wallet: Wallet,
@@ -261,10 +262,10 @@ describe('SequencerInbox', async () => {
     // update the addresses below and uncomment to avoid redeploying
     // return connectAddreses(user, deployer, batchPoster, {
     //   user: '0x870204e93ca485a6676E264EB0d7df4cD0246203',
-    //   bridge: '0x960aB1A4858a1CBd3cf75E9a6a16A3C40E1D231e',
-    //   inbox: '0xe763a2bB11c38aB41735D7bB24E98a0662687478',
-    //   sequencerInbox: '0xe187f8f751a4d5860d96f99c6D1e1f5c557128ac',
-    //   messageTester: '0xc1D13079aaC7Bbc399ca14308206d5B87Ae8F3BA',
+    //   bridge: '0xF224c1d7cC177f24450aC1bD073EA6A83B479A84',
+    //   inbox: '0x30a12d427dA40881c9aE54e59B3bA5187A032e35',
+    //   sequencerInbox: '0xD3E7FB00e1341D2621ff9fC7757639107B5A8F1E',
+    //   messageTester: '0x55226aAfa122128D63f9d9612209F9a3f53bb437',
     //   batchPoster: '0x328375c90F01Dcb114888DA36e3832F69Ad0BB57',
     // })
 
@@ -309,6 +310,9 @@ describe('SequencerInbox', async () => {
     await sequencerInboxProxy.deployed()
     await inboxProxy.deployed()
     const dataHashReader = await Toolkit4844.deployDataHashReader(fundingWallet)
+    const blobBasefeeReader = await Toolkit4844.deployBlobBasefeeReader(
+      fundingWallet
+    )
 
     const bridge = await bridgeFac.attach(bridgeProxy.address).connect(user)
     const bridgeAdmin = await bridgeFac
@@ -330,7 +334,8 @@ describe('SequencerInbox', async () => {
           futureBlocks: 10,
           futureSeconds: 3000,
         },
-        dataHashReader.address
+        dataHashReader.address,
+        blobBasefeeReader.address
       )
     ).wait()
     await (
@@ -405,7 +410,7 @@ describe('SequencerInbox', async () => {
     await batchSendTx.wait()
   })
 
-  it('can send blob batch', async () => {
+  it.only('can send blob batch', async () => {
     const privKey =
       'cb5790da63720727af975f42c79f69918580209889225fa7128c92402a6d3a65'
     const prov = new JsonRpcProvider('http://127.0.0.1:8545')
@@ -481,14 +486,16 @@ describe('SequencerInbox', async () => {
       await bridge.delayedMessageCount()
     ).toNumber()
 
+    // -2 since we add a message to the from the sequencer inbox
     const beforeAcc =
       seqMessageCountAfter > 1
         ? await bridge.sequencerInboxAccs(seqMessageCountAfter - 2)
         : constants.HashZero
     expect(batchDeliveredEvent.beforeAcc, 'before acc').to.eq(beforeAcc)
+    // -2 since we add the batch spending report
     const delayedAcc =
       delayedMessageCountAfter > 0
-        ? await bridge.delayedInboxAccs(delayedMessageCountAfter - 1)
+        ? await bridge.delayedInboxAccs(delayedMessageCountAfter - 2)
         : constants.HashZero
     expect(batchDeliveredEvent.delayedAcc, 'delayed acc').to.eq(delayedAcc)
     const afterAcc = solidityKeccak256(
@@ -496,6 +503,47 @@ describe('SequencerInbox', async () => {
       [beforeAcc, dataHash, delayedAcc]
     )
     expect(batchDeliveredEvent.afterAcc, 'after acc').to.eq(afterAcc)
+
+    // check the spending report was submitted
+    const inboxMsgDeliveredEvent = batchSendReceipt.logs
+      .filter(
+        (b: any) =>
+          b.address.toLowerCase() === sequencerInbox.address.toLowerCase() &&
+          b.topics[0] ===
+            sequencerInbox.interface.getEventTopic('InboxMessageDelivered')
+      )
+      .map(
+        (l: any) => sequencerInbox.interface.parseLog(l).args
+      )[0] as InboxMessageDeliveredEvent['args']
+
+    const spendingTimestamp =
+      '0x' + inboxMsgDeliveredEvent.data.substring(2, 66)
+    const spendingBatchPoster =
+      '0x' + inboxMsgDeliveredEvent.data.substring(66, 106)
+    const spendingDataHash =
+      '0x' + inboxMsgDeliveredEvent.data.substring(106, 170)
+    const spendingSeqMessageIndex =
+      '0x' + inboxMsgDeliveredEvent.data.substring(170, 234)
+    const spendingBlobBasefee =
+      '0x' + inboxMsgDeliveredEvent.data.substring(234, 298)
+
+    expect(
+      BigNumber.from(spendingTimestamp).eq(blockTimestamp),
+      'spending timestamp'
+    ).to.eq(true)
+    expect(spendingBatchPoster.toLowerCase(), 'spending batch poster').to.eq(
+      (await batchPoster.getAddress()).toLowerCase()
+    )
+    expect(spendingDataHash, 'spending data hash').to.eq(dataHash)
+    expect(
+      BigNumber.from(spendingSeqMessageIndex).eq(sequenceNumber),
+      'spending seq message index'
+    ).to.eq(true)
+    // we expect a very low - 1 - basefee since we havent sent many blobs
+    expect(
+      BigNumber.from(spendingBlobBasefee).eq(1),
+      `spending blob basefee: ${BigNumber.from(spendingBlobBasefee).toString()}`
+    ).to.eq(true)
   })
 
   const getTimeBounds = async (

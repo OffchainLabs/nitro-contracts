@@ -42,6 +42,7 @@ contract RollupCreator is Ownable {
         bool deployFactoriesToL2;
         uint256 maxFeePerGasForRetryables;
         IDataHashReader dataHashReader;
+        IBlobBasefeeReader blobBasefeeReader;
     }
 
     BridgeCreator public bridgeCreator;
@@ -139,7 +140,8 @@ contract RollupCreator is Ownable {
             address(rollup),
             deployParams.nativeToken,
             deployParams.config.sequencerInboxMaxTimeVariation,
-            deployParams.dataHashReader
+            deployParams.dataHashReader,
+            deployParams.blobBasefeeReader
         );
 
         IChallengeManager challengeManager = IChallengeManager(

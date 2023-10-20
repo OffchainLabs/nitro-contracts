@@ -66,6 +66,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     mapping(address => bool) public isSequencer;
     IDataHashReader dataHashReader;
+    IBlobBasefeeReader blobBasefeeReader;
 
     // On L1 this should be set to 117964: 90% of Geth's 128KB tx size limit, leaving ~13KB for proving
     uint256 public immutable maxDataSize;
@@ -84,7 +85,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     function initialize(
         IBridge bridge_,
         ISequencerInbox.MaxTimeVariation calldata maxTimeVariation_,
-        IDataHashReader dataHashReader_
+        IDataHashReader dataHashReader_,
+        IBlobBasefeeReader blobBasefeeReader_
     ) external onlyDelegated {
         if (bridge != IBridge(address(0))) revert AlreadyInit();
         if (bridge_ == IBridge(address(0))) revert HadZeroInit();
@@ -93,6 +95,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         maxTimeVariation = maxTimeVariation_;
         // CHRIS: TODO: check that this is not empty?
         dataHashReader = dataHashReader_;
+        blobBasefeeReader = blobBasefeeReader_;
     }
 
     function getTimeBounds() internal view virtual returns (TimeBounds memory) {
@@ -201,6 +204,11 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             0,
             BatchDataLocation.TxInput
         );
+    }
+
+    // CHRIS: TODO: remove this
+    function getBlobBasefee() public view returns (uint256) {
+        return blobBasefeeReader.getBlobBaseFee();
     }
 
     function addSequencerL2BatchFromOrigin(
@@ -349,9 +357,12 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
                 prevMessageCount,
                 newMessageCount
             );
-        if (dataLocation == BatchDataLocation.TxInput || dataLocation == BatchDataLocation.Blob) {
-            submitBatchSpendingReport(dataHash, seqMessageIndex, dataLocation);
+        if (dataLocation == BatchDataLocation.TxInput) {
+            submitTxInputBatchSpendingReport(dataHash, seqMessageIndex);
+        } else if (dataLocation == BatchDataLocation.Blob) {
+            submitBlobBatchSpendingReport(dataHash, seqMessageIndex);
         }
+
         if (seqMessageIndex != sequenceNumber && sequenceNumber != ~uint256(0)) {
             revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
         }
@@ -367,50 +378,61 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         );
     }
 
-    function submitBatchSpendingReport(
-        bytes32 dataHash,
-        uint256 seqMessageIndex,
-        BatchDataLocation bType
-    ) internal {
-        if (bType == BatchDataLocation.TxInput) {
-            // this msg isn't included in the current sequencer batch, but instead added to
-            // the delayed messages queue that is yet to be included
-            address batchPoster = msg.sender;
-            bytes memory spendingReportMsg;
-            if (hostChainIsArbitrum) {
-                // Include extra gas for the host chain's L1 gas charging
-                uint256 l1Fees = ArbGasInfo(address(0x6c)).getCurrentTxL1GasFees();
-                uint256 extraGas = l1Fees / block.basefee;
-                require(extraGas <= type(uint64).max, "L1_GAS_NOT_UINT64");
-                spendingReportMsg = abi.encodePacked(
-                    block.timestamp,
-                    batchPoster,
-                    dataHash,
-                    seqMessageIndex,
-                    block.basefee,
-                    uint64(extraGas)
-                );
-            } else {
-                spendingReportMsg = abi.encodePacked(
-                    block.timestamp,
-                    batchPoster,
-                    dataHash,
-                    seqMessageIndex,
-                    block.basefee
-                );
-            }
-            uint256 msgNum = bridge.submitBatchSpendingReport(
+    function submitTxInputBatchSpendingReport(bytes32 dataHash, uint256 seqMessageIndex) internal {
+        // this msg isn't included in the current sequencer batch, but instead added to
+        // the delayed messages queue that is yet to be included
+        address batchPoster = msg.sender;
+        bytes memory spendingReportMsg;
+        if (hostChainIsArbitrum) {
+            // Include extra gas for the host chain's L1 gas charging
+            uint256 l1Fees = ArbGasInfo(address(0x6c)).getCurrentTxL1GasFees();
+            uint256 extraGas = l1Fees / block.basefee;
+            require(extraGas <= type(uint64).max, "L1_GAS_NOT_UINT64");
+            spendingReportMsg = abi.encodePacked(
+                block.timestamp,
                 batchPoster,
-                keccak256(spendingReportMsg)
+                dataHash,
+                seqMessageIndex,
+                block.basefee,
+                uint64(extraGas)
             );
-            // this is the same event used by Inbox.sol after including a message to the delayed message accumulator
-            emit InboxMessageDelivered(msgNum, spendingReportMsg);
-        } else if (bType == BatchDataLocation.Blob) {
-            // CHRIS: TODO: add blob charging report
         } else {
-            // CHRIS: TODO: add custom error
-            revert("Unrecognised batch data type");
+            spendingReportMsg = abi.encodePacked(
+                block.timestamp,
+                batchPoster,
+                dataHash,
+                seqMessageIndex,
+                block.basefee
+            );
         }
+        uint256 msgNum = bridge.submitBatchSpendingReport(
+            batchPoster,
+            keccak256(spendingReportMsg)
+        );
+        // this is the same event used by Inbox.sol after including a message to the delayed message accumulator
+        emit InboxMessageDelivered(msgNum, spendingReportMsg);
+    }
+
+    function submitBlobBatchSpendingReport(bytes32 dataHash, uint256 seqMessageIndex) internal {
+        // this msg isn't included in the current sequencer batch, but instead added to
+        // the delayed messages queue that is yet to be included
+        address batchPoster = tx.origin;
+        uint256 blobBasefee = blobBasefeeReader.getBlobBaseFee();
+        // CHRIS: TODO: custom error
+        require(!hostChainIsArbitrum, "Unsupported blob transaction");
+        bytes memory spendingReportMsg = abi.encodePacked(
+            block.timestamp,
+            batchPoster,
+            dataHash,
+            seqMessageIndex,
+            blobBasefee
+        );
+        uint256 msgNum = bridge.submitBatchSpendingReport(
+            batchPoster,
+            keccak256(spendingReportMsg)
+        );
+        // this is the same event used by Inbox.sol after including a message to the delayed message accumulator
+        emit InboxMessageDelivered(msgNum, spendingReportMsg);
     }
 
     // CHRIS: TODO: docs and inline it?

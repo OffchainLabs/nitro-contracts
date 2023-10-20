@@ -281,6 +281,7 @@ const setup = async () => {
     deployFactoriesToL2: true,
     maxFeePerGasForRetryables: maxFeePerGas,
     dataHashReader: ethers.constants.AddressZero,
+    blobBasefeeReader: ethers.constants.AddressZero
   }
 
   const response = await rollupCreator.createRollup(deployParams, {

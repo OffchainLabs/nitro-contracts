@@ -14,6 +14,7 @@ contract BridgeCreatorTest is Test {
     address public owner = address(100);
     uint256 public constant MAX_DATA_SIZE = 117_964;
     IDataHashReader dummyDataHashReader = IDataHashReader(address(137));
+    IBlobBasefeeReader dummyBlobBasefeeReader = IBlobBasefeeReader(address(138));
 
     BridgeCreator.BridgeContracts ethBasedTemplates =
         BridgeCreator.BridgeContracts({
@@ -129,7 +130,8 @@ contract BridgeCreatorTest is Test {
             rollup,
             nativeToken,
             timeVars,
-            dummyDataHashReader
+            dummyDataHashReader,
+            dummyBlobBasefeeReader
         );
         (
             IBridge bridge,
@@ -201,7 +203,8 @@ contract BridgeCreatorTest is Test {
             rollup,
             nativeToken,
             timeVars,
-            dummyDataHashReader
+            dummyDataHashReader,
+            dummyBlobBasefeeReader
         );
         (
             IBridge bridge,

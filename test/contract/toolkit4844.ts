@@ -1,7 +1,13 @@
 import { execSync } from 'child_process'
 import { ContractFactory, Signer, Wallet, ethers } from 'ethers'
 import * as http from 'http'
-import { IDataHashReader, IDataHashReader__factory } from '../../build/types'
+import {
+  IBlobBasefeeReader,
+  IBlobBasefeeReader__factory,
+  IDataHashReader,
+  IDataHashReader__factory,
+} from '../../build/types'
+import { JsonRpcProvider } from '@ethersproject/providers'
 
 const dataHashReaderJson = {
   _format: 'hh-sol-artifact-1',
@@ -10,6 +16,17 @@ const dataHashReaderJson = {
   abi: [],
   bytecode:
     '0x603b80600a5f395ff3fe5f3560e01c63e83a2d8214600f57005b5f5b804990811560295760019160408260051b0152016011565b60409060205f528060205260051b015ff3',
+  linkReferences: {},
+  deployedLinkReferences: {},
+}
+
+const blobBasefeeReaderJson = {
+  _format: 'hh-sol-artifact-1',
+  contractName: 'BlobBasefeeReader',
+  sourceName: 'src/bridge/BlobBasefeeReader.yul',
+  abi: [],
+  bytecode:
+    '0x601780600a5f395ff3fe5f3560e01c631f6d6ef714600f57005b4a5f5260205ff3',
   linkReferences: {},
   deployedLinkReferences: {},
 }
@@ -101,6 +118,16 @@ export class Toolkit4844 {
     return Boolean(match)
   }
 
+  public static async waitUntilBlockMined(
+    blockNumber: number,
+    provider: JsonRpcProvider
+  ) {
+    while (true) {
+      if ((await provider.getBlockNumber()) > blockNumber) return
+      await wait(300)
+    }
+  }
+
   public static async sendBlobTx(
     privKey: string,
     to: string,
@@ -132,5 +159,22 @@ export class Toolkit4844 {
     await dataHashReader.deployed()
 
     return IDataHashReader__factory.connect(dataHashReader.address, wallet)
+  }
+
+  public static async deployBlobBasefeeReader(
+    wallet: Signer
+  ): Promise<IBlobBasefeeReader> {
+    const contractFactory = new ContractFactory(
+      blobBasefeeReaderJson.abi,
+      blobBasefeeReaderJson.bytecode,
+      wallet
+    )
+    const blobBasefeeReader = await contractFactory.deploy()
+    await blobBasefeeReader.deployed()
+
+    return IBlobBasefeeReader__factory.connect(
+      blobBasefeeReader.address,
+      wallet
+    )
   }
 }
