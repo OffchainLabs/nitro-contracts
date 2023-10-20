@@ -198,21 +198,16 @@ describe('SequencerInbox', async () => {
     let key = wallet.privateKey
     const wallets: Wallet[] = []
 
-    console.log('a10')
-
     for (let index = 0; index < length; index++) {
-      console.log('a11', index)
       key = keccak256(key)
       const nextWallet = new Wallet(key).connect(wallet.provider)
       if ((await nextWallet.getBalance()).lt(amount)) {
-        console.log('a12', index)
         await (
           await wallet.sendTransaction({
             to: nextWallet.address,
             value: amount,
           })
         ).wait()
-        console.log('a13', index)
       }
       wallets.push(nextWallet)
     }
@@ -254,9 +249,7 @@ describe('SequencerInbox', async () => {
     maxDelayBlocks = 10,
     maxDelayTime = 0
   ) => {
-    console.log('a1a')
     const accounts = await fundAccounts(fundingWallet, 5, utils.parseEther('1'))
-    console.log('a2')
 
     const admin = accounts[0]
     const adminAddr = await admin.getAddress()
@@ -279,8 +272,6 @@ describe('SequencerInbox', async () => {
     const rollupMock = await rollupMockFac.deploy(
       await rollupOwner.getAddress()
     )
-    console.log('a3')
-
     const sequencerInboxFac = new SequencerInbox__factory(deployer)
     const seqInboxTemplate = await sequencerInboxFac.deploy(117964)
 
@@ -418,36 +409,10 @@ describe('SequencerInbox', async () => {
     const privKey =
       'cb5790da63720727af975f42c79f69918580209889225fa7128c92402a6d3a65'
     const prov = new JsonRpcProvider('http://127.0.0.1:8545')
-    // console.log('a')
-    // console.log('b1')
-    // while (true) {
-    //   try {
-    //     const res = execSync(
-    //       `curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":45678,"method":"eth_chainId","params":[]}' 'http://localhost:8545'`
-    //     )
-    //     console.log(res.toString())
-    //     const prov2 = new JsonRpcProvider('http://127.0.0.1:8545')
-
-    //     console.log('prov send', await prov2.send('eth_chainId', []))
-    //     console.log(await prov.getBlockNumber())
-    //     console.log(await prov.getNetwork())
-    //     console.log(
-    //       execSync(
-    //         `curl -X POST -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":45678,"method":"eth_chainId","params":[]}' 'http://localhost:8547'`
-    //       )
-    //     )
-    //     break
-    //   } catch (e) {
-    //     console.log('fail, try again soon', (e as Error).message)
-    //     await wait(10000)
-    //   }
-    // }
     const wallet = new Wallet(privKey).connect(prov)
 
     const { user, inbox, bridge, messageTester, sequencerInbox, batchPoster } =
       await setupSequencerInbox(wallet)
-
-    console.log('b')
 
     await sendDelayedTx(
       user,
@@ -461,8 +426,6 @@ describe('SequencerInbox', async () => {
       BigNumber.from(10),
       '0x1010'
     )
-    console.log('c')
-
     const subMessageCount = await bridge.sequencerReportedSubMessageCount()
     const afterDelayedMessagesRead = await bridge.delayedMessageCount()
     const sequenceNumber = await bridge.sequencerMessageCount()
@@ -483,25 +446,17 @@ describe('SequencerInbox', async () => {
         ]
       )
     )
-    console.log('d')
-
     const batchSendTx = await Toolkit4844.getTx(txHash)
-    console.log('e')
     const blobHashes = (batchSendTx as any)['blobVersionedHashes'] as string[]
-    console.log('f')
     const batchSendReceipt = await Toolkit4844.getTxReceipt(txHash)
-    console.log('g')
     const { timestamp: blockTimestamp, number: blockNumber } =
       await wallet.provider.getBlock(batchSendReceipt.blockNumber)
-    console.log('h')
 
     const timeBounds = await getTimeBounds(
       blockNumber,
       blockTimestamp,
       sequencerInbox
     )
-    console.log('i')
-
     const dataHash = formDataBlobHash(
       timeBounds,
       afterDelayedMessagesRead.toNumber(),
@@ -519,28 +474,23 @@ describe('SequencerInbox', async () => {
         (l: any) => sequencerInbox.interface.parseLog(l).args
       )[0] as SequencerBatchDeliveredEvent['args']
 
-    console.log('j')
     const seqMessageCountAfter = (
       await bridge.sequencerMessageCount()
     ).toNumber()
-    console.log('k')
     const delayedMessageCountAfter = (
       await bridge.delayedMessageCount()
     ).toNumber()
-    console.log('l')
 
     const beforeAcc =
       seqMessageCountAfter > 1
         ? await bridge.sequencerInboxAccs(seqMessageCountAfter - 2)
         : constants.HashZero
     expect(batchDeliveredEvent.beforeAcc, 'before acc').to.eq(beforeAcc)
-    console.log('m')
     const delayedAcc =
       delayedMessageCountAfter > 0
         ? await bridge.delayedInboxAccs(delayedMessageCountAfter - 1)
         : constants.HashZero
     expect(batchDeliveredEvent.delayedAcc, 'delayed acc').to.eq(delayedAcc)
-    console.log('n')
     const afterAcc = solidityKeccak256(
       ['bytes32', 'bytes32', 'bytes32'],
       [beforeAcc, dataHash, delayedAcc]
