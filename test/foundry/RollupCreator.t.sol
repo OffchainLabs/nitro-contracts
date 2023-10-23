@@ -28,6 +28,7 @@ contract RollupCreatorTest is Test {
     IRollupUser public rollupUser;
     DeployHelper public deployHelper;
     IDataHashReader dummyDataHashReader = IDataHashReader(address(137));
+    IBlobBasefeeReader dummyBlobBasefeeReader = IBlobBasefeeReader(address(138));
 
     // 1 gwei
     uint256 public constant MAX_FEE_PER_GAS = 1_000_000_000;
@@ -132,7 +133,8 @@ contract RollupCreatorTest is Test {
                 nativeToken: address(0),
                 deployFactoriesToL2: true,
                 maxFeePerGasForRetryables: MAX_FEE_PER_GAS,
-                dataHashReader: dummyDataHashReader
+                dataHashReader: dummyDataHashReader,
+                blobBasefeeReader: dummyBlobBasefeeReader
             });
         address rollupAddress = rollupCreator.createRollup{value: factoryDeploymentFunds}(
             deployParams
@@ -284,7 +286,8 @@ contract RollupCreatorTest is Test {
                 nativeToken: nativeToken,
                 deployFactoriesToL2: true,
                 maxFeePerGasForRetryables: MAX_FEE_PER_GAS,
-                dataHashReader: dummyDataHashReader
+                dataHashReader: dummyDataHashReader,
+                blobBasefeeReader: dummyBlobBasefeeReader
             });
 
         address rollupAddress = rollupCreator.createRollup(deployParams);
@@ -429,7 +432,8 @@ contract RollupCreatorTest is Test {
                 nativeToken: address(0),
                 deployFactoriesToL2: true,
                 maxFeePerGasForRetryables: MAX_FEE_PER_GAS,
-                dataHashReader: dummyDataHashReader
+                dataHashReader: dummyDataHashReader,
+                blobBasefeeReader: dummyBlobBasefeeReader
             });
         address rollupAddress = rollupCreator.createRollup{value: factoryDeploymentFunds}(
             deployParams

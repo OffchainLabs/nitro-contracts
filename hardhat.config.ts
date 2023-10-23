@@ -6,8 +6,6 @@ import '@typechain/hardhat'
 import 'solidity-coverage'
 import 'hardhat-gas-reporter'
 import 'hardhat-ignore-warnings'
-// CHRIS: TODO: use a flag for this
-// uncomment to regenerate yul
 // import '@tovarishfin/hardhat-yul';
 import dotenv from 'dotenv'
 

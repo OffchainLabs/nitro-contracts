@@ -8,28 +8,8 @@ import {
   IDataHashReader__factory,
 } from '../../build/types'
 import { JsonRpcProvider } from '@ethersproject/providers'
-
-const dataHashReaderJson = {
-  _format: 'hh-sol-artifact-1',
-  contractName: 'DataHashesReader',
-  sourceName: 'src/bridge/DataHashesReader.yul',
-  abi: [],
-  bytecode:
-    '0x603b80600a5f395ff3fe5f3560e01c63e83a2d8214600f57005b5f5b804990811560295760019160408260051b0152016011565b60409060205f528060205260051b015ff3',
-  linkReferences: {},
-  deployedLinkReferences: {},
-}
-
-const blobBasefeeReaderJson = {
-  _format: 'hh-sol-artifact-1',
-  contractName: 'BlobBasefeeReader',
-  sourceName: 'src/bridge/BlobBasefeeReader.yul',
-  abi: [],
-  bytecode:
-    '0x601780600a5f395ff3fe5f3560e01c631f6d6ef714600f57005b4a5f5260205ff3',
-  linkReferences: {},
-  deployedLinkReferences: {},
-}
+import { bytecode as blobBasefeeReaderBytecode } from '../../out/yul/BlobBasefeeReader.yul/BlobBasefeeReader.json'
+import { bytecode as dataHeashesReaderBytecode } from '../../out/yul/DataHashesReader.yul/DataHashesReader.json'
 
 const wait = async (ms: number) =>
   new Promise((res, rej) => {
@@ -151,8 +131,8 @@ export class Toolkit4844 {
     wallet: Signer
   ): Promise<IDataHashReader> {
     const contractFactory = new ContractFactory(
-      dataHashReaderJson.abi,
-      dataHashReaderJson.bytecode,
+      IDataHashReader__factory.abi,
+      dataHeashesReaderBytecode,
       wallet
     )
     const dataHashReader = await contractFactory.deploy()
@@ -165,8 +145,8 @@ export class Toolkit4844 {
     wallet: Signer
   ): Promise<IBlobBasefeeReader> {
     const contractFactory = new ContractFactory(
-      blobBasefeeReaderJson.abi,
-      blobBasefeeReaderJson.bytecode,
+      IBlobBasefeeReader__factory.abi,
+      blobBasefeeReaderBytecode,
       wallet
     )
     const blobBasefeeReader = await contractFactory.deploy()

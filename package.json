@@ -19,6 +19,9 @@
   "scripts": {
     "prepublishOnly": "hardhat clean && hardhat compile",
     "build": "hardhat compile",
+    "build:forge:sol": "forge build --skip *.yul",
+    "build:forge:yul": "FOUNDRY_PROFILE=yul forge build --skip *.sol --skip *BlobBasefeeReader.yul && FOUNDRY_PROFILE=yul forge build --skip *.sol --skip *DataHashesReader.yul",
+    "build:forge": "yarn build:forge:sol && yarn build:forge:yul",
     "lint:test": "eslint ./test",
     "solhint": "solhint -f table src/**/*.sol",
     "prettier:solidity": "prettier --write src/**/*.sol",
