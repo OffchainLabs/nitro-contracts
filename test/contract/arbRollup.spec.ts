@@ -268,6 +268,9 @@ const setup = async () => {
 
   const maxFeePerGas = BigNumber.from('1000000000')
 
+  const dummyDataHashReader = '0x0000000000000000000000000000000000000089'
+  const dummyBlobBasefeeReader = '0x0000000000000000000000000000000000000090'
+
   const deployParams = {
     config: await getDefaultConfig(),
     batchPoster: await sequencer.getAddress(),
@@ -280,8 +283,8 @@ const setup = async () => {
     nativeToken: ethers.constants.AddressZero,
     deployFactoriesToL2: true,
     maxFeePerGasForRetryables: maxFeePerGas,
-    dataHashReader: ethers.constants.AddressZero,
-    blobBasefeeReader: ethers.constants.AddressZero,
+    dataHashReader: dummyDataHashReader,
+    blobBasefeeReader: dummyBlobBasefeeReader,
   }
 
   const response = await rollupCreator.createRollup(deployParams, {
