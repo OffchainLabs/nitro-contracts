@@ -31,19 +31,7 @@ contract SequencerInboxStub is SequencerInbox {
         require(num == 0, "ALREADY_DELAYED_INIT");
         emit InboxMessageDelivered(num, initMsg);
         (bytes32 dataHash, TimeBounds memory timeBounds) = formEmptyDataHash(1);
-        checkAndSetDelayedMessagesRead(1);
-        (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 afterAcc) = bridge
-            .enqueueSequencerMessage(dataHash, 1, 0, 0);
-        require(seqMessageIndex == 0, "ALREADY_SEQ_INIT");
-        emit SequencerBatchDelivered(
-            seqMessageIndex,
-            beforeAcc,
-            afterAcc,
-            delayedAcc,
-            totalDelayedMessagesRead,
-            timeBounds,
-            BatchDataLocation.NoData
-        );
+        addSequencerL2BatchImpl(0, dataHash, timeBounds, 1, 0, 0, BatchDataLocation.NoData);
     }
 
     function getTimeBounds() internal view override returns (TimeBounds memory bounds) {

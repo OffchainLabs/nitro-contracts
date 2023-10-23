@@ -18,8 +18,8 @@
   },
   "scripts": {
     "prepublishOnly": "hardhat clean && hardhat compile",
-    "build": "yarn build:hardhat && yarn build:forge",
-    "build:hardhat": "hardhat compile",
+    "build:all": "yarn build && yarn build:forge",
+    "build": "hardhat compile",
     "build:forge:sol": "forge build --skip *.yul",
     "build:forge:yul": "FOUNDRY_PROFILE=yul forge build --skip *.sol --skip *BlobBasefeeReader.yul && FOUNDRY_PROFILE=yul forge build --skip *.sol --skip *DataHashesReader.yul",
     "build:forge": "yarn build:forge:sol && yarn build:forge:yul",

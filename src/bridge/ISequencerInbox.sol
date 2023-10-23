@@ -67,7 +67,7 @@ interface ISequencerInbox is IDelayedMessageProvider {
     function DATA_AUTHENTICATED_FLAG() external view returns (bytes1);
 
     /// @dev If the first data byte after the header has this bit set,
-    ///      then the batch data is to be found in 4844 data blobs  
+    ///      then the batch data is to be found in 4844 data blobs
     // solhint-disable-next-line func-name-mixedcase
     function DATA_BLOB_HEADER_FLAG() external view returns (bytes1);
 

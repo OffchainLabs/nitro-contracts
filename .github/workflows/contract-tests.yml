@@ -69,7 +69,7 @@ jobs:
         run: yarn lint:test
 
       - name: Build
-        run: yarn build
+        run: yarn build:all
 
       - name: Run tests
         run: yarn hardhat --network hardhat test test/contract/*.spec.ts
@@ -115,7 +115,7 @@ jobs:
         run: yarn install
 
       - name: Build
-        run: yarn build
+        run: yarn build:all
 
       - name: Test 4844
         run: yarn test:4844
