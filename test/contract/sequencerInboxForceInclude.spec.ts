@@ -273,6 +273,7 @@ describe('SequencerInboxForceInclude', async () => {
       .connect(user)
     const inbox = await inboxFac.attach(inboxProxy.address).connect(user)
     const dataHashReader = await Toolkit4844.deployDataHashReader(admin)
+    const blobBasefeeReader = await Toolkit4844.deployBlobBasefeeReader(admin)
 
     await bridge.initialize(rollupMock.address)
 
@@ -284,7 +285,8 @@ describe('SequencerInboxForceInclude', async () => {
         futureBlocks: 10,
         futureSeconds: 3000,
       },
-      dataHashReader.address
+      dataHashReader.address,
+      blobBasefeeReader.address
     )
     await (
       await sequencerInbox
