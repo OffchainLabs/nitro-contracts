@@ -270,7 +270,6 @@ const setup = async () => {
 
   const dummyDataHashReader = '0x0000000000000000000000000000000000000089'
   const dummyBlobBasefeeReader = '0x0000000000000000000000000000000000000090'
-
   const deployParams = {
     config: await getDefaultConfig(),
     batchPoster: await sequencer.getAddress(),
