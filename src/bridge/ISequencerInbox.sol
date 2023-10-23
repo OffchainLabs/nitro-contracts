@@ -185,11 +185,12 @@ interface ISequencerInbox is IDelayedMessageProvider {
     ) external;
 }
 
-// CHRIS: TODO: where to put these?
 interface IDataHashReader {
+    /// @notice Returns all the data hashes of all the blobs on the current transaction
     function getDataHashes() external view returns (bytes32[] memory);
 }
 
 interface IBlobBasefeeReader {
+    /// @notice Returns the current BLOBBASEFEE
     function getBlobBaseFee() external view returns (uint256);
 }

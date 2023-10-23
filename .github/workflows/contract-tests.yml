@@ -33,7 +33,7 @@ jobs:
       - name: Install packages
         run: yarn
 
-      - name: Run unit tests
+      - name: Build
         run: forge test
   tests:
     name: Contract tests
