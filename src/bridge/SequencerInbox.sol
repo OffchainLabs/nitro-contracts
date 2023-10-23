@@ -57,6 +57,12 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     /// @inheritdoc ISequencerInbox
     bytes1 public constant DATA_AUTHENTICATED_FLAG = 0x40;
 
+    /// @inheritdoc ISequencerInbox
+    bytes1 public constant DATA_BLOB_HEADER_FLAG = 0x10;
+
+    /// @inheritdoc ISequencerInbox
+    bytes1 public constant DAS_MESSAGE_HEADER_FLAG = 0x80;
+
     IOwnable public rollup;
     mapping(address => bool) public isBatchPoster;
     ISequencerInbox.MaxTimeVariation public maxTimeVariation;
@@ -245,6 +251,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     function addSequencerL2BatchFromBlob(
         uint256 sequenceNumber,
+        // CHRIS: TODO: this isnt strictly necessary atm, but I'll leave it here until we decide if we want to specify blob indices
         bytes calldata data,
         uint256 afterDelayedMessagesRead,
         IGasRefunder gasRefunder,
@@ -337,8 +344,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         if (dataLocation == BatchDataLocation.Blob) {
             bytes32[] memory dataHashes = dataHashReader.getDataHashes();
             if (dataHashes.length == 0) revert MissingDataHashes();
-            // CHRIS: TODO: ensure this flag isnt used
-            if (data.length > 0 && data[0] & 0x04 == 0) revert InvalidBlobMetadata();
+            if (data.length != 1) revert InvalidBlobMetadata();
+            if (data[0] & DATA_BLOB_HEADER_FLAG == 0) revert InvalidBlobMetadata();
 
             return (
                 keccak256(bytes.concat(header, data, abi.encodePacked(dataHashes))),
@@ -347,13 +354,11 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         } else {
             // the first byte is used to identify the type of batch data
             // das batches expect to have the type byte set, followed by the keyset (so they should have at least 33 bytes)
-            // CHRIS: TODO: what if it's less than 33?
-            if (data.length >= 33 && data[0] & 0x80 != 0) {
+            if (data.length >= 33 && data[0] & DAS_MESSAGE_HEADER_FLAG != 0) {
                 // we skip the first byte, then read the next 32 bytes for the keyset
                 bytes32 dasKeysetHash = bytes32(data[1:33]);
                 if (!dasKeySetInfo[dasKeysetHash].isValidKeyset) revert NoSuchKeyset(dasKeysetHash);
             }
-            // CHRIS: TODO: consider more if-else stuff here
             return (keccak256(bytes.concat(header, data)), timeBounds);
         }
     }
@@ -367,7 +372,10 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 newMessageCount,
         BatchDataLocation dataLocation
     ) internal {
-        checkAndSetDelayedMessagesRead(afterDelayedMessagesRead);
+        if (afterDelayedMessagesRead < totalDelayedMessagesRead) revert DelayedBackwards();
+        if (afterDelayedMessagesRead > bridge.delayedMessageCount()) revert DelayedTooFar();
+        totalDelayedMessagesRead = afterDelayedMessagesRead;
+
         (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 afterAcc) = bridge
             .enqueueSequencerMessage(
                 dataHash,
@@ -452,13 +460,6 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         );
         // this is the same event used by Inbox.sol after including a message to the delayed message accumulator
         emit InboxMessageDelivered(msgNum, spendingReportMsg);
-    }
-
-    // CHRIS: TODO: docs and inline it?
-    function checkAndSetDelayedMessagesRead(uint256 afterDelayedMessagesRead) internal {
-        if (afterDelayedMessagesRead < totalDelayedMessagesRead) revert DelayedBackwards();
-        if (afterDelayedMessagesRead > bridge.delayedMessageCount()) revert DelayedTooFar();
-        totalDelayedMessagesRead = afterDelayedMessagesRead;
     }
 
     function inboxAccs(uint256 index) external view returns (bytes32) {
