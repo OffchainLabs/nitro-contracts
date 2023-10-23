@@ -102,8 +102,7 @@ export class Toolkit4844 {
     blockNumber: number,
     provider: JsonRpcProvider
   ) {
-    while (true) {
-      if ((await provider.getBlockNumber()) > blockNumber) return
+    while ((await provider.getBlockNumber()) <= blockNumber) {
       await wait(300)
     }
   }

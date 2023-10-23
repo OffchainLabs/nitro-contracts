@@ -172,3 +172,15 @@ error AlreadyValidDASKeyset(bytes32);
 
 /// @dev Tried to use or invalidate an already invalid Data Availability Service keyset
 error NoSuchKeyset(bytes32);
+
+/// @dev Thrown when a data blob feature is attempted to be used on a chain that doesnt support it
+error DataBlobsNotSupported();
+
+/// @dev Thrown when an init param was supplied as empty
+error InitParamZero(string name);
+
+/// @dev Thrown when data hashes where expected but not where present on the tx
+error MissingDataHashes();
+
+/// @dev Thrown when the data blob meta data is invalid
+error InvalidBlobMetadata();

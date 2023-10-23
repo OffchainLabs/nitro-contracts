@@ -20,7 +20,11 @@ import {
     DataNotAuthenticated,
     AlreadyValidDASKeyset,
     NoSuchKeyset,
-    NotForked
+    NotForked,
+    DataBlobsNotSupported,
+    InitParamZero,
+    MissingDataHashes,
+    InvalidBlobMetadata
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./IInboxBase.sol";
@@ -93,9 +97,18 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         bridge = bridge_;
         rollup = bridge_.rollup();
         maxTimeVariation = maxTimeVariation_;
-        // CHRIS: TODO: check that this is not empty?
-        dataHashReader = dataHashReader_;
-        blobBasefeeReader = blobBasefeeReader_;
+        if (hostChainIsArbitrum) {
+            if (dataHashReader_ != IDataHashReader(address(0))) revert DataBlobsNotSupported();
+            if (blobBasefeeReader_ != IBlobBasefeeReader(address(0)))
+                revert DataBlobsNotSupported();
+        } else {
+            if (dataHashReader_ == IDataHashReader(address(0)))
+                revert InitParamZero("DataHashReader");
+            dataHashReader = dataHashReader_;
+            if (blobBasefeeReader_ == IBlobBasefeeReader(address(0)))
+                revert InitParamZero("BlobBasefeeReader");
+            blobBasefeeReader = blobBasefeeReader_;
+        }
     }
 
     function getTimeBounds() internal view virtual returns (TimeBounds memory) {
@@ -157,7 +170,6 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             Messages.accumulateInboxMessage(prevDelayedAcc, messageHash)
         ) revert IncorrectMessagePreimage();
 
-        // CHRIS: TODO: why this assign??
         uint256 __totalDelayedMessagesRead = _totalDelayedMessagesRead;
         uint256 prevSeqMsgCount = bridge.sequencerReportedSubMessageCount();
         uint256 newSeqMsgCount = prevSeqMsgCount +
@@ -167,21 +179,13 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         (bytes32 dataHash, TimeBounds memory timeBounds) = formEmptyDataHash(
             __totalDelayedMessagesRead
         );
-        checkAndSetDelayedMessagesRead(__totalDelayedMessagesRead);
-        (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 afterAcc) = bridge
-            .enqueueSequencerMessage(
-                dataHash,
-                __totalDelayedMessagesRead,
-                prevSeqMsgCount,
-                newSeqMsgCount
-            );
-        emit SequencerBatchDelivered(
-            seqMessageIndex,
-            beforeAcc,
-            afterAcc,
-            delayedAcc,
-            totalDelayedMessagesRead,
+        addSequencerL2BatchImpl(
+            type(uint256).max,
+            dataHash,
             timeBounds,
+            __totalDelayedMessagesRead,
+            prevSeqMsgCount,
+            newSeqMsgCount,
             BatchDataLocation.NoData
         );
     }
@@ -196,19 +200,20 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
+        (bytes32 dataHash, TimeBounds memory timeBounds) = formDataHash(
+            data,
+            afterDelayedMessagesRead,
+            BatchDataLocation.TxInput
+        );
         addSequencerL2BatchImpl(
             sequenceNumber,
-            data,
+            dataHash,
+            timeBounds,
             afterDelayedMessagesRead,
             0,
             0,
             BatchDataLocation.TxInput
         );
-    }
-
-    // CHRIS: TODO: remove this
-    function getBlobBasefee() public view returns (uint256) {
-        return blobBasefeeReader.getBlobBaseFee();
     }
 
     function addSequencerL2BatchFromOrigin(
@@ -222,9 +227,15 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
+        (bytes32 dataHash, TimeBounds memory timeBounds) = formDataHash(
+            data,
+            afterDelayedMessagesRead,
+            BatchDataLocation.TxInput
+        );
         addSequencerL2BatchImpl(
             sequenceNumber,
-            data,
+            dataHash,
+            timeBounds,
             afterDelayedMessagesRead,
             prevMessageCount,
             newMessageCount,
@@ -241,9 +252,15 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 newMessageCount
     ) external refundsGas(gasRefunder) {
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
+        (bytes32 dataHash, TimeBounds memory timeBounds) = formDataHash(
+            data,
+            afterDelayedMessagesRead,
+            BatchDataLocation.Blob
+        );
         addSequencerL2BatchImpl(
             sequenceNumber,
-            data,
+            dataHash,
+            timeBounds,
             afterDelayedMessagesRead,
             prevMessageCount,
             newMessageCount,
@@ -261,9 +278,15 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 newMessageCount
     ) external override refundsGas(gasRefunder) {
         if (!isBatchPoster[msg.sender] && msg.sender != address(rollup)) revert NotBatchPoster();
+        (bytes32 dataHash, TimeBounds memory timeBounds) = formDataHash(
+            data,
+            afterDelayedMessagesRead,
+            BatchDataLocation.SeparateBatchEvent
+        );
         addSequencerL2BatchImpl(
             sequenceNumber,
-            data,
+            dataHash,
+            timeBounds,
             afterDelayedMessagesRead,
             prevMessageCount,
             newMessageCount,
@@ -310,13 +333,12 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             revert DataNotAuthenticated();
         }
 
-        // CHRIS: TODO: ensure this flag isnt used
         (bytes memory header, TimeBounds memory timeBounds) = packHeader(afterDelayedMessagesRead);
         if (dataLocation == BatchDataLocation.Blob) {
             bytes32[] memory dataHashes = dataHashReader.getDataHashes();
-            // CHRIS: TODO: switch all requires to custom errors
-            require(dataHashes.length != 0, "Missing data hashes");
-            require(data.length > 0 && data[0] & 0x04 != 0, "Invalid blob data");
+            if (dataHashes.length == 0) revert MissingDataHashes();
+            // CHRIS: TODO: ensure this flag isnt used
+            if (data.length > 0 && data[0] & 0x04 == 0) revert InvalidBlobMetadata();
 
             return (
                 keccak256(bytes.concat(header, data, abi.encodePacked(dataHashes))),
@@ -338,17 +360,13 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     function addSequencerL2BatchImpl(
         uint256 sequenceNumber,
-        bytes calldata data,
+        bytes32 dataHash,
+        TimeBounds memory timeBounds,
         uint256 afterDelayedMessagesRead,
         uint256 prevMessageCount,
         uint256 newMessageCount,
         BatchDataLocation dataLocation
     ) internal {
-        (bytes32 dataHash, TimeBounds memory timeBounds) = formDataHash(
-            data,
-            afterDelayedMessagesRead,
-            dataLocation
-        );
         checkAndSetDelayedMessagesRead(afterDelayedMessagesRead);
         (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 afterAcc) = bridge
             .enqueueSequencerMessage(
@@ -357,12 +375,14 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
                 prevMessageCount,
                 newMessageCount
             );
+        // CHRIS: TODO: push these together
         if (dataLocation == BatchDataLocation.TxInput) {
             submitTxInputBatchSpendingReport(dataHash, seqMessageIndex);
         } else if (dataLocation == BatchDataLocation.Blob) {
             submitBlobBatchSpendingReport(dataHash, seqMessageIndex);
         }
 
+        // CHRIS: TODO: replace this unclear max
         if (seqMessageIndex != sequenceNumber && sequenceNumber != ~uint256(0)) {
             revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
         }
@@ -418,8 +438,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         // the delayed messages queue that is yet to be included
         address batchPoster = tx.origin;
         uint256 blobBasefee = blobBasefeeReader.getBlobBaseFee();
-        // CHRIS: TODO: custom error
-        require(!hostChainIsArbitrum, "Unsupported blob transaction");
+        if (hostChainIsArbitrum) revert DataBlobsNotSupported();
         bytes memory spendingReportMsg = abi.encodePacked(
             block.timestamp,
             batchPoster,
