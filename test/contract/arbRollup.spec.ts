@@ -790,19 +790,23 @@ describe('ArbRollup', () => {
   })
 
   it('allow force refund staker with pending node', async function () {
-    await (await rollupAdmin.pause()).wait();
-    await (await rollupAdmin.forceRefundStaker([await validators[1].getAddress()])).wait()
-    await (await rollup.rollup.connect(validators[1]).withdrawStakerFunds()).wait()
-    await (await rollupAdmin.resume()).wait();
+    await (await rollupAdmin.pause()).wait()
+    await (
+      await rollupAdmin.forceRefundStaker([await validators[1].getAddress()])
+    ).wait()
+    await (
+      await rollup.rollup.connect(validators[1]).withdrawStakerFunds()
+    ).wait()
+    await (await rollupAdmin.resume()).wait()
 
     const postWithdrawablefunds = await rollup.rollup.withdrawableFunds(
       await validators[1].getAddress()
     )
-    expect(postWithdrawablefunds, "withdrawable funds").to.equal(0)
+    expect(postWithdrawablefunds, 'withdrawable funds').to.equal(0)
     const stake = await rollup.rollup.amountStaked(
       await validators[1].getAddress()
     )
-    expect(stake, "amount staked").to.equal(0)
+    expect(stake, 'amount staked').to.equal(0)
   })
 
   // it('should add and remove stakes correctly', async function () {
