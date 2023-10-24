@@ -27,6 +27,11 @@ abstract contract AbsRollupUserLogic is
         _;
     }
 
+    modifier whenNotPausedOrDeprecated() {
+        require(!paused() || address(bridge.rollup()) != address(this), "PAUSED_AND_ACTIVE");
+        _;
+    }
+
     uint256 internal immutable deployTimeChainId = block.chainid;
 
     function _chainIdChanged() internal view returns (bool) {
@@ -225,11 +230,6 @@ abstract contract AbsRollupUserLogic is
         createNewNode(assertion, prevNode, prevNodeInboxMaxCount, expectedNodeHash);
 
         stakeOnNode(msg.sender, latestNodeCreated());
-    }
-
-    modifier whenNotPausedOrDeprecated() {
-        require(!paused() || address(bridge.rollup()) != address(this), "PAUSED_AND_ACTIVE");
-        _;
     }
 
     /**
