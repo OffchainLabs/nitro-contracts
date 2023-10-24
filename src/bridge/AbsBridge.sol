@@ -70,6 +70,7 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     /// @notice Allows the rollup owner to set another rollup address
     function updateRollupAddress(IOwnable _rollup) external onlyRollupOrOwner {
         rollup = _rollup;
+        emit RollupUpdated(address(_rollup));
     }
 
     /// @dev returns the address of current active Outbox, or zero if no outbox is active
