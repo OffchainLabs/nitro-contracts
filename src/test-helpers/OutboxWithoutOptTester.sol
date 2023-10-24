@@ -48,6 +48,8 @@ contract OutboxWithoutOptTester is DelegateCallAware, IOutbox {
         rollup = address(_bridge.rollup());
     }
 
+    function postUpgradeInit() external {}
+
     function updateSendRoot(bytes32 root, bytes32 l2BlockHash) external override {
         //if (msg.sender != rollup) revert NotRollup(msg.sender, rollup);  //test only!!!
         roots[root] = l2BlockHash;
