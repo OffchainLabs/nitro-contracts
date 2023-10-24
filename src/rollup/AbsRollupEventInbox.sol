@@ -12,7 +12,7 @@ import "../libraries/ArbitrumChecker.sol";
 import "../bridge/IDelayedMessageProvider.sol";
 import "../libraries/DelegateCallAware.sol";
 import {INITIALIZATION_MSG_TYPE} from "../libraries/MessageTypes.sol";
-import {AlreadyInit, HadZeroInit} from "../libraries/Error.sol";
+import {AlreadyInit, HadZeroInit, RollupNotChanged} from "../libraries/Error.sol";
 
 /**
  * @title The inbox for rollup protocol events
@@ -41,7 +41,9 @@ abstract contract AbsRollupEventInbox is
     function updateRollupAddress() external {
         if (msg.sender != IOwnable(rollup).owner())
             revert NotOwner(msg.sender, IOwnable(rollup).owner());
-        rollup = address(bridge.rollup());
+        address newRollup = address(bridge.rollup());
+        if (rollup == newRollup) revert RollupNotChanged();
+        rollup = newRollup;
     }
 
     function rollupInitialized(uint256 chainId, string calldata chainConfig)

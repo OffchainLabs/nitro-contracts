@@ -20,7 +20,8 @@ import {
     DataNotAuthenticated,
     AlreadyValidDASKeyset,
     NoSuchKeyset,
-    NotForked
+    NotForked,
+    RollupNotChanged
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./IInboxBase.sol";
@@ -95,7 +96,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     function updateRollupAddress() external {
         if (msg.sender != IOwnable(rollup).owner())
             revert NotOwner(msg.sender, IOwnable(rollup).owner());
-        rollup = bridge.rollup();
+        IOwnable newRollup = bridge.rollup();
+        if (rollup == newRollup) revert RollupNotChanged();
+        rollup = newRollup;
     }
 
     function getTimeBounds() internal view virtual returns (TimeBounds memory) {
