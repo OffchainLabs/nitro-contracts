@@ -74,7 +74,7 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
         rollup = rollup_;
     }
 
-    function updateRollupAddress(IOwnable _rollup) external onlyDelegated onlyProxyOwner {
+    function updateRollupAddress(IOwnable _rollup) external {
         rollup = _rollup;
     }
 

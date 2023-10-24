@@ -76,8 +76,10 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         rollup = address(_bridge.rollup());
     }
 
-    /// @notice Allows the proxy owner to set the rollup address
-    function updateRollupAddress() external onlyDelegated onlyProxyOwner {
+    /// @notice Allows the rollup owner to sync the rollup address
+    function updateRollupAddress() external {
+        if (msg.sender != IOwnable(rollup).owner())
+            revert NotOwner(msg.sender, IOwnable(rollup).owner());
         rollup = address(bridge.rollup());
     }
 

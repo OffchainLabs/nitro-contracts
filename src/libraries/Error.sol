@@ -172,3 +172,6 @@ error AlreadyValidDASKeyset(bytes32);
 
 /// @dev Tried to use or invalidate an already invalid Data Availability Service keyset
 error NoSuchKeyset(bytes32);
+
+/// @dev Invalid rollup address is set
+error InvalidRollupSet(address);

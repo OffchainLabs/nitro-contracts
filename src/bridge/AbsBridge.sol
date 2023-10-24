@@ -14,6 +14,7 @@ import {
     NotSequencerInbox,
     NotOutbox,
     InvalidOutboxSet,
+    InvalidRollupSet,
     BadSequencerMessageNumber
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
@@ -57,11 +58,6 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
 
     address internal constant EMPTY_ACTIVEOUTBOX = address(type(uint160).max);
 
-    /// @notice Allows the proxy owner to set the rollup address
-    function updateRollupAddress(IOwnable _rollup) external onlyDelegated onlyProxyOwner {
-        rollup = _rollup;
-    }
-
     modifier onlyRollupOrOwner() {
         if (msg.sender != address(rollup)) {
             address rollupOwner = rollup.owner();
@@ -70,6 +66,11 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
             }
         }
         _;
+    }
+
+    /// @notice Allows the rollup owner to set another rollup address
+    function updateRollupAddress(IOwnable _rollup) external onlyRollupOrOwner {
+        rollup = _rollup;
     }
 
     /// @dev returns the address of current active Outbox, or zero if no outbox is active
