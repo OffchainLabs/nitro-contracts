@@ -10,9 +10,6 @@ error AlreadyInit();
 /// @dev Init was called with param set to zero that must be nonzero
 error HadZeroInit();
 
-/// @dev Thrown when post upgrade init validation fails
-error BadPostUpgradeInit();
-
 /// @dev Thrown when non owner tries to access an only-owner function
 /// @param sender The msg.sender who is not the owner
 /// @param owner The owner address
