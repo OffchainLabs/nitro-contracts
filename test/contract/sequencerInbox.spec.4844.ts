@@ -478,7 +478,7 @@ describe('SequencerInbox', async () => {
       .map(
         (l: any) => sequencerInbox.interface.parseLog(l).args
       )[0] as SequencerBatchDeliveredEvent['args']
-    if (!Boolean(batchDeliveredEvent)) throw new Error('missing batch event')
+    if (!batchDeliveredEvent) throw new Error('missing batch event')
 
     const seqMessageCountAfter = (
       await bridge.sequencerMessageCount()
