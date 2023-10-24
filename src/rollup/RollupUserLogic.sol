@@ -227,6 +227,11 @@ abstract contract AbsRollupUserLogic is
         stakeOnNode(msg.sender, latestNodeCreated());
     }
 
+    modifier whenNotPausedOrDeprecated() {
+        require(!paused() || address(bridge.rollup()) != address(this), "PAUSED_OR_NOT_DEPRECATED");
+        _;
+    }
+
     /**
      * @notice Refund a staker that is currently staked on or before the latest confirmed node
      * @dev Since a staker is initially placed in the latest confirmed node, if they don't move it
@@ -234,7 +239,12 @@ abstract contract AbsRollupUserLogic is
      * and move it to the desired node.
      * @param stakerAddress Address of the staker whose stake is refunded
      */
-    function returnOldDeposit(address stakerAddress) external override onlyValidator {
+    function returnOldDeposit(address stakerAddress)
+        external
+        override
+        onlyValidator
+        whenNotPausedOrDeprecated
+    {
         require(latestStakedNode(stakerAddress) <= latestConfirmed(), "TOO_RECENT");
         requireUnchallengedStaker(stakerAddress);
         withdrawStaker(stakerAddress);
@@ -258,7 +268,7 @@ abstract contract AbsRollupUserLogic is
      * @notice Reduce the amount staked for the sender (difference between initial amount staked and target is creditted back to the sender).
      * @param target Target amount of stake for the staker. If this is below the current minimum, it will be set to minimum instead
      */
-    function reduceDeposit(uint256 target) external onlyValidator {
+    function reduceDeposit(uint256 target) external onlyValidator whenNotPausedOrDeprecated {
         requireUnchallengedStaker(msg.sender);
         uint256 currentRequired = currentRequiredStake();
         if (target < currentRequired) {
@@ -659,7 +669,13 @@ contract RollupUserLogic is AbsRollupUserLogic, IRollupUser {
     /**
      * @notice Withdraw uncommitted funds owned by sender from the rollup chain
      */
-    function withdrawStakerFunds() external override onlyValidator returns (uint256) {
+    function withdrawStakerFunds()
+        external
+        override
+        onlyValidator
+        whenNotPausedOrDeprecated
+        returns (uint256)
+    {
         uint256 amount = withdrawFunds(msg.sender);
         // This is safe because it occurs after all checks and effects
         // solhint-disable-next-line avoid-low-level-calls
@@ -731,7 +747,13 @@ contract ERC20RollupUserLogic is AbsRollupUserLogic, IRollupUserERC20 {
     /**
      * @notice Withdraw uncommitted funds owned by sender from the rollup chain
      */
-    function withdrawStakerFunds() external override onlyValidator returns (uint256) {
+    function withdrawStakerFunds()
+        external
+        override
+        onlyValidator
+        whenNotPausedOrDeprecated
+        returns (uint256)
+    {
         uint256 amount = withdrawFunds(msg.sender);
         // This is safe because it occurs after all checks and effects
         require(IERC20Upgradeable(stakeToken).transfer(msg.sender, amount), "TRANSFER_FAILED");
