@@ -809,16 +809,22 @@ describe('ArbRollup', () => {
         .connect(await impersonateAccount(upgradeExecutor))
         .forceRefundStaker([await validators[3].getAddress()])
     ).wait()
+
+    await expect(
+      rollup.rollup.connect(validators[3]).withdrawStakerFunds()
+    ).to.be.revertedWith('PAUSED_AND_ACTIVE')
     // staker can only withdraw if rollup address changed when paused
     await bridge
       .connect(await impersonateAccount(rollup.rollup.address))
       .updateRollupAddress(ethers.constants.AddressZero)
+
     await (
       await rollup.rollup.connect(validators[3]).withdrawStakerFunds()
     ).wait()
     await rollupAdmin
       .connect(await impersonateAccount(upgradeExecutor))
       .resume()
+
     // restore rollup address
     await bridge
       .connect(await impersonateAccount(ethers.constants.AddressZero))
