@@ -262,10 +262,10 @@ describe('SequencerInbox', async () => {
     // update the addresses below and uncomment to avoid redeploying
     // return connectAddreses(user, deployer, batchPoster, {
     //   user: '0x870204e93ca485a6676E264EB0d7df4cD0246203',
-    //   bridge: '0xF224c1d7cC177f24450aC1bD073EA6A83B479A84',
-    //   inbox: '0x30a12d427dA40881c9aE54e59B3bA5187A032e35',
-    //   sequencerInbox: '0xD3E7FB00e1341D2621ff9fC7757639107B5A8F1E',
-    //   messageTester: '0x55226aAfa122128D63f9d9612209F9a3f53bb437',
+    //   bridge: '0x00eb941BD8B89E0396A983c870fa74DA4aC5ecFB',
+    //   inbox: '0x68BCf73c6b36ae3f20b2fD06c2d4651538Ae02a6',
+    //   sequencerInbox: '0x87fEe873425A65Bb2A11dFf6E15B4Ce25e7AFccD',
+    //   messageTester: '0x33B1355B2F3BE116eB1c8226CF3B0a433259459C',
     //   batchPoster: '0x328375c90F01Dcb114888DA36e3832F69Ad0BB57',
     // })
 
@@ -410,7 +410,7 @@ describe('SequencerInbox', async () => {
     await batchSendTx.wait()
   })
 
-  it.only('can send blob batch', async () => {
+  it('can send blob batch', async () => {
     const privKey =
       'cb5790da63720727af975f42c79f69918580209889225fa7128c92402a6d3a65'
     const prov = new JsonRpcProvider('http://127.0.0.1:8545')
@@ -443,7 +443,7 @@ describe('SequencerInbox', async () => {
         'addSequencerL2BatchFromBlob',
         [
           sequenceNumber,
-          '0x04',
+          Toolkit4844.DATA_BLOB_HEADER_FLAG,
           afterDelayedMessagesRead,
           constants.AddressZero,
           subMessageCount,
@@ -478,6 +478,7 @@ describe('SequencerInbox', async () => {
       .map(
         (l: any) => sequencerInbox.interface.parseLog(l).args
       )[0] as SequencerBatchDeliveredEvent['args']
+    if (!Boolean(batchDeliveredEvent)) throw new Error('missing batch event')
 
     const seqMessageCountAfter = (
       await bridge.sequencerMessageCount()
@@ -595,7 +596,11 @@ describe('SequencerInbox', async () => {
     return keccak256(
       solidityPack(
         ['bytes', 'bytes', 'bytes'],
-        [header, '0x04', solidityPack(['bytes32[]'], [blobHashes])]
+        [
+          header,
+          Toolkit4844.DATA_BLOB_HEADER_FLAG,
+          solidityPack(['bytes32[]'], [blobHashes]),
+        ]
       )
     )
   }

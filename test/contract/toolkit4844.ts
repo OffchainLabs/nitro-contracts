@@ -17,6 +17,8 @@ const wait = async (ms: number) =>
   })
 
 export class Toolkit4844 {
+  public static DATA_BLOB_HEADER_FLAG = "0x10"
+
   public static postDataToGeth(body: any): Promise<any> {
     return new Promise((resolve, reject) => {
       const options = {
@@ -114,7 +116,7 @@ export class Toolkit4844 {
     data: string
   ) {
     const blobStr = blobs.reduce((acc, blob) => acc + ' -b ' + blob, '')
-    const blobCommand = `docker run --network=nitro-testnode_default ethpandaops/goomy-blob:master blob-sender -p ${privKey} -r http://geth:8545 -t ${to} -d ${data} --gaslimit 1000000${blobStr} 2>&1`
+    const blobCommand = `docker run --network=nitro-testnode_default ethpandaops/goomy-blob@sha256:8fd6dfe19bedf43f485f1d5ef3db0a0af569c1a08eacc117d5c5ba43656989f0 blob-sender -p ${privKey} -r http://geth:8545 -t ${to} -d ${data} --gaslimit 1000000${blobStr} 2>&1`
     const res = execSync(blobCommand).toString()
     const txHashRegex = /0x[a-fA-F0-9]{64}/
     const match = res.match(txHashRegex)
