@@ -175,3 +175,6 @@ error AlreadyValidDASKeyset(bytes32);
 
 /// @dev Tried to use or invalidate an already invalid Data Availability Service keyset
 error NoSuchKeyset(bytes32);
+
+/// @dev Thrown when rollup is not updated with updateRollupAddress
+error RollupNotChanged();

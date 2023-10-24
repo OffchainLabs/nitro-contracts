@@ -32,6 +32,8 @@ interface IBridge {
 
     event SequencerInboxUpdated(address newSequencerInbox);
 
+    event RollupUpdated(address rollup);
+
     function allowedDelayedInboxList(uint256) external returns (address);
 
     function allowedOutboxList(uint256) external returns (address);
@@ -97,4 +99,6 @@ interface IBridge {
     function setDelayedInbox(address inbox, bool enabled) external;
 
     function setOutbox(address inbox, bool enabled) external;
+
+    function updateRollupAddress(IOwnable _rollup) external;
 }

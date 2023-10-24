@@ -13,7 +13,8 @@ import {
     AlreadySpent,
     BridgeCallFailed,
     HadZeroInit,
-    BadPostUpgradeInit
+    BadPostUpgradeInit,
+    RollupNotChanged
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./IOutbox.sol";
@@ -88,6 +89,15 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
             sender: SENDER_DEFAULT_CONTEXT,
             withdrawalAmount: _defaultContextAmount()
         });
+    }
+
+    /// @notice Allows the rollup owner to sync the rollup address
+    function updateRollupAddress() external {
+        if (msg.sender != IOwnable(rollup).owner())
+            revert NotOwner(msg.sender, IOwnable(rollup).owner());
+        address newRollup = address(bridge.rollup());
+        if (rollup == newRollup) revert RollupNotChanged();
+        rollup = newRollup;
     }
 
     function updateSendRoot(bytes32 root, bytes32 l2BlockHash) external {
