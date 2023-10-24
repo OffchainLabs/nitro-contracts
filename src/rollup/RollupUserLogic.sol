@@ -228,7 +228,7 @@ abstract contract AbsRollupUserLogic is
     }
 
     modifier whenNotPausedOrDeprecated() {
-        require(!paused() || address(bridge.rollup()) != address(this), "PAUSED_OR_NOT_DEPRECATED");
+        require(!paused() || address(bridge.rollup()) != address(this), "PAUSED_AND_ACTIVE");
         _;
     }
 
