@@ -57,6 +57,11 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
 
     address internal constant EMPTY_ACTIVEOUTBOX = address(type(uint160).max);
 
+    /// @notice Allows the proxy owner to set the rollup address
+    function updateRollupAddress(IOwnable _rollup) external onlyDelegated onlyProxyOwner {
+        rollup = _rollup;
+    }
+
     modifier onlyRollupOrOwner() {
         if (msg.sender != address(rollup)) {
             address rollupOwner = rollup.owner();
