@@ -46,6 +46,7 @@ import {
   RollupUserLogic__factory,
   SequencerInbox,
   SequencerInbox__factory,
+  Bridge,
 } from '../../build/types'
 import {
   abi as UpgradeExecutorABI,
@@ -86,6 +87,7 @@ const wasmModuleRoot =
 let rollup: RollupContract
 let rollupUser: RollupUserLogic
 let rollupAdmin: RollupAdminLogic
+let bridge: Bridge
 let accounts: Signer[]
 let validators: Signer[]
 let sequencerInbox: SequencerInbox
@@ -93,6 +95,7 @@ let admin: Signer
 let sequencer: Signer
 let challengeManager: ChallengeManager
 let upgradeExecutor: string
+let adminproxy: string
 
 async function getDefaultConfig(
   _confirmPeriodBlocks = confirmationPeriodBlocks
@@ -275,6 +278,7 @@ const setup = async () => {
       await val1.getAddress(),
       await val2.getAddress(),
       await val3.getAddress(),
+      await val4.getAddress(),
     ],
     maxDataSize: 117964,
     nativeToken: ethers.constants.AddressZero,
@@ -298,6 +302,7 @@ const setup = async () => {
   const rollupUser = rollupUserLogicFac
     .attach(rollupCreatedEvent.rollupAddress)
     .connect(user)
+  const bridge = ethBridgeFac.attach(rollupCreatedEvent.bridge).connect(user)
 
   sequencerInbox = (
     (await ethers.getContractFactory(
@@ -328,8 +333,9 @@ const setup = async () => {
     sequencerInbox: rollupCreatedEvent.sequencerInbox,
     delayedBridge: rollupCreatedEvent.bridge,
     delayedInbox: rollupCreatedEvent.inboxAddress,
-    bridge: rollupCreatedEvent.bridge,
+    bridge,
     upgradeExecutorAddress: rollupCreatedEvent.upgradeExecutor,
+    adminproxy: rollupCreatedEvent.adminProxy,
   }
 }
 
@@ -509,15 +515,19 @@ describe('ArbRollup', () => {
     const {
       rollupAdmin: rollupAdminContract,
       rollupUser: rollupUserContract,
+      bridge: bridgeContract,
       admin: adminI,
       validators: validatorsI,
       upgradeExecutorAddress,
+      adminproxy: adminproxyAddress,
     } = await setup()
     rollupAdmin = rollupAdminContract
     rollupUser = rollupUserContract
+    bridge = bridgeContract
     admin = adminI
     validators = validatorsI
     upgradeExecutor = upgradeExecutorAddress
+    adminproxy = adminproxyAddress
     rollup = new RollupContract(rollupUser.connect(validators[0]))
   })
 
@@ -579,6 +589,9 @@ describe('ArbRollup', () => {
     const stake = await rollup.currentRequiredStake()
     await rollupUser
       .connect(validators[2])
+      .newStakeOnExistingNode(1, prevNode.nodeHash, { value: stake })
+    await rollupUser
+      .connect(validators[3])
       .newStakeOnExistingNode(1, prevNode.nodeHash, { value: stake })
   })
 
@@ -790,88 +803,98 @@ describe('ArbRollup', () => {
   })
 
   it('allow force refund staker with pending node', async function () {
-    await (await rollupAdmin.pause()).wait()
+    await rollupAdmin.connect(await impersonateAccount(upgradeExecutor)).pause()
     await (
-      await rollupAdmin.forceRefundStaker([await validators[1].getAddress()])
+      await rollupAdmin
+        .connect(await impersonateAccount(upgradeExecutor))
+        .forceRefundStaker([await validators[3].getAddress()])
     ).wait()
+    // staker can only withdraw if rollup address changed when paused
+    await bridge
+      .connect(await impersonateAccount(rollup.rollup.address))
+      .updateRollupAddress(ethers.constants.AddressZero)
     await (
-      await rollup.rollup.connect(validators[1]).withdrawStakerFunds()
+      await rollup.rollup.connect(validators[3]).withdrawStakerFunds()
     ).wait()
-    await (await rollupAdmin.resume()).wait()
+    await rollupAdmin
+      .connect(await impersonateAccount(upgradeExecutor))
+      .resume()
+    // restore rollup address
+    await bridge
+      .connect(await impersonateAccount(ethers.constants.AddressZero))
+      .updateRollupAddress(rollupUser.address)
 
     const postWithdrawablefunds = await rollup.rollup.withdrawableFunds(
-      await validators[1].getAddress()
+      await validators[3].getAddress()
     )
     expect(postWithdrawablefunds, 'withdrawable funds').to.equal(0)
     const stake = await rollup.rollup.amountStaked(
-      await validators[1].getAddress()
+      await validators[3].getAddress()
     )
     expect(stake, 'amount staked').to.equal(0)
   })
 
-  // it('should add and remove stakes correctly', async function () {
-  //   /*
-  //     RollupUser functions that alter stake and their respective Core logic
+  it('should add and remove stakes correctly', async function () {
+    /*
+      RollupUser functions that alter stake and their respective Core logic
 
-  //     user: newStake
-  //     core: createNewStake
+      user: newStake
+      core: createNewStake
 
-  //     user: addToDeposit
-  //     core: increaseStakeBy
+      user: addToDeposit
+      core: increaseStakeBy
 
-  //     user: reduceDeposit
-  //     core: reduceStakeTo
+      user: reduceDeposit
+      core: reduceStakeTo
 
-  //     user: returnOldDeposit
-  //     core: withdrawStaker
+      user: returnOldDeposit
+      core: withdrawStaker
 
-  //     user: withdrawStakerFunds
-  //     core: withdrawFunds
-  //   */
+      user: withdrawStakerFunds
+      core: withdrawFunds
+    */
 
-  //   const initialStake = await rollup.rollup.amountStaked(
-  //     await validators[1].getAddress()
-  //   )
+    const initialStake = await rollup.rollup.amountStaked(
+      await validators[1].getAddress()
+    )
 
-  //   await rollup.connect(validators[1]).reduceDeposit(initialStake)
+    await rollup.connect(validators[1]).reduceDeposit(initialStake)
 
-  //   await expect(
-  //     rollup.connect(validators[1]).reduceDeposit(initialStake.add(1))
-  //   ).to.be.revertedWith('TOO_LITTLE_STAKE')
+    await expect(
+      rollup.connect(validators[1]).reduceDeposit(initialStake.add(1))
+    ).to.be.revertedWith('TOO_LITTLE_STAKE')
 
-  //   await rollup
-  //     .connect(validators[1])
-  //     .addToDeposit(await validators[1].getAddress(), { value: 5 })
+    await rollup
+      .connect(validators[1])
+      .addToDeposit(await validators[1].getAddress(), { value: 5 })
 
-  //   await rollupAdmin.pause()
-  //   await rollup.connect(validators[1]).reduceDeposit(5)
+    await rollup.connect(validators[1]).reduceDeposit(5)
 
-  //   const prevBalance = await validators[1].getBalance()
-  //   const prevWithdrawablefunds = await rollup.rollup.withdrawableFunds(
-  //     await validators[1].getAddress()
-  //   )
+    const prevBalance = await validators[1].getBalance()
+    const prevWithdrawablefunds = await rollup.rollup.withdrawableFunds(
+      await validators[1].getAddress()
+    )
 
-  //   const tx = await rollup.rollup.connect(validators[1]).withdrawStakerFunds()
-  //   const receipt = await tx.wait()
-  //   const gasPaid = receipt.gasUsed.mul(receipt.effectiveGasPrice)
+    const tx = await rollup.rollup.connect(validators[1]).withdrawStakerFunds()
+    const receipt = await tx.wait()
+    const gasPaid = receipt.gasUsed.mul(receipt.effectiveGasPrice)
 
-  //   const postBalance = await validators[1].getBalance()
-  //   const postWithdrawablefunds = await rollup.rollup.withdrawableFunds(
-  //     await validators[1].getAddress()
-  //   )
+    const postBalance = await validators[1].getBalance()
+    const postWithdrawablefunds = await rollup.rollup.withdrawableFunds(
+      await validators[1].getAddress()
+    )
 
-  //   expect(postWithdrawablefunds).to.equal(0)
-  //   expect(postBalance.add(gasPaid)).to.equal(
-  //     prevBalance.add(prevWithdrawablefunds)
-  //   )
+    expect(postWithdrawablefunds).to.equal(0)
+    expect(postBalance.add(gasPaid)).to.equal(
+      prevBalance.add(prevWithdrawablefunds)
+    )
 
-  //   // this gets deposit and removes staker
-  //   await rollup.rollup
-  //     .connect(validators[1])
-  //     .returnOldDeposit(await validators[1].getAddress())
-  //   // all stake is now removed
-  //   await rollupAdmin.resume()
-  // })
+    // this gets deposit and removes staker
+    await rollup.rollup
+      .connect(validators[1])
+      .returnOldDeposit(await validators[1].getAddress())
+    // all stake is now removed
+  })
 
   it('should allow removing zombies', async function () {
     const zombieCount = (
