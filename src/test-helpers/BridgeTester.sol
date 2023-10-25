@@ -232,6 +232,10 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge {
     function sequencerMessageCount() external view override returns (uint256) {
         return sequencerInboxAccs.length;
     }
+    
+    function pause() external {}
+
+    function unpause() external {}
 
     receive() external payable {}
 

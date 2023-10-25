@@ -174,6 +174,10 @@ contract BridgeStub is IBridge {
         revert("NOT_IMPLEMENTED");
     }
 
+    function pause() external {}
+
+    function unpause() external {}
+
     function acceptFundsFromOldBridge() external payable {}
 
     function initialize(IOwnable) external pure {
