@@ -20,10 +20,11 @@ import {
     DataNotAuthenticated,
     AlreadyValidDASKeyset,
     NoSuchKeyset,
-    NotForked
+    NotForked,
+    RollupNotChanged
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
-import "./IInbox.sol";
+import "./IInboxBase.sol";
 import "./ISequencerInbox.sol";
 import "../rollup/IRollupLogic.sol";
 import "./Messages.sol";
@@ -34,7 +35,6 @@ import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
 import {GasRefundEnabled, IGasRefunder} from "../libraries/IGasRefunder.sol";
 import "../libraries/DelegateCallAware.sol";
 import "../libraries/ArbitrumChecker.sol";
-import {MAX_DATA_SIZE} from "../libraries/Constants.sol";
 
 /**
  * @title Accepts batches from the sequencer and adds them to the rollup inbox.
@@ -65,12 +65,17 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         _;
     }
 
-    uint256 internal immutable deployTimeChainId = block.chainid;
-
     mapping(address => bool) public isSequencer;
 
+    // On L1 this should be set to 117964: 90% of Geth's 128KB tx size limit, leaving ~13KB for proving
+    uint256 public immutable maxDataSize;
+    uint256 internal immutable deployTimeChainId = block.chainid;
     // If the chain this SequencerInbox is deployed on is an Arbitrum chain.
     bool internal immutable hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
+
+    constructor(uint256 _maxDataSize) {
+        maxDataSize = _maxDataSize;
+    }
 
     function _chainIdChanged() internal view returns (bool) {
         return deployTimeChainId != block.chainid;
@@ -85,6 +90,15 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         bridge = bridge_;
         rollup = bridge_.rollup();
         maxTimeVariation = maxTimeVariation_;
+    }
+
+    /// @notice Allows the rollup owner to sync the rollup address
+    function updateRollupAddress() external {
+        if (msg.sender != IOwnable(rollup).owner())
+            revert NotOwner(msg.sender, IOwnable(rollup).owner());
+        IOwnable newRollup = bridge.rollup();
+        if (rollup == newRollup) revert RollupNotChanged();
+        rollup = newRollup;
     }
 
     function getTimeBounds() internal view virtual returns (TimeBounds memory) {
@@ -310,7 +324,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     modifier validateBatchData(bytes calldata data) {
         uint256 fullDataLen = HEADER_LENGTH + data.length;
-        if (fullDataLen > MAX_DATA_SIZE) revert DataTooLarge(fullDataLen, MAX_DATA_SIZE);
+        if (fullDataLen > maxDataSize) revert DataTooLarge(fullDataLen, maxDataSize);
         if (data.length > 0 && (data[0] & DATA_AUTHENTICATED_FLAG) == DATA_AUTHENTICATED_FLAG) {
             revert DataNotAuthenticated();
         }

@@ -5,14 +5,16 @@
 pragma solidity ^0.8.0;
 
 import "../bridge/SequencerInbox.sol";
+import "../bridge/IEthBridge.sol";
 import {INITIALIZATION_MSG_TYPE} from "../libraries/MessageTypes.sol";
 
 contract SequencerInboxStub is SequencerInbox {
     constructor(
         IBridge bridge_,
         address sequencer_,
-        ISequencerInbox.MaxTimeVariation memory maxTimeVariation_
-    ) {
+        ISequencerInbox.MaxTimeVariation memory maxTimeVariation_,
+        uint256 maxDataSize_
+    ) SequencerInbox(maxDataSize_) {
         bridge = bridge_;
         rollup = IOwnable(msg.sender);
         maxTimeVariation = maxTimeVariation_;
@@ -21,7 +23,7 @@ contract SequencerInboxStub is SequencerInbox {
 
     function addInitMessage(uint256 chainId) external {
         bytes memory initMsg = abi.encodePacked(chainId);
-        uint256 num = bridge.enqueueDelayedMessage(
+        uint256 num = IEthBridge(address(bridge)).enqueueDelayedMessage(
             INITIALIZATION_MSG_TYPE,
             address(0),
             keccak256(initMsg)

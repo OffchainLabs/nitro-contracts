@@ -1,5 +1,9 @@
 import { ethers } from 'ethers'
 
+// 90% of Geth's 128KB tx size limit, leaving ~13KB for proving
+// This need to be adjusted for Orbit chains
+export const maxDataSize = 117964
+
 export const config = {
   rollupConfig: {
     confirmPeriodBlocks: ethers.BigNumber.from('45818'),
