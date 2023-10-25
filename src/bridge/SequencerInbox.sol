@@ -54,7 +54,7 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
     /// @inheritdoc ISequencerInbox
     bytes1 public constant DATA_AUTHENTICATED_FLAG = 0x40;
 
-    IOwnable public immutable rollup;
+    IOwnable public rollup;
     mapping(address => bool) public isBatchPoster;
     // see ISequencerInbox.MaxTimeVariation
     uint256 internal immutable delayBlocks;

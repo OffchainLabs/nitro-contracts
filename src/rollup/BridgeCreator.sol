@@ -19,40 +19,48 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract BridgeCreator is Ownable {
-    BridgeContracts public ethBasedTemplates;
-    BridgeContracts public erc20BasedTemplates;
+    BridgeTemplates public ethBasedTemplates;
+    BridgeTemplates public erc20BasedTemplates;
 
     event TemplatesUpdated();
     event ERC20TemplatesUpdated();
 
-    struct BridgeContracts {
+    struct BridgeTemplates {
         IBridge bridge;
         IInboxBase inbox;
         IRollupEventInbox rollupEventInbox;
         IOutbox outbox;
     }
 
+    struct BridgeContracts {
+        IBridge bridge;
+        ISequencerInbox sequencerInbox;
+        IInboxBase inbox;
+        IRollupEventInbox rollupEventInbox;
+        IOutbox outbox;
+    }
+
     constructor(
-        BridgeContracts memory _ethBasedTemplates,
-        BridgeContracts memory _erc20BasedTemplates
+        BridgeTemplates memory _ethBasedTemplates,
+        BridgeTemplates memory _erc20BasedTemplates
     ) Ownable() {
         ethBasedTemplates = _ethBasedTemplates;
         erc20BasedTemplates = _erc20BasedTemplates;
     }
 
-    function updateTemplates(BridgeContracts calldata _newTemplates) external onlyOwner {
+    function updateTemplates(BridgeTemplates calldata _newTemplates) external onlyOwner {
         ethBasedTemplates = _newTemplates;
         emit TemplatesUpdated();
     }
 
-    function updateERC20Templates(BridgeContracts calldata _newTemplates) external onlyOwner {
+    function updateERC20Templates(BridgeTemplates calldata _newTemplates) external onlyOwner {
         erc20BasedTemplates = _newTemplates;
         emit ERC20TemplatesUpdated();
     }
 
     function _createBridge(
         address adminProxy,
-        BridgeContracts storage templates,
+        BridgeTemplates storage templates,
         ISequencerInbox.MaxTimeVariation calldata maxTimeVariation,
         uint256 maxDataSize
     ) internal returns (BridgeContracts memory) {
