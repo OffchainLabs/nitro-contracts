@@ -14,7 +14,9 @@ import {
     NotSequencerInbox,
     NotOutbox,
     InvalidOutboxSet,
-    BadSequencerMessageNumber
+    BadSequencerMessageNumber,
+    Paused,
+    Unpaused
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./Messages.sol";
@@ -58,6 +60,8 @@ contract Bridge is Initializable, DelegateCallAware, IBridge {
 
     address internal constant EMPTY_ACTIVEOUTBOX = address(type(uint160).max);
 
+    bool internal _paused;
+
     function initialize(IOwnable rollup_) external initializer onlyDelegated {
         _activeOutbox = EMPTY_ACTIVEOUTBOX;
         rollup = rollup_;
@@ -69,6 +73,19 @@ contract Bridge is Initializable, DelegateCallAware, IBridge {
             if (msg.sender != rollupOwner) {
                 revert NotRollupOrOwner(msg.sender, address(rollup), rollupOwner);
             }
+        }
+        _;
+    }
+
+    modifier whenNotPaused() {
+        if(paused()){
+            revert Paused();
+        }
+        _;
+    }
+    modifier whenPaused() {
+        if(!paused()){
+            revert Unpaused();
         }
         _;
     }
@@ -105,6 +122,7 @@ contract Bridge is Initializable, DelegateCallAware, IBridge {
     )
         external
         onlySequencerInbox
+        whenNotPaused
         returns (
             uint256 seqMessageIndex,
             bytes32 beforeAcc,
@@ -135,6 +153,7 @@ contract Bridge is Initializable, DelegateCallAware, IBridge {
     function submitBatchSpendingReport(address sender, bytes32 messageDataHash)
         external
         onlySequencerInbox
+        whenNotPaused
         returns (uint256)
     {
         return
@@ -153,7 +172,7 @@ contract Bridge is Initializable, DelegateCallAware, IBridge {
         uint8 kind,
         address sender,
         bytes32 messageDataHash
-    ) external payable returns (uint256) {
+    ) external whenNotPaused payable returns (uint256) {
         if (!allowedDelayedInboxesMap[msg.sender].allowed) revert NotDelayedInbox(msg.sender);
         return
             addMessageToDelayedAccumulator(
@@ -206,7 +225,7 @@ contract Bridge is Initializable, DelegateCallAware, IBridge {
         address to,
         uint256 value,
         bytes calldata data
-    ) external returns (bool success, bytes memory returnData) {
+    ) external whenNotPaused returns (bool success, bytes memory returnData) {
         if (!allowedOutboxesMap[msg.sender].allowed) revert NotOutbox(msg.sender);
         if (data.length > 0 && !to.isContract()) revert NotContract(to);
         address prevOutbox = _activeOutbox;
@@ -278,6 +297,17 @@ contract Bridge is Initializable, DelegateCallAware, IBridge {
         return sequencerInboxAccs.length;
     }
 
-    /// @dev For the classic -> nitro migration. TODO: remove post-migration.
-    function acceptFundsFromOldBridge() external payable {}
+    function pause() external onlyRollupOrOwner whenNotPaused {
+        _paused = true;
+        emit BridgePaused(msg.sender);
+    }
+    function unpause() external onlyRollupOrOwner whenPaused {
+        _paused = false;
+        emit BridgeUnpaused(msg.sender);
+    }
+
+    function paused() public view returns (bool) {
+        return _paused;
+    }
+
 }
