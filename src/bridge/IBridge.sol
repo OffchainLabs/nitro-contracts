@@ -113,7 +113,7 @@ interface IBridge {
 
     function setOutbox(address inbox, bool enabled) external;
 
-   function pause() external;
+    function pause() external;
 
     function unpause() external;
 

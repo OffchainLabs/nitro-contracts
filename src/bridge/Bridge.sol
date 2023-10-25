@@ -78,13 +78,13 @@ contract Bridge is Initializable, DelegateCallAware, IBridge {
     }
 
     modifier whenNotPaused() {
-        if(paused()){
+        if (paused()) {
             revert Paused();
         }
         _;
     }
     modifier whenPaused() {
-        if(!paused()){
+        if (!paused()) {
             revert Unpaused();
         }
         _;
@@ -172,7 +172,7 @@ contract Bridge is Initializable, DelegateCallAware, IBridge {
         uint8 kind,
         address sender,
         bytes32 messageDataHash
-    ) external whenNotPaused payable returns (uint256) {
+    ) external payable whenNotPaused returns (uint256) {
         if (!allowedDelayedInboxesMap[msg.sender].allowed) revert NotDelayedInbox(msg.sender);
         return
             addMessageToDelayedAccumulator(
@@ -301,6 +301,7 @@ contract Bridge is Initializable, DelegateCallAware, IBridge {
         _paused = true;
         emit BridgePaused(msg.sender);
     }
+
     function unpause() external onlyRollupOrOwner whenPaused {
         _paused = false;
         emit BridgeUnpaused(msg.sender);
@@ -309,5 +310,4 @@ contract Bridge is Initializable, DelegateCallAware, IBridge {
     function paused() public view returns (bool) {
         return _paused;
     }
-
 }
