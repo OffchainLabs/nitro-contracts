@@ -36,7 +36,6 @@ interface IBridge {
 
     event BridgeUnpaused(address account);
 
-
     function allowedDelayedInboxList(uint256) external returns (address);
 
     function allowedOutboxList(uint256) external returns (address);
