@@ -33,7 +33,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     uint256 public baseStake;
     bytes32 public wasmModuleRoot;
 
-    IInbox public inbox;
+    IInboxBase public inbox;
     IBridge public bridge;
     IOutbox public outbox;
     ISequencerInbox public sequencerInbox;

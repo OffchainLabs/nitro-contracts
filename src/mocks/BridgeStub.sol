@@ -8,8 +8,9 @@ import "./InboxStub.sol";
 import {BadSequencerMessageNumber} from "../libraries/Error.sol";
 
 import "../bridge/IBridge.sol";
+import "../bridge/IEthBridge.sol";
 
-contract BridgeStub is IBridge {
+contract BridgeStub is IBridge, IEthBridge {
     struct InOutInfo {
         uint256 index;
         bool allowed;
@@ -30,6 +31,11 @@ contract BridgeStub is IBridge {
 
     address public sequencerInbox;
     uint256 public override sequencerReportedSubMessageCount;
+    IOwnable public rollup;
+
+    constructor(IOwnable rollup_) {
+        rollup = rollup_;
+    }
 
     function setSequencerInbox(address _sequencerInbox) external override {
         sequencerInbox = _sequencerInbox;
@@ -41,6 +47,10 @@ contract BridgeStub is IBridge {
     }
 
     function allowedOutboxes(address) external pure override returns (bool) {
+        revert("NOT_IMPLEMENTED");
+    }
+
+    function updateRollupAddress(IOwnable) external pure {
         revert("NOT_IMPLEMENTED");
     }
 
@@ -168,10 +178,6 @@ contract BridgeStub is IBridge {
 
     function sequencerMessageCount() external view override returns (uint256) {
         return sequencerInboxAccs.length;
-    }
-
-    function rollup() external pure override returns (IOwnable) {
-        revert("NOT_IMPLEMENTED");
     }
 
     function acceptFundsFromOldBridge() external payable {}

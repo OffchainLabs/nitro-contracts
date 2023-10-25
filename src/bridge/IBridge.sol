@@ -32,6 +32,8 @@ interface IBridge {
 
     event SequencerInboxUpdated(address newSequencerInbox);
 
+    event RollupUpdated(address rollup);
+
     function allowedDelayedInboxList(uint256) external returns (address);
 
     function allowedOutboxList(uint256) external returns (address);
@@ -53,17 +55,6 @@ interface IBridge {
     function allowedOutboxes(address outbox) external view returns (bool);
 
     function sequencerReportedSubMessageCount() external view returns (uint256);
-
-    /**
-     * @dev Enqueue a message in the delayed inbox accumulator.
-     *      These messages are later sequenced in the SequencerInbox, either
-     *      by the sequencer as part of a normal batch, or by force inclusion.
-     */
-    function enqueueDelayedMessage(
-        uint8 kind,
-        address sender,
-        bytes32 messageDataHash
-    ) external payable returns (uint256);
 
     function executeCall(
         address to,
@@ -109,7 +100,5 @@ interface IBridge {
 
     function setOutbox(address inbox, bool enabled) external;
 
-    // ---------- initializer ----------
-
-    function initialize(IOwnable rollup_) external;
+    function updateRollupAddress(IOwnable _rollup) external;
 }
