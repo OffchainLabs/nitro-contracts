@@ -118,6 +118,4 @@ contract BridgeCreator is Ownable {
 
         return frame;
     }
-
-    event Testy(address);
 }
