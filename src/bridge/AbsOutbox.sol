@@ -76,6 +76,7 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         });
         bridge = _bridge;
         rollup = address(_bridge.rollup());
+        if(address(rollup) == address(0)) revert RollupNotChanged();
     }
 
     function postUpgradeInit() external onlyDelegated onlyProxyOwner {

@@ -129,8 +129,6 @@ contract BridgeCreatorTest is Test {
             30,
             40
         );
-        timeVars.delayBlocks;
-
         BridgeCreator.BridgeContracts memory contracts = creator.createBridge(
             proxyAdmin,
             rollup,
@@ -153,12 +151,12 @@ contract BridgeCreatorTest is Test {
             );
 
         // bridge
-        assertEq(address(bridge.rollup()), rollup, "Invalid rollup ref");
+        assertEq(address(bridge.rollup()), rollup, "Invalid bridge rollup ref");
         assertEq(bridge.activeOutbox(), address(0), "Invalid activeOutbox ref");
 
         // seqInbox
         assertEq(address(seqInbox.bridge()), address(bridge), "Invalid bridge ref");
-        assertEq(address(seqInbox.rollup()), rollup, "Invalid rollup ref");
+        assertEq(address(seqInbox.rollup()), rollup, "Invalid seq rollup ref");
         ISequencerInbox.MaxTimeVariation memory maxTimeVariation = seqInbox.maxTimeVariation();
         assertEq(maxTimeVariation.delayBlocks, timeVars.delayBlocks, "Invalid delayBlocks");
         assertEq(maxTimeVariation.futureBlocks, timeVars.futureBlocks, "Invalid futureBlocks");
@@ -173,11 +171,11 @@ contract BridgeCreatorTest is Test {
 
         // rollup event inbox
         assertEq(address(eventInbox.bridge()), address(bridge), "Invalid bridge ref");
-        assertEq(address(eventInbox.rollup()), rollup, "Invalid rollup ref");
+        assertEq(address(eventInbox.rollup()), rollup, "Invalid event inbox rollup ref");
 
         // outbox
         assertEq(address(outbox.bridge()), address(bridge), "Invalid bridge ref");
-        assertEq(address(outbox.rollup()), rollup, "Invalid rollup ref");
+        assertEq(address(outbox.rollup()), rollup, "Invalid outbox rollup ref");
 
         // revert fetching native token
         vm.expectRevert();
@@ -196,8 +194,6 @@ contract BridgeCreatorTest is Test {
             30,
             40
         );
-        timeVars.delayBlocks;
-
         BridgeCreator.BridgeContracts memory contracts = creator.createBridge(
             proxyAdmin,
             rollup,
@@ -220,7 +216,7 @@ contract BridgeCreatorTest is Test {
             );
 
         // bridge
-        assertEq(address(bridge.rollup()), rollup, "Invalid rollup ref");
+        assertEq(address(bridge.rollup()), rollup, "Invalid bridge rollup ref");
         assertEq(
             address(IERC20Bridge(address(bridge)).nativeToken()),
             nativeToken,
@@ -230,7 +226,7 @@ contract BridgeCreatorTest is Test {
 
         // seqInbox
         assertEq(address(seqInbox.bridge()), address(bridge), "Invalid bridge ref");
-        assertEq(address(seqInbox.rollup()), rollup, "Invalid rollup ref");
+        assertEq(address(seqInbox.rollup()), rollup, "Invalid seq inbox rollup ref");
         ISequencerInbox.MaxTimeVariation memory maxTimeVariation = seqInbox.maxTimeVariation();
         assertEq(maxTimeVariation.delayBlocks, timeVars.delayBlocks, "Invalid delayBlocks");
         assertEq(maxTimeVariation.futureBlocks, timeVars.futureBlocks, "Invalid futureBlocks");
@@ -245,10 +241,10 @@ contract BridgeCreatorTest is Test {
 
         // rollup event inbox
         assertEq(address(eventInbox.bridge()), address(bridge), "Invalid bridge ref");
-        assertEq(address(eventInbox.rollup()), rollup, "Invalid rollup ref");
+        assertEq(address(eventInbox.rollup()), rollup, "Invalid event inbox rollup ref");
 
         // outbox
         assertEq(address(outbox.bridge()), address(bridge), "Invalid bridge ref");
-        assertEq(address(outbox.rollup()), rollup, "Invalid rollup ref");
+        assertEq(address(outbox.rollup()), rollup, "Invalid outbox rollup ref");
     }
 }

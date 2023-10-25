@@ -68,11 +68,6 @@ contract BridgeCreator is Ownable {
         frame.bridge = IBridge(
             address(new TransparentUpgradeableProxy(address(templates.bridge), adminProxy, ""))
         );
-        frame.sequencerInbox = new SequencerInbox(
-            IBridge(frame.bridge),
-            maxTimeVariation,
-            maxDataSize
-        );
         frame.inbox = IInboxBase(
             address(new TransparentUpgradeableProxy(address(templates.inbox), adminProxy, ""))
         );
@@ -108,10 +103,17 @@ contract BridgeCreator is Ownable {
         } else {
             IERC20Bridge(address(frame.bridge)).initialize(IOwnable(rollup), nativeToken);
         }
+        frame.sequencerInbox = new SequencerInbox(
+            IBridge(frame.bridge),
+            maxTimeVariation,
+            maxDataSize
+        );
         frame.inbox.initialize(frame.bridge, frame.sequencerInbox);
         frame.rollupEventInbox.initialize(frame.bridge);
         frame.outbox.initialize(frame.bridge);
 
         return frame;
     }
+
+    event Testy(address);
 }

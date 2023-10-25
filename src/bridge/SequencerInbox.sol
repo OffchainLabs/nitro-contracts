@@ -85,6 +85,7 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         if (bridge_ == IBridge(address(0))) revert HadZeroInit();
         bridge = bridge_;
         rollup = bridge_.rollup();
+        if(address(rollup) == address(0)) revert RollupNotChanged();
         delayBlocks = maxTimeVariation_.delayBlocks;
         futureBlocks = maxTimeVariation_.futureBlocks;
         delaySeconds = maxTimeVariation_.delaySeconds;
