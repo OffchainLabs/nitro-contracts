@@ -27,12 +27,9 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
     /// @inheritdoc IERC20Bridge
     address public nativeToken;
 
-    event Hi();
-
     /// @inheritdoc IERC20Bridge
     function initialize(IOwnable rollup_, address nativeToken_) external initializer onlyDelegated {
         if (nativeToken_ == address(0)) revert InvalidTokenSet(nativeToken_);
-        emit Hi();
         nativeToken = nativeToken_;
         _activeOutbox = EMPTY_ACTIVEOUTBOX;
         rollup = rollup_;
