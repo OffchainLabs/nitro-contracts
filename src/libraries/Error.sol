@@ -86,6 +86,9 @@ error AlreadyUnpaused();
 /// @dev The contract is paused
 error Paused();
 
+/// @dev The contract is unpaused
+error Unpaused();
+
 /// @dev msg.value sent to the inbox isn't high enough
 error InsufficientValue(uint256 expected, uint256 actual);
 

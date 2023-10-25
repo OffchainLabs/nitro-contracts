@@ -14,7 +14,9 @@ import {
     NotSequencerInbox,
     NotOutbox,
     InvalidOutboxSet,
-    BadSequencerMessageNumber
+    BadSequencerMessageNumber,
+    Paused,
+    Unpaused
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./Messages.sol";
@@ -57,12 +59,26 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
 
     address internal constant EMPTY_ACTIVEOUTBOX = address(type(uint160).max);
 
+    bool internal _paused;
+
     modifier onlyRollupOrOwner() {
         if (msg.sender != address(rollup)) {
             address rollupOwner = rollup.owner();
             if (msg.sender != rollupOwner) {
                 revert NotRollupOrOwner(msg.sender, address(rollup), rollupOwner);
             }
+        }
+        _;
+    }
+    modifier whenNotPaused() {
+        if (paused()) {
+            revert Paused();
+        }
+        _;
+    }
+    modifier whenPaused() {
+        if (!paused()) {
+            revert Unpaused();
         }
         _;
     }
@@ -105,6 +121,7 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     )
         external
         onlySequencerInbox
+        whenNotPaused
         returns (
             uint256 seqMessageIndex,
             bytes32 beforeAcc,
@@ -135,6 +152,7 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     function submitBatchSpendingReport(address sender, bytes32 messageDataHash)
         external
         onlySequencerInbox
+        whenNotPaused
         returns (uint256)
     {
         return
@@ -211,7 +229,7 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
         address to,
         uint256 value,
         bytes calldata data
-    ) external returns (bool success, bytes memory returnData) {
+    ) external whenNotPaused returns (bool success, bytes memory returnData) {
         if (!allowedOutboxes(msg.sender)) revert NotOutbox(msg.sender);
         if (data.length > 0 && !to.isContract()) revert NotContract(to);
         address prevOutbox = _activeOutbox;
@@ -283,9 +301,6 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
         return sequencerInboxAccs.length;
     }
 
-    /// @dev For the classic -> nitro migration. TODO: remove post-migration.
-    function acceptFundsFromOldBridge() external payable {}
-
     /// @dev transfer funds provided to pay for crosschain msg
     function _transferFunds(uint256 amount) internal virtual;
 
@@ -299,10 +314,24 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     /// used in ArbOs to calculate the submission fee for retryable ticket
     function _baseFeeToReport() internal view virtual returns (uint256);
 
+    function pause() external onlyRollupOrOwner whenNotPaused {
+        _paused = true;
+        emit BridgePaused(msg.sender);
+    }
+
+    function unpause() external onlyRollupOrOwner whenPaused {
+        _paused = false;
+        emit BridgeUnpaused(msg.sender);
+    }
+
+    function paused() public view returns (bool) {
+        return _paused;
+    }
+
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[40] private __gap;
+    uint256[39] private __gap;
 }

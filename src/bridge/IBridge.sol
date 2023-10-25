@@ -34,6 +34,10 @@ interface IBridge {
 
     event RollupUpdated(address rollup);
 
+    event BridgePaused(address account);
+
+    event BridgeUnpaused(address account);
+
     function allowedDelayedInboxList(uint256) external returns (address);
 
     function allowedOutboxList(uint256) external returns (address);
@@ -101,4 +105,8 @@ interface IBridge {
     function setOutbox(address inbox, bool enabled) external;
 
     function updateRollupAddress(IOwnable _rollup) external;
+
+    function pause() external;
+
+    function unpause() external;
 }

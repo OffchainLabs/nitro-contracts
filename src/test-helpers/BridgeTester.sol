@@ -240,5 +240,7 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
 
     receive() external payable {}
 
-    function acceptFundsFromOldBridge() external payable {}
+    function pause() external {}
+
+    function unpause() external {}
 }
