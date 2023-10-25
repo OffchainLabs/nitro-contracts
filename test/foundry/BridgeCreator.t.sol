@@ -36,23 +36,15 @@ contract BridgeCreatorTest is Test {
 
     function getEthBasedTemplates() internal returns (BridgeCreator.BridgeTemplates memory) {
         BridgeCreator.BridgeTemplates memory templates;
-        (
-            templates.bridge,
-            templates.inbox,
-            templates.rollupEventInbox,
-            templates.outbox
-        ) = creator.ethBasedTemplates();
+        (templates.bridge, templates.inbox, templates.rollupEventInbox, templates.outbox) = creator
+            .ethBasedTemplates();
         return templates;
     }
 
     function getErc20BasedTemplates() internal returns (BridgeCreator.BridgeTemplates memory) {
         BridgeCreator.BridgeTemplates memory templates;
-        (
-            templates.bridge,
-            templates.inbox,
-            templates.rollupEventInbox,
-            templates.outbox
-        ) = creator.erc20BasedTemplates();
+        (templates.bridge, templates.inbox, templates.rollupEventInbox, templates.outbox) = creator
+            .erc20BasedTemplates();
         return templates;
     }
 

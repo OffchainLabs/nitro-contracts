@@ -110,12 +110,10 @@ contract RollupCreator is Ownable {
         returns (address)
     {
         // Make sure the immutable maxDataSize is as expected
-        (, IInboxBase ethInbox, , ) = bridgeCreator
-            .ethBasedTemplates();
+        (, IInboxBase ethInbox, , ) = bridgeCreator.ethBasedTemplates();
         require(deployParams.maxDataSize == ethInbox.maxDataSize(), "I_MAX_DATA_SIZE_MISMATCH");
 
-        (, IInboxBase erc20Inbox, , ) = bridgeCreator
-            .erc20BasedTemplates();
+        (, IInboxBase erc20Inbox, , ) = bridgeCreator.erc20BasedTemplates();
         require(deployParams.maxDataSize == erc20Inbox.maxDataSize(), "I_MAX_DATA_SIZE_MISMATCH");
 
         // create proxy admin which will manage bridge contracts

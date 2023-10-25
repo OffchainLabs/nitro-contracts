@@ -320,7 +320,6 @@ contract RollupCreatorTest is Test {
         // check proxy admin for non-rollup contracts
         address proxyAdminExpectedAddress = computeCreateAddress(address(rollupCreator), 1);
 
-        
         // seq inbox has no proxy admin
         assertEq(
             _getProxyAdmin(address(rollup.sequencerInbox())),
