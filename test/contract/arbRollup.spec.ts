@@ -185,11 +185,6 @@ const setup = async () => {
   )) as Bridge__factory
   const ethBridge = await ethBridgeFac.deploy()
 
-  const ethSequencerInboxFac = (await ethers.getContractFactory(
-    'SequencerInbox'
-  )) as SequencerInbox__factory
-  const ethSequencerInbox = await ethSequencerInboxFac.deploy(117964)
-
   const ethInboxFac = (await ethers.getContractFactory(
     'Inbox'
   )) as Inbox__factory
@@ -209,8 +204,6 @@ const setup = async () => {
     'ERC20Bridge'
   )) as ERC20Bridge__factory
   const erc20Bridge = await erc20BridgeFac.deploy()
-
-  const erc20SequencerInbox = ethSequencerInbox
 
   const erc20InboxFac = (await ethers.getContractFactory(
     'ERC20Inbox'
@@ -233,14 +226,12 @@ const setup = async () => {
   const bridgeCreator = await bridgeCreatorFac.deploy(
     {
       bridge: ethBridge.address,
-      sequencerInbox: ethSequencerInbox.address,
       inbox: ethInbox.address,
       rollupEventInbox: ethRollupEventInbox.address,
       outbox: ethOutbox.address,
     },
     {
       bridge: erc20Bridge.address,
-      sequencerInbox: erc20SequencerInbox.address,
       inbox: erc20Inbox.address,
       rollupEventInbox: erc20RollupEventInbox.address,
       outbox: erc20Outbox.address,
