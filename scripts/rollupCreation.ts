@@ -3,6 +3,12 @@ import '@nomiclabs/hardhat-ethers'
 import { run } from 'hardhat'
 import { abi as rollupCreatorAbi } from '../build/contracts/src/rollup/RollupCreator.sol/RollupCreator.json'
 import { config, maxDataSize } from './config'
+import { BigNumber } from 'ethers'
+import { IERC20__factory } from '../build/types'
+import { sleep } from './testSetup'
+
+// 1 gwei
+const MAX_FER_PER_GAS = BigNumber.from('1000000000')
 
 interface RollupCreatedEvent {
   event: string
@@ -21,7 +27,7 @@ interface RollupCreatedEvent {
   }
 }
 
-async function main() {
+export async function createRollup(feeToken?: string) {
   const rollupCreatorAddress = process.env.ROLLUP_CREATOR_ADDRESS
 
   if (!rollupCreatorAddress) {
@@ -39,25 +45,51 @@ async function main() {
 
   const [signer] = await ethers.getSigners()
 
-  const rollupCreator = await new ethers.Contract(
+  const rollupCreator = new ethers.Contract(
     rollupCreatorAddress,
     rollupCreatorAbi,
     signer
   )
+
+  if (!feeToken) {
+    feeToken = ethers.constants.AddressZero
+  }
 
   try {
     let vals: boolean[] = []
     for (let i = 0; i < config.validators.length; i++) {
       vals.push(true)
     }
+
+    //// funds for deploying L2 factories
+
+    // 0.13 ETH is enough to deploy L2 factories via retryables. Excess is refunded
+    let feeCost = ethers.utils.parseEther('0.13')
+    if (feeToken != ethers.constants.AddressZero) {
+      // in case fees are paid via fee token, then approve rollup cretor to spend required amount
+      await (
+        await IERC20__factory.connect(feeToken, signer).approve(
+          rollupCreator.address,
+          feeCost
+        )
+      ).wait()
+      feeCost = BigNumber.from(0)
+    }
+
     // Call the createRollup function
     console.log('Calling createRollup to generate a new rollup ...')
-    const createRollupTx = await rollupCreator.createRollup(
-      config.rollupConfig,
-      config.batchPoster,
-      config.validators,
-      maxDataSize
-    )
+    const deployParams = {
+      config: config.rollupConfig,
+      batchPoster: config.batchPoster,
+      validators: config.validators,
+      maxDataSize: maxDataSize,
+      nativeToken: feeToken,
+      deployFactoriesToL2: true,
+      maxFeePerGasForRetryables: MAX_FER_PER_GAS,
+    }
+    const createRollupTx = await rollupCreator.createRollup(deployParams, {
+      value: feeCost,
+    })
     const createRollupReceipt = await createRollupTx.wait()
 
     const rollupCreatedEvent = createRollupReceipt.events?.find(
@@ -82,6 +114,8 @@ async function main() {
 
       console.log("Congratulations! 🎉🎉🎉 All DONE! Here's your addresses:")
       console.log('RollupProxy Contract created at address:', rollupAddress)
+      console.log('Wait a minute before starting the contract verification')
+      await sleep(1 * 60 * 1000)
       console.log(
         `Attempting to verify Rollup contract at address ${rollupAddress}...`
       )
@@ -131,10 +165,3 @@ async function main() {
     )
   }
 }
-
-main()
-  .then(() => process.exit(0))
-  .catch((error: Error) => {
-    console.error(error)
-    process.exit(1)
-  })

@@ -21,10 +21,11 @@ import {
     AlreadyValidDASKeyset,
     NoSuchKeyset,
     NotForked,
-    NotOwner
+    NotOwner,
+    RollupNotChanged
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
-import "./IInbox.sol";
+import "./IInboxBase.sol";
 import "./ISequencerInbox.sol";
 import "../rollup/IRollupLogic.sol";
 import "./Messages.sol";
@@ -93,6 +94,15 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
 
     function _chainIdChanged() internal view returns (bool) {
         return deployTimeChainId != block.chainid;
+    }
+
+    /// @inheritdoc ISequencerInbox
+    function updateRollupAddress() external {
+        if (msg.sender != IOwnable(rollup).owner())
+            revert NotOwner(msg.sender, IOwnable(rollup).owner());
+        IOwnable newRollup = bridge.rollup();
+        if (rollup == newRollup) revert RollupNotChanged();
+        rollup = newRollup;
     }
 
     function getTimeBounds() internal view virtual returns (TimeBounds memory) {

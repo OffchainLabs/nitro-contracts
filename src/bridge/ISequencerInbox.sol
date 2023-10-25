@@ -164,4 +164,7 @@ interface ISequencerInbox is IDelayedMessageProvider {
      * @param isSequencer_ if the specified address should be authorized as a sequencer
      */
     function setIsSequencer(address addr, bool isSequencer_) external;
+
+    /// @notice Allows the rollup owner to sync the rollup address
+    function updateRollupAddress() external;
 }
