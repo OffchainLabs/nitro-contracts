@@ -172,7 +172,7 @@ contract Bridge is Initializable, DelegateCallAware, IBridge {
         uint8 kind,
         address sender,
         bytes32 messageDataHash
-    ) external payable whenNotPaused returns (uint256) {
+    ) external payable returns (uint256) {
         if (!allowedDelayedInboxesMap[msg.sender].allowed) revert NotDelayedInbox(msg.sender);
         return
             addMessageToDelayedAccumulator(
