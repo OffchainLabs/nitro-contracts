@@ -9,6 +9,7 @@ pragma experimental ABIEncoderV2;
 import "../libraries/IGasRefunder.sol";
 import "./IDelayedMessageProvider.sol";
 import "./IBridge.sol";
+import "./ICommon.sol";
 
 interface ISequencerInbox is IDelayedMessageProvider {
     /// @notice The maximum amount of time variatin between a message being posted on the L1 and being executed on the L2
@@ -23,29 +24,6 @@ interface ISequencerInbox is IDelayedMessageProvider {
         uint256 futureSeconds;
     }
 
-    struct TimeBounds {
-        uint64 minTimestamp;
-        uint64 maxTimestamp;
-        uint64 minBlockNumber;
-        uint64 maxBlockNumber;
-    }
-
-    enum BatchDataLocation {
-        TxInput,
-        SeparateBatchEvent,
-        NoData
-    }
-
-    event SequencerBatchDelivered(
-        uint256 indexed batchSequenceNumber,
-        bytes32 indexed beforeAcc,
-        bytes32 indexed afterAcc,
-        bytes32 delayedAcc,
-        uint256 afterDelayedMessagesRead,
-        TimeBounds timeBounds,
-        BatchDataLocation dataLocation
-    );
-
     event OwnerFunctionCalled(uint256 indexed id);
 
     /// @dev a separate event that emits batch data when this isn't easily accessible in the tx.input
@@ -57,6 +35,8 @@ interface ISequencerInbox is IDelayedMessageProvider {
     /// @dev a keyset was invalidated
     event InvalidateKeyset(bytes32 indexed keysetHash);
 
+    /// @notice The total number of delated messages read in the bridge
+    /// @dev    We surface this here for backwards compatibility
     function totalDelayedMessagesRead() external view returns (uint256);
 
     function bridge() external view returns (IBridge);
