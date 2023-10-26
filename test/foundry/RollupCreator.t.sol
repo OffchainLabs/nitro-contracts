@@ -34,18 +34,16 @@ contract RollupCreatorTest is Test {
     uint256 public constant MAX_FEE_PER_GAS = 1_000_000_000;
     uint256 public constant MAX_DATA_SIZE = 117_964;
 
-    BridgeCreator.BridgeContracts public ethBasedTemplates =
-        BridgeCreator.BridgeContracts({
+    BridgeCreator.BridgeTemplates public ethBasedTemplates =
+        BridgeCreator.BridgeTemplates({
             bridge: new Bridge(),
-            sequencerInbox: new SequencerInbox(MAX_DATA_SIZE),
             inbox: new Inbox(MAX_DATA_SIZE),
             rollupEventInbox: new RollupEventInbox(),
             outbox: new Outbox()
         });
-    BridgeCreator.BridgeContracts public erc20BasedTemplates =
-        BridgeCreator.BridgeContracts({
+    BridgeCreator.BridgeTemplates public erc20BasedTemplates =
+        BridgeCreator.BridgeTemplates({
             bridge: new ERC20Bridge(),
-            sequencerInbox: ethBasedTemplates.sequencerInbox,
             inbox: new ERC20Inbox(MAX_DATA_SIZE),
             rollupEventInbox: new ERC20RollupEventInbox(),
             outbox: new ERC20Outbox()
@@ -169,9 +167,10 @@ contract RollupCreatorTest is Test {
         // check proxy admin for non-rollup contracts
         address proxyAdminExpectedAddress = computeCreateAddress(address(rollupCreator), 1);
 
+        // seq inbox has no proxy admin
         assertEq(
             _getProxyAdmin(address(rollup.sequencerInbox())),
-            proxyAdminExpectedAddress,
+            address(0),
             "Invalid seqInbox' proxyAdmin owner"
         );
         assertEq(
@@ -203,7 +202,7 @@ contract RollupCreatorTest is Test {
         // check upgrade executor owns proxyAdmin
         address upgradeExecutorExpectedAddress = computeCreateAddress(address(rollupCreator), 4);
         assertEq(
-            ProxyAdmin(_getProxyAdmin(address(rollup.sequencerInbox()))).owner(),
+            ProxyAdmin(_getProxyAdmin(address(rollup.inbox()))).owner(),
             upgradeExecutorExpectedAddress,
             "Invalid proxyAdmin's owner"
         );
@@ -302,7 +301,6 @@ contract RollupCreatorTest is Test {
         /// rollup proxy
         assertEq(_getPrimary(rollupAddress), address(rollupAdmin), "Invalid proxy primary impl");
         assertEq(_getSecondary(rollupAddress), address(rollupUser), "Invalid proxy secondary impl");
-
         /// rollup check
         RollupCore rollup = RollupCore(rollupAddress);
         assertTrue(address(rollup.sequencerInbox()) != address(0), "Invalid seqInbox");
@@ -328,9 +326,10 @@ contract RollupCreatorTest is Test {
         // check proxy admin for non-rollup contracts
         address proxyAdminExpectedAddress = computeCreateAddress(address(rollupCreator), 1);
 
+        // seq inbox has no proxy admin
         assertEq(
             _getProxyAdmin(address(rollup.sequencerInbox())),
-            proxyAdminExpectedAddress,
+            address(0),
             "Invalid seqInbox' proxyAdmin owner"
         );
         assertEq(
@@ -362,10 +361,11 @@ contract RollupCreatorTest is Test {
         // check upgrade executor owns proxyAdmin
         address upgradeExecutorExpectedAddress = computeCreateAddress(address(rollupCreator), 4);
         assertEq(
-            ProxyAdmin(_getProxyAdmin(address(rollup.sequencerInbox()))).owner(),
+            ProxyAdmin(_getProxyAdmin(address(rollup.inbox()))).owner(),
             upgradeExecutorExpectedAddress,
             "Invalid proxyAdmin's owner"
         );
+        console.log("c2");
 
         // upgrade executor owns rollup
         assertEq(
@@ -378,6 +378,7 @@ contract RollupCreatorTest is Test {
             upgradeExecutorExpectedAddress,
             "Invalid rollup's proxyAdmin owner"
         );
+        console.log("d");
 
         // check rollupOwner has executor role
         AccessControlUpgradeable executor = AccessControlUpgradeable(

@@ -190,3 +190,6 @@ error InvalidBlobMetadata();
 
 /// @dev Thrown when rollup is not updated with updateRollupAddress
 error RollupNotChanged();
+
+/// @dev Thrown when reading the total delayed messages and getting 0 when a non zero value is expected
+error EmptyDelayedMessagesRead();

@@ -9,38 +9,20 @@ pragma experimental ABIEncoderV2;
 import "../libraries/IGasRefunder.sol";
 import "./IDelayedMessageProvider.sol";
 import "./IBridge.sol";
+import "./ICommon.sol";
 
 interface ISequencerInbox is IDelayedMessageProvider {
+    /// @notice The maximum amount of time variatin between a message being posted on the L1 and being executed on the L2
+    /// @param delayBlocks The max amount of blocks in the past that a message can be received on L2
+    /// @param futureBlocks The max amount of blocks in the future that a message can be received on L2
+    /// @param delaySeconds The max amount of seconds in the past that a message can be received on L2
+    /// @param futureSeconds The max amount of seconds in the future that a message can be received on L2
     struct MaxTimeVariation {
         uint256 delayBlocks;
         uint256 futureBlocks;
         uint256 delaySeconds;
         uint256 futureSeconds;
     }
-
-    struct TimeBounds {
-        uint64 minTimestamp;
-        uint64 maxTimestamp;
-        uint64 minBlockNumber;
-        uint64 maxBlockNumber;
-    }
-
-    enum BatchDataLocation {
-        TxInput,
-        SeparateBatchEvent,
-        NoData,
-        Blob
-    }
-
-    event SequencerBatchDelivered(
-        uint256 indexed batchSequenceNumber,
-        bytes32 indexed beforeAcc,
-        bytes32 indexed afterAcc,
-        bytes32 delayedAcc,
-        uint256 afterDelayedMessagesRead,
-        TimeBounds timeBounds,
-        BatchDataLocation dataLocation
-    );
 
     event OwnerFunctionCalled(uint256 indexed id);
 
@@ -53,6 +35,8 @@ interface ISequencerInbox is IDelayedMessageProvider {
     /// @dev a keyset was invalidated
     event InvalidateKeyset(bytes32 indexed keysetHash);
 
+    /// @notice The total number of delated messages read in the bridge
+    /// @dev    We surface this here for backwards compatibility
     function totalDelayedMessagesRead() external view returns (uint256);
 
     function bridge() external view returns (IBridge);
@@ -89,20 +73,10 @@ interface ISequencerInbox is IDelayedMessageProvider {
         uint64 creationBlock;
     }
 
-    function maxTimeVariation()
-        external
-        view
-        returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        );
+    /// @notice Returns the max time variation settings for this sequencer inbox
+    function maxTimeVariation() external view returns (ISequencerInbox.MaxTimeVariation memory);
 
     function dasKeySetInfo(bytes32) external view returns (bool, uint64);
-
-    /// @notice Remove force inclusion delay after a L1 chainId fork
-    function removeDelayAfterFork() external;
 
     /// @notice Force messages from the delayed inbox to be included in the chain
     ///         Callable by any address, but message can only be force-included after maxTimeVariation.delayBlocks and
@@ -138,7 +112,9 @@ interface ISequencerInbox is IDelayedMessageProvider {
         uint256 sequenceNumber,
         bytes calldata data,
         uint256 afterDelayedMessagesRead,
-        IGasRefunder gasRefunder
+        IGasRefunder gasRefunder,
+        uint256 prevMessageCount,
+        uint256 newMessageCount
     ) external;
 
     function addSequencerL2Batch(
@@ -151,12 +127,6 @@ interface ISequencerInbox is IDelayedMessageProvider {
     ) external;
 
     // ---------- onlyRollupOrOwner functions ----------
-
-    /**
-     * @notice Set max delay for sequencer inbox
-     * @param maxTimeVariation_ the maximum time variation parameters
-     */
-    function setMaxTimeVariation(MaxTimeVariation memory maxTimeVariation_) external;
 
     /**
      * @notice Updates whether an address is authorized to be a batch poster at the sequencer inbox
@@ -185,15 +155,7 @@ interface ISequencerInbox is IDelayedMessageProvider {
      */
     function setIsSequencer(address addr, bool isSequencer_) external;
 
-    // ---------- initializer ----------
-
-    function initialize(
-        IBridge bridge_,
-        MaxTimeVariation calldata maxTimeVariation_,
-        IDataHashReader dataHashReader_,
-        IBlobBasefeeReader blobBasefeeReader_
-    ) external;
-
+    /// @notice Allows the rollup owner to sync the rollup address
     function updateRollupAddress() external;
 }
 
