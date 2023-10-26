@@ -71,6 +71,8 @@ interface ISequencerInbox is IDelayedMessageProvider {
 
     function isSequencer(address) external view returns (bool);
 
+    function maxDataSize() external view returns (uint256);
+
     struct DasKeySetInfo {
         bool isValidKeyset;
         uint64 creationBlock;
@@ -175,4 +177,6 @@ interface ISequencerInbox is IDelayedMessageProvider {
     // ---------- initializer ----------
 
     function initialize(IBridge bridge_, MaxTimeVariation calldata maxTimeVariation_) external;
+
+    function updateRollupAddress() external;
 }

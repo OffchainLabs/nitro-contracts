@@ -4,44 +4,21 @@
 
 pragma solidity ^0.8.0;
 
-import "./IRollupEventInbox.sol";
-import "../bridge/IBridge.sol";
-import "../bridge/IDelayedMessageProvider.sol";
-import "../libraries/DelegateCallAware.sol";
-import {INITIALIZATION_MSG_TYPE} from "../libraries/MessageTypes.sol";
-import {AlreadyInit, HadZeroInit} from "../libraries/Error.sol";
+import "./AbsRollupEventInbox.sol";
+import "../bridge/IEthBridge.sol";
 
 /**
  * @title The inbox for rollup protocol events
  */
-contract RollupEventInbox is IRollupEventInbox, IDelayedMessageProvider, DelegateCallAware {
-    IBridge public override bridge;
-    address public override rollup;
+contract RollupEventInbox is AbsRollupEventInbox {
+    constructor() AbsRollupEventInbox() {}
 
-    modifier onlyRollup() {
-        require(msg.sender == rollup, "ONLY_ROLLUP");
-        _;
-    }
-
-    function initialize(IBridge _bridge) external override onlyDelegated {
-        if (address(bridge) != address(0)) revert AlreadyInit();
-        if (address(_bridge) == address(0)) revert HadZeroInit();
-        bridge = _bridge;
-        rollup = address(_bridge.rollup());
-    }
-
-    function rollupInitialized(uint256 chainId, string calldata chainConfig)
-        external
-        override
-        onlyRollup
-    {
-        require(bytes(chainConfig).length > 0, "EMPTY_CHAIN_CONFIG");
-        bytes memory initMsg = abi.encodePacked(chainId, uint8(0), chainConfig);
-        uint256 num = bridge.enqueueDelayedMessage(
-            INITIALIZATION_MSG_TYPE,
-            address(0),
-            keccak256(initMsg)
-        );
-        emit InboxMessageDelivered(num, initMsg);
+    function _enqueueInitializationMsg(bytes memory initMsg) internal override returns (uint256) {
+        return
+            IEthBridge(address(bridge)).enqueueDelayedMessage(
+                INITIALIZATION_MSG_TYPE,
+                address(0),
+                keccak256(initMsg)
+            );
     }
 }
