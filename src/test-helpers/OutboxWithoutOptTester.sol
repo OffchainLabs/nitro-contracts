@@ -48,10 +48,16 @@ contract OutboxWithoutOptTester is DelegateCallAware, IOutbox {
         rollup = address(_bridge.rollup());
     }
 
+    function postUpgradeInit() external {}
+
     function updateSendRoot(bytes32 root, bytes32 l2BlockHash) external override {
         //if (msg.sender != rollup) revert NotRollup(msg.sender, rollup);  //test only!!!
         roots[root] = l2BlockHash;
         emit SendRootUpdated(root, l2BlockHash);
+    }
+
+    function updateRollupAddress() external onlyDelegated onlyProxyOwner {
+        rollup = address(bridge.rollup());
     }
 
     /// @notice When l2ToL1Sender returns a nonzero address, the message was originated by an L2 account

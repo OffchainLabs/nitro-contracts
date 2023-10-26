@@ -74,6 +74,10 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
         rollup = rollup_;
     }
 
+    function updateRollupAddress(IOwnable _rollup) external {
+        rollup = _rollup;
+    }
+
     function activeOutbox() public view returns (address) {
         if (_activeOutbox == EMPTY_ACTIVEOUTBOX) return address(uint160(0));
         return _activeOutbox;

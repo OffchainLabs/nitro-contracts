@@ -193,6 +193,8 @@ interface ISequencerInbox is IDelayedMessageProvider {
         IDataHashReader dataHashReader_,
         IBlobBasefeeReader blobBasefeeReader_
     ) external;
+
+    function updateRollupAddress() external;
 }
 
 interface IDataHashReader {
