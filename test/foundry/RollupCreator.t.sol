@@ -32,23 +32,20 @@ contract RollupCreatorTest is Test {
     uint256 public constant MAX_FEE_PER_GAS = 1_000_000_000;
     uint256 public constant MAX_DATA_SIZE = 117_964;
 
-    BridgeCreator.BridgeContracts public ethBasedTemplates =
-        BridgeCreator.BridgeContracts({
-            bridge: new Bridge(),
-            sequencerInbox: new SequencerInbox(MAX_DATA_SIZE),
-            inbox: new Inbox(MAX_DATA_SIZE),
-            rollupEventInbox: new RollupEventInbox(),
-            outbox: new Outbox()
-        });
-    BridgeCreator.BridgeContracts public erc20BasedTemplates =
-        BridgeCreator.BridgeContracts({
-            bridge: new ERC20Bridge(),
-            sequencerInbox: ethBasedTemplates.sequencerInbox,
-            inbox: new ERC20Inbox(MAX_DATA_SIZE),
-            rollupEventInbox: new ERC20RollupEventInbox(),
-            outbox: new ERC20Outbox()
-        });
-
+    BridgeCreator.BridgeContracts public ethBasedTemplates = BridgeCreator.BridgeContracts({
+        bridge: new Bridge(),
+        sequencerInbox: new SequencerInbox(MAX_DATA_SIZE),
+        inbox: new Inbox(MAX_DATA_SIZE),
+        rollupEventInbox: new RollupEventInbox(),
+        outbox: new Outbox()
+    });
+    BridgeCreator.BridgeContracts public erc20BasedTemplates = BridgeCreator.BridgeContracts({
+        bridge: new ERC20Bridge(),
+        sequencerInbox: ethBasedTemplates.sequencerInbox,
+        inbox: new ERC20Inbox(MAX_DATA_SIZE),
+        rollupEventInbox: new ERC20RollupEventInbox(),
+        outbox: new ERC20Outbox()
+    });
 
     /* solhint-disable func-name-mixedcase */
     function setUp() public {
@@ -92,12 +89,8 @@ contract RollupCreatorTest is Test {
         vm.startPrank(deployer);
 
         // deployment params
-        ISequencerInbox.MaxTimeVariation memory timeVars = ISequencerInbox.MaxTimeVariation(
-            ((60 * 60 * 24) / 15),
-            12,
-            60 * 60 * 24,
-            60 * 60
-        );
+        ISequencerInbox.MaxTimeVariation memory timeVars =
+            ISequencerInbox.MaxTimeVariation(((60 * 60 * 24) / 15), 12, 60 * 60 * 24, 60 * 60);
         Config memory config = Config({
             confirmPeriodBlocks: 20,
             extraChallengeTimeBlocks: 200,
@@ -123,9 +116,18 @@ contract RollupCreatorTest is Test {
         validators[0] = makeAddr("validator1");
         validators[1] = makeAddr("validator2");
 
-        address rollupAddress = rollupCreator.createRollup{value: factoryDeploymentFunds}(
-            config, batchPoster, validators, MAX_DATA_SIZE, address(0), true, MAX_FEE_PER_GAS
-        );
+        RollupCreator.RollupDeploymentParams memory deployParams = RollupCreator
+            .RollupDeploymentParams({
+            config: config,
+            batchPoster: batchPoster,
+            validators: validators,
+            maxDataSize: MAX_DATA_SIZE,
+            nativeToken: address(0),
+            deployFactoriesToL2: true,
+            maxFeePerGasForRetryables: MAX_FEE_PER_GAS
+        });
+        address rollupAddress =
+            rollupCreator.createRollup{value: factoryDeploymentFunds}(deployParams);
 
         vm.stopPrank();
 
@@ -197,9 +199,7 @@ contract RollupCreatorTest is Test {
 
         // upgrade executor owns rollup
         assertEq(
-            IOwnable(rollupAddress).owner(),
-            upgradeExecutorExpectedAddress,
-            "Invalid rollup owner"
+            IOwnable(rollupAddress).owner(), upgradeExecutorExpectedAddress, "Invalid rollup owner"
         );
         assertEq(
             _getProxyAdmin(rollupAddress),
@@ -208,36 +208,26 @@ contract RollupCreatorTest is Test {
         );
 
         // check rollupOwner has executor role
-        AccessControlUpgradeable executor = AccessControlUpgradeable(
-            upgradeExecutorExpectedAddress
-        );
+        AccessControlUpgradeable executor = AccessControlUpgradeable(upgradeExecutorExpectedAddress);
         assertTrue(
-            executor.hasRole(keccak256("EXECUTOR_ROLE"), rollupOwner),
-            "Invalid executor role"
+            executor.hasRole(keccak256("EXECUTOR_ROLE"), rollupOwner), "Invalid executor role"
         );
 
         // check funds are refunded
         uint256 balanceAfter = deployer.balance;
-        uint256 factoryDeploymentCost = deployHelper.getDeploymentTotalCost(
-            rollup.inbox(),
-            MAX_FEE_PER_GAS
-        );
+        uint256 factoryDeploymentCost =
+            deployHelper.getDeploymentTotalCost(rollup.inbox(), MAX_FEE_PER_GAS);
         assertEq(balanceBefore - balanceAfter, factoryDeploymentCost, "Invalid balance");
     }
 
     function test_createErc20Rollup() public {
         vm.startPrank(deployer);
-        address nativeToken = address(
-            new ERC20PresetFixedSupply("Appchain Token", "App", 1_000_000 ether, deployer)
-        );
+        address nativeToken =
+            address(new ERC20PresetFixedSupply("Appchain Token", "App", 1_000_000 ether, deployer));
 
         // deployment params
-        ISequencerInbox.MaxTimeVariation memory timeVars = ISequencerInbox.MaxTimeVariation(
-            ((60 * 60 * 24) / 15),
-            12,
-            60 * 60 * 24,
-            60 * 60
-        );
+        ISequencerInbox.MaxTimeVariation memory timeVars =
+            ISequencerInbox.MaxTimeVariation(((60 * 60 * 24) / 15), 12, 60 * 60 * 24, 60 * 60);
         Config memory config = Config({
             confirmPeriodBlocks: 20,
             extraChallengeTimeBlocks: 200,
@@ -253,9 +243,7 @@ contract RollupCreatorTest is Test {
         });
 
         // approve fee token to pay for deployment of L2 factories
-        uint256 expectedCost = 0.1247 ether +
-            4 *
-            (1400 * 100_000_000_000 + 100_000 * 1_000_000_000);
+        uint256 expectedCost = 0.1247 ether + 4 * (1400 * 100_000_000_000 + 100_000 * 1_000_000_000);
         IERC20(nativeToken).approve(address(rollupCreator), expectedCost);
 
         /// deploy rollup
@@ -263,9 +251,19 @@ contract RollupCreatorTest is Test {
         address[] memory validators = new address[](2);
         validators[0] = makeAddr("validator1");
         validators[1] = makeAddr("validator2");
-        address rollupAddress = rollupCreator.createRollup(
-            config, batchPoster, validators, MAX_DATA_SIZE, nativeToken, true, MAX_FEE_PER_GAS
-        );
+
+        RollupCreator.RollupDeploymentParams memory deployParams = RollupCreator
+            .RollupDeploymentParams({
+            config: config,
+            batchPoster: batchPoster,
+            validators: validators,
+            maxDataSize: MAX_DATA_SIZE,
+            nativeToken: nativeToken,
+            deployFactoriesToL2: true,
+            maxFeePerGasForRetryables: MAX_FEE_PER_GAS
+        });
+
+        address rollupAddress = rollupCreator.createRollup(deployParams);
 
         vm.stopPrank();
 
@@ -295,9 +293,7 @@ contract RollupCreatorTest is Test {
         // native token check
         IBridge bridge = RollupCore(address(rollupAddress)).bridge();
         assertEq(
-            IERC20Bridge(address(bridge)).nativeToken(),
-            nativeToken,
-            "Invalid native token ref"
+            IERC20Bridge(address(bridge)).nativeToken(), nativeToken, "Invalid native token ref"
         );
 
         // check proxy admin for non-rollup contracts
@@ -344,9 +340,7 @@ contract RollupCreatorTest is Test {
 
         // upgrade executor owns rollup
         assertEq(
-            IOwnable(rollupAddress).owner(),
-            upgradeExecutorExpectedAddress,
-            "Invalid rollup owner"
+            IOwnable(rollupAddress).owner(), upgradeExecutorExpectedAddress, "Invalid rollup owner"
         );
         assertEq(
             _getProxyAdmin(rollupAddress),
@@ -355,12 +349,9 @@ contract RollupCreatorTest is Test {
         );
 
         // check rollupOwner has executor role
-        AccessControlUpgradeable executor = AccessControlUpgradeable(
-            upgradeExecutorExpectedAddress
-        );
+        AccessControlUpgradeable executor = AccessControlUpgradeable(upgradeExecutorExpectedAddress);
         assertTrue(
-            executor.hasRole(keccak256("EXECUTOR_ROLE"), rollupOwner),
-            "Invalid executor role"
+            executor.hasRole(keccak256("EXECUTOR_ROLE"), rollupOwner), "Invalid executor role"
         );
     }
 
@@ -368,12 +359,8 @@ contract RollupCreatorTest is Test {
         vm.startPrank(deployer);
 
         // deployment params
-        ISequencerInbox.MaxTimeVariation memory timeVars = ISequencerInbox.MaxTimeVariation(
-            ((60 * 60 * 24) / 15),
-            12,
-            60 * 60 * 24,
-            60 * 60
-        );
+        ISequencerInbox.MaxTimeVariation memory timeVars =
+            ISequencerInbox.MaxTimeVariation(((60 * 60 * 24) / 15), 12, 60 * 60 * 24, 60 * 60);
         Config memory config = Config({
             confirmPeriodBlocks: 20,
             extraChallengeTimeBlocks: 200,
@@ -397,9 +384,19 @@ contract RollupCreatorTest is Test {
         address[] memory validators = new address[](2);
         validators[0] = makeAddr("validator1");
         validators[1] = makeAddr("validator2");
-        address rollupAddress = rollupCreator.createRollup{value: factoryDeploymentFunds}(
-            config, batchPoster, validators, MAX_DATA_SIZE, address(0), true, MAX_FEE_PER_GAS
-        );
+
+        RollupCreator.RollupDeploymentParams memory deployParams = RollupCreator
+            .RollupDeploymentParams({
+            config: config,
+            batchPoster: batchPoster,
+            validators: validators,
+            maxDataSize: MAX_DATA_SIZE,
+            nativeToken: address(0),
+            deployFactoriesToL2: true,
+            maxFeePerGasForRetryables: MAX_FEE_PER_GAS
+        });
+        address rollupAddress =
+            rollupCreator.createRollup{value: factoryDeploymentFunds}(deployParams);
 
         vm.stopPrank();
 
@@ -407,16 +404,12 @@ contract RollupCreatorTest is Test {
         RollupCore rollup = RollupCore(rollupAddress);
         address inbox = address(rollup.inbox());
         address proxyAdmin = computeCreateAddress(address(rollupCreator), 1);
-        IUpgradeExecutor upgradeExecutor = IUpgradeExecutor(
-            computeCreateAddress(address(rollupCreator), 4)
-        );
+        IUpgradeExecutor upgradeExecutor =
+            IUpgradeExecutor(computeCreateAddress(address(rollupCreator), 4));
 
         Dummy newLogicImpl = new Dummy();
         bytes memory data = abi.encodeWithSelector(
-            ProxyUpgradeAction.perform.selector,
-            address(proxyAdmin),
-            inbox,
-            address(newLogicImpl)
+            ProxyUpgradeAction.perform.selector, address(proxyAdmin), inbox, address(newLogicImpl)
         );
 
         address upgradeAction = address(new ProxyUpgradeAction());
@@ -468,19 +461,14 @@ contract RollupCreatorTest is Test {
     }
 
     function _getSecondary(address proxy) internal view returns (address) {
-        bytes32 secondarySlot = bytes32(
-            uint256(keccak256("eip1967.proxy.implementation.secondary")) - 1
-        );
+        bytes32 secondarySlot =
+            bytes32(uint256(keccak256("eip1967.proxy.implementation.secondary")) - 1);
         return address(uint160(uint256(vm.load(proxy, secondarySlot))));
     }
 }
 
 contract ProxyUpgradeAction {
-    function perform(
-        address admin,
-        address payable target,
-        address newLogic
-    ) public payable {
+    function perform(address admin, address payable target, address newLogic) public payable {
         ProxyAdmin(admin).upgrade(TransparentUpgradeableProxy(target), newLogic);
     }
 }

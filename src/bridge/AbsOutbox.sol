@@ -12,7 +12,9 @@ import {
     UnknownRoot,
     AlreadySpent,
     BridgeCallFailed,
-    HadZeroInit
+    HadZeroInit,
+    BadPostUpgradeInit,
+    RollupNotChanged
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./IOutbox.sol";
@@ -75,6 +77,28 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         });
         bridge = _bridge;
         rollup = address(_bridge.rollup());
+    }
+
+    function postUpgradeInit() external onlyDelegated onlyProxyOwner {
+        // prevent postUpgradeInit within a withdrawal
+        if (context.l2Block != L2BLOCK_DEFAULT_CONTEXT) revert BadPostUpgradeInit();
+        context = L2ToL1Context({
+            l2Block: L2BLOCK_DEFAULT_CONTEXT,
+            l1Block: L1BLOCK_DEFAULT_CONTEXT,
+            timestamp: TIMESTAMP_DEFAULT_CONTEXT,
+            outputId: OUTPUTID_DEFAULT_CONTEXT,
+            sender: SENDER_DEFAULT_CONTEXT,
+            withdrawalAmount: _defaultContextAmount()
+        });
+    }
+
+    /// @notice Allows the rollup owner to sync the rollup address
+    function updateRollupAddress() external {
+        if (msg.sender != IOwnable(rollup).owner())
+            revert NotOwner(msg.sender, IOwnable(rollup).owner());
+        address newRollup = address(bridge.rollup());
+        if (rollup == newRollup) revert RollupNotChanged();
+        rollup = newRollup;
     }
 
     function updateSendRoot(bytes32 root, bytes32 l2BlockHash) external {
