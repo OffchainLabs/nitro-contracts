@@ -14,7 +14,7 @@
 
 pragma solidity ^0.8.0;
 
-import "bn254/Utils.sol";
+import "./Utils.sol";
 
 /// @notice Barreto-Naehrig curve over a 254 bit prime field
 library BN254 {

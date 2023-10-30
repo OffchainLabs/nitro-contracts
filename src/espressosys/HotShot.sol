@@ -1,6 +1,6 @@
 pragma solidity ^0.8.0;
 
-import { BN254 } from "bn254/BN254.sol";
+import { BN254 } from "./lib/bn254/BN254.sol";
 import { BLSSig } from "./libraries/BLSSig.sol";
 
 import { BN256G2 } from "./libraries//BN256G2.sol";
@@ -9,11 +9,11 @@ contract HotShot {
     event NewStakingKey(BN254.G2Point stakingKey, uint256 amount, uint256 index);
 
     uint256 public constant MAX_BLOCKS = 500;
-    mapping(uint256 blockHeight => uint256 commitment) public commitments;
+    mapping(uint256 => uint256) public commitments;
     uint256 public blockHeight;
 
     // Stake table related data structures
-    mapping(uint256 index => uint256 amount) private _stakeAmounts;
+    mapping(uint256 => uint256) private _stakeAmounts;
     BN254.G2Point[] private _stakingKeys;
 
     event NewBlocks(uint256 firstBlockNumber, uint256 numBlocks);
