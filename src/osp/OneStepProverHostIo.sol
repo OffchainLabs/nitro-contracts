@@ -105,7 +105,7 @@ contract OneStepProverHostIo is IOneStepProver {
         ExecutionContext calldata,
         Machine memory mach,
         Module memory mod,
-        Instruction calldata,
+        Instruction calldata inst,
         bytes calldata proof
     ) internal pure {
         uint256 preimageOffset = mach.valueStack.pop().assumeI32();
@@ -128,9 +128,30 @@ contract OneStepProverHostIo is IOneStepProver {
         bytes memory extracted;
         uint8 proofType = uint8(proof[proofOffset]);
         proofOffset++;
-        if (proofType == 0) {
+        // These values must be kept in sync with `arbitrator/arbutil/src/types.rs`
+        // and `arbutil/preimage_type.go` (both in the nitro repo).
+        if (inst.argumentData == 0) {
+            // The machine is asking for a keccak256 preimage
+
+            if (proofType == 0) {
+                bytes calldata preimage = proof[proofOffset:];
+                require(keccak256(preimage) == leafContents, "BAD_PREIMAGE");
+
+                uint256 preimageEnd = preimageOffset + 32;
+                if (preimageEnd > preimage.length) {
+                    preimageEnd = preimage.length;
+                }
+                extracted = preimage[preimageOffset:preimageEnd];
+            } else {
+                // TODO: support proving via an authenticated contract
+                revert("UNKNOWN_PREIMAGE_PROOF");
+            }
+        } else if (inst.argumentData == 1) {
+            // The machine is asking for a sha2-256 preimage
+
+            require(proofType == 0, "UNKNOWN_PREIMAGE_PROOF");
             bytes calldata preimage = proof[proofOffset:];
-            require(keccak256(preimage) == leafContents, "BAD_PREIMAGE");
+            require(sha256(preimage) == leafContents, "BAD_PREIMAGE");
 
             uint256 preimageEnd = preimageOffset + 32;
             if (preimageEnd > preimage.length) {
@@ -138,8 +159,7 @@ contract OneStepProverHostIo is IOneStepProver {
             }
             extracted = preimage[preimageOffset:preimageEnd];
         } else {
-            // TODO: support proving via an authenticated contract
-            revert("UNKNOWN_PREIMAGE_PROOF");
+            revert("UNKNOWN_PREIMAGE_TYPE");
         }
 
         for (uint256 i = 0; i < extracted.length; i++) {
