@@ -9,7 +9,6 @@ pragma experimental ABIEncoderV2;
 import "../libraries/IGasRefunder.sol";
 import "./IDelayedMessageProvider.sol";
 import "./IBridge.sol";
-import "./ICommon.sol";
 
 interface ISequencerInbox is IDelayedMessageProvider {
     /// @notice The maximum amount of time variatin between a message being posted on the L1 and being executed on the L2

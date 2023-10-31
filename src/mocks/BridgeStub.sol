@@ -72,23 +72,13 @@ contract BridgeStub is IBridge, IEthBridge {
             );
     }
 
-    event SequencerBatchDelivered(
-        uint256 indexed batchSequenceNumber,
-        bytes32 indexed beforeAcc,
-        bytes32 indexed afterAcc,
-        bytes32 delayedAcc,
-        uint256 afterDelayedMessagesRead,
-        ICommon.TimeBounds timeBounds,
-        ICommon.BatchDataLocation dataLocation
-    );
-
     function enqueueSequencerMessage(
         bytes32 dataHash,
         uint256 afterDelayedMessagesRead,
         uint256 prevMessageCount,
         uint256 newMessageCount,
-        ICommon.TimeBounds memory timeBounds,
-        ICommon.BatchDataLocation batchDataLocation
+        TimeBounds memory timeBounds,
+        BatchDataLocation batchDataLocation
     )
         external
         returns (
@@ -127,7 +117,8 @@ contract BridgeStub is IBridge, IEthBridge {
             delayedAcc,
             afterDelayedMessagesRead,
             timeBounds,
-            batchDataLocation
+            batchDataLocation,
+            msg.sender
         );
     }
 

@@ -63,16 +63,6 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
 
     address internal constant EMPTY_ACTIVEOUTBOX = address(type(uint160).max);
 
-    event SequencerBatchDelivered(
-        uint256 indexed batchSequenceNumber,
-        bytes32 indexed beforeAcc,
-        bytes32 indexed afterAcc,
-        bytes32 delayedAcc,
-        uint256 afterDelayedMessagesRead,
-        ICommon.TimeBounds timeBounds,
-        ICommon.BatchDataLocation dataLocation
-    );
-
     function postUpgradeInit() external onlyDelegated onlyProxyOwner {
         totalDelayedMessagesRead = ISequencerInbox(sequencerInbox).totalDelayedMessagesRead();
         if (totalDelayedMessagesRead == 0) revert EmptyDelayedMessagesRead();
@@ -123,8 +113,8 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
         uint256 afterDelayedMessagesRead,
         uint256 prevMessageCount,
         uint256 newMessageCount,
-        ICommon.TimeBounds memory timeBounds,
-        ICommon.BatchDataLocation batchDataLocation
+        TimeBounds memory timeBounds,
+        BatchDataLocation batchDataLocation
     )
         external
         onlySequencerInbox
@@ -164,7 +154,8 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
             delayedAcc,
             afterDelayedMessagesRead,
             timeBounds,
-            batchDataLocation
+            batchDataLocation,
+            msg.sender
         );
     }
 
