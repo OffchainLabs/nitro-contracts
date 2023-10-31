@@ -1,7 +1,6 @@
-| Name                     | Type                                                     | Slot | Offset | Bytes | Contract                                     |
-|--------------------------|----------------------------------------------------------|------|--------|-------|----------------------------------------------|
-| totalDelayedMessagesRead | uint256                                                  | 0    | 0      | 32    | src/bridge/SequencerInbox.sol:SequencerInbox |
-| rollup                   | contract IOwnable                                        | 1    | 0      | 20    | src/bridge/SequencerInbox.sol:SequencerInbox |
-| isBatchPoster            | mapping(address => bool)                                 | 2    | 0      | 32    | src/bridge/SequencerInbox.sol:SequencerInbox |
-| dasKeySetInfo            | mapping(bytes32 => struct ISequencerInbox.DasKeySetInfo) | 3    | 0      | 32    | src/bridge/SequencerInbox.sol:SequencerInbox |
-| isSequencer              | mapping(address => bool)                                 | 4    | 0      | 32    | src/bridge/SequencerInbox.sol:SequencerInbox |
+| Name          | Type                                                     | Slot | Offset | Bytes | Contract                                     |
+|---------------|----------------------------------------------------------|------|--------|-------|----------------------------------------------|
+| rollup        | contract IOwnable                                        | 0    | 0      | 20    | src/bridge/SequencerInbox.sol:SequencerInbox |
+| isBatchPoster | mapping(address => bool)                                 | 1    | 0      | 32    | src/bridge/SequencerInbox.sol:SequencerInbox |
+| dasKeySetInfo | mapping(bytes32 => struct ISequencerInbox.DasKeySetInfo) | 2    | 0      | 32    | src/bridge/SequencerInbox.sol:SequencerInbox |
+| isSequencer   | mapping(address => bool)                                 | 3    | 0      | 32    | src/bridge/SequencerInbox.sol:SequencerInbox |
