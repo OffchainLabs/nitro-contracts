@@ -46,6 +46,8 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
     IOwnable public rollup;
     address public sequencerInbox;
 
+    address public nativeToken;
+
     modifier onlyRollupOrOwner() {
         if (msg.sender != address(rollup)) {
             address rollupOwner = rollup.owner();

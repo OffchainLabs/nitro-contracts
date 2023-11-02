@@ -34,6 +34,17 @@ interface IBridge {
 
     event RollupUpdated(address rollup);
 
+    /**
+     * @dev Token that is escrowed in bridge on L1 side and minted on L2 as native currency.
+     * When set to address(0), the bridge use the L1 native token (e.g. ETH)
+     * Fees are paid in this token. There are certain restrictions on the native token:
+     *  - The token can't be rebasing or have a transfer fee
+     *  - The token must only be transferrable via a call to the token address itself
+     *  - The token must only be able to set allowance via a call to the token address itself
+     *  - The token must not have a callback on transfer, and more generally a user must not be able to make a transfer to themselves revert
+     */
+    function nativeToken() external view returns (address);
+
     function allowedDelayedInboxList(uint256) external returns (address);
 
     function allowedOutboxList(uint256) external returns (address);
