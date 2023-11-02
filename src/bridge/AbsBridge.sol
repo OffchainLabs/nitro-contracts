@@ -24,11 +24,6 @@ import "../libraries/DelegateCallAware.sol";
 import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
 
 abstract contract AbsBridgeStorage is IBridge {
-    struct InOutInfo {
-        uint256 index;
-        bool allowed;
-    }
-
     mapping(address => InOutInfo) internal allowedDelayedInboxesMap;
     mapping(address => InOutInfo) internal allowedOutboxesMap;
 
@@ -64,7 +59,13 @@ abstract contract AbsBridgeStorage is IBridge {
  * Since the escrow is held here, this contract also contains a list of allowed
  * outboxes that can make calls from here and withdraw this escrow.
  */
-abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge, AbsBridgeStorage, AccessControlUpgradeable {
+abstract contract AbsBridge is
+    Initializable,
+    DelegateCallAware,
+    IBridge,
+    AbsBridgeStorage,
+    AccessControlUpgradeable
+{
     using AddressUpgradeable for address;
 
     address internal constant EMPTY_ACTIVEOUTBOX = address(type(uint160).max);

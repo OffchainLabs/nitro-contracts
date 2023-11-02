@@ -11,11 +11,6 @@ import "../bridge/IBridge.sol";
 import "../bridge/IEthBridge.sol";
 
 contract BridgeStub is IBridge, IEthBridge {
-    struct InOutInfo {
-        uint256 index;
-        bool allowed;
-    }
-
     mapping(address => InOutInfo) private allowedDelayedInboxesMap;
     //mapping(address => InOutInfo) private allowedOutboxesMap;
 

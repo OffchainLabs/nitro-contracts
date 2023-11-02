@@ -8,6 +8,11 @@ pragma solidity >=0.6.9 <0.9.0;
 import "./IOwnable.sol";
 
 interface IBridge {
+    struct InOutInfo {
+        uint256 index;
+        bool allowed;
+    }
+
     event MessageDelivered(
         uint256 indexed messageIndex,
         bytes32 indexed beforeInboxAcc,

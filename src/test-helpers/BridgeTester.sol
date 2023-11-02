@@ -30,11 +30,6 @@ import "../libraries/DelegateCallAware.sol";
 contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
     using AddressUpgradeable for address;
 
-    struct InOutInfo {
-        uint256 index;
-        bool allowed;
-    }
-
     mapping(address => InOutInfo) private allowedInboxesMap;
     mapping(address => InOutInfo) private allowedOutboxesMap;
 

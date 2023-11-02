@@ -2,8 +2,8 @@
 |----------------------------------|--------------------------------------------------------------|------|--------|-------|----------------------------------------|
 | _initialized                     | bool                                                         | 0    | 0      | 1     | src/bridge/ERC20Bridge.sol:ERC20Bridge |
 | _initializing                    | bool                                                         | 0    | 1      | 1     | src/bridge/ERC20Bridge.sol:ERC20Bridge |
-| allowedDelayedInboxesMap         | mapping(address => struct AbsBridgeStorage.InOutInfo)        | 1    | 0      | 32    | src/bridge/ERC20Bridge.sol:ERC20Bridge |
-| allowedOutboxesMap               | mapping(address => struct AbsBridgeStorage.InOutInfo)        | 2    | 0      | 32    | src/bridge/ERC20Bridge.sol:ERC20Bridge |
+| allowedDelayedInboxesMap         | mapping(address => struct IBridge.InOutInfo)                 | 1    | 0      | 32    | src/bridge/ERC20Bridge.sol:ERC20Bridge |
+| allowedOutboxesMap               | mapping(address => struct IBridge.InOutInfo)                 | 2    | 0      | 32    | src/bridge/ERC20Bridge.sol:ERC20Bridge |
 | allowedDelayedInboxList          | address[]                                                    | 3    | 0      | 32    | src/bridge/ERC20Bridge.sol:ERC20Bridge |
 | allowedOutboxList                | address[]                                                    | 4    | 0      | 32    | src/bridge/ERC20Bridge.sol:ERC20Bridge |
 | _activeOutbox                    | address                                                      | 5    | 0      | 20    | src/bridge/ERC20Bridge.sol:ERC20Bridge |
