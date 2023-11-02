@@ -50,6 +50,7 @@ abstract contract AbsBridgeStorage is IBridge {
      */
     uint256[40] private __gap;
 
+    /// @inheritdoc IBridge
     address public nativeToken;
 }
 
