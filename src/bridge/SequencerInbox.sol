@@ -226,6 +226,8 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         );
     }
 
+    // CHRIS: TODO: we're missing the old one with just the revert here
+
     function addSequencerL2BatchFromOrigin(
         uint256 sequenceNumber,
         bytes calldata data,
