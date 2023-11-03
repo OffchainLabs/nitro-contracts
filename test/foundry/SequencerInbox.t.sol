@@ -14,6 +14,30 @@ contract RollupMock {
 }
 
 contract SequencerInboxTest is Test {
+    // cannot reference events outside of the original contract until 0.8.21
+    // we currently use 0.8.9
+    event MessageDelivered(
+        uint256 indexed messageIndex,
+        bytes32 indexed beforeInboxAcc,
+        address inbox,
+        uint8 kind,
+        address sender,
+        bytes32 messageDataHash,
+        uint256 baseFeeL1,
+        uint64 timestamp
+    );
+    event InboxMessageDelivered(uint256 indexed messageNum, bytes data);
+    event SequencerBatchDelivered(
+        uint256 indexed batchSequenceNumber,
+        bytes32 indexed beforeAcc,
+        bytes32 indexed afterAcc,
+        bytes32 delayedAcc,
+        uint256 afterDelayedMessagesRead,
+        ISequencerInbox.TimeBounds timeBounds,
+        ISequencerInbox.BatchDataLocation dataLocation
+    );
+
+
     Random RAND = new Random();
     address rollupOwner = address(137);
     uint256 maxDataSize = 10000;
@@ -25,8 +49,6 @@ contract SequencerInboxTest is Test {
     });
     address dummyInbox = address(139);
     address proxyAdmin = address(140);
-    
-
 
     function deploy() public returns(SequencerInbox, Bridge) {
         RollupMock rollupMock = new RollupMock(rollupOwner);
@@ -86,7 +108,7 @@ contract SequencerInboxTest is Test {
 
         // spending report
         vm.expectEmit();
-        emit IBridge.MessageDelivered(
+        emit MessageDelivered(
             delayedMessagesRead,
             delayedAcc,
             address(seqInbox),
@@ -99,14 +121,14 @@ contract SequencerInboxTest is Test {
 
         // spending report event in seq inbox
         vm.expectEmit();
-        emit IDelayedMessageProvider.InboxMessageDelivered(
+        emit InboxMessageDelivered(
             delayedMessagesRead,
             spendingReportMsg
         );
 
         // sequencer batch delivered
         vm.expectEmit();
-        emit ISequencerInbox.SequencerBatchDelivered(
+        emit SequencerBatchDelivered(
             sequenceNumber, 
             beforeAcc,
             afterAcc,

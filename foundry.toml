@@ -7,11 +7,7 @@ cache_path  = 'forge-cache'
 optimizer = true
 optimizer_runs = 20000
 via_ir = false
-# 0.8.21 has a bug which causes compilation failure in the tests
-# https://github.com/ethereum/solidity/issues/14430
-# however .22 is not shipped as default in foundry yet
-# we can remove the line below when it is
-solc_version = '0.8.22'
+solc_version = '0.8.9'
 
 [fmt]
 number_underscore = 'thousands'
