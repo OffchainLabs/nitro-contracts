@@ -135,8 +135,8 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         return bridge.totalDelayedMessagesRead();
     }
 
-    function getTimeBounds() internal view virtual returns (ICommon.TimeBounds memory) {
-        ICommon.TimeBounds memory bounds;
+    function getTimeBounds() internal view virtual returns (IBridge.TimeBounds memory) {
+        IBridge.TimeBounds memory bounds;
         ISequencerInbox.MaxTimeVariation memory maxTimeVariation_ = maxTimeVariation();
         if (block.timestamp > maxTimeVariation_.delaySeconds) {
             bounds.minTimestamp = uint64(block.timestamp - maxTimeVariation_.delaySeconds);
@@ -207,7 +207,7 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
             ) revert IncorrectMessagePreimage();
         }
 
-        (bytes32 dataHash, ICommon.TimeBounds memory timeBounds) = formEmptyDataHash(
+        (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formEmptyDataHash(
             _totalDelayedMessagesRead
         );
         uint256 prevSeqMsgCount = bridge.sequencerReportedSubMessageCount();
@@ -222,7 +222,7 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
             _totalDelayedMessagesRead,
             prevSeqMsgCount,
             newSeqMsgCount,
-            ICommon.BatchDataLocation.NoData
+            IBridge.BatchDataLocation.NoData
         );
     }
 
@@ -237,10 +237,10 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
-        (bytes32 dataHash, ICommon.TimeBounds memory timeBounds) = formDataHash(
+        (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formDataHash(
             data,
             afterDelayedMessagesRead,
-            ICommon.BatchDataLocation.TxInput
+            IBridge.BatchDataLocation.TxInput
         );
         addSequencerL2BatchImpl(
             sequenceNumber,
@@ -249,7 +249,7 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
             afterDelayedMessagesRead,
             prevMessageCount,
             newMessageCount,
-            ICommon.BatchDataLocation.TxInput
+            IBridge.BatchDataLocation.TxInput
         );
     }
 
@@ -263,10 +263,10 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         uint256 newMessageCount
     ) external refundsGas(gasRefunder) {
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
-        (bytes32 dataHash, ICommon.TimeBounds memory timeBounds) = formDataHash(
+        (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formDataHash(
             data,
             afterDelayedMessagesRead,
-            ICommon.BatchDataLocation.Blob
+            IBridge.BatchDataLocation.Blob
         );
         addSequencerL2BatchImpl(
             sequenceNumber,
@@ -275,7 +275,7 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
             afterDelayedMessagesRead,
             prevMessageCount,
             newMessageCount,
-            ICommon.BatchDataLocation.Blob
+            IBridge.BatchDataLocation.Blob
         );
         emit SequencerBatchData(sequenceNumber, data);
     }
@@ -289,10 +289,10 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         uint256 newMessageCount
     ) external override refundsGas(gasRefunder) {
         if (!isBatchPoster[msg.sender] && msg.sender != address(rollup)) revert NotBatchPoster();
-        (bytes32 dataHash, ICommon.TimeBounds memory timeBounds) = formDataHash(
+        (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formDataHash(
             data,
             afterDelayedMessagesRead,
-            ICommon.BatchDataLocation.SeparateBatchEvent
+            IBridge.BatchDataLocation.SeparateBatchEvent
         );
         addSequencerL2BatchImpl(
             sequenceNumber,
@@ -301,7 +301,7 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
             afterDelayedMessagesRead,
             prevMessageCount,
             newMessageCount,
-            ICommon.BatchDataLocation.SeparateBatchEvent
+            IBridge.BatchDataLocation.SeparateBatchEvent
         );
         emit SequencerBatchData(sequenceNumber, data);
     }
@@ -309,9 +309,9 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
     function packHeader(uint256 afterDelayedMessagesRead)
         internal
         view
-        returns (bytes memory, ICommon.TimeBounds memory)
+        returns (bytes memory, IBridge.TimeBounds memory)
     {
-        ICommon.TimeBounds memory timeBounds = getTimeBounds();
+        IBridge.TimeBounds memory timeBounds = getTimeBounds();
         bytes memory header = abi.encodePacked(
             timeBounds.minTimestamp,
             timeBounds.maxTimestamp,
@@ -327,9 +327,9 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
     function formEmptyDataHash(uint256 afterDelayedMessagesRead)
         internal
         view
-        returns (bytes32, ICommon.TimeBounds memory)
+        returns (bytes32, IBridge.TimeBounds memory)
     {
-        (bytes memory header, ICommon.TimeBounds memory timeBounds) = packHeader(
+        (bytes memory header, IBridge.TimeBounds memory timeBounds) = packHeader(
             afterDelayedMessagesRead
         );
         return (keccak256(header), timeBounds);
@@ -338,18 +338,18 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
     function formDataHash(
         bytes calldata data,
         uint256 afterDelayedMessagesRead,
-        ICommon.BatchDataLocation dataLocation
-    ) internal view returns (bytes32, ICommon.TimeBounds memory) {
+        IBridge.BatchDataLocation dataLocation
+    ) internal view returns (bytes32, IBridge.TimeBounds memory) {
         uint256 fullDataLen = HEADER_LENGTH + data.length;
         if (fullDataLen > maxDataSize) revert DataTooLarge(fullDataLen, maxDataSize);
         if (data.length > 0 && (data[0] & DATA_AUTHENTICATED_FLAG) == DATA_AUTHENTICATED_FLAG) {
             revert DataNotAuthenticated();
         }
 
-        (bytes memory header, ICommon.TimeBounds memory timeBounds) = packHeader(
+        (bytes memory header, IBridge.TimeBounds memory timeBounds) = packHeader(
             afterDelayedMessagesRead
         );
-        if (dataLocation == ICommon.BatchDataLocation.Blob) {
+        if (dataLocation == IBridge.BatchDataLocation.Blob) {
             bytes32[] memory dataHashes = dataHashReader.getDataHashes();
             if (dataHashes.length == 0) revert MissingDataHashes();
             if (data.length != 1) revert InvalidBlobMetadata();
@@ -374,24 +374,23 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
     function addSequencerL2BatchImpl(
         uint256 sequenceNumber,
         bytes32 dataHash,
-        ICommon.TimeBounds memory timeBounds,
+        IBridge.TimeBounds memory timeBounds,
         uint256 afterDelayedMessagesRead,
         uint256 prevMessageCount,
         uint256 newMessageCount,
-        ICommon.BatchDataLocation dataLocation
-    ) internal {
-        (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 afterAcc) = bridge
-            .enqueueSequencerMessage(
-                dataHash,
-                afterDelayedMessagesRead,
-                prevMessageCount,
-                newMessageCount,
-                timeBounds,
-                dataLocation
-            );
+        IBridge.BatchDataLocation batchDataLocation
+    ) internal returns (uint256 seqMessageIndex) {
+        (seqMessageIndex, , , ) = bridge.enqueueSequencerMessage(
+            dataHash,
+            afterDelayedMessagesRead,
+            prevMessageCount,
+            newMessageCount,
+            timeBounds,
+            batchDataLocation
+        );
 
         // submit a batch spending report to refund the entity that produced the batch data
-        submitBatchSpendingReport(dataHash, seqMessageIndex, dataLocation);
+        submitBatchSpendingReport(dataHash, seqMessageIndex, batchDataLocation);
 
         // ~uint256(0) is type(uint256).max, but ever so slightly cheaper
         if (seqMessageIndex != sequenceNumber && sequenceNumber != ~uint256(0)) {
@@ -402,12 +401,12 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
     function submitBatchSpendingReport(
         bytes32 dataHash,
         uint256 seqMessageIndex,
-        ICommon.BatchDataLocation dataLocation
+        IBridge.BatchDataLocation dataLocation
     ) internal {
         bytes memory spendingReportMsg;
         address batchPoster = tx.origin;
 
-        if (dataLocation == ICommon.BatchDataLocation.TxInput) {
+        if (dataLocation == IBridge.BatchDataLocation.TxInput) {
             // this msg isn't included in the current sequencer batch, but instead added to
             // the delayed messages queue that is yet to be included
             if (hostChainIsArbitrum) {
@@ -432,7 +431,7 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
                     block.basefee
                 );
             }
-        } else if (dataLocation == ICommon.BatchDataLocation.Blob) {
+        } else if (dataLocation == IBridge.BatchDataLocation.Blob) {
             // this msg isn't included in the current sequencer batch, but instead added to
             // the delayed messages queue that is yet to be included
             uint256 blobBasefee = blobBasefeeReader.getBlobBaseFee();

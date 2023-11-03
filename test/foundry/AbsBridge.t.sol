@@ -22,8 +22,8 @@ abstract contract AbsBridgeTest is Test {
     address public outbox = address(1002);
     address public seqInbox = address(1003);
 
-    ICommon.TimeBounds timeBounds =
-        ICommon.TimeBounds({
+    IBridge.TimeBounds timeBounds =
+        IBridge.TimeBounds({
             minTimestamp: uint64(block.timestamp + 1),
             maxTimestamp: uint64(block.timestamp + 10),
             minBlockNumber: uint64(block.number + 1),
@@ -48,7 +48,7 @@ abstract contract AbsBridgeTest is Test {
                 prevMessageCount,
                 newMessageCount,
                 timeBounds,
-                ICommon.BatchDataLocation.TxInput
+                IBridge.BatchDataLocation.TxInput
             );
 
         // checks
@@ -90,7 +90,7 @@ abstract contract AbsBridgeTest is Test {
                 prevMessageCount,
                 newMessageCount,
                 timeBounds,
-                ICommon.BatchDataLocation.TxInput
+                IBridge.BatchDataLocation.TxInput
             );
 
         // checks
@@ -125,7 +125,7 @@ abstract contract AbsBridgeTest is Test {
             0,
             10,
             timeBounds,
-            ICommon.BatchDataLocation.SeparateBatchEvent
+            IBridge.BatchDataLocation.SeparateBatchEvent
         );
         vm.stopPrank();
 
@@ -142,7 +142,7 @@ abstract contract AbsBridgeTest is Test {
                 prevMessageCount,
                 newMessageCount,
                 timeBounds,
-                ICommon.BatchDataLocation.TxInput
+                IBridge.BatchDataLocation.TxInput
             );
 
         // checks
@@ -177,7 +177,7 @@ abstract contract AbsBridgeTest is Test {
             0,
             10,
             timeBounds,
-            ICommon.BatchDataLocation.SeparateBatchEvent
+            IBridge.BatchDataLocation.SeparateBatchEvent
         );
         vm.stopPrank();
 
@@ -193,7 +193,7 @@ abstract contract AbsBridgeTest is Test {
             incorrectPrevMsgCount,
             10,
             timeBounds,
-            ICommon.BatchDataLocation.SeparateBatchEvent
+            IBridge.BatchDataLocation.SeparateBatchEvent
         );
     }
 
@@ -206,7 +206,7 @@ abstract contract AbsBridgeTest is Test {
             0,
             10,
             timeBounds,
-            ICommon.BatchDataLocation.SeparateBatchEvent
+            IBridge.BatchDataLocation.SeparateBatchEvent
         );
     }
 

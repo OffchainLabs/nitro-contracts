@@ -98,8 +98,8 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
         uint256 afterDelayedMessagesRead,
         uint256 prevMessageCount,
         uint256 newMessageCount,
-        ICommon.TimeBounds memory timeBounds,
-        ICommon.BatchDataLocation batchDataLocation
+        TimeBounds memory timeBounds,
+        BatchDataLocation batchDataLocation
     )
         external
         returns (

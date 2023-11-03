@@ -7,9 +7,22 @@ pragma solidity >=0.6.9 <0.9.0;
 pragma experimental ABIEncoderV2;
 
 import "./IOwnable.sol";
-import "./ICommon.sol";
 
 interface IBridge {
+    enum BatchDataLocation {
+        TxInput,
+        SeparateBatchEvent,
+        NoData,
+        Blob
+    }
+
+    struct TimeBounds {
+        uint64 minTimestamp;
+        uint64 maxTimestamp;
+        uint64 minBlockNumber;
+        uint64 maxBlockNumber;
+    }
+
     event MessageDelivered(
         uint256 indexed messageIndex,
         bytes32 indexed beforeInboxAcc,
@@ -26,6 +39,17 @@ interface IBridge {
         address indexed to,
         uint256 value,
         bytes data
+    );
+
+    event SequencerBatchDelivered(
+        uint256 indexed batchSequenceNumber,
+        bytes32 indexed beforeAcc,
+        bytes32 indexed afterAcc,
+        bytes32 delayedAcc,
+        uint256 afterDelayedMessagesRead,
+        TimeBounds timeBounds,
+        BatchDataLocation dataLocation,
+        address sequencerInbox
     );
 
     event InboxToggle(address indexed inbox, bool enabled);
@@ -77,8 +101,8 @@ interface IBridge {
         uint256 afterDelayedMessagesRead,
         uint256 prevMessageCount,
         uint256 newMessageCount,
-        ICommon.TimeBounds memory timeBounds,
-        ICommon.BatchDataLocation dataLocation
+        TimeBounds memory timeBounds,
+        BatchDataLocation dataLocation
     )
         external
         returns (
