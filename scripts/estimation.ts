@@ -16,6 +16,8 @@ let totalL2Gas = BigNumber.from(0)
 let l2BaseFee = BigNumber.from(0)
 let l1BaseFee = BigNumber.from(0)
 
+let totalTxFees = BigNumber.from(0)
+
 async function estimateContractDeployment(
   contractName: string,
   nodeInterface: NodeInterface,
@@ -42,14 +44,17 @@ async function estimateContractDeployment(
   l2BaseFee = gasEstimateComponents.baseFee
   l1BaseFee = gasEstimateComponents.l1BaseFeeEstimate
 
-  console.log(contractName)
-  console.log('  L1: ' + gasEstimateComponents.gasEstimateForL1)
-  console.log(
-    '  L2: ' +
-      gasEstimateComponents.gasEstimate.sub(
-        gasEstimateComponents.gasEstimateForL1
-      )
-  )
+  const P = l2BaseFee
+  const L1P = l1BaseFee.mul(16)
+  const l1Size = totalL1Gas.mul(P).div(L1P)
+  const L1C = L1P.mul(l1Size)
+  const B = L1C.div(P)
+  const G = totalL2Gas.add(B)
+  const TXFEES = l2BaseFee.mul(G)
+
+  totalTxFees = totalTxFees.add(TXFEES)
+
+  _printInfo(contractName, gasEstimateComponents, L1P, l1Size, TXFEES)
 }
 
 async function estimateUpgradeExecutorDeployment(nodeInterface: NodeInterface) {
@@ -75,14 +80,17 @@ async function estimateUpgradeExecutorDeployment(nodeInterface: NodeInterface) {
     )
   )
 
-  console.log('UpgradeExecutor')
-  console.log('  L1:' + gasEstimateComponents.gasEstimateForL1)
-  console.log(
-    '  L2: ' +
-      gasEstimateComponents.gasEstimate.sub(
-        gasEstimateComponents.gasEstimateForL1
-      )
-  )
+  const P = l2BaseFee
+  const L1P = l1BaseFee.mul(16)
+  const l1Size = totalL1Gas.mul(P).div(L1P)
+  const L1C = L1P.mul(l1Size)
+  const B = L1C.div(P)
+  const G = totalL2Gas.add(B)
+  const TXFEES = l2BaseFee.mul(G)
+
+  totalTxFees = totalTxFees.add(TXFEES)
+
+  _printInfo('UpgradeExecutor', gasEstimateComponents, L1P, l1Size, TXFEES)
 }
 
 async function estimateAll(signer: any) {
@@ -140,9 +148,42 @@ async function estimateAll(signer: any) {
   await estimateContractDeployment('DeployHelper', nodeInterface)
 }
 
+function _printInfo(
+  contractName: String,
+  gasEstimateComponents: [BigNumber, BigNumber, BigNumber, BigNumber] & {
+    gasEstimate: BigNumber
+    gasEstimateForL1: BigNumber
+    baseFee: BigNumber
+    l1BaseFeeEstimate: BigNumber
+  },
+  L1P: BigNumber,
+  l1Size: BigNumber,
+  TXFEES: BigNumber
+) {
+  console.log(contractName)
+  console.log('  L1 gas: ' + gasEstimateComponents.gasEstimateForL1)
+  console.log(
+    '  L2 gas: ' +
+      gasEstimateComponents.gasEstimate.sub(
+        gasEstimateComponents.gasEstimateForL1
+      )
+  )
+  console.log(
+    '  L1P (L1 calldata price per byte):',
+    ethers.utils.formatUnits(L1P, 'gwei'),
+    ' gwei'
+  )
+  console.log('  L1S (L1 Calldata size in bytes):', l1Size, 'bytes')
+  console.log(
+    '  Estimated fees to pay:',
+    ethers.utils.formatEther(TXFEES),
+    ' ETH'
+  )
+}
+
 async function main() {
   const [signer] = await ethers.getSigners()
-  
+
   await estimateAll(signer)
 
   console.log('\n==========================================')
@@ -159,30 +200,7 @@ async function main() {
     'gwei'
   )
 
-  const P = l2BaseFee
-  const L1P = l1BaseFee.mul(16)
-
-  const l1Size = totalL1Gas.mul(P).div(L1P)
-
-  const L1C = L1P.mul(l1Size)
-  const B = L1C.div(P)
-  const G = totalL2Gas.add(B)
-  const TXFEES = l2BaseFee.mul(G)
-
-  console.log(
-    `L1P (L1 estimated calldata price per byte) = ${ethers.utils.formatUnits(
-      L1P,
-      'gwei'
-    )} gwei`
-  )
-  console.log(`L1S (L1 Calldata size in bytes) = ${l1Size} bytes`)
-
-  console.log('-------------------')
-  console.log(
-    `Transaction estimated fees to pay = ${ethers.utils.formatEther(
-      TXFEES
-    )} ETH`
-  )
+  console.log('Total TX fees = ', ethers.utils.formatEther(totalTxFees), 'ETH')
 }
 
 main()
