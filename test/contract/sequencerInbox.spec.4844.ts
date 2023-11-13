@@ -558,7 +558,12 @@ describe('SequencerInbox', async () => {
     maxTimestamp: number
   }> => {
     const maxTimeVariation = await sequencerInbox.maxTimeVariation()
-    console.log(maxTimeVariation)
+    console.log(
+      'maxTimeVariation',
+      sequencerInbox.address,
+      (await sequencerInbox.provider.getCode(sequencerInbox.address)).length,
+      maxTimeVariation
+    )
     return {
       minBlocks:
         blockNumber > maxTimeVariation.delayBlocks.toNumber()
