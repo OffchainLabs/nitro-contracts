@@ -197,6 +197,19 @@ contract SequencerInboxOpt is GasRefundEnabled, ISequencerInbox {
         );
     }
 
+    struct ProofData {
+        bytes32 beforeAccBeforeAcc;
+        bytes32 beforeAccDataHash;
+        bytes32 beforeAccDelayedAcc;
+        uint8 kind;
+        address sender;
+        uint64 blockNumber;
+        uint64 blockTimestamp;
+        uint256 count;
+        uint256 baseFeeL1;
+        bytes32 messageDataHash;
+    }
+
     function addSequencerL2BatchFromOrigin(
         uint256 sequenceNumber,
         bytes calldata data,
@@ -204,6 +217,7 @@ contract SequencerInboxOpt is GasRefundEnabled, ISequencerInbox {
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount,
+        ProofData memory pData
     ) external refundsGas(gasRefunder) {
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
@@ -212,16 +226,17 @@ contract SequencerInboxOpt is GasRefundEnabled, ISequencerInbox {
             data,
             afterDelayedMessagesRead
         );
+        bytes32 beforeAcc;
         // Reformat the stack to prevent "Stack too deep"
-        uint256 sequenceNumber_ = sequenceNumber;
+        {uint256 sequenceNumber_ = sequenceNumber;
         IBridge.TimeBounds memory timeBounds_ = timeBounds;
         bytes32 dataHash_ = dataHash;
         uint256 dataLength = data.length;
         uint256 afterDelayedMessagesRead_ = afterDelayedMessagesRead;
         uint256 prevMessageCount_ = prevMessageCount;
         uint256 newMessageCount_ = newMessageCount;
-
-        uint256 seqMessageIndex = addSequencerL2BatchImpl(
+        uint256 seqMessageIndex;
+        (seqMessageIndex, beforeAcc) = addSequencerL2BatchImpl(
             dataHash_,
             afterDelayedMessagesRead_,
             dataLength,
@@ -232,6 +247,25 @@ contract SequencerInboxOpt is GasRefundEnabled, ISequencerInbox {
         );
         if (seqMessageIndex != sequenceNumber_ && sequenceNumber_ != ~uint256(0))
             revert BadSequencerNumber(seqMessageIndex, sequenceNumber_);
+        }
+
+        if(beforeAcc != 0) {
+            require(beforeAcc == keccak256(abi.encodePacked(pData.beforeAccBeforeAcc, pData.beforeAccDataHash, pData.beforeAccDelayedAcc)), "a");
+            // unwrap the before acc delayed acc
+            require(pData.beforeAccDelayedAcc == keccak256(abi.encodePacked(bytes32(0), 
+                Messages.messageHash(
+                    pData.kind,
+                    pData.sender,
+                    pData.blockNumber,
+                    pData.blockTimestamp,
+                    pData.count,
+                    pData.baseFeeL1,
+                    pData.messageDataHash
+                ))) , "b");
+
+            require(pData.blockNumber < block.number, "c");
+        }
+
     }
 
     function addSequencerL2Batch(
@@ -258,7 +292,7 @@ contract SequencerInboxOpt is GasRefundEnabled, ISequencerInbox {
             uint256 newMessageCount_ = newMessageCount;
             // we set the calldata length posted to 0 here since the caller isn't the origin
             // of the tx, so they might have not paid tx input cost for the calldata
-            seqMessageIndex = addSequencerL2BatchImpl(
+            (seqMessageIndex, ) = addSequencerL2BatchImpl(
                 dataHash_,
                 afterDelayedMessagesRead_,
                 0,
@@ -339,8 +373,8 @@ contract SequencerInboxOpt is GasRefundEnabled, ISequencerInbox {
         uint256 newMessageCount,
         IBridge.TimeBounds memory timeBounds,
         IBridge.BatchDataLocation batchDataLocation
-    ) internal returns (uint256 seqMessageIndex) {
-        (seqMessageIndex, , , ) = bridge.enqueueSequencerMessage(
+    ) internal returns (uint256 seqMessageIndex, bytes32 beforeAcc) {
+        (seqMessageIndex, beforeAcc, , ) = bridge.enqueueSequencerMessage(
             dataHash,
             afterDelayedMessagesRead,
             prevMessageCount,
