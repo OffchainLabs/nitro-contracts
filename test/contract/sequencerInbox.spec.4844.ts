@@ -326,7 +326,8 @@ describe('SequencerInbox', async () => {
       },
       117964,
       dataHashReader.address,
-      blobBasefeeReader.address, {gasLimit: 15000000}
+      blobBasefeeReader.address,
+      { gasLimit: 15000000 }
     )
     await sequencerInbox.deployed()
 
