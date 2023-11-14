@@ -250,7 +250,7 @@ describe('SequencerInbox', async () => {
     maxDelayBlocks = 10,
     maxDelayTime = 0
   ) => {
-    console.log("a1")
+    console.log('a1')
     const accounts = await fundAccounts(fundingWallet, 5, utils.parseEther('1'))
 
     const admin = accounts[0]
@@ -274,10 +274,10 @@ describe('SequencerInbox', async () => {
     const rollupMock = await rollupMockFac.deploy(
       await rollupOwner.getAddress()
     )
-    console.log("a2")
+    console.log('a2')
     const sequencerInboxFac = new SequencerInbox__factory(deployer)
     const seqInboxTemplate = await sequencerInboxFac.deploy(117964)
-    console.log("a3")
+    console.log('a3')
 
     const inboxFac = new Inbox__factory(deployer)
     const inboxTemplate = await inboxFac.deploy(117964)
@@ -289,7 +289,7 @@ describe('SequencerInbox', async () => {
     await inboxTemplate.deployed()
     await bridgeTemplate.deployed()
 
-    console.log("a4")
+    console.log('a4')
 
     const transparentUpgradeableProxyFac =
       new TransparentUpgradeableProxy__factory(deployer)
@@ -314,12 +314,12 @@ describe('SequencerInbox', async () => {
     await bridgeProxy.deployed()
     await sequencerInboxProxy.deployed()
     await inboxProxy.deployed()
-    console.log("a5")
+    console.log('a5')
     const dataHashReader = await Toolkit4844.deployDataHashReader(fundingWallet)
     const blobBasefeeReader = await Toolkit4844.deployBlobBasefeeReader(
       fundingWallet
     )
-    console.log("a6")
+    console.log('a6')
 
     const bridge = await bridgeFac.attach(bridgeProxy.address).connect(user)
     const bridgeAdmin = await bridgeFac
@@ -330,10 +330,10 @@ describe('SequencerInbox', async () => {
       .attach(sequencerInboxProxy.address)
       .connect(user)
     const inbox = await inboxFac.attach(inboxProxy.address).connect(user)
-    console.log("a7")
+    console.log('a7')
 
     await (await bridgeAdmin.initialize(rollupMock.address)).wait()
-    console.log("a8")
+    console.log('a8')
     await (
       await sequencerInbox.initialize(
         bridgeProxy.address,
@@ -347,7 +347,7 @@ describe('SequencerInbox', async () => {
         blobBasefeeReader.address
       )
     ).wait()
-    console.log("a9")
+    console.log('a9')
     await (
       await sequencerInbox
         .connect(rollupOwner)
@@ -356,15 +356,15 @@ describe('SequencerInbox', async () => {
     await (
       await inbox.initialize(bridgeProxy.address, sequencerInbox.address)
     ).wait()
-    console.log("a10")
+    console.log('a10')
     await (await bridgeAdmin.setDelayedInbox(inbox.address, true)).wait()
-    console.log("a11")
+    console.log('a11')
 
     await (await bridgeAdmin.setSequencerInbox(sequencerInbox.address)).wait()
-    console.log("a12")
+    console.log('a12')
     const messageTester = await new MessageTester__factory(deployer).deploy()
     await messageTester.deployed()
-    console.log("a13")
+    console.log('a13')
     const res = {
       user,
       bridge: bridge,
@@ -383,18 +383,18 @@ describe('SequencerInbox', async () => {
   }
 
   it('can send normal batch', async () => {
-    console.log("a")
+    console.log('a')
     const privKey =
       'cb5790da63720727af975f42c79f69918580209889225fa7128c92402a6d3a65'
     const prov = new JsonRpcProvider('http://127.0.0.1:8545')
-    console.log("b")
+    console.log('b')
     const wallet = new Wallet(privKey).connect(prov)
 
-    console.log("c")
+    console.log('c')
     const { user, inbox, bridge, messageTester, sequencerInbox, batchPoster } =
       await setupSequencerInbox(wallet)
 
-      console.log("d")
+    console.log('d')
 
     await sendDelayedTx(
       user,
@@ -408,7 +408,7 @@ describe('SequencerInbox', async () => {
       BigNumber.from(10),
       '0x1010'
     )
-    console.log("e")
+    console.log('e')
 
     const subMessageCount = await bridge.sequencerReportedSubMessageCount()
     const batchSendTx = await sequencerInbox
@@ -423,7 +423,7 @@ describe('SequencerInbox', async () => {
         subMessageCount,
         subMessageCount.add(1)
       )
-      console.log("f")
+    console.log('f')
 
     await batchSendTx.wait()
   })
