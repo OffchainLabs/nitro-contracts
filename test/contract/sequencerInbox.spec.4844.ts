@@ -274,10 +274,6 @@ describe('SequencerInbox', async () => {
     const rollupMock = await rollupMockFac.deploy(
       await rollupOwner.getAddress()
     )
-    console.log('a2')
-    const sequencerInboxFac = new SequencerInbox__factory(deployer)
-    const seqInboxTemplate = await sequencerInboxFac.deploy(117964)
-    console.log('a3')
 
     const inboxFac = new Inbox__factory(deployer)
     const inboxTemplate = await inboxFac.deploy(117964)
@@ -285,7 +281,6 @@ describe('SequencerInbox', async () => {
     const bridgeFac = new Bridge__factory(deployer)
     const bridgeTemplate = await bridgeFac.deploy()
     await rollupMock.deployed()
-    await seqInboxTemplate.deployed()
     await inboxTemplate.deployed()
     await bridgeTemplate.deployed()
 
@@ -300,19 +295,12 @@ describe('SequencerInbox', async () => {
       '0x'
     )
 
-    const sequencerInboxProxy = await transparentUpgradeableProxyFac.deploy(
-      seqInboxTemplate.address,
-      adminAddr,
-      '0x'
-    )
-
     const inboxProxy = await transparentUpgradeableProxyFac.deploy(
       inboxTemplate.address,
       adminAddr,
       '0x'
     )
     await bridgeProxy.deployed()
-    await sequencerInboxProxy.deployed()
     await inboxProxy.deployed()
     console.log('a5')
     const dataHashReader = await Toolkit4844.deployDataHashReader(fundingWallet)
@@ -326,28 +314,26 @@ describe('SequencerInbox', async () => {
       .attach(bridgeProxy.address)
       .connect(rollupOwner)
 
-    const sequencerInbox = await sequencerInboxFac
-      .attach(sequencerInboxProxy.address)
-      .connect(user)
+    console.log('a2')
+    const sequencerInboxFac = new SequencerInbox__factory(deployer)
+    const sequencerInbox = await sequencerInboxFac.deploy(
+      bridge.address,
+      {
+        delayBlocks: maxDelayBlocks,
+        delaySeconds: maxDelayTime,
+        futureBlocks: 10,
+        futureSeconds: 3000,
+      },
+      117964,
+      dataHashReader.address,
+      blobBasefeeReader.address
+    )
+    await sequencerInbox.deployed()
+
     const inbox = await inboxFac.attach(inboxProxy.address).connect(user)
     console.log('a7')
 
     await (await bridgeAdmin.initialize(rollupMock.address)).wait()
-    console.log('a8')
-    await (
-      await sequencerInbox.initialize(
-        bridgeProxy.address,
-        {
-          delayBlocks: maxDelayBlocks,
-          delaySeconds: maxDelayTime,
-          futureBlocks: 10,
-          futureSeconds: 3000,
-        },
-        dataHashReader.address,
-        blobBasefeeReader.address
-      )
-    ).wait()
-    console.log('a9')
     await (
       await sequencerInbox
         .connect(rollupOwner)
@@ -413,9 +399,7 @@ describe('SequencerInbox', async () => {
     const subMessageCount = await bridge.sequencerReportedSubMessageCount()
     const batchSendTx = await sequencerInbox
       .connect(batchPoster)
-      [
-        'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256)'
-      ](
+      .functions.addSequencerL2BatchFromOrigin(
         await bridge.sequencerMessageCount(),
         '0x0142',
         await bridge.delayedMessageCount(),
