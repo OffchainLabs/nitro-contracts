@@ -500,6 +500,10 @@ const impersonateAccount = (address: string) =>
     .then(() => ethers.getSigner(address))
 
 describe('ArbRollup', () => {
+  it('should initialize contracts', async function () {
+    accounts = await initializeAccounts()
+  })
+
   it('should initialize', async function () {
     const {
       rollupAdmin: rollupAdminContract,
