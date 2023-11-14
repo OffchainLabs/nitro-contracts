@@ -320,13 +320,13 @@ describe('SequencerInbox', async () => {
       bridge.address,
       {
         delayBlocks: maxDelayBlocks,
-        delaySeconds: maxDelayTime,
         futureBlocks: 10,
+        delaySeconds: maxDelayTime,
         futureSeconds: 3000,
       },
       117964,
       dataHashReader.address,
-      blobBasefeeReader.address
+      blobBasefeeReader.address, {gasLimit: 15000000}
     )
     await sequencerInbox.deployed()
 
