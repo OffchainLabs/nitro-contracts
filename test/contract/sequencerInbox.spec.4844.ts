@@ -372,13 +372,18 @@ describe('SequencerInbox', async () => {
   }
 
   it('can send normal batch', async () => {
+    console.log("a")
     const privKey =
       'cb5790da63720727af975f42c79f69918580209889225fa7128c92402a6d3a65'
     const prov = new JsonRpcProvider('http://127.0.0.1:8545')
+    console.log("b")
     const wallet = new Wallet(privKey).connect(prov)
 
+    console.log("c")
     const { user, inbox, bridge, messageTester, sequencerInbox, batchPoster } =
       await setupSequencerInbox(wallet)
+
+      console.log("d")
 
     await sendDelayedTx(
       user,
@@ -392,6 +397,7 @@ describe('SequencerInbox', async () => {
       BigNumber.from(10),
       '0x1010'
     )
+    console.log("e")
 
     const subMessageCount = await bridge.sequencerReportedSubMessageCount()
     const batchSendTx = await sequencerInbox
@@ -406,6 +412,7 @@ describe('SequencerInbox', async () => {
         subMessageCount,
         subMessageCount.add(1)
       )
+      console.log("f")
 
     await batchSendTx.wait()
   })
