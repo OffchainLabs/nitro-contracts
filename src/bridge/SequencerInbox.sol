@@ -94,26 +94,26 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         IDataHashReader dataHashReader_,
         IBlobBasefeeReader blobBasefeeReader_
     ) {
-        if (bridge_ == IBridge(address(0))) revert HadZeroInit();
+        // if (bridge_ == IBridge(address(0))) revert HadZeroInit();
         bridge = bridge_;
         rollup = bridge_.rollup();
-        if (address(rollup) == address(0)) revert RollupNotChanged();
+        // if (address(rollup) == address(0)) revert RollupNotChanged();
         delayBlocks = maxTimeVariation_.delayBlocks;
         futureBlocks = maxTimeVariation_.futureBlocks;
         delaySeconds = maxTimeVariation_.delaySeconds;
         futureSeconds = maxTimeVariation_.futureSeconds;
         maxDataSize = _maxDataSize;
         if (hostChainIsArbitrum) {
-            if (dataHashReader_ != IDataHashReader(address(0))) revert DataBlobsNotSupported();
-            if (blobBasefeeReader_ != IBlobBasefeeReader(address(0)))
-                revert DataBlobsNotSupported();
+            // if (dataHashReader_ != IDataHashReader(address(0))) revert DataBlobsNotSupported();
+            // if (blobBasefeeReader_ != IBlobBasefeeReader(address(0)))
+            //     revert DataBlobsNotSupported();
         } else {
-            if (dataHashReader_ == IDataHashReader(address(0)))
-                revert InitParamZero("DataHashReader");
-            dataHashReader = dataHashReader_;
-            if (blobBasefeeReader_ == IBlobBasefeeReader(address(0)))
-                revert InitParamZero("BlobBasefeeReader");
-            blobBasefeeReader = blobBasefeeReader_;
+            // if (dataHashReader_ == IDataHashReader(address(0)))
+            //     revert InitParamZero("DataHashReader");
+            // dataHashReader = dataHashReader_;
+            // if (blobBasefeeReader_ == IBlobBasefeeReader(address(0)))
+            //     revert InitParamZero("BlobBasefeeReader");
+            // blobBasefeeReader = blobBasefeeReader_;
         }
     }
 
