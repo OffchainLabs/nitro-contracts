@@ -132,10 +132,12 @@ function _handleGasEstimates(
 
   const P = l2BaseFee
   const L1P = l1BaseFee.mul(16)
-  const l1Size = totalL1Gas.mul(P).div(L1P)
+  const l1Size = gasEstimateComponents.gasEstimateForL1.mul(P).div(L1P)
   const L1C = L1P.mul(l1Size)
   const B = L1C.div(P)
-  const G = totalL2Gas.add(B)
+  const G = gasEstimateComponents.gasEstimate
+    .sub(gasEstimateComponents.gasEstimateForL1)
+    .add(B)
   const TXFEES = P.mul(G)
 
   totalTxFees = totalTxFees.add(TXFEES)
