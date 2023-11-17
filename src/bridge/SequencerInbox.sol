@@ -55,10 +55,10 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
     IOwnable public rollup;
     mapping(address => bool) public isBatchPoster;
     // see ISequencerInbox.MaxTimeVariation
-    uint256 internal immutable delayBlocks;
-    uint256 internal immutable futureBlocks;
-    uint256 internal immutable delaySeconds;
-    uint256 internal immutable futureSeconds;
+    uint64 internal immutable delayBlocks;
+    uint64 internal immutable futureBlocks;
+    uint64 internal immutable delaySeconds;
+    uint64 internal immutable futureSeconds;
 
     mapping(bytes32 => DasKeySetInfo) public dasKeySetInfo;
 
@@ -112,28 +112,28 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
     function getTimeBounds() internal view virtual returns (IBridge.TimeBounds memory) {
         IBridge.TimeBounds memory bounds;
         (
-            uint256 delayBlocks_,
-            uint256 futureBlocks_,
-            uint256 delaySeconds_,
-            uint256 futureSeconds_
+            uint64 delayBlocks_,
+            uint64 futureBlocks_,
+            uint64 delaySeconds_,
+            uint64 futureSeconds_
         ) = maxTimeVariationInternal();
         if (block.timestamp > delaySeconds_) {
-            bounds.minTimestamp = uint64(block.timestamp - delaySeconds_);
+            bounds.minTimestamp = uint64(block.timestamp) - delaySeconds_;
         }
-        bounds.maxTimestamp = uint64(block.timestamp + futureSeconds_);
+        bounds.maxTimestamp = uint64(block.timestamp) + futureSeconds_;
         if (block.number > delayBlocks_) {
-            bounds.minBlockNumber = uint64(block.number - delayBlocks_);
+            bounds.minBlockNumber = uint64(block.number) - delayBlocks_;
         }
-        bounds.maxBlockNumber = uint64(block.number + futureBlocks_);
+        bounds.maxBlockNumber = uint64(block.number) + futureBlocks_;
         return bounds;
     }
 
     function maxTimeVariation() public view returns (ISequencerInbox.MaxTimeVariation memory) {
         (
-            uint256 delayBlocks_,
-            uint256 futureBlocks_,
-            uint256 delaySeconds_,
-            uint256 futureSeconds_
+            uint64 delayBlocks_,
+            uint64 futureBlocks_,
+            uint64 delaySeconds_,
+            uint64 futureSeconds_
         ) = maxTimeVariationInternal();
 
         return
@@ -149,10 +149,10 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         internal
         view
         returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256
+            uint64,
+            uint64,
+            uint64,
+            uint64
         )
     {
         if (_chainIdChanged()) {
