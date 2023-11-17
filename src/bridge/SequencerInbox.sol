@@ -255,7 +255,6 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
 
     function addSequencerL2BatchFromBlob(
         uint256 sequenceNumber,
-        // CHRIS: TODO: this isnt strictly necessary atm, but I'll leave it here until we decide if we want to specify blob indices
         bytes calldata data,
         uint256 afterDelayedMessagesRead,
         IGasRefunder gasRefunder,
@@ -277,7 +276,6 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
             newMessageCount,
             IBridge.BatchDataLocation.Blob
         );
-        emit SequencerBatchData(sequenceNumber, data);
     }
 
     function addSequencerL2Batch(
