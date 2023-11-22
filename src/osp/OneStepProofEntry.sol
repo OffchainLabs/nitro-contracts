@@ -117,7 +117,7 @@ contract OneStepProofEntry is IOneStepProofEntry {
         } else if (
             (opcode >= Instructions.GET_GLOBAL_STATE_BYTES32 &&
                 opcode <= Instructions.SET_GLOBAL_STATE_U64) ||
-            (opcode >= Instructions.READ_PRE_IMAGE && opcode <= Instructions.POP_ERROR_GUARD)
+            (opcode >= Instructions.READ_PRE_IMAGE && opcode <= Instructions.SET_ERROR_POLICY)
         ) {
             prover = proverHostIo;
         } else {
@@ -132,7 +132,7 @@ contract OneStepProofEntry is IOneStepProofEntry {
             mach.modulesRoot = modProof.computeRootFromModule(oldModIdx, mod);
         }
 
-        if (mach.status == MachineStatus.ERRORED && !mach.guardStack.empty()) {
+        if (mach.status == MachineStatus.ERRORED && mach.guardStack.canPop()) {
             ErrorGuard memory guard = mach.guardStack.pop();
             mach.frameStack.overwrite(guard.frameStack);
             mach.valueStack.overwrite(guard.valueStack);
