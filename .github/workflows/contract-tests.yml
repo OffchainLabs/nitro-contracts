@@ -52,6 +52,11 @@ jobs:
           cache: 'yarn'
           cache-dependency-path: '**/yarn.lock'
 
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
       - name: Install dependencies
         run: yarn install
 
@@ -69,6 +74,9 @@ jobs:
 
       - name: Interface compatibility
         run: yarn run test:compatibility
+
+      - name: Forge build
+        run: forge build
 
       - name: Test Storage Layouts
         run: yarn run test:storage
