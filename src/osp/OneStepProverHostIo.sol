@@ -400,7 +400,6 @@ contract OneStepProverHostIo is IOneStepProver {
         Value memory onError = ValueLib.newPc(mach.functionPc, mach.functionIdx, mach.moduleIdx);
         mach.guardStack.push(GuardStackLib.newErrorGuard(frames, values, inters, onError));
         mach.valueStack.push(ValueLib.newI32(1));
-        mach.guardStack.enabled = true;
     }
 
     function executePopErrorGuard(
@@ -411,7 +410,6 @@ contract OneStepProverHostIo is IOneStepProver {
         bytes calldata
     ) internal pure {
         mach.guardStack.pop();
-        mach.guardStack.enabled = false;
     }
 
     function executeSetErrorPolicy(
