@@ -10,6 +10,7 @@ import "../precompiles/ArbSys.sol";
 
 contract Simple {
     uint64 public counter;
+    uint256 public difficulty;
 
     event CounterEvent(uint64 count);
     event RedeemedEvent(address caller, address redeemer);
@@ -46,8 +47,12 @@ contract Simple {
         return block.number;
     }
 
+    function storeDifficulty() external {
+        difficulty = block.difficulty;
+    }
+
     function getBlockDifficulty() external view returns (uint256) {
-        return block.difficulty;
+        return difficulty;
     }
 
     function noop() external pure {}
