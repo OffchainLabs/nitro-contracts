@@ -392,20 +392,22 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
     {
         uint256 fullDataLen = HEADER_LENGTH + data.length;
         if (fullDataLen > maxDataSize) revert DataTooLarge(fullDataLen, maxDataSize);
-        
+
         (bytes memory header, IBridge.TimeBounds memory timeBounds) = packHeader(
             afterDelayedMessagesRead
         );
 
-        // the batch poster is allowed to submit an empty batch, they can use this to progress the 
+        // the batch poster is allowed to submit an empty batch, they can use this to progress the
         // delayed inbox without providing extra batch data
-        if(data.length > 0) {
+        if (data.length > 0) {
             // The first data byte cannot be the same as any that have been set via other methods (eg 4844 blob header) as this
             // would allow the supplier of the data to spoof an incorrect 4844 data batch
             if (!isValidCallDataFlag(data[0])) revert InvalidHeaderFlag(data[0]);
 
             // the first byte is used to identify the type of batch data
             // das batches expect to have the type byte set, followed by the keyset (so they should have at least 33 bytes)
+            // if invalid data is supplied here the state transition function will process it as an empty block
+            // however we can provide a nice additional check here for the batch poster
             if (data[0] & DAS_MESSAGE_HEADER_FLAG != 0 && data.length >= 33) {
                 // we skip the first byte, then read the next 32 bytes for the keyset
                 bytes32 dasKeysetHash = bytes32(data[1:33]);
