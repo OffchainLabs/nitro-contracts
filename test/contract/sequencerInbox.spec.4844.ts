@@ -45,13 +45,11 @@ import {
 import { Signer, Wallet, constants, utils } from 'ethers'
 import { keccak256, solidityKeccak256, solidityPack } from 'ethers/lib/utils'
 import { Toolkit4844 } from './toolkit4844'
-import {
-  SequencerBatchDeliveredEvent,
-  SequencerInbox,
-} from '../../build/types/src/bridge/SequencerInbox'
+import { SequencerInbox } from '../../build/types/src/bridge/SequencerInbox'
 import { execSync } from 'child_process'
 import { wait } from '@arbitrum/sdk/dist/lib/utils/lib'
 import { InboxMessageDeliveredEvent } from '../../build/types/src/bridge/AbsInbox'
+import { SequencerBatchDeliveredEvent } from '../../build/types/src/bridge/AbsBridge'
 
 const mineBlocks = async (
   wallet: Wallet,
