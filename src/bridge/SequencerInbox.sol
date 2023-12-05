@@ -26,7 +26,9 @@ import {
     MissingDataHashes,
     InvalidBlobMetadata,
     NotOwner,
-    RollupNotChanged
+    RollupNotChanged,
+    EmptyBatchData,
+    InvalidHeaderFlag
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./IInboxBase.sol";
@@ -54,13 +56,19 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
     uint256 public constant HEADER_LENGTH = 40;
 
     /// @inheritdoc ISequencerInbox
-    bytes1 public constant DATA_AUTHENTICATED_FLAG = 0x40;
-
-    /// @inheritdoc ISequencerInbox
-    bytes1 public constant DATA_BLOB_HEADER_FLAG = 0x10;
+    bytes1 public constant DATA_BLOB_HEADER_FLAG = 0x40;
 
     /// @inheritdoc ISequencerInbox
     bytes1 public constant DAS_MESSAGE_HEADER_FLAG = 0x80;
+
+    /// @inheritdoc ISequencerInbox
+    bytes1 public constant TREE_DAS_MESSAGE_HEADER_FLAG = 0x08;
+
+    /// @inheritdoc ISequencerInbox
+    bytes1 public constant BROTLI_MESSAGE_HEADER_FLAG = 0x00;
+
+    /// @inheritdoc ISequencerInbox
+    bytes1 public constant ZERO_HEAVY_MESSAGE_HEADER_FLAG = 0x20;
 
     IOwnable public rollup;
     mapping(address => bool) public isBatchPoster;
@@ -215,13 +223,12 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
             _totalDelayedMessagesRead -
             totalDelayedMessagesRead();
 
-        addSequencerL2BatchImpl(
-            type(uint256).max,
+        bridge.enqueueSequencerMessage(
             dataHash,
-            timeBounds,
             _totalDelayedMessagesRead,
             prevSeqMsgCount,
             newSeqMsgCount,
+            timeBounds,
             IBridge.BatchDataLocation.NoData
         );
     }
@@ -237,45 +244,63 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
-        (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formDataHash(
+        (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formCallDataHash(
             data,
-            afterDelayedMessagesRead,
-            IBridge.BatchDataLocation.TxInput
+            afterDelayedMessagesRead
         );
-        addSequencerL2BatchImpl(
-            sequenceNumber,
+
+        (uint256 seqMessageIndex, , , ) = bridge.enqueueSequencerMessage(
             dataHash,
-            timeBounds,
             afterDelayedMessagesRead,
             prevMessageCount,
             newMessageCount,
+            timeBounds,
             IBridge.BatchDataLocation.TxInput
         );
+
+        // ~uint256(0) is type(uint256).max, but ever so slightly cheaper
+        if (seqMessageIndex != sequenceNumber && sequenceNumber != ~uint256(0)) {
+            revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
+        }
+
+        // submit a batch spending report to refund the entity that produced the batch data
+        submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee);
     }
 
     function addSequencerL2BatchFromBlob(
         uint256 sequenceNumber,
-        bytes calldata data,
         uint256 afterDelayedMessagesRead,
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
     ) external refundsGas(gasRefunder) {
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
-        (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formDataHash(
-            data,
-            afterDelayedMessagesRead,
-            IBridge.BatchDataLocation.Blob
+        (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formBlobDataHash(
+            afterDelayedMessagesRead
         );
-        addSequencerL2BatchImpl(
-            sequenceNumber,
+
+        (uint256 seqMessageIndex, , , ) = bridge.enqueueSequencerMessage(
             dataHash,
-            timeBounds,
             afterDelayedMessagesRead,
             prevMessageCount,
             newMessageCount,
+            timeBounds,
             IBridge.BatchDataLocation.Blob
         );
+
+        // ~uint256(0) is type(uint256).max, but ever so slightly cheaper
+        if (seqMessageIndex != sequenceNumber && sequenceNumber != ~uint256(0)) {
+            revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
+        }
+
+        // blobs are currently not supported on host arbitrum chains, when support is added it may
+        // consume gas in a different way to L1, so explicitly block host arb chains so that if support for blobs
+        // on arb is added it will need to explicitly turned on in the sequencer inbox
+        if (hostChainIsArbitrum) revert DataBlobsNotSupported();
+
+        // submit a batch spending report to refund the entity that produced the blob batch data
+        uint256 blobBasefee = blobBasefeeReader.getBlobBaseFee();
+        submitBatchSpendingReport(dataHash, seqMessageIndex, blobBasefee);
     }
 
     function addSequencerL2Batch(
@@ -287,20 +312,25 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         uint256 newMessageCount
     ) external override refundsGas(gasRefunder) {
         if (!isBatchPoster[msg.sender] && msg.sender != address(rollup)) revert NotBatchPoster();
-        (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formDataHash(
+        (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formCallDataHash(
             data,
-            afterDelayedMessagesRead,
-            IBridge.BatchDataLocation.SeparateBatchEvent
+            afterDelayedMessagesRead
         );
-        addSequencerL2BatchImpl(
-            sequenceNumber,
+
+        (uint256 seqMessageIndex, , , ) = bridge.enqueueSequencerMessage(
             dataHash,
-            timeBounds,
             afterDelayedMessagesRead,
             prevMessageCount,
             newMessageCount,
+            timeBounds,
             IBridge.BatchDataLocation.SeparateBatchEvent
         );
+
+        // ~uint256(0) is type(uint256).max, but ever so slightly cheaper
+        if (seqMessageIndex != sequenceNumber && sequenceNumber != ~uint256(0)) {
+            revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
+        }
+
         emit SequencerBatchData(sequenceNumber, data);
     }
 
@@ -322,6 +352,10 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         return (header, timeBounds);
     }
 
+    /// @dev    Form a hash for a sequencer message with no batch data
+    /// @param  afterDelayedMessagesRead The delayed messages count read up to
+    /// @return The data hash
+    /// @return The timebounds within which the message should be processed
     function formEmptyDataHash(uint256 afterDelayedMessagesRead)
         internal
         view
@@ -333,117 +367,108 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         return (keccak256(header), timeBounds);
     }
 
-    function formDataHash(
-        bytes calldata data,
-        uint256 afterDelayedMessagesRead,
-        IBridge.BatchDataLocation dataLocation
-    ) internal view returns (bytes32, IBridge.TimeBounds memory) {
+    /// @dev    Since the data is supplied from calldata, the batch poster can choose the data type
+    ///         We need to ensure that this data cannot cause a collision with data supplied via another method (eg blobs)
+    ///         therefore we restrict which flags can be provided as a header in this field
+    ///         This also safe guards unused flags for future use, as we know they would have been disallowed up until this point
+    /// @param  headerByte The first byte in the calldata
+    function isValidCallDataFlag(bytes1 headerByte) internal pure returns (bool) {
+        return
+            headerByte == BROTLI_MESSAGE_HEADER_FLAG ||
+            headerByte == DAS_MESSAGE_HEADER_FLAG ||
+            (headerByte == (DAS_MESSAGE_HEADER_FLAG | TREE_DAS_MESSAGE_HEADER_FLAG)) ||
+            headerByte == ZERO_HEAVY_MESSAGE_HEADER_FLAG;
+    }
+
+    /// @dev    Form a hash of the data taken from the calldata
+    /// @param  data The calldata to be hashed
+    /// @param  afterDelayedMessagesRead The delayed messages count read up to
+    /// @return The data hash
+    /// @return The timebounds within which the message should be processed
+    function formCallDataHash(bytes calldata data, uint256 afterDelayedMessagesRead)
+        internal
+        view
+        returns (bytes32, IBridge.TimeBounds memory)
+    {
         uint256 fullDataLen = HEADER_LENGTH + data.length;
         if (fullDataLen > maxDataSize) revert DataTooLarge(fullDataLen, maxDataSize);
-        if (data.length > 0 && (data[0] & DATA_AUTHENTICATED_FLAG) == DATA_AUTHENTICATED_FLAG) {
-            revert DataNotAuthenticated();
-        }
+        // The first data byte must exist so that the data cannot collide with empty hash
+        if (data.length == 0) revert EmptyBatchData();
+        // The first data byte cannot be the same as any that have been set via other methods (eg 4844 blob header) as this
+        // would allow the supplier of the data to spoof an incorrect 4844 data batch
+        if (!isValidCallDataFlag(data[0])) revert InvalidHeaderFlag(data[0]);
 
         (bytes memory header, IBridge.TimeBounds memory timeBounds) = packHeader(
             afterDelayedMessagesRead
         );
-        if (dataLocation == IBridge.BatchDataLocation.Blob) {
-            bytes32[] memory dataHashes = dataHashReader.getDataHashes();
-            if (dataHashes.length == 0) revert MissingDataHashes();
-            if (data.length != 1) revert InvalidBlobMetadata();
-            if (data[0] & DATA_BLOB_HEADER_FLAG == 0) revert InvalidBlobMetadata();
 
-            return (
-                keccak256(bytes.concat(header, data, abi.encodePacked(dataHashes))),
-                timeBounds
-            );
-        } else {
-            // the first byte is used to identify the type of batch data
-            // das batches expect to have the type byte set, followed by the keyset (so they should have at least 33 bytes)
-            if (data.length >= 33 && data[0] & DAS_MESSAGE_HEADER_FLAG != 0) {
-                // we skip the first byte, then read the next 32 bytes for the keyset
-                bytes32 dasKeysetHash = bytes32(data[1:33]);
-                if (!dasKeySetInfo[dasKeysetHash].isValidKeyset) revert NoSuchKeyset(dasKeysetHash);
-            }
-            return (keccak256(bytes.concat(header, data)), timeBounds);
+        // the first byte is used to identify the type of batch data
+        // das batches expect to have the type byte set, followed by the keyset (so they should have at least 33 bytes)
+        if (data[0] & DAS_MESSAGE_HEADER_FLAG != 0 && data.length >= 33) {
+            // we skip the first byte, then read the next 32 bytes for the keyset
+            bytes32 dasKeysetHash = bytes32(data[1:33]);
+            if (!dasKeySetInfo[dasKeysetHash].isValidKeyset) revert NoSuchKeyset(dasKeysetHash);
         }
+        return (keccak256(bytes.concat(header, data)), timeBounds);
     }
 
-    function addSequencerL2BatchImpl(
-        uint256 sequenceNumber,
-        bytes32 dataHash,
-        IBridge.TimeBounds memory timeBounds,
-        uint256 afterDelayedMessagesRead,
-        uint256 prevMessageCount,
-        uint256 newMessageCount,
-        IBridge.BatchDataLocation batchDataLocation
-    ) internal returns (uint256 seqMessageIndex) {
-        (seqMessageIndex, , , ) = bridge.enqueueSequencerMessage(
-            dataHash,
-            afterDelayedMessagesRead,
-            prevMessageCount,
-            newMessageCount,
-            timeBounds,
-            batchDataLocation
+    /// @dev   Form a hash of the data being provided in 4844 data blobs
+    /// @param afterDelayedMessagesRead The delayed messages count read up to
+    /// @return The data hash
+    /// @return The timebounds within which the message should be processed
+    function formBlobDataHash(uint256 afterDelayedMessagesRead)
+        internal
+        view
+        returns (bytes32, IBridge.TimeBounds memory)
+    {
+        bytes32[] memory dataHashes = dataHashReader.getDataHashes();
+        if (dataHashes.length == 0) revert MissingDataHashes();
+
+        (bytes memory header, IBridge.TimeBounds memory timeBounds) = packHeader(
+            afterDelayedMessagesRead
         );
 
-        // submit a batch spending report to refund the entity that produced the batch data
-        submitBatchSpendingReport(dataHash, seqMessageIndex, batchDataLocation);
-
-        // ~uint256(0) is type(uint256).max, but ever so slightly cheaper
-        if (seqMessageIndex != sequenceNumber && sequenceNumber != ~uint256(0)) {
-            revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
-        }
+        return (
+            keccak256(bytes.concat(header, DATA_BLOB_HEADER_FLAG, abi.encodePacked(dataHashes))),
+            timeBounds
+        );
     }
 
+    /// @dev   Submit a batch spending report message so that the batch poster can be reimbursed on the rollup
+    /// @param dataHash The hash of the message the spending report is being submitted for
+    /// @param seqMessageIndex The index of the message to submit the spending report for
+    /// @param gasPrice The gas price that was paid for the data (standard gas or data gas)
     function submitBatchSpendingReport(
         bytes32 dataHash,
         uint256 seqMessageIndex,
-        IBridge.BatchDataLocation dataLocation
+        uint256 gasPrice
     ) internal {
         bytes memory spendingReportMsg;
         address batchPoster = tx.origin;
 
-        if (dataLocation == IBridge.BatchDataLocation.TxInput) {
-            // this msg isn't included in the current sequencer batch, but instead added to
-            // the delayed messages queue that is yet to be included
-            if (hostChainIsArbitrum) {
-                // Include extra gas for the host chain's L1 gas charging
-                uint256 l1Fees = ArbGasInfo(address(0x6c)).getCurrentTxL1GasFees();
-                uint256 extraGas = l1Fees / block.basefee;
-                require(extraGas <= type(uint64).max, "L1_GAS_NOT_UINT64");
-                spendingReportMsg = abi.encodePacked(
-                    block.timestamp,
-                    batchPoster,
-                    dataHash,
-                    seqMessageIndex,
-                    block.basefee,
-                    uint64(extraGas)
-                );
-            } else {
-                spendingReportMsg = abi.encodePacked(
-                    block.timestamp,
-                    batchPoster,
-                    dataHash,
-                    seqMessageIndex,
-                    block.basefee
-                );
-            }
-        } else if (dataLocation == IBridge.BatchDataLocation.Blob) {
-            // this msg isn't included in the current sequencer batch, but instead added to
-            // the delayed messages queue that is yet to be included
-            uint256 blobBasefee = blobBasefeeReader.getBlobBaseFee();
-            if (hostChainIsArbitrum) revert DataBlobsNotSupported();
+        // this msg isn't included in the current sequencer batch, but instead added to
+        // the delayed messages queue that is yet to be included
+        if (hostChainIsArbitrum) {
+            // Include extra gas for the host chain's L1 gas charging
+            uint256 l1Fees = ArbGasInfo(address(0x6c)).getCurrentTxL1GasFees();
+            uint256 extraGas = l1Fees / block.basefee;
+            require(extraGas <= type(uint64).max, "L1_GAS_NOT_UINT64");
             spendingReportMsg = abi.encodePacked(
                 block.timestamp,
                 batchPoster,
                 dataHash,
                 seqMessageIndex,
-                blobBasefee
+                gasPrice,
+                uint64(extraGas)
             );
         } else {
-            // do nothing, we only submit spending reports for tx input and blob
-            return;
+            spendingReportMsg = abi.encodePacked(
+                block.timestamp,
+                batchPoster,
+                dataHash,
+                seqMessageIndex,
+                gasPrice
+            );
         }
 
         uint256 msgNum = bridge.submitBatchSpendingReport(
@@ -453,8 +478,6 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         // this is the same event used by Inbox.sol after including a message to the delayed message accumulator
         emit InboxMessageDelivered(msgNum, spendingReportMsg);
     }
-
-    function submitBlobBatchSpendingReport(bytes32 dataHash, uint256 seqMessageIndex) internal {}
 
     function inboxAccs(uint256 index) external view returns (bytes32) {
         return bridge.sequencerInboxAccs(index);

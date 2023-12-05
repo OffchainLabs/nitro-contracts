@@ -44,20 +44,35 @@ interface ISequencerInbox is IDelayedMessageProvider {
     // solhint-disable-next-line func-name-mixedcase
     function HEADER_LENGTH() external view returns (uint256);
 
-    /// @dev If the first batch data byte after the header has this bit set,
-    ///      the sequencer inbox has authenticated the data. Currently not used.
-    // solhint-disable-next-line func-name-mixedcase
-    function DATA_AUTHENTICATED_FLAG() external view returns (bytes1);
-
     /// @dev If the first data byte after the header has this bit set,
     ///      then the batch data is to be found in 4844 data blobs
+    ///      See: https://github.com/OffchainLabs/nitro/blob/69de0603abf6f900a4128cab7933df60cad54ded/arbstate/das_reader.go
     // solhint-disable-next-line func-name-mixedcase
     function DATA_BLOB_HEADER_FLAG() external view returns (bytes1);
 
     /// @dev If the first data byte after the header has this bit set,
     ///      then the batch data is a das message
+    ///      See: https://github.com/OffchainLabs/nitro/blob/69de0603abf6f900a4128cab7933df60cad54ded/arbstate/das_reader.go
     // solhint-disable-next-line func-name-mixedcase
     function DAS_MESSAGE_HEADER_FLAG() external view returns (bytes1);
+
+    /// @dev If the first data byte after the header has this bit set,
+    ///      then the batch data is a das message that employs a merklesization strategy
+    ///      See: https://github.com/OffchainLabs/nitro/blob/69de0603abf6f900a4128cab7933df60cad54ded/arbstate/das_reader.go
+    // solhint-disable-next-line func-name-mixedcase
+    function TREE_DAS_MESSAGE_HEADER_FLAG() external view returns (bytes1);
+
+    /// @dev If the first data byte after the header has this bit set,
+    ///      then the batch data has been brotli compressed
+    ///      See: https://github.com/OffchainLabs/nitro/blob/69de0603abf6f900a4128cab7933df60cad54ded/arbstate/das_reader.go
+    // solhint-disable-next-line func-name-mixedcase
+    function BROTLI_MESSAGE_HEADER_FLAG() external view returns (bytes1);
+
+    /// @dev If the first data byte after the header has this bit set,
+    ///      then the batch data uses a zero heavy encoding
+    ///      See: https://github.com/OffchainLabs/nitro/blob/69de0603abf6f900a4128cab7933df60cad54ded/arbstate/das_reader.go
+    // solhint-disable-next-line func-name-mixedcase
+    function ZERO_HEAVY_MESSAGE_HEADER_FLAG() external view returns (bytes1);
 
     function rollup() external view returns (IOwnable);
 

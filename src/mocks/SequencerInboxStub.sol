@@ -38,13 +38,12 @@ contract SequencerInboxStub is SequencerInbox {
         require(num == 0, "ALREADY_DELAYED_INIT");
         emit InboxMessageDelivered(num, initMsg);
         (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formEmptyDataHash(1);
-        uint256 sequencerMessageCount = addSequencerL2BatchImpl(
-            0,
+        (uint256 sequencerMessageCount, , , ) = bridge.enqueueSequencerMessage(
             dataHash,
-            timeBounds,
             1,
             0,
             0,
+            timeBounds,
             IBridge.BatchDataLocation.NoData
         );
         require(sequencerMessageCount == 0, "ALREADY_SEQ_INIT");
