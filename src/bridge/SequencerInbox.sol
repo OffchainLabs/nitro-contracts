@@ -392,22 +392,25 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
     {
         uint256 fullDataLen = HEADER_LENGTH + data.length;
         if (fullDataLen > maxDataSize) revert DataTooLarge(fullDataLen, maxDataSize);
-        // The first data byte must exist so that the data cannot collide with empty hash
-        if (data.length == 0) revert EmptyBatchData();
-        // The first data byte cannot be the same as any that have been set via other methods (eg 4844 blob header) as this
-        // would allow the supplier of the data to spoof an incorrect 4844 data batch
-        if (!isValidCallDataFlag(data[0])) revert InvalidHeaderFlag(data[0]);
-
+        
         (bytes memory header, IBridge.TimeBounds memory timeBounds) = packHeader(
             afterDelayedMessagesRead
         );
 
-        // the first byte is used to identify the type of batch data
-        // das batches expect to have the type byte set, followed by the keyset (so they should have at least 33 bytes)
-        if (data[0] & DAS_MESSAGE_HEADER_FLAG != 0 && data.length >= 33) {
-            // we skip the first byte, then read the next 32 bytes for the keyset
-            bytes32 dasKeysetHash = bytes32(data[1:33]);
-            if (!dasKeySetInfo[dasKeysetHash].isValidKeyset) revert NoSuchKeyset(dasKeysetHash);
+        // the batch poster is allowed to submit an empty batch, they can use this to progress the 
+        // delayed inbox without providing extra batch data
+        if(data.length > 0) {
+            // The first data byte cannot be the same as any that have been set via other methods (eg 4844 blob header) as this
+            // would allow the supplier of the data to spoof an incorrect 4844 data batch
+            if (!isValidCallDataFlag(data[0])) revert InvalidHeaderFlag(data[0]);
+
+            // the first byte is used to identify the type of batch data
+            // das batches expect to have the type byte set, followed by the keyset (so they should have at least 33 bytes)
+            if (data[0] & DAS_MESSAGE_HEADER_FLAG != 0 && data.length >= 33) {
+                // we skip the first byte, then read the next 32 bytes for the keyset
+                bytes32 dasKeysetHash = bytes32(data[1:33]);
+                if (!dasKeySetInfo[dasKeysetHash].isValidKeyset) revert NoSuchKeyset(dasKeysetHash);
+            }
         }
         return (keccak256(bytes.concat(header, data)), timeBounds);
     }
