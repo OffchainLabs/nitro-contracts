@@ -19,7 +19,7 @@ interface IBridge {
         uint64 timestamp
     );
 
-    event MessageDeliveredV2(uint8 indexed kind, address indexed sender);
+    event DepositMessageDelivered(address indexed sender);
 
     event BridgeCallTriggered(
         address indexed outbox,
