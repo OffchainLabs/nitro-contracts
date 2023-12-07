@@ -63,7 +63,7 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
     mapping(bytes32 => DasKeySetInfo) public dasKeySetInfo;
 
     modifier onlyRollupOwner() {
-        if (msg.sender != rollup.owner()) revert NotOwner(msg.sender, address(rollup));
+        if (msg.sender != rollup.owner()) revert NotOwner(msg.sender, rollup.owner());
         _;
     }
 
