@@ -20,7 +20,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-
 /**
  * @title Staging ground for incoming and outgoing messages
  * @notice Unlike the standard Eth bridge, native token bridge escrows the custom ERC20 token which is
