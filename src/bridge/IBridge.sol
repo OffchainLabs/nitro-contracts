@@ -34,22 +34,6 @@ interface IBridge {
 
     event RollupUpdated(address rollup);
 
-    /**
-     * @dev token that is escrowed in bridge on L1 side and minted on L2 as native currency.
-     * Fees are paid in this token. There are certain restrictions on the native token:
-     *  - The token can't be rebasing or have a transfer fee
-     *  - The token must only be transferrable via a call to the token address itself
-     *  - The token must only be able to set allowance via a call to the token address itself
-     *  - The token must not have a callback on transfer, and more generally a user must not be able to make a transfer to themselves revert
-     * For non ERC20Bridge, this method should revert with error NoNativeToken().
-     */
-    function nativeToken() external view returns (address);
-
-    /**
-     * @dev For non ERC20Bridge, this method will return 0.
-     */
-    function nativeTokenDecimals() external view returns (uint8);
-
     function allowedDelayedInboxList(uint256) external returns (address);
 
     function allowedOutboxList(uint256) external returns (address);

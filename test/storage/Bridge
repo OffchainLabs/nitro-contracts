@@ -13,5 +13,3 @@
 | sequencerInbox                   | address                                        | 9    | 0      | 20    | src/bridge/Bridge.sol:Bridge |
 | sequencerReportedSubMessageCount | uint256                                        | 10   | 0      | 32    | src/bridge/Bridge.sol:Bridge |
 | __gap                            | uint256[40]                                    | 11   | 0      | 1280  | src/bridge/Bridge.sol:Bridge |
-| _nativeToken                     | address                                        | 51   | 0      | 20    | src/bridge/Bridge.sol:Bridge |
-| _nativeTokenDecimals             | uint8                                          | 51   | 20     | 1     | src/bridge/Bridge.sol:Bridge |

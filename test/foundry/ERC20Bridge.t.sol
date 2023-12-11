@@ -46,7 +46,7 @@ contract ERC20BridgeTest is AbsBridgeTest {
         assertEq(address(bridge.rollup()), rollup, "Invalid rollup ref");
         assertEq(bridge.activeOutbox(), address(0), "Invalid activeOutbox ref");
         assertEq(
-            bridge.nativeTokenDecimals(),
+            IERC20Bridge(address(bridge)).nativeTokenDecimals(),
             18,
             "Invalid native token decimals"
         );

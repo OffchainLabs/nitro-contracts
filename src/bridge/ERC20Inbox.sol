@@ -155,7 +155,7 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
         // decimals then here it will be normalized to 18. Keep in mind, when withdrawing from child chain back
         // to parent chain then the amount has to match native token's granularity, otherwise it will be rounded
         // down.
-        uint8 nativeTokenDecimals = bridge.nativeTokenDecimals();
+        uint8 nativeTokenDecimals = IERC20Bridge(address(bridge)).nativeTokenDecimals();
 
         // Also make sure that inflated amount does not overflow uint256
         if (nativeTokenDecimals < 18) {
