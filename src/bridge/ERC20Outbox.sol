@@ -7,37 +7,16 @@ pragma solidity ^0.8.4;
 import "./AbsOutbox.sol";
 import {IERC20Bridge} from "./IERC20Bridge.sol";
 import {DecimalsConverterHelper} from "../libraries/DecimalsConverterHelper.sol";
-import {AmountTooLarge, NativeTokenDecimalsTooLarge} from "../libraries/Error.sol";
+import {AmountTooLarge} from "../libraries/Error.sol";
+import {MAX_BRIDGEABLE_AMOUNT} from "../libraries/Constants.sol";
+
 
 contract ERC20Outbox is AbsOutbox {
-    /// @dev number of decimals used by native token
-    uint8 public nativeTokenDecimals;
-
     /// @dev it is assumed that arb-os never assigns this value to a valid leaf to be redeemed
     uint256 private constant AMOUNT_DEFAULT_CONTEXT = type(uint256).max;
 
-    /// @dev If nativeTokenDecimals is different than 18 decimals, bridge will inflate or deflate token amounts
-    ///      when depositing to child chain to match 18 decimal denomination. Opposite process happens when
-    ///      amount is withdrawn back to parent chain. In order to avoid uint256 overflows we restrict max number
-    ///      of decimals to 36 which should be enough for most practical use-cases.
-    uint8 public constant MAX_ALLOWED_NATIVE_TOKEN_DECIMALS = uint8(36);
-
-    /// @dev Max amount that can be moved from parent chain to child chain. Also the max amount that can be
-    ///      claimed on parent chain after withdrawing it from child chain. Amounts higher than this would
-    ///      risk uint256 overflows. This amount is derived from the fact that we have set MAX_ALLOWED_NATIVE_TOKEN_DECIMALS
-    ///      to 36 which means that in the worst case we are inflating by 18 decimals points. This constant
-    ///      equals to ~1.1*10^59 tokens
-    uint256 public constant MAX_BRIDGEABLE_AMOUNT = type(uint256).max / 10**18;
-
     function initialize(IBridge _bridge) external onlyDelegated {
         __AbsOutbox_init(_bridge);
-
-        // store number of decimals used by native token
-        address nativeToken = IERC20Bridge(address(bridge)).nativeToken();
-        nativeTokenDecimals = DecimalsConverterHelper.getDecimals(nativeToken);
-        if (nativeTokenDecimals > MAX_ALLOWED_NATIVE_TOKEN_DECIMALS) {
-            revert NativeTokenDecimalsTooLarge(nativeTokenDecimals);
-        }
     }
 
     function l2ToL1WithdrawalAmount() external view returns (uint256) {
@@ -54,6 +33,7 @@ contract ERC20Outbox is AbsOutbox {
 
     /// @inheritdoc AbsOutbox
     function _getAmountToUnlock(uint256 value) internal view override returns (uint256) {
+        uint8 nativeTokenDecimals = bridge.nativeTokenDecimals();
         // make sure that inflated amount does not overflow uint256
         if (value > MAX_BRIDGEABLE_AMOUNT && nativeTokenDecimals > 18) {
             revert AmountTooLarge(value);

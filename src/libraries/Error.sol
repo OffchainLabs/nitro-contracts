@@ -75,6 +75,9 @@ error CallTargetNotAllowed(address target);
 /// @dev Call that changes the balance of ERC20Bridge is not allowed
 error CallNotAllowed();
 
+/// @dev NativeToken is invalid on ETHBridge
+error NoNativeToken();
+
 // Inbox Errors
 
 /// @dev The contract is paused, so cannot be paused

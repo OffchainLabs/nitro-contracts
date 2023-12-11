@@ -14,7 +14,8 @@ import {
     NotSequencerInbox,
     NotOutbox,
     InvalidOutboxSet,
-    BadSequencerMessageNumber
+    BadSequencerMessageNumber,
+    NoNativeToken
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./Messages.sol";
@@ -305,4 +306,26 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
     uint256[40] private __gap;
+
+    // These are put after the gap to preserves the storage layout of ERC20Bridge
+    address internal _nativeToken;
+    uint8 internal _nativeTokenDecimals;
+
+    /// @inheritdoc IBridge
+    function nativeToken() external view returns (address){
+        address nativeToken_ = _nativeToken;
+        if(nativeToken_ == address(0)){
+            revert NoNativeToken();
+        }
+        return nativeToken_;
+    }
+
+    /// @inheritdoc IBridge
+    function nativeTokenDecimals() external view returns (uint8){
+        address nativeToken_ = _nativeToken;
+        if(nativeToken_ == address(0)){
+            revert NoNativeToken();
+        }
+        return _nativeTokenDecimals;
+    }
 }

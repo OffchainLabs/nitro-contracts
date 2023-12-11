@@ -2,7 +2,7 @@
 pragma solidity ^0.8.4;
 
 import "./AbsOutbox.t.sol";
-import "./ERC20Inbox.t.sol";
+import "./ERC20Bridge.t.sol";
 import "../../src/bridge/ERC20Bridge.sol";
 import "../../src/bridge/ERC20Outbox.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -36,43 +36,12 @@ contract ERC20OutboxTest is AbsOutboxTest {
 
     /* solhint-disable func-name-mixedcase */
     function test_initialize_ERC20() public {
-        assertEq(erc20Outbox.nativeTokenDecimals(), 18, "Invalid native token decimals");
         assertEq(erc20Outbox.l2ToL1WithdrawalAmount(), 0, "Invalid withdrawalAmount");
-    }
-
-    function test_initialize_ERC20_LessThan18Decimals() public {
-        ERC20 _nativeToken = new ERC20_6Decimals();
-        ERC20Bridge _bridge = ERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        ERC20Outbox _outbox = ERC20Outbox(TestUtil.deployProxy(address(new ERC20Outbox())));
-        _bridge.initialize(IOwnable(makeAddr("rollup")), address(_nativeToken));
-        _outbox.initialize(IBridge(_bridge));
-
-        assertEq(_outbox.nativeTokenDecimals(), 6, "Invalid native token decimals");
-    }
-
-    function test_initialize_ERC20_NoDecimals() public {
-        ERC20 _nativeToken = new ERC20NoDecimals();
-        ERC20Bridge _bridge = ERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        ERC20Outbox _outbox = ERC20Outbox(TestUtil.deployProxy(address(new ERC20Outbox())));
-        _bridge.initialize(IOwnable(makeAddr("rollup")), address(_nativeToken));
-        _outbox.initialize(IBridge(_bridge));
-
-        assertEq(_outbox.nativeTokenDecimals(), 0, "Invalid native token decimals");
     }
 
     function test_initialize_revert_AlreadyInit() public {
         vm.expectRevert(abi.encodeWithSelector(AlreadyInit.selector));
         erc20Outbox.initialize(IBridge(bridge));
-    }
-
-    function test_initialize_revert_DecimalsTooLarge() public {
-        ERC20 _nativeToken = new ERC20_37Decimals();
-        ERC20Bridge _bridge = ERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        ERC20Outbox _outbox = ERC20Outbox(TestUtil.deployProxy(address(new ERC20Outbox())));
-        _bridge.initialize(IOwnable(makeAddr("rollup")), address(_nativeToken));
-
-        vm.expectRevert(abi.encodeWithSelector(NativeTokenDecimalsTooLarge.selector, 37));
-        _outbox.initialize(IBridge(_bridge));
     }
 
     function test_executeTransaction() public {

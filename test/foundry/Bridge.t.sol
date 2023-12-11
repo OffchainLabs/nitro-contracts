@@ -35,6 +35,13 @@ contract BridgeTest is AbsBridgeTest {
         assertEq(bridge.activeOutbox(), address(0), "Invalid activeOutbox ref");
     }
 
+    function test_no_native_token() public {
+        vm.expectRevert(NoNativeToken.selector);
+        bridge.nativeToken();
+        vm.expectRevert(NoNativeToken.selector);
+        bridge.nativeTokenDecimals();
+    }
+
     function test_initialize_revert_ReInit() public {
         vm.expectRevert("Initializable: contract is already initialized");
         ethBridge.initialize(IOwnable(rollup));

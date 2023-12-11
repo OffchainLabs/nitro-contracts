@@ -7,7 +7,10 @@ pragma solidity ^0.8.4;
 import "./AbsBridge.sol";
 import "./IERC20Bridge.sol";
 import "../libraries/AddressAliasHelper.sol";
-import {InvalidTokenSet, CallTargetNotAllowed, CallNotAllowed} from "../libraries/Error.sol";
+import {InvalidTokenSet, CallTargetNotAllowed, CallNotAllowed, NativeTokenDecimalsTooLarge} from "../libraries/Error.sol";
+import {DecimalsConverterHelper} from "../libraries/DecimalsConverterHelper.sol";
+import {MAX_ALLOWED_NATIVE_TOKEN_DECIMALS} from "../libraries/Constants.sol";
+
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -25,14 +28,17 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
     using SafeERC20 for IERC20;
 
     /// @inheritdoc IERC20Bridge
-    address public nativeToken;
-
-    /// @inheritdoc IERC20Bridge
     function initialize(IOwnable rollup_, address nativeToken_) external initializer onlyDelegated {
         if (nativeToken_ == address(0)) revert InvalidTokenSet(nativeToken_);
-        nativeToken = nativeToken_;
+        _nativeToken = nativeToken_;
         _activeOutbox = EMPTY_ACTIVEOUTBOX;
         rollup = rollup_;
+
+        // store number of decimals used by native token
+        _nativeTokenDecimals = DecimalsConverterHelper.getDecimals(_nativeToken);
+        if (_nativeTokenDecimals > MAX_ALLOWED_NATIVE_TOKEN_DECIMALS) {
+            revert NativeTokenDecimalsTooLarge(_nativeTokenDecimals);
+        }
     }
 
     /// @inheritdoc IERC20Bridge
@@ -47,7 +53,7 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
 
     function _transferFunds(uint256 amount) internal override {
         // fetch native token from Inbox
-        IERC20(nativeToken).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(_nativeToken).safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function _executeLowLevelCall(
@@ -55,12 +61,12 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
         uint256 value,
         bytes memory data
     ) internal override returns (bool success, bytes memory returnData) {
-        address _nativeToken = nativeToken;
+        address nativeToken_ = _nativeToken;
 
         // we don't allow outgoing calls to native token contract because it could
         // result in loss of native tokens which are escrowed by ERC20Bridge
-        if (to == _nativeToken) {
-            revert CallTargetNotAllowed(_nativeToken);
+        if (to == nativeToken_) {
+            revert CallTargetNotAllowed(nativeToken_);
         }
 
         // first release native token
@@ -70,12 +76,12 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
         // if there's data do additional contract call. Make sure that call is not used to
         // decrease bridge contract's balance of the native token
         if (data.length > 0) {
-            uint256 bridgeBalanceBefore = IERC20(_nativeToken).balanceOf(address(this));
+            uint256 bridgeBalanceBefore = IERC20(nativeToken_).balanceOf(address(this));
 
             // solhint-disable-next-line avoid-low-level-calls
             (success, returnData) = to.call(data);
 
-            uint256 bridgeBalanceAfter = IERC20(_nativeToken).balanceOf(address(this));
+            uint256 bridgeBalanceAfter = IERC20(nativeToken_).balanceOf(address(this));
             if (bridgeBalanceAfter < bridgeBalanceBefore) {
                 revert CallNotAllowed();
             }
