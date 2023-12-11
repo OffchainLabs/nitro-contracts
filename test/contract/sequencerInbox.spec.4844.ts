@@ -426,7 +426,6 @@ describe('SequencerInbox', async () => {
         'addSequencerL2BatchFromBlob',
         [
           sequenceNumber,
-          Toolkit4844.DATA_BLOB_HEADER_FLAG,
           afterDelayedMessagesRead,
           constants.AddressZero,
           subMessageCount,
