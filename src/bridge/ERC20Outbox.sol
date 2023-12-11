@@ -10,7 +10,6 @@ import {DecimalsConverterHelper} from "../libraries/DecimalsConverterHelper.sol"
 import {AmountTooLarge} from "../libraries/Error.sol";
 import {MAX_BRIDGEABLE_AMOUNT} from "../libraries/Constants.sol";
 
-
 contract ERC20Outbox is AbsOutbox {
     /// @dev it is assumed that arb-os never assigns this value to a valid leaf to be redeemed
     uint256 private constant AMOUNT_DEFAULT_CONTEXT = type(uint256).max;

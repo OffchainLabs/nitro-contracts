@@ -312,18 +312,18 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     uint8 internal _nativeTokenDecimals;
 
     /// @inheritdoc IBridge
-    function nativeToken() external view returns (address){
+    function nativeToken() external view returns (address) {
         address nativeToken_ = _nativeToken;
-        if(nativeToken_ == address(0)){
+        if (nativeToken_ == address(0)) {
             revert NoNativeToken();
         }
         return nativeToken_;
     }
 
     /// @inheritdoc IBridge
-    function nativeTokenDecimals() external view returns (uint8){
+    function nativeTokenDecimals() external view returns (uint8) {
         address nativeToken_ = _nativeToken;
-        if(nativeToken_ == address(0)){
+        if (nativeToken_ == address(0)) {
             revert NoNativeToken();
         }
         return _nativeTokenDecimals;

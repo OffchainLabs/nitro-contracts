@@ -7,7 +7,12 @@ pragma solidity ^0.8.4;
 import "./AbsBridge.sol";
 import "./IERC20Bridge.sol";
 import "../libraries/AddressAliasHelper.sol";
-import {InvalidTokenSet, CallTargetNotAllowed, CallNotAllowed, NativeTokenDecimalsTooLarge} from "../libraries/Error.sol";
+import {
+    InvalidTokenSet,
+    CallTargetNotAllowed,
+    CallNotAllowed,
+    NativeTokenDecimalsTooLarge
+} from "../libraries/Error.sol";
 import {DecimalsConverterHelper} from "../libraries/DecimalsConverterHelper.sol";
 import {MAX_ALLOWED_NATIVE_TOKEN_DECIMALS} from "../libraries/Constants.sol";
 
