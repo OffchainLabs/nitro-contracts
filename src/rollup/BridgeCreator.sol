@@ -58,12 +58,10 @@ contract BridgeCreator is Ownable {
         emit ERC20TemplatesUpdated();
     }
 
-    function _createBridge(
-        address adminProxy,
-        BridgeTemplates storage templates,
-        ISequencerInbox.MaxTimeVariation calldata maxTimeVariation,
-        uint256 maxDataSize
-    ) internal returns (BridgeContracts memory) {
+    function _createBridge(address adminProxy, BridgeTemplates storage templates)
+        internal
+        returns (BridgeContracts memory)
+    {
         BridgeContracts memory frame;
         frame.bridge = IBridge(
             address(new TransparentUpgradeableProxy(address(templates.bridge), adminProxy, ""))
@@ -94,9 +92,7 @@ contract BridgeCreator is Ownable {
         // create ETH-based bridge if address zero is provided for native token, otherwise create ERC20-based bridge
         BridgeContracts memory frame = _createBridge(
             adminProxy,
-            nativeToken == address(0) ? ethBasedTemplates : erc20BasedTemplates,
-            maxTimeVariation,
-            maxDataSize
+            nativeToken == address(0) ? ethBasedTemplates : erc20BasedTemplates
         );
 
         // init contracts

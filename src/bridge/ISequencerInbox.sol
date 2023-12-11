@@ -17,10 +17,10 @@ interface ISequencerInbox is IDelayedMessageProvider {
     /// @param delaySeconds The max amount of seconds in the past that a message can be received on L2
     /// @param futureSeconds The max amount of seconds in the future that a message can be received on L2
     struct MaxTimeVariation {
-        uint256 delayBlocks;
-        uint256 futureBlocks;
-        uint256 delaySeconds;
-        uint256 futureSeconds;
+        uint64 delayBlocks;
+        uint64 futureBlocks;
+        uint64 delaySeconds;
+        uint64 futureSeconds;
     }
 
     event OwnerFunctionCalled(uint256 indexed id);
