@@ -14,10 +14,6 @@ contract ERC20Outbox is AbsOutbox {
     /// @dev it is assumed that arb-os never assigns this value to a valid leaf to be redeemed
     uint256 private constant AMOUNT_DEFAULT_CONTEXT = type(uint256).max;
 
-    function initialize(IBridge _bridge) external onlyDelegated {
-        __AbsOutbox_init(_bridge);
-    }
-
     function l2ToL1WithdrawalAmount() external view returns (uint256) {
         uint256 amount = context.withdrawalAmount;
         if (amount == AMOUNT_DEFAULT_CONTEXT) return 0;

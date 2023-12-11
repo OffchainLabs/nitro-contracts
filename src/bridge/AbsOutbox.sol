@@ -60,8 +60,7 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
 
     uint128 public constant OUTBOX_VERSION = 2;
 
-    /* solhint-disable func-name-mixedcase */
-    function __AbsOutbox_init(IBridge _bridge) internal {
+    function initialize(IBridge _bridge) external onlyDelegated {
         if (address(_bridge) == address(0)) revert HadZeroInit();
         if (address(bridge) != address(0)) revert AlreadyInit();
         // address zero is returned if no context is set, but the values used in storage
