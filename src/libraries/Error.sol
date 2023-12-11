@@ -7,8 +7,11 @@ pragma solidity ^0.8.4;
 /// @dev Init was already called
 error AlreadyInit();
 
-/// Init was called with param set to zero that must be nonzero
+/// @dev Init was called with param set to zero that must be nonzero
 error HadZeroInit();
+
+/// @dev Thrown when post upgrade init validation fails
+error BadPostUpgradeInit();
 
 /// @dev Thrown when non owner tries to access an only-owner function
 /// @param sender The msg.sender who is not the owner
@@ -178,3 +181,6 @@ error AlreadyValidDASKeyset(bytes32);
 
 /// @dev Tried to use or invalidate an already invalid Data Availability Service keyset
 error NoSuchKeyset(bytes32);
+
+/// @dev Thrown when rollup is not updated with updateRollupAddress
+error RollupNotChanged();
