@@ -46,11 +46,11 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
             if (decimals > MAX_ALLOWED_NATIVE_TOKEN_DECIMALS) {
                 revert NativeTokenDecimalsTooLarge(decimals);
             }
-            _nativeTokenDecimals = decimals;
+            nativeTokenDecimals = decimals;
         } catch {
             // decimal is not part of the ERC20 spec
             // assume it have 0 decimals if it does not have decimals() method
-            _nativeTokenDecimals = 0;
+            nativeTokenDecimals = 0;
         }
     }
 
@@ -74,27 +74,27 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
         uint256 value,
         bytes memory data
     ) internal override returns (bool success, bytes memory returnData) {
-        address nativeToken_ = _nativeToken;
+        address __nativeToken = _nativeToken;
 
         // we don't allow outgoing calls to native token contract because it could
         // result in loss of native tokens which are escrowed by ERC20Bridge
-        if (to == nativeToken_) {
-            revert CallTargetNotAllowed(nativeToken_);
+        if (to == __nativeToken) {
+            revert CallTargetNotAllowed(__nativeToken);
         }
 
         // first release native token
-        IERC20(_nativeToken).safeTransfer(to, value);
+        IERC20(__nativeToken).safeTransfer(to, value);
         success = true;
 
         // if there's data do additional contract call. Make sure that call is not used to
         // decrease bridge contract's balance of the native token
         if (data.length > 0) {
-            uint256 bridgeBalanceBefore = IERC20(nativeToken_).balanceOf(address(this));
+            uint256 bridgeBalanceBefore = IERC20(__nativeToken).balanceOf(address(this));
 
             // solhint-disable-next-line avoid-low-level-calls
             (success, returnData) = to.call(data);
 
-            uint256 bridgeBalanceAfter = IERC20(nativeToken_).balanceOf(address(this));
+            uint256 bridgeBalanceAfter = IERC20(__nativeToken).balanceOf(address(this));
             if (bridgeBalanceAfter < bridgeBalanceBefore) {
                 revert CallNotAllowed();
             }

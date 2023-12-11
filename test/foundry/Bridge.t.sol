@@ -38,8 +38,7 @@ contract BridgeTest is AbsBridgeTest {
     function test_no_native_token() public {
         vm.expectRevert(NoNativeToken.selector);
         bridge.nativeToken();
-        vm.expectRevert(NoNativeToken.selector);
-        bridge.nativeTokenDecimals();
+        assertEq(bridge.nativeTokenDecimals(), 0, "Invalid nativeTokenDecimals");
     }
 
     function test_initialize_revert_ReInit() public {

@@ -309,7 +309,7 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
 
     // These are put after the gap to preserves the storage layout of ERC20Bridge
     address internal _nativeToken;
-    uint8 internal _nativeTokenDecimals;
+    uint8 public nativeTokenDecimals;
 
     /// @inheritdoc IBridge
     function nativeToken() external view returns (address) {
@@ -318,14 +318,5 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
             revert NoNativeToken();
         }
         return nativeToken_;
-    }
-
-    /// @inheritdoc IBridge
-    function nativeTokenDecimals() external view returns (uint8) {
-        address nativeToken_ = _nativeToken;
-        if (nativeToken_ == address(0)) {
-            revert NoNativeToken();
-        }
-        return _nativeTokenDecimals;
     }
 }

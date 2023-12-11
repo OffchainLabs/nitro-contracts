@@ -46,7 +46,7 @@ interface IBridge {
     function nativeToken() external view returns (address);
 
     /**
-     * @dev For non ERC20Bridge, this method should revert with error NoNativeToken().
+     * @dev For non ERC20Bridge, this method will return 0.
      */
     function nativeTokenDecimals() external view returns (uint8);
 
