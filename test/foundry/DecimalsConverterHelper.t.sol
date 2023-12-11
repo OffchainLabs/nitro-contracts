@@ -17,11 +17,13 @@ contract DecimalsConverterHelperTest is Test {
     function test_adjust_decimals_InLessThanOut() public {
         assertEq(
             DecimalsConverterHelper.adjustDecimals(752, 0, 18),
-            752 * 10 ** 18,
+            752 * 10**18,
             "Invalid adjustment 2"
         );
         assertEq(
-            DecimalsConverterHelper.adjustDecimals(752, 16, 18), 75_200, "Invalid adjustment 4"
+            DecimalsConverterHelper.adjustDecimals(752, 16, 18),
+            75_200,
+            "Invalid adjustment 4"
         );
     }
 
@@ -33,7 +35,9 @@ contract DecimalsConverterHelperTest is Test {
 
     function test_adjust_decimals_equalDecimal_Fuzz(uint256 amount, uint8 decimals) public {
         assertEq(
-            DecimalsConverterHelper.adjustDecimals(amount, decimals, decimals), amount, "Invalid 8"
+            DecimalsConverterHelper.adjustDecimals(amount, decimals, decimals),
+            amount,
+            "Invalid 8"
         );
     }
 
@@ -42,10 +46,10 @@ contract DecimalsConverterHelperTest is Test {
     {
         uint8 decimalsOut = 18;
         vm.assume(decimalsIn < decimalsOut);
-        vm.assume(amount < type(uint256).max / 10 ** (decimalsOut - decimalsIn));
+        vm.assume(amount < type(uint256).max / 10**(decimalsOut - decimalsIn));
         assertEq(
             DecimalsConverterHelper.adjustDecimals(amount, decimalsIn, decimalsOut),
-            amount * 10 ** (decimalsOut - decimalsIn),
+            amount * 10**(decimalsOut - decimalsIn),
             "Invalid 9"
         );
     }
@@ -59,31 +63,8 @@ contract DecimalsConverterHelperTest is Test {
         vm.assume(decimalsIn > decimalsOut);
         assertEq(
             DecimalsConverterHelper.adjustDecimals(amount, decimalsIn, decimalsOut),
-            amount / 10 ** (decimalsIn - decimalsOut),
+            amount / 10**(decimalsIn - decimalsOut),
             "Invalid 10"
-        );
-    }
-
-    function test_getDecimals() public {
-        assertEq(
-            DecimalsConverterHelper.getDecimals(address(new ERC20_6Decimals())),
-            6,
-            "Invalid decimals 1"
-        );
-        assertEq(
-            DecimalsConverterHelper.getDecimals(address(new ERC20_20Decimals())),
-            20,
-            "Invalid decimals 2"
-        );
-        assertEq(
-            DecimalsConverterHelper.getDecimals(address(new ERC20_37Decimals())),
-            37,
-            "Invalid decimals 3"
-        );
-        assertEq(
-            DecimalsConverterHelper.getDecimals(address(new ERC20NoDecimals())),
-            0,
-            "Invalid decimals 4"
         );
     }
 }

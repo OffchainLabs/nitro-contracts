@@ -16,8 +16,10 @@ import {
 import {DecimalsConverterHelper} from "../libraries/DecimalsConverterHelper.sol";
 import {MAX_ALLOWED_NATIVE_TOKEN_DECIMALS} from "../libraries/Constants.sol";
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
 
 /**
  * @title Staging ground for incoming and outgoing messages
@@ -40,9 +42,15 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
         rollup = rollup_;
 
         // store number of decimals used by native token
-        _nativeTokenDecimals = DecimalsConverterHelper.getDecimals(_nativeToken);
-        if (_nativeTokenDecimals > MAX_ALLOWED_NATIVE_TOKEN_DECIMALS) {
-            revert NativeTokenDecimalsTooLarge(_nativeTokenDecimals);
+        try ERC20(nativeToken_).decimals() returns (uint8 decimals) {
+            if (decimals > MAX_ALLOWED_NATIVE_TOKEN_DECIMALS) {
+                revert NativeTokenDecimalsTooLarge(decimals);
+            }
+            _nativeTokenDecimals = decimals;
+        } catch {
+            // decimal is not part of the ERC20 spec
+            // assume it have 0 decimals if it does not have decimals() method
+            _nativeTokenDecimals = 0;
         }
     }
 

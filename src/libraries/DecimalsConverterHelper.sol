@@ -4,7 +4,6 @@
 
 pragma solidity ^0.8.0;
 
-import {BytesLib} from "./BytesLib.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 library DecimalsConverterHelper {
@@ -30,20 +29,5 @@ library DecimalsConverterHelper {
         } else {
             return amount / 10**(decimalsIn - decimalsOut);
         }
-    }
-
-    /// @notice use static call to get number of decimals used by token.
-    /// @param token address of the token
-    /// @return number of decimals used by token. Returns 0 if static call is unsuccessful.
-    function getDecimals(address token) internal view returns (uint8) {
-        (bool success, bytes memory decimalsData) = token.staticcall(
-            abi.encodeWithSelector(ERC20.decimals.selector)
-        );
-        if (success && decimalsData.length == 32) {
-            // decimals() returns uint8
-            return BytesLib.toUint8(decimalsData, 31);
-        }
-
-        return 0;
     }
 }
