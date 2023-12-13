@@ -407,7 +407,7 @@ contract ERC20OutboxTest is AbsOutboxTest {
 
         bytes memory data = abi.encodeWithSignature("receiveHook()");
 
-        vm.expectRevert(abi.encodeWithSelector(AmountTooLarge.selector, tooLargeWithdrawalAmount));
+        vm.expectRevert(stdError.arithmeticError); // overflow
         _outbox.executeTransaction({
             proof: proof,
             index: 12,

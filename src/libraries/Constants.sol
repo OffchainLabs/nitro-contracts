@@ -15,9 +15,7 @@ uint256 constant ETH_POS_BLOCK_TIME = 12;
 ///      of decimals to 36 which should be enough for most practical use-cases.
 uint8 constant MAX_ALLOWED_NATIVE_TOKEN_DECIMALS = uint8(36);
 
-/// @dev Max amount that can be moved from parent chain to child chain. Also the max amount that can be
-///      claimed on parent chain after withdrawing it from child chain. Amounts higher than this would
-///      risk uint256 overflows. This amount is derived from the fact that we have set MAX_ALLOWED_NATIVE_TOKEN_DECIMALS
-///      to 36 which means that in the worst case we are inflating by 18 decimals points. This constant
-///      equals to ~1.1*10^59 tokens
-uint256 constant MAX_BRIDGEABLE_AMOUNT = type(uint256).max / 10**18;
+/// @dev Max amount of erc20 native token that can deposit when upscaling is required (i.e. < 18 decimals)
+///      Amounts higher than this would risk uint256 overflows when adjusting decimals. Considering
+///      18 decimals are 60 bits, we choose 2^192 as the limit which equals to ~6.3*10^57 weis of token
+uint256 constant MAX_UPSCALE_AMOUNT = type(uint192).max;

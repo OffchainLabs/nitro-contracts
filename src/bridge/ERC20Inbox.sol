@@ -10,7 +10,7 @@ import "./IERC20Bridge.sol";
 import "../libraries/AddressAliasHelper.sol";
 import {L1MessageType_ethDeposit} from "../libraries/MessageTypes.sol";
 import {AmountTooLarge} from "../libraries/Error.sol";
-import {MAX_BRIDGEABLE_AMOUNT} from "../libraries/Constants.sol";
+import {MAX_UPSCALE_AMOUNT} from "../libraries/Constants.sol";
 
 import {DecimalsConverterHelper} from "../libraries/DecimalsConverterHelper.sol";
 
@@ -159,7 +159,7 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
 
         // Also make sure that inflated amount does not overflow uint256
         if (nativeTokenDecimals < 18) {
-            if (value > MAX_BRIDGEABLE_AMOUNT) {
+            if (value > MAX_UPSCALE_AMOUNT) {
                 revert AmountTooLarge(value);
             }
         }

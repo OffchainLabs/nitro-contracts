@@ -8,7 +8,6 @@ import "./AbsOutbox.sol";
 import {IERC20Bridge} from "./IERC20Bridge.sol";
 import {DecimalsConverterHelper} from "../libraries/DecimalsConverterHelper.sol";
 import {AmountTooLarge} from "../libraries/Error.sol";
-import {MAX_BRIDGEABLE_AMOUNT} from "../libraries/Constants.sol";
 
 contract ERC20Outbox is AbsOutbox {
     /// @dev it is assumed that arb-os never assigns this value to a valid leaf to be redeemed
@@ -29,11 +28,7 @@ contract ERC20Outbox is AbsOutbox {
     /// @inheritdoc AbsOutbox
     function _getAmountToUnlock(uint256 value) internal view override returns (uint256) {
         uint8 nativeTokenDecimals = IERC20Bridge(address(bridge)).nativeTokenDecimals();
-        // make sure that inflated amount does not overflow uint256
-        if (value > MAX_BRIDGEABLE_AMOUNT && nativeTokenDecimals > 18) {
-            revert AmountTooLarge(value);
-        }
-
+        // this might revert due to overflow, but we assume the token supply is less than 2^256
         return DecimalsConverterHelper.adjustDecimals(value, 18, nativeTokenDecimals);
     }
 

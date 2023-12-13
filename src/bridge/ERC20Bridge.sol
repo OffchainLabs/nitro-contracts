@@ -29,6 +29,8 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
  *       - The token must only be transferrable via a call to the token address itself
  *       - The token must only be able to set allowance via a call to the token address itself
  *       - The token must not have a callback on transfer, and more generally a user must not be able to make a transfer to themselves revert
+ *       - The token must have a max of 2^256 wei total supply unscaled
+ *       - The token must have a max of 2^256 wei total supply when scaled to 18 decimals
  */
 contract ERC20Bridge is AbsBridge, IERC20Bridge {
     using SafeERC20 for IERC20;
