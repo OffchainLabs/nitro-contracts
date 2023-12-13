@@ -89,6 +89,16 @@ library Deserialize {
         ret = bytes32(retInt);
     }
 
+    function boolean(bytes calldata proof, uint256 startOffset)
+        internal
+        pure
+        returns (bool ret, uint256 offset)
+    {
+        offset = startOffset;
+        ret = uint8(proof[offset]) != 0;
+        offset++;
+    }
+
     function value(bytes calldata proof, uint256 startOffset)
         internal
         pure
@@ -204,17 +214,18 @@ library Deserialize {
     {
         offset = startOffset;
         bytes32 remainingHash;
+        bool enabled;
+        bool empty;
+        (enabled, offset) = boolean(proof, offset);
+        (empty, offset) = boolean(proof, offset);
         (remainingHash, offset) = b32(proof, offset);
-        ErrorGuard[] memory proved;
 
-        bool enabled = uint8(proof[offset]) == 2;
-        if (proof[offset] != 0) {
-            offset++;
+        ErrorGuard[] memory proved;
+        if (empty) {
+            proved = new ErrorGuard[](0);
+        } else {
             proved = new ErrorGuard[](1);
             (proved[0], offset) = errorGuard(proof, offset);
-        } else {
-            offset++;
-            proved = new ErrorGuard[](0);
         }
         window = GuardStack({proved: proved, remainingHash: remainingHash, enabled: enabled});
     }
