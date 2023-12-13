@@ -392,8 +392,8 @@ contract OneStepProverHostIo is IOneStepProver {
         Machine memory mach,
         Module memory,
         Instruction calldata,
-        bytes calldata proof
-    ) internal view {
+        bytes calldata
+    ) internal pure {
         bytes32 frames = mach.frameStack.hash();
         bytes32 values = mach.valueStack.hash();
         bytes32 inters = mach.internalStack.hash();
@@ -410,6 +410,17 @@ contract OneStepProverHostIo is IOneStepProver {
         bytes calldata
     ) internal pure {
         mach.guardStack.pop();
+    }
+
+    function executeSetErrorPolicy(
+        ExecutionContext calldata,
+        Machine memory mach,
+        Module memory,
+        Instruction calldata inst,
+        bytes calldata
+    ) internal pure {
+        uint32 status = mach.valueStack.pop().assumeI32();
+        mach.guardStack.enabled = status != 0;
     }
 
     function executeGlobalStateAccess(
@@ -481,6 +492,8 @@ contract OneStepProverHostIo is IOneStepProver {
             impl = executePushErrorGuard;
         } else if (opcode == Instructions.POP_ERROR_GUARD) {
             impl = executePopErrorGuard;
+        } else if (opcode == Instructions.SET_ERROR_POLICY) {
+            impl = executeSetErrorPolicy;
         } else {
             revert("INVALID_MEMORY_OPCODE");
         }
