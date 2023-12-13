@@ -62,7 +62,7 @@ library GuardStackLib {
     }
 
     function empty(GuardStack memory guards) internal pure returns (bool) {
-        return guards.proved.length == 0 || guards.remainingHash == 0;
+        return guards.proved.length == 0 && guards.remainingHash == 0;
     }
 
     function peek(GuardStack memory guards) internal pure returns (ErrorGuard memory) {
