@@ -297,7 +297,9 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
             revert GasLimitTooLarge();
         }
 
-        uint256 submissionFee = calculateRetryableSubmissionFee(data.length, block.basefee);
+        // block.basefee is used in calculateRetryableSubmissionFee when 0 is specified 
+        // we use 0 instead of block.basefee to workaround a geth gas estimation quirk
+        uint256 submissionFee = calculateRetryableSubmissionFee(data.length, 0);
         if (maxSubmissionCost < submissionFee)
             revert InsufficientSubmissionCost(submissionFee, maxSubmissionCost);
 
