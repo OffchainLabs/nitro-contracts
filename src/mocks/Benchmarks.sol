@@ -16,10 +16,30 @@ contract Benchmarks {
         }
     }
 
+    function fillBlockMulMod() external payable {
+        uint256 hash = 0xeddecf107b5740cef7f5a01e3ea7e287665c4e75a8eb6afae2fda2e3d4367786;
+        while (true) {
+            hash = mulmod(
+                hash,
+                0xeddecf107b5740cef7f5a01e3ea7e287665c4e75a8eb6afae2fda2e3d4367786,
+                0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f
+            );
+        }
+    }
+
     function fillBlockHash() external payable {
         bytes32 hash = 0xeddecf107b5740cef7f5a01e3ea7e287665c4e75a8eb6afae2fda2e3d4367786;
         while (true) {
             hash = keccak256(abi.encodePacked(hash));
+        }
+    }
+
+    function fillBlockAdd() external payable {
+        uint256 value = 0;
+        while (true) {
+            unchecked {
+                value += 0xeddecf107b5740cef7f5a01e3ea7e287665c4e75a8eb6afae2fda2e3d4367786;
+            }
         }
     }
 
