@@ -20,6 +20,7 @@ interface IERC20Inbox is IInboxBase {
      * @notice Put a message in the L2 inbox that can be reexecuted for some fixed amount of time if it reverts
      * @dev all tokenTotalFeeAmount will be deposited to callValueRefundAddress on L2
      * @dev Gas limit and maxFeePerGas should not be set to 1 as that is used to trigger the RetryableData error
+     * @dev In case of native token having non-18 decimals: tokenTotalFeeAmount is denominated in native token's decimals. All other value params - l2CallValue, maxSubmissionCost and maxFeePerGas are denominated in child chain's native 18 decimals.
      * @param to destination L2 contract address
      * @param l2CallValue call value for retryable L2 message
      * @param maxSubmissionCost Max gas deducted from user's L2 balance to cover base submission fee

@@ -231,7 +231,9 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         uint256 amount,
         bytes calldata data
     ) internal returns (uint256) {
-        // ensure the user's deposit alone will make submission succeed
+        // Ensure the user's deposit alone will make submission succeed.
+        // In case of native token having non-18 decimals: 'amount' is denominated in native token's decimals. All other
+        // value params - l2CallValue, maxSubmissionCost and maxFeePerGas are denominated in child chain's native 18 decimals.
         uint256 amountToBeMintedOnL2 = _fromNativeTo18Decimals(amount);
         if (amountToBeMintedOnL2 < (maxSubmissionCost + l2CallValue + gasLimit * maxFeePerGas)) {
             revert InsufficientValue(
