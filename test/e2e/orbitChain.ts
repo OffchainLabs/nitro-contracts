@@ -602,7 +602,9 @@ async function _getFeeToken(
       bridge,
       l1Provider
     ).nativeToken()
-  } catch {}
+  } catch {
+    feeToken = ethers.constants.AddressZero
+  }
 
   return feeToken
 }
