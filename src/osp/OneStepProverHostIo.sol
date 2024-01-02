@@ -101,16 +101,21 @@ contract OneStepProverHostIo is IOneStepProver {
         state.u64Vals[idx] = val;
     }
 
+    uint256 constant BLS_MODULUS =
+        52435875175126190479447740508185965837690552500527637822603658699938581184513;
+    uint256 constant PRIMITIVE_ROOT_OF_UNITY =
+        10238227357739495823651030575849232062558860180284477541189508159991286009131;
+
     function executeReadPreImage(
         ExecutionContext calldata,
         Machine memory mach,
         Module memory mod,
         Instruction calldata inst,
         bytes calldata proof
-    ) internal pure {
+    ) internal view {
         uint256 preimageOffset = mach.valueStack.pop().assumeI32();
         uint256 ptr = mach.valueStack.pop().assumeI32();
-        if (ptr + 32 > mod.moduleMemory.size || ptr % LEAF_SIZE != 0) {
+        if (preimageOffset % 32 != 0 || ptr + 32 > mod.moduleMemory.size || ptr % LEAF_SIZE != 0) {
             mach.status = MachineStatus.ERRORED;
             return;
         }
@@ -158,6 +163,57 @@ contract OneStepProverHostIo is IOneStepProver {
                 preimageEnd = preimage.length;
             }
             extracted = preimage[preimageOffset:preimageEnd];
+        } else if (inst.argumentData == 2) {
+            // The machine is asking for an Ethereum versioned hash preimage
+
+            require(proofType == 0, "UNKNOWN_PREIMAGE_PROOF");
+
+            bytes calldata kzgProof = proof[proofOffset:];
+
+            require(bytes32(kzgProof[:32]) == leafContents, "KZG_PROOF_WRONG_HASH");
+
+            (bool success, bytes memory kzgParams) = address(0x0A).staticcall(kzgProof);
+            require(success, "INVALID_KZG_PROOF");
+            require(kzgParams.length > 0, "KZG_PRECOMPILE_MISSING");
+            (uint256 fieldElementsPerBlob, ) = abi.decode(kzgParams, (uint256, uint256));
+
+            // If preimageOffset is greater than the blob size, leave extracted empty and call it here.
+            if (preimageOffset < fieldElementsPerBlob * 32) {
+                // We need to compute what point the polynomial should be evaluated at to get the right part of the preimage.
+                // KZG commitments use a bit reversal permutation to order the roots of unity.
+                // To account for that, we reverse the bit order of the index.
+                uint256 bitReversedIndex = 0;
+                // preimageOffset was required to be 32 byte aligned above
+                uint256 tmp = preimageOffset / 32;
+                for (uint256 i = 1; i < fieldElementsPerBlob; i *= 2) {
+                    bitReversedIndex <<= 1;
+                    if (tmp & 1 == 1) {
+                        bitReversedIndex |= 1;
+                    }
+                    tmp >>= 1;
+                }
+
+                uint256 rootOfUnityPower = (1 << 32) / fieldElementsPerBlob;
+                rootOfUnityPower *= bitReversedIndex;
+                bytes memory modExpInput = abi.encode(
+                    32,
+                    32,
+                    32,
+                    PRIMITIVE_ROOT_OF_UNITY,
+                    rootOfUnityPower,
+                    BLS_MODULUS
+                );
+                (bool modexpSuccess, bytes memory modExpOutput) = address(0x05).staticcall(
+                    modExpInput
+                );
+                require(modexpSuccess, "MODEXP_FAILED");
+
+                uint256 rootOfUnity = abi.decode(modExpOutput, (uint256));
+
+                require(bytes32(kzgProof[32:64]) == bytes32(rootOfUnity), "KZG_PROOF_WRONG_Z");
+
+                extracted = kzgProof[64:96];
+            }
         } else {
             revert("UNKNOWN_PREIMAGE_TYPE");
         }
