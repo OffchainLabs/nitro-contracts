@@ -103,12 +103,18 @@ interface ArbOwner {
     function setWasmPageRamp(uint64 ramp) external;
 
     /// @notice sets the maximum number of pages a wasm may allocate
-    function setWasmPageLimit(uint16 limit) external view;
+    function setWasmPageLimit(uint16 limit) external;
 
     /// @notice sets the added wasm call cost based on binary size
-    function setWasmCallScalar(uint16 gas) external view;
+    function setWasmCallScalar(uint16 gas) external;
 
-    //// @notice Sets serialized chain config in ArbOS state
+    /// @notice sets the number of days after which programs deactivate
+    function setWasmExpiryDays(uint16 _days) external;
+
+    /// @notice sets the age a program must be to perform a keepalive
+    function setWasmKeepaliveDays(uint16 _days) external;
+
+    /// @notice Sets serialized chain config in ArbOS state
     function setChainConfig(string calldata chainConfig) external;
 
     /// Emitted when a successful call is made to this precompile

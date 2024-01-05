@@ -22,12 +22,12 @@ interface ArbWasm {
     // @return version the program version (reverts for EVM contracts)
     function codehashVersion(bytes32 codehash) external view returns (uint16 version);
 
+    // @notice extends a program's expiration date (reverts if too soon)
+    function codehashKeepalive(bytes32 codehash) external;
+
     // @notice gets the stylus version the program was most recently activated against
     // @return version the program version (reverts for EVM contracts)
     function programVersion(address program) external view returns (uint16 version);
-
-    // @notice extends a program's lifetime (reverts if too soon)
-    function codehashKeepalive(bytes32 program) external;
 
     // @notice gets the uncompressed size of the program at the given address in bytes
     // @return size the size of the program in bytes rounded up to a multiple of 512 (reverts for EVM contracts)
@@ -73,7 +73,7 @@ interface ArbWasm {
     // @return _days the number of days
     function expiryDays() external view returns (uint16 _days);
 
-    // @notice gets the age a program must be to have its expiry extended
+    // @notice gets the age a program must be to perform a keepalive
     // @return _days the number of days
     function keepaliveDays() external view returns (uint16 _days);
 
