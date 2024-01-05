@@ -9,22 +9,25 @@ pragma solidity >=0.4.21 <0.9.0;
  * @notice Precompiled contract that exists in every Arbitrum chain at 0x0000000000000000000000000000000000000071.
  */
 interface ArbWasm {
-    // @notice compile a wasm program
-    // @param program the program to compile
-    // @return version the stylus version the program was compiled against
+    // @notice activate a wasm program
+    // @param program the program to activate
+    // @return version the stylus version the program was activated against
     function activateProgram(address program) external returns (uint16 version);
 
     // @notice gets the latest stylus version
     // @return version the stylus version
     function stylusVersion() external view returns (uint16 version);
 
-    // @notice gets the stylus version the program with codehash was most recently compiled against
+    // @notice gets the stylus version the program with codehash was most recently activated against
     // @return version the program version (reverts for EVM contracts)
     function codehashVersion(bytes32 codehash) external view returns (uint16 version);
 
-    // @notice gets the stylus version the program was most recently compiled against
+    // @notice gets the stylus version the program was most recently activated against
     // @return version the program version (reverts for EVM contracts)
     function programVersion(address program) external view returns (uint16 version);
+
+    // @notice extends a program's lifetime (reverts if too soon)
+    function codehashKeepalive(bytes32 program) external;
 
     // @notice gets the uncompressed size of the program at the given address in bytes
     // @return size the size of the program in bytes rounded up to a multiple of 512 (reverts for EVM contracts)
@@ -69,6 +72,10 @@ interface ArbWasm {
     // @notice gets the number of days after which programs deactivate
     // @return _days the number of days
     function expiryDays() external view returns (uint16 _days);
+
+    // @notice gets the age a program must be to have its expiry extended
+    // @return _days the number of days
+    function keepaliveDays() external view returns (uint16 _days);
 
     event ProgramActivated(
         bytes32 indexed codehash,
