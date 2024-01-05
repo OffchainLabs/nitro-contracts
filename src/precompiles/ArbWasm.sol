@@ -18,21 +18,25 @@ interface ArbWasm {
     // @return version the stylus version
     function stylusVersion() external view returns (uint16 version);
 
-    // @notice gets the stylus version the program with codehash was most recently compiled against.
-    // @return version the program version (0 for EVM contracts)
+    // @notice gets the stylus version the program with codehash was most recently compiled against
+    // @return version the program version (reverts for EVM contracts)
     function codehashVersion(bytes32 codehash) external view returns (uint16 version);
 
-    // @notice gets the stylus version the program was most recently compiled against.
-    // @return version the program version (0 for EVM contracts)
+    // @notice gets the stylus version the program was most recently compiled against
+    // @return version the program version (reverts for EVM contracts)
     function programVersion(address program) external view returns (uint16 version);
 
     // @notice gets the uncompressed size of the program at the given address in bytes
-    // @return size the size of the program in bytes rounded up to a multiple of 512
+    // @return size the size of the program in bytes rounded up to a multiple of 512 (reverts for EVM contracts)
     function programSize(address program) external view returns (uint32 size);
 
     // @notice gets the memory footprint of the program at the given address in pages
-    // @return footprint the memory footprint of program in pages
+    // @return footprint the memory footprint of program in pages (reverts for EVM contracts)
     function programMemoryFootprint(address program) external view returns (uint16 footprint);
+
+    // @notice gets the amount of time remaining until the program expires
+    // @return _secs the time left in seconds (reverts for EVM contracts)
+    function programTimeLeft(address program) external view returns (uint64 _secs);
 
     // @notice gets the conversion rate between gas and ink
     // @return price the amount of ink 1 gas buys
@@ -62,6 +66,10 @@ interface ArbWasm {
     // @return gas cost paid per half kb uncompressed.
     function callScalar() external view returns (uint16 gas);
 
+    // @notice gets the number of days after which programs deactivate
+    // @return _days the number of days
+    function expiryDays() external view returns (uint16 _days);
+
     event ProgramActivated(
         bytes32 indexed codehash,
         bytes32 moduleHash,
@@ -70,6 +78,8 @@ interface ArbWasm {
     );
 
     error ProgramNotActivated();
-    error ProgramOutOfDate(uint16 version);
+    error ProgramNeedsUpgrade(uint16 version, uint16 stylusVersion);
+    error ProgramExpired(uint64 ageInSeconds);
     error ProgramUpToDate();
+    error ProgramKeepaliveTooSoon(uint64 ageInSeconds);
 }
