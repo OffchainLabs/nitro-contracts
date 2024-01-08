@@ -185,7 +185,7 @@ contract OneStepProverHostIo is IOneStepProver {
                 uint256 bitReversedIndex = 0;
                 // preimageOffset was required to be 32 byte aligned above
                 uint256 tmp = preimageOffset / 32;
-                for (uint256 i = 1; i < fieldElementsPerBlob; i *= 2) {
+                for (uint256 i = 1; i < fieldElementsPerBlob; i <<= 1) {
                     bitReversedIndex <<= 1;
                     if (tmp & 1 == 1) {
                         bitReversedIndex |= 1;
