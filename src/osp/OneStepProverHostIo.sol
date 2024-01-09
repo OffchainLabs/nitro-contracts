@@ -106,6 +106,25 @@ contract OneStepProverHostIo is IOneStepProver {
     uint256 constant PRIMITIVE_ROOT_OF_UNITY =
         10238227357739495823651030575849232062558860180284477541189508159991286009131;
 
+    // Computes b**e % m
+    // Really pure but the Solidity compiler sees the staticcall and requires view
+    function modExp256(uint256 b, uint256 e, uint256 m) internal view returns (uint256) {
+        bytes memory modExpInput = abi.encode(
+            32,
+            32,
+            32,
+            b,
+            e,
+            m
+        );
+        (bool modexpSuccess, bytes memory modExpOutput) = address(0x05).staticcall(
+            modExpInput
+        );
+        require(modexpSuccess, "MODEXP_FAILED");
+        require(modExpOutput.length == 32, "MODEXP_WRONG_LENGTH");
+        return uint256(bytes32(modExpOutput));
+    }
+
     function executeReadPreImage(
         ExecutionContext calldata,
         Machine memory mach,
@@ -195,21 +214,11 @@ contract OneStepProverHostIo is IOneStepProver {
 
                 uint256 rootOfUnityPower = (1 << 32) / fieldElementsPerBlob;
                 rootOfUnityPower *= bitReversedIndex;
-                bytes memory modExpInput = abi.encode(
-                    32,
-                    32,
-                    32,
+                uint256 rootOfUnity = modExp256(
                     PRIMITIVE_ROOT_OF_UNITY,
                     rootOfUnityPower,
                     BLS_MODULUS
                 );
-                (bool modexpSuccess, bytes memory modExpOutput) = address(0x05).staticcall(
-                    modExpInput
-                );
-                require(modexpSuccess, "MODEXP_FAILED");
-
-                uint256 rootOfUnity = abi.decode(modExpOutput, (uint256));
-
                 require(bytes32(kzgProof[32:64]) == bytes32(rootOfUnity), "KZG_PROOF_WRONG_Z");
 
                 extracted = kzgProof[64:96];
