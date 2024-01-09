@@ -30,9 +30,9 @@ interface ArbWasm {
     /// @return version the program version (reverts for EVM contracts)
     function programVersion(address program) external view returns (uint16 version);
 
-    /// @notice gets the uncompressed size of the program at the given address in bytes
-    /// @return size the size of the program in bytes rounded up to a multiple of 512 (reverts for EVM contracts)
-    function programSize(address program) external view returns (uint32 size);
+    /// @notice gets the cost to invoke the program (not including minInitGas)
+    /// @return gas the amount of gas
+    function programInitGas(address program) external view returns (uint32 gas);
 
     /// @notice gets the memory footprint of the program at the given address in pages
     /// @return footprint the memory footprint of program in pages (reverts for EVM contracts)
@@ -66,9 +66,9 @@ interface ArbWasm {
     /// @return limit the number of pages
     function pageLimit() external view returns (uint16 limit);
 
-    /// @notice gets the added wasm call cost based on binary size
-    /// @return gas cost paid per half kb uncompressed.
-    function callScalar() external view returns (uint16 gas);
+    /// @notice gets the minimum cost to invoke a program
+    /// @return gas amount of gas
+    function minInitGas() external view returns (uint16 gas);
 
     /// @notice gets the number of days after which programs deactivate
     /// @return _days the number of days
