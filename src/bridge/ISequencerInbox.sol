@@ -63,7 +63,16 @@ interface ISequencerInbox is IDelayedMessageProvider {
     }
 
     /// @notice Returns the max time variation settings for this sequencer inbox
-    function maxTimeVariation() external view returns (uint256, uint256, uint256, uint256);
+    /// @dev    We return the tuple of uint256 instead of the MaxTimeVariation struct to maintain backwards compatibility
+    function maxTimeVariation()
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        );
 
     function dasKeySetInfo(bytes32) external view returns (bool, uint64);
 

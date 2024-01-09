@@ -149,7 +149,12 @@ contract BridgeCreatorTest is Test {
         // seqInbox
         assertEq(address(seqInbox.bridge()), address(bridge), "Invalid bridge ref");
         assertEq(address(seqInbox.rollup()), rollup, "Invalid seq rollup ref");
-        (uint256 delayBlocks, uint256 futureBlocks, uint256 delaySeconds, uint256 futureSeconds) = seqInbox.maxTimeVariation();
+        (
+            uint256 delayBlocks,
+            uint256 futureBlocks,
+            uint256 delaySeconds,
+            uint256 futureSeconds
+        ) = seqInbox.maxTimeVariation();
         assertEq(delayBlocks, timeVars.delayBlocks, "Invalid delayBlocks");
         assertEq(futureBlocks, timeVars.futureBlocks, "Invalid futureBlocks");
         assertEq(delaySeconds, timeVars.delaySeconds, "Invalid delaySeconds");
@@ -219,7 +224,12 @@ contract BridgeCreatorTest is Test {
         // seqInbox
         assertEq(address(seqInbox.bridge()), address(bridge), "Invalid bridge ref");
         assertEq(address(seqInbox.rollup()), rollup, "Invalid seq inbox rollup ref");
-        (uint256 delayBlocks, uint256 futureBlocks, uint256 delaySeconds, uint256 futureSeconds) = seqInbox.maxTimeVariation();
+        (
+            uint256 delayBlocks,
+            uint256 futureBlocks,
+            uint256 delaySeconds,
+            uint256 futureSeconds
+        ) = seqInbox.maxTimeVariation();
         assertEq(delayBlocks, timeVars.delayBlocks, "Invalid delayBlocks");
         assertEq(futureBlocks, timeVars.futureBlocks, "Invalid futureBlocks");
         assertEq(delaySeconds, timeVars.delaySeconds, "Invalid delaySeconds");

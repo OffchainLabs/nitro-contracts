@@ -128,7 +128,16 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         return bounds;
     }
 
-    function maxTimeVariation() external view returns (uint256, uint256, uint256, uint256) {
+    function maxTimeVariation()
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
         (
             uint64 delayBlocks_,
             uint64 futureBlocks_,
