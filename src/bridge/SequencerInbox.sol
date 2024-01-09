@@ -128,7 +128,16 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         return bounds;
     }
 
-    function maxTimeVariation() public view returns (ISequencerInbox.MaxTimeVariation memory) {
+    function maxTimeVariation()
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
         (
             uint64 delayBlocks_,
             uint64 futureBlocks_,
@@ -136,13 +145,7 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
             uint64 futureSeconds_
         ) = maxTimeVariationInternal();
 
-        return
-            ISequencerInbox.MaxTimeVariation({
-                delayBlocks: delayBlocks_,
-                futureBlocks: futureBlocks_,
-                delaySeconds: delaySeconds_,
-                futureSeconds: futureSeconds_
-            });
+        return (delayBlocks_, futureBlocks_, delaySeconds_, futureSeconds_);
     }
 
     function maxTimeVariationInternal()

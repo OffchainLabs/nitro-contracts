@@ -149,11 +149,16 @@ contract BridgeCreatorTest is Test {
         // seqInbox
         assertEq(address(seqInbox.bridge()), address(bridge), "Invalid bridge ref");
         assertEq(address(seqInbox.rollup()), rollup, "Invalid seq rollup ref");
-        ISequencerInbox.MaxTimeVariation memory maxTimeVariation = seqInbox.maxTimeVariation();
-        assertEq(maxTimeVariation.delayBlocks, timeVars.delayBlocks, "Invalid delayBlocks");
-        assertEq(maxTimeVariation.futureBlocks, timeVars.futureBlocks, "Invalid futureBlocks");
-        assertEq(maxTimeVariation.delaySeconds, timeVars.delaySeconds, "Invalid delaySeconds");
-        assertEq(maxTimeVariation.futureSeconds, timeVars.futureSeconds, "Invalid futureSeconds");
+        (
+            uint256 delayBlocks,
+            uint256 futureBlocks,
+            uint256 delaySeconds,
+            uint256 futureSeconds
+        ) = seqInbox.maxTimeVariation();
+        assertEq(delayBlocks, timeVars.delayBlocks, "Invalid delayBlocks");
+        assertEq(futureBlocks, timeVars.futureBlocks, "Invalid futureBlocks");
+        assertEq(delaySeconds, timeVars.delaySeconds, "Invalid delaySeconds");
+        assertEq(futureSeconds, timeVars.futureSeconds, "Invalid futureSeconds");
 
         // inbox
         assertEq(address(inbox.bridge()), address(bridge), "Invalid bridge ref");
@@ -219,11 +224,16 @@ contract BridgeCreatorTest is Test {
         // seqInbox
         assertEq(address(seqInbox.bridge()), address(bridge), "Invalid bridge ref");
         assertEq(address(seqInbox.rollup()), rollup, "Invalid seq inbox rollup ref");
-        ISequencerInbox.MaxTimeVariation memory maxTimeVariation = seqInbox.maxTimeVariation();
-        assertEq(maxTimeVariation.delayBlocks, timeVars.delayBlocks, "Invalid delayBlocks");
-        assertEq(maxTimeVariation.futureBlocks, timeVars.futureBlocks, "Invalid futureBlocks");
-        assertEq(maxTimeVariation.delaySeconds, timeVars.delaySeconds, "Invalid delaySeconds");
-        assertEq(maxTimeVariation.futureSeconds, timeVars.futureSeconds, "Invalid futureSeconds");
+        (
+            uint256 delayBlocks,
+            uint256 futureBlocks,
+            uint256 delaySeconds,
+            uint256 futureSeconds
+        ) = seqInbox.maxTimeVariation();
+        assertEq(delayBlocks, timeVars.delayBlocks, "Invalid delayBlocks");
+        assertEq(futureBlocks, timeVars.futureBlocks, "Invalid futureBlocks");
+        assertEq(delaySeconds, timeVars.delaySeconds, "Invalid delaySeconds");
+        assertEq(futureSeconds, timeVars.futureSeconds, "Invalid futureSeconds");
 
         // inbox
         assertEq(address(inbox.bridge()), address(bridge), "Invalid bridge ref");

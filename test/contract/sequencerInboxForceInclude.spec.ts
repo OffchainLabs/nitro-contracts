@@ -354,9 +354,9 @@ describe('SequencerInboxForceInclude', async () => {
       BigNumber.from(10),
       '0x1010'
     )
-    const maxTimeVariation = await sequencerInbox.maxTimeVariation()
+    const [delayBlocks, , ,] = await sequencerInbox.maxTimeVariation()
 
-    await mineBlocks(maxTimeVariation.delayBlocks.toNumber())
+    await mineBlocks(delayBlocks.toNumber())
 
     await forceIncludeMessages(
       sequencerInbox,
@@ -399,8 +399,9 @@ describe('SequencerInboxForceInclude', async () => {
       '0xdeadface'
     )
 
-    const maxTimeVariation = await sequencerInbox.maxTimeVariation()
-    await mineBlocks(maxTimeVariation.delayBlocks.toNumber())
+    const [delayBlocks, , ,] = await sequencerInbox.maxTimeVariation()
+
+    await mineBlocks(delayBlocks.toNumber())
 
     await forceIncludeMessages(
       sequencerInbox,
@@ -464,8 +465,8 @@ describe('SequencerInboxForceInclude', async () => {
       '0x10101010'
     )
 
-    const maxTimeVariation = await sequencerInbox.maxTimeVariation()
-    await mineBlocks(maxTimeVariation.delayBlocks.toNumber())
+    const [delayBlocks, , ,] = await sequencerInbox.maxTimeVariation()
+    await mineBlocks(delayBlocks.toNumber())
 
     await forceIncludeMessages(
       sequencerInbox,
@@ -495,8 +496,8 @@ describe('SequencerInboxForceInclude', async () => {
       '0x1010'
     )
 
-    const maxTimeVariation = await sequencerInbox.maxTimeVariation()
-    await mineBlocks(maxTimeVariation.delayBlocks.toNumber() - 1, 5)
+    const [delayBlocks, , ,] = await sequencerInbox.maxTimeVariation()
+    await mineBlocks(delayBlocks.toNumber() - 1, 5)
 
     await forceIncludeMessages(
       sequencerInbox,
@@ -527,10 +528,10 @@ describe('SequencerInboxForceInclude', async () => {
       '0x1010'
     )
 
-    const maxTimeVariation = await sequencerInbox.maxTimeVariation()
+    const [delayBlocks, , ,] = await sequencerInbox.maxTimeVariation()
     // mine a lot of blocks - but use a short time per block
     // this should mean enough blocks have passed, but not enough time
-    await mineBlocks(maxTimeVariation.delayBlocks.toNumber() + 1, 5)
+    await mineBlocks(delayBlocks.toNumber() + 1, 5)
 
     await forceIncludeMessages(
       sequencerInbox,
