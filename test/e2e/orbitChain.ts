@@ -161,24 +161,38 @@ describe('Orbit Chain', () => {
     const l2Result = await depositRec.waitForL2(l2Provider)
     expect(l2Result.complete).to.be.true
 
-    // check user balance increased on L2 and decreased on L1
+    // check user balance decreased on L1
     let userL1NativeAssetBalanceAfter: BigNumber
     if (nativeToken) {
       userL1NativeAssetBalanceAfter = await nativeToken.balanceOf(
         userL1Wallet.address
       )
+      expect(
+        userL1NativeAssetBalance.sub(userL1NativeAssetBalanceAfter)
+      ).to.be.eq(amountToDeposit)
     } else {
       userL1NativeAssetBalanceAfter = await l1Provider.getBalance(
         userL1Wallet.address
       )
+      expect(
+        userL1NativeAssetBalance.sub(userL1NativeAssetBalanceAfter)
+      ).to.be.gte(amountToDeposit)
     }
-    expect(
-      userL1NativeAssetBalance.sub(userL1NativeAssetBalanceAfter)
-    ).to.be.gte(amountToDeposit)
 
+    // check user balance increased on L2
     const userL2BalanceAfter = await l2Provider.getBalance(userL2Wallet.address)
-    expect(userL2BalanceAfter.sub(userL2Balance)).to.be.eq(amountToDeposit)
+    let expectedL2BalanceIncrease = amountToDeposit
+    if (nativeToken) {
+      expectedL2BalanceIncrease = await _getScaledAmount(
+        nativeToken,
+        amountToDeposit
+      )
+    }
+    expect(userL2BalanceAfter.sub(userL2Balance)).to.be.eq(
+      expectedL2BalanceIncrease
+    )
 
+    // check bridge balance increased
     let bridgeL1NativeAssetBalanceAfter
     if (nativeToken) {
       bridgeL1NativeAssetBalanceAfter = await nativeToken.balanceOf(
@@ -189,8 +203,6 @@ describe('Orbit Chain', () => {
         l2Network.ethBridge.bridge
       )
     }
-
-    // bridge escrow increased
     expect(
       bridgeL1NativeAssetBalanceAfter.sub(bridgeL1NativeAssetBalance)
     ).to.be.eq(amountToDeposit)
@@ -230,7 +242,7 @@ describe('Orbit Chain', () => {
     //// retryables params
 
     const to = userL1Wallet.address
-    const l2CallValue = ethers.utils.parseEther('0.21')
+    const l2CallValue = ethers.utils.parseEther('0.25')
     const data = '0x'
 
     const l1ToL2MessageGasEstimate = new L1ToL2MessageGasEstimator(l2Provider)
@@ -247,14 +259,19 @@ describe('Orbit Chain', () => {
       l1Provider
     )
 
-    const tokenTotalFeeAmount = retryableParams.deposit
+    let tokenTotalFeeAmount = retryableParams.deposit
     const gasLimit = retryableParams.gasLimit
     const maxFeePerGas = retryableParams.maxFeePerGas
     const maxSubmissionCost = retryableParams.maxSubmissionCost
 
-    /// deposit 37 tokens using retryable
+    /// deposit tokens using retryable
     let retryableTx: ContractTransaction
     if (nativeToken) {
+      tokenTotalFeeAmount = await _getPrescaledAmount(
+        nativeToken,
+        retryableParams.deposit
+      )
+
       await (
         await nativeToken
           .connect(userL1Wallet)
@@ -303,23 +320,28 @@ describe('Orbit Chain', () => {
     let userL1TokenAfter, bridgeL1TokenAfter: BigNumber
     if (nativeToken) {
       userL1TokenAfter = await nativeToken.balanceOf(userL1Wallet.address)
-
       bridgeL1TokenAfter = await nativeToken.balanceOf(
         l2Network.ethBridge.bridge
       )
+
+      expect(userL1NativeAssetBalance.sub(userL1TokenAfter)).to.be.eq(
+        tokenTotalFeeAmount
+      )
+      expect(bridgeL1TokenAfter.sub(bridgeL1NativeAssetBalance)).to.be.eq(
+        tokenTotalFeeAmount
+      )
     } else {
       userL1TokenAfter = await l1Provider.getBalance(userL1Wallet.address)
-
       bridgeL1TokenAfter = await l1Provider.getBalance(
         l2Network.ethBridge.bridge
       )
+      expect(userL1NativeAssetBalance.sub(userL1TokenAfter)).to.be.gte(
+        retryableParams.deposit
+      )
+      expect(bridgeL1TokenAfter.sub(bridgeL1NativeAssetBalance)).to.be.eq(
+        retryableParams.deposit
+      )
     }
-    expect(userL1NativeAssetBalance.sub(userL1TokenAfter)).to.be.gte(
-      tokenTotalFeeAmount
-    )
-    expect(bridgeL1TokenAfter.sub(bridgeL1NativeAssetBalance)).to.be.eq(
-      tokenTotalFeeAmount
-    )
 
     const userL2After = await l2Provider.getBalance(userL2Wallet.address)
     expect(userL2After.sub(userL2Balance)).to.be.eq(l2CallValue)
@@ -403,7 +425,7 @@ describe('Orbit Chain', () => {
       l1Provider
     )
 
-    const tokenTotalFeeAmount = retryableParams.deposit
+    let tokenTotalFeeAmount = retryableParams.deposit
     const gasLimit = retryableParams.gasLimit
     const maxFeePerGas = retryableParams.maxFeePerGas
     const maxSubmissionCost = retryableParams.maxSubmissionCost
@@ -411,6 +433,11 @@ describe('Orbit Chain', () => {
     /// execute retryable
     let retryableTx: ContractTransaction
     if (nativeToken) {
+      tokenTotalFeeAmount = await _getPrescaledAmount(
+        nativeToken,
+        retryableParams.deposit
+      )
+
       await (
         await nativeToken
           .connect(userL1Wallet)
@@ -607,4 +634,32 @@ async function _getFeeToken(
   }
 
   return feeToken
+}
+
+async function _getScaledAmount(
+  nativeToken: ERC20,
+  amount: BigNumber
+): Promise<BigNumber> {
+  const decimals = BigNumber.from(await nativeToken.decimals())
+  if (decimals.lt(BigNumber.from(18))) {
+    return amount.mul(BigNumber.from(10).pow(BigNumber.from(18).sub(decimals)))
+  } else if (decimals.gt(BigNumber.from(18))) {
+    return amount.div(BigNumber.from(10).pow(decimals.sub(BigNumber.from(18))))
+  }
+
+  return amount
+}
+
+async function _getPrescaledAmount(
+  nativeToken: ERC20,
+  amount: ethers.BigNumber
+): Promise<BigNumber> {
+  const decimals = BigNumber.from(await nativeToken.decimals())
+  if (decimals.lt(BigNumber.from(18))) {
+    return amount.div(BigNumber.from(10).pow(BigNumber.from(18).sub(decimals)))
+  } else if (decimals.gt(BigNumber.from(18))) {
+    return amount.mul(BigNumber.from(10).pow(decimals.sub(BigNumber.from(18))))
+  }
+
+  return amount
 }
