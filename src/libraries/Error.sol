@@ -178,3 +178,12 @@ error NoSuchKeyset(bytes32);
 
 /// @dev Thrown when rollup is not updated with updateRollupAddress
 error RollupNotChanged();
+
+error OutboxExecutionPaused();
+error OutboxExecutionNotPaused();
+
+error SequencerInboxMsgsPaused();
+error SequencerInboxMsgsNotPaused();
+
+error  DelayedMessagesEnqueuePaused();
+error  DelayedMessagesEnqueueNotPaused();

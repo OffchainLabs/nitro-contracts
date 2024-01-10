@@ -30,6 +30,7 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
         nativeToken = nativeToken_;
         _activeOutbox = EMPTY_ACTIVEOUTBOX;
         rollup = rollup_;
+        _grantAllPauseRolesTo(rollup_.owner());
     }
 
     /// @inheritdoc IERC20Bridge
@@ -38,7 +39,7 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
         address sender,
         bytes32 messageDataHash,
         uint256 tokenFeeAmount
-    ) external returns (uint256) {
+    ) external whenDelayedMessageEnqueueNotPaused returns (uint256) {
         return _enqueueDelayedMessage(kind, sender, messageDataHash, tokenFeeAmount);
     }
 

@@ -24,6 +24,7 @@ contract Bridge is AbsBridge, IEthBridge {
     function initialize(IOwnable rollup_) external initializer onlyDelegated {
         _activeOutbox = EMPTY_ACTIVEOUTBOX;
         rollup = rollup_;
+        _grantAllPauseRolesTo(rollup_.owner());
     }
 
     /// @inheritdoc IEthBridge
@@ -31,7 +32,7 @@ contract Bridge is AbsBridge, IEthBridge {
         uint8 kind,
         address sender,
         bytes32 messageDataHash
-    ) external payable returns (uint256) {
+    ) external payable whenDelayedMessageEnqueueNotPaused returns (uint256) {
         return _enqueueDelayedMessage(kind, sender, messageDataHash, msg.value);
     }
 
