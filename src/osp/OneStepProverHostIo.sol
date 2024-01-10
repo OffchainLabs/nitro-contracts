@@ -108,18 +108,13 @@ contract OneStepProverHostIo is IOneStepProver {
 
     // Computes b**e % m
     // Really pure but the Solidity compiler sees the staticcall and requires view
-    function modExp256(uint256 b, uint256 e, uint256 m) internal view returns (uint256) {
-        bytes memory modExpInput = abi.encode(
-            32,
-            32,
-            32,
-            b,
-            e,
-            m
-        );
-        (bool modexpSuccess, bytes memory modExpOutput) = address(0x05).staticcall(
-            modExpInput
-        );
+    function modExp256(
+        uint256 b,
+        uint256 e,
+        uint256 m
+    ) internal view returns (uint256) {
+        bytes memory modExpInput = abi.encode(32, 32, 32, b, e, m);
+        (bool modexpSuccess, bytes memory modExpOutput) = address(0x05).staticcall(modExpInput);
         require(modexpSuccess, "MODEXP_FAILED");
         require(modExpOutput.length == 32, "MODEXP_WRONG_LENGTH");
         return uint256(bytes32(modExpOutput));
