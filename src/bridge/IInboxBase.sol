@@ -61,10 +61,10 @@ interface IInboxBase is IDelayedMessageProvider {
 
     // ---------- onlyRollupOrOwner functions ----------
 
-    /// @notice pauses all inbox functionality
+    /// @notice deprecated in favor of pausing on Bridge
     function pause() external;
 
-    /// @notice unpauses all inbox functionality
+    /// @notice deprecated in favor of pausing on Bridge
     function unpause() external;
 
     /// @notice add or remove users from allowList

@@ -13,7 +13,8 @@ import {
     NotAllowedOrigin,
     NotOrigin,
     NotRollupOrOwner,
-    RetryableData
+    RetryableData,
+    Deprecated
 } from "../libraries/Error.sol";
 import "./IInboxBase.sol";
 import "./ISequencerInbox.sol";
@@ -110,13 +111,13 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
     }
 
     /// @inheritdoc IInboxBase
-    function pause() external onlyRollupOrOwner {
-        _pause();
+    function pause() external {
+        revert Deprecated();
     }
 
     /// @inheritdoc IInboxBase
-    function unpause() external onlyRollupOrOwner {
-        _unpause();
+    function unpause() external {
+        revert Deprecated();
     }
 
     /* solhint-disable func-name-mixedcase */
@@ -133,7 +134,6 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
     /// @inheritdoc IInboxBase
     function sendL2MessageFromOrigin(bytes calldata messageData)
         external
-        whenNotPaused
         onlyAllowed
         returns (uint256)
     {
@@ -149,7 +149,6 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
     /// @inheritdoc IInboxBase
     function sendL2Message(bytes calldata messageData)
         external
-        whenNotPaused
         onlyAllowed
         returns (uint256)
     {
@@ -165,7 +164,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         address to,
         uint256 value,
         bytes calldata data
-    ) external whenNotPaused onlyAllowed returns (uint256) {
+    ) external onlyAllowed returns (uint256) {
         // arbos will discard unsigned tx with gas limit too large
         if (gasLimit > type(uint64).max) {
             revert GasLimitTooLarge();
@@ -194,7 +193,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         address to,
         uint256 value,
         bytes calldata data
-    ) external whenNotPaused onlyAllowed returns (uint256) {
+    ) external onlyAllowed returns (uint256) {
         // arbos will discard unsigned tx with gas limit too large
         if (gasLimit > type(uint64).max) {
             revert GasLimitTooLarge();

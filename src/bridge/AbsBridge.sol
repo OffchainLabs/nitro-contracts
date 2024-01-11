@@ -20,6 +20,7 @@ import {
 import "./IBridge.sol";
 import "./Messages.sol";
 import "../libraries/DelegateCallAware.sol";
+import "./BridgePausable.sol";
 
 import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
 
@@ -65,7 +66,7 @@ abstract contract AbsBridge is
     DelegateCallAware,
     IBridge,
     AbsBridgeStorage,
-    AccessControlUpgradeable
+    BridgePausable
 {
     using AddressUpgradeable for address;
 
@@ -79,6 +80,10 @@ abstract contract AbsBridge is
             }
         }
         _;
+    }
+
+    function postUpgradeInit() public onlyDelegated onlyProxyOwner {
+        _grantAllPauseRolesTo(rollup.owner());
     }
 
     /// @notice Allows the rollup owner to set another rollup address
@@ -119,12 +124,8 @@ abstract contract AbsBridge is
     )
         external
         onlySequencerInbox
-        returns (
-            uint256 seqMessageIndex,
-            bytes32 beforeAcc,
-            bytes32 delayedAcc,
-            bytes32 acc
-        )
+        whenSequencerInboxMsgsNotPaused
+        returns (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc)
     {
         if (
             sequencerReportedSubMessageCount != prevMessageCount &&
@@ -146,11 +147,11 @@ abstract contract AbsBridge is
     }
 
     /// @inheritdoc IBridge
-    function submitBatchSpendingReport(address sender, bytes32 messageDataHash)
-        external
-        onlySequencerInbox
-        returns (uint256)
-    {
+
+    function submitBatchSpendingReport(
+        address sender,
+        bytes32 messageDataHash
+    ) external onlySequencerInbox whenDelayedMessageEnqueueNotPaused returns (uint256) {
         return
             addMessageToDelayedAccumulator(
                 L1MessageType_batchPostingReport,
@@ -225,7 +226,7 @@ abstract contract AbsBridge is
         address to,
         uint256 value,
         bytes calldata data
-    ) external returns (bool success, bytes memory returnData) {
+    ) external whenOutboxExecutionNotPaused returns (bool success, bytes memory returnData) {
         if (!allowedOutboxes(msg.sender)) revert NotOutbox(msg.sender);
         if (data.length > 0 && !to.isContract()) revert NotContract(to);
         address prevOutbox = _activeOutbox;
