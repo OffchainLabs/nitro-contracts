@@ -187,3 +187,5 @@ error SequencerInboxMsgsNotPaused();
 
 error  DelayedMessagesEnqueuePaused();
 error  DelayedMessagesEnqueueNotPaused();
+
+error Deprecated();
