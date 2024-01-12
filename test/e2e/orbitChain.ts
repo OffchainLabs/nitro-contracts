@@ -12,6 +12,7 @@ import { expect } from 'chai'
 import { ethers, Wallet } from '@arbitrum/sdk/node_modules/ethers'
 import {
   ArbSys__factory,
+  DeployHelper__factory,
   ERC20,
   ERC20Inbox__factory,
   ERC20__factory,
@@ -27,6 +28,10 @@ import { BigNumber, ContractTransaction } from 'ethers'
 
 const LOCALHOST_L2_RPC = 'http://localhost:8547'
 const LOCALHOST_L3_RPC = 'http://localhost:3347'
+const DEPLOY_HELPER_ADDRESS = '0x4287839696d650A0cf93b98351e85199102335D0'
+
+// when code at address is empty, ethers.js returns '0x'
+const EMPTY_CODE_LENGTH = 2
 
 let l1Provider: JsonRpcProvider
 let l2Provider: JsonRpcProvider
@@ -604,6 +609,61 @@ describe('Orbit Chain', () => {
 
     const userL2BalanceAfter = await l2Provider.getBalance(userL2Wallet.address)
     expect(userL2BalanceAfter).to.be.lte(userL2Balance.sub(withdrawAmount))
+  })
+
+  it('can deploy deterministic factories to L2', async function () {
+    const deployHelper = DeployHelper__factory.connect(
+      DEPLOY_HELPER_ADDRESS,
+      l1Provider
+    )
+
+    const inbox = l2Network.ethBridge.inbox
+    const maxFeePerGas = BigNumber.from('100000000') // 0.1 gwei
+    let fee = await deployHelper.getDeploymentTotalCost(inbox, maxFeePerGas)
+    console.log('original fee', fee.toString())
+
+    if (nativeToken) {
+      fee = await _getPrescaledAmount(nativeToken, fee)
+      console.log('scaled fee', fee.toString())
+      await (
+        await nativeToken.connect(userL1Wallet).transfer(inbox, fee)
+      ).wait()
+    }
+
+    console.log('native token', nativeToken!.address)
+
+    const receipt = await (
+      await deployHelper
+        .connect(userL1Wallet)
+        .perform(
+          inbox,
+          nativeToken ? nativeToken.address : ethers.constants.AddressZero,
+          maxFeePerGas
+        )
+    ).wait()
+
+    const l1TxReceipt = new L1TransactionReceipt(receipt)
+    const messages = await l1TxReceipt.getL1ToL2Messages(l2Provider)
+    const messageResults = await Promise.all(
+      messages.map(message => message.waitForStatus())
+    )
+
+    expect(messageResults[0].status).to.be.eq(L1ToL2MessageStatus.REDEEMED)
+    expect(messageResults[1].status).to.be.eq(L1ToL2MessageStatus.REDEEMED)
+    expect(messageResults[2].status).to.be.eq(L1ToL2MessageStatus.REDEEMED)
+    expect(messageResults[3].status).to.be.eq(L1ToL2MessageStatus.REDEEMED)
+
+    const deployedFactories = [
+      '0x4e59b44847b379578588920ca78fbf26c0b4956c',
+      '0xce0042B868300000d44A59004Da54A005ffdcf9f',
+      '0x7A0D94F55792C434d74a40883C6ed8545E406D12',
+      '0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24',
+    ]
+    deployedFactories.forEach(async factory => {
+      expect((await l2Provider.getCode(factory)).length).to.be.gt(
+        EMPTY_CODE_LENGTH
+      )
+    })
   })
 })
 
