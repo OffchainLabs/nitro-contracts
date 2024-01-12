@@ -5,6 +5,8 @@ import "forge-std/Test.sol";
 import "./util/TestUtil.sol";
 import "../../src/bridge/Bridge.sol";
 import "../../src/bridge/SequencerInbox.sol";
+import {ERC20Bridge, IERC20Bridge} from "../../src/bridge/ERC20Bridge.sol";
+import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 
 contract RollupMock {
     address immutable public owner;
@@ -50,7 +52,7 @@ contract SequencerInboxTest is Test {
     address dummyInbox = address(139);
     address proxyAdmin = address(140);
 
-    function deploy() public returns(SequencerInbox, Bridge) {
+    function deployRollup() internal returns(SequencerInbox, Bridge) {
         RollupMock rollupMock = new RollupMock(rollupOwner);
         Bridge bridgeImpl = new Bridge();
         Bridge bridge = Bridge(address(new TransparentUpgradeableProxy(address(bridgeImpl), proxyAdmin, "")));
@@ -75,7 +77,40 @@ contract SequencerInboxTest is Test {
         return (seqInbox, bridge);
     }
 
-    function expectEvents(Bridge bridge, SequencerInbox seqInbox, bytes memory data) internal {
+    function deployFeeTokenBasedRollup() internal returns(SequencerInbox, ERC20Bridge) {
+        RollupMock rollupMock = new RollupMock(rollupOwner);
+        ERC20Bridge bridgeImpl = new ERC20Bridge();
+        ERC20Bridge bridge = ERC20Bridge(address(new TransparentUpgradeableProxy(address(bridgeImpl), proxyAdmin, "")));
+        address nativeToken = address(new ERC20PresetMinterPauser("Appchain Token", "App"));
+
+        bridge.initialize(IOwnable(address(rollupMock)), nativeToken);
+        vm.prank(rollupOwner);
+        bridge.setDelayedInbox(dummyInbox, true);
+
+        /// this will result in 'hostChainIsArbitrum = true'
+        vm.mockCall(
+            address(100),
+            abi.encodeWithSelector(ArbSys.arbOSVersion.selector),
+            abi.encode(uint256(11))
+        );
+        SequencerInbox seqInboxImpl = new SequencerInbox(maxDataSize);
+        SequencerInbox seqInbox = SequencerInbox(address(new TransparentUpgradeableProxy(address(seqInboxImpl), proxyAdmin, "")));
+        seqInbox.initialize(
+            bridge,
+            maxTimeVariation
+        );
+
+        vm.prank(rollupOwner);
+        seqInbox.setIsBatchPoster(tx.origin, true);
+
+        vm.prank(rollupOwner);
+        bridge.setSequencerInbox(address(seqInbox));
+
+        return (seqInbox, bridge);
+    }
+
+
+    function expectEvents(IBridge bridge, SequencerInbox seqInbox, bytes memory data, bool hostChainIsArbitrum, uint256 expectedBaseFeeReport, uint256 expectedExtraGas) internal {
         uint256 delayedMessagesRead = bridge.delayedMessageCount();
         uint256 sequenceNumber = bridge.sequencerMessageCount();
         ISequencerInbox.TimeBounds memory timeBounds;
@@ -95,13 +130,25 @@ contract SequencerInboxTest is Test {
             uint64(delayedMessagesRead)
         ), data));
 
-        bytes memory spendingReportMsg  = abi.encodePacked(
-            block.timestamp,
-            msg.sender,
-            dataHash,
-            sequenceNumber,
-            block.basefee
-        );
+        bytes memory spendingReportMsg;
+        if(hostChainIsArbitrum) {
+            spendingReportMsg = abi.encodePacked(
+                block.timestamp,
+                msg.sender,
+                dataHash,
+                sequenceNumber,
+                expectedBaseFeeReport,
+                uint64(expectedExtraGas)
+            );
+        } else {
+            spendingReportMsg = abi.encodePacked(
+                block.timestamp,
+                msg.sender,
+                dataHash,
+                sequenceNumber,
+                expectedBaseFeeReport
+            );
+        }
         bytes32 beforeAcc = bytes32(0);
         bytes32 delayedAcc = bridge.delayedInboxAccs(delayedMessagesRead - 1);
         bytes32 afterAcc = keccak256(abi.encodePacked(beforeAcc, dataHash, delayedAcc));
@@ -140,7 +187,7 @@ contract SequencerInboxTest is Test {
     }
 
     function testAddSequencerL2BatchFromOrigin() public {
-        (SequencerInbox seqInbox, Bridge bridge) = deploy();
+        (SequencerInbox seqInbox, Bridge bridge) = deployRollup();
         address delayedInboxSender = address(140);
         uint8 delayedInboxKind = 3;
         bytes32 messageDataHash = RAND.Bytes32();
@@ -157,7 +204,10 @@ contract SequencerInboxTest is Test {
         uint256 sequenceNumber = bridge.sequencerMessageCount();
         uint256 delayedMessagesRead = bridge.delayedMessageCount();
 
-        expectEvents(bridge, seqInbox, data);
+        // set 60 gwei basefee
+        uint256 basefee = 60000000000;
+        vm.fee(basefee);
+        expectEvents(bridge, seqInbox, data, false, basefee, 0);
 
         vm.prank(tx.origin);
         seqInbox.addSequencerL2BatchFromOrigin(
@@ -170,8 +220,45 @@ contract SequencerInboxTest is Test {
         );
     }
 
-    function testAddSequencerL2BatchFromOriginRevers() public {
-        (SequencerInbox seqInbox, Bridge bridge) = deploy();
+    function testAddSequencerL2BatchFromOrigin_FeeTokenBased() public {
+        (SequencerInbox seqInbox, ERC20Bridge bridge) = deployFeeTokenBasedRollup();
+        address delayedInboxSender = address(140);
+        uint8 delayedInboxKind = 3;
+        bytes32 messageDataHash = RAND.Bytes32();
+        bytes memory data = hex"a4567890";
+
+        vm.prank(dummyInbox);
+        bridge.enqueueDelayedMessage(
+            delayedInboxKind,
+            delayedInboxSender,
+            messageDataHash,
+            0
+        );
+
+        uint256 subMessageCount = bridge.sequencerReportedSubMessageCount();
+        uint256 sequenceNumber = bridge.sequencerMessageCount();
+        uint256 delayedMessagesRead = bridge.delayedMessageCount();
+
+        // set 40 gwei basefee
+        uint256 basefee = 40000000000;
+        vm.fee(basefee);
+        uint256 expectedReportedBaseFee = 0;
+        uint256 expectedReportedExtraGas = 0;
+        expectEvents(IBridge(address(bridge)), seqInbox, data, true, expectedReportedBaseFee, expectedReportedExtraGas);
+
+        vm.prank(tx.origin);
+        seqInbox.addSequencerL2BatchFromOrigin(
+            sequenceNumber,
+            data,
+            delayedMessagesRead,
+            IGasRefunder(address(0)),
+            subMessageCount,
+            subMessageCount + 1
+        );
+    }
+
+    function testAddSequencerL2BatchFromOriginReverts() public {
+        (SequencerInbox seqInbox, Bridge bridge) = deployRollup();
         address delayedInboxSender = address(140);
         uint8 delayedInboxKind = 3;
         bytes32 messageDataHash = RAND.Bytes32();
