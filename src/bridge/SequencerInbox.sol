@@ -35,6 +35,7 @@ import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
 import {GasRefundEnabled, IGasRefunder} from "../libraries/IGasRefunder.sol";
 import "../libraries/DelegateCallAware.sol";
 import "../libraries/ArbitrumChecker.sol";
+import {IERC20Bridge} from "./IERC20Bridge.sol";
 
 /**
  * @title Accepts batches from the sequencer and adds them to the rollup inbox.
@@ -409,16 +410,32 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             address batchPoster = msg.sender;
             bytes memory spendingReportMsg;
             if (hostChainIsArbitrum) {
-                // Include extra gas for the host chain's L1 gas charging
-                uint256 l1Fees = ArbGasInfo(address(0x6c)).getCurrentTxL1GasFees();
-                uint256 extraGas = l1Fees / block.basefee;
-                require(extraGas <= type(uint64).max, "L1_GAS_NOT_UINT64");
+                bool isUsingFeeToken = false;
+                // Bridge in ETH based chains doesn't implement nativeToken(). In future it might implement it and return address(0)
+                try IERC20Bridge(address(bridge)).nativeToken() returns (address feeToken) {
+                    if (feeToken != address(0)) {
+                        isUsingFeeToken = true;
+                    }
+                } catch {}
+
+                // If chain is using ETH to pay for fees, report the base fee and extra gas spent
+                // If chain is using fee token, report 0 spendings to avoid ETH<->fee token conversions
+                uint256 baseFeeToReport = 0;
+                uint256 extraGas = 0;
+                if (!isUsingFeeToken) {
+                    baseFeeToReport = block.basefee;
+                    // Include extra gas for the host chain's L1 gas charging
+                    uint256 l1Fees = ArbGasInfo(address(0x6c)).getCurrentTxL1GasFees();
+                    extraGas = l1Fees / block.basefee;
+                    require(extraGas <= type(uint64).max, "L1_GAS_NOT_UINT64");
+                }
+
                 spendingReportMsg = abi.encodePacked(
                     block.timestamp,
                     batchPoster,
                     dataHash,
                     seqMessageIndex,
-                    block.basefee,
+                    baseFeeToReport,
                     uint64(extraGas)
                 );
             } else {
