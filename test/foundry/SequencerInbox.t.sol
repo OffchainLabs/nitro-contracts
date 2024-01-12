@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "./util/TestUtil.sol";
 import "../../src/bridge/Bridge.sol";
 import "../../src/bridge/SequencerInbox.sol";
-import {ERC20Bridge, IERC20Bridge} from "../../src/bridge/ERC20Bridge.sol";
+import {ERC20Bridge} from "../../src/bridge/ERC20Bridge.sol";
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 
 contract RollupMock {
@@ -246,17 +246,18 @@ contract SequencerInboxTest is Test {
 
         // set 0.1 gwei basefee
         uint256 basefee = 100000000;
+        vm.fee(basefee);
         // 30 gwei TX L1 fees
         uint256 l1Fees = 30000000000;
-        vm.fee(basefee);
-        uint256 expectedReportedBaseFee = basefee;
-        uint256 expectedReportedExtraGas = l1Fees / basefee;
         vm.mockCall(
             address(0x6c),
             abi.encodeWithSignature("getCurrentTxL1GasFees()"),
             abi.encode(l1Fees)
         );
-        expectEvents(bridge, seqInbox, data, true, basefee, expectedReportedExtraGas);
+        uint256 expectedReportedBaseFee = basefee;
+        uint256 expectedReportedExtraGas = l1Fees / basefee;
+
+        expectEvents(bridge, seqInbox, data, true, expectedReportedBaseFee, expectedReportedExtraGas);
 
         vm.prank(tx.origin);
         seqInbox.addSequencerL2BatchFromOrigin(
