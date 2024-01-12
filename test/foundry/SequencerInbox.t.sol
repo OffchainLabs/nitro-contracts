@@ -109,7 +109,6 @@ contract SequencerInboxTest is Test {
         return (seqInbox, bridge);
     }
 
-
     function expectEvents(IBridge bridge, SequencerInbox seqInbox, bytes memory data, bool hostChainIsArbitrum, uint256 expectedBaseFeeReport, uint256 expectedExtraGas) internal {
         uint256 delayedMessagesRead = bridge.delayedMessageCount();
         uint256 sequenceNumber = bridge.sequencerMessageCount();
@@ -220,7 +219,57 @@ contract SequencerInboxTest is Test {
         );
     }
 
-    function testAddSequencerL2BatchFromOrigin_FeeTokenBased() public {
+    function testAddSequencerL2BatchFromOrigin_ArbitrumHosted() public {
+        // this will result in 'hostChainIsArbitrum = true'
+        vm.mockCall(
+            address(100),
+            abi.encodeWithSelector(ArbSys.arbOSVersion.selector),
+            abi.encode(uint256(11))
+        );
+        (SequencerInbox seqInbox, Bridge bridge) = deployRollup();
+
+        address delayedInboxSender = address(140);
+        uint8 delayedInboxKind = 3;
+        bytes32 messageDataHash = RAND.Bytes32();
+        bytes memory data = hex"a4567890"; // CHRIS: TODO: bigger data;
+
+        vm.prank(dummyInbox);
+        bridge.enqueueDelayedMessage(
+            delayedInboxKind,
+            delayedInboxSender,
+            messageDataHash
+        );
+
+        uint256 subMessageCount = bridge.sequencerReportedSubMessageCount();
+        uint256 sequenceNumber = bridge.sequencerMessageCount();
+        uint256 delayedMessagesRead = bridge.delayedMessageCount();
+
+        // set 0.1 gwei basefee
+        uint256 basefee = 100000000;
+        // 30 gwei TX L1 fees
+        uint256 l1Fees = 30000000000;
+        vm.fee(basefee);
+        uint256 expectedReportedBaseFee = basefee;
+        uint256 expectedReportedExtraGas = l1Fees / basefee;
+        vm.mockCall(
+            address(0x6c),
+            abi.encodeWithSignature("getCurrentTxL1GasFees()"),
+            abi.encode(l1Fees)
+        );
+        expectEvents(bridge, seqInbox, data, true, basefee, expectedReportedExtraGas);
+
+        vm.prank(tx.origin);
+        seqInbox.addSequencerL2BatchFromOrigin(
+            sequenceNumber,
+            data,
+            delayedMessagesRead,
+            IGasRefunder(address(0)),
+            subMessageCount,
+            subMessageCount + 1
+        );
+    }
+
+    function testAddSequencerL2BatchFromOrigin_ArbitrumHostedFeeTokenBased() public {
         (SequencerInbox seqInbox, ERC20Bridge bridge) = deployFeeTokenBasedRollup();
         address delayedInboxSender = address(140);
         uint8 delayedInboxKind = 3;
