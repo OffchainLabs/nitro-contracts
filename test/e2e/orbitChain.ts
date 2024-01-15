@@ -8,11 +8,10 @@ import {
 } from '@arbitrum/sdk'
 import { getBaseFee } from '@arbitrum/sdk/dist/lib/utils/lib'
 import { JsonRpcProvider } from '@ethersproject/providers'
-import { expect } from 'chai'
+import { expect, use } from 'chai'
 import { ethers, Wallet } from '@arbitrum/sdk/node_modules/ethers'
 import {
   ArbSys__factory,
-  DeployHelper,
   DeployHelper__factory,
   ERC20,
   ERC20Inbox__factory,
@@ -27,7 +26,7 @@ import {
 import { getLocalNetworks, sleep } from '../../scripts/testSetup'
 import { applyAlias } from '../contract/utils'
 import { BigNumber, ContractTransaction } from 'ethers'
-import { execSync } from 'child_process'
+import { RollupCreatedEvent } from '../../build/types/src/rollup/RollupCreator'
 
 const LOCALHOST_L2_RPC = 'http://localhost:8547'
 const LOCALHOST_L3_RPC = 'http://localhost:3347'
@@ -687,6 +686,14 @@ describe('Orbit Chain', () => {
       ).wait()
     }
 
+    let userL1TokenBefore: BigNumber
+    if (nativeToken) {
+      userL1TokenBefore = await nativeToken.balanceOf(userL1Wallet.address)
+    } else {
+      userL1TokenBefore = await l1Provider.getBalance(userL1Wallet.address)
+    }
+
+    /// deploy params
     const config = {
       confirmPeriodBlocks: ethers.BigNumber.from('150'),
       extraChallengeTimeBlocks: ethers.BigNumber.from('200'),
@@ -723,14 +730,15 @@ describe('Orbit Chain', () => {
       deployFactoriesToL2,
       maxFeePerGasForRetryables,
     }
+
+    /// deploy it
     const receipt = await (
       await rollupCreator.connect(userL1Wallet).createRollup(deployParams)
     ).wait()
-
     const l1TxReceipt = new L1TransactionReceipt(receipt)
-    const events = l1TxReceipt.getMessageEvents()
 
     // 1 init message + 8 msgs for deploying factories
+    const events = l1TxReceipt.getMessageEvents()
     expect(events.length).to.be.eq(9)
 
     // 1st retryable
@@ -780,6 +788,69 @@ describe('Orbit Chain', () => {
     expect(events[8].inboxMessageEvent.data).to.be.eq(
       await deployHelper.ERC1820_PAYLOAD()
     )
+
+    // check total amount to be minted is correct
+    const { amountToBeMintedOnChildChain: amount1 } = await _decodeInboxMessage(
+      events[1].inboxMessageEvent.data
+    )
+    const { amountToBeMintedOnChildChain: amount2 } = await _decodeInboxMessage(
+      events[3].inboxMessageEvent.data
+    )
+    const { amountToBeMintedOnChildChain: amount3 } = await _decodeInboxMessage(
+      events[5].inboxMessageEvent.data
+    )
+    const { amountToBeMintedOnChildChain: amount4 } = await _decodeInboxMessage(
+      events[7].inboxMessageEvent.data
+    )
+    const amountToBeMinted = amount1.add(amount2).add(amount3).add(amount4)
+    expect(amountToBeMinted).to.be.eq(
+      await deployHelper.getDeploymentTotalCost(inbox, maxFeePerGas)
+    )
+
+    // check amount locked (taken from deployer) matches total amount to be minted
+    const transferLogs = receipt.logs.filter(log =>
+      log.topics.includes(nativeToken!.interface.getEventTopic('Transfer'))
+    )
+    const decodedEvents = transferLogs.map(
+      log => nativeToken!.interface.parseLog(log).args
+    )
+    const transferedFromDeployer = decodedEvents.filter(
+      log => log.from === userL1Wallet.address
+    )
+
+    expect(transferedFromDeployer.length).to.be.eq(1)
+    const amountTransferedFromDeployer = transferedFromDeployer[0].value
+    expect(amountTransferedFromDeployer).to.be.eq(amountToBeMinted)
+
+    console.log(l2Network)
+
+    // check balances after retryable is processed
+    let userL1TokenAfter, bridgeBalanceAfter: BigNumber
+    const rollupCreatedEvent = receipt.logs.filter(log =>
+      log.topics.includes(
+        rollupCreator.interface.getEventTopic('RollupCreated')
+      )
+    )[0]
+    const decodedRollupCreatedEvent =
+      rollupCreator.interface.parseLog(rollupCreatedEvent)
+    const bridge = decodedRollupCreatedEvent.args.bridge
+    if (nativeToken) {
+      userL1TokenAfter = await nativeToken.balanceOf(userL1Wallet.address)
+      expect(userL1TokenBefore.sub(userL1TokenAfter)).to.be.eq(
+        amountTransferedFromDeployer
+      )
+      bridgeBalanceAfter = await nativeToken.balanceOf(bridge)
+      expect(bridgeBalanceAfter).to.be.eq(amountTransferedFromDeployer)
+    } else {
+      userL1TokenAfter = await l1Provider.getBalance(userL1Wallet.address)
+      bridgeBalanceAfter = await l1Provider.getBalance(
+        l2Network.ethBridge.bridge
+      )
+      expect(userL1TokenBefore.sub(userL1TokenAfter)).to.be.eq(
+        amountTransferedFromDeployer
+      )
+      expect(bridgeBalanceAfter).to.be.eq(amountTransferedFromDeployer)
+    }
   })
 })
 
