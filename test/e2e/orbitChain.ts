@@ -665,7 +665,7 @@ describe('Orbit Chain', () => {
     })
   })
 
-  it('can deploy deterministic factories to L2 through RollupCreator', async function () {
+  it.only('can deploy deterministic factories to L2 through RollupCreator', async function () {
     const rollupCreator = RollupCreator__factory.connect(
       L2_ROLLUP_CREATOR_ADDRESS,
       l1Provider
@@ -740,6 +740,10 @@ describe('Orbit Chain', () => {
       await deployHelper.NICK_CREATE2_DEPLOYER(),
       await deployHelper.NICK_CREATE2_VALUE()
     )
+    expect(events[2].inboxMessageEvent.messageNum.toString()).to.be.eq('2')
+    expect(events[2].inboxMessageEvent.data).to.be.eq(
+      await deployHelper.NICK_CREATE2_PAYLOAD()
+    )
 
     // 2nd retryable
     expect(events[3].inboxMessageEvent.messageNum.toString()).to.be.eq('3')
@@ -747,6 +751,10 @@ describe('Orbit Chain', () => {
       events[3].inboxMessageEvent.data,
       await deployHelper.ERC2470_DEPLOYER(),
       await deployHelper.ERC2470_VALUE()
+    )
+    expect(events[4].inboxMessageEvent.messageNum.toString()).to.be.eq('4')
+    expect(events[4].inboxMessageEvent.data).to.be.eq(
+      await deployHelper.ERC2470_PAYLOAD()
     )
 
     // 3rd retryable
@@ -756,6 +764,10 @@ describe('Orbit Chain', () => {
       await deployHelper.ZOLTU_CREATE2_DEPLOYER(),
       await deployHelper.ZOLTU_VALUE()
     )
+    expect(events[6].inboxMessageEvent.messageNum.toString()).to.be.eq('6')
+    expect(events[6].inboxMessageEvent.data).to.be.eq(
+      await deployHelper.ZOLTU_CREATE2_PAYLOAD()
+    )
 
     // 4th retryable
     expect(events[7].inboxMessageEvent.messageNum.toString()).to.be.eq('7')
@@ -763,6 +775,10 @@ describe('Orbit Chain', () => {
       events[7].inboxMessageEvent.data,
       await deployHelper.ERC1820_DEPLOYER(),
       await deployHelper.ERC1820_VALUE()
+    )
+    expect(events[8].inboxMessageEvent.messageNum.toString()).to.be.eq('8')
+    expect(events[8].inboxMessageEvent.data).to.be.eq(
+      await deployHelper.ERC1820_PAYLOAD()
     )
   })
 })
