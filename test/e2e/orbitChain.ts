@@ -12,6 +12,7 @@ import { expect } from 'chai'
 import { ethers, Wallet } from '@arbitrum/sdk/node_modules/ethers'
 import {
   ArbSys__factory,
+  DeployHelper,
   DeployHelper__factory,
   ERC20,
   ERC20Inbox__factory,
@@ -21,14 +22,17 @@ import {
   IInbox__factory,
   Inbox__factory,
   RollupCore__factory,
+  RollupCreator__factory,
 } from '../../build/types'
 import { getLocalNetworks, sleep } from '../../scripts/testSetup'
 import { applyAlias } from '../contract/utils'
 import { BigNumber, ContractTransaction } from 'ethers'
+import { execSync } from 'child_process'
 
 const LOCALHOST_L2_RPC = 'http://localhost:8547'
 const LOCALHOST_L3_RPC = 'http://localhost:3347'
-const DEPLOY_HELPER_ADDRESS = '0x4287839696d650A0cf93b98351e85199102335D0'
+const L2_ROLLUP_CREATOR_ADDRESS = '0x3baf9f08bad68869eedea90f2cc546bd80f1a651'
+const L2_DEPLOY_HELPER_ADDRESS = '0x4287839696d650A0cf93b98351e85199102335D0'
 
 // when code at address is empty, ethers.js returns '0x'
 const EMPTY_CODE_LENGTH = 2
@@ -613,24 +617,19 @@ describe('Orbit Chain', () => {
 
   it('can deploy deterministic factories to L2', async function () {
     const deployHelper = DeployHelper__factory.connect(
-      DEPLOY_HELPER_ADDRESS,
+      L2_DEPLOY_HELPER_ADDRESS,
       l1Provider
     )
 
     const inbox = l2Network.ethBridge.inbox
     const maxFeePerGas = BigNumber.from('100000000') // 0.1 gwei
     let fee = await deployHelper.getDeploymentTotalCost(inbox, maxFeePerGas)
-    console.log('original fee', fee.toString())
-
     if (nativeToken) {
       fee = await _getPrescaledAmount(nativeToken, fee)
-      console.log('scaled fee', fee.toString())
       await (
         await nativeToken.connect(userL1Wallet).transfer(inbox, fee)
       ).wait()
     }
-
-    console.log('native token', nativeToken!.address)
 
     const receipt = await (
       await deployHelper
@@ -665,7 +664,165 @@ describe('Orbit Chain', () => {
       )
     })
   })
+
+  it('can deploy deterministic factories to L2 through RollupCreator', async function () {
+    const rollupCreator = RollupCreator__factory.connect(
+      L2_ROLLUP_CREATOR_ADDRESS,
+      l1Provider
+    )
+
+    const deployHelper = DeployHelper__factory.connect(
+      L2_DEPLOY_HELPER_ADDRESS,
+      l1Provider
+    )
+    const inbox = l2Network.ethBridge.inbox
+    const maxFeePerGas = BigNumber.from('100000000') // 0.1 gwei
+    let fee = await deployHelper.getDeploymentTotalCost(inbox, maxFeePerGas)
+    if (nativeToken) {
+      // fee = await _getPrescaledAmount(nativeToken, fee)
+      await (
+        await nativeToken
+          .connect(userL1Wallet)
+          .approve(rollupCreator.address, fee)
+      ).wait()
+    }
+
+    const config = {
+      confirmPeriodBlocks: ethers.BigNumber.from('150'),
+      extraChallengeTimeBlocks: ethers.BigNumber.from('200'),
+      stakeToken: ethers.constants.AddressZero,
+      baseStake: ethers.utils.parseEther('1'),
+      wasmModuleRoot:
+        '0xda4e3ad5e7feacb817c21c8d0220da7650fe9051ece68a3f0b1c5d38bbb27b21',
+      owner: '0x72f7EEedF02C522242a4D3Bdc8aE6A8583aD7c5e',
+      loserStakeEscrow: ethers.constants.AddressZero,
+      chainId: ethers.BigNumber.from('433333'),
+      chainConfig:
+        '{"chainId":433333,"homesteadBlock":0,"daoForkBlock":null,"daoForkSupport":true,"eip150Block":0,"eip150Hash":"0x0000000000000000000000000000000000000000000000000000000000000000","eip155Block":0,"eip158Block":0,"byzantiumBlock":0,"constantinopleBlock":0,"petersburgBlock":0,"istanbulBlock":0,"muirGlacierBlock":0,"berlinBlock":0,"londonBlock":0,"clique":{"period":0,"epoch":0},"arbitrum":{"EnableArbOS":true,"AllowDebugPrecompiles":false,"DataAvailabilityCommittee":false,"InitialArbOSVersion":10,"InitialChainOwner":"0x72f7EEedF02C522242a4D3Bdc8aE6A8583aD7c5e","GenesisBlockNum":0}}',
+      genesisBlockNum: ethers.BigNumber.from('0'),
+      sequencerInboxMaxTimeVariation: {
+        delayBlocks: ethers.BigNumber.from('5760'),
+        futureBlocks: ethers.BigNumber.from('12'),
+        delaySeconds: ethers.BigNumber.from('86400'),
+        futureSeconds: ethers.BigNumber.from('3600'),
+      },
+    }
+    const batchPoster = ethers.Wallet.createRandom().address
+    const validators = [ethers.Wallet.createRandom().address]
+    const maxDataSize = 104857
+    const nativeTokenAddress = nativeToken!.address
+    const deployFactoriesToL2 = true
+    const maxFeePerGasForRetryables = BigNumber.from('100000000') // 0.1 gwei
+
+    const deployParams = {
+      config,
+      batchPoster,
+      validators,
+      maxDataSize,
+      nativeToken: nativeTokenAddress,
+      deployFactoriesToL2,
+      maxFeePerGasForRetryables,
+    }
+    const receipt = await (
+      await rollupCreator.connect(userL1Wallet).createRollup(deployParams)
+    ).wait()
+
+    const l1TxReceipt = new L1TransactionReceipt(receipt)
+    const events = l1TxReceipt.getMessageEvents()
+
+    // 1 init message + 8 msgs for deploying factories
+    expect(events.length).to.be.eq(9)
+
+    // 1st retryable
+    expect(events[1].inboxMessageEvent.messageNum.toString()).to.be.eq('1')
+    await _verifyInboxMsg(
+      events[1].inboxMessageEvent.data,
+      await deployHelper.NICK_CREATE2_DEPLOYER(),
+      await deployHelper.NICK_CREATE2_VALUE()
+    )
+
+    // 2nd retryable
+    expect(events[3].inboxMessageEvent.messageNum.toString()).to.be.eq('3')
+    await _verifyInboxMsg(
+      events[3].inboxMessageEvent.data,
+      await deployHelper.ERC2470_DEPLOYER(),
+      await deployHelper.ERC2470_VALUE()
+    )
+
+    // 3rd retryable
+    expect(events[5].inboxMessageEvent.messageNum.toString()).to.be.eq('5')
+    await _verifyInboxMsg(
+      events[5].inboxMessageEvent.data,
+      await deployHelper.ZOLTU_CREATE2_DEPLOYER(),
+      await deployHelper.ZOLTU_VALUE()
+    )
+
+    // 4th retryable
+    expect(events[7].inboxMessageEvent.messageNum.toString()).to.be.eq('7')
+    await _verifyInboxMsg(
+      events[7].inboxMessageEvent.data,
+      await deployHelper.ERC1820_DEPLOYER(),
+      await deployHelper.ERC1820_VALUE()
+    )
+  })
 })
+
+async function _verifyInboxMsg(
+  inboxMsg: string,
+  create2Deployer: string,
+  create2Value: BigNumber
+) {
+  const maxFeePerGasForRetryables = BigNumber.from('100000000') // 0.1 gwei
+
+  const msg1 = await _decodeInboxMessage(inboxMsg)
+  expect(msg1.to).to.be.eq(create2Deployer)
+  expect(msg1.l2CallValue).to.be.eq(create2Value)
+  expect(msg1.amountToBeMintedOnChildChain).to.be.eq(
+    BigNumber.from(create2Value).add(maxFeePerGasForRetryables.mul(21000))
+  )
+  expect(msg1.maxSubmissionCost).to.be.eq('0')
+  expect(msg1.excessFeeRefundAddress).to.be.eq(
+    applyAlias(L2_ROLLUP_CREATOR_ADDRESS)
+  )
+  expect(msg1.callValueRefundAddress).to.be.eq(
+    applyAlias(L2_ROLLUP_CREATOR_ADDRESS)
+  )
+  expect(msg1.gasLimit).to.be.eq('21000')
+  expect(msg1.maxFeePerGas).to.be.eq(maxFeePerGasForRetryables)
+  expect(msg1.dataLength).to.be.eq('0')
+}
+
+async function _decodeInboxMessage(encodedMsg: string) {
+  const abiCoder = new ethers.utils.AbiCoder()
+  const types = [
+    'uint256', // uint256(uint160(to))
+    'uint256', // l2CallValue
+    'uint256', // _fromNativeTo18Decimals(amount)
+    'uint256', // maxSubmissionCost
+    'uint256', // uint256(uint160(excessFeeRefundAddress))
+    'uint256', // uint256(uint160(callValueRefundAddress))
+    'uint256', // gasLimit
+    'uint256', // maxFeePerGas
+    'uint256', // data.length (assuming it's a uint256)
+  ]
+
+  const decoded = abiCoder.decode(types, encodedMsg)
+  return {
+    to: _uint256ToAddress(decoded[0]),
+    l2CallValue: decoded[1],
+    amountToBeMintedOnChildChain: decoded[2],
+    maxSubmissionCost: decoded[3],
+    excessFeeRefundAddress: _uint256ToAddress(decoded[4]),
+    callValueRefundAddress: _uint256ToAddress(decoded[5]),
+    gasLimit: decoded[6],
+    maxFeePerGas: decoded[7],
+    dataLength: decoded[8],
+  }
+}
+
+function _uint256ToAddress(uint256: string) {
+  return ethers.utils.getAddress(ethers.utils.hexStripZeros(uint256))
+}
 
 async function waitOnL2Msg(tx: ethers.ContractTransaction) {
   const retryableReceipt = await tx.wait()
