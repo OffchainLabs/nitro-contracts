@@ -186,10 +186,14 @@ contract OneStepProverHostIo is IOneStepProver {
 
             require(bytes32(kzgProof[:32]) == leafContents, "KZG_PROOF_WRONG_HASH");
 
-            (bool success, bytes memory kzgParams) = address(0x0A).staticcall(kzgProof);
-            require(success, "INVALID_KZG_PROOF");
-            require(kzgParams.length > 0, "KZG_PRECOMPILE_MISSING");
-            (uint256 fieldElementsPerBlob, ) = abi.decode(kzgParams, (uint256, uint256));
+            uint256 fieldElementsPerBlob;
+            uint256 blsModulus;
+            {
+                (bool success, bytes memory kzgParams) = address(0x0A).staticcall(kzgProof);
+                require(success, "INVALID_KZG_PROOF");
+                require(kzgParams.length > 0, "KZG_PRECOMPILE_MISSING");
+                (fieldElementsPerBlob, blsModulus) = abi.decode(kzgParams, (uint256, uint256));
+            }
 
             // If preimageOffset is greater than the blob size, leave extracted empty and call it here.
             if (preimageOffset < fieldElementsPerBlob * 32) {
@@ -207,14 +211,20 @@ contract OneStepProverHostIo is IOneStepProver {
                     tmp >>= 1;
                 }
 
+                // First, we get the root of unity of order 2**fieldElementsPerBlob.
+                // We start with a root of unity of order 2**32 and then raise it to
+                // the power of (2**32)/fieldElementsPerBlob to get root of unity we need.
                 uint256 rootOfUnityPower = (1 << 32) / fieldElementsPerBlob;
+                // Then, we raise the root of unity to the power of bitReversedIndex,
+                // to retrieve this word of the KZG commitment.
                 rootOfUnityPower *= bitReversedIndex;
-                uint256 rootOfUnity = modExp256(
+                // z is the point the polynomial is evaluated at to retrieve this word of data
+                uint256 z = modExp256(
                     PRIMITIVE_ROOT_OF_UNITY,
                     rootOfUnityPower,
-                    BLS_MODULUS
+                    blsModulus
                 );
-                require(bytes32(kzgProof[32:64]) == bytes32(rootOfUnity), "KZG_PROOF_WRONG_Z");
+                require(bytes32(kzgProof[32:64]) == bytes32(z), "KZG_PROOF_WRONG_Z");
 
                 extracted = kzgProof[64:96];
             }
