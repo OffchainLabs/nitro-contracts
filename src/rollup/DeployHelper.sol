@@ -59,6 +59,7 @@ contract DeployHelper {
 
         // fund the target L2 address
         if (_nativeToken != address(0)) {
+            // calculate the fee amount in the native token's decimals
             uint8 decimals = ERC20(_nativeToken).decimals();
             if (decimals < 18) {
                 feeAmount = feeAmount / (10**(18 - decimals));

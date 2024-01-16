@@ -265,6 +265,15 @@ contract RollupCreator is Ownable {
                 IInboxBase(_inbox),
                 _maxFeePerGas
             );
+
+            // calculate the fee amount in the native token's decimals
+            uint8 decimals = ERC20(_nativeToken).decimals();
+            if (decimals < 18) {
+                totalFee = totalFee / (10**(18 - decimals));
+            } else if (decimals > 18) {
+                totalFee = totalFee * (10**(decimals - 18));
+            }
+
             IERC20(_nativeToken).safeTransferFrom(msg.sender, _inbox, totalFee);
 
             // do it
