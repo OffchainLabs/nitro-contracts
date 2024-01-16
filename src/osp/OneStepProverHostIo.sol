@@ -182,6 +182,8 @@ contract OneStepProverHostIo is IOneStepProver {
 
             require(proofType == 0, "UNKNOWN_PREIMAGE_PROOF");
 
+            // kzgProof should be a valid input to the EIP-4844 point evaluation precompile at address 0x0A.
+            // It should prove the preimageOffset/32'th word of the machine's requested KZG commitment.
             bytes calldata kzgProof = proof[proofOffset:];
 
             require(bytes32(kzgProof[:32]) == leafContents, "KZG_PROOF_WRONG_HASH");
