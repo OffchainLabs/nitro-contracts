@@ -18,6 +18,7 @@ import {
   ERC20__factory,
   EthVault__factory,
   IERC20Bridge__factory,
+  IInboxBase__factory,
   IInbox__factory,
   Inbox__factory,
   RollupCore__factory,
@@ -26,7 +27,6 @@ import {
 import { getLocalNetworks, sleep } from '../../scripts/testSetup'
 import { applyAlias } from '../contract/utils'
 import { BigNumber, ContractTransaction } from 'ethers'
-import { RollupCreatedEvent } from '../../build/types/src/rollup/RollupCreator'
 
 const LOCALHOST_L2_RPC = 'http://localhost:8547'
 const LOCALHOST_L3_RPC = 'http://localhost:3347'
@@ -686,11 +686,15 @@ describe('Orbit Chain', () => {
       ).wait()
     }
 
-    let userL1TokenBefore: BigNumber
+    let userL1NativeAssetBalance: BigNumber
     if (nativeToken) {
-      userL1TokenBefore = await nativeToken.balanceOf(userL1Wallet.address)
+      userL1NativeAssetBalance = await nativeToken.balanceOf(
+        userL1Wallet.address
+      )
     } else {
-      userL1TokenBefore = await l1Provider.getBalance(userL1Wallet.address)
+      userL1NativeAssetBalance = await l1Provider.getBalance(
+        userL1Wallet.address
+      )
     }
 
     /// deploy params
@@ -717,7 +721,9 @@ describe('Orbit Chain', () => {
     const batchPoster = ethers.Wallet.createRandom().address
     const validators = [ethers.Wallet.createRandom().address]
     const maxDataSize = 104857
-    const nativeTokenAddress = nativeToken!.address
+    const nativeTokenAddress = nativeToken
+      ? nativeToken.address
+      : ethers.constants.AddressZero
     const deployFactoriesToL2 = true
     const maxFeePerGasForRetryables = BigNumber.from('100000000') // 0.1 gwei
 
@@ -733,7 +739,9 @@ describe('Orbit Chain', () => {
 
     /// deploy it
     const receipt = await (
-      await rollupCreator.connect(userL1Wallet).createRollup(deployParams)
+      await rollupCreator.connect(userL1Wallet).createRollup(deployParams, {
+        value: nativeToken ? BigNumber.from(0) : fee,
+      })
     ).wait()
     const l1TxReceipt = new L1TransactionReceipt(receipt)
 
@@ -746,7 +754,8 @@ describe('Orbit Chain', () => {
     await _verifyInboxMsg(
       events[1].inboxMessageEvent.data,
       await deployHelper.NICK_CREATE2_DEPLOYER(),
-      await deployHelper.NICK_CREATE2_VALUE()
+      await deployHelper.NICK_CREATE2_VALUE(),
+      receipt.effectiveGasPrice
     )
     expect(events[2].inboxMessageEvent.messageNum.toString()).to.be.eq('2')
     expect(events[2].inboxMessageEvent.data).to.be.eq(
@@ -758,7 +767,8 @@ describe('Orbit Chain', () => {
     await _verifyInboxMsg(
       events[3].inboxMessageEvent.data,
       await deployHelper.ERC2470_DEPLOYER(),
-      await deployHelper.ERC2470_VALUE()
+      await deployHelper.ERC2470_VALUE(),
+      receipt.effectiveGasPrice
     )
     expect(events[4].inboxMessageEvent.messageNum.toString()).to.be.eq('4')
     expect(events[4].inboxMessageEvent.data).to.be.eq(
@@ -770,7 +780,8 @@ describe('Orbit Chain', () => {
     await _verifyInboxMsg(
       events[5].inboxMessageEvent.data,
       await deployHelper.ZOLTU_CREATE2_DEPLOYER(),
-      await deployHelper.ZOLTU_VALUE()
+      await deployHelper.ZOLTU_VALUE(),
+      receipt.effectiveGasPrice
     )
     expect(events[6].inboxMessageEvent.messageNum.toString()).to.be.eq('6')
     expect(events[6].inboxMessageEvent.data).to.be.eq(
@@ -782,7 +793,8 @@ describe('Orbit Chain', () => {
     await _verifyInboxMsg(
       events[7].inboxMessageEvent.data,
       await deployHelper.ERC1820_DEPLOYER(),
-      await deployHelper.ERC1820_VALUE()
+      await deployHelper.ERC1820_VALUE(),
+      receipt.effectiveGasPrice
     )
     expect(events[8].inboxMessageEvent.messageNum.toString()).to.be.eq('8')
     expect(events[8].inboxMessageEvent.data).to.be.eq(
@@ -808,24 +820,29 @@ describe('Orbit Chain', () => {
     )
 
     // check amount locked (taken from deployer) matches total amount to be minted
-    const transferLogs = receipt.logs.filter(log =>
-      log.topics.includes(nativeToken!.interface.getEventTopic('Transfer'))
-    )
-    const decodedEvents = transferLogs.map(
-      log => nativeToken!.interface.parseLog(log).args
-    )
-    const transferedFromDeployer = decodedEvents.filter(
-      log => log.from === userL1Wallet.address
-    )
-
-    expect(transferedFromDeployer.length).to.be.eq(1)
-    const amountTransferedFromDeployer = transferedFromDeployer[0].value
-    expect(amountTransferedFromDeployer).to.be.eq(amountToBeMinted)
-
-    console.log(l2Network)
+    let amountTransferedFromDeployer
+    if (nativeToken) {
+      const transferLogs = receipt.logs.filter(log =>
+        log.topics.includes(nativeToken!.interface.getEventTopic('Transfer'))
+      )
+      const decodedEvents = transferLogs.map(
+        log => nativeToken!.interface.parseLog(log).args
+      )
+      const transferedFromDeployer = decodedEvents.filter(
+        log => log.from === userL1Wallet.address
+      )
+      expect(transferedFromDeployer.length).to.be.eq(1)
+      amountTransferedFromDeployer = transferedFromDeployer[0].value
+      expect(amountTransferedFromDeployer).to.be.eq(amountToBeMinted)
+    } else {
+      amountTransferedFromDeployer = userL1NativeAssetBalance.sub(
+        await l1Provider.getBalance(userL1Wallet.address)
+      )
+      expect(amountTransferedFromDeployer).to.be.gte(amountToBeMinted)
+    }
 
     // check balances after retryable is processed
-    let userL1TokenAfter, bridgeBalanceAfter: BigNumber
+    let userL1NativeAssetBalanceAfter, bridgeBalanceAfter: BigNumber
     const rollupCreatedEvent = receipt.logs.filter(log =>
       log.topics.includes(
         rollupCreator.interface.getEventTopic('RollupCreated')
@@ -835,21 +852,23 @@ describe('Orbit Chain', () => {
       rollupCreator.interface.parseLog(rollupCreatedEvent)
     const bridge = decodedRollupCreatedEvent.args.bridge
     if (nativeToken) {
-      userL1TokenAfter = await nativeToken.balanceOf(userL1Wallet.address)
-      expect(userL1TokenBefore.sub(userL1TokenAfter)).to.be.eq(
-        amountTransferedFromDeployer
+      userL1NativeAssetBalanceAfter = await nativeToken.balanceOf(
+        userL1Wallet.address
       )
+      expect(
+        userL1NativeAssetBalance.sub(userL1NativeAssetBalanceAfter)
+      ).to.be.eq(amountTransferedFromDeployer)
       bridgeBalanceAfter = await nativeToken.balanceOf(bridge)
       expect(bridgeBalanceAfter).to.be.eq(amountTransferedFromDeployer)
     } else {
-      userL1TokenAfter = await l1Provider.getBalance(userL1Wallet.address)
-      bridgeBalanceAfter = await l1Provider.getBalance(
-        l2Network.ethBridge.bridge
+      userL1NativeAssetBalanceAfter = await l1Provider.getBalance(
+        userL1Wallet.address
       )
-      expect(userL1TokenBefore.sub(userL1TokenAfter)).to.be.eq(
-        amountTransferedFromDeployer
-      )
-      expect(bridgeBalanceAfter).to.be.eq(amountTransferedFromDeployer)
+      bridgeBalanceAfter = await l1Provider.getBalance(bridge)
+      expect(
+        userL1NativeAssetBalance.sub(userL1NativeAssetBalanceAfter)
+      ).to.be.eq(amountTransferedFromDeployer)
+      expect(bridgeBalanceAfter).to.be.eq(amountToBeMinted)
     }
   })
 })
@@ -857,7 +876,8 @@ describe('Orbit Chain', () => {
 async function _verifyInboxMsg(
   inboxMsg: string,
   create2Deployer: string,
-  create2Value: BigNumber
+  create2Value: BigNumber,
+  gasPrice: BigNumber
 ) {
   const maxFeePerGasForRetryables = BigNumber.from('100000000') // 0.1 gwei
 
@@ -865,9 +885,11 @@ async function _verifyInboxMsg(
   expect(msg1.to).to.be.eq(create2Deployer)
   expect(msg1.l2CallValue).to.be.eq(create2Value)
   expect(msg1.amountToBeMintedOnChildChain).to.be.eq(
-    BigNumber.from(create2Value).add(maxFeePerGasForRetryables.mul(21000))
+    BigNumber.from(create2Value)
+      .add(maxFeePerGasForRetryables.mul(21000))
+      .add(_submissionCost(gasPrice))
   )
-  expect(msg1.maxSubmissionCost).to.be.eq('0')
+  expect(msg1.maxSubmissionCost).to.be.eq(_submissionCost(gasPrice))
   expect(msg1.excessFeeRefundAddress).to.be.eq(
     applyAlias(L2_ROLLUP_CREATOR_ADDRESS)
   )
@@ -909,6 +931,14 @@ async function _decodeInboxMessage(encodedMsg: string) {
 
 function _uint256ToAddress(uint256: string) {
   return ethers.utils.getAddress(ethers.utils.hexStripZeros(uint256))
+}
+
+function _submissionCost(gasPrice: BigNumber) {
+  if (nativeToken) {
+    return BigNumber.from(0)
+  } else {
+    return BigNumber.from(1400).mul(gasPrice)
+  }
 }
 
 async function waitOnL2Msg(tx: ethers.ContractTransaction) {
