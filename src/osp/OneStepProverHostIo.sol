@@ -101,9 +101,9 @@ contract OneStepProverHostIo is IOneStepProver {
         state.u64Vals[idx] = val;
     }
 
-    uint256 constant BLS_MODULUS =
+    uint256 internal constant BLS_MODULUS =
         52435875175126190479447740508185965837690552500527637822603658699938581184513;
-    uint256 constant PRIMITIVE_ROOT_OF_UNITY =
+    uint256 internal constant PRIMITIVE_ROOT_OF_UNITY =
         10238227357739495823651030575849232062558860180284477541189508159991286009131;
 
     // Computes b**e % m
@@ -197,6 +197,11 @@ contract OneStepProverHostIo is IOneStepProver {
                 (fieldElementsPerBlob, blsModulus) = abi.decode(kzgParams, (uint256, uint256));
             }
 
+            // With a hardcoded PRIMITIVE_ROOT_OF_UNITY, we can only support this BLS modulus.
+            // It may be worth in the future supporting arbitrary BLS moduli, but we would likely need to
+            // validate a user-supplied root of unity.
+            require(blsModulus == BLS_MODULUS, "UNKNOWN_BLS_MODULUS");
+
             // If preimageOffset is greater than the blob size, leave extracted empty and call it here.
             if (preimageOffset < fieldElementsPerBlob * 32) {
                 // We need to compute what point the polynomial should be evaluated at to get the right part of the preimage.
@@ -221,11 +226,7 @@ contract OneStepProverHostIo is IOneStepProver {
                 // to retrieve this word of the KZG commitment.
                 rootOfUnityPower *= bitReversedIndex;
                 // z is the point the polynomial is evaluated at to retrieve this word of data
-                uint256 z = modExp256(
-                    PRIMITIVE_ROOT_OF_UNITY,
-                    rootOfUnityPower,
-                    blsModulus
-                );
+                uint256 z = modExp256(PRIMITIVE_ROOT_OF_UNITY, rootOfUnityPower, blsModulus);
                 require(bytes32(kzgProof[32:64]) == bytes32(z), "KZG_PROOF_WRONG_Z");
 
                 extracted = kzgProof[64:96];
