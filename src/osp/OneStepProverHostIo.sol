@@ -202,7 +202,7 @@ contract OneStepProverHostIo is IOneStepProver {
             // validate a user-supplied root of unity.
             require(blsModulus == BLS_MODULUS, "UNKNOWN_BLS_MODULUS");
 
-            // If preimageOffset is greater than the blob size, leave extracted empty and call it here.
+            // If preimageOffset is greater than or equal to the blob size, leave extracted empty and call it here.
             if (preimageOffset < fieldElementsPerBlob * 32) {
                 // We need to compute what point the polynomial should be evaluated at to get the right part of the preimage.
                 // KZG commitments use a bit reversal permutation to order the roots of unity.
