@@ -664,7 +664,7 @@ describe('Orbit Chain', () => {
     })
   })
 
-  it.only('can deploy deterministic factories to L2 through RollupCreator', async function () {
+  it('can deploy deterministic factories to L2 through RollupCreator', async function () {
     const rollupCreator = RollupCreator__factory.connect(
       L2_ROLLUP_CREATOR_ADDRESS,
       l1Provider
