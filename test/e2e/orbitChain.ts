@@ -678,7 +678,7 @@ describe('Orbit Chain', () => {
     const maxFeePerGas = BigNumber.from('100000000') // 0.1 gwei
     let fee = await deployHelper.getDeploymentTotalCost(inbox, maxFeePerGas)
     if (nativeToken) {
-      // fee = await _getPrescaledAmount(nativeToken, fee)
+      fee = await _getPrescaledAmount(nativeToken, fee)
       await (
         await nativeToken
           .connect(userL1Wallet)
@@ -833,7 +833,9 @@ describe('Orbit Chain', () => {
       )
       expect(transferedFromDeployer.length).to.be.eq(1)
       amountTransferedFromDeployer = transferedFromDeployer[0].value
-      expect(amountTransferedFromDeployer).to.be.eq(amountToBeMinted)
+      expect(
+        await _getScaledAmount(nativeToken, amountTransferedFromDeployer)
+      ).to.be.eq(amountToBeMinted)
     } else {
       amountTransferedFromDeployer = userL1NativeAssetBalance.sub(
         await l1Provider.getBalance(userL1Wallet.address)
