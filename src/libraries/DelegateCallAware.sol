@@ -11,7 +11,7 @@ import {NotOwner} from "./Error.sol";
 abstract contract DelegateCallAware {
     address private immutable __self = address(this);
 
-    function isDelegateCall() internal view returns(bool) {
+    function isDelegateCall() internal view returns (bool) {
         return address(this) != __self;
     }
 
