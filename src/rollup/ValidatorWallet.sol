@@ -7,6 +7,7 @@ pragma solidity ^0.8.0;
 import "../challenge/IChallengeManager.sol";
 import "../libraries/DelegateCallAware.sol";
 import "../libraries/IGasRefunder.sol";
+import "../libraries/GasRefundEnabled.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
