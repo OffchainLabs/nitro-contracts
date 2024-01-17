@@ -696,7 +696,8 @@ describe('Orbit Chain', () => {
         .perform(
           inbox,
           nativeToken ? nativeToken.address : ethers.constants.AddressZero,
-          maxFeePerGas
+          maxFeePerGas,
+          { value: nativeToken ? BigNumber.from(0) : fee }
         )
     ).wait()
 
@@ -738,7 +739,47 @@ describe('Orbit Chain', () => {
     const maxFeePerGas = BigNumber.from('100000000') // 0.1 gwei
     let fee = await deployHelper.getDeploymentTotalCost(inbox, maxFeePerGas)
     if (nativeToken) {
-      fee = await _getPrescaledAmount(nativeToken, fee)
+      const decimals = await nativeToken.decimals()
+      if (decimals < 18) {
+        // if token has less than 18 decimals we need to sum fee costs per each retryable,
+        // as there could be rounding effect for each one of them
+        fee = BigNumber.from(0)
+        fee = fee.add(
+          await _getPrescaledAmount(
+            nativeToken,
+            (
+              await deployHelper.NICK_CREATE2_VALUE()
+            ).add(maxFeePerGas.mul(BigNumber.from(21000)))
+          )
+        )
+        fee = fee.add(
+          await _getPrescaledAmount(
+            nativeToken,
+            (
+              await deployHelper.ERC2470_VALUE()
+            ).add(maxFeePerGas.mul(BigNumber.from(21000)))
+          )
+        )
+        fee = fee.add(
+          await _getPrescaledAmount(
+            nativeToken,
+            (
+              await deployHelper.ZOLTU_VALUE()
+            ).add(maxFeePerGas.mul(BigNumber.from(21000)))
+          )
+        )
+        fee = fee.add(
+          await _getPrescaledAmount(
+            nativeToken,
+            (
+              await deployHelper.ERC1820_VALUE()
+            ).add(maxFeePerGas.mul(BigNumber.from(21000)))
+          )
+        )
+      } else {
+        fee = await _getPrescaledAmount(nativeToken, fee)
+      }
+
       await (
         await nativeToken
           .connect(userL1Wallet)
@@ -875,9 +916,42 @@ describe('Orbit Chain', () => {
       events[7].inboxMessageEvent.data
     )
     const amountToBeMinted = amount1.add(amount2).add(amount3).add(amount4)
-    expect(amountToBeMinted).to.be.eq(
-      await deployHelper.getDeploymentTotalCost(inbox, maxFeePerGas)
-    )
+    let expectedAmountToBeMinted = amountToBeMinted
+    if (nativeToken && (await nativeToken.decimals()) < 18) {
+      // sum up every retryable cost separately due to rounding effect possibly applied to each one
+      const gasCost = maxFeePerGas.mul(BigNumber.from(21000))
+      expectedAmountToBeMinted = BigNumber.from(0)
+      expectedAmountToBeMinted = expectedAmountToBeMinted.add(
+        await _getPrescaledAmount(
+          nativeToken,
+          (await deployHelper.NICK_CREATE2_VALUE()).add(gasCost)
+        )
+      )
+      expectedAmountToBeMinted = expectedAmountToBeMinted.add(
+        await _getPrescaledAmount(
+          nativeToken,
+          (await deployHelper.ERC2470_VALUE()).add(gasCost)
+        )
+      )
+      expectedAmountToBeMinted = expectedAmountToBeMinted.add(
+        await _getPrescaledAmount(
+          nativeToken,
+          (await deployHelper.ZOLTU_VALUE()).add(gasCost)
+        )
+      )
+      expectedAmountToBeMinted = expectedAmountToBeMinted.add(
+        await _getPrescaledAmount(
+          nativeToken,
+          (await deployHelper.ERC1820_VALUE()).add(gasCost)
+        )
+      )
+      expectedAmountToBeMinted = await _getScaledAmount(
+        nativeToken,
+        expectedAmountToBeMinted
+      )
+    }
+
+    expect(amountToBeMinted).to.be.eq(expectedAmountToBeMinted)
 
     // check amount locked (taken from deployer) matches total amount to be minted
     let amountTransferedFromDeployer
@@ -946,11 +1020,17 @@ async function _verifyInboxMsg(
   const msg1 = await _decodeInboxMessage(inboxMsg)
   expect(msg1.to).to.be.eq(create2Deployer)
   expect(msg1.l2CallValue).to.be.eq(create2Value)
-  expect(msg1.amountToBeMintedOnChildChain).to.be.eq(
-    BigNumber.from(create2Value)
-      .add(maxFeePerGasForRetryables.mul(21000))
-      .add(_submissionCost(gasPrice))
-  )
+
+  let expectedAmountToBeMinted = BigNumber.from(create2Value)
+    .add(maxFeePerGasForRetryables.mul(21000))
+    .add(_submissionCost(gasPrice))
+  if (nativeToken && (await nativeToken.decimals()) < 18) {
+    expectedAmountToBeMinted = await _getScaledAmount(
+      nativeToken,
+      await _getPrescaledAmount(nativeToken, expectedAmountToBeMinted)
+    )
+  }
+  expect(msg1.amountToBeMintedOnChildChain).to.be.eq(expectedAmountToBeMinted)
   expect(msg1.maxSubmissionCost).to.be.eq(_submissionCost(gasPrice))
   expect(msg1.excessFeeRefundAddress).to.be.eq(
     applyAlias(L2_ROLLUP_CREATOR_ADDRESS)
@@ -1066,6 +1146,7 @@ async function _getPrescaledAmount(
       BigNumber.from(18).sub(decimals)
     )
     let prescaledAmount = amount.div(scalingFactor)
+    // round up if needed
     if (prescaledAmount.mul(scalingFactor).lt(amount)) {
       prescaledAmount = prescaledAmount.add(BigNumber.from(1))
     }
