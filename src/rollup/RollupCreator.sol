@@ -268,13 +268,31 @@ contract RollupCreator is Ownable {
 
             // calculate the fee amount in the native token's decimals
             uint8 decimals = ERC20(_nativeToken).decimals();
+
             uint256 totalFeeNativeDenominated = totalFee;
             if (decimals < 18) {
-                totalFeeNativeDenominated = totalFee / (10**(18 - decimals));
-                // round up if necessary
-                if (totalFeeNativeDenominated * (10**(18 - decimals)) < totalFee) {
-                    totalFeeNativeDenominated++;
-                }
+                uint256 gasCost = _maxFeePerGas * 21_000;
+                uint256 nickCreate2Cost = _scaleDownToNativeDecimals(
+                    l2FactoriesDeployer.NICK_CREATE2_VALUE() + gasCost,
+                    decimals
+                );
+                uint256 erc2470Cost = _scaleDownToNativeDecimals(
+                    l2FactoriesDeployer.ERC2470_VALUE() + gasCost,
+                    decimals
+                );
+                uint256 zoltuCreate2Cost = _scaleDownToNativeDecimals(
+                    l2FactoriesDeployer.ZOLTU_VALUE() + gasCost,
+                    decimals
+                );
+                uint256 erc1820Cost = _scaleDownToNativeDecimals(
+                    l2FactoriesDeployer.ERC1820_VALUE() + gasCost,
+                    decimals
+                );
+                totalFeeNativeDenominated =
+                    nickCreate2Cost +
+                    erc2470Cost +
+                    zoltuCreate2Cost +
+                    erc1820Cost;
             } else if (decimals > 18) {
                 totalFeeNativeDenominated = totalFee * (10**(decimals - 18));
             }
@@ -284,5 +302,21 @@ contract RollupCreator is Ownable {
             // do it
             l2FactoriesDeployer.perform(_inbox, _nativeToken, _maxFeePerGas);
         }
+    }
+
+    function _scaleDownToNativeDecimals(uint256 amount, uint8 decimals)
+        internal
+        pure
+        returns (uint256)
+    {
+        uint256 scaledAmount = amount;
+        if (decimals < 18) {
+            scaledAmount = amount / (10**(18 - decimals));
+            // round up if necessary
+            if (scaledAmount * (10**(18 - decimals)) < amount) {
+                scaledAmount++;
+            }
+        }
+        return scaledAmount;
     }
 }
