@@ -60,11 +60,16 @@ contract DeployHelper {
         // fund the target L2 address
         if (_nativeToken != address(0)) {
             // calculate the fee amount in the native token's decimals
+            uint256 feeAmountNativeDenominated = feeAmount;
             uint8 decimals = ERC20(_nativeToken).decimals();
             if (decimals < 18) {
-                feeAmount = feeAmount / (10**(18 - decimals));
+                feeAmountNativeDenominated = feeAmount / (10**(18 - decimals));
+                // round up if necessary
+                if (feeAmountNativeDenominated * (10**(18 - decimals)) < feeAmount) {
+                    feeAmountNativeDenominated++;
+                }
             } else if (decimals > 18) {
-                feeAmount = feeAmount * (10**(decimals - 18));
+                feeAmountNativeDenominated = feeAmount * (10**(decimals - 18));
             }
 
             IERC20Inbox(inbox).createRetryableTicket({
@@ -75,7 +80,7 @@ contract DeployHelper {
                 callValueRefundAddress: msg.sender,
                 gasLimit: GASLIMIT,
                 maxFeePerGas: maxFeePerGas,
-                tokenTotalFeeAmount: feeAmount,
+                tokenTotalFeeAmount: feeAmountNativeDenominated,
                 data: ""
             });
         } else {

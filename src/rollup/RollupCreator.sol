@@ -268,13 +268,18 @@ contract RollupCreator is Ownable {
 
             // calculate the fee amount in the native token's decimals
             uint8 decimals = ERC20(_nativeToken).decimals();
+            uint256 totalFeeNativeDenominated = totalFee;
             if (decimals < 18) {
-                totalFee = totalFee / (10**(18 - decimals));
+                totalFeeNativeDenominated = totalFee / (10**(18 - decimals));
+                // round up if necessary
+                if (totalFeeNativeDenominated * (10**(18 - decimals)) < totalFee) {
+                    totalFeeNativeDenominated++;
+                }
             } else if (decimals > 18) {
-                totalFee = totalFee * (10**(decimals - 18));
+                totalFeeNativeDenominated = totalFee * (10**(decimals - 18));
             }
 
-            IERC20(_nativeToken).safeTransferFrom(msg.sender, _inbox, totalFee);
+            IERC20(_nativeToken).safeTransferFrom(msg.sender, _inbox, totalFeeNativeDenominated);
 
             // do it
             l2FactoriesDeployer.perform(_inbox, _nativeToken, _maxFeePerGas);
