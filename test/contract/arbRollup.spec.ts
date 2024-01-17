@@ -121,7 +121,7 @@ async function getDefaultConfig(
 }
 
 const setup = async () => {
-  const accounts = await initializeAccounts()
+  accounts = await initializeAccounts()
   admin = accounts[0]
 
   const user = accounts[1]

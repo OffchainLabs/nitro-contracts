@@ -4,6 +4,7 @@
 
 pragma solidity ^0.8.0;
 
+import "../bridge/ISequencerInbox.sol";
 import "../precompiles/ArbRetryableTx.sol";
 import "../precompiles/ArbSys.sol";
 
@@ -129,5 +130,25 @@ contract Simple {
         // solc-ignore-next-line unused-call-retval
         to.staticcall{gas: before - 10000}(input);
         return before - gasleft();
+    }
+
+    function postManyBatches(
+        ISequencerInbox sequencerInbox,
+        bytes memory batchData,
+        uint256 numberToPost
+    ) external {
+        uint256 sequenceNumber = sequencerInbox.batchCount();
+        uint256 delayedMessagesRead = sequencerInbox.totalDelayedMessagesRead();
+        for (uint256 i = 0; i < numberToPost; i++) {
+            sequencerInbox.addSequencerL2Batch(
+                sequenceNumber,
+                batchData,
+                delayedMessagesRead,
+                IGasRefunder(address(0)),
+                0,
+                0
+            );
+            sequenceNumber++;
+        }
     }
 }
