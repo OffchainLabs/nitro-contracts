@@ -295,6 +295,47 @@ contract OneStepProverHostIo is IOneStepProver {
         return true;
     }
 
+    function executeReadHotShotCommitment(
+        ExecutionContext calldata execCtx,
+        Machine memory mach,
+        Module memory mod,
+        Instruction calldata,
+        bytes calldata proof
+    ) internal view {
+        uint256 height = mach.valueStack.pop().assumeI64();
+        uint256 ptr = mach.valueStack.pop().assumeI32();
+
+        if (ptr + 32 > mod.moduleMemory.size || ptr % LEAF_SIZE != 0) {
+            mach.status = MachineStatus.ERRORED;
+            return;
+        }
+
+        uint256 leafIdx = ptr / LEAF_SIZE;
+        uint256 proofOffset = 0;
+        bytes32 leafContents;
+        MerkleProof memory merkleProof;
+        (leafContents, proofOffset, merkleProof) = mod.moduleMemory.proveLeaf(
+            leafIdx,
+            proof,
+            proofOffset
+        );
+
+        bytes calldata commitment = proof[proofOffset:proofOffset+32];
+        bool success = validateHotShotCommitment(execCtx, height, commitment);
+        if (!success) {
+            return;
+        }
+    }
+
+    function validateHotShotCommitment(
+        ExecutionContext calldata,
+        uint256 ,
+        bytes calldata
+    ) internal view returns (bool) {
+        // Get the hotshot commitment via the height
+        return true;
+    }
+
     function executeReadInboxMessage(
         ExecutionContext calldata execCtx,
         Machine memory mach,
@@ -441,6 +482,8 @@ contract OneStepProverHostIo is IOneStepProver {
             impl = executeReadInboxMessage;
         } else if (opcode == Instructions.HALT_AND_SET_FINISHED) {
             impl = executeHaltAndSetFinished;
+        } else if (opcode == Instructions.READ_HOTSHOT_COMMITMENT) {
+            impl = executeReadHotShotCommitment;
         } else {
             revert("INVALID_MEMORY_OPCODE");
         }

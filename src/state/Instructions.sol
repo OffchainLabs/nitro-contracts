@@ -144,6 +144,8 @@ library Instructions {
     uint16 internal constant READ_INBOX_MESSAGE = 0x8021;
     uint16 internal constant HALT_AND_SET_FINISHED = 0x8022;
 
+    uint16 internal constant READ_HOTSHOT_COMMITMENT = 0x9001;
+
     uint256 internal constant INBOX_INDEX_SEQUENCER = 0;
     uint256 internal constant INBOX_INDEX_DELAYED = 1;
 
