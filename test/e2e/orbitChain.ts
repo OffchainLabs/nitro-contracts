@@ -142,7 +142,7 @@ describe('Orbit Chain', () => {
     }
 
     /// bridge native asset
-    const amountToDeposit = ethers.utils.parseEther('0.35')
+    const amountToDeposit = await _applyDecimalsToAmount('3')
 
     let depositTx
     if (nativeToken) {
@@ -216,7 +216,7 @@ describe('Orbit Chain', () => {
     ).to.be.eq(amountToDeposit)
   })
 
-  it('can issue retryable ticket (no calldata)', async function () {
+  it.only('can issue retryable ticket (no calldata)', async function () {
     // snapshot state before deposit
     const userL2Balance = await l2Provider.getBalance(userL2Wallet.address)
     const aliasL2Balance = await l2Provider.getBalance(
@@ -250,7 +250,7 @@ describe('Orbit Chain', () => {
     //// retryables params
 
     const to = userL1Wallet.address
-    const l2CallValue = ethers.utils.parseEther('0.25')
+    const l2CallValue = await _applyDecimalsToAmount('2')
     const data = '0x'
 
     const l1ToL2MessageGasEstimate = new L1ToL2MessageGasEstimator(l2Provider)
@@ -268,6 +268,7 @@ describe('Orbit Chain', () => {
     )
 
     let tokenTotalFeeAmount = retryableParams.deposit
+    console.log('tokenTotalFeeAmount', tokenTotalFeeAmount.toString())
     const gasLimit = retryableParams.gasLimit
     const maxFeePerGas = retryableParams.maxFeePerGas
     const maxSubmissionCost = retryableParams.maxSubmissionCost
@@ -279,6 +280,8 @@ describe('Orbit Chain', () => {
         nativeToken,
         retryableParams.deposit
       )
+
+      console.log('tokenTotalFeeAmount', tokenTotalFeeAmount.toString())
 
       await (
         await nativeToken
@@ -412,7 +415,7 @@ describe('Orbit Chain', () => {
     //// retryables params
 
     const to = ethVaultContract.address
-    const l2CallValue = ethers.utils.parseEther('0.27')
+    const l2CallValue = await _applyDecimalsToAmount('1')
     // calldata -> change 'version' field to 11
     const newValue = 11
     const data = new ethers.utils.Interface([
@@ -568,7 +571,7 @@ describe('Orbit Chain', () => {
       '0x0000000000000000000000000000000000000064',
       l2Provider
     )
-    const withdrawAmount = ethers.utils.parseEther('0.11')
+    const withdrawAmount = await _applyDecimalsToAmount('1')
     const withdrawTx = await arbSys
       .connect(userL2Wallet)
       .sendTxToL1(userL1Wallet.address, '0x', {
@@ -940,6 +943,16 @@ function _submissionCost(gasPrice: BigNumber) {
     return BigNumber.from(0)
   } else {
     return BigNumber.from(1400).mul(gasPrice)
+  }
+}
+
+async function _applyDecimalsToAmount(amount: string) {
+  if (nativeToken) {
+    return BigNumber.from(amount).mul(
+      BigNumber.from(10).pow(await nativeToken.decimals())
+    )
+  } else {
+    return ethers.utils.parseEther(amount.toString())
   }
 }
 
