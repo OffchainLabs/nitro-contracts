@@ -216,7 +216,7 @@ describe('Orbit Chain', () => {
     ).to.be.eq(amountToDeposit)
   })
 
-  it.only('can issue retryable ticket (no calldata)', async function () {
+  it('can issue retryable ticket (no calldata)', async function () {
     // snapshot state before deposit
     const userL2Balance = await l2Provider.getBalance(userL2Wallet.address)
     const aliasL2Balance = await l2Provider.getBalance(
@@ -268,7 +268,6 @@ describe('Orbit Chain', () => {
     )
 
     let tokenTotalFeeAmount = retryableParams.deposit
-    console.log('tokenTotalFeeAmount', tokenTotalFeeAmount.toString())
     const gasLimit = retryableParams.gasLimit
     const maxFeePerGas = retryableParams.maxFeePerGas
     const maxSubmissionCost = retryableParams.maxSubmissionCost
@@ -280,8 +279,6 @@ describe('Orbit Chain', () => {
         nativeToken,
         retryableParams.deposit
       )
-
-      console.log('tokenTotalFeeAmount', tokenTotalFeeAmount.toString())
 
       await (
         await nativeToken
@@ -360,7 +357,16 @@ describe('Orbit Chain', () => {
     const aliasL2BalanceAfter = await l2Provider.getBalance(
       applyAlias(userL2Wallet.address)
     )
-    expect(aliasL2BalanceAfter).to.be.eq(aliasL2Balance)
+    let expectedAliasL2BalanceExtraFunds = BigNumber.from(0)
+    // due to rounding effect there can be some funds left on alias address
+    if (nativeToken && (await nativeToken.decimals()) < 18) {
+      expectedAliasL2BalanceExtraFunds = (
+        await _getScaledAmount(nativeToken, tokenTotalFeeAmount)
+      ).sub(retryableParams.deposit)
+    }
+    expect(aliasL2BalanceAfter.sub(expectedAliasL2BalanceExtraFunds)).to.be.eq(
+      aliasL2Balance
+    )
 
     const excessFeeReceiverBalanceAfter = await l2Provider.getBalance(
       excessFeeRefundAddress
@@ -529,7 +535,16 @@ describe('Orbit Chain', () => {
     const aliasL2BalanceAfter = await l2Provider.getBalance(
       applyAlias(userL1Wallet.address)
     )
-    expect(aliasL2BalanceAfter).to.be.eq(aliasL2Balance)
+    let expectedAliasL2BalanceExtraFunds = BigNumber.from(0)
+    // due to rounding effect there can be some funds left on alias address
+    if (nativeToken && (await nativeToken.decimals()) < 18) {
+      expectedAliasL2BalanceExtraFunds = (
+        await _getScaledAmount(nativeToken, tokenTotalFeeAmount)
+      ).sub(retryableParams.deposit)
+    }
+    expect(aliasL2BalanceAfter.sub(expectedAliasL2BalanceExtraFunds)).to.be.eq(
+      aliasL2Balance
+    )
 
     const excessFeeReceiverBalanceAfter = await l2Provider.getBalance(
       excessFeeRefundAddress
@@ -626,13 +641,55 @@ describe('Orbit Chain', () => {
     const inbox = l2Network.ethBridge.inbox
     const maxFeePerGas = BigNumber.from('100000000') // 0.1 gwei
     let fee = await deployHelper.getDeploymentTotalCost(inbox, maxFeePerGas)
+
     if (nativeToken) {
-      fee = await _getPrescaledAmount(nativeToken, fee)
+      const decimals = await nativeToken.decimals()
+      if (decimals < 18) {
+        // if token has less than 18 decimals we need to sum fee costs per each retryable,
+        // as there could be rounding effect for each one of them
+        fee = BigNumber.from(0)
+        fee = fee.add(
+          await _getPrescaledAmount(
+            nativeToken,
+            (
+              await deployHelper.NICK_CREATE2_VALUE()
+            ).add(maxFeePerGas.mul(BigNumber.from(21000)))
+          )
+        )
+        fee = fee.add(
+          await _getPrescaledAmount(
+            nativeToken,
+            (
+              await deployHelper.ERC2470_VALUE()
+            ).add(maxFeePerGas.mul(BigNumber.from(21000)))
+          )
+        )
+        fee = fee.add(
+          await _getPrescaledAmount(
+            nativeToken,
+            (
+              await deployHelper.ZOLTU_VALUE()
+            ).add(maxFeePerGas.mul(BigNumber.from(21000)))
+          )
+        )
+        fee = fee.add(
+          await _getPrescaledAmount(
+            nativeToken,
+            (
+              await deployHelper.ERC1820_VALUE()
+            ).add(maxFeePerGas.mul(BigNumber.from(21000)))
+          )
+        )
+      } else {
+        fee = await _getPrescaledAmount(nativeToken, fee)
+      }
+
       await (
         await nativeToken.connect(userL1Wallet).transfer(inbox, fee)
       ).wait()
     }
 
+    // deploy factories
     const receipt = await (
       await deployHelper
         .connect(userL1Wallet)
@@ -1005,7 +1062,14 @@ async function _getPrescaledAmount(
 ): Promise<BigNumber> {
   const decimals = BigNumber.from(await nativeToken.decimals())
   if (decimals.lt(BigNumber.from(18))) {
-    return amount.div(BigNumber.from(10).pow(BigNumber.from(18).sub(decimals)))
+    const scalingFactor = BigNumber.from(10).pow(
+      BigNumber.from(18).sub(decimals)
+    )
+    let prescaledAmount = amount.div(scalingFactor)
+    if (prescaledAmount.mul(scalingFactor).lt(amount)) {
+      prescaledAmount = prescaledAmount.add(BigNumber.from(1))
+    }
+    return prescaledAmount
   } else if (decimals.gt(BigNumber.from(18))) {
     return amount.mul(BigNumber.from(10).pow(decimals.sub(BigNumber.from(18))))
   }
