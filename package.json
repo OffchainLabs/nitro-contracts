@@ -31,13 +31,13 @@
     "postinstall": "patch-package",
     "deploy-factory": "hardhat run scripts/deployment.ts",
     "deploy-eth-rollup": "hardhat run scripts/createEthRollup.ts",
-    "deploy-erc20-rollup": "hardhat run scripts/createERC20Rollup.ts"
+    "deploy-erc20-rollup": "hardhat run scripts/createERC20Rollup.ts",
+    "publish": "scripts/publish.sh"
   },
   "dependencies": {
     "@offchainlabs/upgrade-executor": "1.1.0-beta.0",
     "@openzeppelin/contracts": "4.5.0",
-    "@openzeppelin/contracts-upgradeable": "4.5.2",
-    "patch-package": "^6.4.7"
+    "@openzeppelin/contracts-upgradeable": "4.5.2"
   },
   "private": false,
   "devDependencies": {
@@ -66,6 +66,7 @@
     "hardhat-deploy": "^0.11.37",
     "hardhat-gas-reporter": "^1.0.9",
     "hardhat-ignore-warnings": "^0.2.9",
+    "patch-package": "^6.4.7",
     "postinstall-postinstall": "^2.1.0",
     "prettier": "^2.5.1",
     "prettier-plugin-solidity": "^1.0.0-beta.19",
