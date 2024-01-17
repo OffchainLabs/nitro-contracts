@@ -38,6 +38,7 @@ import "../rollup/IRollupLogic.sol";
 import "./Messages.sol";
 import "../precompiles/ArbGasInfo.sol";
 import "../precompiles/ArbSys.sol";
+import "../libraries/I4844Readers.sol";
 
 import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
 import {GasRefundEnabled, IGasRefunder} from "../libraries/IGasRefunder.sol";
@@ -361,7 +362,10 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    ) external refundsGas(gasRefunder) {
+    )
+        external
+        refundsGas(gasRefunder, IDataHashReader(address(0)), IBlobBasefeeReader(address(0)))
+    {
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
@@ -412,7 +416,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    ) external refundsGas(gasRefunder) {
+    ) external refundsGas(gasRefunder, dataHashReader, blobBasefeeReader) {
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
         (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formBlobDataHash(
             afterDelayedMessagesRead
@@ -466,7 +470,11 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    ) external override refundsGas(gasRefunder) {
+    )
+        external
+        override
+        refundsGas(gasRefunder, IDataHashReader(address(0)), IBlobBasefeeReader(address(0)))
+    {
         if (!isBatchPoster[msg.sender] && msg.sender != address(rollup)) revert NotBatchPoster();
         (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formCallDataHash(
             data,
