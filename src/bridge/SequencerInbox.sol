@@ -418,6 +418,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             afterDelayedMessagesRead
         );
 
+        // we use addSequencerL2BatchImpl for submitting the message
+        // normally this would also submit a batch spending report but that is skipped if we pass
+        // an empty call data size, then we submit a separate batch spending report later
         (
             uint256 seqMessageIndex,
             bytes32 beforeAcc,
@@ -453,11 +456,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
         // submit a batch spending report to refund the entity that produced the blob batch data
         uint256 blobBasefee = blobBasefeeReader.getBlobBaseFee();
-
-        // TODO: This report the gas spending using the blob basefee, however the actual spending actually involve
-        //       2 parts: 1. data cost priced in blob basefee, 2. tx cost priced in block basefee
-        //       We might need to change the batch spending report format so both costs are reported.
-        submitBatchSpendingReport(dataHash, seqMessageIndex, blobBasefee);
+        submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, blobBasefee);
     }
 
     function addSequencerL2Batch(
@@ -625,7 +624,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     function submitBatchSpendingReport(
         bytes32 dataHash,
         uint256 seqMessageIndex,
-        uint256 gasPrice
+        uint256 gasPrice,
+        uint256 blobBaseFeePrice
     ) internal {
         bytes memory spendingReportMsg;
         address batchPoster = msg.sender;
@@ -646,12 +646,16 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
                 uint64(extraGas)
             );
         } else {
+            // when a blob base fee is supplied we include it into the batch spending report
             spendingReportMsg = abi.encodePacked(
                 block.timestamp,
                 batchPoster,
                 dataHash,
                 seqMessageIndex,
-                gasPrice
+                gasPrice,
+                // we add an empty extraGas since the parsing code expects a value here
+                uint64(0),
+                blobBaseFeePrice
             );
         }
 
@@ -691,7 +695,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         totalDelayedMessagesRead = afterDelayedMessagesRead;
 
         if (calldataLengthPosted > 0) {
-            submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee);
+            submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, 0);
         }
     }
 

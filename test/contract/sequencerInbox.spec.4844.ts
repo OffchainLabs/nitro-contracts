@@ -445,8 +445,11 @@ describe('SequencerInbox', async () => {
     const batchSendTx = await Toolkit4844.getTx(txHash)
     const blobHashes = (batchSendTx as any)['blobVersionedHashes'] as string[]
     const batchSendReceipt = await Toolkit4844.getTxReceipt(txHash)
-    const { timestamp: blockTimestamp, number: blockNumber } =
-      await wallet.provider.getBlock(batchSendReceipt.blockNumber)
+    const {
+      timestamp: blockTimestamp,
+      number: blockNumber,
+      baseFeePerGas,
+    } = await wallet.provider.getBlock(batchSendReceipt.blockNumber)
 
     const timeBounds = await getTimeBounds(
       blockNumber,
@@ -516,8 +519,12 @@ describe('SequencerInbox', async () => {
       '0x' + inboxMsgDeliveredEvent.data.substring(106, 170)
     const spendingSeqMessageIndex =
       '0x' + inboxMsgDeliveredEvent.data.substring(170, 234)
-    const spendingBlobBasefee =
+    const spendingBlockBaseFee =
       '0x' + inboxMsgDeliveredEvent.data.substring(234, 298)
+    const spendingExtraGas =
+      '0x' + inboxMsgDeliveredEvent.data.substring(298, 314)
+    const spendingBlobBasefee =
+      '0x' + inboxMsgDeliveredEvent.data.substring(314, 378)
 
     expect(
       BigNumber.from(spendingTimestamp).eq(blockTimestamp),
@@ -530,6 +537,18 @@ describe('SequencerInbox', async () => {
     expect(
       BigNumber.from(spendingSeqMessageIndex).eq(sequenceNumber),
       'spending seq message index'
+    ).to.eq(true)
+
+    if (baseFeePerGas == null) {
+      throw new Error('Missing base fee')
+    }
+    expect(
+      BigNumber.from(spendingBlockBaseFee).eq(baseFeePerGas),
+      `spending basefee: ${BigNumber.from(spendingBlockBaseFee).toString()}`
+    ).to.eq(true)
+    expect(
+      BigNumber.from(spendingExtraGas).eq(0),
+      `spending extra gas: ${BigNumber.from(spendingExtraGas).toString()}`
     ).to.eq(true)
     // we expect a very low - 1 - basefee since we havent sent many blobs
     expect(
