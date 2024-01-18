@@ -11,12 +11,16 @@ import {NotOwner} from "./Error.sol";
 abstract contract DelegateCallAware {
     address private immutable __self = address(this);
 
+    function isDelegateCall() internal view returns (bool) {
+        return address(this) != __self;
+    }
+
     /**
      * @dev Check that the execution is being performed through a delegate call. This allows a function to be
      * callable on the proxy contract but not on the logic contract.
      */
     modifier onlyDelegated() {
-        require(address(this) != __self, "Function must be called through delegatecall");
+        require(isDelegateCall(), "Function must be called through delegatecall");
         _;
     }
 
@@ -25,7 +29,7 @@ abstract contract DelegateCallAware {
      * callable on the implementing contract but not through proxies.
      */
     modifier notDelegated() {
-        require(address(this) == __self, "Function must not be called through delegatecall");
+        require(!isDelegateCall(), "Function must not be called through delegatecall");
         _;
     }
 

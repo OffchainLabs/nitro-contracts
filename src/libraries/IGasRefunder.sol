@@ -5,6 +5,8 @@
 // solhint-disable-next-line compiler-version
 pragma solidity >=0.6.9 <0.9.0;
 
+import "./DelegateCallAware.sol";
+
 interface IGasRefunder {
     function onGasSpent(
         address payable spender,
@@ -13,7 +15,7 @@ interface IGasRefunder {
     ) external returns (bool success);
 }
 
-abstract contract GasRefundEnabled {
+abstract contract GasRefundEnabled is DelegateCallAware {
     /// @dev this refunds the sender for execution costs of the tx
     /// calldata costs are only refunded if `msg.sender == tx.origin` to guarantee the value refunded relates to charging
     /// for the `tx.input`. this avoids a possible attack where you generate large calldata from a contract and get over-refunded
@@ -22,9 +24,11 @@ abstract contract GasRefundEnabled {
         _;
         if (address(gasRefunder) != address(0)) {
             uint256 calldataSize = msg.data.length;
-            uint256 calldataWords = (calldataSize + 31) / 32;
-            // account for the CALLDATACOPY cost of the proxy contract, including the memory expansion cost
-            startGasLeft += calldataWords * 6 + (calldataWords**2) / 512;
+            if (isDelegateCall()) {
+                uint256 calldataWords = (calldataSize + 31) / 32;
+                // account for the CALLDATACOPY cost of the proxy contract, including the memory expansion cost
+                startGasLeft += calldataWords * 6 + (calldataWords**2) / 512;
+            }
             // if triggered in a contract call, the spender may be overrefunded by appending dummy data to the call
             // so we check if it is a top level call, which would mean the sender paid calldata as part of tx.input
             // solhint-disable-next-line avoid-tx-origin

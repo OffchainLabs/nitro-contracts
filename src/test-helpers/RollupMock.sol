@@ -8,6 +8,12 @@ contract RollupMock {
     event WithdrawTriggered();
     event ZombieTriggered();
 
+    address public owner;
+
+    constructor(address _owner) {
+        owner = _owner;
+    }
+
     function withdrawStakerFunds() external returns (uint256) {
         emit WithdrawTriggered();
         return 0;

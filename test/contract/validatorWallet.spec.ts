@@ -28,6 +28,7 @@ describe('Validator Wallet', () => {
 
     owner = await accounts[0]
     executor = await accounts[1]
+    const rollupOwner = await accounts[2]
     const walletCreationTx = await (await walletCreator.createWallet([])).wait()
 
     const events = walletCreationTx.logs
@@ -46,8 +47,12 @@ describe('Validator Wallet', () => {
     await wallet.transferOwnership(await owner.getAddress())
 
     const RollupMock = await ethers.getContractFactory('RollupMock')
-    rollupMock1 = (await RollupMock.deploy()) as RollupMock
-    rollupMock2 = (await RollupMock.deploy()) as RollupMock
+    rollupMock1 = (await RollupMock.deploy(
+      await rollupOwner.getAddress()
+    )) as RollupMock
+    rollupMock2 = (await RollupMock.deploy(
+      await rollupOwner.getAddress()
+    )) as RollupMock
 
     await accounts[0].sendTransaction({
       to: wallet.address,
