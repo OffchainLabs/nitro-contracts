@@ -82,6 +82,8 @@ const ZERO_ADDR = ethers.constants.AddressZero
 const extraChallengeTimeBlocks = 20
 const wasmModuleRoot =
   '0x9900000000000000000000000000000000000000000000000000000000000010'
+const dummyDataHashReader = '0x0000000000000000000000000000000000000089'
+const dummyBlobBasefeeReader = '0x0000000000000000000000000000000000000090'
 
 // let rollup: RollupContract
 let rollup: RollupContract
@@ -121,7 +123,7 @@ async function getDefaultConfig(
 }
 
 const setup = async () => {
-  const accounts = await initializeAccounts()
+  accounts = await initializeAccounts()
   admin = accounts[0]
 
   const user = accounts[1]
@@ -185,6 +187,15 @@ const setup = async () => {
   )) as Bridge__factory
   const ethBridge = await ethBridgeFac.deploy()
 
+  const ethSequencerInboxFac = (await ethers.getContractFactory(
+    'SequencerInbox'
+  )) as SequencerInbox__factory
+  const ethSequencerInbox = await ethSequencerInboxFac.deploy(
+    117964,
+    dummyDataHashReader,
+    dummyBlobBasefeeReader
+  )
+
   const ethInboxFac = (await ethers.getContractFactory(
     'Inbox'
   )) as Inbox__factory
@@ -204,6 +215,8 @@ const setup = async () => {
     'ERC20Bridge'
   )) as ERC20Bridge__factory
   const erc20Bridge = await erc20BridgeFac.deploy()
+
+  const erc20SequencerInbox = ethSequencerInbox
 
   const erc20InboxFac = (await ethers.getContractFactory(
     'ERC20Inbox'
@@ -226,12 +239,14 @@ const setup = async () => {
   const bridgeCreator = await bridgeCreatorFac.deploy(
     {
       bridge: ethBridge.address,
+      sequencerInbox: ethSequencerInbox.address,
       inbox: ethInbox.address,
       rollupEventInbox: ethRollupEventInbox.address,
       outbox: ethOutbox.address,
     },
     {
       bridge: erc20Bridge.address,
+      sequencerInbox: erc20SequencerInbox.address,
       inbox: erc20Inbox.address,
       rollupEventInbox: erc20RollupEventInbox.address,
       outbox: erc20Outbox.address,
@@ -262,8 +277,6 @@ const setup = async () => {
 
   const maxFeePerGas = BigNumber.from('1000000000')
 
-  const dummyDataHashReader = '0x0000000000000000000000000000000000000089'
-  const dummyBlobBasefeeReader = '0x0000000000000000000000000000000000000090'
   const deployParams = {
     config: await getDefaultConfig(),
     batchPoster: await sequencer.getAddress(),
@@ -277,8 +290,6 @@ const setup = async () => {
     nativeToken: ethers.constants.AddressZero,
     deployFactoriesToL2: true,
     maxFeePerGasForRetryables: maxFeePerGas,
-    dataHashReader: dummyDataHashReader,
-    blobBasefeeReader: dummyBlobBasefeeReader,
   }
 
   const response = await rollupCreator.createRollup(deployParams, {
@@ -500,10 +511,6 @@ const impersonateAccount = (address: string) =>
     .then(() => ethers.getSigner(address))
 
 describe('ArbRollup', () => {
-  it('should initialize contracts', async function () {
-    accounts = await initializeAccounts()
-  })
-
   it('should initialize', async function () {
     const {
       rollupAdmin: rollupAdminContract,
@@ -1368,6 +1375,12 @@ describe('ArbRollup', () => {
       proxySecondaryImpl.interface.functions['initialize(address)']
         .stateMutability
     ).to.eq('view')
+  })
+
+  it('should fail the chainid fork check', async function () {
+    await expect(sequencerInbox.removeDelayAfterFork()).to.revertedWith(
+      'NotForked()'
+    )
   })
 
   it('should fail the batch poster check', async function () {

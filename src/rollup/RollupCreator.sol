@@ -41,8 +41,6 @@ contract RollupCreator is Ownable {
         address nativeToken;
         bool deployFactoriesToL2;
         uint256 maxFeePerGasForRetryables;
-        IDataHashReader dataHashReader;
-        IBlobBasefeeReader blobBasefeeReader;
     }
 
     BridgeCreator public bridgeCreator;
@@ -112,12 +110,27 @@ contract RollupCreator is Ownable {
         payable
         returns (address)
     {
-        // Make sure the immutable maxDataSize is as expected
-        (, IInboxBase ethInbox, , ) = bridgeCreator.ethBasedTemplates();
-        require(deployParams.maxDataSize == ethInbox.maxDataSize(), "I_MAX_DATA_SIZE_MISMATCH");
+        {
+            // Make sure the immutable maxDataSize is as expected
+            (, ISequencerInbox ethSequencerInbox, IInboxBase ethInbox, , ) = bridgeCreator
+                .ethBasedTemplates();
+            require(
+                deployParams.maxDataSize == ethSequencerInbox.maxDataSize(),
+                "SI_MAX_DATA_SIZE_MISMATCH"
+            );
+            require(deployParams.maxDataSize == ethInbox.maxDataSize(), "I_MAX_DATA_SIZE_MISMATCH");
 
-        (, IInboxBase erc20Inbox, , ) = bridgeCreator.erc20BasedTemplates();
-        require(deployParams.maxDataSize == erc20Inbox.maxDataSize(), "I_MAX_DATA_SIZE_MISMATCH");
+            (, ISequencerInbox erc20SequencerInbox, IInboxBase erc20Inbox, , ) = bridgeCreator
+                .erc20BasedTemplates();
+            require(
+                deployParams.maxDataSize == erc20SequencerInbox.maxDataSize(),
+                "SI_MAX_DATA_SIZE_MISMATCH"
+            );
+            require(
+                deployParams.maxDataSize == erc20Inbox.maxDataSize(),
+                "I_MAX_DATA_SIZE_MISMATCH"
+            );
+        }
 
         // create proxy admin which will manage bridge contracts
         ProxyAdmin proxyAdmin = new ProxyAdmin();
@@ -129,10 +142,7 @@ contract RollupCreator is Ownable {
             address(proxyAdmin),
             address(rollup),
             deployParams.nativeToken,
-            deployParams.config.sequencerInboxMaxTimeVariation,
-            deployParams.maxDataSize,
-            deployParams.dataHashReader,
-            deployParams.blobBasefeeReader
+            deployParams.config.sequencerInboxMaxTimeVariation
         );
 
         IChallengeManager challengeManager = IChallengeManager(

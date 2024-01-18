@@ -14,15 +14,11 @@ import {
     NotSequencerInbox,
     NotOutbox,
     InvalidOutboxSet,
-    BadSequencerMessageNumber,
-    EmptyDelayedMessagesRead,
-    DelayedBackwards,
-    DelayedTooFar
+    BadSequencerMessageNumber
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./Messages.sol";
 import "../libraries/DelegateCallAware.sol";
-import "./ISequencerInbox.sol";
 
 import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
 
@@ -59,14 +55,7 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
 
     uint256 public override sequencerReportedSubMessageCount;
 
-    uint256 public totalDelayedMessagesRead;
-
     address internal constant EMPTY_ACTIVEOUTBOX = address(type(uint160).max);
-
-    function postUpgradeInit() external onlyDelegated onlyProxyOwner {
-        totalDelayedMessagesRead = ISequencerInbox(sequencerInbox).totalDelayedMessagesRead();
-        if (totalDelayedMessagesRead == 0) revert EmptyDelayedMessagesRead();
-    }
 
     modifier onlyRollupOrOwner() {
         if (msg.sender != address(rollup)) {
@@ -112,9 +101,7 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
         bytes32 dataHash,
         uint256 afterDelayedMessagesRead,
         uint256 prevMessageCount,
-        uint256 newMessageCount,
-        TimeBounds memory timeBounds,
-        BatchDataLocation batchDataLocation
+        uint256 newMessageCount
     )
         external
         onlySequencerInbox
@@ -132,9 +119,6 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
         ) {
             revert BadSequencerMessageNumber(sequencerReportedSubMessageCount, prevMessageCount);
         }
-        if (afterDelayedMessagesRead > delayedInboxAccs.length) revert DelayedTooFar();
-        if (afterDelayedMessagesRead < totalDelayedMessagesRead) revert DelayedBackwards();
-
         sequencerReportedSubMessageCount = newMessageCount;
         seqMessageIndex = sequencerInboxAccs.length;
         if (sequencerInboxAccs.length > 0) {
@@ -145,18 +129,6 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
         }
         acc = keccak256(abi.encodePacked(beforeAcc, dataHash, delayedAcc));
         sequencerInboxAccs.push(acc);
-        totalDelayedMessagesRead = afterDelayedMessagesRead;
-
-        emit SequencerBatchDelivered(
-            seqMessageIndex,
-            beforeAcc,
-            acc,
-            delayedAcc,
-            afterDelayedMessagesRead,
-            timeBounds,
-            batchDataLocation,
-            msg.sender
-        );
     }
 
     /// @inheritdoc IBridge
@@ -332,5 +304,5 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
-    uint256[39] private __gap;
+    uint256[40] private __gap;
 }

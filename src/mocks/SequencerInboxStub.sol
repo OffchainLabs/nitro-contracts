@@ -10,21 +10,11 @@ import {INITIALIZATION_MSG_TYPE} from "../libraries/MessageTypes.sol";
 
 contract SequencerInboxStub is SequencerInbox {
     constructor(
-        IBridge bridge_,
         address sequencer_,
-        ISequencerInbox.MaxTimeVariation memory maxTimeVariation_,
         uint256 maxDataSize_,
         IDataHashReader dataHashReader_,
         IBlobBasefeeReader blobBasefeeReader_
-    )
-        SequencerInbox(
-            bridge_,
-            maxTimeVariation_,
-            maxDataSize_,
-            dataHashReader_,
-            blobBasefeeReader_
-        )
-    {
+    ) SequencerInbox(maxDataSize_, dataHashReader_, blobBasefeeReader_) {
         isBatchPoster[sequencer_] = true;
     }
 
@@ -38,15 +28,22 @@ contract SequencerInboxStub is SequencerInbox {
         require(num == 0, "ALREADY_DELAYED_INIT");
         emit InboxMessageDelivered(num, initMsg);
         (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formEmptyDataHash(1);
-        (uint256 sequencerMessageCount, , , ) = bridge.enqueueSequencerMessage(
-            dataHash,
-            1,
-            0,
-            0,
+        (
+            uint256 sequencerMessageCount,
+            bytes32 beforeAcc,
+            bytes32 delayedAcc,
+            bytes32 afterAcc
+        ) = addSequencerL2BatchImpl(dataHash, 1, 0, 0, 1);
+        require(sequencerMessageCount == 0, "ALREADY_SEQ_INIT");
+        emit SequencerBatchDelivered(
+            sequencerMessageCount,
+            beforeAcc,
+            afterAcc,
+            delayedAcc,
+            totalDelayedMessagesRead,
             timeBounds,
             IBridge.BatchDataLocation.NoData
         );
-        require(sequencerMessageCount == 0, "ALREADY_SEQ_INIT");
     }
 
     function getTimeBounds() internal view override returns (IBridge.TimeBounds memory bounds) {

@@ -12,5 +12,4 @@
 | rollup                           | contract IOwnable                              | 8    | 0      | 20    | src/bridge/Bridge.sol:Bridge |
 | sequencerInbox                   | address                                        | 9    | 0      | 20    | src/bridge/Bridge.sol:Bridge |
 | sequencerReportedSubMessageCount | uint256                                        | 10   | 0      | 32    | src/bridge/Bridge.sol:Bridge |
-| totalDelayedMessagesRead         | uint256                                        | 11   | 0      | 32    | src/bridge/Bridge.sol:Bridge |
-| __gap                            | uint256[39]                                    | 12   | 0      | 1248  | src/bridge/Bridge.sol:Bridge |
+| __gap                            | uint256[40]                                    | 11   | 0      | 1280  | src/bridge/Bridge.sol:Bridge |

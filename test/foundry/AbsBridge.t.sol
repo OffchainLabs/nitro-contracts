@@ -22,14 +22,6 @@ abstract contract AbsBridgeTest is Test {
     address public outbox = address(1002);
     address public seqInbox = address(1003);
 
-    IBridge.TimeBounds timeBounds =
-        IBridge.TimeBounds({
-            minTimestamp: uint64(block.timestamp + 1),
-            maxTimestamp: uint64(block.timestamp + 10),
-            minBlockNumber: uint64(block.number + 1),
-            maxBlockNumber: uint64(block.number + 10)
-        });
-
     /* solhint-disable func-name-mixedcase */
     function test_enqueueSequencerMessage_NoDelayedMsgs() public {
         vm.prank(rollup);
@@ -46,9 +38,7 @@ abstract contract AbsBridgeTest is Test {
                 dataHash,
                 afterDelayedMessagesRead,
                 prevMessageCount,
-                newMessageCount,
-                timeBounds,
-                IBridge.BatchDataLocation.TxInput
+                newMessageCount
             );
 
         // checks
@@ -88,9 +78,7 @@ abstract contract AbsBridgeTest is Test {
                 dataHash,
                 afterDelayedMessagesRead,
                 prevMessageCount,
-                newMessageCount,
-                timeBounds,
-                IBridge.BatchDataLocation.TxInput
+                newMessageCount
             );
 
         // checks
@@ -119,14 +107,7 @@ abstract contract AbsBridgeTest is Test {
         bridge.submitBatchSpendingReport(address(1), keccak256("1"));
         bridge.submitBatchSpendingReport(address(2), keccak256("2"));
         bridge.submitBatchSpendingReport(address(3), keccak256("3"));
-        bridge.enqueueSequencerMessage(
-            keccak256("seq"),
-            2,
-            0,
-            10,
-            timeBounds,
-            IBridge.BatchDataLocation.SeparateBatchEvent
-        );
+        bridge.enqueueSequencerMessage(keccak256("seq"), 2, 0, 10);
         vm.stopPrank();
 
         // enqueue 2nd sequencer msg with additional delayed msgs
@@ -140,9 +121,7 @@ abstract contract AbsBridgeTest is Test {
                 dataHash,
                 afterDelayedMessagesRead,
                 prevMessageCount,
-                newMessageCount,
-                timeBounds,
-                IBridge.BatchDataLocation.TxInput
+                newMessageCount
             );
 
         // checks
@@ -171,14 +150,7 @@ abstract contract AbsBridgeTest is Test {
         bridge.submitBatchSpendingReport(address(1), keccak256("1"));
         bridge.submitBatchSpendingReport(address(2), keccak256("2"));
         bridge.submitBatchSpendingReport(address(3), keccak256("3"));
-        bridge.enqueueSequencerMessage(
-            keccak256("seq"),
-            2,
-            0,
-            10,
-            timeBounds,
-            IBridge.BatchDataLocation.SeparateBatchEvent
-        );
+        bridge.enqueueSequencerMessage(keccak256("seq"), 2, 0, 10);
         vm.stopPrank();
 
         //  setting wrong msg counter shall revert
@@ -187,27 +159,13 @@ abstract contract AbsBridgeTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(BadSequencerMessageNumber.selector, 10, incorrectPrevMsgCount)
         );
-        bridge.enqueueSequencerMessage(
-            keccak256("seq"),
-            2,
-            incorrectPrevMsgCount,
-            10,
-            timeBounds,
-            IBridge.BatchDataLocation.SeparateBatchEvent
-        );
+        bridge.enqueueSequencerMessage(keccak256("seq"), 2, incorrectPrevMsgCount, 10);
     }
 
     function test_enqueueSequencerMessage_revert_NonSeqInboxCall() public {
         // enqueueSequencerMessage shall revert
         vm.expectRevert(abi.encodeWithSelector(NotSequencerInbox.selector, address(this)));
-        bridge.enqueueSequencerMessage(
-            keccak256("msg"),
-            0,
-            0,
-            10,
-            timeBounds,
-            IBridge.BatchDataLocation.SeparateBatchEvent
-        );
+        bridge.enqueueSequencerMessage(keccak256("msg"), 0, 0, 10);
     }
 
     function test_submitBatchSpendingReport() public {

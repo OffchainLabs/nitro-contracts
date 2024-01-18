@@ -35,7 +35,6 @@ abstract contract AbsRollupEventInbox is
         if (address(_bridge) == address(0)) revert HadZeroInit();
         bridge = _bridge;
         rollup = address(_bridge.rollup());
-        if (address(rollup) == address(0)) revert RollupNotChanged();
     }
 
     /// @notice Allows the rollup owner to sync the rollup address

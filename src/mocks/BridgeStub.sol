@@ -5,7 +5,7 @@
 pragma solidity ^0.8.0;
 
 import "./InboxStub.sol";
-import {BadSequencerMessageNumber, DelayedTooFar, DelayedBackwards} from "../libraries/Error.sol";
+import {BadSequencerMessageNumber} from "../libraries/Error.sol";
 
 import "../bridge/IBridge.sol";
 import "../bridge/IEthBridge.sol";
@@ -31,12 +31,6 @@ contract BridgeStub is IBridge, IEthBridge {
 
     address public sequencerInbox;
     uint256 public override sequencerReportedSubMessageCount;
-    IOwnable public rollup;
-    uint256 public totalDelayedMessagesRead;
-
-    constructor(IOwnable rollup_) {
-        rollup = rollup_;
-    }
 
     function setSequencerInbox(address _sequencerInbox) external override {
         sequencerInbox = _sequencerInbox;
@@ -76,9 +70,7 @@ contract BridgeStub is IBridge, IEthBridge {
         bytes32 dataHash,
         uint256 afterDelayedMessagesRead,
         uint256 prevMessageCount,
-        uint256 newMessageCount,
-        TimeBounds memory timeBounds,
-        BatchDataLocation batchDataLocation
+        uint256 newMessageCount
     )
         external
         returns (
@@ -95,9 +87,6 @@ contract BridgeStub is IBridge, IEthBridge {
         ) {
             revert BadSequencerMessageNumber(sequencerReportedSubMessageCount, prevMessageCount);
         }
-        if (afterDelayedMessagesRead > delayedInboxAccs.length) revert DelayedTooFar();
-        if (afterDelayedMessagesRead < totalDelayedMessagesRead) revert DelayedBackwards();
-
         sequencerReportedSubMessageCount = newMessageCount;
         seqMessageIndex = sequencerInboxAccs.length;
         if (sequencerInboxAccs.length > 0) {
@@ -108,18 +97,6 @@ contract BridgeStub is IBridge, IEthBridge {
         }
         acc = keccak256(abi.encodePacked(beforeAcc, dataHash, delayedAcc));
         sequencerInboxAccs.push(acc);
-        totalDelayedMessagesRead = afterDelayedMessagesRead;
-
-        emit SequencerBatchDelivered(
-            seqMessageIndex,
-            beforeAcc,
-            acc,
-            delayedAcc,
-            afterDelayedMessagesRead,
-            timeBounds,
-            batchDataLocation,
-            msg.sender
-        );
     }
 
     function submitBatchSpendingReport(address batchPoster, bytes32 dataHash)
@@ -196,6 +173,10 @@ contract BridgeStub is IBridge, IEthBridge {
 
     function sequencerMessageCount() external view override returns (uint256) {
         return sequencerInboxAccs.length;
+    }
+
+    function rollup() external pure override returns (IOwnable) {
+        revert("NOT_IMPLEMENTED");
     }
 
     function acceptFundsFromOldBridge() external payable {}
