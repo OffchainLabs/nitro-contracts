@@ -67,6 +67,8 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
     bytes32[] public override sequencerInboxAccs;
     uint256 public override sequencerReportedSubMessageCount;
 
+    uint256 public totalDelayedMessagesRead;
+
     address private constant EMPTY_ACTIVEOUTBOX = address(type(uint160).max);
 
     function initialize(IOwnable rollup_) external initializer {
@@ -95,7 +97,9 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
         bytes32 dataHash,
         uint256 afterDelayedMessagesRead,
         uint256 prevMessageCount,
-        uint256 newMessageCount
+        uint256 newMessageCount,
+        TimeBounds memory timeBounds,
+        BatchDataLocation batchDataLocation
     )
         external
         returns (

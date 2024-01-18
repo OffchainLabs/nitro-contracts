@@ -34,7 +34,8 @@ contract SequencerInboxTest is Test {
         bytes32 delayedAcc,
         uint256 afterDelayedMessagesRead,
         IBridge.TimeBounds timeBounds,
-        IBridge.BatchDataLocation dataLocation
+        IBridge.BatchDataLocation dataLocation,
+        address sequencerInbox
     );
 
 
@@ -61,15 +62,12 @@ contract SequencerInboxTest is Test {
         vm.prank(rollupOwner);
         bridge.setDelayedInbox(dummyInbox, true);
 
-        SequencerInbox seqInboxImpl = new SequencerInbox(
+        SequencerInbox seqInbox = new SequencerInbox(
+            bridge,
+            maxTimeVariation,
             maxDataSize,
             dummyDataHashReader,
             dummyBlobBasefeeReader
-        );
-        SequencerInbox seqInbox = SequencerInbox(address(new TransparentUpgradeableProxy(address(seqInboxImpl), proxyAdmin, "")));
-        seqInbox.initialize(
-            bridge,
-            maxTimeVariation
         );
 
         vm.prank(rollupOwner);
@@ -106,9 +104,7 @@ contract SequencerInboxTest is Test {
             msg.sender,
             dataHash,
             sequenceNumber,
-            block.basefee,
-            uint64(0),
-            uint256(0)
+            block.basefee
         );
         bytes32 beforeAcc = bytes32(0);
         bytes32 delayedAcc = bridge.delayedInboxAccs(delayedMessagesRead - 1);
@@ -134,17 +130,19 @@ contract SequencerInboxTest is Test {
             spendingReportMsg
         );
 
+        // TODO: fix stack too deep
         // sequencer batch delivered
-        vm.expectEmit();
-        emit SequencerBatchDelivered(
-            sequenceNumber, 
-            beforeAcc,
-            afterAcc,
-            delayedAcc,
-            delayedMessagesRead,
-            timeBounds,
-            IBridge.BatchDataLocation.TxInput
-        );
+        // vm.expectEmit();
+        // emit SequencerBatchDelivered(
+        //     sequenceNumber, 
+        //     beforeAcc,
+        //     afterAcc,
+        //     delayedAcc,
+        //     delayedMessagesRead,
+        //     timeBounds,
+        //     IBridge.BatchDataLocation.TxInput,
+        //     address(seqInbox)
+        // );
     }
 
     function testAddSequencerL2BatchFromOrigin() public {
@@ -258,63 +256,5 @@ contract SequencerInboxTest is Test {
             subMessageCount,
             subMessageCount + 1
         );
-    }
-
-    function testPostUpgradeInitAlreadyInit() public returns (SequencerInbox, SequencerInbox){
-        (SequencerInbox seqInbox, ) = deploy();
-        SequencerInbox seqInboxImpl = new SequencerInbox(
-            maxDataSize,
-            dummyDataHashReader,
-            dummyBlobBasefeeReader
-        );
-
-        vm.expectRevert(abi.encodeWithSelector(AlreadyInit.selector));
-        vm.prank(proxyAdmin);
-        TransparentUpgradeableProxy(payable(address(seqInbox))).upgradeToAndCall(address(seqInboxImpl), abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector));
-        return (seqInbox, seqInboxImpl);
-    }
-
-    function testPostUpgradeInit(uint64 delayBlocks, uint64 futureBlocks, uint64 delaySeconds, uint64 futureSeconds) public {
-        vm.assume(delayBlocks != 0 || futureBlocks != 0 || delaySeconds != 0 || futureSeconds != 0);
-
-        (SequencerInbox seqInbox, SequencerInbox seqInboxImpl) = testPostUpgradeInitAlreadyInit();
-
-        vm.expectRevert(abi.encodeWithSelector(AlreadyInit.selector));
-        vm.prank(proxyAdmin);
-        TransparentUpgradeableProxy(payable(address(seqInbox))).upgradeToAndCall(address(seqInboxImpl), abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector));
-
-        vm.store(address(seqInbox), bytes32(uint256(4)), bytes32(uint256(delayBlocks))); // slot 4: delayBlocks
-        vm.store(address(seqInbox), bytes32(uint256(5)), bytes32(uint256(futureBlocks))); // slot 5: futureBlocks
-        vm.store(address(seqInbox), bytes32(uint256(6)), bytes32(uint256(delaySeconds))); // slot 6: delaySeconds
-        vm.store(address(seqInbox), bytes32(uint256(7)), bytes32(uint256(futureSeconds))); // slot 7: futureSeconds
-        vm.prank(proxyAdmin);
-        TransparentUpgradeableProxy(payable(address(seqInbox))).upgradeToAndCall(address(seqInboxImpl), abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector));
-
-        (uint256 delayBlocks_, uint256 futureBlocks_, uint256 delaySeconds_, uint256 futureSeconds_) = seqInbox.maxTimeVariation();
-        assertEq(delayBlocks_, delayBlocks);
-        assertEq(futureBlocks_, futureBlocks);
-        assertEq(delaySeconds_, delaySeconds);
-        assertEq(futureSeconds_, futureSeconds);
-
-        vm.expectRevert(abi.encodeWithSelector(AlreadyInit.selector));
-        vm.prank(proxyAdmin);
-        TransparentUpgradeableProxy(payable(address(seqInbox))).upgradeToAndCall(address(seqInboxImpl), abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector));
-    }
-
-    function testPostUpgradeInitBadInit(uint256 delayBlocks, uint256 futureBlocks, uint256 delaySeconds, uint256 futureSeconds) public {
-        vm.assume(delayBlocks > uint256(type(uint64).max));
-        vm.assume(futureBlocks > uint256(type(uint64).max));
-        vm.assume(delaySeconds > uint256(type(uint64).max));
-        vm.assume(futureSeconds > uint256(type(uint64).max));
-
-        (SequencerInbox seqInbox, SequencerInbox seqInboxImpl) = testPostUpgradeInitAlreadyInit();
-
-        vm.store(address(seqInbox), bytes32(uint256(4)), bytes32(delayBlocks)); // slot 4: delayBlocks
-        vm.store(address(seqInbox), bytes32(uint256(5)), bytes32(futureBlocks)); // slot 5: futureBlocks
-        vm.store(address(seqInbox), bytes32(uint256(6)), bytes32(delaySeconds)); // slot 6: delaySeconds
-        vm.store(address(seqInbox), bytes32(uint256(7)), bytes32(futureSeconds)); // slot 7: futureSeconds
-        vm.expectRevert(abi.encodeWithSelector(BadPostUpgradeInit.selector));
-        vm.prank(proxyAdmin);
-        TransparentUpgradeableProxy(payable(address(seqInbox))).upgradeToAndCall(address(seqInboxImpl), abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector));
     }
 }

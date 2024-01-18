@@ -49,7 +49,7 @@ import { SequencerInbox } from '../../build/types/src/bridge/SequencerInbox'
 import { execSync } from 'child_process'
 import { wait } from '@arbitrum/sdk/dist/lib/utils/lib'
 import { InboxMessageDeliveredEvent } from '../../build/types/src/bridge/AbsInbox'
-import { SequencerBatchDeliveredEvent } from '../../build/types/src/bridge/ISequencerInbox'
+import { SequencerBatchDeliveredEvent } from '../../build/types/src/bridge/AbsBridge'
 
 const mineBlocks = async (
   wallet: Wallet,
@@ -272,16 +272,6 @@ describe('SequencerInbox', async () => {
       await rollupOwner.getAddress()
     )
 
-    const dataHashReader = await Toolkit4844.deployDataHashReader(fundingWallet)
-    const blobBasefeeReader = await Toolkit4844.deployBlobBasefeeReader(
-      fundingWallet
-    )
-    const sequencerInboxFac = new SequencerInbox__factory(deployer)
-    const seqInboxTemplate = await sequencerInboxFac.deploy(
-      117964,
-      dataHashReader.address,
-      blobBasefeeReader.address
-    )
     const inboxFac = new Inbox__factory(deployer)
     const inboxTemplate = await inboxFac.deploy(117964)
 
@@ -290,7 +280,6 @@ describe('SequencerInbox', async () => {
     await rollupMock.deployed()
     await inboxTemplate.deployed()
     await bridgeTemplate.deployed()
-    await seqInboxTemplate.deployed()
 
     const transparentUpgradeableProxyFac =
       new TransparentUpgradeableProxy__factory(deployer)
@@ -300,11 +289,7 @@ describe('SequencerInbox', async () => {
       adminAddr,
       '0x'
     )
-    const sequencerInboxProxy = await transparentUpgradeableProxyFac.deploy(
-      seqInboxTemplate.address,
-      adminAddr,
-      '0x'
-    )
+
     const inboxProxy = await transparentUpgradeableProxyFac.deploy(
       inboxTemplate.address,
       adminAddr,
@@ -312,24 +297,32 @@ describe('SequencerInbox', async () => {
     )
     await bridgeProxy.deployed()
     await inboxProxy.deployed()
-    await sequencerInboxProxy.deployed()
+    const dataHashReader = await Toolkit4844.deployDataHashReader(fundingWallet)
+    const blobBasefeeReader = await Toolkit4844.deployBlobBasefeeReader(
+      fundingWallet
+    )
 
     const bridge = await bridgeFac.attach(bridgeProxy.address).connect(user)
     const bridgeAdmin = await bridgeFac
       .attach(bridgeProxy.address)
       .connect(rollupOwner)
-    const sequencerInbox = await sequencerInboxFac
-      .attach(sequencerInboxProxy.address)
-      .connect(user)
     await (await bridgeAdmin.initialize(rollupMock.address)).wait()
-    await (
-      await sequencerInbox.initialize(bridgeProxy.address, {
+
+    const sequencerInboxFac = new SequencerInbox__factory(deployer)
+    const sequencerInbox = await sequencerInboxFac.deploy(
+      bridge.address,
+      {
         delayBlocks: maxDelayBlocks,
-        delaySeconds: maxDelayTime,
         futureBlocks: 10,
+        delaySeconds: maxDelayTime,
         futureSeconds: 3000,
-      })
-    ).wait()
+      },
+      117964,
+      dataHashReader.address,
+      blobBasefeeReader.address,
+      { gasLimit: 15000000 }
+    )
+    await sequencerInbox.deployed()
 
     const inbox = await inboxFac.attach(inboxProxy.address).connect(user)
 
@@ -388,9 +381,7 @@ describe('SequencerInbox', async () => {
     const subMessageCount = await bridge.sequencerReportedSubMessageCount()
     const batchSendTx = await sequencerInbox
       .connect(batchPoster)
-      .functions[
-        'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256)'
-      ](
+      .functions.addSequencerL2BatchFromOrigin(
         await bridge.sequencerMessageCount(),
         '0x0042',
         await bridge.delayedMessageCount(),
@@ -445,11 +436,8 @@ describe('SequencerInbox', async () => {
     const batchSendTx = await Toolkit4844.getTx(txHash)
     const blobHashes = (batchSendTx as any)['blobVersionedHashes'] as string[]
     const batchSendReceipt = await Toolkit4844.getTxReceipt(txHash)
-    const {
-      timestamp: blockTimestamp,
-      number: blockNumber,
-      baseFeePerGas,
-    } = await wallet.provider.getBlock(batchSendReceipt.blockNumber)
+    const { timestamp: blockTimestamp, number: blockNumber } =
+      await wallet.provider.getBlock(batchSendReceipt.blockNumber)
 
     const timeBounds = await getTimeBounds(
       blockNumber,
@@ -465,12 +453,12 @@ describe('SequencerInbox', async () => {
     const batchDeliveredEvent = batchSendReceipt.logs
       .filter(
         (b: any) =>
-          b.address.toLowerCase() === sequencerInbox.address.toLowerCase() &&
+          b.address.toLowerCase() === bridge.address.toLowerCase() &&
           b.topics[0] ===
-            sequencerInbox.interface.getEventTopic('SequencerBatchDelivered')
+            bridge.interface.getEventTopic('SequencerBatchDelivered')
       )
       .map(
-        (l: any) => sequencerInbox.interface.parseLog(l).args
+        (l: any) => bridge.interface.parseLog(l).args
       )[0] as SequencerBatchDeliveredEvent['args']
     if (!batchDeliveredEvent) throw new Error('missing batch event')
 
@@ -519,12 +507,8 @@ describe('SequencerInbox', async () => {
       '0x' + inboxMsgDeliveredEvent.data.substring(106, 170)
     const spendingSeqMessageIndex =
       '0x' + inboxMsgDeliveredEvent.data.substring(170, 234)
-    const spendingBlockBaseFee =
-      '0x' + inboxMsgDeliveredEvent.data.substring(234, 298)
-    const spendingExtraGas =
-      '0x' + inboxMsgDeliveredEvent.data.substring(298, 314)
     const spendingBlobBasefee =
-      '0x' + inboxMsgDeliveredEvent.data.substring(314, 378)
+      '0x' + inboxMsgDeliveredEvent.data.substring(234, 298)
 
     expect(
       BigNumber.from(spendingTimestamp).eq(blockTimestamp),
@@ -537,18 +521,6 @@ describe('SequencerInbox', async () => {
     expect(
       BigNumber.from(spendingSeqMessageIndex).eq(sequenceNumber),
       'spending seq message index'
-    ).to.eq(true)
-
-    if (baseFeePerGas == null) {
-      throw new Error('Missing base fee')
-    }
-    expect(
-      BigNumber.from(spendingBlockBaseFee).eq(baseFeePerGas),
-      `spending basefee: ${BigNumber.from(spendingBlockBaseFee).toString()}`
-    ).to.eq(true)
-    expect(
-      BigNumber.from(spendingExtraGas).eq(0),
-      `spending extra gas: ${BigNumber.from(spendingExtraGas).toString()}`
     ).to.eq(true)
     // we expect a very low - 1 - basefee since we havent sent many blobs
     expect(
@@ -567,19 +539,18 @@ describe('SequencerInbox', async () => {
     minTimestamp: number
     maxTimestamp: number
   }> => {
-    const [delayBlocks, futureBlocks, delaySeconds, futureSeconds] =
-      await sequencerInbox.maxTimeVariation()
+    const maxTimeVariation = await sequencerInbox.maxTimeVariation()
     return {
       minBlocks:
-        blockNumber > delayBlocks.toNumber()
-          ? blockNumber - delayBlocks.toNumber()
+        blockNumber > maxTimeVariation[0].toNumber()
+          ? blockNumber - maxTimeVariation[0].toNumber()
           : 0,
-      maxBlock: blockNumber + futureBlocks.toNumber(),
+      maxBlock: blockNumber + maxTimeVariation[1].toNumber(),
       minTimestamp:
-        blockTimestamp > delaySeconds.toNumber()
-          ? blockTimestamp - delaySeconds.toNumber()
+        blockTimestamp > maxTimeVariation[2].toNumber()
+          ? blockTimestamp - maxTimeVariation[2].toNumber()
           : 0,
-      maxTimestamp: blockTimestamp + futureSeconds.toNumber(),
+      maxTimestamp: blockTimestamp + maxTimeVariation[3].toNumber(),
     }
   }
 
