@@ -53,10 +53,7 @@ abstract contract AbsRollupEventInbox is
     {
         require(bytes(chainConfig).length > 0, "EMPTY_CHAIN_CONFIG");
         uint8 initMsgVersion = 1;
-        uint256 currentDataCost = block.basefee;
-        if (ArbitrumChecker.runningOnArbitrum()) {
-            currentDataCost += ArbGasInfo(address(0x6c)).getL1BaseFeeEstimate();
-        }
+        uint256 currentDataCost = _currentDataCostToReport();
         bytes memory initMsg = abi.encodePacked(
             chainId,
             initMsgVersion,
@@ -68,4 +65,6 @@ abstract contract AbsRollupEventInbox is
     }
 
     function _enqueueInitializationMsg(bytes memory initMsg) internal virtual returns (uint256);
+
+    function _currentDataCostToReport() internal virtual returns (uint256);
 }
