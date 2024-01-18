@@ -16,22 +16,16 @@ contract BridgeCreatorTest is Test {
     IDataHashReader dummyDataHashReader = IDataHashReader(address(137));
     IBlobBasefeeReader dummyBlobBasefeeReader = IBlobBasefeeReader(address(138));
 
-    BridgeCreator.BridgeContracts ethBasedTemplates =
-        BridgeCreator.BridgeContracts({
+    BridgeCreator.BridgeTemplates ethBasedTemplates =
+        BridgeCreator.BridgeTemplates({
             bridge: new Bridge(),
-            sequencerInbox: new SequencerInbox(
-                MAX_DATA_SIZE,
-                dummyDataHashReader,
-                dummyBlobBasefeeReader
-            ),
             inbox: new Inbox(MAX_DATA_SIZE),
             rollupEventInbox: new RollupEventInbox(),
             outbox: new Outbox()
         });
-    BridgeCreator.BridgeContracts erc20BasedTemplates =
-        BridgeCreator.BridgeContracts({
+    BridgeCreator.BridgeTemplates erc20BasedTemplates =
+        BridgeCreator.BridgeTemplates({
             bridge: new ERC20Bridge(),
-            sequencerInbox: ethBasedTemplates.sequencerInbox,
             inbox: new ERC20Inbox(MAX_DATA_SIZE),
             rollupEventInbox: new ERC20RollupEventInbox(),
             outbox: new ERC20Outbox()
@@ -42,28 +36,32 @@ contract BridgeCreatorTest is Test {
         creator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
     }
 
-    function getEthBasedTemplates() internal returns (BridgeCreator.BridgeContracts memory) {
-        BridgeCreator.BridgeContracts memory templates;
-        (
-            templates.bridge,
-            templates.sequencerInbox,
-            templates.inbox,
-            templates.rollupEventInbox,
-            templates.outbox
-        ) = creator.ethBasedTemplates();
+    function getEthBasedTemplates() internal returns (BridgeCreator.BridgeTemplates memory) {
+        BridgeCreator.BridgeTemplates memory templates;
+        (templates.bridge, templates.inbox, templates.rollupEventInbox, templates.outbox) = creator
+            .ethBasedTemplates();
         return templates;
     }
 
-    function getErc20BasedTemplates() internal returns (BridgeCreator.BridgeContracts memory) {
-        BridgeCreator.BridgeContracts memory templates;
-        (
-            templates.bridge,
-            templates.sequencerInbox,
-            templates.inbox,
-            templates.rollupEventInbox,
-            templates.outbox
-        ) = creator.erc20BasedTemplates();
+    function getErc20BasedTemplates() internal returns (BridgeCreator.BridgeTemplates memory) {
+        BridgeCreator.BridgeTemplates memory templates;
+        (templates.bridge, templates.inbox, templates.rollupEventInbox, templates.outbox) = creator
+            .erc20BasedTemplates();
         return templates;
+    }
+
+    function assertEq(
+        BridgeCreator.BridgeTemplates memory a,
+        BridgeCreator.BridgeTemplates memory b
+    ) internal {
+        assertEq(address(a.bridge), address(b.bridge), "Invalid bridge");
+        assertEq(address(a.inbox), address(b.inbox), "Invalid inbox");
+        assertEq(
+            address(a.rollupEventInbox),
+            address(b.rollupEventInbox),
+            "Invalid rollup event inbox"
+        );
+        assertEq(address(a.outbox), address(b.outbox), "Invalid outbox");
     }
 
     function assertEq(
@@ -88,9 +86,8 @@ contract BridgeCreatorTest is Test {
     }
 
     function test_updateTemplates() public {
-        BridgeCreator.BridgeContracts memory templs = BridgeCreator.BridgeContracts({
+        BridgeCreator.BridgeTemplates memory templs = BridgeCreator.BridgeTemplates({
             bridge: Bridge(address(200)),
-            sequencerInbox: SequencerInbox(address(201)),
             inbox: Inbox(address(202)),
             rollupEventInbox: RollupEventInbox(address(203)),
             outbox: Outbox(address(204))
@@ -103,9 +100,8 @@ contract BridgeCreatorTest is Test {
     }
 
     function test_updateERC20Templates() public {
-        BridgeCreator.BridgeContracts memory templs = BridgeCreator.BridgeContracts({
+        BridgeCreator.BridgeTemplates memory templs = BridgeCreator.BridgeTemplates({
             bridge: ERC20Bridge(address(400)),
-            sequencerInbox: SequencerInbox(address(401)),
             inbox: ERC20Inbox(address(402)),
             rollupEventInbox: ERC20RollupEventInbox(address(403)),
             outbox: ERC20Outbox(address(404))
@@ -127,13 +123,14 @@ contract BridgeCreatorTest is Test {
             30,
             40
         );
-        timeVars.delayBlocks;
-
         BridgeCreator.BridgeContracts memory contracts = creator.createBridge(
             proxyAdmin,
             rollup,
             nativeToken,
-            timeVars
+            timeVars,
+            MAX_DATA_SIZE,
+            dummyDataHashReader,
+            dummyBlobBasefeeReader
         );
         (
             IBridge bridge,
@@ -150,22 +147,17 @@ contract BridgeCreatorTest is Test {
             );
 
         // bridge
-        assertEq(address(bridge.rollup()), rollup, "Invalid rollup ref");
+        assertEq(address(bridge.rollup()), rollup, "Invalid bridge rollup ref");
         assertEq(bridge.activeOutbox(), address(0), "Invalid activeOutbox ref");
 
         // seqInbox
         assertEq(address(seqInbox.bridge()), address(bridge), "Invalid bridge ref");
-        assertEq(address(seqInbox.rollup()), rollup, "Invalid rollup ref");
-        (
-            uint256 _delayBlocks,
-            uint256 _futureBlocks,
-            uint256 _delaySeconds,
-            uint256 _futureSeconds
-        ) = seqInbox.maxTimeVariation();
-        assertEq(_delayBlocks, timeVars.delayBlocks, "Invalid delayBlocks");
-        assertEq(_futureBlocks, timeVars.futureBlocks, "Invalid futureBlocks");
-        assertEq(_delaySeconds, timeVars.delaySeconds, "Invalid delaySeconds");
-        assertEq(_futureSeconds, timeVars.futureSeconds, "Invalid futureSeconds");
+        assertEq(address(seqInbox.rollup()), rollup, "Invalid seq rollup ref");
+        (uint256 delayBlocks, uint256 futureBlocks, uint256 delaySeconds, uint256 futureSeconds) = seqInbox.maxTimeVariation();
+        assertEq(delayBlocks, timeVars.delayBlocks, "Invalid delayBlocks");
+        assertEq(futureBlocks, timeVars.futureBlocks, "Invalid futureBlocks");
+        assertEq(delaySeconds, timeVars.delaySeconds, "Invalid delaySeconds");
+        assertEq(futureSeconds, timeVars.futureSeconds, "Invalid futureSeconds");
 
         // inbox
         assertEq(address(inbox.bridge()), address(bridge), "Invalid bridge ref");
@@ -175,11 +167,11 @@ contract BridgeCreatorTest is Test {
 
         // rollup event inbox
         assertEq(address(eventInbox.bridge()), address(bridge), "Invalid bridge ref");
-        assertEq(address(eventInbox.rollup()), rollup, "Invalid rollup ref");
+        assertEq(address(eventInbox.rollup()), rollup, "Invalid event inbox rollup ref");
 
         // outbox
         assertEq(address(outbox.bridge()), address(bridge), "Invalid bridge ref");
-        assertEq(address(outbox.rollup()), rollup, "Invalid rollup ref");
+        assertEq(address(outbox.rollup()), rollup, "Invalid outbox rollup ref");
 
         // revert fetching native token
         vm.expectRevert();
@@ -198,13 +190,14 @@ contract BridgeCreatorTest is Test {
             30,
             40
         );
-        timeVars.delayBlocks; // TODO: what is this?
-
         BridgeCreator.BridgeContracts memory contracts = creator.createBridge(
             proxyAdmin,
             rollup,
             nativeToken,
-            timeVars
+            timeVars,
+            MAX_DATA_SIZE,
+            dummyDataHashReader,
+            dummyBlobBasefeeReader
         );
         (
             IBridge bridge,
@@ -221,7 +214,7 @@ contract BridgeCreatorTest is Test {
             );
 
         // bridge
-        assertEq(address(bridge.rollup()), rollup, "Invalid rollup ref");
+        assertEq(address(bridge.rollup()), rollup, "Invalid bridge rollup ref");
         assertEq(
             address(IERC20Bridge(address(bridge)).nativeToken()),
             nativeToken,
@@ -231,17 +224,12 @@ contract BridgeCreatorTest is Test {
 
         // seqInbox
         assertEq(address(seqInbox.bridge()), address(bridge), "Invalid bridge ref");
-        assertEq(address(seqInbox.rollup()), rollup, "Invalid rollup ref");
-        (
-            uint256 _delayBlocks,
-            uint256 _futureBlocks,
-            uint256 _delaySeconds,
-            uint256 _futureSeconds
-        ) = seqInbox.maxTimeVariation();
-        assertEq(_delayBlocks, timeVars.delayBlocks, "Invalid delayBlocks");
-        assertEq(_futureBlocks, timeVars.futureBlocks, "Invalid futureBlocks");
-        assertEq(_delaySeconds, timeVars.delaySeconds, "Invalid delaySeconds");
-        assertEq(_futureSeconds, timeVars.futureSeconds, "Invalid futureSeconds");
+        assertEq(address(seqInbox.rollup()), rollup, "Invalid seq inbox rollup ref");
+        (uint256 delayBlocks, uint256 futureBlocks, uint256 delaySeconds, uint256 futureSeconds) = seqInbox.maxTimeVariation();
+        assertEq(delayBlocks, timeVars.delayBlocks, "Invalid delayBlocks");
+        assertEq(futureBlocks, timeVars.futureBlocks, "Invalid futureBlocks");
+        assertEq(delaySeconds, timeVars.delaySeconds, "Invalid delaySeconds");
+        assertEq(futureSeconds, timeVars.futureSeconds, "Invalid futureSeconds");
 
         // inbox
         assertEq(address(inbox.bridge()), address(bridge), "Invalid bridge ref");
@@ -251,10 +239,10 @@ contract BridgeCreatorTest is Test {
 
         // rollup event inbox
         assertEq(address(eventInbox.bridge()), address(bridge), "Invalid bridge ref");
-        assertEq(address(eventInbox.rollup()), rollup, "Invalid rollup ref");
+        assertEq(address(eventInbox.rollup()), rollup, "Invalid event inbox rollup ref");
 
         // outbox
         assertEq(address(outbox.bridge()), address(bridge), "Invalid bridge ref");
-        assertEq(address(outbox.rollup()), rollup, "Invalid rollup ref");
+        assertEq(address(outbox.rollup()), rollup, "Invalid outbox rollup ref");
     }
 }

@@ -41,7 +41,9 @@ contract ERC20BridgeTest is AbsBridgeTest {
     /* solhint-disable func-name-mixedcase */
     function test_initialize() public {
         assertEq(
-            address(erc20Bridge.nativeToken()), address(nativeToken), "Invalid nativeToken ref"
+            address(erc20Bridge.nativeToken()),
+            address(nativeToken),
+            "Invalid nativeToken ref"
         );
         assertEq(address(bridge.rollup()), rollup, "Invalid rollup ref");
         assertEq(bridge.activeOutbox(), address(0), "Invalid activeOutbox ref");
@@ -105,7 +107,9 @@ contract ERC20BridgeTest is AbsBridgeTest {
         //// checks
         uint256 userNativeTokenBalanceAfter = nativeToken.balanceOf(address(user));
         assertEq(
-            userNativeTokenBalanceAfter, userNativeTokenBalanceBefore, "Invalid user token balance"
+            userNativeTokenBalanceAfter,
+            userNativeTokenBalanceBefore,
+            "Invalid user token balance"
         );
 
         uint256 bridgeNativeTokenBalanceAfter = nativeToken.balanceOf(address(bridge));
@@ -135,7 +139,9 @@ contract ERC20BridgeTest is AbsBridgeTest {
         hoax(inbox);
         vm.expectRevert();
         IEthBridge(address(bridge)).enqueueDelayedMessage{value: 0.1 ether}(
-            kind, user, messageDataHash
+            kind,
+            user,
+            messageDataHash
         );
     }
 
@@ -166,7 +172,7 @@ contract ERC20BridgeTest is AbsBridgeTest {
 
         //// execute call
         vm.prank(outbox);
-        (bool success,) = bridge.executeCall(user, withdrawalAmount, data);
+        (bool success, ) = bridge.executeCall(user, withdrawalAmount, data);
 
         //// checks
         assertTrue(success, "Execute call failed");
@@ -212,8 +218,11 @@ contract ERC20BridgeTest is AbsBridgeTest {
 
         //// execute call
         vm.prank(outbox);
-        (bool success,) =
-            bridge.executeCall({to: address(vault), value: withdrawalAmount, data: data});
+        (bool success, ) = bridge.executeCall({
+            to: address(vault),
+            value: withdrawalAmount,
+            data: data
+        });
 
         //// checks
         assertTrue(success, "Execute call failed");
@@ -259,8 +268,11 @@ contract ERC20BridgeTest is AbsBridgeTest {
 
         //// execute call - do call which reverts
         vm.prank(outbox);
-        (bool success, bytes memory returnData) =
-            bridge.executeCall({to: address(vault), value: withdrawalAmount, data: data});
+        (bool success, bytes memory returnData) = bridge.executeCall({
+            to: address(vault),
+            value: withdrawalAmount,
+            data: data
+        });
 
         //// checks
         assertEq(success, false, "Execute shall be unsuccessful");
@@ -361,7 +373,9 @@ contract ERC20BridgeTest is AbsBridgeTest {
         address to = _gateway;
         uint256 withdrawAmount = 25 ether;
         bytes memory data = abi.encodeWithSelector(
-            MockGateway.withdraw.selector, MockBridgedToken(_nativeToken), withdrawAmount
+            MockGateway.withdraw.selector,
+            MockBridgedToken(_nativeToken),
+            withdrawAmount
         );
         vm.expectRevert(abi.encodeWithSelector(CallNotAllowed.selector));
         vm.prank(_outbox);
@@ -376,6 +390,7 @@ contract MockBridgedToken is ERC20 {
         gateway = _gateway;
         _mint(msg.sender, 1_000_000 ether);
     }
+
     function bridgeBurn(address account, uint256 amount) external {
         require(msg.sender == gateway, "ONLY_GATEWAY");
         _burn(account, amount);
