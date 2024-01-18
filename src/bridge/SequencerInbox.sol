@@ -41,6 +41,7 @@ import "../precompiles/ArbSys.sol";
 import "../libraries/I4844Readers.sol";
 
 import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
+import "../libraries/DelegateCallAware.sol";
 import {IGasRefunder} from "../libraries/IGasRefunder.sol";
 import {GasRefundEnabled} from "../libraries/GasRefundEnabled.sol";
 import "../libraries/ArbitrumChecker.sol";
