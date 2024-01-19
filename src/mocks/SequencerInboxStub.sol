@@ -10,10 +10,18 @@ import {INITIALIZATION_MSG_TYPE} from "../libraries/MessageTypes.sol";
 
 contract SequencerInboxStub is SequencerInbox {
     constructor(
+        IBridge bridge_,
         address sequencer_,
+        ISequencerInbox.MaxTimeVariation memory maxTimeVariation_,
         uint256 maxDataSize_,
         IReader4844 reader4844_
     ) SequencerInbox(maxDataSize_, reader4844_) {
+        bridge = bridge_;
+        rollup = IOwnable(msg.sender);
+        delayBlocks = maxTimeVariation_.delayBlocks;
+        futureBlocks = maxTimeVariation_.futureBlocks;
+        delaySeconds = maxTimeVariation_.delaySeconds;
+        futureSeconds = maxTimeVariation_.futureSeconds;
         isBatchPoster[sequencer_] = true;
     }
 
