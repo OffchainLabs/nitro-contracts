@@ -90,7 +90,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     mapping(address => bool) public isSequencer;
-    IReader4844 immutable reader4844;
+    IReader4844 public immutable reader4844;
 
     // see ISequencerInbox.MaxTimeVariation
     uint64 internal delayBlocks;
