@@ -6,6 +6,11 @@ object "Reader4844" {
    }
    object "runtime" {
       code {
+         // This contract does not accept callvalue
+         if callvalue() {
+            revert(0, 0)
+         }
+
          // Match against the keccak of the ABI function signature needed.
          switch shr(0xe0,calldataload(0))
             // bytes4(keccak("getDataHashes()"))
@@ -28,8 +33,12 @@ object "Reader4844" {
             case 0x1f6d6ef7 {
                // BLOBBASEFEE opcode has hex value 0x4a
                let blobBasefee := verbatim_0i_1o(hex"4a")
-               mstore(0, blobBasefee) 
+               mstore(0, blobBasefee)
                return(0, 32)
+            }
+            // Unknown selector (revert)
+            default {
+               revert(0, 0)
             }
       }
    }
