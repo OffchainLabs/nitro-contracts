@@ -1,10 +1,7 @@
 import { execSync } from 'child_process'
 import { ContractFactory, Signer, Wallet, ethers } from 'ethers'
 import * as http from 'http'
-import {
-  IReader4844,
-  IReader4844__factory
-} from '../../build/types'
+import { IReader4844, IReader4844__factory } from '../../build/types'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { bytecode as Reader4844Bytecode } from '../../out/yul/Reader4844.yul/Reader4844.json'
 
@@ -125,9 +122,7 @@ export class Toolkit4844 {
     }
   }
 
-  public static async deployReader4844(
-    wallet: Signer
-  ): Promise<IReader4844> {
+  public static async deployReader4844(wallet: Signer): Promise<IReader4844> {
     const contractFactory = new ContractFactory(
       IReader4844__factory.abi,
       Reader4844Bytecode,

@@ -283,7 +283,7 @@ describe('SequencerInbox', async () => {
     )
 
     const reader4844 = await Toolkit4844.deployReader4844(fundingWallet)
-    
+
     const sequencerInboxFac = new SequencerInbox__factory(deployer)
     const seqInboxTemplate = await sequencerInboxFac.deploy(
       117964,
