@@ -76,6 +76,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     /// @inheritdoc ISequencerInbox
     bytes1 public constant ZERO_HEAVY_MESSAGE_HEADER_FLAG = 0x20;
 
+    // GAS_PER_BLOB from EIP-4844
+    uint256 internal constant GAS_PER_BLOB = 1 << 17;
+
     IOwnable public rollup;
     mapping(address => bool) public isBatchPoster;
 
@@ -411,9 +414,11 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 newMessageCount
     ) external refundsGas(gasRefunder, reader4844) {
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
-        (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formBlobDataHash(
-            afterDelayedMessagesRead
-        );
+        (
+            bytes32 dataHash,
+            IBridge.TimeBounds memory timeBounds,
+            uint256 blobCost
+        ) = formBlobDataHash(afterDelayedMessagesRead);
 
         // we use addSequencerL2BatchImpl for submitting the message
         // normally this would also submit a batch spending report but that is skipped if we pass
@@ -431,13 +436,15 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
                 newMessageCount
             );
 
+        uint256 _sequenceNumber = sequenceNumber; // stack workaround
+
         // ~uint256(0) is type(uint256).max, but ever so slightly cheaper
-        if (seqMessageIndex != sequenceNumber && sequenceNumber != ~uint256(0)) {
-            revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
+        if (seqMessageIndex != _sequenceNumber && _sequenceNumber != ~uint256(0)) {
+            revert BadSequencerNumber(seqMessageIndex, _sequenceNumber);
         }
 
         emit SequencerBatchDelivered(
-            sequenceNumber,
+            _sequenceNumber,
             beforeAcc,
             afterAcc,
             delayedAcc,
@@ -452,8 +459,12 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         if (hostChainIsArbitrum) revert DataBlobsNotSupported();
 
         // submit a batch spending report to refund the entity that produced the blob batch data
-        uint256 blobBasefee = reader4844.getBlobBaseFee();
-        submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, blobBasefee);
+        submitBatchSpendingReport(
+            dataHash,
+            seqMessageIndex,
+            block.basefee,
+            blobCost / block.basefee
+        );
     }
 
     function addSequencerL2Batch(
@@ -599,7 +610,11 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     function formBlobDataHash(uint256 afterDelayedMessagesRead)
         internal
         view
-        returns (bytes32, IBridge.TimeBounds memory)
+        returns (
+            bytes32,
+            IBridge.TimeBounds memory,
+            uint256
+        )
     {
         bytes32[] memory dataHashes = reader4844.getDataHashes();
         if (dataHashes.length == 0) revert MissingDataHashes();
@@ -608,9 +623,16 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             afterDelayedMessagesRead
         );
 
+        uint256 blobCost = reader4844.getBlobBaseFee() * GAS_PER_BLOB * dataHashes.length;
+        // solhint-disable-next-line avoid-tx-origin
+        if (tx.origin != msg.sender) {
+            // Make sure that if we're refunding this blob, it's only for this batch submission.
+            blobCost = 0;
+        }
         return (
             keccak256(bytes.concat(header, DATA_BLOB_HEADER_FLAG, abi.encodePacked(dataHashes))),
-            timeBounds
+            timeBounds,
+            blobCost
         );
     }
 
@@ -622,9 +644,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         bytes32 dataHash,
         uint256 seqMessageIndex,
         uint256 gasPrice,
-        uint256 blobBaseFeePrice
+        uint256 extraGas
     ) internal {
-        bytes memory spendingReportMsg;
         address batchPoster = msg.sender;
 
         // this msg isn't included in the current sequencer batch, but instead added to
@@ -632,29 +653,17 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         if (hostChainIsArbitrum) {
             // Include extra gas for the host chain's L1 gas charging
             uint256 l1Fees = ArbGasInfo(address(0x6c)).getCurrentTxL1GasFees();
-            uint256 extraGas = l1Fees / block.basefee;
-            require(extraGas <= type(uint64).max, "L1_GAS_NOT_UINT64");
-            spendingReportMsg = abi.encodePacked(
-                block.timestamp,
-                batchPoster,
-                dataHash,
-                seqMessageIndex,
-                gasPrice,
-                uint64(extraGas)
-            );
-        } else {
-            // when a blob base fee is supplied we include it into the batch spending report
-            spendingReportMsg = abi.encodePacked(
-                block.timestamp,
-                batchPoster,
-                dataHash,
-                seqMessageIndex,
-                gasPrice,
-                // we add an empty extraGas since the parsing code expects a value here
-                uint64(0),
-                blobBaseFeePrice
-            );
+            extraGas += l1Fees / block.basefee;
         }
+        require(extraGas <= type(uint64).max, "EXTRA_GAS_NOT_UINT64");
+        bytes memory spendingReportMsg = abi.encodePacked(
+            block.timestamp,
+            batchPoster,
+            dataHash,
+            seqMessageIndex,
+            gasPrice,
+            uint64(extraGas)
+        );
 
         uint256 msgNum = bridge.submitBatchSpendingReport(
             batchPoster,
