@@ -39,6 +39,7 @@ import {
   MessageDeliveredEvent,
 } from '../../build/types/src/bridge/Bridge'
 import { Signer } from 'ethers'
+import { Toolkit4844 } from './toolkit4844'
 import { data } from './batchData.json'
 
 const mineBlocks = async (count: number, timeDiffPerBlock = 14) => {
@@ -221,14 +222,26 @@ describe('SequencerInboxForceInclude', async () => {
     const admin = accounts[0]
     const adminAddr = await admin.getAddress()
     const user = accounts[1]
-    const batchPoster = accounts[3]
-    const batchPosterManager = accounts[4]
-    const rollupOwner = accounts[5]
+    const dummyRollup = accounts[2]
+    const rollupOwner = accounts[3]
+    const batchPoster = accounts[4]
+    const batchPosterManager = accounts[5]
 
     const rollupMockFac = (await ethers.getContractFactory(
       'RollupMock'
     )) as RollupMock__factory
     const rollup = await rollupMockFac.deploy(await rollupOwner.getAddress())
+
+    const dataHashReader = await Toolkit4844.deployDataHashReader(admin)
+    const blobBasefeeReader = await Toolkit4844.deployBlobBasefeeReader(admin)
+    const sequencerInboxFac = (await ethers.getContractFactory(
+      'SequencerInbox'
+    )) as SequencerInbox__factory
+    const seqInboxTemplate = await sequencerInboxFac.deploy(
+      117964,
+      dataHashReader.address,
+      blobBasefeeReader.address
+    )
     const inboxFac = (await ethers.getContractFactory(
       'Inbox'
     )) as Inbox__factory
@@ -246,7 +259,11 @@ describe('SequencerInboxForceInclude', async () => {
       adminAddr,
       '0x'
     )
-
+    const sequencerInboxProxy = await transparentUpgradeableProxyFac.deploy(
+      seqInboxTemplate.address,
+      adminAddr,
+      '0x'
+    )
     const inboxProxy = await transparentUpgradeableProxyFac.deploy(
       inboxTemplate.address,
       adminAddr,
@@ -256,23 +273,23 @@ describe('SequencerInboxForceInclude', async () => {
     const bridgeAdmin = await bridgeFac
       .attach(bridgeProxy.address)
       .connect(rollupOwner)
+    const sequencerInbox = await sequencerInboxFac
+      .attach(sequencerInboxProxy.address)
+      .connect(user)
     await bridge.initialize(rollup.address)
 
-    const sequencerInboxFac = (await ethers.getContractFactory(
-      'SequencerInbox'
-    )) as SequencerInbox__factory
-    const sequencerInbox = await sequencerInboxFac.deploy(
-      bridgeProxy.address,
-      {
-        delayBlocks: maxDelayBlocks,
-        delaySeconds: maxDelayTime,
-        futureBlocks: 10,
-        futureSeconds: 3000,
-      },
-      117964,
-      [await batchPoster.getAddress()],
-      await batchPosterManager.getAddress()
-    )
+    await sequencerInbox.initialize(bridgeProxy.address, {
+      delayBlocks: maxDelayBlocks,
+      delaySeconds: maxDelayTime,
+      futureBlocks: 10,
+      futureSeconds: 3000,
+    })
+
+    await (
+      await sequencerInbox
+        .connect(rollupOwner)
+        .setIsBatchPoster(await batchPoster.getAddress(), true)
+    ).wait()
 
     const inbox = await inboxFac.attach(inboxProxy.address).connect(user)
 
@@ -299,10 +316,10 @@ describe('SequencerInboxForceInclude', async () => {
       messageTester,
       inboxProxy,
       inboxTemplate,
+      batchPoster,
       bridgeProxy,
       rollup,
       rollupOwner,
-      batchPoster,
     }
   }
 
@@ -329,7 +346,9 @@ describe('SequencerInboxForceInclude', async () => {
     await (
       await sequencerInbox
         .connect(batchPoster)
-        .addSequencerL2BatchFromOrigin(
+        .functions[
+          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256)'
+        ](
           0,
           data,
           messagesRead,
@@ -357,9 +376,9 @@ describe('SequencerInboxForceInclude', async () => {
       BigNumber.from(10),
       '0x1010'
     )
-    const maxTimeVariation = await sequencerInbox.maxTimeVariation()
 
-    await mineBlocks(maxTimeVariation.delayBlocks.toNumber())
+    const [delayBlocks, , ,] = await sequencerInbox.maxTimeVariation()
+    await mineBlocks(delayBlocks.toNumber())
 
     await forceIncludeMessages(
       sequencerInbox,
@@ -402,8 +421,8 @@ describe('SequencerInboxForceInclude', async () => {
       '0xdeadface'
     )
 
-    const maxTimeVariation = await sequencerInbox.maxTimeVariation()
-    await mineBlocks(maxTimeVariation.delayBlocks.toNumber())
+    const [delayBlocks, , ,] = await sequencerInbox.maxTimeVariation()
+    await mineBlocks(delayBlocks.toNumber())
 
     await forceIncludeMessages(
       sequencerInbox,
@@ -467,8 +486,8 @@ describe('SequencerInboxForceInclude', async () => {
       '0x10101010'
     )
 
-    const maxTimeVariation = await sequencerInbox.maxTimeVariation()
-    await mineBlocks(maxTimeVariation.delayBlocks.toNumber())
+    const [delayBlocks, , ,] = await sequencerInbox.maxTimeVariation()
+    await mineBlocks(delayBlocks.toNumber())
 
     await forceIncludeMessages(
       sequencerInbox,
@@ -498,8 +517,8 @@ describe('SequencerInboxForceInclude', async () => {
       '0x1010'
     )
 
-    const maxTimeVariation = await sequencerInbox.maxTimeVariation()
-    await mineBlocks(maxTimeVariation.delayBlocks.toNumber() - 1, 5)
+    const [delayBlocks, , ,] = await sequencerInbox.maxTimeVariation()
+    await mineBlocks(delayBlocks.toNumber() - 1, 5)
 
     await forceIncludeMessages(
       sequencerInbox,
@@ -530,10 +549,10 @@ describe('SequencerInboxForceInclude', async () => {
       '0x1010'
     )
 
-    const maxTimeVariation = await sequencerInbox.maxTimeVariation()
+    const [delayBlocks, , ,] = await sequencerInbox.maxTimeVariation()
     // mine a lot of blocks - but use a short time per block
     // this should mean enough blocks have passed, but not enough time
-    await mineBlocks(maxTimeVariation.delayBlocks.toNumber() + 1, 5)
+    await mineBlocks(delayBlocks.toNumber() + 1, 5)
 
     await forceIncludeMessages(
       sequencerInbox,

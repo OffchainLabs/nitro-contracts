@@ -5,6 +5,7 @@ import {
   ValidatorWalletCreator__factory,
   ValidatorWallet,
   RollupMock,
+  RollupMock__factory,
 } from '../../build/types'
 import { initializeAccounts } from './utils'
 
@@ -14,6 +15,7 @@ describe('Validator Wallet', () => {
   let accounts: Awaited<ReturnType<typeof initializeAccounts>>
   let owner: ArrayElement<typeof accounts>
   let executor: ArrayElement<typeof accounts>
+  let rollupOwner: ArrayElement<typeof accounts>
   let walletCreator: ValidatorWalletCreator
   let wallet: ValidatorWallet
   let rollupMock1: RollupMock
@@ -26,9 +28,9 @@ describe('Validator Wallet', () => {
     walletCreator = await WalletCreator.deploy()
     await walletCreator.deployed()
 
-    owner = await accounts[0]
-    executor = await accounts[1]
-    const rollupOwner = await accounts[2]
+    owner = accounts[0]
+    executor = accounts[1]
+    rollupOwner = accounts[2]
     const walletCreationTx = await (await walletCreator.createWallet([])).wait()
 
     const events = walletCreationTx.logs
@@ -46,7 +48,9 @@ describe('Validator Wallet', () => {
     await wallet.setExecutor([await executor.getAddress()], [true])
     await wallet.transferOwnership(await owner.getAddress())
 
-    const RollupMock = await ethers.getContractFactory('RollupMock')
+    const RollupMock = (await ethers.getContractFactory(
+      'RollupMock'
+    )) as RollupMock__factory
     rollupMock1 = (await RollupMock.deploy(
       await rollupOwner.getAddress()
     )) as RollupMock
