@@ -42,6 +42,18 @@ contract ERC20RollupEventInboxTest is AbsRollupEventInboxTest {
 
         // expect event
         vm.expectEmit(true, true, true, true);
+        emit MessageDelivered(
+            0,
+            bytes32(0),
+            address(rollupEventInbox),
+            INITIALIZATION_MSG_TYPE,
+            address(0),
+            keccak256(expectedInitMsg),
+            uint256(0),
+            uint64(block.timestamp)
+        );
+
+        vm.expectEmit(true, true, true, true);
         emit InboxMessageDelivered(0, expectedInitMsg);
 
         /// this will result in 'hostChainIsArbitrum = true'
@@ -65,6 +77,18 @@ contract ERC20RollupEventInboxTest is AbsRollupEventInboxTest {
             abi.encodePacked(chainId, expectedInitMsgVersion, expectedCurrentDataCost, chainConfig);
 
         // expect event
+        vm.expectEmit(true, true, true, true);
+        emit MessageDelivered(
+            0,
+            bytes32(0),
+            address(rollupEventInbox),
+            INITIALIZATION_MSG_TYPE,
+            address(0),
+            keccak256(expectedInitMsg),
+            uint256(0),
+            uint64(block.timestamp)
+        );
+
         vm.expectEmit(true, true, true, true);
         emit InboxMessageDelivered(0, expectedInitMsg);
 

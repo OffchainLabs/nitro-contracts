@@ -5,6 +5,7 @@ import "./AbsRollupEventInbox.t.sol";
 import {TestUtil} from "./util/TestUtil.sol";
 import {RollupEventInbox, IRollupEventInbox} from "../../src/rollup/RollupEventInbox.sol";
 import {Bridge, IOwnable, IEthBridge} from "../../src/bridge/Bridge.sol";
+import "../../src/libraries/MessageTypes.sol";
 
 contract RollupEventInboxTest is AbsRollupEventInboxTest {
     function setUp() public {
@@ -43,6 +44,18 @@ contract RollupEventInboxTest is AbsRollupEventInboxTest {
 
         // expect event
         vm.expectEmit(true, true, true, true);
+        emit MessageDelivered(
+            0,
+            bytes32(0),
+            address(rollupEventInbox),
+            INITIALIZATION_MSG_TYPE,
+            address(0),
+            keccak256(expectedInitMsg),
+            basefee,
+            uint64(block.timestamp)
+        );
+
+        vm.expectEmit(true, true, true, true);
         emit InboxMessageDelivered(0, expectedInitMsg);
 
         vm.prank(rollup);
@@ -76,6 +89,18 @@ contract RollupEventInboxTest is AbsRollupEventInboxTest {
         );
 
         // expect event
+        vm.expectEmit(true, true, true, true);
+        emit MessageDelivered(
+            0,
+            bytes32(0),
+            address(rollupEventInbox),
+            INITIALIZATION_MSG_TYPE,
+            address(0),
+            keccak256(expectedInitMsg),
+            l2Fee,
+            uint64(block.timestamp)
+        );
+
         vm.expectEmit(true, true, true, true);
         emit InboxMessageDelivered(0, expectedInitMsg);
 
