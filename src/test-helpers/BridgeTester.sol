@@ -30,11 +30,6 @@ import "../libraries/DelegateCallAware.sol";
 contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
     using AddressUpgradeable for address;
 
-    struct InOutInfo {
-        uint256 index;
-        bool allowed;
-    }
-
     mapping(address => InOutInfo) private allowedInboxesMap;
     mapping(address => InOutInfo) private allowedOutboxesMap;
 
@@ -45,6 +40,8 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
 
     IOwnable public rollup;
     address public sequencerInbox;
+
+    address public nativeToken;
 
     modifier onlyRollupOrOwner() {
         if (msg.sender != address(rollup)) {

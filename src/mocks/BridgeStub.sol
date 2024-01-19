@@ -11,11 +11,6 @@ import "../bridge/IBridge.sol";
 import "../bridge/IEthBridge.sol";
 
 contract BridgeStub is IBridge, IEthBridge {
-    struct InOutInfo {
-        uint256 index;
-        bool allowed;
-    }
-
     mapping(address => InOutInfo) private allowedDelayedInboxesMap;
     //mapping(address => InOutInfo) private allowedOutboxesMap;
 
@@ -31,6 +26,8 @@ contract BridgeStub is IBridge, IEthBridge {
 
     address public sequencerInbox;
     uint256 public override sequencerReportedSubMessageCount;
+
+    address public nativeToken;
 
     function setSequencerInbox(address _sequencerInbox) external override {
         sequencerInbox = _sequencerInbox;

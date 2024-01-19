@@ -6,6 +6,7 @@ pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 import {
     NotContract,
@@ -22,22 +23,9 @@ import "../libraries/DelegateCallAware.sol";
 
 import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
 
-/**
- * @title Staging ground for incoming and outgoing messages
- * @notice Holds the inbox accumulator for sequenced and delayed messages.
- * Since the escrow is held here, this contract also contains a list of allowed
- * outboxes that can make calls from here and withdraw this escrow.
- */
-abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
-    using AddressUpgradeable for address;
-
-    struct InOutInfo {
-        uint256 index;
-        bool allowed;
-    }
-
-    mapping(address => InOutInfo) private allowedDelayedInboxesMap;
-    mapping(address => InOutInfo) private allowedOutboxesMap;
+abstract contract AbsBridgeStorage is IBridge {
+    mapping(address => InOutInfo) internal allowedDelayedInboxesMap;
+    mapping(address => InOutInfo) internal allowedOutboxesMap;
 
     address[] public allowedDelayedInboxList;
     address[] public allowedOutboxList;
@@ -54,6 +42,32 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     address public sequencerInbox;
 
     uint256 public override sequencerReportedSubMessageCount;
+
+    /**
+     * @dev This empty reserved space is put in place to allow future versions to add new
+     * variables without shifting down storage in the inheritance chain.
+     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[40] private __gap;
+
+    /// @inheritdoc IBridge
+    address public nativeToken;
+}
+
+/**
+ * @title Staging ground for incoming and outgoing messages
+ * @notice Holds the inbox accumulator for sequenced and delayed messages.
+ * Since the escrow is held here, this contract also contains a list of allowed
+ * outboxes that can make calls from here and withdraw this escrow.
+ */
+abstract contract AbsBridge is
+    Initializable,
+    DelegateCallAware,
+    IBridge,
+    AbsBridgeStorage,
+    AccessControlUpgradeable
+{
+    using AddressUpgradeable for address;
 
     address internal constant EMPTY_ACTIVEOUTBOX = address(type(uint160).max);
 
@@ -298,11 +312,4 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     /// @dev get base fee which is emitted in `MessageDelivered` event and then picked up and
     /// used in ArbOs to calculate the submission fee for retryable ticket
     function _baseFeeToReport() internal view virtual returns (uint256);
-
-    /**
-     * @dev This empty reserved space is put in place to allow future versions to add new
-     * variables without shifting down storage in the inheritance chain.
-     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
-     */
-    uint256[40] private __gap;
 }
