@@ -188,6 +188,14 @@ contract RollupCreator is Ownable {
             })
         );
 
+        // Setting batch posters and batch poster manager
+        for (uint256 i = 0; i < deployParams.batchPosters.length; i++) {
+            bridgeContracts.sequencerInbox.setIsBatchPoster(deployParams.batchPosters[i], true);
+        }
+        if (deployParams.batchPosterManager != address(0)) {
+            bridgeContracts.sequencerInbox.setBatchPosterManager(deployParams.batchPosterManager);
+        }
+
         // Call setValidator on the newly created rollup contract just if validator set is not empty
         if (deployParams.validators.length != 0) {
             bool[] memory _vals = new bool[](deployParams.validators.length);
