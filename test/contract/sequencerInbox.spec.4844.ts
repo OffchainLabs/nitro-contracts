@@ -420,7 +420,9 @@ describe('SequencerInbox', async () => {
     await (
       await sequencerInbox
         .connect(batchPoster)
-        .functions.addSequencerL2BatchFromOrigin(
+        .functions[
+          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256)'
+        ](
           await bridge.sequencerMessageCount(),
           '0x0042',
           await bridge.delayedMessageCount(),
