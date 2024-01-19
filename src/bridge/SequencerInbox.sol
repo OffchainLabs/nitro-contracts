@@ -38,10 +38,12 @@ import "../rollup/IRollupLogic.sol";
 import "./Messages.sol";
 import "../precompiles/ArbGasInfo.sol";
 import "../precompiles/ArbSys.sol";
+import "../libraries/IReader4844.sol";
 
 import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
-import {GasRefundEnabled, IGasRefunder} from "../libraries/IGasRefunder.sol";
 import "../libraries/DelegateCallAware.sol";
+import {IGasRefunder} from "../libraries/IGasRefunder.sol";
+import {GasRefundEnabled} from "../libraries/GasRefundEnabled.sol";
 import "../libraries/ArbitrumChecker.sol";
 
 /**
@@ -91,8 +93,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     mapping(address => bool) public isSequencer;
-    IDataHashReader immutable dataHashReader;
-    IBlobBasefeeReader immutable blobBasefeeReader;
+    IReader4844 public immutable reader4844;
 
     // see ISequencerInbox.MaxTimeVariation
     uint64 internal delayBlocks;
@@ -106,24 +107,14 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     // If the chain this SequencerInbox is deployed on is an Arbitrum chain.
     bool internal immutable hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
 
-    constructor(
-        uint256 _maxDataSize,
-        IDataHashReader dataHashReader_,
-        IBlobBasefeeReader blobBasefeeReader_
-    ) {
+    constructor(uint256 _maxDataSize, IReader4844 reader4844_) {
         maxDataSize = _maxDataSize;
         if (hostChainIsArbitrum) {
-            if (dataHashReader_ != IDataHashReader(address(0))) revert DataBlobsNotSupported();
-            if (blobBasefeeReader_ != IBlobBasefeeReader(address(0)))
-                revert DataBlobsNotSupported();
+            if (reader4844_ != IReader4844(address(0))) revert DataBlobsNotSupported();
         } else {
-            if (dataHashReader_ == IDataHashReader(address(0)))
-                revert InitParamZero("DataHashReader");
-            if (blobBasefeeReader_ == IBlobBasefeeReader(address(0)))
-                revert InitParamZero("BlobBasefeeReader");
+            if (reader4844_ == IReader4844(address(0))) revert InitParamZero("Reader4844");
         }
-        dataHashReader = dataHashReader_;
-        blobBasefeeReader = blobBasefeeReader_;
+        reader4844 = reader4844_;
     }
 
     function _chainIdChanged() internal view returns (bool) {
@@ -325,7 +316,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         bytes calldata data,
         uint256 afterDelayedMessagesRead,
         IGasRefunder gasRefunder
-    ) external refundsGas(gasRefunder) {
+    ) external refundsGas(gasRefunder, IReader4844(address(0))) {
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
@@ -334,25 +325,31 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             data,
             afterDelayedMessagesRead
         );
+        // Reformat the stack to prevent "Stack too deep"
+        uint256 sequenceNumber_ = sequenceNumber;
+        IBridge.TimeBounds memory timeBounds_ = timeBounds;
+        bytes32 dataHash_ = dataHash;
+        uint256 dataLength = data.length;
+        uint256 afterDelayedMessagesRead_ = afterDelayedMessagesRead;
         (
             uint256 seqMessageIndex,
             bytes32 beforeAcc,
             bytes32 delayedAcc,
             bytes32 afterAcc
-        ) = addSequencerL2BatchImpl(dataHash, afterDelayedMessagesRead, data.length, 0, 0);
+        ) = addSequencerL2BatchImpl(dataHash_, afterDelayedMessagesRead_, dataLength, 0, 0);
 
         // ~uint256(0) is type(uint256).max, but ever so slightly cheaper
-        if (seqMessageIndex != sequenceNumber && sequenceNumber != ~uint256(0)) {
-            revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
+        if (seqMessageIndex != sequenceNumber_ && sequenceNumber_ != ~uint256(0)) {
+            revert BadSequencerNumber(seqMessageIndex, sequenceNumber_);
         }
 
         emit SequencerBatchDelivered(
-            sequenceNumber,
+            sequenceNumber_,
             beforeAcc,
             afterAcc,
             delayedAcc,
             totalDelayedMessagesRead,
-            timeBounds,
+            timeBounds_,
             IBridge.BatchDataLocation.TxInput
         );
     }
@@ -364,7 +361,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    ) external refundsGas(gasRefunder) {
+    ) external refundsGas(gasRefunder, IReader4844(address(0))) {
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
@@ -415,7 +412,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    ) external refundsGas(gasRefunder) {
+    ) external refundsGas(gasRefunder, reader4844) {
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
         (
             bytes32 dataHash,
@@ -439,13 +436,15 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
                 newMessageCount
             );
 
+        uint256 _sequenceNumber = sequenceNumber; // stack workaround
+
         // ~uint256(0) is type(uint256).max, but ever so slightly cheaper
-        if (seqMessageIndex != sequenceNumber && sequenceNumber != ~uint256(0)) {
-            revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
+        if (seqMessageIndex != _sequenceNumber && _sequenceNumber != ~uint256(0)) {
+            revert BadSequencerNumber(seqMessageIndex, _sequenceNumber);
         }
 
         emit SequencerBatchDelivered(
-            sequenceNumber,
+            _sequenceNumber,
             beforeAcc,
             afterAcc,
             delayedAcc,
@@ -475,7 +474,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    ) external override refundsGas(gasRefunder) {
+    ) external override refundsGas(gasRefunder, IReader4844(address(0))) {
         if (!isBatchPoster[msg.sender] && msg.sender != address(rollup)) revert NotBatchPoster();
         (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formCallDataHash(
             data,
@@ -617,14 +616,14 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             uint256
         )
     {
-        bytes32[] memory dataHashes = dataHashReader.getDataHashes();
+        bytes32[] memory dataHashes = reader4844.getDataHashes();
         if (dataHashes.length == 0) revert MissingDataHashes();
 
         (bytes memory header, IBridge.TimeBounds memory timeBounds) = packHeader(
             afterDelayedMessagesRead
         );
 
-        uint256 blobCost = blobBasefeeReader.getBlobBaseFee() * GAS_PER_BLOB * dataHashes.length;
+        uint256 blobCost = reader4844.getBlobBaseFee() * GAS_PER_BLOB * dataHashes.length;
         // solhint-disable-next-line avoid-tx-origin
         if (tx.origin != msg.sender) {
             // Make sure that if we're refunding this blob, it's only for this batch submission.

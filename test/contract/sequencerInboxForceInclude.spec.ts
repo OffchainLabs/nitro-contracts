@@ -231,15 +231,13 @@ describe('SequencerInboxForceInclude', async () => {
     )) as RollupMock__factory
     const rollup = await rollupMockFac.deploy(await rollupOwner.getAddress())
 
-    const dataHashReader = await Toolkit4844.deployDataHashReader(admin)
-    const blobBasefeeReader = await Toolkit4844.deployBlobBasefeeReader(admin)
+    const reader4844 = await Toolkit4844.deployReader4844(admin)
     const sequencerInboxFac = (await ethers.getContractFactory(
       'SequencerInbox'
     )) as SequencerInbox__factory
     const seqInboxTemplate = await sequencerInboxFac.deploy(
       117964,
-      dataHashReader.address,
-      blobBasefeeReader.address
+      reader4844.address
     )
     const inboxFac = (await ethers.getContractFactory(
       'Inbox'

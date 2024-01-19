@@ -1,15 +1,9 @@
 import { execSync } from 'child_process'
 import { ContractFactory, Signer, Wallet, ethers } from 'ethers'
 import * as http from 'http'
-import {
-  IBlobBasefeeReader,
-  IBlobBasefeeReader__factory,
-  IDataHashReader,
-  IDataHashReader__factory,
-} from '../../build/types'
+import { IReader4844, IReader4844__factory } from '../../build/types'
 import { JsonRpcProvider } from '@ethersproject/providers'
-import { bytecode as blobBasefeeReaderBytecode } from '../../out/yul/BlobBasefeeReader.yul/BlobBasefeeReader.json'
-import { bytecode as dataHeashesReaderBytecode } from '../../out/yul/DataHashesReader.yul/DataHashesReader.json'
+import { bytecode as Reader4844Bytecode } from '../../out/yul/Reader4844.yul/Reader4844.json'
 
 const wait = async (ms: number) =>
   new Promise((res, rej) => {
@@ -128,34 +122,15 @@ export class Toolkit4844 {
     }
   }
 
-  public static async deployDataHashReader(
-    wallet: Signer
-  ): Promise<IDataHashReader> {
+  public static async deployReader4844(wallet: Signer): Promise<IReader4844> {
     const contractFactory = new ContractFactory(
-      IDataHashReader__factory.abi,
-      dataHeashesReaderBytecode,
+      IReader4844__factory.abi,
+      Reader4844Bytecode,
       wallet
     )
-    const dataHashReader = await contractFactory.deploy()
-    await dataHashReader.deployed()
+    const reader4844 = await contractFactory.deploy()
+    await reader4844.deployed()
 
-    return IDataHashReader__factory.connect(dataHashReader.address, wallet)
-  }
-
-  public static async deployBlobBasefeeReader(
-    wallet: Signer
-  ): Promise<IBlobBasefeeReader> {
-    const contractFactory = new ContractFactory(
-      IBlobBasefeeReader__factory.abi,
-      blobBasefeeReaderBytecode,
-      wallet
-    )
-    const blobBasefeeReader = await contractFactory.deploy()
-    await blobBasefeeReader.deployed()
-
-    return IBlobBasefeeReader__factory.connect(
-      blobBasefeeReader.address,
-      wallet
-    )
+    return IReader4844__factory.connect(reader4844.address, wallet)
   }
 }
