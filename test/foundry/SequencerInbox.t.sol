@@ -107,8 +107,6 @@ contract SequencerInboxTest is Test {
             dataHash,
             sequenceNumber,
             block.basefee,
-            uint64(0),
-            uint256(0),
             uint64(0)
         );
         bytes32 beforeAcc = bytes32(0);
