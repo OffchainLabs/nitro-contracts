@@ -523,8 +523,6 @@ describe('SequencerInbox', async () => {
       '0x' + inboxMsgDeliveredEvent.data.substring(234, 298)
     const spendingExtraGas =
       '0x' + inboxMsgDeliveredEvent.data.substring(298, 314)
-    const spendingBlobBasefee =
-      '0x' + inboxMsgDeliveredEvent.data.substring(314, 378)
 
     expect(
       BigNumber.from(spendingTimestamp).eq(blockTimestamp),
@@ -547,13 +545,8 @@ describe('SequencerInbox', async () => {
       `spending basefee: ${BigNumber.from(spendingBlockBaseFee).toString()}`
     ).to.eq(true)
     expect(
-      BigNumber.from(spendingExtraGas).eq(0),
+      BigNumber.from(spendingExtraGas).gt(0), // blob spending is normalized into extra gas
       `spending extra gas: ${BigNumber.from(spendingExtraGas).toString()}`
-    ).to.eq(true)
-    // we expect a very low - 1 - basefee since we havent sent many blobs
-    expect(
-      BigNumber.from(spendingBlobBasefee).eq(1),
-      `spending blob basefee: ${BigNumber.from(spendingBlobBasefee).toString()}`
     ).to.eq(true)
   })
 
