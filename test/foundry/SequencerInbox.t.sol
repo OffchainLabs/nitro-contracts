@@ -108,7 +108,8 @@ contract SequencerInboxTest is Test {
             sequenceNumber,
             block.basefee,
             uint64(0),
-            uint256(0)
+            uint256(0),
+            uint64(0)
         );
         bytes32 beforeAcc = bytes32(0);
         bytes32 delayedAcc = bridge.delayedInboxAccs(delayedMessagesRead - 1);
@@ -137,7 +138,7 @@ contract SequencerInboxTest is Test {
         // sequencer batch delivered
         vm.expectEmit();
         emit SequencerBatchDelivered(
-            sequenceNumber, 
+            sequenceNumber,
             beforeAcc,
             afterAcc,
             delayedAcc,
