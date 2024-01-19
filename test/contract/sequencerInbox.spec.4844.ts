@@ -282,15 +282,12 @@ describe('SequencerInbox', async () => {
       await rollupOwner.getAddress()
     )
 
-    const dataHashReader = await Toolkit4844.deployDataHashReader(fundingWallet)
-    const blobBasefeeReader = await Toolkit4844.deployBlobBasefeeReader(
-      fundingWallet
-    )
+    const reader4844 = await Toolkit4844.deployReader4844(fundingWallet)
+    
     const sequencerInboxFac = new SequencerInbox__factory(deployer)
     const seqInboxTemplate = await sequencerInboxFac.deploy(
       117964,
-      dataHashReader.address,
-      blobBasefeeReader.address
+      reader4844.address
     )
     const inboxFac = new Inbox__factory(deployer)
     const inboxTemplate = await inboxFac.deploy(117964)
@@ -420,7 +417,7 @@ describe('SequencerInbox', async () => {
 
     const subMessageCount = await bridge.sequencerReportedSubMessageCount()
     const balBefore = await batchPoster.getBalance()
-    const receipt = await (
+    await (
       await sequencerInbox
         .connect(batchPoster)
         .functions.addSequencerL2BatchFromOrigin(

@@ -114,7 +114,7 @@ contract ValidatorWallet is OwnableUpgradeable, DelegateCallAware, GasRefundEnab
         public
         payable
         onlyExecutorOrOwner
-        refundsGas(gasRefunder, IDataHashReader(address(0)), IBlobBasefeeReader(address(0)))
+        refundsGas(gasRefunder, IReader4844(address(0)))
     {
         uint256 numTxes = data.length;
         if (numTxes != destination.length) revert BadArrayLength(numTxes, destination.length);
@@ -154,7 +154,7 @@ contract ValidatorWallet is OwnableUpgradeable, DelegateCallAware, GasRefundEnab
         public
         payable
         onlyExecutorOrOwner
-        refundsGas(gasRefunder, IDataHashReader(address(0)), IBlobBasefeeReader(address(0)))
+        refundsGas(gasRefunder, IReader4844(address(0)))
     {
         if (data.length > 0) require(destination.isContract(), "NO_CODE_AT_ADDR");
         validateExecuteTransaction(destination);
@@ -182,7 +182,7 @@ contract ValidatorWallet is OwnableUpgradeable, DelegateCallAware, GasRefundEnab
     )
         public
         onlyExecutorOrOwner
-        refundsGas(gasRefunder, IDataHashReader(address(0)), IBlobBasefeeReader(address(0)))
+        refundsGas(gasRefunder, IReader4844(address(0)))
     {
         uint256 challengesCount = challenges.length;
         for (uint256 i = 0; i < challengesCount; i++) {

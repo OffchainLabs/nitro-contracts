@@ -1,5 +1,5 @@
 // taken from https://github.com/rauljordan/eip4844-interop/blob/b23c1afa79ad18b0318dca41c000c7c0edfe29d9/upload/contracts/DataHashesReader.yul
-object "DataHashesReader" {
+object "Reader4844" {
    code {
       datacopy(0, dataoffset("runtime"), datasize("runtime"))
       return(0, datasize("runtime"))
@@ -23,6 +23,13 @@ object "DataHashesReader" {
                 mstore(0, 32)
                 mstore(32, i)
                 return(0, add(mul(i, 32), 64))
+            }
+            // bytes4(keccak("getBlobBaseFee()"))
+            case 0x1f6d6ef7 {
+               // BLOBBASEFEE opcode has hex value 0x4a
+               let blobBasefee := verbatim_0i_1o(hex"4a")
+               mstore(0, blobBasefee) 
+               return(0, 32)
             }
       }
    }

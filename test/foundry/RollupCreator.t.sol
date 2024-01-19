@@ -27,8 +27,7 @@ contract RollupCreatorTest is Test {
     IRollupAdmin public rollupAdmin;
     IRollupUser public rollupUser;
     DeployHelper public deployHelper;
-    IDataHashReader dummyDataHashReader = IDataHashReader(address(137));
-    IBlobBasefeeReader dummyBlobBasefeeReader = IBlobBasefeeReader(address(138));
+    IReader4844 dummyReader4844 = IReader4844(address(137));
 
     // 1 gwei
     uint256 public constant MAX_FEE_PER_GAS = 1_000_000_000;
@@ -38,8 +37,7 @@ contract RollupCreatorTest is Test {
         bridge: new Bridge(),
         sequencerInbox: new SequencerInbox(
             MAX_DATA_SIZE,
-            dummyDataHashReader,
-            dummyBlobBasefeeReader
+            dummyReader4844
         ),
         inbox: new Inbox(MAX_DATA_SIZE),
         rollupEventInbox: new RollupEventInbox(),

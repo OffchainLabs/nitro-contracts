@@ -5,7 +5,7 @@
 // solhint-disable-next-line compiler-version
 pragma solidity ^0.8.0;
 
-import "./I4844Readers.sol";
+import "./IReader4844.sol";
 import "./IGasRefunder.sol";
 
 abstract contract GasRefundEnabled {
@@ -16,8 +16,7 @@ abstract contract GasRefundEnabled {
     /// for the `tx.input`. this avoids a possible attack where you generate large calldata from a contract and get over-refunded
     modifier refundsGas(
         IGasRefunder gasRefunder,
-        IDataHashReader dataHashReader,
-        IBlobBasefeeReader blobBasefeeReader
+        IReader4844 reader4844
     ) {
         uint256 startGasLeft = gasleft();
         _;
@@ -36,15 +35,12 @@ abstract contract GasRefundEnabled {
             } else {
                 // for similar reasons to above we only refund blob gas when the tx.origin is the msg.sender
                 // this avoids the caller being able to send blobs to other contracts and still get refunded here
-                if (
-                    address(dataHashReader) != address(0) &&
-                    address(blobBasefeeReader) != (address(0))
-                ) {
+                if (address(reader4844) != address(0)) {
                     // add any cost for 4844 data, the data hash reader throws an error prior to 4844 being activated
                     // we do this addition here rather in the GasRefunder so that we can check the msg.sender is the tx.origin
-                    try dataHashReader.getDataHashes() returns (bytes32[] memory dataHashes) {
+                    try reader4844.getDataHashes() returns (bytes32[] memory dataHashes) {
                         if (dataHashes.length != 0) {
-                            uint256 blobBasefee = blobBasefeeReader.getBlobBaseFee();
+                            uint256 blobBasefee = reader4844.getBlobBaseFee();
                             startGasLeft +=
                                 (dataHashes.length * gasPerBlob * blobBasefee) /
                                 block.basefee;

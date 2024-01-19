@@ -49,8 +49,7 @@ contract SequencerInboxTest is Test {
     });
     address dummyInbox = address(139);
     address proxyAdmin = address(140);
-    IDataHashReader dummyDataHashReader = IDataHashReader(address(141));
-    IBlobBasefeeReader dummyBlobBasefeeReader = IBlobBasefeeReader(address(142));
+    IReader4844 dummyReader4844 = IReader4844(address(137));
 
     function deploy() public returns(SequencerInbox, Bridge) {
         RollupMock rollupMock = new RollupMock(rollupOwner);
@@ -63,8 +62,7 @@ contract SequencerInboxTest is Test {
 
         SequencerInbox seqInboxImpl = new SequencerInbox(
             maxDataSize,
-            dummyDataHashReader,
-            dummyBlobBasefeeReader
+            dummyReader4844
         );
         SequencerInbox seqInbox = SequencerInbox(address(new TransparentUpgradeableProxy(address(seqInboxImpl), proxyAdmin, "")));
         seqInbox.initialize(
@@ -264,8 +262,7 @@ contract SequencerInboxTest is Test {
         (SequencerInbox seqInbox, ) = deploy();
         SequencerInbox seqInboxImpl = new SequencerInbox(
             maxDataSize,
-            dummyDataHashReader,
-            dummyBlobBasefeeReader
+            dummyReader4844
         );
 
         vm.expectRevert(abi.encodeWithSelector(AlreadyInit.selector));

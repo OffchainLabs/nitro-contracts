@@ -12,9 +12,8 @@ contract SequencerInboxStub is SequencerInbox {
     constructor(
         address sequencer_,
         uint256 maxDataSize_,
-        IDataHashReader dataHashReader_,
-        IBlobBasefeeReader blobBasefeeReader_
-    ) SequencerInbox(maxDataSize_, dataHashReader_, blobBasefeeReader_) {
+        IReader4844 reader4844_
+    ) SequencerInbox(maxDataSize_, reader4844_) {
         isBatchPoster[sequencer_] = true;
     }
 
