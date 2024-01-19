@@ -319,6 +319,10 @@ const setup = async () => {
     )) as SequencerInbox__factory
   ).attach(rollupCreatedEvent.sequencerInbox)
 
+  await sequencerInbox
+    .connect(await impersonateAccount(rollupCreatedEvent.upgradeExecutor))
+    .setBatchPosterManager(await batchPosterManager.getAddress())
+
   challengeManager = (
     (await ethers.getContractFactory(
       'ChallengeManager'
@@ -1446,12 +1450,16 @@ describe('ArbRollup', () => {
     )
     await expect(
       sequencerInbox.connect(accounts[8]).setBatchPosterManager(testManager)
-    ).to.revertedWith(`NotOwner("${testManager}", "${rollupUser.address}")`)
+    ).to.revertedWith(`NotOwner("${testManager}", "${upgradeExecutor}")`)
     expect(await sequencerInbox.batchPosterManager()).to.eq(
       await batchPosterManager.getAddress()
     )
 
-    await (await sequencerInbox.setBatchPosterManager(testManager)).wait()
+    await (
+      await sequencerInbox
+        .connect(await impersonateAccount(upgradeExecutor))
+        .setBatchPosterManager(testManager)
+    ).wait()
 
     expect(await sequencerInbox.batchPosterManager()).to.eq(testManager)
   })

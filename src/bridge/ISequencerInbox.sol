@@ -85,6 +85,8 @@ interface ISequencerInbox is IDelayedMessageProvider {
 
     function maxDataSize() external view returns (uint256);
 
+    /// @notice The batch poster manager has the ability to change the batch poster addresses
+    ///         This enables the batch poster to do key rotation
     function batchPosterManager() external view returns (address);
 
     struct DasKeySetInfo {

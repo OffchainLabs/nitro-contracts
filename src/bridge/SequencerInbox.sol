@@ -89,6 +89,13 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         _;
     }
 
+    modifier onlyRollupOwnerOrBatchPosterManager() {
+        if (msg.sender != rollup.owner() && msg.sender != batchPosterManager) {
+            revert NotBatchPosterManager(msg.sender);
+        }
+        _;
+    }
+
     mapping(address => bool) public isSequencer;
     IDataHashReader immutable dataHashReader;
     IBlobBasefeeReader immutable blobBasefeeReader;
@@ -99,8 +106,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     uint64 internal delaySeconds;
     uint64 internal futureSeconds;
 
-    /// @notice The batch poster manager has the ability to change the batch poster addresses
-    ///         This enables the batch poster to do key rotation
+    /// @inheritdoc ISequencerInbox
     address public batchPosterManager;
 
     // On L1 this should be set to 117964: 90% of Geth's 128KB tx size limit, leaving ~13KB for proving
@@ -726,7 +732,10 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @inheritdoc ISequencerInbox
-    function setIsBatchPoster(address addr, bool isBatchPoster_) external onlyRollupOwner {
+    function setIsBatchPoster(address addr, bool isBatchPoster_)
+        external
+        onlyRollupOwnerOrBatchPosterManager
+    {
         isBatchPoster[addr] = isBatchPoster_;
         emit OwnerFunctionCalled(1);
     }
@@ -762,8 +771,10 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @inheritdoc ISequencerInbox
-    function setIsSequencer(address addr, bool isSequencer_) external {
-        if (msg.sender != batchPosterManager) revert NotBatchPosterManager(msg.sender);
+    function setIsSequencer(address addr, bool isSequencer_)
+        external
+        onlyRollupOwnerOrBatchPosterManager
+    {
         isSequencer[addr] = isSequencer_;
         emit OwnerFunctionCalled(4);
     }
