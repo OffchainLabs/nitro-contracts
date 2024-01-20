@@ -1,22 +1,23 @@
-// taken from https://github.com/rauljordan/eip4844-interop/blob/b23c1afa79ad18b0318dca41c000c7c0edfe29d9/upload/contracts/DataHashesReader.yul
 object "Reader4844" {
-   code {
-      datacopy(0, dataoffset("runtime"), datasize("runtime"))
-      return(0, datasize("runtime"))
-   }
-   object "runtime" {
-      code {
-         // Match against the keccak of the ABI function signature needed.
-         switch shr(0xe0,calldataload(0))
+    code {
+        datacopy(0, dataoffset("runtime"), datasize("runtime"))
+        return(0, datasize("runtime"))
+    }
+    object "runtime" {
+        code {
+            // This contract does not accept callvalue
+            if callvalue() { revert(0, 0) }
+
+            // Match against the keccak of the ABI function signature needed.
+            switch shr(0xe0, calldataload(0))
             // bytes4(keccak("getDataHashes()"))
             case 0xe83a2d82 {
-                // DATAHASH opcode has hex value 0x49
                 let i := 0
-                for {} true {} {
+                for { } true { }
+                {
+                    // DATAHASH opcode has hex value 0x49
                     let hash := verbatim_1i_1o(hex"49", i)
-                    if iszero(hash) {
-                        break
-                    }
+                    if iszero(hash) { break }
                     mstore(add(mul(i, 32), 64), hash)
                     i := add(i, 1)
                 }
@@ -26,11 +27,13 @@ object "Reader4844" {
             }
             // bytes4(keccak("getBlobBaseFee()"))
             case 0x1f6d6ef7 {
-               // BLOBBASEFEE opcode has hex value 0x4a
-               let blobBasefee := verbatim_0i_1o(hex"4a")
-               mstore(0, blobBasefee) 
-               return(0, 32)
+                // BLOBBASEFEE opcode has hex value 0x4a
+                let blobBasefee := verbatim_0i_1o(hex"4a")
+                mstore(0, blobBasefee)
+                return(0, 32)
             }
-      }
-   }
+            // Unknown selector (revert)
+            default { revert(0, 0) }
+        }
+    }
 }
