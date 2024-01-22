@@ -52,6 +52,8 @@ contract SequencerInboxTest is Test {
     address dummyInbox = address(139);
     address proxyAdmin = address(140);
 
+    uint256 constant public MAX_DATA_SIZE = 117964;
+
     function deployRollup() internal returns(SequencerInbox, Bridge) {
         RollupMock rollupMock = new RollupMock(rollupOwner);
         Bridge bridgeImpl = new Bridge();
@@ -235,6 +237,87 @@ contract SequencerInboxTest is Test {
     }
 
     /* solhint-disable func-name-mixedcase */
+    function testConstructor() public {
+        SequencerInbox seqInboxLogic = new SequencerInbox(MAX_DATA_SIZE, false);
+        assertEq(seqInboxLogic.maxDataSize(), MAX_DATA_SIZE, "Invalid MAX_DATA_SIZE");
+        assertEq(seqInboxLogic.isUsingFeeToken(), false, "Invalid isUsingFeeToken");
+
+        SequencerInbox seqInboxProxy = SequencerInbox(TestUtil.deployProxy(address(seqInboxLogic)));
+        assertEq(seqInboxProxy.maxDataSize(), MAX_DATA_SIZE, "Invalid MAX_DATA_SIZE");
+        assertEq(seqInboxProxy.isUsingFeeToken(), false, "Invalid isUsingFeeToken");
+
+        SequencerInbox seqInboxLogicFeeToken = new SequencerInbox(MAX_DATA_SIZE, true);
+        assertEq(seqInboxLogicFeeToken.maxDataSize(), MAX_DATA_SIZE, "Invalid MAX_DATA_SIZE");
+        assertEq(seqInboxLogicFeeToken.isUsingFeeToken(), true, "Invalid isUsingFeeToken");
+
+        SequencerInbox seqInboxProxyFeeToken = SequencerInbox(TestUtil.deployProxy(address(seqInboxLogicFeeToken)));
+        assertEq(seqInboxProxyFeeToken.maxDataSize(), MAX_DATA_SIZE, "Invalid MAX_DATA_SIZE");
+        assertEq(seqInboxProxyFeeToken.isUsingFeeToken(), true, "Invalid isUsingFeeToken");
+    }
+
+    function testInitialize() public {
+        Bridge _bridge = Bridge(address(new TransparentUpgradeableProxy(address(new Bridge()), proxyAdmin, "")));
+        _bridge.initialize(IOwnable(address(new RollupMock(rollupOwner))));
+
+        address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, false));
+        SequencerInbox seqInboxProxy = SequencerInbox(TestUtil.deployProxy(seqInboxLogic));
+        seqInboxProxy.initialize(
+            IBridge(_bridge),
+            maxTimeVariation
+        );
+
+        assertEq(seqInboxProxy.isUsingFeeToken(), false, "Invalid isUsingFeeToken");
+        assertEq(address(seqInboxProxy.bridge()), address(_bridge), "Invalid bridge");
+        assertEq(address(seqInboxProxy.rollup()), address(_bridge.rollup()), "Invalid rollup");
+    }
+
+    function testInitialize_FeeTokenBased() public {
+        ERC20Bridge _bridge = ERC20Bridge(address(new TransparentUpgradeableProxy(address(new ERC20Bridge()), proxyAdmin, "")));
+        address nativeToken = address(new ERC20PresetMinterPauser("Appchain Token", "App"));
+        _bridge.initialize(IOwnable(address(new RollupMock(rollupOwner))), nativeToken);
+
+        address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, true));
+        SequencerInbox seqInboxProxy = SequencerInbox(TestUtil.deployProxy(seqInboxLogic));
+        seqInboxProxy.initialize(
+            IBridge(_bridge),
+            maxTimeVariation
+        );
+
+        assertEq(seqInboxProxy.isUsingFeeToken(), true, "Invalid isUsingFeeToken");
+        assertEq(address(seqInboxProxy.bridge()), address(_bridge), "Invalid bridge");
+        assertEq(address(seqInboxProxy.rollup()), address(_bridge.rollup()), "Invalid rollup");
+    }
+
+    function testInitialize_revert_NativeTokenMismatch_EthFeeToken() public {
+        Bridge _bridge = Bridge(address(new TransparentUpgradeableProxy(address(new Bridge()), proxyAdmin, "")));
+        _bridge.initialize(IOwnable(address(new RollupMock(rollupOwner))));
+
+        address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, true));
+        SequencerInbox seqInboxProxy = SequencerInbox(TestUtil.deployProxy(seqInboxLogic));
+
+        vm.expectRevert(abi.encodeWithSelector(NativeTokenMismatch.selector));
+        seqInboxProxy.initialize(
+            IBridge(_bridge),
+            maxTimeVariation
+        );
+    }
+
+    function testInitialize_revert_NativeTokenMismatch_FeeTokenEth() public {
+        ERC20Bridge _bridge = ERC20Bridge(address(new TransparentUpgradeableProxy(address(new ERC20Bridge()), proxyAdmin, "")));
+        address nativeToken = address(new ERC20PresetMinterPauser("Appchain Token", "App"));
+        _bridge.initialize(IOwnable(address(new RollupMock(rollupOwner))), nativeToken);
+
+
+        address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, false));
+        SequencerInbox seqInboxProxy = SequencerInbox(TestUtil.deployProxy(seqInboxLogic));
+
+        vm.expectRevert(abi.encodeWithSelector(NativeTokenMismatch.selector));
+        seqInboxProxy.initialize(
+            IBridge(_bridge),
+            maxTimeVariation
+        );
+    }
+
     function testAddSequencerL2BatchFromOrigin_ArbitrumHosted() public {
         // this will result in 'hostChainIsArbitrum = true'
         vm.mockCall(
