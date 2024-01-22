@@ -405,54 +405,50 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         totalDelayedMessagesRead = afterDelayedMessagesRead;
 
         if (calldataLengthPosted > 0) {
-            // this msg isn't included in the current sequencer batch, but instead added to
-            // the delayed messages queue that is yet to be included
-            address batchPoster = msg.sender;
-            bytes memory spendingReportMsg;
-            if (hostChainIsArbitrum) {
-                bool isUsingFeeToken = false;
-                // Bridge in ETH based chains doesn't implement nativeToken(). In future it might implement it and return address(0)
-                try IERC20Bridge(address(bridge)).nativeToken() returns (address feeToken) {
-                    if (feeToken != address(0)) {
-                        isUsingFeeToken = true;
-                    }
-                } catch {}
+            bool isUsingFeeToken = false;
+            // Bridge in ETH based chains doesn't implement nativeToken(). In future it might implement it and return address(0)
+            try IERC20Bridge(address(bridge)).nativeToken() returns (address feeToken) {
+                if (feeToken != address(0)) {
+                    isUsingFeeToken = true;
+                }
+            } catch {}
 
-                // If chain is using ETH to pay for fees, report the base fee and extra gas spent
-                // If chain is using fee token, report 0 spendings to avoid ETH<->fee token conversions
-                uint256 baseFeeToReport = 0;
-                uint256 extraGas = 0;
-                if (!isUsingFeeToken) {
-                    baseFeeToReport = block.basefee;
+            // only report batch poster spendings if chain is using ETH as native currency
+            if (!isUsingFeeToken) {
+                // this msg isn't included in the current sequencer batch, but instead added to
+                // the delayed messages queue that is yet to be included
+                address batchPoster = msg.sender;
+                bytes memory spendingReportMsg;
+                if (hostChainIsArbitrum) {
                     // Include extra gas for the host chain's L1 gas charging
                     uint256 l1Fees = ArbGasInfo(address(0x6c)).getCurrentTxL1GasFees();
-                    extraGas = l1Fees / block.basefee;
+                    uint256 extraGas = l1Fees / block.basefee;
                     require(extraGas <= type(uint64).max, "L1_GAS_NOT_UINT64");
-                }
 
-                spendingReportMsg = abi.encodePacked(
-                    block.timestamp,
+                    spendingReportMsg = abi.encodePacked(
+                        block.timestamp,
+                        batchPoster,
+                        dataHash,
+                        seqMessageIndex,
+                        block.basefee,
+                        uint64(extraGas)
+                    );
+                } else {
+                    spendingReportMsg = abi.encodePacked(
+                        block.timestamp,
+                        batchPoster,
+                        dataHash,
+                        seqMessageIndex,
+                        block.basefee
+                    );
+                }
+                uint256 msgNum = bridge.submitBatchSpendingReport(
                     batchPoster,
-                    dataHash,
-                    seqMessageIndex,
-                    baseFeeToReport,
-                    uint64(extraGas)
+                    keccak256(spendingReportMsg)
                 );
-            } else {
-                spendingReportMsg = abi.encodePacked(
-                    block.timestamp,
-                    batchPoster,
-                    dataHash,
-                    seqMessageIndex,
-                    block.basefee
-                );
+                // this is the same event used by Inbox.sol after including a message to the delayed message accumulator
+                emit InboxMessageDelivered(msgNum, spendingReportMsg);
             }
-            uint256 msgNum = bridge.submitBatchSpendingReport(
-                batchPoster,
-                keccak256(spendingReportMsg)
-            );
-            // this is the same event used by Inbox.sol after including a message to the delayed message accumulator
-            emit InboxMessageDelivered(msgNum, spendingReportMsg);
         }
     }
 
