@@ -178,3 +178,6 @@ error NoSuchKeyset(bytes32);
 
 /// @dev Thrown when rollup is not updated with updateRollupAddress
 error RollupNotChanged();
+
+/// @dev SequencerInbox and Bridge are not in the same feeToken/ETH mode
+error NativeTokenMismatch();

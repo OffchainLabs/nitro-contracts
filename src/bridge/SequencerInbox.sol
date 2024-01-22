@@ -21,7 +21,8 @@ import {
     AlreadyValidDASKeyset,
     NoSuchKeyset,
     NotForked,
-    RollupNotChanged
+    RollupNotChanged,
+    NativeTokenMismatch
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./IInboxBase.sol";
@@ -72,9 +73,12 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     uint256 internal immutable deployTimeChainId = block.chainid;
     // If the chain this SequencerInbox is deployed on is an Arbitrum chain.
     bool internal immutable hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
+    // True if the chain this SequencerInbox is deployed on uses custom fee token
+    bool internal immutable isUsingFeeToken;
 
-    constructor(uint256 _maxDataSize) {
+    constructor(uint256 _maxDataSize, bool _isUsingFeeToken) {
         maxDataSize = _maxDataSize;
+        isUsingFeeToken = _isUsingFeeToken;
     }
 
     function _chainIdChanged() internal view returns (bool) {
@@ -87,6 +91,19 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     ) external onlyDelegated {
         if (bridge != IBridge(address(0))) revert AlreadyInit();
         if (bridge_ == IBridge(address(0))) revert HadZeroInit();
+
+        // Make sure logic contract was created by proper value for 'isUsingFeeToken'.
+        // Bridge in ETH based chains doesn't implement nativeToken(). In future it might implement it and return address(0)
+        bool actualIsUsingFeeToken = false;
+        try IERC20Bridge(address(bridge_)).nativeToken() returns (address feeToken) {
+            if (feeToken != address(0)) {
+                actualIsUsingFeeToken = true;
+            }
+        } catch {}
+        if (isUsingFeeToken != actualIsUsingFeeToken) {
+            revert NativeTokenMismatch();
+        }
+
         bridge = bridge_;
         rollup = bridge_.rollup();
         maxTimeVariation = maxTimeVariation_;
@@ -404,14 +421,6 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         totalDelayedMessagesRead = afterDelayedMessagesRead;
 
         if (calldataLengthPosted > 0) {
-            bool isUsingFeeToken = false;
-            // Bridge in ETH based chains doesn't implement nativeToken(). In future it might implement it and return address(0)
-            try IERC20Bridge(address(bridge)).nativeToken() returns (address feeToken) {
-                if (feeToken != address(0)) {
-                    isUsingFeeToken = true;
-                }
-            } catch {}
-
             // only report batch poster spendings if chain is using ETH as native currency
             if (!isUsingFeeToken) {
                 // this msg isn't included in the current sequencer batch, but instead added to

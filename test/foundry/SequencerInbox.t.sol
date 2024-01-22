@@ -61,7 +61,7 @@ contract SequencerInboxTest is Test {
         vm.prank(rollupOwner);
         bridge.setDelayedInbox(dummyInbox, true);
 
-        SequencerInbox seqInboxImpl = new SequencerInbox(maxDataSize);
+        SequencerInbox seqInboxImpl = new SequencerInbox(maxDataSize, false);
         SequencerInbox seqInbox = SequencerInbox(address(new TransparentUpgradeableProxy(address(seqInboxImpl), proxyAdmin, "")));
         seqInbox.initialize(
             bridge,
@@ -93,7 +93,7 @@ contract SequencerInboxTest is Test {
             abi.encodeWithSelector(ArbSys.arbOSVersion.selector),
             abi.encode(uint256(11))
         );
-        SequencerInbox seqInboxImpl = new SequencerInbox(maxDataSize);
+        SequencerInbox seqInboxImpl = new SequencerInbox(maxDataSize, true);
         SequencerInbox seqInbox = SequencerInbox(address(new TransparentUpgradeableProxy(address(seqInboxImpl), proxyAdmin, "")));
         seqInbox.initialize(
             bridge,
