@@ -110,7 +110,7 @@ contract ChallengeManager is DelegateCallAware, IChallengeManager {
         osp = osp_;
     }
 
-    function postUpgradeInit(IOneStepProofEntry osp_) onlyDelegated onlyProxyOwner external {
+    function postUpgradeInit(IOneStepProofEntry osp_) external onlyDelegated onlyProxyOwner {
         // when updating to 4844 we need to create new osp contracts and set them here
         // on the challenge manager
         osp = osp_;
