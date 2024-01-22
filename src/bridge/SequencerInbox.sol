@@ -776,7 +776,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         onlyRollupOwnerOrBatchPosterManager
     {
         isSequencer[addr] = isSequencer_;
-        emit OwnerFunctionCalled(4);
+        emit OwnerFunctionCalled(4); // Owner in this context can also be batch poster manager
     }
 
     /// @inheritdoc ISequencerInbox
