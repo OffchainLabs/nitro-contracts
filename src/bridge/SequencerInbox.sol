@@ -75,7 +75,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     // If the chain this SequencerInbox is deployed on is an Arbitrum chain.
     bool internal immutable hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
     // True if the chain this SequencerInbox is deployed on uses custom fee token
-    bool internal immutable isUsingFeeToken;
+    bool public immutable isUsingFeeToken;
 
     constructor(uint256 _maxDataSize, bool _isUsingFeeToken) {
         maxDataSize = _maxDataSize;
