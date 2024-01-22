@@ -36,6 +36,7 @@ import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
 import {GasRefundEnabled, IGasRefunder} from "../libraries/IGasRefunder.sol";
 import "../libraries/DelegateCallAware.sol";
 import "../libraries/ArbitrumChecker.sol";
+import {IERC20Bridge} from "./IERC20Bridge.sol";
 
 /**
  * @title Accepts batches from the sequencer and adds them to the rollup inbox.
