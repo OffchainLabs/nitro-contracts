@@ -12,7 +12,11 @@ interface ArbWasm {
     /// @notice activate a wasm program
     /// @param program the program to activate
     /// @return version the stylus version the program was activated against
-    function activateProgram(address program) external payable returns (uint16 version);
+    /// @return dataFee the data fee paid to store the activated program
+    function activateProgram(address program)
+        external
+        payable
+        returns (uint16 version, uint256 dataFee);
 
     /// @notice gets the latest stylus version
     /// @return version the stylus version
@@ -82,6 +86,7 @@ interface ArbWasm {
         bytes32 indexed codehash,
         bytes32 moduleHash,
         address program,
+        uint256 dataFee,
         uint16 version
     );
 
