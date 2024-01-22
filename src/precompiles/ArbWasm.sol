@@ -12,6 +12,7 @@ interface ArbWasm {
     /// @notice activate a wasm program
     /// @param program the program to activate
     /// @return version the stylus version the program was activated against
+    /// @return dataFee the data fee paid to store the activated program
     function activateProgram(address program)
         external
         payable
