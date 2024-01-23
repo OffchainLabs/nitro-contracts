@@ -14,7 +14,7 @@ module.exports = {
         printWidth: 100,
         singleQuote: false,
         bracketSpacing: false,
-        compiler: '0.8.6',
+        compiler: '0.8.9',
       },
     },
   ],
