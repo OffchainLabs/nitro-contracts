@@ -472,7 +472,7 @@ describe('SequencerInbox', async () => {
       sequencerInbox.address,
       ['0x0142', '0x0143'],
       sequencerInbox.interface.encodeFunctionData(
-        'addSequencerL2BatchFromBlob',
+        'addSequencerL2BatchFromBlobs',
         [
           sequenceNumber,
           afterDelayedMessagesRead,
