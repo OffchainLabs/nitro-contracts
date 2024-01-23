@@ -96,7 +96,7 @@ contract BridgeCreator is Ownable {
         } else {
             IERC20Bridge(address(frame.bridge)).initialize(IOwnable(rollup), nativeToken);
         }
-        frame.sequencerInbox.initialize(frame.bridge, maxTimeVariation);
+        frame.sequencerInbox.initialize(IBridge(frame.bridge), maxTimeVariation);
         frame.inbox.initialize(frame.bridge, frame.sequencerInbox);
         frame.rollupEventInbox.initialize(frame.bridge);
         frame.outbox.initialize(frame.bridge);

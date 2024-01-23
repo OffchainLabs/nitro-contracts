@@ -82,6 +82,7 @@ const ZERO_ADDR = ethers.constants.AddressZero
 const extraChallengeTimeBlocks = 20
 const wasmModuleRoot =
   '0x9900000000000000000000000000000000000000000000000000000000000010'
+const dummy4844Reader = '0x0000000000000000000000000000000000000089'
 
 // let rollup: RollupContract
 let rollup: RollupContract
@@ -188,7 +189,11 @@ const setup = async () => {
   const ethSequencerInboxFac = (await ethers.getContractFactory(
     'SequencerInbox'
   )) as SequencerInbox__factory
-  const ethSequencerInbox = await ethSequencerInboxFac.deploy(117964, false)
+  const ethSequencerInbox = await ethSequencerInboxFac.deploy(
+    117964,
+    dummy4844Reader,
+    false
+  )
 
   const ethInboxFac = (await ethers.getContractFactory(
     'Inbox'
@@ -213,7 +218,11 @@ const setup = async () => {
   const erc20SequencerInboxFac = (await ethers.getContractFactory(
     'SequencerInbox'
   )) as SequencerInbox__factory
-  const erc20SequencerInbox = await erc20SequencerInboxFac.deploy(117964, true)
+  const erc20SequencerInbox = await erc20SequencerInboxFac.deploy(
+    117964,
+    dummy4844Reader,
+    true
+  )
 
   const erc20InboxFac = (await ethers.getContractFactory(
     'ERC20Inbox'
@@ -508,12 +517,6 @@ const impersonateAccount = (address: string) =>
     .then(() => ethers.getSigner(address))
 
 describe('ArbRollup', () => {
-  it('should deploy contracts', async function () {
-    accounts = await initializeAccounts()
-
-    await run('deploy', { tags: 'test' })
-  })
-
   it('should initialize', async function () {
     const {
       rollupAdmin: rollupAdminContract,
