@@ -62,7 +62,10 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     uint256 public constant HEADER_LENGTH = 40;
 
     /// @inheritdoc ISequencerInbox
-    bytes1 public constant DATA_BLOB_HEADER_FLAG = 0x40;
+    bytes1 public constant DATA_AUTHENTICATED_FLAG = 0x40;
+
+    /// @inheritdoc ISequencerInbox
+    bytes1 public constant DATA_BLOB_HEADER_FLAG = DATA_AUTHENTICATED_FLAG | 0x10;
 
     /// @inheritdoc ISequencerInbox
     bytes1 public constant DAS_MESSAGE_HEADER_FLAG = 0x80;
@@ -406,7 +409,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         );
     }
 
-    function addSequencerL2BatchFromBlob(
+    function addSequencerL2BatchFromBlobs(
         uint256 sequenceNumber,
         uint256 afterDelayedMessagesRead,
         IGasRefunder gasRefunder,

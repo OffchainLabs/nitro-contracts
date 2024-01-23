@@ -47,6 +47,12 @@ interface ISequencerInbox is IDelayedMessageProvider {
     // solhint-disable-next-line func-name-mixedcase
     function HEADER_LENGTH() external view returns (uint256);
 
+    /// @dev If the first batch data byte after the header has this bit set,
+    ///      the sequencer inbox has authenticated the data. Currently only used for 4844 blob support.
+    ///      See: https://github.com/OffchainLabs/nitro/blob/69de0603abf6f900a4128cab7933df60cad54ded/arbstate/das_reader.go
+    // solhint-disable-next-line func-name-mixedcase
+    function DATA_AUTHENTICATED_FLAG() external view returns (bytes1);
+
     /// @dev If the first data byte after the header has this bit set,
     ///      then the batch data is to be found in 4844 data blobs
     ///      See: https://github.com/OffchainLabs/nitro/blob/69de0603abf6f900a4128cab7933df60cad54ded/arbstate/das_reader.go
