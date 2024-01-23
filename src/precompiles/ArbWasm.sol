@@ -89,7 +89,7 @@ interface ArbWasm {
         uint256 dataFee,
         uint16 version
     );
-    event ProgramKeepalive(bytes32 indexed codehash, uint256 dataFee);
+    event ProgramLifetimeExtended(bytes32 indexed codehash, uint256 dataFee);
 
     error ProgramNotActivated();
     error ProgramNeedsUpgrade(uint16 version, uint16 stylusVersion);
