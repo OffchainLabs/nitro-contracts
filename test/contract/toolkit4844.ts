@@ -11,7 +11,7 @@ const wait = async (ms: number) =>
   })
 
 export class Toolkit4844 {
-  public static DATA_BLOB_HEADER_FLAG = '0x40'
+  public static DATA_BLOB_HEADER_FLAG = '0x50' // 0x40 | 0x10
 
   public static postDataToGeth(body: any): Promise<any> {
     return new Promise((resolve, reject) => {
