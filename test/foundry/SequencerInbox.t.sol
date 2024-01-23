@@ -314,7 +314,7 @@ contract SequencerInboxTest is Test {
         );
     }
 
-    function testAddSequencerL2BatchFromOrigin_ArbitrumHosted_X() public {
+    function testAddSequencerL2BatchFromOrigin_ArbitrumHosted() public {
         // this will result in 'hostChainIsArbitrum = true'
         vm.mockCall(
             address(100),

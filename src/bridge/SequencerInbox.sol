@@ -115,7 +115,11 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     // True if the chain this SequencerInbox is deployed on uses custom fee token
     bool public immutable isUsingFeeToken;
 
-    constructor(uint256 _maxDataSize, IReader4844 reader4844_, bool _isUsingFeeToken) {
+    constructor(
+        uint256 _maxDataSize,
+        IReader4844 reader4844_,
+        bool _isUsingFeeToken
+    ) {
         maxDataSize = _maxDataSize;
         if (hostChainIsArbitrum) {
             if (reader4844_ != IReader4844(address(0))) revert DataBlobsNotSupported();
@@ -481,7 +485,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         if (hostChainIsArbitrum) revert DataBlobsNotSupported();
 
         // only report batch poster spendings if chain is using ETH as native currency
-        if(!isUsingFeeToken) {
+        if (!isUsingFeeToken) {
             // submit a batch spending report to refund the entity that produced the blob batch data
             submitBatchSpendingReport(
                 dataHash,
@@ -724,7 +728,6 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         );
 
         totalDelayedMessagesRead = afterDelayedMessagesRead;
-
 
         if (calldataLengthPosted > 0 && !isUsingFeeToken) {
             // only report batch poster spendings if chain is using ETH as native currency
