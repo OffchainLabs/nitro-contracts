@@ -199,3 +199,6 @@ error InvalidHeaderFlag(bytes1);
 
 /// @dev SequencerInbox and Bridge are not in the same feeToken/ETH mode
 error NativeTokenMismatch();
+
+/// @dev Thrown when a deprecated function is called
+error Deprecated();
