@@ -22,6 +22,7 @@ import {
     AlreadyValidDASKeyset,
     NoSuchKeyset,
     NotForked,
+    NotBatchPosterManager,
     RollupNotChanged,
     DataBlobsNotSupported,
     InitParamZero,
@@ -87,6 +88,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     uint256 internal constant GAS_PER_BLOB = 1 << 17;
 
     IOwnable public rollup;
+
     mapping(address => bool) public isBatchPoster;
 
     // we previously stored the max time variation in a (uint,uint,uint,uint) struct here
@@ -99,6 +101,13 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         _;
     }
 
+    modifier onlyRollupOwnerOrBatchPosterManager() {
+        if (msg.sender != rollup.owner() && msg.sender != batchPosterManager) {
+            revert NotBatchPosterManager(msg.sender);
+        }
+        _;
+    }
+
     mapping(address => bool) public isSequencer;
     IReader4844 public immutable reader4844;
 
@@ -107,6 +116,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     uint64 internal futureBlocks;
     uint64 internal delaySeconds;
     uint64 internal futureSeconds;
+
+    /// @inheritdoc ISequencerInbox
+    address public batchPosterManager;
 
     // On L1 this should be set to 117964: 90% of Geth's 128KB tx size limit, leaving ~13KB for proving
     uint256 public immutable maxDataSize;
@@ -720,7 +732,10 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @inheritdoc ISequencerInbox
-    function setIsBatchPoster(address addr, bool isBatchPoster_) external onlyRollupOwner {
+    function setIsBatchPoster(address addr, bool isBatchPoster_)
+        external
+        onlyRollupOwnerOrBatchPosterManager
+    {
         isBatchPoster[addr] = isBatchPoster_;
         emit OwnerFunctionCalled(1);
     }
@@ -756,9 +771,18 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @inheritdoc ISequencerInbox
-    function setIsSequencer(address addr, bool isSequencer_) external onlyRollupOwner {
+    function setIsSequencer(address addr, bool isSequencer_)
+        external
+        onlyRollupOwnerOrBatchPosterManager
+    {
         isSequencer[addr] = isSequencer_;
-        emit OwnerFunctionCalled(4);
+        emit OwnerFunctionCalled(4); // Owner in this context can also be batch poster manager
+    }
+
+    /// @inheritdoc ISequencerInbox
+    function setBatchPosterManager(address newBatchPosterManager) external onlyRollupOwner {
+        batchPosterManager = newBatchPosterManager;
+        emit OwnerFunctionCalled(5);
     }
 
     function isValidKeysetHash(bytes32 ksHash) external view returns (bool) {

@@ -91,6 +91,10 @@ interface ISequencerInbox is IDelayedMessageProvider {
 
     function maxDataSize() external view returns (uint256);
 
+    /// @notice The batch poster manager has the ability to change the batch poster addresses
+    ///         This enables the batch poster to do key rotation
+    function batchPosterManager() external view returns (address);
+
     struct DasKeySetInfo {
         bool isValidKeyset;
         uint64 creationBlock;
@@ -210,9 +214,16 @@ interface ISequencerInbox is IDelayedMessageProvider {
      */
     function setIsSequencer(address addr, bool isSequencer_) external;
 
+    /**
+     * @notice Updates the batch poster manager, the address which has the ability to rotate batch poster keys
+     * @param newBatchPosterManager The new batch poster manager to be set
+     */
+    function setBatchPosterManager(address newBatchPosterManager) external;
+
+    /// @notice Allows the rollup owner to sync the rollup address
+    function updateRollupAddress() external;
+
     // ---------- initializer ----------
 
     function initialize(IBridge bridge_, MaxTimeVariation calldata maxTimeVariation_) external;
-
-    function updateRollupAddress() external;
 }

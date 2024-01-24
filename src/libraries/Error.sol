@@ -176,6 +176,9 @@ error AlreadyValidDASKeyset(bytes32);
 /// @dev Tried to use or invalidate an already invalid Data Availability Service keyset
 error NoSuchKeyset(bytes32);
 
+/// @dev Thrown when the provided address is not the designated batch poster manager
+error NotBatchPosterManager(address);
+
 /// @dev Thrown when a data blob feature is attempted to be used on a chain that doesnt support it
 error DataBlobsNotSupported();
 
