@@ -6,12 +6,12 @@ pragma solidity ^0.8.0;
 
 struct GlobalState {
     bytes32[2] bytes32Vals;
-    uint64[2] u64Vals;
+    uint64[3] u64Vals;
 }
 
 library GlobalStateLib {
     uint16 internal constant BYTES32_VALS_NUM = 2;
-    uint16 internal constant U64_VALS_NUM = 2;
+    uint16 internal constant U64_VALS_NUM = 3;
 
     function hash(GlobalState memory state) internal pure returns (bytes32) {
         return
