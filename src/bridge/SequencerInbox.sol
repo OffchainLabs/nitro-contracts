@@ -602,6 +602,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @dev   Submit a batch spending report message so that the batch poster can be reimbursed on the rollup
+    ///        This function expect msg.sender is tx.origin, and will always record tx.origin as the spender
     /// @param dataHash The hash of the message the spending report is being submitted for
     /// @param seqMessageIndex The index of the message to submit the spending report for
     /// @param gasPrice The gas price that was paid for the data (standard gas or data gas)
