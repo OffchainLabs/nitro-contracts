@@ -17,7 +17,14 @@ module.exports = async hre => {
   }
   await deploy('SequencerInboxStub', {
     from: deployer,
-    args: [bridge.address, deployer, maxTime, 117964, reader4844.address],
+    args: [
+      bridge.address,
+      deployer,
+      maxTime,
+      117964,
+      reader4844.address,
+      false,
+    ],
   })
 }
 

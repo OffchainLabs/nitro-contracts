@@ -191,7 +191,8 @@ const setup = async () => {
   )) as SequencerInbox__factory
   const ethSequencerInbox = await ethSequencerInboxFac.deploy(
     117964,
-    dummy4844Reader
+    dummy4844Reader,
+    false
   )
 
   const ethInboxFac = (await ethers.getContractFactory(
@@ -214,7 +215,14 @@ const setup = async () => {
   )) as ERC20Bridge__factory
   const erc20Bridge = await erc20BridgeFac.deploy()
 
-  const erc20SequencerInbox = ethSequencerInbox
+  const erc20SequencerInboxFac = (await ethers.getContractFactory(
+    'SequencerInbox'
+  )) as SequencerInbox__factory
+  const erc20SequencerInbox = await erc20SequencerInboxFac.deploy(
+    117964,
+    dummy4844Reader,
+    true
+  )
 
   const erc20InboxFac = (await ethers.getContractFactory(
     'ERC20Inbox'

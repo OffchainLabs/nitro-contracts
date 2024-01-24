@@ -81,6 +81,7 @@ async function deployAllContracts(
   const ethBridge = await deployContract('Bridge', signer, [])
   const ethSequencerInbox = await deployContract('SequencerInbox', signer, [
     maxDataSize,
+    false,
   ])
   const ethInbox = await deployContract('Inbox', signer, [maxDataSize])
   const ethRollupEventInbox = await deployContract(
@@ -91,7 +92,10 @@ async function deployAllContracts(
   const ethOutbox = await deployContract('Outbox', signer, [])
 
   const erc20Bridge = await deployContract('ERC20Bridge', signer, [])
-  const erc20SequencerInbox = ethSequencerInbox
+  const erc20SequencerInbox = await deployContract('SequencerInbox', signer, [
+    maxDataSize,
+    true,
+  ])
   const erc20Inbox = await deployContract('ERC20Inbox', signer, [maxDataSize])
   const erc20RollupEventInbox = await deployContract(
     'ERC20RollupEventInbox',
