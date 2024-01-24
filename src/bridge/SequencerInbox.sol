@@ -387,7 +387,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         (
             bytes32 dataHash,
             IBridge.TimeBounds memory timeBounds,
-            uint256 blobCost
+            uint256 blobGas
         ) = formBlobDataHash(afterDelayedMessagesRead);
 
         // we use addSequencerL2BatchImpl for submitting the message
@@ -429,11 +429,12 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         if (hostChainIsArbitrum) revert DataBlobsNotSupported();
 
         // submit a batch spending report to refund the entity that produced the blob batch data
-        uint256 blobGas = 0;
-        if (block.basefee > 0) {
-            blobGas = blobCost / block.basefee;
+        // same as using calldata, we only submit spending report if the caller is the origin of the tx
+        // such that one cannot "double-claim" batch posting refund in the same tx
+        // solhint-disable-next-line avoid-tx-origin
+        if (msg.sender == tx.origin) {
+            submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, blobGas);
         }
-        submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, blobGas);
     }
 
     function addSequencerL2Batch(
@@ -576,6 +577,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     /// @param afterDelayedMessagesRead The delayed messages count read up to
     /// @return The data hash
     /// @return The timebounds within which the message should be processed
+    /// @return The normalized amount of gas used for blob posting
     function formBlobDataHash(uint256 afterDelayedMessagesRead)
         internal
         view
@@ -593,19 +595,15 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         );
 
         uint256 blobCost = reader4844.getBlobBaseFee() * GAS_PER_BLOB * dataHashes.length;
-        // solhint-disable-next-line avoid-tx-origin
-        if (tx.origin != msg.sender) {
-            // Make sure that if we're refunding this blob, it's only for this batch submission.
-            blobCost = 0;
-        }
         return (
             keccak256(bytes.concat(header, DATA_BLOB_HEADER_FLAG, abi.encodePacked(dataHashes))),
             timeBounds,
-            blobCost
+            block.basefee > 0 ? blobCost / block.basefee : 0
         );
     }
 
     /// @dev   Submit a batch spending report message so that the batch poster can be reimbursed on the rollup
+    ///        This function expect msg.sender is tx.origin, and will always record tx.origin as the spender
     /// @param dataHash The hash of the message the spending report is being submitted for
     /// @param seqMessageIndex The index of the message to submit the spending report for
     /// @param gasPrice The gas price that was paid for the data (standard gas or data gas)
@@ -616,7 +614,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 extraGas
     ) internal {
         // report the account who paid the gas (tx.origin) for the tx as batch poster
-        // if msg.sender is used and is a contract, fund might stuck in a L2 address due to lack of aliasing
+        // if msg.sender is used and is a contract, it might not be able to spend the refund on l2
         // solhint-disable-next-line avoid-tx-origin
         address batchPoster = tx.origin;
 

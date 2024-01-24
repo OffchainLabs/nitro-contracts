@@ -6,7 +6,9 @@ module.exports = async hre => {
   const { deployer } = await getNamedAccounts()
 
   const bridge = await ethers.getContract('BridgeStub')
-  const reader4844 = await Toolkit4844.deployReader4844(await ethers.getSigner(deployer))
+  const reader4844 = await Toolkit4844.deployReader4844(
+    await ethers.getSigner(deployer)
+  )
   const maxTime = {
     delayBlocks: 10000,
     futureBlocks: 10000,
@@ -15,13 +17,7 @@ module.exports = async hre => {
   }
   await deploy('SequencerInboxStub', {
     from: deployer,
-    args: [
-      bridge.address,
-      deployer,
-      maxTime,
-      117964,
-      reader4844.address,
-    ],
+    args: [bridge.address, deployer, maxTime, 117964, reader4844.address],
   })
 }
 
