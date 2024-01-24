@@ -87,7 +87,8 @@ export async function deployUpgradeExecutor(signer: any): Promise<Contract> {
 
 // Function to handle all deployments of core contracts using deployContract function
 export async function deployAllContracts(
-  signer: any
+  signer: any,
+  hotshotAddr?: string
 ): Promise<Record<string, Contract>> {
   const isOnArb = await _isRunningOnArbitrum(signer)
 
@@ -143,7 +144,12 @@ export async function deployAllContracts(
   const prover0 = await deployContract('OneStepProver0', signer)
   const proverMem = await deployContract('OneStepProverMemory', signer)
   const proverMath = await deployContract('OneStepProverMath', signer)
-  const proverHostIo = await deployContract('OneStepProverHostIo', signer)
+  const hostIoArg = hotshotAddr ? [hotshotAddr] : []
+  const proverHostIo = await deployContract(
+    'OneStepProverHostIo',
+    signer,
+    hostIoArg
+  )
   const osp: Contract = await deployContract('OneStepProofEntry', signer, [
     prover0.address,
     proverMem.address,

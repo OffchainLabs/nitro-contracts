@@ -12,12 +12,23 @@ import "./IOneStepProver.sol";
 import "../bridge/Messages.sol";
 import "../bridge/IBridge.sol";
 
+interface IHotShot {
+    function commitments(uint256) external view returns (uint256);
+}
+
+
 contract OneStepProverHostIo is IOneStepProver {
     using GlobalStateLib for GlobalState;
     using MerkleProofLib for MerkleProof;
     using ModuleMemoryLib for ModuleMemory;
     using ValueLib for Value;
     using ValueStackLib for ValueStack;
+
+    IHotShot public hotshot;
+
+    constructor(address hotshotAddr) {
+        hotshot = IHotShot(hotshotAddr);
+    }
 
     uint256 private constant LEAF_SIZE = 32;
     uint256 private constant INBOX_NUM = 2;
@@ -323,16 +334,40 @@ contract OneStepProverHostIo is IOneStepProver {
         bytes calldata commitment = proof[proofOffset:proofOffset+32];
         bool success = validateHotShotCommitment(execCtx, height, commitment);
         if (!success) {
+            mach.status = MachineStatus.ERRORED;
             return;
         }
+
+        for (uint32 i = 0; i < 32; i++) {
+            leafContents = setLeafByte(
+                leafContents,
+                i,
+                uint8(proof[proofOffset + i])
+            );
+        }
+
+        mod.moduleMemory.merkleRoot = merkleProof.computeRootFromMemory(leafIdx, leafContents);
     }
 
     function validateHotShotCommitment(
         ExecutionContext calldata,
-        uint256 ,
-        bytes calldata
+        uint256 height,
+        bytes calldata commitment
     ) internal view returns (bool) {
-        // Get the hotshot commitment via the height
+        uint256 expected = hotshot.commitments(height);
+        bytes memory b = new bytes(32);
+        assembly { mstore(add(b, 32), expected) }
+
+        if (commitment.length != 32) {
+            return false;
+        }
+
+        for (uint i = 0; i < b.length; i++) {
+            if (b[i] != commitment[i]) {
+                return false;
+            }
+        }
+
         return true;
     }
 
