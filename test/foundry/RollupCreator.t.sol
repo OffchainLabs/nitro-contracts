@@ -37,7 +37,8 @@ contract RollupCreatorTest is Test {
         bridge: new Bridge(),
         sequencerInbox: new SequencerInbox(
             MAX_DATA_SIZE,
-            dummyReader4844
+            dummyReader4844,
+            false
         ),
         inbox: new Inbox(MAX_DATA_SIZE),
         rollupEventInbox: new RollupEventInbox(),
@@ -45,7 +46,11 @@ contract RollupCreatorTest is Test {
     });
     BridgeCreator.BridgeContracts public erc20BasedTemplates = BridgeCreator.BridgeContracts({
         bridge: new ERC20Bridge(),
-        sequencerInbox: ethBasedTemplates.sequencerInbox,
+        sequencerInbox: new SequencerInbox(
+            MAX_DATA_SIZE,
+            dummyReader4844,
+            true
+        ),
         inbox: new ERC20Inbox(MAX_DATA_SIZE),
         rollupEventInbox: new ERC20RollupEventInbox(),
         outbox: new ERC20Outbox()

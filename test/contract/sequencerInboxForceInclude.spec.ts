@@ -238,7 +238,8 @@ describe('SequencerInboxForceInclude', async () => {
     )) as SequencerInbox__factory
     const seqInboxTemplate = await sequencerInboxFac.deploy(
       117964,
-      reader4844.address
+      reader4844.address,
+      false
     )
     const inboxFac = (await ethers.getContractFactory(
       'Inbox'

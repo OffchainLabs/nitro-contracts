@@ -23,6 +23,7 @@ import {
     NoSuchKeyset,
     NotForked,
     NotBatchPosterManager,
+    RollupNotChanged,
     DataBlobsNotSupported,
     InitParamZero,
     MissingDataHashes,
@@ -31,6 +32,7 @@ import {
     RollupNotChanged,
     EmptyBatchData,
     InvalidHeaderFlag,
+    NativeTokenMismatch,
     Deprecated
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
@@ -47,6 +49,7 @@ import "../libraries/DelegateCallAware.sol";
 import {IGasRefunder} from "../libraries/IGasRefunder.sol";
 import {GasRefundEnabled} from "../libraries/GasRefundEnabled.sol";
 import "../libraries/ArbitrumChecker.sol";
+import {IERC20Bridge} from "./IERC20Bridge.sol";
 
 /**
  * @title Accepts batches from the sequencer and adds them to the rollup inbox.
@@ -122,8 +125,14 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     uint256 internal immutable deployTimeChainId = block.chainid;
     // If the chain this SequencerInbox is deployed on is an Arbitrum chain.
     bool internal immutable hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
+    // True if the chain this SequencerInbox is deployed on uses custom fee token
+    bool public immutable isUsingFeeToken;
 
-    constructor(uint256 _maxDataSize, IReader4844 reader4844_) {
+    constructor(
+        uint256 _maxDataSize,
+        IReader4844 reader4844_,
+        bool _isUsingFeeToken
+    ) {
         maxDataSize = _maxDataSize;
         if (hostChainIsArbitrum) {
             if (reader4844_ != IReader4844(address(0))) revert DataBlobsNotSupported();
@@ -131,6 +140,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             if (reader4844_ == IReader4844(address(0))) revert InitParamZero("Reader4844");
         }
         reader4844 = reader4844_;
+        isUsingFeeToken = _isUsingFeeToken;
     }
 
     function _chainIdChanged() internal view returns (bool) {
@@ -175,6 +185,19 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     ) external onlyDelegated {
         if (bridge != IBridge(address(0))) revert AlreadyInit();
         if (bridge_ == IBridge(address(0))) revert HadZeroInit();
+
+        // Make sure logic contract was created by proper value for 'isUsingFeeToken'.
+        // Bridge in ETH based chains doesn't implement nativeToken(). In future it might implement it and return address(0)
+        bool actualIsUsingFeeToken = false;
+        try IERC20Bridge(address(bridge_)).nativeToken() returns (address feeToken) {
+            if (feeToken != address(0)) {
+                actualIsUsingFeeToken = true;
+            }
+        } catch {}
+        if (isUsingFeeToken != actualIsUsingFeeToken) {
+            revert NativeTokenMismatch();
+        }
+
         bridge = bridge_;
         rollup = bridge_.rollup();
         delayBlocks = maxTimeVariation_.delayBlocks;
@@ -444,7 +467,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         // same as using calldata, we only submit spending report if the caller is the origin of the tx
         // such that one cannot "double-claim" batch posting refund in the same tx
         // solhint-disable-next-line avoid-tx-origin
-        if (msg.sender == tx.origin) {
+        if (msg.sender == tx.origin && !isUsingFeeToken) {
             submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, blobGas);
         }
     }
@@ -682,7 +705,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
         totalDelayedMessagesRead = afterDelayedMessagesRead;
 
-        if (calldataLengthPosted > 0) {
+        if (calldataLengthPosted > 0 && !isUsingFeeToken) {
+            // only report batch poster spendings if chain is using ETH as native currency
             submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, 0);
         }
     }
