@@ -27,6 +27,7 @@ contract RollupCreatorTest is Test {
     IRollupAdmin public rollupAdmin;
     IRollupUser public rollupUser;
     DeployHelper public deployHelper;
+    IReader4844 dummyReader4844 = IReader4844(address(137));
 
     // 1 gwei
     uint256 public constant MAX_FEE_PER_GAS = 1_000_000_000;
@@ -34,7 +35,10 @@ contract RollupCreatorTest is Test {
 
     BridgeCreator.BridgeContracts public ethBasedTemplates = BridgeCreator.BridgeContracts({
         bridge: new Bridge(),
-        sequencerInbox: new SequencerInbox(MAX_DATA_SIZE),
+        sequencerInbox: new SequencerInbox(
+            MAX_DATA_SIZE,
+            dummyReader4844
+        ),
         inbox: new Inbox(MAX_DATA_SIZE),
         rollupEventInbox: new RollupEventInbox(),
         outbox: new Outbox()
@@ -118,16 +122,17 @@ contract RollupCreatorTest is Test {
 
         RollupCreator.RollupDeploymentParams memory deployParams = RollupCreator
             .RollupDeploymentParams({
-            config: config,
-            batchPoster: batchPoster,
-            validators: validators,
-            maxDataSize: MAX_DATA_SIZE,
-            nativeToken: address(0),
-            deployFactoriesToL2: true,
-            maxFeePerGasForRetryables: MAX_FEE_PER_GAS
-        });
-        address rollupAddress =
-            rollupCreator.createRollup{value: factoryDeploymentFunds}(deployParams);
+                config: config,
+                batchPoster: batchPoster,
+                validators: validators,
+                maxDataSize: MAX_DATA_SIZE,
+                nativeToken: address(0),
+                deployFactoriesToL2: true,
+                maxFeePerGasForRetryables: MAX_FEE_PER_GAS
+            });
+        address rollupAddress = rollupCreator.createRollup{value: factoryDeploymentFunds}(
+            deployParams
+        );
 
         vm.stopPrank();
 
@@ -254,14 +259,14 @@ contract RollupCreatorTest is Test {
 
         RollupCreator.RollupDeploymentParams memory deployParams = RollupCreator
             .RollupDeploymentParams({
-            config: config,
-            batchPoster: batchPoster,
-            validators: validators,
-            maxDataSize: MAX_DATA_SIZE,
-            nativeToken: nativeToken,
-            deployFactoriesToL2: true,
-            maxFeePerGasForRetryables: MAX_FEE_PER_GAS
-        });
+                config: config,
+                batchPoster: batchPoster,
+                validators: validators,
+                maxDataSize: MAX_DATA_SIZE,
+                nativeToken: nativeToken,
+                deployFactoriesToL2: true,
+                maxFeePerGasForRetryables: MAX_FEE_PER_GAS
+            });
 
         address rollupAddress = rollupCreator.createRollup(deployParams);
 
@@ -387,16 +392,17 @@ contract RollupCreatorTest is Test {
 
         RollupCreator.RollupDeploymentParams memory deployParams = RollupCreator
             .RollupDeploymentParams({
-            config: config,
-            batchPoster: batchPoster,
-            validators: validators,
-            maxDataSize: MAX_DATA_SIZE,
-            nativeToken: address(0),
-            deployFactoriesToL2: true,
-            maxFeePerGasForRetryables: MAX_FEE_PER_GAS
-        });
-        address rollupAddress =
-            rollupCreator.createRollup{value: factoryDeploymentFunds}(deployParams);
+                config: config,
+                batchPoster: batchPoster,
+                validators: validators,
+                maxDataSize: MAX_DATA_SIZE,
+                nativeToken: address(0),
+                deployFactoriesToL2: true,
+                maxFeePerGasForRetryables: MAX_FEE_PER_GAS
+            });
+        address rollupAddress = rollupCreator.createRollup{value: factoryDeploymentFunds}(
+            deployParams
+        );
 
         vm.stopPrank();
 

@@ -13,11 +13,15 @@ contract BridgeCreatorTest is Test {
     BridgeCreator public creator;
     address public owner = address(100);
     uint256 public constant MAX_DATA_SIZE = 117_964;
+    IReader4844 dummyReader4844 = IReader4844(address(137));
 
     BridgeCreator.BridgeContracts ethBasedTemplates =
         BridgeCreator.BridgeContracts({
             bridge: new Bridge(),
-            sequencerInbox: new SequencerInbox(MAX_DATA_SIZE),
+            sequencerInbox: new SequencerInbox(
+                MAX_DATA_SIZE,
+                dummyReader4844
+            ),
             inbox: new Inbox(MAX_DATA_SIZE),
             rollupEventInbox: new RollupEventInbox(),
             outbox: new Outbox()
@@ -192,7 +196,7 @@ contract BridgeCreatorTest is Test {
             30,
             40
         );
-        timeVars.delayBlocks;
+        timeVars.delayBlocks; // TODO: what is this?
 
         BridgeCreator.BridgeContracts memory contracts = creator.createBridge(
             proxyAdmin,

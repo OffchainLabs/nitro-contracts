@@ -13,11 +13,15 @@ contract SequencerInboxStub is SequencerInbox {
         IBridge bridge_,
         address sequencer_,
         ISequencerInbox.MaxTimeVariation memory maxTimeVariation_,
-        uint256 maxDataSize_
-    ) SequencerInbox(maxDataSize_) {
+        uint256 maxDataSize_,
+        IReader4844 reader4844_
+    ) SequencerInbox(maxDataSize_, reader4844_) {
         bridge = bridge_;
         rollup = IOwnable(msg.sender);
-        maxTimeVariation = maxTimeVariation_;
+        delayBlocks = maxTimeVariation_.delayBlocks;
+        futureBlocks = maxTimeVariation_.futureBlocks;
+        delaySeconds = maxTimeVariation_.delaySeconds;
+        futureSeconds = maxTimeVariation_.futureSeconds;
         isBatchPoster[sequencer_] = true;
     }
 
@@ -30,7 +34,7 @@ contract SequencerInboxStub is SequencerInbox {
         );
         require(num == 0, "ALREADY_DELAYED_INIT");
         emit InboxMessageDelivered(num, initMsg);
-        (bytes32 dataHash, TimeBounds memory timeBounds) = formEmptyDataHash(1);
+        (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formEmptyDataHash(1);
         (
             uint256 sequencerMessageCount,
             bytes32 beforeAcc,
@@ -45,11 +49,11 @@ contract SequencerInboxStub is SequencerInbox {
             delayedAcc,
             totalDelayedMessagesRead,
             timeBounds,
-            BatchDataLocation.NoData
+            IBridge.BatchDataLocation.NoData
         );
     }
 
-    function getTimeBounds() internal view override returns (TimeBounds memory bounds) {
+    function getTimeBounds() internal view override returns (IBridge.TimeBounds memory bounds) {
         this; // silence warning about function not being view
         return bounds;
     }
