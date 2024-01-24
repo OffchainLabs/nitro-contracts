@@ -430,6 +430,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
         // submit a batch spending report to refund the entity that produced the blob batch data
         // same as using calldata, we only submit spending report if the caller is the origin of the tx
+        // such that one cannot "double-claim" batch posting refund in the same tx
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender == tx.origin) {
             submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, blobGas);
@@ -613,7 +614,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 extraGas
     ) internal {
         // report the account who paid the gas (tx.origin) for the tx as batch poster
-        // if msg.sender is used and is a contract, fund might stuck in a L2 address due to lack of aliasing
+        // if msg.sender is used and is a contract, it might not be able to spend the refund on l2
         // solhint-disable-next-line avoid-tx-origin
         address batchPoster = tx.origin;
 
