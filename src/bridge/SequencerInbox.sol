@@ -462,12 +462,11 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         if (hostChainIsArbitrum) revert DataBlobsNotSupported();
 
         // submit a batch spending report to refund the entity that produced the blob batch data
-        submitBatchSpendingReport(
-            dataHash,
-            seqMessageIndex,
-            block.basefee,
-            blobCost / block.basefee
-        );
+        uint256 blobGas = 0;
+        if (block.basefee > 0) {
+            blobGas = blobCost / block.basefee;
+        }
+        submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, blobGas);
     }
 
     function addSequencerL2Batch(
