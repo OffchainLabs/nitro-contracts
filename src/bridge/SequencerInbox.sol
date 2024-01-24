@@ -648,7 +648,12 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 gasPrice,
         uint256 extraGas
     ) internal {
-        address batchPoster = msg.sender;
+        bytes memory spendingReportMsg;
+
+        // report the account who paid the gas (tx.origin) for the tx as batch poster
+        // if msg.sender is used and is a contract, fund might stuck in a L2 address due to lack of aliasing
+        // solhint-disable-next-line avoid-tx-origin
+        address batchPoster = tx.origin;
 
         // this msg isn't included in the current sequencer batch, but instead added to
         // the delayed messages queue that is yet to be included
