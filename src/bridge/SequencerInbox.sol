@@ -615,8 +615,6 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 gasPrice,
         uint256 extraGas
     ) internal {
-        bytes memory spendingReportMsg;
-
         // report the account who paid the gas (tx.origin) for the tx as batch poster
         // if msg.sender is used and is a contract, fund might stuck in a L2 address due to lack of aliasing
         // solhint-disable-next-line avoid-tx-origin
