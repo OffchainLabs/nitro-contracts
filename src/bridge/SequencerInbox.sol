@@ -455,7 +455,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         // same as using calldata, we only submit spending report if the caller is the origin of the tx
         // such that one cannot "double-claim" batch posting refund in the same tx
         // solhint-disable-next-line avoid-tx-origin
-        if (msg.sender == tx.origin) {
+        if (msg.sender == tx.origin && !isUsingFeeToken) {
             submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, blobGas);
         }
     }
