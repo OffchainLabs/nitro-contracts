@@ -484,16 +484,12 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         // on arb is added it will need to explicitly turned on in the sequencer inbox
         if (hostChainIsArbitrum) revert DataBlobsNotSupported();
 
-        // only report batch poster spendings if chain is using ETH as native currency
-        if (!isUsingFeeToken) {
-            // submit a batch spending report to refund the entity that produced the blob batch data
-            submitBatchSpendingReport(
-                dataHash,
-                seqMessageIndex,
-                block.basefee,
-                blobCost / block.basefee
-            );
+        // submit a batch spending report to refund the entity that produced the blob batch data
+        uint256 blobGas = 0;
+        if (block.basefee > 0) {
+            blobGas = blobCost / block.basefee;
         }
+        submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, blobGas);
     }
 
     function addSequencerL2Batch(
