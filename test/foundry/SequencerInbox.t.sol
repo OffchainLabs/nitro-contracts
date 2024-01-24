@@ -149,7 +149,7 @@ contract SequencerInboxTest is Test {
         address delayedInboxSender = address(140);
         uint8 delayedInboxKind = 3;
         bytes32 messageDataHash = RAND.Bytes32();
-        bytes memory data = hex"00a4567890"; // CHRIS: TODO: bigger data; // 00 is BROTLI_MESSAGE_HEADER_FLAG
+        bytes memory data = hex"00a4567890"; // 00 is BROTLI_MESSAGE_HEADER_FLAG
 
         vm.prank(dummyInbox);
         bridge.enqueueDelayedMessage(
@@ -180,7 +180,7 @@ contract SequencerInboxTest is Test {
         address delayedInboxSender = address(140);
         uint8 delayedInboxKind = 3;
         bytes32 messageDataHash = RAND.Bytes32();
-        bytes memory data = hex"00567890"; // CHRIS: TODO: bigger data; // 00 is BROTLI_MESSAGE_HEADER_FLAG
+        bytes memory data = hex"00567890"; // 00 is BROTLI_MESSAGE_HEADER_FLAG
 
         vm.prank(dummyInbox);
         bridge.enqueueDelayedMessage(
@@ -233,7 +233,7 @@ contract SequencerInboxTest is Test {
             subMessageCount + 1
         );
 
-        bytes memory authenticatedData = bytes.concat(seqInbox.DATA_BLOB_HEADER_FLAG(), data); // TODO: unsure
+        bytes memory authenticatedData = bytes.concat(seqInbox.DATA_BLOB_HEADER_FLAG(), data);
         vm.expectRevert(abi.encodeWithSelector(InvalidHeaderFlag.selector, authenticatedData[0]));
         vm.prank(tx.origin);
         seqInbox.addSequencerL2BatchFromOrigin(
