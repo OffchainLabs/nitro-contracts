@@ -196,3 +196,6 @@ error EmptyBatchData();
 
 /// @dev Unsupported header flag was provided
 error InvalidHeaderFlag(bytes1);
+
+/// @dev Thrown when a deprecated function is called
+error Deprecated();

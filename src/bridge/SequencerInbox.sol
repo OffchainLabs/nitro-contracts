@@ -29,7 +29,8 @@ import {
     NotOwner,
     RollupNotChanged,
     EmptyBatchData,
-    InvalidHeaderFlag
+    InvalidHeaderFlag,
+    Deprecated
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./IInboxBase.sol";
@@ -313,48 +314,14 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         );
     }
 
-    /// @dev Deprecated in favor of the variant specifying message counts for consistency
+    /// @dev Deprecated, kept for abi generation and will be removed in the future
     function addSequencerL2BatchFromOrigin(
-        uint256 sequenceNumber,
-        bytes calldata data,
-        uint256 afterDelayedMessagesRead,
-        IGasRefunder gasRefunder
-    ) external refundsGas(gasRefunder, IReader4844(address(0))) {
-        // solhint-disable-next-line avoid-tx-origin
-        if (msg.sender != tx.origin) revert NotOrigin();
-        if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
-
-        (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formCallDataHash(
-            data,
-            afterDelayedMessagesRead
-        );
-        // Reformat the stack to prevent "Stack too deep"
-        uint256 sequenceNumber_ = sequenceNumber;
-        IBridge.TimeBounds memory timeBounds_ = timeBounds;
-        bytes32 dataHash_ = dataHash;
-        uint256 dataLength = data.length;
-        uint256 afterDelayedMessagesRead_ = afterDelayedMessagesRead;
-        (
-            uint256 seqMessageIndex,
-            bytes32 beforeAcc,
-            bytes32 delayedAcc,
-            bytes32 afterAcc
-        ) = addSequencerL2BatchImpl(dataHash_, afterDelayedMessagesRead_, dataLength, 0, 0);
-
-        // ~uint256(0) is type(uint256).max, but ever so slightly cheaper
-        if (seqMessageIndex != sequenceNumber_ && sequenceNumber_ != ~uint256(0)) {
-            revert BadSequencerNumber(seqMessageIndex, sequenceNumber_);
-        }
-
-        emit SequencerBatchDelivered(
-            sequenceNumber_,
-            beforeAcc,
-            afterAcc,
-            delayedAcc,
-            totalDelayedMessagesRead,
-            timeBounds_,
-            IBridge.BatchDataLocation.TxInput
-        );
+        uint256,
+        bytes calldata,
+        uint256,
+        IGasRefunder
+    ) external pure {
+        revert Deprecated();
     }
 
     function addSequencerL2BatchFromOrigin(
