@@ -30,7 +30,8 @@ import {
     NotOwner,
     RollupNotChanged,
     EmptyBatchData,
-    InvalidHeaderFlag
+    InvalidHeaderFlag,
+    Deprecated
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./IInboxBase.sol";
@@ -39,10 +40,12 @@ import "../rollup/IRollupLogic.sol";
 import "./Messages.sol";
 import "../precompiles/ArbGasInfo.sol";
 import "../precompiles/ArbSys.sol";
+import "../libraries/IReader4844.sol";
 
 import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
-import {GasRefundEnabled, IGasRefunder} from "../libraries/IGasRefunder.sol";
 import "../libraries/DelegateCallAware.sol";
+import {IGasRefunder} from "../libraries/IGasRefunder.sol";
+import {GasRefundEnabled} from "../libraries/GasRefundEnabled.sol";
 import "../libraries/ArbitrumChecker.sol";
 
 /**
@@ -61,7 +64,10 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     uint256 public constant HEADER_LENGTH = 40;
 
     /// @inheritdoc ISequencerInbox
-    bytes1 public constant DATA_BLOB_HEADER_FLAG = 0x40;
+    bytes1 public constant DATA_AUTHENTICATED_FLAG = 0x40;
+
+    /// @inheritdoc ISequencerInbox
+    bytes1 public constant DATA_BLOB_HEADER_FLAG = DATA_AUTHENTICATED_FLAG | 0x10;
 
     /// @inheritdoc ISequencerInbox
     bytes1 public constant DAS_MESSAGE_HEADER_FLAG = 0x80;
@@ -74,6 +80,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     /// @inheritdoc ISequencerInbox
     bytes1 public constant ZERO_HEAVY_MESSAGE_HEADER_FLAG = 0x20;
+
+    // GAS_PER_BLOB from EIP-4844
+    uint256 internal constant GAS_PER_BLOB = 1 << 17;
 
     IOwnable public rollup;
 
@@ -97,8 +106,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     mapping(address => bool) public isSequencer;
-    IDataHashReader immutable dataHashReader;
-    IBlobBasefeeReader immutable blobBasefeeReader;
+    IReader4844 public immutable reader4844;
 
     // see ISequencerInbox.MaxTimeVariation
     uint64 internal delayBlocks;
@@ -115,24 +123,14 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     // If the chain this SequencerInbox is deployed on is an Arbitrum chain.
     bool internal immutable hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
 
-    constructor(
-        uint256 _maxDataSize,
-        IDataHashReader dataHashReader_,
-        IBlobBasefeeReader blobBasefeeReader_
-    ) {
+    constructor(uint256 _maxDataSize, IReader4844 reader4844_) {
         maxDataSize = _maxDataSize;
         if (hostChainIsArbitrum) {
-            if (dataHashReader_ != IDataHashReader(address(0))) revert DataBlobsNotSupported();
-            if (blobBasefeeReader_ != IBlobBasefeeReader(address(0)))
-                revert DataBlobsNotSupported();
+            if (reader4844_ != IReader4844(address(0))) revert DataBlobsNotSupported();
         } else {
-            if (dataHashReader_ == IDataHashReader(address(0)))
-                revert InitParamZero("DataHashReader");
-            if (blobBasefeeReader_ == IBlobBasefeeReader(address(0)))
-                revert InitParamZero("BlobBasefeeReader");
+            if (reader4844_ == IReader4844(address(0))) revert InitParamZero("Reader4844");
         }
-        dataHashReader = dataHashReader_;
-        blobBasefeeReader = blobBasefeeReader_;
+        reader4844 = reader4844_;
     }
 
     function _chainIdChanged() internal view returns (bool) {
@@ -328,42 +326,14 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         );
     }
 
-    /// @dev Deprecated in favor of the variant specifying message counts for consistency
+    /// @dev Deprecated, kept for abi generation and will be removed in the future
     function addSequencerL2BatchFromOrigin(
-        uint256 sequenceNumber,
-        bytes calldata data,
-        uint256 afterDelayedMessagesRead,
-        IGasRefunder gasRefunder
-    ) external refundsGas(gasRefunder) {
-        // solhint-disable-next-line avoid-tx-origin
-        if (msg.sender != tx.origin) revert NotOrigin();
-        if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
-
-        (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formCallDataHash(
-            data,
-            afterDelayedMessagesRead
-        );
-        (
-            uint256 seqMessageIndex,
-            bytes32 beforeAcc,
-            bytes32 delayedAcc,
-            bytes32 afterAcc
-        ) = addSequencerL2BatchImpl(dataHash, afterDelayedMessagesRead, data.length, 0, 0);
-
-        // ~uint256(0) is type(uint256).max, but ever so slightly cheaper
-        if (seqMessageIndex != sequenceNumber && sequenceNumber != ~uint256(0)) {
-            revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
-        }
-
-        emit SequencerBatchDelivered(
-            sequenceNumber,
-            beforeAcc,
-            afterAcc,
-            delayedAcc,
-            totalDelayedMessagesRead,
-            timeBounds,
-            IBridge.BatchDataLocation.TxInput
-        );
+        uint256,
+        bytes calldata,
+        uint256,
+        IGasRefunder
+    ) external pure {
+        revert Deprecated();
     }
 
     function addSequencerL2BatchFromOrigin(
@@ -373,7 +343,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    ) external refundsGas(gasRefunder) {
+    ) external refundsGas(gasRefunder, IReader4844(address(0))) {
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
@@ -418,17 +388,19 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         );
     }
 
-    function addSequencerL2BatchFromBlob(
+    function addSequencerL2BatchFromBlobs(
         uint256 sequenceNumber,
         uint256 afterDelayedMessagesRead,
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    ) external refundsGas(gasRefunder) {
+    ) external refundsGas(gasRefunder, reader4844) {
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
-        (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formBlobDataHash(
-            afterDelayedMessagesRead
-        );
+        (
+            bytes32 dataHash,
+            IBridge.TimeBounds memory timeBounds,
+            uint256 blobGas
+        ) = formBlobDataHash(afterDelayedMessagesRead);
 
         // we use addSequencerL2BatchImpl for submitting the message
         // normally this would also submit a batch spending report but that is skipped if we pass
@@ -446,13 +418,15 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
                 newMessageCount
             );
 
+        uint256 _sequenceNumber = sequenceNumber; // stack workaround
+
         // ~uint256(0) is type(uint256).max, but ever so slightly cheaper
-        if (seqMessageIndex != sequenceNumber && sequenceNumber != ~uint256(0)) {
-            revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
+        if (seqMessageIndex != _sequenceNumber && _sequenceNumber != ~uint256(0)) {
+            revert BadSequencerNumber(seqMessageIndex, _sequenceNumber);
         }
 
         emit SequencerBatchDelivered(
-            sequenceNumber,
+            _sequenceNumber,
             beforeAcc,
             afterAcc,
             delayedAcc,
@@ -467,8 +441,12 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         if (hostChainIsArbitrum) revert DataBlobsNotSupported();
 
         // submit a batch spending report to refund the entity that produced the blob batch data
-        uint256 blobBasefee = blobBasefeeReader.getBlobBaseFee();
-        submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, blobBasefee);
+        // same as using calldata, we only submit spending report if the caller is the origin of the tx
+        // such that one cannot "double-claim" batch posting refund in the same tx
+        // solhint-disable-next-line avoid-tx-origin
+        if (msg.sender == tx.origin) {
+            submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, blobGas);
+        }
     }
 
     function addSequencerL2Batch(
@@ -478,7 +456,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    ) external override refundsGas(gasRefunder) {
+    ) external override refundsGas(gasRefunder, IReader4844(address(0))) {
         if (!isBatchPoster[msg.sender] && msg.sender != address(rollup)) revert NotBatchPoster();
         (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formCallDataHash(
             data,
@@ -611,25 +589,33 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     /// @param afterDelayedMessagesRead The delayed messages count read up to
     /// @return The data hash
     /// @return The timebounds within which the message should be processed
+    /// @return The normalized amount of gas used for blob posting
     function formBlobDataHash(uint256 afterDelayedMessagesRead)
         internal
         view
-        returns (bytes32, IBridge.TimeBounds memory)
+        returns (
+            bytes32,
+            IBridge.TimeBounds memory,
+            uint256
+        )
     {
-        bytes32[] memory dataHashes = dataHashReader.getDataHashes();
+        bytes32[] memory dataHashes = reader4844.getDataHashes();
         if (dataHashes.length == 0) revert MissingDataHashes();
 
         (bytes memory header, IBridge.TimeBounds memory timeBounds) = packHeader(
             afterDelayedMessagesRead
         );
 
+        uint256 blobCost = reader4844.getBlobBaseFee() * GAS_PER_BLOB * dataHashes.length;
         return (
             keccak256(bytes.concat(header, DATA_BLOB_HEADER_FLAG, abi.encodePacked(dataHashes))),
-            timeBounds
+            timeBounds,
+            block.basefee > 0 ? blobCost / block.basefee : 0
         );
     }
 
     /// @dev   Submit a batch spending report message so that the batch poster can be reimbursed on the rollup
+    ///        This function expect msg.sender is tx.origin, and will always record tx.origin as the spender
     /// @param dataHash The hash of the message the spending report is being submitted for
     /// @param seqMessageIndex The index of the message to submit the spending report for
     /// @param gasPrice The gas price that was paid for the data (standard gas or data gas)
@@ -637,39 +623,29 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         bytes32 dataHash,
         uint256 seqMessageIndex,
         uint256 gasPrice,
-        uint256 blobBaseFeePrice
+        uint256 extraGas
     ) internal {
-        bytes memory spendingReportMsg;
-        address batchPoster = msg.sender;
+        // report the account who paid the gas (tx.origin) for the tx as batch poster
+        // if msg.sender is used and is a contract, it might not be able to spend the refund on l2
+        // solhint-disable-next-line avoid-tx-origin
+        address batchPoster = tx.origin;
 
         // this msg isn't included in the current sequencer batch, but instead added to
         // the delayed messages queue that is yet to be included
         if (hostChainIsArbitrum) {
             // Include extra gas for the host chain's L1 gas charging
             uint256 l1Fees = ArbGasInfo(address(0x6c)).getCurrentTxL1GasFees();
-            uint256 extraGas = l1Fees / block.basefee;
-            require(extraGas <= type(uint64).max, "L1_GAS_NOT_UINT64");
-            spendingReportMsg = abi.encodePacked(
-                block.timestamp,
-                batchPoster,
-                dataHash,
-                seqMessageIndex,
-                gasPrice,
-                uint64(extraGas)
-            );
-        } else {
-            // when a blob base fee is supplied we include it into the batch spending report
-            spendingReportMsg = abi.encodePacked(
-                block.timestamp,
-                batchPoster,
-                dataHash,
-                seqMessageIndex,
-                gasPrice,
-                // we add an empty extraGas since the parsing code expects a value here
-                uint64(0),
-                blobBaseFeePrice
-            );
+            extraGas += l1Fees / block.basefee;
         }
+        require(extraGas <= type(uint64).max, "EXTRA_GAS_NOT_UINT64");
+        bytes memory spendingReportMsg = abi.encodePacked(
+            block.timestamp,
+            batchPoster,
+            dataHash,
+            seqMessageIndex,
+            gasPrice,
+            uint64(extraGas)
+        );
 
         uint256 msgNum = bridge.submitBatchSpendingReport(
             batchPoster,

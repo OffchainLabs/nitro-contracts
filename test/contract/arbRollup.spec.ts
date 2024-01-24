@@ -82,8 +82,7 @@ const ZERO_ADDR = ethers.constants.AddressZero
 const extraChallengeTimeBlocks = 20
 const wasmModuleRoot =
   '0x9900000000000000000000000000000000000000000000000000000000000010'
-const dummyDataHashReader = '0x0000000000000000000000000000000000000089'
-const dummyBlobBasefeeReader = '0x0000000000000000000000000000000000000090'
+const dummy4844Reader = '0x0000000000000000000000000000000000000089'
 
 // let rollup: RollupContract
 let rollup: RollupContract
@@ -194,8 +193,7 @@ const setup = async () => {
   )) as SequencerInbox__factory
   const ethSequencerInbox = await ethSequencerInboxFac.deploy(
     117964,
-    dummyDataHashReader,
-    dummyBlobBasefeeReader
+    dummy4844Reader
   )
 
   const ethInboxFac = (await ethers.getContractFactory(

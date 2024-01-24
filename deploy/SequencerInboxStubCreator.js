@@ -1,11 +1,14 @@
+import { Toolkit4844 } from '../test/contract/toolkit4844'
+
 module.exports = async hre => {
-  const { deployments, getNamedAccounts, ethers } = hre
+  const { deployments, getSigners, getNamedAccounts, ethers } = hre
   const { deploy } = deployments
   const { deployer } = await getNamedAccounts()
 
   const bridge = await ethers.getContract('BridgeStub')
-  const blobBasefeeReader = await ethers.getContract('BlobBasefeeReader')
-  const dataHashReader = await ethers.getContract('DataHashReader')
+  const reader4844 = await Toolkit4844.deployReader4844(
+    await ethers.getSigner(deployer)
+  )
   const maxTime = {
     delayBlocks: 10000,
     futureBlocks: 10000,
@@ -14,14 +17,7 @@ module.exports = async hre => {
   }
   await deploy('SequencerInboxStub', {
     from: deployer,
-    args: [
-      bridge.address,
-      deployer,
-      maxTime,
-      117964,
-      dataHashReader,
-      blobBasefeeReader,
-    ],
+    args: [bridge.address, deployer, maxTime, 117964, reader4844.address],
   })
 }
 
