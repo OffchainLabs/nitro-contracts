@@ -33,7 +33,7 @@ abstract contract GasRefundEnabled {
                 // for similar reasons to above we only refund blob gas when the tx.origin is the msg.sender
                 // this avoids the caller being able to send blobs to other contracts and still get refunded here
                 
-                // since 4844 may not be enable yet, or may never be enabled on this chain we do not want to always call the
+                // since 4844 may not be enabled on this chain we do not want to always call the
                 // blobhash or blobbasefee opcodes. We can only detect the presence of these opcodes without reverting
                 // by either doing a call and checking success or providing a bool for specific code paths. We go for 
                 // the bool approach as it's cheaper
