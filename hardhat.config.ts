@@ -11,6 +11,17 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 
+const cancunSolSettings = {
+  version: '0.8.24',
+  settings: {
+    evmVersion: 'cancun',
+    optimizer: {
+      enabled: true,
+      runs: 500,
+    },
+  },
+}
+
 const solidity = {
   compilers: [
     {
@@ -23,7 +34,16 @@ const solidity = {
       },
     },
   ],
-  overrides: {},
+  overrides: {
+    'src/bridge/SequencerInbox.sol': cancunSolSettings,
+    'src/rollup/BridgeCreator.sol': cancunSolSettings,
+    'src/rollup/RollupCreator.sol': cancunSolSettings,
+    'src/mocks/SequencerInboxStub.sol': cancunSolSettings,
+    'src/libraries/GasRefundEnabled.sol': cancunSolSettings,
+    'src/libraries/BlobDataHashReader.sol': cancunSolSettings,  
+    'src/rollup/ValidatorWallet.sol': cancunSolSettings,
+    'src/rollup/ValidatorWalletCreator.sol': cancunSolSettings,
+  },
 }
 
 if (process.env['INTERFACE_TESTER_SOLC_VERSION']) {
@@ -36,14 +56,12 @@ if (process.env['INTERFACE_TESTER_SOLC_VERSION']) {
       },
     },
   })
-  solidity.overrides = {
-    'src/test-helpers/InterfaceCompatibilityTester.sol': {
-      version: process.env['INTERFACE_TESTER_SOLC_VERSION'],
-      settings: {
-        optimizer: {
-          enabled: true,
-          runs: 100,
-        },
+  solidity.overrides['src/test-helpers/InterfaceCompatibilityTester.sol'] = {
+    version: process.env['INTERFACE_TESTER_SOLC_VERSION'],
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 100,
       },
     },
   }

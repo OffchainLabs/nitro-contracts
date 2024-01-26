@@ -1,9 +1,7 @@
 import { execSync } from 'child_process'
-import { ContractFactory, Signer, Wallet, ethers } from 'ethers'
+import { ContractFactory, Signer, ethers } from 'ethers'
 import * as http from 'http'
-import { IReader4844, IReader4844__factory } from '../../build/types'
 import { JsonRpcProvider } from '@ethersproject/providers'
-import { bytecode as Reader4844Bytecode } from '../../out/yul/Reader4844.yul/Reader4844.json'
 
 const wait = async (ms: number) =>
   new Promise((res, rej) => {
@@ -120,17 +118,5 @@ export class Toolkit4844 {
     } else {
       throw new Error('Error sending blob tx:\n' + res)
     }
-  }
-
-  public static async deployReader4844(wallet: Signer): Promise<IReader4844> {
-    const contractFactory = new ContractFactory(
-      IReader4844__factory.abi,
-      Reader4844Bytecode,
-      wallet
-    )
-    const reader4844 = await contractFactory.deploy()
-    await reader4844.deployed()
-
-    return IReader4844__factory.connect(reader4844.address, wallet)
   }
 }

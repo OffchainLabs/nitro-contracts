@@ -282,12 +282,10 @@ describe('SequencerInbox', async () => {
       await rollupOwner.getAddress()
     )
 
-    const reader4844 = await Toolkit4844.deployReader4844(fundingWallet)
-
     const sequencerInboxFac = new SequencerInbox__factory(deployer)
     const seqInboxTemplate = await sequencerInboxFac.deploy(
       117964,
-      reader4844.address
+      false
     )
     const inboxFac = new Inbox__factory(deployer)
     const inboxTemplate = await inboxFac.deploy(117964)

@@ -13,14 +13,12 @@ contract BridgeCreatorTest is Test {
     BridgeCreator public creator;
     address public owner = address(100);
     uint256 public constant MAX_DATA_SIZE = 117_964;
-    IReader4844 dummyReader4844 = IReader4844(address(137));
 
     BridgeCreator.BridgeContracts ethBasedTemplates =
         BridgeCreator.BridgeContracts({
             bridge: new Bridge(),
             sequencerInbox: new SequencerInbox(
                 MAX_DATA_SIZE,
-                dummyReader4844,
                 false
             ),
             inbox: new Inbox(MAX_DATA_SIZE),
@@ -32,7 +30,6 @@ contract BridgeCreatorTest is Test {
             bridge: new ERC20Bridge(),
             sequencerInbox: new SequencerInbox(
                 MAX_DATA_SIZE,
-                dummyReader4844,
                 true
             ),
             inbox: new ERC20Inbox(MAX_DATA_SIZE),

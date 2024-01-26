@@ -2,7 +2,7 @@
 // For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.24;
 
 import {
     AlreadyInit,
@@ -42,12 +42,12 @@ import "../rollup/IRollupLogic.sol";
 import "./Messages.sol";
 import "../precompiles/ArbGasInfo.sol";
 import "../precompiles/ArbSys.sol";
-import "../libraries/IReader4844.sol";
 
 import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
 import "../libraries/DelegateCallAware.sol";
 import {IGasRefunder} from "../libraries/IGasRefunder.sol";
 import {GasRefundEnabled} from "../libraries/GasRefundEnabled.sol";
+import {BlobDataHashReader} from "../libraries/BlobDataHashReader.sol";
 import "../libraries/ArbitrumChecker.sol";
 import {IERC20Bridge} from "./IERC20Bridge.sol";
 
@@ -109,7 +109,6 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     mapping(address => bool) public isSequencer;
-    IReader4844 public immutable reader4844;
 
     // see ISequencerInbox.MaxTimeVariation
     uint64 internal delayBlocks;
@@ -130,16 +129,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     constructor(
         uint256 _maxDataSize,
-        IReader4844 reader4844_,
         bool _isUsingFeeToken
     ) {
         maxDataSize = _maxDataSize;
-        if (hostChainIsArbitrum) {
-            if (reader4844_ != IReader4844(address(0))) revert DataBlobsNotSupported();
-        } else {
-            if (reader4844_ == IReader4844(address(0))) revert InitParamZero("Reader4844");
-        }
-        reader4844 = reader4844_;
         isUsingFeeToken = _isUsingFeeToken;
     }
 
@@ -366,7 +358,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    ) external refundsGas(gasRefunder, IReader4844(address(0))) {
+    ) external refundsGas(gasRefunder, false) {
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
@@ -417,7 +409,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    ) external refundsGas(gasRefunder, reader4844) {
+    ) external refundsGas(gasRefunder, true) {
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
         (
             bytes32 dataHash,
@@ -479,7 +471,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    ) external override refundsGas(gasRefunder, IReader4844(address(0))) {
+    ) external override refundsGas(gasRefunder, false) {
         if (!isBatchPoster[msg.sender] && msg.sender != address(rollup)) revert NotBatchPoster();
         (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formCallDataHash(
             data,
@@ -608,6 +600,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         return (keccak256(bytes.concat(header, data)), timeBounds);
     }
 
+
     /// @dev   Form a hash of the data being provided in 4844 data blobs
     /// @param afterDelayedMessagesRead The delayed messages count read up to
     /// @return The data hash
@@ -622,14 +615,14 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             uint256
         )
     {
-        bytes32[] memory dataHashes = reader4844.getDataHashes();
+        bytes32[] memory dataHashes = BlobDataHashReader.getDataHashes();
         if (dataHashes.length == 0) revert MissingDataHashes();
 
         (bytes memory header, IBridge.TimeBounds memory timeBounds) = packHeader(
             afterDelayedMessagesRead
         );
 
-        uint256 blobCost = reader4844.getBlobBaseFee() * GAS_PER_BLOB * dataHashes.length;
+        uint256 blobCost = block.blobbasefee * GAS_PER_BLOB * dataHashes.length;
         return (
             keccak256(bytes.concat(header, DATA_BLOB_HEADER_FLAG, abi.encodePacked(dataHashes))),
             timeBounds,

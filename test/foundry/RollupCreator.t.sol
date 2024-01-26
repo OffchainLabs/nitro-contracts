@@ -27,7 +27,6 @@ contract RollupCreatorTest is Test {
     IRollupAdmin public rollupAdmin;
     IRollupUser public rollupUser;
     DeployHelper public deployHelper;
-    IReader4844 dummyReader4844 = IReader4844(address(137));
 
     // 1 gwei
     uint256 public constant MAX_FEE_PER_GAS = 1_000_000_000;
@@ -37,7 +36,6 @@ contract RollupCreatorTest is Test {
         bridge: new Bridge(),
         sequencerInbox: new SequencerInbox(
             MAX_DATA_SIZE,
-            dummyReader4844,
             false
         ),
         inbox: new Inbox(MAX_DATA_SIZE),
@@ -48,7 +46,6 @@ contract RollupCreatorTest is Test {
         bridge: new ERC20Bridge(),
         sequencerInbox: new SequencerInbox(
             MAX_DATA_SIZE,
-            dummyReader4844,
             true
         ),
         inbox: new ERC20Inbox(MAX_DATA_SIZE),
