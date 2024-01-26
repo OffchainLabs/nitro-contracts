@@ -40,7 +40,7 @@ const solidity = {
     'src/rollup/RollupCreator.sol': cancunSolSettings,
     'src/mocks/SequencerInboxStub.sol': cancunSolSettings,
     'src/libraries/GasRefundEnabled.sol': cancunSolSettings,
-    'src/libraries/BlobDataHashReader.sol': cancunSolSettings,  
+    'src/libraries/BlobDataHashReader.sol': cancunSolSettings,
     'src/rollup/ValidatorWallet.sol': cancunSolSettings,
     'src/rollup/ValidatorWalletCreator.sol': cancunSolSettings,
   },
