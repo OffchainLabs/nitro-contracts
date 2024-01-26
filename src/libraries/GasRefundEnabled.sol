@@ -40,8 +40,7 @@ abstract contract GasRefundEnabled {
                     // add any cost for 4844 data, the data hash reader throws an error prior to 4844 being activated
                     // we do this addition here rather in the GasRefunder so that we can check the msg.sender is the tx.origin
                     bytes32[] memory dataHashes = BlobDataHashReader.getDataHashes();
-                    if (dataHashes.length != 0) {
-                        // CHRIS: TODO: should we check basefee == 0? we often have that for estimation
+                    if (dataHashes.length != 0 && block.basefee > 0) {
                         startGasLeft +=
                             (dataHashes.length * gasPerBlob * block.blobbasefee) /
                             block.basefee;
