@@ -287,7 +287,8 @@ describe('SequencerInbox', async () => {
     const sequencerInboxFac = new SequencerInbox__factory(deployer)
     const seqInboxTemplate = await sequencerInboxFac.deploy(
       117964,
-      reader4844.address
+      reader4844.address,
+      false
     )
     const inboxFac = new Inbox__factory(deployer)
     const inboxTemplate = await inboxFac.deploy(117964)
