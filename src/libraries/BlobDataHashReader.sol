@@ -8,8 +8,12 @@ library BlobDataHashReader {
     /// @notice Gets all the data blob hashes on this transaction
     /// @dev    Will revert if called on chains that do not support the 4844 blobhash opcode
     function getDataHashes() internal view returns (bytes32[] memory) {
-        // we use assembly so that we can efficiently push into a memory arracy
+        bytes32[] memory dataHashes;
+        // we use assembly so that we can push into a memory array without resizing
         assembly {
+            // get the free mem pointer
+            let dataHashesPtr := mload(0x40)
+            // and keep track of the number of hashes
             let i := 0
             // prettier-ignore
             for { } 1 { } {
@@ -18,15 +22,20 @@ library BlobDataHashReader {
                 if iszero(h) {
                     break
                 }
-                // store the blob hash
-                mstore(add(mul(i, 32), 64), h)
-                // set the number of hashes
+                // we will fill the first slot with the array size
+                // so we store the hashes after that
+                mstore(add(dataHashesPtr, add(mul(i, 32), 32)), h)
                 i := add(i, 1)
             }
-            // format an return an array of the data blob hashes
-            mstore(0, 32)
-            mstore(32, i)
-            return(0, add(mul(i, 32), 64))
+            // store the hash count
+            mstore(dataHashesPtr, i)
+
+            // update the free mem pointer
+            let size := add(mul(i, 32), 32)
+            mstore(0x40, add(dataHashesPtr, size))
+
+            dataHashes := dataHashesPtr
         }
+        return dataHashes;
     }
 }
