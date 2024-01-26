@@ -2,7 +2,6 @@
 // For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
-// CHRIS: TODO: use ^ on all the new version like we used to
 pragma solidity ^0.8.24;
 
 import {
