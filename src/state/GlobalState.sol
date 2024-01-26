@@ -21,7 +21,8 @@ library GlobalStateLib {
                     state.bytes32Vals[0],
                     state.bytes32Vals[1],
                     state.u64Vals[0],
-                    state.u64Vals[1]
+                    state.u64Vals[1],
+                    state.u64Vals[2]
                 )
             );
     }
@@ -46,6 +47,7 @@ library GlobalStateLib {
         return (state.bytes32Vals[0] == bytes32(0) &&
             state.bytes32Vals[1] == bytes32(0) &&
             state.u64Vals[0] == 0 &&
-            state.u64Vals[1] == 0);
+            state.u64Vals[1] == 0 &&
+            state.u64Vals[2] == 0);
     }
 }
