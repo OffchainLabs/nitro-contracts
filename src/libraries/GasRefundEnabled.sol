@@ -32,18 +32,20 @@ abstract contract GasRefundEnabled {
             } else {
                 // for similar reasons to above we only refund blob gas when the tx.origin is the msg.sender
                 // this avoids the caller being able to send blobs to other contracts and still get refunded here
-                
+
                 // since 4844 may not be enabled on this chain we do not want to always call the
                 // blobhash or blobbasefee opcodes. We can only detect the presence of these opcodes without reverting
-                // by either doing a call and checking success or providing a bool for specific code paths. We go for 
+                // by either doing a call and checking success or providing a bool for specific code paths. We go for
                 // the bool approach as it's cheaper
-                if(includeBlobCosts) {
+                if (includeBlobCosts) {
                     // add any cost for 4844 data, the data hash reader throws an error prior to 4844 being activated
                     // we do this addition here rather in the GasRefunder so that we can check the msg.sender is the tx.origin
                     bytes32[] memory dataHashes = BlobDataHashReader.getDataHashes();
                     if (dataHashes.length != 0) {
                         // CHRIS: TODO: should we check basefee == 0? we often have that for estimation
-                        startGasLeft += (dataHashes.length * gasPerBlob * block.blobbasefee) /  block.basefee;
+                        startGasLeft +=
+                            (dataHashes.length * gasPerBlob * block.blobbasefee) /
+                            block.basefee;
                     }
                 }
             }

@@ -127,10 +127,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     // True if the chain this SequencerInbox is deployed on uses custom fee token
     bool public immutable isUsingFeeToken;
 
-    constructor(
-        uint256 _maxDataSize,
-        bool _isUsingFeeToken
-    ) {
+    constructor(uint256 _maxDataSize, bool _isUsingFeeToken) {
         maxDataSize = _maxDataSize;
         isUsingFeeToken = _isUsingFeeToken;
     }
@@ -599,7 +596,6 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         }
         return (keccak256(bytes.concat(header, data)), timeBounds);
     }
-
 
     /// @dev   Form a hash of the data being provided in 4844 data blobs
     /// @param afterDelayedMessagesRead The delayed messages count read up to
