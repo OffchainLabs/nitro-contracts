@@ -129,4 +129,19 @@ interface ArbGasInfo {
 
     /// @notice Returns the available funds from L1 fees
     function getL1FeesAvailable() external view returns (uint256);
+
+    /// @notice Returns the equilibration units parameter for L1 price adjustment algorithm
+    function getL1PricingEquilibrationUnits() external view returns (uint256);
+
+    /// @notice Returns the last time the L1 calldata pricer was updated.
+    function getLastL1PricingUpdateTime() external view returns (uint64);
+
+    /// @notice Returns the amount of L1 calldata payments due for rewards (per the L1 reward rate)
+    function getL1PricingFundsDueForRewards() external view returns (uint256);
+
+    /// @notice Returns the amount of L1 calldata posted since the last update.
+    function getL1PricingUnitsSinceUpdate() external view returns (uint64);
+
+    /// @notice Returns the L1 pricing surplus as of the last update (may be negative).
+    function getLastL1PricingSurplus() external view returns (int256);
 }
