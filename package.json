@@ -20,7 +20,7 @@
     "prepublishOnly": "hardhat clean && hardhat compile",
     "build:all": "yarn build && yarn build:forge",
     "build": "hardhat compile",
-    "build:forge": "yarn build:forge:sol",
+    "build:forge": "forge build",
     "lint:test": "eslint ./test",
     "solhint": "solhint -f table src/**/*.sol",
     "prettier:solidity": "prettier --write src/**/*.sol",

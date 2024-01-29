@@ -127,9 +127,8 @@ jobs:
       - name: Install dependencies
         run: yarn install
 
-      # CHRIS: TODO: comment back in when foundry builds cancun
-      # - name: Build
-      #   run: yarn build:all
+      - name: Build
+        run: yarn build:all
 
       - name: Test 4844
         run: yarn test:4844
