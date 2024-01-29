@@ -63,18 +63,22 @@ library ChallengeLib {
         ValueStack memory internalStack;
         StackFrameWindow memory frameStack;
         GuardStack memory guardStack;
+        MultiStack memory emptyMultiStack;
 
         Machine memory mach = Machine({
             status: MachineStatus.RUNNING,
             valueStack: values,
+            valueMultiStack:emptyMultiStack,
             internalStack: internalStack,
             frameStack: frameStack,
+            frameMultiStack: emptyMultiStack,
             guardStack: guardStack,
             globalStateHash: globalStateHash,
             moduleIdx: 0,
             functionIdx: 0,
             functionPc: 0,
-            modulesRoot: wasmModuleRoot
+            modulesRoot: wasmModuleRoot,
+            cothread: false
         });
         return mach.hash();
     }

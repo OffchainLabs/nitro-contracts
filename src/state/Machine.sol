@@ -6,6 +6,7 @@ pragma solidity ^0.8.0;
 
 import "./ValueStack.sol";
 import "./Instructions.sol";
+import "./MultiStack.sol";
 import "./StackFrame.sol";
 import "./GuardStack.sol";
 
@@ -19,29 +20,35 @@ enum MachineStatus {
 struct Machine {
     MachineStatus status;
     ValueStack valueStack;
+    MultiStack valueMultiStack;
     ValueStack internalStack;
     StackFrameWindow frameStack;
+    MultiStack frameMultiStack;
     GuardStack guardStack;
     bytes32 globalStateHash;
     uint32 moduleIdx;
     uint32 functionIdx;
     uint32 functionPc;
     bytes32 modulesRoot;
+    bool cothread;
 }
 
 library MachineLib {
     using StackFrameLib for StackFrameWindow;
     using GuardStackLib for GuardStack;
     using ValueStackLib for ValueStack;
+    using MultiStackLib for MultiStack;
 
     function hash(Machine memory mach) internal pure returns (bytes32) {
         // Warning: the non-running hashes are replicated in Challenge
         if (mach.status == MachineStatus.RUNNING) {
+            bytes32 valueMultiHash = mach.valueMultiStack.hash(mach.valueStack.hash(), mach.cothread);
+            bytes32 frameMultiHash = mach.frameMultiStack.hash(mach.frameStack.hash(), mach.cothread);
             bytes memory preimage = abi.encodePacked(
                 "Machine running:",
-                mach.valueStack.hash(),
+                valueMultiHash,
                 mach.internalStack.hash(),
-                mach.frameStack.hash(),
+                frameMultiHash,
                 mach.globalStateHash,
                 mach.moduleIdx,
                 mach.functionIdx,
