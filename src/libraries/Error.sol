@@ -176,6 +176,9 @@ error AlreadyValidDASKeyset(bytes32);
 /// @dev Tried to use or invalidate an already invalid Data Availability Service keyset
 error NoSuchKeyset(bytes32);
 
+/// @dev Thrown when the provided address is not the designated batch poster manager
+error NotBatchPosterManager(address);
+
 /// @dev Thrown when a data blob feature is attempted to be used on a chain that doesnt support it
 error DataBlobsNotSupported();
 
@@ -196,3 +199,9 @@ error EmptyBatchData();
 
 /// @dev Unsupported header flag was provided
 error InvalidHeaderFlag(bytes1);
+
+/// @dev SequencerInbox and Bridge are not in the same feeToken/ETH mode
+error NativeTokenMismatch();
+
+/// @dev Thrown when a deprecated function is called
+error Deprecated();

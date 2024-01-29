@@ -225,6 +225,7 @@ describe('SequencerInboxForceInclude', async () => {
     const dummyRollup = accounts[2]
     const rollupOwner = accounts[3]
     const batchPoster = accounts[4]
+    const batchPosterManager = accounts[5]
 
     const rollupMockFac = (await ethers.getContractFactory(
       'RollupMock'
@@ -237,7 +238,8 @@ describe('SequencerInboxForceInclude', async () => {
     )) as SequencerInbox__factory
     const seqInboxTemplate = await sequencerInboxFac.deploy(
       117964,
-      reader4844.address
+      reader4844.address,
+      false
     )
     const inboxFac = (await ethers.getContractFactory(
       'Inbox'

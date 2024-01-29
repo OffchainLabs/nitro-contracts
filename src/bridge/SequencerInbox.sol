@@ -22,6 +22,8 @@ import {
     AlreadyValidDASKeyset,
     NoSuchKeyset,
     NotForked,
+    NotBatchPosterManager,
+    RollupNotChanged,
     DataBlobsNotSupported,
     InitParamZero,
     MissingDataHashes,
@@ -29,7 +31,9 @@ import {
     NotOwner,
     RollupNotChanged,
     EmptyBatchData,
-    InvalidHeaderFlag
+    InvalidHeaderFlag,
+    NativeTokenMismatch,
+    Deprecated
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./IInboxBase.sol";
@@ -45,6 +49,7 @@ import "../libraries/DelegateCallAware.sol";
 import {IGasRefunder} from "../libraries/IGasRefunder.sol";
 import {GasRefundEnabled} from "../libraries/GasRefundEnabled.sol";
 import "../libraries/ArbitrumChecker.sol";
+import {IERC20Bridge} from "./IERC20Bridge.sol";
 
 /**
  * @title Accepts batches from the sequencer and adds them to the rollup inbox.
@@ -83,6 +88,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     uint256 internal constant GAS_PER_BLOB = 1 << 17;
 
     IOwnable public rollup;
+
     mapping(address => bool) public isBatchPoster;
 
     // we previously stored the max time variation in a (uint,uint,uint,uint) struct here
@@ -95,6 +101,13 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         _;
     }
 
+    modifier onlyRollupOwnerOrBatchPosterManager() {
+        if (msg.sender != rollup.owner() && msg.sender != batchPosterManager) {
+            revert NotBatchPosterManager(msg.sender);
+        }
+        _;
+    }
+
     mapping(address => bool) public isSequencer;
     IReader4844 public immutable reader4844;
 
@@ -104,13 +117,22 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     uint64 internal delaySeconds;
     uint64 internal futureSeconds;
 
+    /// @inheritdoc ISequencerInbox
+    address public batchPosterManager;
+
     // On L1 this should be set to 117964: 90% of Geth's 128KB tx size limit, leaving ~13KB for proving
     uint256 public immutable maxDataSize;
     uint256 internal immutable deployTimeChainId = block.chainid;
     // If the chain this SequencerInbox is deployed on is an Arbitrum chain.
     bool internal immutable hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
+    // True if the chain this SequencerInbox is deployed on uses custom fee token
+    bool public immutable isUsingFeeToken;
 
-    constructor(uint256 _maxDataSize, IReader4844 reader4844_) {
+    constructor(
+        uint256 _maxDataSize,
+        IReader4844 reader4844_,
+        bool _isUsingFeeToken
+    ) {
         maxDataSize = _maxDataSize;
         if (hostChainIsArbitrum) {
             if (reader4844_ != IReader4844(address(0))) revert DataBlobsNotSupported();
@@ -118,6 +140,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             if (reader4844_ == IReader4844(address(0))) revert InitParamZero("Reader4844");
         }
         reader4844 = reader4844_;
+        isUsingFeeToken = _isUsingFeeToken;
     }
 
     function _chainIdChanged() internal view returns (bool) {
@@ -162,6 +185,19 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     ) external onlyDelegated {
         if (bridge != IBridge(address(0))) revert AlreadyInit();
         if (bridge_ == IBridge(address(0))) revert HadZeroInit();
+
+        // Make sure logic contract was created by proper value for 'isUsingFeeToken'.
+        // Bridge in ETH based chains doesn't implement nativeToken(). In future it might implement it and return address(0)
+        bool actualIsUsingFeeToken = false;
+        try IERC20Bridge(address(bridge_)).nativeToken() returns (address feeToken) {
+            if (feeToken != address(0)) {
+                actualIsUsingFeeToken = true;
+            }
+        } catch {}
+        if (isUsingFeeToken != actualIsUsingFeeToken) {
+            revert NativeTokenMismatch();
+        }
+
         bridge = bridge_;
         rollup = bridge_.rollup();
         delayBlocks = maxTimeVariation_.delayBlocks;
@@ -313,48 +349,14 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         );
     }
 
-    /// @dev Deprecated in favor of the variant specifying message counts for consistency
+    /// @dev Deprecated, kept for abi generation and will be removed in the future
     function addSequencerL2BatchFromOrigin(
-        uint256 sequenceNumber,
-        bytes calldata data,
-        uint256 afterDelayedMessagesRead,
-        IGasRefunder gasRefunder
-    ) external refundsGas(gasRefunder, IReader4844(address(0))) {
-        // solhint-disable-next-line avoid-tx-origin
-        if (msg.sender != tx.origin) revert NotOrigin();
-        if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
-
-        (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formCallDataHash(
-            data,
-            afterDelayedMessagesRead
-        );
-        // Reformat the stack to prevent "Stack too deep"
-        uint256 sequenceNumber_ = sequenceNumber;
-        IBridge.TimeBounds memory timeBounds_ = timeBounds;
-        bytes32 dataHash_ = dataHash;
-        uint256 dataLength = data.length;
-        uint256 afterDelayedMessagesRead_ = afterDelayedMessagesRead;
-        (
-            uint256 seqMessageIndex,
-            bytes32 beforeAcc,
-            bytes32 delayedAcc,
-            bytes32 afterAcc
-        ) = addSequencerL2BatchImpl(dataHash_, afterDelayedMessagesRead_, dataLength, 0, 0);
-
-        // ~uint256(0) is type(uint256).max, but ever so slightly cheaper
-        if (seqMessageIndex != sequenceNumber_ && sequenceNumber_ != ~uint256(0)) {
-            revert BadSequencerNumber(seqMessageIndex, sequenceNumber_);
-        }
-
-        emit SequencerBatchDelivered(
-            sequenceNumber_,
-            beforeAcc,
-            afterAcc,
-            delayedAcc,
-            totalDelayedMessagesRead,
-            timeBounds_,
-            IBridge.BatchDataLocation.TxInput
-        );
+        uint256,
+        bytes calldata,
+        uint256,
+        IGasRefunder
+    ) external pure {
+        revert Deprecated();
     }
 
     function addSequencerL2BatchFromOrigin(
@@ -420,7 +422,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         (
             bytes32 dataHash,
             IBridge.TimeBounds memory timeBounds,
-            uint256 blobCost
+            uint256 blobGas
         ) = formBlobDataHash(afterDelayedMessagesRead);
 
         // we use addSequencerL2BatchImpl for submitting the message
@@ -462,11 +464,12 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         if (hostChainIsArbitrum) revert DataBlobsNotSupported();
 
         // submit a batch spending report to refund the entity that produced the blob batch data
-        uint256 blobGas = 0;
-        if (block.basefee > 0) {
-            blobGas = blobCost / block.basefee;
+        // same as using calldata, we only submit spending report if the caller is the origin of the tx
+        // such that one cannot "double-claim" batch posting refund in the same tx
+        // solhint-disable-next-line avoid-tx-origin
+        if (msg.sender == tx.origin && !isUsingFeeToken) {
+            submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, blobGas);
         }
-        submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, blobGas);
     }
 
     function addSequencerL2Batch(
@@ -609,6 +612,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     /// @param afterDelayedMessagesRead The delayed messages count read up to
     /// @return The data hash
     /// @return The timebounds within which the message should be processed
+    /// @return The normalized amount of gas used for blob posting
     function formBlobDataHash(uint256 afterDelayedMessagesRead)
         internal
         view
@@ -626,19 +630,15 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         );
 
         uint256 blobCost = reader4844.getBlobBaseFee() * GAS_PER_BLOB * dataHashes.length;
-        // solhint-disable-next-line avoid-tx-origin
-        if (tx.origin != msg.sender) {
-            // Make sure that if we're refunding this blob, it's only for this batch submission.
-            blobCost = 0;
-        }
         return (
             keccak256(bytes.concat(header, DATA_BLOB_HEADER_FLAG, abi.encodePacked(dataHashes))),
             timeBounds,
-            blobCost
+            block.basefee > 0 ? blobCost / block.basefee : 0
         );
     }
 
     /// @dev   Submit a batch spending report message so that the batch poster can be reimbursed on the rollup
+    ///        This function expect msg.sender is tx.origin, and will always record tx.origin as the spender
     /// @param dataHash The hash of the message the spending report is being submitted for
     /// @param seqMessageIndex The index of the message to submit the spending report for
     /// @param gasPrice The gas price that was paid for the data (standard gas or data gas)
@@ -648,7 +648,10 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 gasPrice,
         uint256 extraGas
     ) internal {
-        address batchPoster = msg.sender;
+        // report the account who paid the gas (tx.origin) for the tx as batch poster
+        // if msg.sender is used and is a contract, it might not be able to spend the refund on l2
+        // solhint-disable-next-line avoid-tx-origin
+        address batchPoster = tx.origin;
 
         // this msg isn't included in the current sequencer batch, but instead added to
         // the delayed messages queue that is yet to be included
@@ -702,7 +705,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
         totalDelayedMessagesRead = afterDelayedMessagesRead;
 
-        if (calldataLengthPosted > 0) {
+        if (calldataLengthPosted > 0 && !isUsingFeeToken) {
+            // only report batch poster spendings if chain is using ETH as native currency
             submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, 0);
         }
     }
@@ -728,7 +732,10 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @inheritdoc ISequencerInbox
-    function setIsBatchPoster(address addr, bool isBatchPoster_) external onlyRollupOwner {
+    function setIsBatchPoster(address addr, bool isBatchPoster_)
+        external
+        onlyRollupOwnerOrBatchPosterManager
+    {
         isBatchPoster[addr] = isBatchPoster_;
         emit OwnerFunctionCalled(1);
     }
@@ -764,9 +771,18 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @inheritdoc ISequencerInbox
-    function setIsSequencer(address addr, bool isSequencer_) external onlyRollupOwner {
+    function setIsSequencer(address addr, bool isSequencer_)
+        external
+        onlyRollupOwnerOrBatchPosterManager
+    {
         isSequencer[addr] = isSequencer_;
-        emit OwnerFunctionCalled(4);
+        emit OwnerFunctionCalled(4); // Owner in this context can also be batch poster manager
+    }
+
+    /// @inheritdoc ISequencerInbox
+    function setBatchPosterManager(address newBatchPosterManager) external onlyRollupOwner {
+        batchPosterManager = newBatchPosterManager;
+        emit OwnerFunctionCalled(5);
     }
 
     function isValidKeysetHash(bytes32 ksHash) external view returns (bool) {
