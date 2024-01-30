@@ -7070,7 +7070,7 @@ solidity-comments@^0.0.2:
     solidity-comments-win32-ia32-msvc "0.0.2"
     solidity-comments-win32-x64-msvc "0.0.2"
 
-solidity-coverage@^0.8.6:
+solidity-coverage@^0.8.4:
   version "0.8.6"
   resolved "https://registry.yarnpkg.com/solidity-coverage/-/solidity-coverage-0.8.6.tgz#c7b18dc9edfeba11064726c37d96265f689c9478"
   integrity sha512-vV03mA/0nNMskOdVwNarUcqk0N/aYdelxAbf6RZ5l84FcYHbqDTr2JXyeYMp4bT48qHtAQjnKrygW1FrECyWNw==
