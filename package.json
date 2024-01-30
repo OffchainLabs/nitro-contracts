@@ -18,6 +18,7 @@
   },
   "scripts": {
     "audit:ci": "audit-ci --config ./audit-ci.jsonc",
+    "audit:fix": "yarn-audit-fix",
     "prepublishOnly": "hardhat clean && hardhat compile",
     "build": "hardhat compile",
     "lint:test": "eslint ./test",
