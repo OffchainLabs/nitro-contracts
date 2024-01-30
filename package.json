@@ -32,7 +32,9 @@
     "deploy-factory": "hardhat run scripts/deployment.ts",
     "deploy-eth-rollup": "hardhat run scripts/createEthRollup.ts",
     "deploy-erc20-rollup": "hardhat run scripts/createERC20Rollup.ts",
-    "gas:snapshot": "forge snapshot"
+    "gas:snapshot": "forge snapshot",
+    "gas:check": "forge snapshot --check",
+    "gas:report": "forge test --gas-report"
   },
   "dependencies": {
     "@offchainlabs/upgrade-executor": "1.1.0-beta.0",
