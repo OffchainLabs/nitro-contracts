@@ -71,6 +71,7 @@ contract ProgramTest {
         result = assert256(result, "rust codehash", uint256(program.codehash));
         result = assert256(result, "arb codehash ", uint256(arbPrecompile.codehash));
         result = assert256(result, "eth codehash ", uint256(ethPrecompile.codehash));
+
         bytes memory code = new bytes(program.code.length);
         for (uint256 i = 0; i < program.code.length; i++) {
             code[i] = result[i];
@@ -82,7 +83,6 @@ contract ProgramTest {
         }
 
         result = rest;
-
         return result;
     }
 
