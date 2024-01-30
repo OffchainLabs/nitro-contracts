@@ -56,16 +56,12 @@ library MachineLib {
                 mach.modulesRoot
             );
 
-            if (mach.guardStack.empty() && !mach.guardStack.enabled) {
+            if (mach.guardStack.empty() && !mach.cothread) {
                 return keccak256(preimage);
             } else {
-                bytes1 flag = 0x00;
-                if (mach.guardStack.enabled) {
-                    flag = 0x01;
-                }
                 return
                     keccak256(
-                        abi.encodePacked(preimage, "With guards:", flag, mach.guardStack.hash())
+                        abi.encodePacked(preimage, "With guards:", mach.guardStack.hash())
                     );
             }
         } else if (mach.status == MachineStatus.FINISHED) {

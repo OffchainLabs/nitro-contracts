@@ -16,7 +16,6 @@ struct ErrorGuard {
 struct GuardStack {
     ErrorGuard[] proved;
     bytes32 remainingHash;
-    bool enabled;
 }
 
 library GuardStackLib {
@@ -55,10 +54,6 @@ library GuardStackLib {
         for (uint256 i = 0; i < guards.proved.length; i++) {
             h = keccak256(abi.encodePacked("Guard stack:", hash(guards.proved[i]), h));
         }
-    }
-
-    function canPop(GuardStack memory guards) internal pure returns (bool) {
-        return guards.enabled && !empty(guards);
     }
 
     function empty(GuardStack memory guards) internal pure returns (bool) {

@@ -228,9 +228,7 @@ library Deserialize {
     {
         offset = startOffset;
         bytes32 remainingHash;
-        bool enabled;
         bool empty;
-        (enabled, offset) = boolean(proof, offset);
         (empty, offset) = boolean(proof, offset);
         (remainingHash, offset) = b32(proof, offset);
 
@@ -241,7 +239,7 @@ library Deserialize {
             proved = new ErrorGuard[](1);
             (proved[0], offset) = errorGuard(proof, offset);
         }
-        window = GuardStack({proved: proved, remainingHash: remainingHash, enabled: enabled});
+        window = GuardStack({proved: proved, remainingHash: remainingHash});
     }
 
     function moduleMemory(bytes calldata proof, uint256 startOffset)
