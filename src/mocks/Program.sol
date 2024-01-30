@@ -4,6 +4,7 @@
 
 pragma solidity ^0.8.0;
 import "../precompiles/ArbSys.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract ProgramTest {
     event Hash(bytes32 result);
@@ -71,6 +72,17 @@ contract ProgramTest {
         result = assert256(result, "arb codehash ", uint256(arbPrecompile.codehash));
         result = assert256(result, "eth codehash ", uint256(ethPrecompile.codehash));
 
+        bytes memory code = new bytes(program.code.length);
+        for (uint256 i = 0; i < program.code.length; i++) {
+            code[i] = result[i];
+        }
+        require(keccak256(code) == keccak256(program.code), "code");
+        bytes memory rest = new bytes(result.length - program.code.length);
+        for (uint256 i = program.code.length; i < result.length; i++) {
+            rest[i - program.code.length] = result[i];
+        }
+
+        result = rest;
         return result;
     }
 
