@@ -51,7 +51,6 @@ contract SequencerInboxTest is Test {
     });
     address dummyInbox = address(139);
     address proxyAdmin = address(140);
-    IReader4844 dummyReader4844 = IReader4844(address(137));
 
     uint256 constant public MAX_DATA_SIZE = 117964;
 
@@ -66,7 +65,6 @@ contract SequencerInboxTest is Test {
 
         SequencerInbox seqInboxImpl = new SequencerInbox(
             maxDataSize,
-            isArbHosted ? IReader4844(address(0)) : dummyReader4844,
             false
         );
         SequencerInbox seqInbox = SequencerInbox(address(new TransparentUpgradeableProxy(address(seqInboxImpl), proxyAdmin, "")));
@@ -100,7 +98,7 @@ contract SequencerInboxTest is Test {
             abi.encodeWithSelector(ArbSys.arbOSVersion.selector),
             abi.encode(uint256(11))
         );
-        SequencerInbox seqInboxImpl = new SequencerInbox(maxDataSize, IReader4844(address(0)), true);
+        SequencerInbox seqInboxImpl = new SequencerInbox(maxDataSize, true);
         SequencerInbox seqInbox = SequencerInbox(address(new TransparentUpgradeableProxy(address(seqInboxImpl), proxyAdmin, "")));
         seqInbox.initialize(
             bridge,
@@ -237,7 +235,7 @@ contract SequencerInboxTest is Test {
 
     /* solhint-disable func-name-mixedcase */
     function testConstructor() public {
-        SequencerInbox seqInboxLogic = new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false);
+        SequencerInbox seqInboxLogic = new SequencerInbox(MAX_DATA_SIZE, false);
         assertEq(seqInboxLogic.maxDataSize(), MAX_DATA_SIZE, "Invalid MAX_DATA_SIZE");
         assertEq(seqInboxLogic.isUsingFeeToken(), false, "Invalid isUsingFeeToken");
 
@@ -245,7 +243,7 @@ contract SequencerInboxTest is Test {
         assertEq(seqInboxProxy.maxDataSize(), MAX_DATA_SIZE, "Invalid MAX_DATA_SIZE");
         assertEq(seqInboxProxy.isUsingFeeToken(), false, "Invalid isUsingFeeToken");
 
-        SequencerInbox seqInboxLogicFeeToken = new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true);
+        SequencerInbox seqInboxLogicFeeToken = new SequencerInbox(MAX_DATA_SIZE, true);
         assertEq(seqInboxLogicFeeToken.maxDataSize(), MAX_DATA_SIZE, "Invalid MAX_DATA_SIZE");
         assertEq(seqInboxLogicFeeToken.isUsingFeeToken(), true, "Invalid isUsingFeeToken");
 
@@ -258,7 +256,7 @@ contract SequencerInboxTest is Test {
         Bridge _bridge = Bridge(address(new TransparentUpgradeableProxy(address(new Bridge()), proxyAdmin, "")));
         _bridge.initialize(IOwnable(address(new RollupMock(rollupOwner))));
 
-        address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false));
+        address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, false));
         SequencerInbox seqInboxProxy = SequencerInbox(TestUtil.deployProxy(seqInboxLogic));
         seqInboxProxy.initialize(
             IBridge(_bridge),
@@ -275,7 +273,7 @@ contract SequencerInboxTest is Test {
         address nativeToken = address(new ERC20PresetMinterPauser("Appchain Token", "App"));
         _bridge.initialize(IOwnable(address(new RollupMock(rollupOwner))), nativeToken);
 
-        address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true));
+        address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, true));
         SequencerInbox seqInboxProxy = SequencerInbox(TestUtil.deployProxy(seqInboxLogic));
         seqInboxProxy.initialize(
             IBridge(_bridge),
@@ -291,7 +289,7 @@ contract SequencerInboxTest is Test {
         Bridge _bridge = Bridge(address(new TransparentUpgradeableProxy(address(new Bridge()), proxyAdmin, "")));
         _bridge.initialize(IOwnable(address(new RollupMock(rollupOwner))));
 
-        address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true));
+        address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, true));
         SequencerInbox seqInboxProxy = SequencerInbox(TestUtil.deployProxy(seqInboxLogic));
 
         vm.expectRevert(abi.encodeWithSelector(NativeTokenMismatch.selector));
@@ -306,7 +304,7 @@ contract SequencerInboxTest is Test {
         address nativeToken = address(new ERC20PresetMinterPauser("Appchain Token", "App"));
         _bridge.initialize(IOwnable(address(new RollupMock(rollupOwner))), nativeToken);
 
-        address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false));
+        address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, false));
         SequencerInbox seqInboxProxy = SequencerInbox(TestUtil.deployProxy(seqInboxLogic));
 
         vm.expectRevert(abi.encodeWithSelector(NativeTokenMismatch.selector));
@@ -476,7 +474,6 @@ contract SequencerInboxTest is Test {
         (SequencerInbox seqInbox, ) = deployRollup(false);
         SequencerInbox seqInboxImpl = new SequencerInbox(
             maxDataSize,
-            dummyReader4844,
             false
         );
 

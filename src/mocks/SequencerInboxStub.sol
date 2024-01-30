@@ -14,9 +14,8 @@ contract SequencerInboxStub is SequencerInbox {
         address sequencer_,
         ISequencerInbox.MaxTimeVariation memory maxTimeVariation_,
         uint256 maxDataSize_,
-        IReader4844 reader4844_,
         bool isUsingFeeToken_
-    ) SequencerInbox(maxDataSize_, reader4844_, isUsingFeeToken_) {
+    ) SequencerInbox(maxDataSize_, isUsingFeeToken_) {
         bridge = bridge_;
         rollup = IOwnable(msg.sender);
         delayBlocks = maxTimeVariation_.delayBlocks;
