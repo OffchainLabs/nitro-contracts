@@ -42,8 +42,14 @@ library MachineLib {
     function hash(Machine memory mach) internal pure returns (bytes32) {
         // Warning: the non-running hashes are replicated in Challenge
         if (mach.status == MachineStatus.RUNNING) {
-            bytes32 valueMultiHash = mach.valueMultiStack.hash(mach.valueStack.hash(), mach.cothread);
-            bytes32 frameMultiHash = mach.frameMultiStack.hash(mach.frameStack.hash(), mach.cothread);
+            bytes32 valueMultiHash = mach.valueMultiStack.hash(
+                mach.valueStack.hash(),
+                mach.cothread
+            );
+            bytes32 frameMultiHash = mach.frameMultiStack.hash(
+                mach.frameStack.hash(),
+                mach.cothread
+            );
             bytes memory preimage = abi.encodePacked(
                 "Machine running:",
                 valueMultiHash,
@@ -60,9 +66,7 @@ library MachineLib {
                 return keccak256(preimage);
             } else {
                 return
-                    keccak256(
-                        abi.encodePacked(preimage, "With guards:", mach.guardStack.hash())
-                    );
+                    keccak256(abi.encodePacked(preimage, "With guards:", mach.guardStack.hash()));
             }
         } else if (mach.status == MachineStatus.FINISHED) {
             return keccak256(abi.encodePacked("Machine finished:", mach.globalStateHash));
@@ -73,6 +77,20 @@ library MachineLib {
         } else {
             revert("BAD_MACH_STATUS");
         }
+    }
+
+    function switchCoThread(Machine memory mach) internal pure {
+        bytes32 newActiveValue = mach.valueMultiStack.inactiveStackHash;
+        bytes32 newActiveFrame = mach.frameMultiStack.inactiveStackHash;
+        if (newActiveFrame == bytes32(0) || newActiveValue == bytes32(0)) {
+            mach.status = MachineStatus.ERRORED;
+            return;
+        }
+        mach.cothread = !mach.cothread;
+        mach.frameMultiStack.inactiveStackHash = mach.frameStack.hash();
+        mach.valueMultiStack.inactiveStackHash = mach.valueStack.hash();
+        mach.frameStack.overwrite(newActiveValue);
+        mach.valueStack.overwrite(newActiveFrame);
     }
 
     function setPc(Machine memory mach, Value memory pc) internal pure {

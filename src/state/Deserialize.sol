@@ -141,7 +141,10 @@ library Deserialize {
         (inactiveStackHash, offset) = b32(proof, offset);
         bytes32 remainingHash;
         (remainingHash, offset) = b32(proof, offset);
-        multistack = MultiStack({inactiveStackHash: inactiveStackHash, remainingHash: remainingHash});
+        multistack = MultiStack({
+            inactiveStackHash: inactiveStackHash,
+            remainingHash: remainingHash
+        });
     }
 
     function instruction(bytes calldata proof, uint256 startOffset)
@@ -345,14 +348,12 @@ library Deserialize {
                 frameStack: frameStack,
                 frameMultiStack: framesMulti,
                 guardStack: guards,
-                // below this lines vars are initialized later in the function,
-                // due to solidity's bounds on number of stack variables
-                globalStateHash: bytes32(0),
-                moduleIdx: 0,
-                functionIdx: 0,
-                functionPc: 0,
-                modulesRoot: bytes32(0),
-                cothread: false
+                globalStateHash: bytes32(0), // filled later
+                moduleIdx: 0, // filled later
+                functionIdx: 0, // filled later
+                functionPc: 0, // filled later
+                modulesRoot: bytes32(0), // filled later
+                cothread: false // filled later
             });
         }
         (mach.globalStateHash, offset) = b32(proof, offset);

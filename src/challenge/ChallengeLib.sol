@@ -5,11 +5,13 @@
 pragma solidity ^0.8.0;
 
 import "../state/Machine.sol";
+import "../state/MultiStack.sol";
 import "../state/GlobalState.sol";
 
 library ChallengeLib {
     using MachineLib for Machine;
     using ChallengeLib for Challenge;
+    using MultiStackLib for MultiStack;
 
     /// @dev It's assumed that that uninitialzed challenges have mode NONE
     enum ChallengeMode {
@@ -64,11 +66,12 @@ library ChallengeLib {
         StackFrameWindow memory frameStack;
         GuardStack memory guardStack;
         MultiStack memory emptyMultiStack;
+        emptyMultiStack.setEmpty();
 
         Machine memory mach = Machine({
             status: MachineStatus.RUNNING,
             valueStack: values,
-            valueMultiStack:emptyMultiStack,
+            valueMultiStack: emptyMultiStack,
             internalStack: internalStack,
             frameStack: frameStack,
             frameMultiStack: emptyMultiStack,

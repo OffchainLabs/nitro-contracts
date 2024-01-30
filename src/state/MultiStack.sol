@@ -10,11 +10,47 @@ struct MultiStack {
 }
 
 library MultiStackLib {
-    function hash(MultiStack memory multi, bytes32 activeStackHash, bool cothread) internal pure returns (bytes32 h) {
+    bytes32 internal constant NO_STACK_HASH = ~bytes32(0);
+
+    function hash(
+        MultiStack memory multi,
+        bytes32 activeStackHash,
+        bool cothread
+    ) internal pure returns (bytes32 h) {
         if (cothread) {
-            return keccak256(abi.encodePacked("Multistack:", multi.inactiveStackHash, activeStackHash, multi.remainingHash));
+            return
+                keccak256(
+                    abi.encodePacked(
+                        "multistack: ",
+                        multi.inactiveStackHash,
+                        activeStackHash,
+                        multi.remainingHash
+                    )
+                );
         } else {
-            return keccak256(abi.encodePacked("Multistack:", activeStackHash, multi.inactiveStackHash, multi.remainingHash));
+            return
+                keccak256(
+                    abi.encodePacked(
+                        "multistack: ",
+                        activeStackHash,
+                        multi.inactiveStackHash,
+                        multi.remainingHash
+                    )
+                );
         }
+    }
+
+    function setEmpty(MultiStack memory multi) internal pure {
+        multi.inactiveStackHash = NO_STACK_HASH;
+        multi.remainingHash = NO_STACK_HASH;
+    }
+
+    function pushNew(MultiStack memory multi) internal pure {
+        if (multi.inactiveStackHash != NO_STACK_HASH) {
+            multi.remainingHash = keccak256(
+                abi.encodePacked("cothread: ", multi.inactiveStackHash, multi.remainingHash)
+            );
+        }
+        multi.inactiveStackHash = 0;
     }
 }
