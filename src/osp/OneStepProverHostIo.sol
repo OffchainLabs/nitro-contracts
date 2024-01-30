@@ -7,6 +7,7 @@ pragma solidity ^0.8.0;
 import "../state/Value.sol";
 import "../state/Machine.sol";
 import "../state/MerkleProof.sol";
+import "../state/MultiStack.sol";
 import "../state/Deserialize.sol";
 import "../state/ModuleMemory.sol";
 import "./IOneStepProver.sol";
@@ -15,8 +16,10 @@ import "../bridge/IBridge.sol";
 
 contract OneStepProverHostIo is IOneStepProver {
     using GlobalStateLib for GlobalState;
+    using MachineLib for Machine;
     using MerkleProofLib for MerkleProof;
     using ModuleMemoryLib for ModuleMemory;
+    using MultiStackLib for MultiStack;
     using ValueLib for Value;
     using ValueStackLib for ValueStack;
     using StackFrameLib for StackFrameWindow;
@@ -442,6 +445,80 @@ contract OneStepProverHostIo is IOneStepProver {
         mach.globalStateHash = state.hash();
     }
 
+    function executeNewCoThread(
+        ExecutionContext calldata,
+        Machine memory mach,
+        Module memory,
+        Instruction calldata,
+        bytes calldata
+    ) internal pure {
+        if (mach.cothread) {
+            // cannot create new cothread from inside cothread
+            mach.status = MachineStatus.ERRORED;
+            return;
+        }
+        mach.frameMultiStack.pushNew();
+    }
+
+    function proovePopCothread(MultiStack memory multi, bytes calldata proof) internal pure {
+        uint256 proofOffset = 0;
+        bytes32 newInactiveCoThread;
+        bytes32 newRemaining;
+        (newInactiveCoThread, proofOffset) = Deserialize.b32(proof, proofOffset);
+        (newRemaining, proofOffset) = Deserialize.b32(proof, proofOffset);
+        if (newInactiveCoThread == MultiStackLib.NO_STACK_HASH) {
+            require(multi.remainingHash == MultiStackLib.NO_STACK_HASH, "WRONG_COTHREAD_EMPTY");
+            return;
+        }
+        require(
+            keccak256(abi.encodePacked("cothread: ", newInactiveCoThread, newRemaining)) ==
+                multi.remainingHash,
+            "WRONG_COTHREAD_POP"
+        );
+        multi.remainingHash = newRemaining;
+        multi.inactiveStackHash = newInactiveCoThread;
+        return;
+    }
+
+    function executePopCoThread(
+        ExecutionContext calldata,
+        Machine memory mach,
+        Module memory,
+        Instruction calldata,
+        bytes calldata proof
+    ) internal pure {
+        if (mach.cothread) {
+            // cannot pop cothread from inside cothread
+            mach.status = MachineStatus.ERRORED;
+            return;
+        }
+        if (mach.frameMultiStack.inactiveStackHash == MultiStackLib.NO_STACK_HASH) {
+            // cannot pop cothread if there isn't one
+            mach.status = MachineStatus.ERRORED;
+            return;
+        }
+        proovePopCothread(mach.valueMultiStack, proof);
+        proovePopCothread(mach.frameMultiStack, proof[64:]);
+    }
+
+    function executeSwitchCoThread(
+        ExecutionContext calldata,
+        Machine memory mach,
+        Module memory,
+        Instruction calldata inst,
+        bytes calldata
+    ) internal pure {
+        if (mach.frameMultiStack.inactiveStackHash == MultiStackLib.NO_STACK_HASH) {
+            // cannot switch cothread if there isn't one
+            mach.status = MachineStatus.ERRORED;
+            return;
+        }
+        bool jumpToCoThread = (inst.argumentData != 0);
+        if (jumpToCoThread != mach.cothread) {
+            mach.switchCoThread();
+        }
+    }
+
     function executeOneStep(
         ExecutionContext calldata execCtx,
         Machine calldata startMach,
@@ -481,7 +558,9 @@ contract OneStepProverHostIo is IOneStepProver {
             impl = executePushErrorGuard;
         } else if (opcode == Instructions.POP_ERROR_GUARD) {
             impl = executePopErrorGuard;
-        } else {
+        } else if (opcode == Instructions.NEW_COTHREAD) {} else if (
+            opcode == Instructions.POP_COTHREAD
+        ) {} else if (opcode == Instructions.SWITCH_COTHREAD) {} else {
             revert("INVALID_MEMORY_OPCODE");
         }
 
