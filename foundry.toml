@@ -8,6 +8,9 @@ optimizer = true
 optimizer_runs = 20000
 via_ir = false
 solc_version = '0.8.9'
+gas_reports = ["Bridge", "BridgeCreator", "ChallengeManager", "DeployHelper", "ERC20Bridge", "ERC20Inbox", "ERC20Outbox",
+                "ERC20RollupEventInbox", "Inbox", "Outbox", "RollupAdminLogic", "RollupCreator", "RollupEventInbox",
+                "RollupProxy", "RollupUserLogic", "SequencerInbox"]
 
 [profile.yul]
 src = 'yul'
