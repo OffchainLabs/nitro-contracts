@@ -27,6 +27,7 @@ contract RollupCreatorTest is Test {
     IRollupAdmin public rollupAdmin;
     IRollupUser public rollupUser;
     DeployHelper public deployHelper;
+    IReader4844 dummyReader4844 = IReader4844(address(137));
 
     // 1 gwei
     uint256 public constant MAX_FEE_PER_GAS = 1_000_000_000;
@@ -34,14 +35,22 @@ contract RollupCreatorTest is Test {
 
     BridgeCreator.BridgeContracts public ethBasedTemplates = BridgeCreator.BridgeContracts({
         bridge: new Bridge(),
-        sequencerInbox: new SequencerInbox(MAX_DATA_SIZE),
+        sequencerInbox: new SequencerInbox(
+            MAX_DATA_SIZE,
+            dummyReader4844,
+            false
+        ),
         inbox: new Inbox(MAX_DATA_SIZE),
         rollupEventInbox: new RollupEventInbox(),
         outbox: new Outbox()
     });
     BridgeCreator.BridgeContracts public erc20BasedTemplates = BridgeCreator.BridgeContracts({
         bridge: new ERC20Bridge(),
-        sequencerInbox: ethBasedTemplates.sequencerInbox,
+        sequencerInbox: new SequencerInbox(
+            MAX_DATA_SIZE,
+            dummyReader4844,
+            true
+        ),
         inbox: new ERC20Inbox(MAX_DATA_SIZE),
         rollupEventInbox: new ERC20RollupEventInbox(),
         outbox: new ERC20Outbox()
@@ -111,23 +120,27 @@ contract RollupCreatorTest is Test {
         uint256 balanceBefore = deployer.balance;
 
         /// deploy rollup
-        address batchPoster = makeAddr("batch poster");
+        address[] memory batchPosters = new address[](1);
+        batchPosters[0] = makeAddr("batch poster 1");
+        address batchPosterManager = makeAddr("batch poster manager");
         address[] memory validators = new address[](2);
         validators[0] = makeAddr("validator1");
         validators[1] = makeAddr("validator2");
 
         RollupCreator.RollupDeploymentParams memory deployParams = RollupCreator
             .RollupDeploymentParams({
-            config: config,
-            batchPoster: batchPoster,
-            validators: validators,
-            maxDataSize: MAX_DATA_SIZE,
-            nativeToken: address(0),
-            deployFactoriesToL2: true,
-            maxFeePerGasForRetryables: MAX_FEE_PER_GAS
-        });
-        address rollupAddress =
-            rollupCreator.createRollup{value: factoryDeploymentFunds}(deployParams);
+                config: config,
+                batchPosters: batchPosters,
+                validators: validators,
+                maxDataSize: MAX_DATA_SIZE,
+                nativeToken: address(0),
+                deployFactoriesToL2: true,
+                maxFeePerGasForRetryables: MAX_FEE_PER_GAS,
+                batchPosterManager: batchPosterManager
+            });
+        address rollupAddress = rollupCreator.createRollup{value: factoryDeploymentFunds}(
+            deployParams
+        );
 
         vm.stopPrank();
 
@@ -150,9 +163,11 @@ contract RollupCreatorTest is Test {
         assertTrue(address(rollup.challengeManager()) != address(0), "Invalid challengeManager");
         assertTrue(rollup.isValidator(validators[0]), "Invalid validator set");
         assertTrue(rollup.isValidator(validators[1]), "Invalid validator set");
-        assertTrue(
-            ISequencerInbox(address(rollup.sequencerInbox())).isBatchPoster(batchPoster),
-            "Invalid batch poster"
+        assertTrue(rollup.sequencerInbox().isBatchPoster(batchPosters[0]), "Invalid batch poster");
+        assertEq(
+            rollup.sequencerInbox().batchPosterManager(),
+            batchPosterManager,
+            "Invalid batch poster manager"
         );
 
         // check proxy admin for non-rollup contracts
@@ -247,21 +262,24 @@ contract RollupCreatorTest is Test {
         IERC20(nativeToken).approve(address(rollupCreator), expectedCost);
 
         /// deploy rollup
-        address batchPoster = makeAddr("batch poster");
+        address[] memory batchPosters = new address[](1);
+        batchPosters[0] = makeAddr("batch poster 1");
+        address batchPosterManager = makeAddr("batch poster manager");
         address[] memory validators = new address[](2);
         validators[0] = makeAddr("validator1");
         validators[1] = makeAddr("validator2");
 
         RollupCreator.RollupDeploymentParams memory deployParams = RollupCreator
             .RollupDeploymentParams({
-            config: config,
-            batchPoster: batchPoster,
-            validators: validators,
-            maxDataSize: MAX_DATA_SIZE,
-            nativeToken: nativeToken,
-            deployFactoriesToL2: true,
-            maxFeePerGasForRetryables: MAX_FEE_PER_GAS
-        });
+                config: config,
+                batchPosters: batchPosters,
+                validators: validators,
+                maxDataSize: MAX_DATA_SIZE,
+                nativeToken: nativeToken,
+                deployFactoriesToL2: true,
+                maxFeePerGasForRetryables: MAX_FEE_PER_GAS,
+                batchPosterManager: batchPosterManager
+            });
 
         address rollupAddress = rollupCreator.createRollup(deployParams);
 
@@ -287,9 +305,15 @@ contract RollupCreatorTest is Test {
         assertTrue(rollup.isValidator(validators[0]), "Invalid validator set");
         assertTrue(rollup.isValidator(validators[1]), "Invalid validator set");
         assertTrue(
-            ISequencerInbox(address(rollup.sequencerInbox())).isBatchPoster(batchPoster),
+            ISequencerInbox(address(rollup.sequencerInbox())).isBatchPoster(batchPosters[0]),
             "Invalid batch poster"
         );
+        assertEq(
+            ISequencerInbox(address(rollup.sequencerInbox())).batchPosterManager(),
+            batchPosterManager,
+            "Invalid batch poster manager"
+        );
+
         // native token check
         IBridge bridge = RollupCore(address(rollupAddress)).bridge();
         assertEq(
@@ -380,23 +404,27 @@ contract RollupCreatorTest is Test {
         vm.deal(deployer, factoryDeploymentFunds);
 
         /// deploy rollup
-        address batchPoster = makeAddr("batch poster");
+        address[] memory batchPosters = new address[](1);
+        batchPosters[0] = makeAddr("batch poster 1");
+        address batchPosterManager = makeAddr("batch poster manager");
         address[] memory validators = new address[](2);
         validators[0] = makeAddr("validator1");
         validators[1] = makeAddr("validator2");
 
         RollupCreator.RollupDeploymentParams memory deployParams = RollupCreator
             .RollupDeploymentParams({
-            config: config,
-            batchPoster: batchPoster,
-            validators: validators,
-            maxDataSize: MAX_DATA_SIZE,
-            nativeToken: address(0),
-            deployFactoriesToL2: true,
-            maxFeePerGasForRetryables: MAX_FEE_PER_GAS
-        });
-        address rollupAddress =
-            rollupCreator.createRollup{value: factoryDeploymentFunds}(deployParams);
+                config: config,
+                batchPosters: batchPosters,
+                validators: validators,
+                maxDataSize: MAX_DATA_SIZE,
+                nativeToken: address(0),
+                deployFactoriesToL2: true,
+                maxFeePerGasForRetryables: MAX_FEE_PER_GAS,
+                batchPosterManager: batchPosterManager
+            });
+        address rollupAddress = rollupCreator.createRollup{value: factoryDeploymentFunds}(
+            deployParams
+        );
 
         vm.stopPrank();
 
