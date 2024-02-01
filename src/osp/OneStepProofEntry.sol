@@ -15,7 +15,6 @@ contract OneStepProofEntry is IOneStepProofEntry {
     using MachineLib for Machine;
 
     using ValueStackLib for ValueStack;
-    using GuardStackLib for GuardStack;
     using StackFrameLib for StackFrameWindow;
 
     IOneStepProver public prover0;
@@ -117,7 +116,7 @@ contract OneStepProofEntry is IOneStepProofEntry {
         } else if (
             (opcode >= Instructions.GET_GLOBAL_STATE_BYTES32 &&
                 opcode <= Instructions.SET_GLOBAL_STATE_U64) ||
-            (opcode >= Instructions.READ_PRE_IMAGE && opcode <= Instructions.POP_ERROR_GUARD) ||
+            (opcode >= Instructions.READ_PRE_IMAGE && opcode <= Instructions.UNLINK_MODULE) ||
             (opcode >= Instructions.NEW_COTHREAD && opcode <= Instructions.SWITCH_COTHREAD)
         ) {
             prover = proverHostIo;
@@ -133,16 +132,10 @@ contract OneStepProofEntry is IOneStepProofEntry {
             mach.modulesRoot = modProof.computeRootFromModule(oldModIdx, mod);
         }
 
-        if (mach.status == MachineStatus.ERRORED && mach.cothread && !mach.guardStack.empty()) {
-            ErrorGuard memory guard = mach.guardStack.pop();
-            mach.frameMultiStack.inactiveStackHash = guard.frameStack;
-            mach.valueMultiStack.inactiveStackHash = guard.valueStack;
+        if (mach.status == MachineStatus.ERRORED && mach.cothread) {
             mach.switchCoThread();
-            mach.internalStack.overwrite(guard.interStack);
-            mach.setPc(guard.onErrorPc);
-
             // indicate an error and continue
-            mach.valueStack.push(ValueLib.newI32(0));
+            mach.valueStack.push(ValueLib.newI32(1));
             mach.status = MachineStatus.RUNNING;
         }
 

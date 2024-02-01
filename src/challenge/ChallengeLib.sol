@@ -64,7 +64,6 @@ library ChallengeLib {
         ValueStack memory values = ValueStack({proved: valuesArray, remainingHash: 0});
         ValueStack memory internalStack;
         StackFrameWindow memory frameStack;
-        GuardStack memory guardStack;
         MultiStack memory emptyMultiStack;
         emptyMultiStack.setEmpty();
 
@@ -75,7 +74,6 @@ library ChallengeLib {
             internalStack: internalStack,
             frameStack: frameStack,
             frameMultiStack: emptyMultiStack,
-            guardStack: guardStack,
             globalStateHash: globalStateHash,
             moduleIdx: 0,
             functionIdx: 0,

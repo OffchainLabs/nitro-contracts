@@ -10,7 +10,6 @@ import "./Machine.sol";
 import "./MultiStack.sol";
 import "./Instructions.sol";
 import "./StackFrame.sol";
-import "./GuardStack.sol";
 import "./MerkleProof.sol";
 import "./ModuleMemoryCompact.sol";
 import "./Module.sol";
@@ -202,49 +201,6 @@ library Deserialize {
         window = StackFrameWindow({proved: proved, remainingHash: remainingHash});
     }
 
-    function errorGuard(bytes calldata proof, uint256 startOffset)
-        internal
-        pure
-        returns (ErrorGuard memory guard, uint256 offset)
-    {
-        offset = startOffset;
-        Value memory onErrorPc;
-        bytes32 frameStack;
-        bytes32 valueStackHash;
-        bytes32 interStack;
-        (frameStack, offset) = b32(proof, offset);
-        (valueStackHash, offset) = b32(proof, offset);
-        (interStack, offset) = b32(proof, offset);
-        (onErrorPc, offset) = value(proof, offset);
-        guard = ErrorGuard({
-            frameStack: frameStack,
-            valueStack: valueStackHash,
-            interStack: interStack,
-            onErrorPc: onErrorPc
-        });
-    }
-
-    function guardStack(bytes calldata proof, uint256 startOffset)
-        internal
-        pure
-        returns (GuardStack memory window, uint256 offset)
-    {
-        offset = startOffset;
-        bytes32 remainingHash;
-        bool empty;
-        (empty, offset) = boolean(proof, offset);
-        (remainingHash, offset) = b32(proof, offset);
-
-        ErrorGuard[] memory proved;
-        if (empty) {
-            proved = new ErrorGuard[](0);
-        } else {
-            proved = new ErrorGuard[](1);
-            (proved[0], offset) = errorGuard(proof, offset);
-        }
-        window = GuardStack({proved: proved, remainingHash: remainingHash});
-    }
-
     function moduleMemory(bytes calldata proof, uint256 startOffset)
         internal
         pure
@@ -333,13 +289,11 @@ library Deserialize {
             MultiStack memory valuesMulti;
             StackFrameWindow memory frameStack;
             MultiStack memory framesMulti;
-            GuardStack memory guards;
             (values, offset) = valueStack(proof, offset);
             (valuesMulti, offset) = multiStack(proof, offset);
             (internalStack, offset) = valueStack(proof, offset);
             (frameStack, offset) = stackFrameWindow(proof, offset);
             (framesMulti, offset) = multiStack(proof, offset);
-            (guards, offset) = guardStack(proof, offset);
             mach = Machine({
                 status: status,
                 valueStack: values,
@@ -347,7 +301,6 @@ library Deserialize {
                 internalStack: internalStack,
                 frameStack: frameStack,
                 frameMultiStack: framesMulti,
-                guardStack: guards,
                 globalStateHash: bytes32(0), // filled later
                 moduleIdx: 0, // filled later
                 functionIdx: 0, // filled later

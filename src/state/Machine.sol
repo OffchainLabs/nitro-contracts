@@ -8,7 +8,6 @@ import "./ValueStack.sol";
 import "./Instructions.sol";
 import "./MultiStack.sol";
 import "./StackFrame.sol";
-import "./GuardStack.sol";
 
 enum MachineStatus {
     RUNNING,
@@ -24,7 +23,6 @@ struct Machine {
     ValueStack internalStack;
     StackFrameWindow frameStack;
     MultiStack frameMultiStack;
-    GuardStack guardStack;
     bytes32 globalStateHash;
     uint32 moduleIdx;
     uint32 functionIdx;
@@ -35,7 +33,6 @@ struct Machine {
 
 library MachineLib {
     using StackFrameLib for StackFrameWindow;
-    using GuardStackLib for GuardStack;
     using ValueStackLib for ValueStack;
     using MultiStackLib for MultiStack;
 
@@ -61,13 +58,7 @@ library MachineLib {
                 mach.functionPc,
                 mach.modulesRoot
             );
-
-            if (mach.guardStack.empty() && !mach.cothread) {
-                return keccak256(preimage);
-            } else {
-                return
-                    keccak256(abi.encodePacked(preimage, "With guards:", mach.guardStack.hash()));
-            }
+            return keccak256(preimage);
         } else if (mach.status == MachineStatus.FINISHED) {
             return keccak256(abi.encodePacked("Machine finished:", mach.globalStateHash));
         } else if (mach.status == MachineStatus.ERRORED) {
