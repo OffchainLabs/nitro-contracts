@@ -44,6 +44,12 @@ interface ISequencerInbox is IDelayedMessageProvider {
     // solhint-disable-next-line func-name-mixedcase
     function HEADER_LENGTH() external view returns (uint256);
 
+    /// @dev If the first batch data byte after the header has this bit set,
+    ///      the sequencer inbox has authenticated the data. Currently only used for 4844 blob support.
+    ///      See: https://github.com/OffchainLabs/nitro/blob/69de0603abf6f900a4128cab7933df60cad54ded/arbstate/das_reader.go
+    // solhint-disable-next-line func-name-mixedcase
+    function DATA_AUTHENTICATED_FLAG() external view returns (bytes1);
+
     /// @dev If the first data byte after the header has this bit set,
     ///      then the batch data is to be found in 4844 data blobs
     ///      See: https://github.com/OffchainLabs/nitro/blob/69de0603abf6f900a4128cab7933df60cad54ded/arbstate/das_reader.go
@@ -81,6 +87,10 @@ interface ISequencerInbox is IDelayedMessageProvider {
     function isSequencer(address) external view returns (bool);
 
     function maxDataSize() external view returns (uint256);
+
+    /// @notice The batch poster manager has the ability to change the batch poster addresses
+    ///         This enables the batch poster to do key rotation
+    function batchPosterManager() external view returns (address);
 
     struct DasKeySetInfo {
         bool isValidKeyset;
@@ -148,6 +158,14 @@ interface ISequencerInbox is IDelayedMessageProvider {
         uint256 newMessageCount
     ) external;
 
+    function addSequencerL2BatchFromBlobs(
+        uint256 sequenceNumber,
+        uint256 afterDelayedMessagesRead,
+        IGasRefunder gasRefunder,
+        uint256 prevMessageCount,
+        uint256 newMessageCount
+    ) external;
+
     // ---------- onlyRollupOrOwner functions ----------
 
     /**
@@ -177,16 +195,12 @@ interface ISequencerInbox is IDelayedMessageProvider {
      */
     function setIsSequencer(address addr, bool isSequencer_) external;
 
+    /**
+     * @notice Updates the batch poster manager, the address which has the ability to rotate batch poster keys
+     * @param newBatchPosterManager The new batch poster manager to be set
+     */
+    function setBatchPosterManager(address newBatchPosterManager) external;
+
     /// @notice Allows the rollup owner to sync the rollup address
     function updateRollupAddress() external;
-}
-
-interface IDataHashReader {
-    /// @notice Returns all the data hashes of all the blobs on the current transaction
-    function getDataHashes() external view returns (bytes32[] memory);
-}
-
-interface IBlobBasefeeReader {
-    /// @notice Returns the current BLOBBASEFEE
-    function getBlobBaseFee() external view returns (uint256);
 }

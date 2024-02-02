@@ -225,6 +225,7 @@ describe('SequencerInboxForceInclude', async () => {
     const dummyRollup = accounts[2]
     const rollupOwner = accounts[3]
     const batchPoster = accounts[4]
+    const batchPosterManager = accounts[5]
 
     const rollupMockFac = (await ethers.getContractFactory(
       'RollupMock'
@@ -259,8 +260,7 @@ describe('SequencerInboxForceInclude', async () => {
       .connect(rollupOwner)
     await bridge.initialize(rollup.address)
 
-    const dataHashReader = await Toolkit4844.deployDataHashReader(admin)
-    const blobBasefeeReader = await Toolkit4844.deployBlobBasefeeReader(admin)
+    const reader4844 = await Toolkit4844.deployReader4844(admin)
 
     const sequencerInboxFac = (await ethers.getContractFactory(
       'SequencerInbox'
@@ -274,8 +274,8 @@ describe('SequencerInboxForceInclude', async () => {
         futureSeconds: 3000,
       },
       117964,
-      dataHashReader.address,
-      blobBasefeeReader.address
+      reader4844.address,
+      false
     )
 
     await (

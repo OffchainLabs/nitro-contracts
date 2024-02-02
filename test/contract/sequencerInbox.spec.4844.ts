@@ -23,10 +23,11 @@ import {
   JsonRpcProvider,
   TransactionReceipt,
 } from '@ethersproject/providers'
-import { expect, util } from 'chai'
+import { expect } from 'chai'
 import {
   Bridge,
   Bridge__factory,
+  GasRefunder__factory,
   Inbox,
   Inbox__factory,
   MessageTester,
@@ -43,11 +44,14 @@ import {
   MessageDeliveredEvent,
 } from '../../build/types/src/bridge/Bridge'
 import { Signer, Wallet, constants, utils } from 'ethers'
-import { keccak256, solidityKeccak256, solidityPack } from 'ethers/lib/utils'
+import {
+  keccak256,
+  parseEther,
+  solidityKeccak256,
+  solidityPack,
+} from 'ethers/lib/utils'
 import { Toolkit4844 } from './toolkit4844'
 import { SequencerInbox } from '../../build/types/src/bridge/SequencerInbox'
-import { execSync } from 'child_process'
-import { wait } from '@arbitrum/sdk/dist/lib/utils/lib'
 import { InboxMessageDeliveredEvent } from '../../build/types/src/bridge/AbsInbox'
 import { SequencerBatchDeliveredEvent } from '../../build/types/src/bridge/AbsBridge'
 
@@ -225,6 +229,7 @@ describe('SequencerInbox', async () => {
       sequencerInbox: string
       messageTester: string
       batchPoster: string
+      gasRefunder: string
     }
   ) => {
     return {
@@ -238,6 +243,10 @@ describe('SequencerInbox', async () => {
       ),
       messageTester: MessageTester__factory.connect(
         addresses.messageTester,
+        deployer
+      ),
+      gasRefunder: GasRefunder__factory.connect(
+        addresses.gasRefunder,
         deployer
       ),
     }
@@ -258,13 +267,14 @@ describe('SequencerInbox', async () => {
     const batchPoster = accounts[4]
 
     // update the addresses below and uncomment to avoid redeploying
-    // return connectAddreses(user, deployer, batchPoster, {
+    //     return connectAddreses(user, deployer, batchPoster, {
     //   user: '0x870204e93ca485a6676E264EB0d7df4cD0246203',
-    //   bridge: '0x00eb941BD8B89E0396A983c870fa74DA4aC5ecFB',
-    //   inbox: '0x68BCf73c6b36ae3f20b2fD06c2d4651538Ae02a6',
+    //   bridge: '0x95491D63100cc7a21155247329007ca294fC752B',
+    //   inbox: '0x00eb941BD8B89E0396A983c870fa74DA4aC5ecFB',
     //   sequencerInbox: '0x87fEe873425A65Bb2A11dFf6E15B4Ce25e7AFccD',
-    //   messageTester: '0x33B1355B2F3BE116eB1c8226CF3B0a433259459C',
+    //   messageTester: '0x68BCf73c6b36ae3f20b2fD06c2d4651538Ae02a6',
     //   batchPoster: '0x328375c90F01Dcb114888DA36e3832F69Ad0BB57',
+    //   gasRefunder: '0x33B1355B2F3BE116eB1c8226CF3B0a433259459C'
     // })
 
     const rollupMockFac = new RollupMock__factory(deployer)
@@ -339,6 +349,21 @@ describe('SequencerInbox', async () => {
     await (await bridgeAdmin.setSequencerInbox(sequencerInbox.address)).wait()
     const messageTester = await new MessageTester__factory(deployer).deploy()
     await messageTester.deployed()
+
+    const gasRefunderFac = new GasRefunder__factory(deployer)
+    const gasRefunder = await gasRefunderFac.deploy()
+    await gasRefunder.deployed()
+    // fund the gas refunder
+    await (
+      await deployer.sendTransaction({
+        to: gasRefunder.address,
+        value: parseEther('0.2'),
+      })
+    ).wait()
+    await (await gasRefunder.allowContracts([sequencerInbox.address])).wait()
+    await (await gasRefunder.allowRefundees([batchPoster.address])).wait()
+    await (await gasRefunder.setExtraGasMargin(35000)).wait()
+
     const res = {
       user,
       bridge: bridge,
@@ -346,6 +371,7 @@ describe('SequencerInbox', async () => {
       sequencerInbox: sequencerInbox,
       messageTester,
       batchPoster,
+      gasRefunder,
     }
 
     // comment this in to print the addresses that can then be re-used to avoid redeployment
@@ -362,8 +388,15 @@ describe('SequencerInbox', async () => {
     const prov = new JsonRpcProvider('http://127.0.0.1:8545')
     const wallet = new Wallet(privKey).connect(prov)
 
-    const { user, inbox, bridge, messageTester, sequencerInbox, batchPoster } =
-      await setupSequencerInbox(wallet)
+    const {
+      user,
+      inbox,
+      bridge,
+      messageTester,
+      sequencerInbox,
+      batchPoster,
+      gasRefunder,
+    } = await setupSequencerInbox(wallet)
 
     await sendDelayedTx(
       user,
@@ -379,18 +412,22 @@ describe('SequencerInbox', async () => {
     )
 
     const subMessageCount = await bridge.sequencerReportedSubMessageCount()
-    const batchSendTx = await sequencerInbox
-      .connect(batchPoster)
-      .functions.addSequencerL2BatchFromOrigin(
-        await bridge.sequencerMessageCount(),
-        '0x0042',
-        await bridge.delayedMessageCount(),
-        constants.AddressZero,
-        subMessageCount,
-        subMessageCount.add(1)
-      )
-
-    await batchSendTx.wait()
+    const balBefore = await batchPoster.getBalance()
+    await (
+      await sequencerInbox
+        .connect(batchPoster)
+        .functions[
+          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256)'
+        ](
+          await bridge.sequencerMessageCount(),
+          '0x0042',
+          await bridge.delayedMessageCount(),
+          gasRefunder.address,
+          subMessageCount,
+          subMessageCount.add(1)
+        )
+    ).wait()
+    expect((await batchPoster.getBalance()).gt(balBefore), 'Refund not enough')
   })
 
   it('can send blob batch', async () => {
@@ -399,8 +436,15 @@ describe('SequencerInbox', async () => {
     const prov = new JsonRpcProvider('http://127.0.0.1:8545')
     const wallet = new Wallet(privKey).connect(prov)
 
-    const { user, inbox, bridge, messageTester, sequencerInbox, batchPoster } =
-      await setupSequencerInbox(wallet)
+    const {
+      user,
+      inbox,
+      bridge,
+      messageTester,
+      sequencerInbox,
+      batchPoster,
+      gasRefunder,
+    } = await setupSequencerInbox(wallet)
 
     await sendDelayedTx(
       user,
@@ -418,21 +462,25 @@ describe('SequencerInbox', async () => {
     const afterDelayedMessagesRead = await bridge.delayedMessageCount()
     const sequenceNumber = await bridge.sequencerMessageCount()
 
+    const balBefore = await batchPoster.getBalance()
     const txHash = await Toolkit4844.sendBlobTx(
       batchPoster.privateKey.substring(2),
       sequencerInbox.address,
       ['0x0142', '0x0143'],
       sequencerInbox.interface.encodeFunctionData(
-        'addSequencerL2BatchFromBlob',
+        'addSequencerL2BatchFromBlobs',
         [
           sequenceNumber,
           afterDelayedMessagesRead,
-          constants.AddressZero,
+          gasRefunder.address,
           subMessageCount,
           subMessageCount.add(1),
         ]
       )
     )
+
+    expect((await batchPoster.getBalance()).gt(balBefore), 'Refund not enough')
+
     const batchSendTx = await Toolkit4844.getTx(txHash)
     const blobHashes = (batchSendTx as any)['blobVersionedHashes'] as string[]
     const batchSendReceipt = await Toolkit4844.getTxReceipt(txHash)
@@ -449,7 +497,6 @@ describe('SequencerInbox', async () => {
       afterDelayedMessagesRead.toNumber(),
       blobHashes
     )
-
     const batchDeliveredEvent = batchSendReceipt.logs
       .filter(
         (b: any) =>
@@ -509,6 +556,8 @@ describe('SequencerInbox', async () => {
       '0x' + inboxMsgDeliveredEvent.data.substring(170, 234)
     const spendingBlobBasefee =
       '0x' + inboxMsgDeliveredEvent.data.substring(234, 298)
+    const spendingExtraGas =
+      '0x' + inboxMsgDeliveredEvent.data.substring(298, 314)
 
     expect(
       BigNumber.from(spendingTimestamp).eq(blockTimestamp),
@@ -522,10 +571,17 @@ describe('SequencerInbox', async () => {
       BigNumber.from(spendingSeqMessageIndex).eq(sequenceNumber),
       'spending seq message index'
     ).to.eq(true)
-    // we expect a very low - 1 - basefee since we havent sent many blobs
+
+    if (baseFeePerGas == null) {
+      throw new Error('Missing base fee')
+    }
     expect(
-      BigNumber.from(spendingBlobBasefee).eq(1),
-      `spending blob basefee: ${BigNumber.from(spendingBlobBasefee).toString()}`
+      BigNumber.from(spendingBlockBaseFee).eq(baseFeePerGas),
+      `spending basefee: ${BigNumber.from(spendingBlockBaseFee).toString()}`
+    ).to.eq(true)
+    expect(
+      BigNumber.from(spendingExtraGas).gt(0), // blob spending is normalized into extra gas
+      `spending extra gas: ${BigNumber.from(spendingExtraGas).toString()}`
     ).to.eq(true)
   })
 

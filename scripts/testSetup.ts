@@ -30,6 +30,8 @@ export const getCustomNetworks = async (
     `docker exec ${sequencerContainer} cat /config/deployment.json`
   ).toString()
 
+  console.log('deploymentData', deploymentData)
+
   const parsedDeploymentData = JSON.parse(deploymentData) as {
     bridge: string
     inbox: string

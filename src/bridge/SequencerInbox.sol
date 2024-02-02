@@ -21,6 +21,8 @@ import {
     AlreadyValidDASKeyset,
     NoSuchKeyset,
     NotForked,
+    NotBatchPosterManager,
+    RollupNotChanged,
     DataBlobsNotSupported,
     InitParamZero,
     MissingDataHashes,
@@ -28,7 +30,9 @@ import {
     NotOwner,
     RollupNotChanged,
     EmptyBatchData,
-    InvalidHeaderFlag
+    InvalidHeaderFlag,
+    NativeTokenMismatch,
+    Deprecated
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./IInboxBase.sol";
@@ -37,10 +41,14 @@ import "../rollup/IRollupLogic.sol";
 import "./Messages.sol";
 import "../precompiles/ArbGasInfo.sol";
 import "../precompiles/ArbSys.sol";
+import "../libraries/IReader4844.sol";
 
 import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
-import {GasRefundEnabled, IGasRefunder} from "../libraries/IGasRefunder.sol";
+import "../libraries/DelegateCallAware.sol";
+import {IGasRefunder} from "../libraries/IGasRefunder.sol";
+import {GasRefundEnabled} from "../libraries/GasRefundEnabled.sol";
 import "../libraries/ArbitrumChecker.sol";
+import {IERC20Bridge} from "./IERC20Bridge.sol";
 
 /**
  * @title Accepts batches from the sequencer and adds them to the rollup inbox.
@@ -56,7 +64,10 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
     uint256 public constant HEADER_LENGTH = 40;
 
     /// @inheritdoc ISequencerInbox
-    bytes1 public constant DATA_BLOB_HEADER_FLAG = 0x40;
+    bytes1 public constant DATA_AUTHENTICATED_FLAG = 0x40;
+
+    /// @inheritdoc ISequencerInbox
+    bytes1 public constant DATA_BLOB_HEADER_FLAG = DATA_AUTHENTICATED_FLAG | 0x10;
 
     /// @inheritdoc ISequencerInbox
     bytes1 public constant DAS_MESSAGE_HEADER_FLAG = 0x80;
@@ -70,7 +81,11 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
     /// @inheritdoc ISequencerInbox
     bytes1 public constant ZERO_HEAVY_MESSAGE_HEADER_FLAG = 0x20;
 
+    // GAS_PER_BLOB from EIP-4844
+    uint256 internal constant GAS_PER_BLOB = 1 << 17;
+
     IOwnable public rollup;
+
     mapping(address => bool) public isBatchPoster;
     // see ISequencerInbox.MaxTimeVariation
     uint64 internal immutable delayBlocks;
@@ -85,22 +100,33 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         _;
     }
 
+    modifier onlyRollupOwnerOrBatchPosterManager() {
+        if (msg.sender != rollup.owner() && msg.sender != batchPosterManager) {
+            revert NotBatchPosterManager(msg.sender);
+        }
+        _;
+    }
+
     mapping(address => bool) public isSequencer;
-    IDataHashReader immutable dataHashReader;
-    IBlobBasefeeReader immutable blobBasefeeReader;
+    IReader4844 public immutable reader4844;
+
+    /// @inheritdoc ISequencerInbox
+    address public batchPosterManager;
 
     // On L1 this should be set to 117964: 90% of Geth's 128KB tx size limit, leaving ~13KB for proving
     uint256 public immutable maxDataSize;
     uint256 internal immutable deployTimeChainId = block.chainid;
     // If the chain this SequencerInbox is deployed on is an Arbitrum chain.
     bool internal immutable hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
+    // True if the chain this SequencerInbox is deployed on uses custom fee token
+    bool public immutable isUsingFeeToken;
 
     constructor(
         IBridge bridge_,
         ISequencerInbox.MaxTimeVariation memory maxTimeVariation_,
         uint256 _maxDataSize,
-        IDataHashReader dataHashReader_,
-        IBlobBasefeeReader blobBasefeeReader_
+        IReader4844 reader4844_,
+        bool _isUsingFeeToken
     ) {
         if (bridge_ == IBridge(address(0))) revert HadZeroInit();
         bridge = bridge_;
@@ -112,17 +138,12 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         futureSeconds = maxTimeVariation_.futureSeconds;
         maxDataSize = _maxDataSize;
         if (hostChainIsArbitrum) {
-            if (dataHashReader_ != IDataHashReader(address(0))) revert DataBlobsNotSupported();
-            if (blobBasefeeReader_ != IBlobBasefeeReader(address(0)))
-                revert DataBlobsNotSupported();
+            if (reader4844_ != IReader4844(address(0))) revert DataBlobsNotSupported();
         } else {
-            if (dataHashReader_ == IDataHashReader(address(0)))
-                revert InitParamZero("DataHashReader");
-            if (blobBasefeeReader_ == IBlobBasefeeReader(address(0)))
-                revert InitParamZero("BlobBasefeeReader");
+            if (reader4844_ == IReader4844(address(0))) revert InitParamZero("Reader4844");
         }
-        dataHashReader = dataHashReader_;
-        blobBasefeeReader = blobBasefeeReader_;
+        reader4844 = reader4844_;
+        isUsingFeeToken = _isUsingFeeToken;
     }
 
     function _chainIdChanged() internal view returns (bool) {
@@ -265,7 +286,7 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    ) external refundsGas(gasRefunder) {
+    ) external refundsGas(gasRefunder, IReader4844(address(0))) {
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
@@ -288,21 +309,25 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
             revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
         }
 
-        // submit a batch spending report to refund the entity that produced the batch data
-        submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee);
+        if (!isUsingFeeToken) {
+            // only report batch poster spendings if chain is using ETH as native currency
+            submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, 0);
+        }
     }
 
-    function addSequencerL2BatchFromBlob(
+    function addSequencerL2BatchFromBlobs(
         uint256 sequenceNumber,
         uint256 afterDelayedMessagesRead,
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    ) external refundsGas(gasRefunder) {
+    ) external refundsGas(gasRefunder, reader4844) {
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
-        (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formBlobDataHash(
-            afterDelayedMessagesRead
-        );
+        (
+            bytes32 dataHash,
+            IBridge.TimeBounds memory timeBounds,
+            uint256 blobGas
+        ) = formBlobDataHash(afterDelayedMessagesRead);
 
         (uint256 seqMessageIndex, , , ) = bridge.enqueueSequencerMessage(
             dataHash,
@@ -313,9 +338,11 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
             IBridge.BatchDataLocation.Blob
         );
 
+        uint256 _sequenceNumber = sequenceNumber; // stack workaround
+
         // ~uint256(0) is type(uint256).max, but ever so slightly cheaper
-        if (seqMessageIndex != sequenceNumber && sequenceNumber != ~uint256(0)) {
-            revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
+        if (seqMessageIndex != _sequenceNumber && _sequenceNumber != ~uint256(0)) {
+            revert BadSequencerNumber(seqMessageIndex, _sequenceNumber);
         }
 
         // blobs are currently not supported on host arbitrum chains, when support is added it may
@@ -324,8 +351,12 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         if (hostChainIsArbitrum) revert DataBlobsNotSupported();
 
         // submit a batch spending report to refund the entity that produced the blob batch data
-        uint256 blobBasefee = blobBasefeeReader.getBlobBaseFee();
-        submitBatchSpendingReport(dataHash, seqMessageIndex, blobBasefee);
+        // same as using calldata, we only submit spending report if the caller is the origin of the tx
+        // such that one cannot "double-claim" batch posting refund in the same tx
+        // solhint-disable-next-line avoid-tx-origin
+        if (msg.sender == tx.origin && !isUsingFeeToken) {
+            submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, blobGas);
+        }
     }
 
     function addSequencerL2Batch(
@@ -335,7 +366,7 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    ) external override refundsGas(gasRefunder) {
+    ) external override refundsGas(gasRefunder, IReader4844(address(0))) {
         if (!isBatchPoster[msg.sender] && msg.sender != address(rollup)) revert NotBatchPoster();
         (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formCallDataHash(
             data,
@@ -446,34 +477,45 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
     /// @param afterDelayedMessagesRead The delayed messages count read up to
     /// @return The data hash
     /// @return The timebounds within which the message should be processed
+    /// @return The normalized amount of gas used for blob posting
     function formBlobDataHash(uint256 afterDelayedMessagesRead)
         internal
         view
-        returns (bytes32, IBridge.TimeBounds memory)
+        returns (
+            bytes32,
+            IBridge.TimeBounds memory,
+            uint256
+        )
     {
-        bytes32[] memory dataHashes = dataHashReader.getDataHashes();
+        bytes32[] memory dataHashes = reader4844.getDataHashes();
         if (dataHashes.length == 0) revert MissingDataHashes();
 
         (bytes memory header, IBridge.TimeBounds memory timeBounds) = packHeader(
             afterDelayedMessagesRead
         );
 
+        uint256 blobCost = reader4844.getBlobBaseFee() * GAS_PER_BLOB * dataHashes.length;
         return (
             keccak256(bytes.concat(header, DATA_BLOB_HEADER_FLAG, abi.encodePacked(dataHashes))),
-            timeBounds
+            timeBounds,
+            block.basefee > 0 ? blobCost / block.basefee : 0
         );
     }
 
     /// @dev   Submit a batch spending report message so that the batch poster can be reimbursed on the rollup
+    ///        This function expect msg.sender is tx.origin, and will always record tx.origin as the spender
     /// @param dataHash The hash of the message the spending report is being submitted for
     /// @param seqMessageIndex The index of the message to submit the spending report for
     /// @param gasPrice The gas price that was paid for the data (standard gas or data gas)
     function submitBatchSpendingReport(
         bytes32 dataHash,
         uint256 seqMessageIndex,
-        uint256 gasPrice
+        uint256 gasPrice,
+        uint256 extraGas
     ) internal {
-        bytes memory spendingReportMsg;
+        // report the account who paid the gas (tx.origin) for the tx as batch poster
+        // if msg.sender is used and is a contract, it might not be able to spend the refund on l2
+        // solhint-disable-next-line avoid-tx-origin
         address batchPoster = tx.origin;
 
         // this msg isn't included in the current sequencer batch, but instead added to
@@ -481,25 +523,17 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
         if (hostChainIsArbitrum) {
             // Include extra gas for the host chain's L1 gas charging
             uint256 l1Fees = ArbGasInfo(address(0x6c)).getCurrentTxL1GasFees();
-            uint256 extraGas = l1Fees / block.basefee;
-            require(extraGas <= type(uint64).max, "L1_GAS_NOT_UINT64");
-            spendingReportMsg = abi.encodePacked(
-                block.timestamp,
-                batchPoster,
-                dataHash,
-                seqMessageIndex,
-                gasPrice,
-                uint64(extraGas)
-            );
-        } else {
-            spendingReportMsg = abi.encodePacked(
-                block.timestamp,
-                batchPoster,
-                dataHash,
-                seqMessageIndex,
-                gasPrice
-            );
+            extraGas += l1Fees / block.basefee;
         }
+        require(extraGas <= type(uint64).max, "EXTRA_GAS_NOT_UINT64");
+        bytes memory spendingReportMsg = abi.encodePacked(
+            block.timestamp,
+            batchPoster,
+            dataHash,
+            seqMessageIndex,
+            gasPrice,
+            uint64(extraGas)
+        );
 
         uint256 msgNum = bridge.submitBatchSpendingReport(
             batchPoster,
@@ -518,7 +552,10 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
     }
 
     /// @inheritdoc ISequencerInbox
-    function setIsBatchPoster(address addr, bool isBatchPoster_) external onlyRollupOwner {
+    function setIsBatchPoster(address addr, bool isBatchPoster_)
+        external
+        onlyRollupOwnerOrBatchPosterManager
+    {
         isBatchPoster[addr] = isBatchPoster_;
         // we used to have OwnerFunctionCalled(0) for setting the maxTimeVariation
         // so we dont use index = 0 here, even though this is the first owner function
@@ -557,9 +594,18 @@ contract SequencerInbox is GasRefundEnabled, ISequencerInbox {
     }
 
     /// @inheritdoc ISequencerInbox
-    function setIsSequencer(address addr, bool isSequencer_) external onlyRollupOwner {
+    function setIsSequencer(address addr, bool isSequencer_)
+        external
+        onlyRollupOwnerOrBatchPosterManager
+    {
         isSequencer[addr] = isSequencer_;
-        emit OwnerFunctionCalled(4);
+        emit OwnerFunctionCalled(4); // Owner in this context can also be batch poster manager
+    }
+
+    /// @inheritdoc ISequencerInbox
+    function setBatchPosterManager(address newBatchPosterManager) external onlyRollupOwner {
+        batchPosterManager = newBatchPosterManager;
+        emit OwnerFunctionCalled(5);
     }
 
     function isValidKeysetHash(bytes32 ksHash) external view returns (bool) {

@@ -86,8 +86,7 @@ contract BridgeCreator is Ownable {
         address nativeToken,
         ISequencerInbox.MaxTimeVariation calldata maxTimeVariation,
         uint256 maxDataSize,
-        IDataHashReader dataHashReader,
-        IBlobBasefeeReader blobBasefeeReader
+        IReader4844 reader4844
     ) external returns (BridgeContracts memory) {
         // create ETH-based bridge if address zero is provided for native token, otherwise create ERC20-based bridge
         BridgeContracts memory frame = _createBridge(
@@ -105,8 +104,8 @@ contract BridgeCreator is Ownable {
             IBridge(frame.bridge),
             maxTimeVariation,
             maxDataSize,
-            dataHashReader,
-            blobBasefeeReader
+            reader4844,
+            nativeToken != address(0)
         );
         frame.inbox.initialize(frame.bridge, frame.sequencerInbox);
         frame.rollupEventInbox.initialize(frame.bridge);

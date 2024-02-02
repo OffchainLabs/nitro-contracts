@@ -35,14 +35,15 @@ contract RollupCreator is Ownable {
 
     struct RollupDeploymentParams {
         Config config;
-        address batchPoster;
         address[] validators;
         uint256 maxDataSize;
         address nativeToken;
         bool deployFactoriesToL2;
         uint256 maxFeePerGasForRetryables;
-        IDataHashReader dataHashReader;
-        IBlobBasefeeReader blobBasefeeReader;
+        //// @dev The address of the batch poster, not used when set to zero address
+        address[] batchPosters;
+        address batchPosterManager;
+        IReader4844 reader4844;
     }
 
     BridgeCreator public bridgeCreator;
@@ -131,8 +132,7 @@ contract RollupCreator is Ownable {
             deployParams.nativeToken,
             deployParams.config.sequencerInboxMaxTimeVariation,
             deployParams.maxDataSize,
-            deployParams.dataHashReader,
-            deployParams.blobBasefeeReader
+            deployParams.reader4844
         );
 
         IChallengeManager challengeManager = IChallengeManager(
@@ -176,9 +176,12 @@ contract RollupCreator is Ownable {
             })
         );
 
-        // setting batch poster, if the address provided is not zero address
-        if (deployParams.batchPoster != address(0)) {
-            bridgeContracts.sequencerInbox.setIsBatchPoster(deployParams.batchPoster, true);
+        // Setting batch posters and batch poster manager
+        for (uint256 i = 0; i < deployParams.batchPosters.length; i++) {
+            bridgeContracts.sequencerInbox.setIsBatchPoster(deployParams.batchPosters[i], true);
+        }
+        if (deployParams.batchPosterManager != address(0)) {
+            bridgeContracts.sequencerInbox.setBatchPosterManager(deployParams.batchPosterManager);
         }
 
         // Call setValidator on the newly created rollup contract just if validator set is not empty

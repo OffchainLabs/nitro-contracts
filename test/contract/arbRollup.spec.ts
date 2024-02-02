@@ -82,9 +82,11 @@ const ZERO_ADDR = ethers.constants.AddressZero
 const extraChallengeTimeBlocks = 20
 const wasmModuleRoot =
   '0x9900000000000000000000000000000000000000000000000000000000000010'
+const dummy4844Reader = '0x0000000000000000000000000000000000000089'
 
 // let rollup: RollupContract
 let rollup: RollupContract
+let batchPosterManager: Signer
 let rollupUser: RollupUserLogic
 let rollupAdmin: RollupAdminLogic
 let bridge: Bridge
@@ -131,6 +133,7 @@ const setup = async () => {
   const val3 = accounts[4]
   const val4 = accounts[5]
   sequencer = accounts[6]
+  const batchPosterManager = accounts[7]
 
   const oneStep0Fac = (await ethers.getContractFactory(
     'OneStepProver0'
@@ -266,7 +269,7 @@ const setup = async () => {
   const dummyBlobBasefeeReader = '0x0000000000000000000000000000000000000090'
   const deployParams = {
     config: await getDefaultConfig(),
-    batchPoster: await sequencer.getAddress(),
+    batchPosters: [await sequencer.getAddress()],
     validators: [
       await val1.getAddress(),
       await val2.getAddress(),
@@ -277,8 +280,8 @@ const setup = async () => {
     nativeToken: ethers.constants.AddressZero,
     deployFactoriesToL2: true,
     maxFeePerGasForRetryables: maxFeePerGas,
-    dataHashReader: dummyDataHashReader,
-    blobBasefeeReader: dummyBlobBasefeeReader,
+    batchPosterManager: await batchPosterManager.getAddress(),
+    reader4844: dummy4844Reader,
   }
 
   const response = await rollupCreator.createRollup(deployParams, {
@@ -305,6 +308,10 @@ const setup = async () => {
     )) as SequencerInbox__factory
   ).attach(rollupCreatedEvent.sequencerInbox)
 
+  await sequencerInbox
+    .connect(await impersonateAccount(rollupCreatedEvent.upgradeExecutor))
+    .setBatchPosterManager(await batchPosterManager.getAddress())
+
   challengeManager = (
     (await ethers.getContractFactory(
       'ChallengeManager'
@@ -329,6 +336,7 @@ const setup = async () => {
     delayedBridge: rollupCreatedEvent.bridge,
     delayedInbox: rollupCreatedEvent.inboxAddress,
     bridge,
+    batchPosterManager,
     upgradeExecutorAddress: rollupCreatedEvent.upgradeExecutor,
     adminproxy: rollupCreatedEvent.adminProxy,
   }
@@ -511,6 +519,7 @@ describe('ArbRollup', () => {
       bridge: bridgeContract,
       admin: adminI,
       validators: validatorsI,
+      batchPosterManager: batchPosterManagerI,
       upgradeExecutorAddress,
       adminproxy: adminproxyAddress,
     } = await setup()
@@ -522,6 +531,7 @@ describe('ArbRollup', () => {
     upgradeExecutor = upgradeExecutorAddress
     adminproxy = adminproxyAddress
     rollup = new RollupContract(rollupUser.connect(validators[0]))
+    batchPosterManager = batchPosterManagerI
   })
 
   it('should only initialize once', async function () {
@@ -1112,6 +1122,7 @@ describe('ArbRollup', () => {
       rollupUser: rollupUserContract,
       admin: adminI,
       validators: validatorsI,
+      batchPosterManager: batchPosterManagerI,
       upgradeExecutorAddress,
     } = await setup()
     rollupAdmin = rollupAdminContract
@@ -1120,6 +1131,7 @@ describe('ArbRollup', () => {
     validators = validatorsI
     upgradeExecutor = upgradeExecutorAddress
     rollup = new RollupContract(rollupUser.connect(validators[0]))
+    batchPosterManager = batchPosterManagerI
   })
 
   it('should stake on initial node again', async function () {
@@ -1368,6 +1380,81 @@ describe('ArbRollup', () => {
       proxySecondaryImpl.interface.functions['initialize(address)']
         .stateMutability
     ).to.eq('view')
+  })
+
+  it('can set is sequencer', async function () {
+    const testAddress = await accounts[9].getAddress()
+    expect(await sequencerInbox.isSequencer(testAddress)).to.be.false
+    await expect(
+      sequencerInbox.setIsSequencer(testAddress, true)
+    ).to.revertedWith(
+      `NotBatchPosterManager("${await sequencerInbox.signer.getAddress()}")`
+    )
+    expect(await sequencerInbox.isSequencer(testAddress)).to.be.false
+
+    await (
+      await sequencerInbox
+        .connect(batchPosterManager)
+        .setIsSequencer(testAddress, true)
+    ).wait()
+
+    expect(await sequencerInbox.isSequencer(testAddress)).to.be.true
+
+    await (
+      await sequencerInbox
+        .connect(batchPosterManager)
+        .setIsSequencer(testAddress, false)
+    ).wait()
+
+    expect(await sequencerInbox.isSequencer(testAddress)).to.be.false
+  })
+
+  it('can set a batch poster', async function () {
+    const testAddress = await accounts[9].getAddress()
+    expect(await sequencerInbox.isBatchPoster(testAddress)).to.be.false
+    await expect(
+      sequencerInbox.setIsBatchPoster(testAddress, true)
+    ).to.revertedWith(
+      `NotBatchPosterManager("${await sequencerInbox.signer.getAddress()}")`
+    )
+    expect(await sequencerInbox.isBatchPoster(testAddress)).to.be.false
+
+    await (
+      await sequencerInbox
+        .connect(batchPosterManager)
+        .setIsBatchPoster(testAddress, true)
+    ).wait()
+
+    expect(await sequencerInbox.isBatchPoster(testAddress)).to.be.true
+
+    await (
+      await sequencerInbox
+        .connect(batchPosterManager)
+        .setIsBatchPoster(testAddress, false)
+    ).wait()
+
+    expect(await sequencerInbox.isBatchPoster(testAddress)).to.be.false
+  })
+
+  it('can set batch poster manager', async function () {
+    const testManager = await accounts[8].getAddress()
+    expect(await sequencerInbox.batchPosterManager()).to.eq(
+      await batchPosterManager.getAddress()
+    )
+    await expect(
+      sequencerInbox.connect(accounts[8]).setBatchPosterManager(testManager)
+    ).to.revertedWith(`NotOwner("${testManager}", "${upgradeExecutor}")`)
+    expect(await sequencerInbox.batchPosterManager()).to.eq(
+      await batchPosterManager.getAddress()
+    )
+
+    await (
+      await sequencerInbox
+        .connect(await impersonateAccount(upgradeExecutor))
+        .setBatchPosterManager(testManager)
+    ).wait()
+
+    expect(await sequencerInbox.batchPosterManager()).to.eq(testManager)
   })
 
   it('should fail the batch poster check', async function () {
