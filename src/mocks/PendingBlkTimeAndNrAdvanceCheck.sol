@@ -15,7 +15,7 @@ contract PendingBlkTimeAndNrAdvanceCheck {
         deployedAtBlock = ArbSys(address(100)).arbBlockNumber();
     }
 
-    function test() external {
+    function isAdvancing() external {
         require(block.timestamp > deployedAt, "Time didn't advance");
         require(ArbSys(address(100)).arbBlockNumber() > deployedAtBlock, "Block didn't advance");
     }
