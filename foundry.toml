@@ -18,6 +18,9 @@ out = 'out/yul'
 libs = ['node_modules', 'lib']
 cache_path  = 'forge-cache/yul'
 
+[profile.gasreporter]
+test = 'test/gas-reporter'
+
 [fmt]
 number_underscore = 'thousands'
 line_length = 100
