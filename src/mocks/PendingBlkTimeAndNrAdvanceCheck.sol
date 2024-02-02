@@ -6,7 +6,7 @@ pragma solidity ^0.8.0;
 
 import "../precompiles/ArbSys.sol";
 
-contract TestPendingBlkTimeAndNrAdvance {
+contract PendingBlkTimeAndNrAdvanceCheck {
     uint256 immutable deployedAt;
     uint256 immutable deployedAtBlock;
 
