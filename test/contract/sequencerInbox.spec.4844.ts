@@ -255,7 +255,8 @@ describe('SequencerInbox', async () => {
   const setupSequencerInbox = async (
     fundingWallet: Wallet,
     maxDelayBlocks = 10,
-    maxDelayTime = 0
+    maxDelayTime = 0,
+    isUsingFeeToken = false
   ) => {
     const accounts = await fundAccounts(fundingWallet, 5, utils.parseEther('1'))
 
@@ -307,10 +308,7 @@ describe('SequencerInbox', async () => {
     )
     await bridgeProxy.deployed()
     await inboxProxy.deployed()
-    const dataHashReader = await Toolkit4844.deployDataHashReader(fundingWallet)
-    const blobBasefeeReader = await Toolkit4844.deployBlobBasefeeReader(
-      fundingWallet
-    )
+    const reader4844 = await Toolkit4844.deployReader4844(fundingWallet)
 
     const bridge = await bridgeFac.attach(bridgeProxy.address).connect(user)
     const bridgeAdmin = await bridgeFac
@@ -328,8 +326,8 @@ describe('SequencerInbox', async () => {
         futureSeconds: 3000,
       },
       117964,
-      dataHashReader.address,
-      blobBasefeeReader.address,
+      reader4844.address,
+      isUsingFeeToken,
       { gasLimit: 15000000 }
     )
     await sequencerInbox.deployed()
@@ -416,9 +414,7 @@ describe('SequencerInbox', async () => {
     await (
       await sequencerInbox
         .connect(batchPoster)
-        .functions[
-          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256)'
-        ](
+        .functions['addSequencerL2BatchFromOrigin'](
           await bridge.sequencerMessageCount(),
           '0x0042',
           await bridge.delayedMessageCount(),
@@ -484,8 +480,11 @@ describe('SequencerInbox', async () => {
     const batchSendTx = await Toolkit4844.getTx(txHash)
     const blobHashes = (batchSendTx as any)['blobVersionedHashes'] as string[]
     const batchSendReceipt = await Toolkit4844.getTxReceipt(txHash)
-    const { timestamp: blockTimestamp, number: blockNumber } =
-      await wallet.provider.getBlock(batchSendReceipt.blockNumber)
+    const {
+      timestamp: blockTimestamp,
+      number: blockNumber,
+      baseFeePerGas,
+    } = await wallet.provider.getBlock(batchSendReceipt.blockNumber)
 
     const timeBounds = await getTimeBounds(
       blockNumber,
@@ -554,7 +553,7 @@ describe('SequencerInbox', async () => {
       '0x' + inboxMsgDeliveredEvent.data.substring(106, 170)
     const spendingSeqMessageIndex =
       '0x' + inboxMsgDeliveredEvent.data.substring(170, 234)
-    const spendingBlobBasefee =
+    const spendingBlockBaseFee =
       '0x' + inboxMsgDeliveredEvent.data.substring(234, 298)
     const spendingExtraGas =
       '0x' + inboxMsgDeliveredEvent.data.substring(298, 314)
