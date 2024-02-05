@@ -49,6 +49,10 @@ contract OneStepProverHostIo is IOneStepProver {
         return bytes32(newLeaf);
     }
 
+    function _getHotShotCommitment(uint256 h) external view returns (uint256) {
+        return hotshot.commitments(h);
+    }
+
     function executeGetOrSetBytes32(
         Machine memory mach,
         Module memory mod,
