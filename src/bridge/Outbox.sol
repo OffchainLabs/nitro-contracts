@@ -8,13 +8,6 @@ import "./AbsOutbox.sol";
 
 contract Outbox is AbsOutbox {
     /// @inheritdoc AbsOutbox
-    function _defaultContextAmount() internal pure override returns (uint256) {
-        // In ETH-based chains withdrawal amount can be read from msg.value. For that reason
-        // amount slot in context will never be accessed and it has 0 default value
-        return 0;
-    }
-
-    /// @inheritdoc AbsOutbox
     function _amountToSetInContext(uint256) internal pure override returns (uint256) {
         // In ETH-based chains withdrawal amount can be read from msg.value. For that reason
         // amount slot in context will never be accessed, we keep it as 0 all the time

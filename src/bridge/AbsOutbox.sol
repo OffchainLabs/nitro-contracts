@@ -45,50 +45,33 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         uint256 withdrawalAmount;
     }
 
-    // Note, these variables are set and then wiped during a single transaction.
-    // Therefore their values don't need to be maintained, and their slots will
-    // hold default values (which are interpreted as empty values) outside of transactions
-    L2ToL1Context internal context;
+    // @dev Deprecated in place of transient storage
+    L2ToL1Context internal __context;
 
-    // default context values to be used in storage instead of zero, to save on storage refunds
-    // it is assumed that arb-os never assigns these values to a valid leaf to be redeemed
-    uint128 private constant L2BLOCK_DEFAULT_CONTEXT = type(uint128).max;
-    uint96 private constant L1BLOCK_DEFAULT_CONTEXT = type(uint96).max;
-    uint128 private constant TIMESTAMP_DEFAULT_CONTEXT = type(uint128).max;
-    bytes32 private constant OUTPUTID_DEFAULT_CONTEXT = bytes32(type(uint256).max);
-    address private constant SENDER_DEFAULT_CONTEXT = address(type(uint160).max);
+    // @dev Transient storage slots for L2ToL1Context. Assembly doesn't allow non-direct constants.
+    //  keccak256("L2_TO_L1_SENDER_TSLOT")
+    //  keccak256("L2_BLOCK_TSLOT")
+    //  keccak256("L1_BLOCK_TSLOT")
+    //  keccak256("L2_TO_L1_TIMESTAMP_TSLOT")
+    //  keccak256("L2_TO_L1_OUTPUT_ID_TSLOT")
+    //  keccak256("L2_TO_L1_WITHDRAWAL_AMOUNT_TSLOT")
+    bytes32 internal constant L2_TO_L1_SENDER_TSLOT = 0xebabdcd8fe14a14c647a343706bd06da1b2e5aebf8d296b8663ee891cc06cf08;
+    bytes32 internal constant L2_BLOCK_TSLOT = 0x447055cbf69f311f2c80a261ffef9aa8f2a2c5b2ade03ecfbc92a8bfd659a6b3;
+    bytes32 internal constant L1_BLOCK_TSLOT = 0xa804c75ce466d589b8d6227e9a0269a295b94c47d7db88da6af0b77161a4754d;
+    bytes32 internal constant L2_TO_L1_TIMESTAMP_TSLOT = 0xeab03eac502e862d963579369c7da43ef4f9948cb50e6e40a96051fb270cb504;
+    bytes32 internal constant L2_TO_L1_OUTPUT_ID_TSLOT = 0x54ac2ba357ff3576d8d2807d265891a0b119c58f75682a7ea98a7440fb38c5f1;
+    bytes32 internal constant L2_TO_L1_WITHDRAWAL_AMOUNT_TSLOT = 0xdf31e30ba0b65dfa9a3e515da66d692305a58e8c0318de8340e1e0e54b00f27b;
 
-    uint128 public constant OUTBOX_VERSION = 2;
+    uint128 public constant OUTBOX_VERSION = 3;
 
     function initialize(IBridge _bridge) external onlyDelegated {
         if (address(_bridge) == address(0)) revert HadZeroInit();
         if (address(bridge) != address(0)) revert AlreadyInit();
-        // address zero is returned if no context is set, but the values used in storage
-        // are non-zero to save users some gas (as storage refunds are usually maxed out)
-        // EIP-1153 would help here
-        context = L2ToL1Context({
-            l2Block: L2BLOCK_DEFAULT_CONTEXT,
-            l1Block: L1BLOCK_DEFAULT_CONTEXT,
-            timestamp: TIMESTAMP_DEFAULT_CONTEXT,
-            outputId: OUTPUTID_DEFAULT_CONTEXT,
-            sender: SENDER_DEFAULT_CONTEXT,
-            withdrawalAmount: _defaultContextAmount()
-        });
         bridge = _bridge;
         rollup = address(_bridge.rollup());
     }
 
     function postUpgradeInit() external onlyDelegated onlyProxyOwner {
-        // prevent postUpgradeInit within a withdrawal
-        if (context.l2Block != L2BLOCK_DEFAULT_CONTEXT) revert BadPostUpgradeInit();
-        context = L2ToL1Context({
-            l2Block: L2BLOCK_DEFAULT_CONTEXT,
-            l1Block: L1BLOCK_DEFAULT_CONTEXT,
-            timestamp: TIMESTAMP_DEFAULT_CONTEXT,
-            outputId: OUTPUTID_DEFAULT_CONTEXT,
-            sender: SENDER_DEFAULT_CONTEXT,
-            withdrawalAmount: _defaultContextAmount()
-        });
     }
 
     /// @notice Allows the rollup owner to sync the rollup address
@@ -107,35 +90,31 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
     }
 
     /// @inheritdoc IOutbox
-    function l2ToL1Sender() external view returns (address) {
-        address sender = context.sender;
-        // we don't return the default context value to avoid a breaking change in the API
-        if (sender == SENDER_DEFAULT_CONTEXT) return address(0);
-        return sender;
+    function l2ToL1Sender() external view returns (address sender) {
+        assembly {
+            sender := tload(L2_TO_L1_SENDER_TSLOT)
+        }
     }
 
     /// @inheritdoc IOutbox
-    function l2ToL1Block() external view returns (uint256) {
-        uint128 l2Block = context.l2Block;
-        // we don't return the default context value to avoid a breaking change in the API
-        if (l2Block == L2BLOCK_DEFAULT_CONTEXT) return uint256(0);
-        return uint256(l2Block);
+    function l2ToL1Block() external view returns (uint256 l2Block) {
+        assembly {
+            l2Block := tload(L2_BLOCK_TSLOT)
+        }
     }
 
     /// @inheritdoc IOutbox
-    function l2ToL1EthBlock() external view returns (uint256) {
-        uint96 l1Block = context.l1Block;
-        // we don't return the default context value to avoid a breaking change in the API
-        if (l1Block == L1BLOCK_DEFAULT_CONTEXT) return uint256(0);
-        return uint256(l1Block);
+    function l2ToL1EthBlock() external view returns (uint256 l1Block) {
+        assembly {
+            l1Block := tload(L1_BLOCK_TSLOT)
+        }
     }
 
     /// @inheritdoc IOutbox
-    function l2ToL1Timestamp() external view returns (uint256) {
-        uint128 timestamp = context.timestamp;
-        // we don't return the default context value to avoid a breaking change in the API
-        if (timestamp == TIMESTAMP_DEFAULT_CONTEXT) return uint256(0);
-        return uint256(timestamp);
+    function l2ToL1Timestamp() external view returns (uint256 _timestamp) {
+        assembly {
+            _timestamp := tload(L2_TO_L1_TIMESTAMP_TSLOT)
+        }
     }
 
     /// @notice batch number is deprecated and now always returns 0
@@ -144,11 +123,10 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
     }
 
     /// @inheritdoc IOutbox
-    function l2ToL1OutputId() external view returns (bytes32) {
-        bytes32 outputId = context.outputId;
-        // we don't return the default context value to avoid a breaking change in the API
-        if (outputId == OUTPUTID_DEFAULT_CONTEXT) return bytes32(0);
-        return outputId;
+    function l2ToL1OutputId() external view returns (bytes32 outputId) {
+        assembly {
+            outputId := tload(L2_TO_L1_OUTPUT_ID_TSLOT)
+        }
     }
 
     /// @inheritdoc IOutbox
@@ -207,21 +185,51 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
 
         // we temporarily store the previous values so the outbox can naturally
         // unwind itself when there are nested calls to `executeTransaction`
-        L2ToL1Context memory prevContext = context;
+        // L2ToL1Context memory prevContext = context;
+        uint256 prevSender; 
+        uint256 prevL2Block; 
+        uint256 prevL1Block; 
+        uint256 prevTimestamp;
+        uint256 prevOutputId;
+        uint256 prevWithdrawalAmount;
+        assembly {
+            prevSender := tload(L2_TO_L1_SENDER_TSLOT)
+            prevL2Block := tload(L2_BLOCK_TSLOT)
+            prevL1Block := tload(L1_BLOCK_TSLOT)
+            prevTimestamp := tload(L2_TO_L1_TIMESTAMP_TSLOT)
+            prevOutputId := tload(L2_TO_L1_OUTPUT_ID_TSLOT)
+            prevWithdrawalAmount := tload(L2_TO_L1_WITHDRAWAL_AMOUNT_TSLOT)
+        }
 
-        context = L2ToL1Context({
-            sender: l2Sender,
-            l2Block: uint128(l2Block),
-            l1Block: uint96(l1Block),
-            timestamp: uint128(l2Timestamp),
-            outputId: bytes32(outputId),
-            withdrawalAmount: _amountToSetInContext(value)
-        });
+        // context = L2ToL1Context({
+        //     sender: l2Sender,
+        //     l2Block: uint128(l2Block),
+        //     l1Block: uint96(l1Block),
+        //     timestamp: uint128(l2Timestamp),
+        //     outputId: bytes32(outputId),
+        //     withdrawalAmount: _amountToSetInContext(value)
+        // });
+        uint256 _withdrawalAmount = _amountToSetInContext(value);
+        assembly {
+            tstore(L2_TO_L1_SENDER_TSLOT, l2Sender)
+            tstore(L2_BLOCK_TSLOT, l2Block)
+            tstore(L1_BLOCK_TSLOT, l1Block)
+            tstore(L2_TO_L1_TIMESTAMP_TSLOT, l2Timestamp)
+            tstore(L2_TO_L1_OUTPUT_ID_TSLOT, outputId)
+            tstore(L2_TO_L1_WITHDRAWAL_AMOUNT_TSLOT, _withdrawalAmount)
+        }
 
         // set and reset vars around execution so they remain valid during call
         executeBridgeCall(to, value, data);
 
-        context = prevContext;
+        assembly {
+            tstore(L2_TO_L1_SENDER_TSLOT, prevSender)
+            tstore(L2_BLOCK_TSLOT, prevL2Block)
+            tstore(L1_BLOCK_TSLOT, prevL1Block)
+            tstore(L2_TO_L1_TIMESTAMP_TSLOT, prevTimestamp)
+            tstore(L2_TO_L1_OUTPUT_ID_TSLOT, prevOutputId)
+            tstore(L2_TO_L1_WITHDRAWAL_AMOUNT_TSLOT, prevWithdrawalAmount)
+        }    
     }
 
     function _calcSpentIndexOffset(uint256 index)
@@ -306,10 +314,6 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
     ) public pure returns (bytes32) {
         return MerkleLib.calculateRoot(proof, path, keccak256(abi.encodePacked(item)));
     }
-
-    /// @notice default value to be used for 'amount' field in L2ToL1Context outside of transaction execution.
-    /// @return default 'amount' in case of ERC20-based rollup is type(uint256).max, or 0 in case of ETH-based rollup
-    function _defaultContextAmount() internal pure virtual returns (uint256);
 
     /// @notice value to be set for 'amount' field in L2ToL1Context during L2 to L1 transaction execution.
     ///         In case of ERC20-based rollup this is the amount of native token being withdrawn. In case of standard ETH-based
