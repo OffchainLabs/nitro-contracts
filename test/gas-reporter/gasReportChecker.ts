@@ -29,7 +29,7 @@ function getReferentGasReport(
   referent: boolean
 ): Record<string, number> {
   const gasReportCmd = `FOUNDRY_PROFILE=gasreporter forge test --fork-url ${rpc} --fork-block-number ${FORK_BLOCK_NUMBER} --gas-report`
-  const testFile = referent ? 'ReferentGasReportTest' : 'GasReportTest'
+  const testFile = referent ? 'ReferentGasReportTest' : 'CurrentGasReportTest'
 
   let outputEth = execSync(
     gasReportCmd +
