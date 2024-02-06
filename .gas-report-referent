@@ -1,4 +1,4 @@
-No files changed, compilation skipped
+.gas-report-referent No files changed, compilation skipped
 
 Running 2 tests for test/gas-reporter/GasSpendingReferentReport.t.sol:GasSpendingReferentReportTest
 [32m[PASS][0m test_depositEth() (gas: 82938)
