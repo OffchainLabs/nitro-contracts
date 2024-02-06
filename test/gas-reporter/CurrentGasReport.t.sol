@@ -3,7 +3,7 @@ pragma solidity ^0.8.4;
 
 import "./ReferentGasReport.t.sol";
 
-contract GasReportTest is ReferentGasReportTest {
+contract CurrentGasReportTest is ReferentGasReportTest {
     /* solhint-disable func-name-mixedcase */
 
     function test_depositEth() public override {
