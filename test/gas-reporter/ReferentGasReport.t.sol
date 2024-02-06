@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import {Inbox} from "../../src/bridge/Inbox.sol";
 import {Outbox} from "../../src/bridge/Outbox.sol";
 
-contract GasSpendingReferentReportTest is Test {
+contract ReferentGasReportTest is Test {
     /* solhint-disable func-name-mixedcase */
 
     // based on TX: 0xac95fa28b940a2f3c431b9766c53473e4ac6c3e4606376255141463b6549626c
