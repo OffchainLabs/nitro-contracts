@@ -3,6 +3,8 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 
+const FORK_BLOCK_NUMBER = 19163009
+
 async function main() {
   const infuraKey = process.env['INFURA_KEY'] as string
   if (!infuraKey) {
@@ -10,34 +12,54 @@ async function main() {
   }
   const mainnetRpc = `https://mainnet.infura.io/v3/${infuraKey}`
 
-  const [referentGasReport, currentImplementationGasReport] =
-    _getGasReports(mainnetRpc)
+  const referentGasReport = getReferentGasReport(mainnetRpc, true)
+  const currentImplementationGasReport = getReferentGasReport(mainnetRpc, false)
+
+  console.log('Referent gas report:', referentGasReport)
+  console.log(
+    'Current implementation gas report:',
+    currentImplementationGasReport
+  )
 
   _printGasReportDiff(referentGasReport, currentImplementationGasReport)
 }
 
-function _getGasReports(
-  rpc: string
-): [Record<string, number>, Record<string, number>] {
-  const gasReportCmd = `FOUNDRY_PROFILE=gasreporter forge test --fork-url ${rpc} --fork-block-number 19140521 --gas-report`
+function getReferentGasReport(
+  rpc: string,
+  referent: boolean
+): Record<string, number> {
+  const gasReportCmd = `FOUNDRY_PROFILE=gasreporter forge test --fork-url ${rpc} --fork-block-number ${FORK_BLOCK_NUMBER} --gas-report`
+  const testFile = referent ? 'ReferentGasReportTest' : 'GasReportTest'
 
-  const referentGasReportOutput = execSync(
-    gasReportCmd + ` --match-contract GasSpendingReferentReportTest`
+  let outputEth = execSync(
+    gasReportCmd +
+      ` --match-contract ${testFile} --mt "test_depositEth|test_withdrawEth"`
   ).toString()
-  const referentGasReport = _parseGasConsumption(referentGasReportOutput)
-
-  const currentImplementationGasReportOutput = execSync(
-    gasReportCmd + ` --match-contract GasSpendingReportTest`
-  ).toString()
-  const currentImplementationGasReport = _parseGasConsumption(
-    currentImplementationGasReportOutput
+  outputEth = outputEth.replace(
+    'executeTransaction',
+    'withdrawEth_executeTransaction'
   )
+  const reportEth = _parseGasConsumption(outputEth)
 
-  return [referentGasReport, currentImplementationGasReport]
+  let outputToken = execSync(
+    gasReportCmd + ` --match-contract ${testFile} --mt "test_withdrawToken"`
+  ).toString()
+  console.log('outputToken:', outputToken)
+  outputToken = outputToken.replace(
+    'executeTransaction',
+    'withdrawToken_executeTransaction'
+  )
+  console.log('outputToken:', outputToken)
+  const reportToken = _parseGasConsumption(outputToken)
+  console.log('reportToken:', reportToken)
+
+  const fullReport = { ...reportEth, ...reportToken }
+  return fullReport
 }
 
 function _parseGasConsumption(report: string): Record<string, number> {
-  const gasUsagePattern = /(depositEth|executeTransaction)\s+\|\s+(\d+)/g
+  const gasUsagePattern =
+    /(depositEth|withdrawEth_executeTransaction|withdrawToken_executeTransaction)\s+\|\s+(\d+)/g
   const gasConsumption: Record<string, number> = {}
   let match
 
