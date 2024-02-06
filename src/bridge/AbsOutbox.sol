@@ -72,6 +72,16 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
     }
 
     function postUpgradeInit() external onlyDelegated onlyProxyOwner {
+        // prevent postUpgradeInit within a withdrawal
+        if (__context.l2Block != type(uint128).max) revert BadPostUpgradeInit();
+        __context = L2ToL1Context({
+            l2Block: uint128(0),
+            l1Block: uint96(0),
+            timestamp: uint128(0),
+            outputId: bytes32(0),
+            sender: address(0),
+            withdrawalAmount: uint256(0)
+        });
     }
 
     /// @notice Allows the rollup owner to sync the rollup address
