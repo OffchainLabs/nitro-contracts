@@ -325,6 +325,18 @@ describe('SequencerInbox', async () => {
         delaySeconds: maxDelayTime,
         futureSeconds: 3000,
       },
+      {
+        blocksPerPeriod: 1,
+        secondsPerPeriod: 1,
+        periodBlocks: 12,
+        periodSeconds: 12,
+      },
+      {
+        maxDelayBufferBlocks: 14400,
+        maxDelayBufferSeconds: 86400 * 2,
+        delayThresholdBlocks: 300,
+        delayThresholdSeconds: 3600,
+      },
       117964,
       reader4844.address,
       isUsingFeeToken,
@@ -464,7 +476,7 @@ describe('SequencerInbox', async () => {
       sequencerInbox.address,
       ['0x0142', '0x0143'],
       sequencerInbox.interface.encodeFunctionData(
-        'addSequencerL2BatchFromBlobs',
+        'addSequencerL2BatchFromBlobs(uint256,uint256,address,uint256,uint256)',
         [
           sequenceNumber,
           afterDelayedMessagesRead,

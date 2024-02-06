@@ -222,10 +222,9 @@ describe('SequencerInboxForceInclude', async () => {
     const admin = accounts[0]
     const adminAddr = await admin.getAddress()
     const user = accounts[1]
-    const dummyRollup = accounts[2]
-    const rollupOwner = accounts[3]
-    const batchPoster = accounts[4]
-    const batchPosterManager = accounts[5]
+    const rollupOwner = accounts[2]
+    const batchPoster = accounts[3]
+    const batchPosterManager = accounts[4]
 
     const rollupMockFac = (await ethers.getContractFactory(
       'RollupMock'
@@ -273,6 +272,18 @@ describe('SequencerInboxForceInclude', async () => {
         futureBlocks: 10,
         futureSeconds: 3000,
       },
+      {
+        blocksPerPeriod: 1,
+        secondsPerPeriod: 1,
+        periodBlocks: 12,
+        periodSeconds: 12,
+      },
+      {
+        maxDelayBufferBlocks: 14400,
+        maxDelayBufferSeconds: 86400 * 2,
+        delayThresholdBlocks: 300,
+        delayThresholdSeconds: 3600,
+      },
       117964,
       reader4844.address,
       false
@@ -282,6 +293,12 @@ describe('SequencerInboxForceInclude', async () => {
       await sequencerInbox
         .connect(rollupOwner)
         .setIsBatchPoster(await batchPoster.getAddress(), true)
+    ).wait()
+
+    await (
+      await sequencerInbox
+        .connect(rollupOwner)
+        .setBatchPosterManager(await batchPosterManager.getAddress())
     ).wait()
 
     const inbox = await inboxFac.attach(inboxProxy.address).connect(user)

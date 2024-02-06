@@ -5,7 +5,6 @@
 pragma solidity ^0.8.0;
 
 import "../bridge/Bridge.sol";
-import "../bridge/SequencerInbox.sol";
 import "../bridge/Inbox.sol";
 import "../bridge/Outbox.sol";
 import "./RollupEventInbox.sol";
@@ -13,7 +12,7 @@ import "../bridge/ERC20Bridge.sol";
 import "../bridge/ERC20Inbox.sol";
 import "../rollup/ERC20RollupEventInbox.sol";
 import "../bridge/ERC20Outbox.sol";
-
+import "./ISequencerInboxCreator.sol";
 import "../bridge/IBridge.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
@@ -21,9 +20,11 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 contract BridgeCreator is Ownable {
     BridgeTemplates public ethBasedTemplates;
     BridgeTemplates public erc20BasedTemplates;
+    ISequencerInboxCreator public sequencerInboxCreator;
 
     event TemplatesUpdated();
     event ERC20TemplatesUpdated();
+    event SequencerInboxCreatorUpdated();
 
     struct BridgeTemplates {
         IBridge bridge;
@@ -42,10 +43,20 @@ contract BridgeCreator is Ownable {
 
     constructor(
         BridgeTemplates memory _ethBasedTemplates,
-        BridgeTemplates memory _erc20BasedTemplates
+        BridgeTemplates memory _erc20BasedTemplates,
+        ISequencerInboxCreator _sequencerInboxCreator
     ) Ownable() {
         ethBasedTemplates = _ethBasedTemplates;
         erc20BasedTemplates = _erc20BasedTemplates;
+        sequencerInboxCreator = _sequencerInboxCreator;
+    }
+
+    function updateSequencerInboxCreator(ISequencerInboxCreator _sequencerInboxCreator)
+        external
+        onlyOwner
+    {
+        sequencerInboxCreator = _sequencerInboxCreator;
+        emit SequencerInboxCreatorUpdated();
     }
 
     function updateTemplates(BridgeTemplates calldata _newTemplates) external onlyOwner {
@@ -85,27 +96,32 @@ contract BridgeCreator is Ownable {
         address rollup,
         address nativeToken,
         ISequencerInbox.MaxTimeVariation calldata maxTimeVariation,
+        ISequencerInbox.ReplenishRate memory replenishRate_,
+        ISequencerInbox.DelaySettings memory delaySettings_,
         uint256 maxDataSize,
         IReader4844 reader4844
     ) external returns (BridgeContracts memory) {
+        bool isUsingFeeToken = nativeToken != address(0);
         // create ETH-based bridge if address zero is provided for native token, otherwise create ERC20-based bridge
         BridgeContracts memory frame = _createBridge(
             adminProxy,
-            nativeToken == address(0) ? ethBasedTemplates : erc20BasedTemplates
+            isUsingFeeToken ? erc20BasedTemplates : ethBasedTemplates
         );
 
         // init contracts
-        if (nativeToken == address(0)) {
-            IEthBridge(address(frame.bridge)).initialize(IOwnable(rollup));
-        } else {
+        if (isUsingFeeToken) {
             IERC20Bridge(address(frame.bridge)).initialize(IOwnable(rollup), nativeToken);
+        } else {
+            IEthBridge(address(frame.bridge)).initialize(IOwnable(rollup));
         }
-        frame.sequencerInbox = new SequencerInbox(
+        frame.sequencerInbox = sequencerInboxCreator.createSequencerInbox(
             IBridge(frame.bridge),
             maxTimeVariation,
+            replenishRate_,
+            delaySettings_,
             maxDataSize,
             reader4844,
-            nativeToken != address(0)
+            isUsingFeeToken
         );
         frame.inbox.initialize(frame.bridge, frame.sequencerInbox);
         frame.rollupEventInbox.initialize(frame.bridge);

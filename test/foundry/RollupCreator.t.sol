@@ -4,6 +4,7 @@ pragma solidity ^0.8.4;
 import "forge-std/Test.sol";
 import "./util/TestUtil.sol";
 import "../../src/rollup/RollupCreator.sol";
+import "../../src/rollup/SequencerInboxCreator.sol";
 import "../../src/rollup/RollupAdminLogic.sol";
 import "../../src/rollup/RollupUserLogic.sol";
 import "../../src/rollup/ValidatorUtils.sol";
@@ -55,8 +56,10 @@ contract RollupCreatorTest is Test {
         rollupCreator = new RollupCreator();
         deployHelper = new DeployHelper();
 
+        // deploy SequencerInboxCreator
+        ISequencerInboxCreator sequencerInboxCreator = new SequencerInboxCreator();
         // deploy BridgeCreators
-        BridgeCreator bridgeCreator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
+        BridgeCreator bridgeCreator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates, sequencerInboxCreator);
 
         IUpgradeExecutor upgradeExecutorLogic = new UpgradeExecutorMock();
 
@@ -96,6 +99,18 @@ contract RollupCreatorTest is Test {
             60 * 60 * 24,
             60 * 60
         );
+        ISequencerInbox.ReplenishRate memory replenishRate = ISequencerInbox.ReplenishRate({
+            secondsPerPeriod: 1,
+            blocksPerPeriod: 1,
+            periodSeconds: 12,
+            periodBlocks: 12
+        });
+        ISequencerInbox.DelaySettings memory delaySettings = ISequencerInbox.DelaySettings({
+            delayThresholdSeconds: 60 * 60,
+            delayThresholdBlocks: 60 * 60 / 12,
+            maxDelayBufferSeconds: 60 * 60 * 24 * 2,
+            maxDelayBufferBlocks: 60 * 60 * 24 * 2 / 12
+        });
         Config memory config = Config({
             confirmPeriodBlocks: 20,
             extraChallengeTimeBlocks: 200,
@@ -107,7 +122,9 @@ contract RollupCreatorTest is Test {
             chainId: 1337,
             chainConfig: "abc",
             genesisBlockNum: 15_000_000,
-            sequencerInboxMaxTimeVariation: timeVars
+            sequencerInboxMaxTimeVariation: timeVars,
+            sequencerInboxReplenishRate: replenishRate,
+            sequencerInboxDelaySettings: delaySettings
         });
 
         // prepare funds
@@ -253,6 +270,18 @@ contract RollupCreatorTest is Test {
             60 * 60 * 24,
             60 * 60
         );
+        ISequencerInbox.ReplenishRate memory replenishRate = ISequencerInbox.ReplenishRate({
+            secondsPerPeriod: 1,
+            blocksPerPeriod: 1,
+            periodSeconds: 12,
+            periodBlocks: 12
+        });
+        ISequencerInbox.DelaySettings memory delaySettings = ISequencerInbox.DelaySettings({
+            delayThresholdSeconds: 60 * 60,
+            delayThresholdBlocks: 60 * 60 / 12,
+            maxDelayBufferSeconds: 60 * 60 * 24 * 2,
+            maxDelayBufferBlocks: 60 * 60 * 24 * 2 / 12
+        });
         Config memory config = Config({
             confirmPeriodBlocks: 20,
             extraChallengeTimeBlocks: 200,
@@ -264,7 +293,9 @@ contract RollupCreatorTest is Test {
             chainId: 1337,
             chainConfig: "abc",
             genesisBlockNum: 15_000_000,
-            sequencerInboxMaxTimeVariation: timeVars
+            sequencerInboxMaxTimeVariation: timeVars,
+            sequencerInboxReplenishRate: replenishRate,
+            sequencerInboxDelaySettings: delaySettings
         });
 
         // approve fee token to pay for deployment of L2 factories
@@ -411,6 +442,19 @@ contract RollupCreatorTest is Test {
             60 * 60 * 24,
             60 * 60
         );
+        ISequencerInbox.ReplenishRate memory replenishRate = ISequencerInbox.ReplenishRate({
+            secondsPerPeriod: 1,
+            blocksPerPeriod: 1,
+            periodSeconds: 12,
+            periodBlocks: 12
+        });
+        ISequencerInbox.DelaySettings memory delaySettings = ISequencerInbox.DelaySettings({
+            delayThresholdSeconds: 60 * 60,
+            delayThresholdBlocks: 60 * 60 / 12,
+            maxDelayBufferSeconds: 60 * 60 * 24 * 2,
+            maxDelayBufferBlocks: 60 * 60 * 24 * 2 / 12
+        });
+
         Config memory config = Config({
             confirmPeriodBlocks: 20,
             extraChallengeTimeBlocks: 200,
@@ -422,7 +466,9 @@ contract RollupCreatorTest is Test {
             chainId: 1337,
             chainConfig: "abc",
             genesisBlockNum: 15_000_000,
-            sequencerInboxMaxTimeVariation: timeVars
+            sequencerInboxMaxTimeVariation: timeVars,
+            sequencerInboxReplenishRate: replenishRate,
+            sequencerInboxDelaySettings: delaySettings
         });
 
         // prepare funds

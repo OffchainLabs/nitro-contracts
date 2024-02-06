@@ -40,6 +40,12 @@ error NotContract(address addr);
 /// @param maxProofLength The max length a merkle proof can have
 error MerkleProofTooLong(uint256 actualLength, uint256 maxProofLength);
 
+/// @dev The DelayedAccPreimage is invalid
+error InvalidDelayedAccPreimage();
+
+/// @dev The InboxAccPreimage is invalid
+error InvalidInboxAccPreimage();
+
 /// @dev Thrown when an un-authorized address tries to access an admin function
 /// @param sender The un-authorized sender
 /// @param rollup The rollup, which would be authorized
@@ -149,6 +155,9 @@ error DelayedBackwards();
 /// @dev Thrown when someone attempts to read more messages than exist
 error DelayedTooFar();
 
+/// @dev Thrown when someone attempts to read as many messages as already read, but it's expected that atleast one new message should be read.
+error DelayedNotFarEnough();
+
 /// @dev Force include can only read messages more blocks old than the delay period
 error ForceIncludeBlockTooSoon();
 
@@ -181,6 +190,8 @@ error NotBatchPosterManager(address);
 
 /// @dev Thrown when a data blob feature is attempted to be used on a chain that doesnt support it
 error DataBlobsNotSupported();
+
+error SyncProofExpired();
 
 /// @dev Thrown when an init param was supplied as empty
 error InitParamZero(string name);

@@ -4,6 +4,7 @@ pragma solidity ^0.8.4;
 import "forge-std/Test.sol";
 import "./util/TestUtil.sol";
 import "../../src/rollup/BridgeCreator.sol";
+import "../../src/rollup/SequencerInboxCreator.sol";
 import "../../src/bridge/ISequencerInbox.sol";
 import "../../src/bridge/AbsInbox.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -31,8 +32,9 @@ contract BridgeCreatorTest is Test {
         });
 
     function setUp() public {
+        SequencerInboxCreator sequencerInboxCreator = new SequencerInboxCreator();
         vm.prank(owner);
-        creator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
+        creator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates, sequencerInboxCreator);
     }
 
     function getEthBasedTemplates() internal returns (BridgeCreator.BridgeTemplates memory) {
@@ -122,11 +124,25 @@ contract BridgeCreatorTest is Test {
             30,
             40
         );
+        ISequencerInbox.ReplenishRate memory replenishRate = ISequencerInbox.ReplenishRate({
+            secondsPerPeriod: 1,
+            blocksPerPeriod: 1,
+            periodSeconds: 12,
+            periodBlocks: 12
+        });
+        ISequencerInbox.DelaySettings memory delaySettings = ISequencerInbox.DelaySettings({
+            delayThresholdSeconds: 60 * 60,
+            delayThresholdBlocks: 60 * 60 / 12,
+            maxDelayBufferSeconds: 60 * 60 * 24 * 2,
+            maxDelayBufferBlocks: 60 * 60 * 24 * 2 / 12
+        });
         BridgeCreator.BridgeContracts memory contracts = creator.createBridge(
             proxyAdmin,
             rollup,
             nativeToken,
             timeVars,
+            replenishRate,
+            delaySettings,
             MAX_DATA_SIZE,
             dummyReader4844
         );
@@ -151,12 +167,13 @@ contract BridgeCreatorTest is Test {
         // seqInbox
         assertEq(address(seqInbox.bridge()), address(bridge), "Invalid bridge ref");
         assertEq(address(seqInbox.rollup()), rollup, "Invalid seq rollup ref");
+        {
         (uint256 delayBlocks, uint256 futureBlocks, uint256 delaySeconds, uint256 futureSeconds) = seqInbox.maxTimeVariation();
         assertEq(delayBlocks, timeVars.delayBlocks, "Invalid delayBlocks");
         assertEq(futureBlocks, timeVars.futureBlocks, "Invalid futureBlocks");
         assertEq(delaySeconds, timeVars.delaySeconds, "Invalid delaySeconds");
         assertEq(futureSeconds, timeVars.futureSeconds, "Invalid futureSeconds");
-
+        }
         // inbox
         assertEq(address(inbox.bridge()), address(bridge), "Invalid bridge ref");
         assertEq(address(inbox.sequencerInbox()), address(seqInbox), "Invalid seqInbox ref");
@@ -188,11 +205,25 @@ contract BridgeCreatorTest is Test {
             30,
             40
         );
+        ISequencerInbox.ReplenishRate memory replenishRate = ISequencerInbox.ReplenishRate({
+            secondsPerPeriod: 1,
+            blocksPerPeriod: 1,
+            periodSeconds: 12,
+            periodBlocks: 12
+        });
+        ISequencerInbox.DelaySettings memory delaySettings = ISequencerInbox.DelaySettings({
+            delayThresholdSeconds: 60 * 60,
+            delayThresholdBlocks: 60 * 60 / 12,
+            maxDelayBufferSeconds: 60 * 60 * 24 * 2,
+            maxDelayBufferBlocks: 60 * 60 * 24 * 2 / 12
+        });
         BridgeCreator.BridgeContracts memory contracts = creator.createBridge(
             proxyAdmin,
             rollup,
             nativeToken,
             timeVars,
+            replenishRate,
+            delaySettings,
             MAX_DATA_SIZE,
             dummyReader4844
         );
@@ -222,12 +253,13 @@ contract BridgeCreatorTest is Test {
         // seqInbox
         assertEq(address(seqInbox.bridge()), address(bridge), "Invalid bridge ref");
         assertEq(address(seqInbox.rollup()), rollup, "Invalid seq inbox rollup ref");
+        {
         (uint256 delayBlocks, uint256 futureBlocks, uint256 delaySeconds, uint256 futureSeconds) = seqInbox.maxTimeVariation();
         assertEq(delayBlocks, timeVars.delayBlocks, "Invalid delayBlocks");
         assertEq(futureBlocks, timeVars.futureBlocks, "Invalid futureBlocks");
         assertEq(delaySeconds, timeVars.delaySeconds, "Invalid delaySeconds");
         assertEq(futureSeconds, timeVars.futureSeconds, "Invalid futureSeconds");
-
+        }
         // inbox
         assertEq(address(inbox.bridge()), address(bridge), "Invalid bridge ref");
         assertEq(address(inbox.sequencerInbox()), address(seqInbox), "Invalid seqInbox ref");

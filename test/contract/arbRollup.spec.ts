@@ -47,6 +47,7 @@ import {
   SequencerInbox,
   SequencerInbox__factory,
   Bridge,
+  SequencerInboxCreator__factory,
 } from '../../build/types'
 import {
   abi as UpgradeExecutorABI,
@@ -114,6 +115,18 @@ async function getDefaultConfig(
       futureBlocks: 12,
       delaySeconds: 60 * 60 * 24,
       futureSeconds: 60 * 60,
+    },
+    sequencerInboxReplenishRate: {
+      secondsPerPeriod: 1,
+      blocksPerPeriod: 1,
+      periodSeconds: 12,
+      periodBlocks: 12,
+    },
+    sequencerInboxDelaySettings: {
+      delayThresholdSeconds: 60 * 60,
+      delayThresholdBlocks: (60 * 60) / 12,
+      maxDelayBufferSeconds: 60 * 60 * 24 * 2,
+      maxDelayBufferBlocks: (60 * 60 * 24 * 2) / 12,
     },
     stakeToken: stakeToken,
     wasmModuleRoot: wasmModuleRoot,
@@ -223,6 +236,11 @@ const setup = async () => {
   )) as ERC20Outbox__factory
   const erc20Outbox = await erc20OutboxFac.deploy()
 
+  const sequencerInboxCreatorFac = (await ethers.getContractFactory(
+    'SequencerInboxCreator'
+  )) as SequencerInboxCreator__factory
+  const sequencerInboxCreator = await sequencerInboxCreatorFac.deploy()
+
   const bridgeCreatorFac = (await ethers.getContractFactory(
     'BridgeCreator'
   )) as BridgeCreator__factory
@@ -238,7 +256,8 @@ const setup = async () => {
       inbox: erc20Inbox.address,
       rollupEventInbox: erc20RollupEventInbox.address,
       outbox: erc20Outbox.address,
-    }
+    },
+    sequencerInboxCreator.address
   )
 
   const rollupCreatorFac = (await ethers.getContractFactory(
@@ -265,8 +284,6 @@ const setup = async () => {
 
   const maxFeePerGas = BigNumber.from('1000000000')
 
-  const dummyDataHashReader = '0x0000000000000000000000000000000000000089'
-  const dummyBlobBasefeeReader = '0x0000000000000000000000000000000000000090'
   const deployParams = {
     config: await getDefaultConfig(),
     batchPosters: [await sequencer.getAddress()],
@@ -1459,7 +1476,7 @@ describe('ArbRollup', () => {
 
   it('should fail the batch poster check', async function () {
     await expect(
-      sequencerInbox.addSequencerL2Batch(
+      sequencerInbox.addSequencerL2BatchFromOrigin(
         0,
         '0x',
         0,

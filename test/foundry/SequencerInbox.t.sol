@@ -50,6 +50,18 @@ contract SequencerInboxTest is Test {
         delaySeconds: 100,
         futureSeconds: 100
     });
+    ISequencerInbox.ReplenishRate replenishRate = ISequencerInbox.ReplenishRate({
+        secondsPerPeriod: 1,
+        blocksPerPeriod: 1,
+        periodSeconds: 12,
+        periodBlocks: 12
+    });
+    ISequencerInbox.DelaySettings delaySettings = ISequencerInbox.DelaySettings({
+        delayThresholdSeconds: 60 * 60,
+        delayThresholdBlocks: 60 * 60 / 12,
+        maxDelayBufferSeconds: 60 * 60 * 24 * 2,
+        maxDelayBufferBlocks: 60 * 60 * 24 * 2 / 12
+    });
     address dummyInbox = address(139);
     address proxyAdmin = address(140);
     IReader4844 dummyReader4844 = IReader4844(address(137));
@@ -68,6 +80,8 @@ contract SequencerInboxTest is Test {
         SequencerInbox seqInbox = new SequencerInbox(
             bridge,
             maxTimeVariation,
+            replenishRate,
+            delaySettings,
             maxDataSize,
             isArbHosted ? IReader4844(address(0)) : dummyReader4844,
             false
@@ -101,6 +115,8 @@ contract SequencerInboxTest is Test {
         SequencerInbox seqInbox = new SequencerInbox(
             bridge,
             maxTimeVariation,
+            replenishRate,
+            delaySettings,
             maxDataSize,
             isArbHosted ? IReader4844(address(0)) : dummyReader4844,
             true
