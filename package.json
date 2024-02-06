@@ -41,7 +41,8 @@
     "gas:snapshot": "forge snapshot",
     "gas:check": "forge snapshot --check",
     "gas:report:all": "forge test --gas-report",
-    "gas:report:fork": "FOUNDRY_PROFILE=gasreporter forge test --mc GasSpendingReportTest --fork-url https://ethereum.publicnode.com --fork-block-number 19140521 --gas-report"
+    "gas:report:referent": "FOUNDRY_PROFILE=gasreporter forge test --mc GasSpendingReferentReportTest --fork-url https://ethereum.publicnode.com --fork-block-number 19140521 --gas-report > .gas-report-referent",
+    "gas:report:simulated": "FOUNDRY_PROFILE=gasreporter forge test --mc GasSpendingReportTest --fork-url https://ethereum.publicnode.com --fork-block-number 19140521 --gas-report > .gas-report-simulated"
   },
   "dependencies": {
     "@offchainlabs/upgrade-executor": "1.1.0-beta.0",
