@@ -57,7 +57,7 @@ contract GasSpendingReferentReportTest is Test {
     }
 
     /// based on TX: 0x9fbe48711d432ac2ad912f5260d577b0923909fae0a2c2b4ea2cc2d82d7f16dc
-    function test_withdrawToken() public {
+    function test_withdrawToken() public virtual {
         Outbox outbox = Outbox(0x0B9857ae2D4A3DBe74ffE1d7DF045bb7F96E4840);
 
         bytes32[] memory proof = new bytes32[](17);
