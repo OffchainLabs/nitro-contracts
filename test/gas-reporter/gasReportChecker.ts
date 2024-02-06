@@ -5,7 +5,7 @@ dotenv.config()
 
 const FORK_BLOCK_NUMBER = 19163009
 
-async function main() {
+function main() {
   const infuraKey = process.env['INFURA_KEY'] as string
   if (!infuraKey) {
     throw new Error('INFURA_KEY env var should be set')
@@ -14,12 +14,6 @@ async function main() {
 
   const referentGasReport = getReferentGasReport(mainnetRpc, true)
   const currentImplementationGasReport = getReferentGasReport(mainnetRpc, false)
-
-  console.log('Referent gas report:', referentGasReport)
-  console.log(
-    'Current implementation gas report:',
-    currentImplementationGasReport
-  )
 
   _printGasReportDiff(referentGasReport, currentImplementationGasReport)
 }
@@ -39,22 +33,18 @@ function getReferentGasReport(
     'executeTransaction',
     'withdrawEth_executeTransaction'
   )
-  const reportEth = _parseGasConsumption(outputEth)
+  const recordEth = _parseGasConsumption(outputEth)
 
   let outputToken = execSync(
     gasReportCmd + ` --match-contract ${testFile} --mt "test_withdrawToken"`
   ).toString()
-  console.log('outputToken:', outputToken)
   outputToken = outputToken.replace(
     'executeTransaction',
     'withdrawToken_executeTransaction'
   )
-  console.log('outputToken:', outputToken)
-  const reportToken = _parseGasConsumption(outputToken)
-  console.log('reportToken:', reportToken)
+  const recordToken = _parseGasConsumption(outputToken)
 
-  const fullReport = { ...reportEth, ...reportToken }
-  return fullReport
+  return { ...recordEth, ...recordToken }
 }
 
 function _parseGasConsumption(report: string): Record<string, number> {
@@ -92,4 +82,4 @@ function _printGasReportDiff(
   }
 }
 
-main().then(() => console.log('Done.'))
+main()
