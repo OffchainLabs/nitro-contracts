@@ -55,12 +55,18 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
     //  keccak256("L2_TO_L1_TIMESTAMP_TSLOT")
     //  keccak256("L2_TO_L1_OUTPUT_ID_TSLOT")
     //  keccak256("L2_TO_L1_WITHDRAWAL_AMOUNT_TSLOT")
-    bytes32 internal constant L2_TO_L1_SENDER_TSLOT = 0xebabdcd8fe14a14c647a343706bd06da1b2e5aebf8d296b8663ee891cc06cf08;
-    bytes32 internal constant L2_BLOCK_TSLOT = 0x447055cbf69f311f2c80a261ffef9aa8f2a2c5b2ade03ecfbc92a8bfd659a6b3;
-    bytes32 internal constant L1_BLOCK_TSLOT = 0xa804c75ce466d589b8d6227e9a0269a295b94c47d7db88da6af0b77161a4754d;
-    bytes32 internal constant L2_TO_L1_TIMESTAMP_TSLOT = 0xeab03eac502e862d963579369c7da43ef4f9948cb50e6e40a96051fb270cb504;
-    bytes32 internal constant L2_TO_L1_OUTPUT_ID_TSLOT = 0x54ac2ba357ff3576d8d2807d265891a0b119c58f75682a7ea98a7440fb38c5f1;
-    bytes32 internal constant L2_TO_L1_WITHDRAWAL_AMOUNT_TSLOT = 0xdf31e30ba0b65dfa9a3e515da66d692305a58e8c0318de8340e1e0e54b00f27b;
+    bytes32 internal constant L2_TO_L1_SENDER_TSLOT =
+        0xebabdcd8fe14a14c647a343706bd06da1b2e5aebf8d296b8663ee891cc06cf08;
+    bytes32 internal constant L2_BLOCK_TSLOT =
+        0x447055cbf69f311f2c80a261ffef9aa8f2a2c5b2ade03ecfbc92a8bfd659a6b3;
+    bytes32 internal constant L1_BLOCK_TSLOT =
+        0xa804c75ce466d589b8d6227e9a0269a295b94c47d7db88da6af0b77161a4754d;
+    bytes32 internal constant L2_TO_L1_TIMESTAMP_TSLOT =
+        0xeab03eac502e862d963579369c7da43ef4f9948cb50e6e40a96051fb270cb504;
+    bytes32 internal constant L2_TO_L1_OUTPUT_ID_TSLOT =
+        0x54ac2ba357ff3576d8d2807d265891a0b119c58f75682a7ea98a7440fb38c5f1;
+    bytes32 internal constant L2_TO_L1_WITHDRAWAL_AMOUNT_TSLOT =
+        0xdf31e30ba0b65dfa9a3e515da66d692305a58e8c0318de8340e1e0e54b00f27b;
 
     uint128 public constant OUTBOX_VERSION = 3;
 
@@ -196,9 +202,9 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         // we temporarily store the previous values so the outbox can naturally
         // unwind itself when there are nested calls to `executeTransaction`
         // L2ToL1Context memory prevContext = context;
-        uint256 prevSender; 
-        uint256 prevL2Block; 
-        uint256 prevL1Block; 
+        uint256 prevSender;
+        uint256 prevL2Block;
+        uint256 prevL1Block;
         uint256 prevTimestamp;
         uint256 prevOutputId;
         uint256 prevWithdrawalAmount;
@@ -239,7 +245,7 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
             tstore(L2_TO_L1_TIMESTAMP_TSLOT, prevTimestamp)
             tstore(L2_TO_L1_OUTPUT_ID_TSLOT, prevOutputId)
             tstore(L2_TO_L1_WITHDRAWAL_AMOUNT_TSLOT, prevWithdrawalAmount)
-        }    
+        }
     }
 
     function _calcSpentIndexOffset(uint256 index)
