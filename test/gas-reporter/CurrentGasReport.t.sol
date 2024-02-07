@@ -2,6 +2,7 @@
 pragma solidity ^0.8.4;
 
 import "./ReferentGasReport.t.sol";
+import {Bridge} from "../../src/bridge/Bridge.sol";
 
 contract CurrentGasReportTest is ReferentGasReportTest {
     /* solhint-disable func-name-mixedcase */
@@ -21,6 +22,11 @@ contract CurrentGasReportTest is ReferentGasReportTest {
         Outbox outbox = new Outbox();
         vm.etch(address(0x0eA7372338a589e7f0b00E463a53AA464ef04e17), address(outbox).code);
 
+        // create instance of bridge contract from current code, and use it in place of
+        // actual bridge logic code that is deployed on-chain
+        Bridge bridge = new Bridge();
+        vm.etch(address(0x1066CEcC8880948FE55e427E94F1FF221d626591), address(bridge).code);
+
         super.test_withdrawEth();
     }
 
@@ -29,6 +35,11 @@ contract CurrentGasReportTest is ReferentGasReportTest {
         // actual outbox logic code that is deployed on-chain
         Outbox outbox = new Outbox();
         vm.etch(address(0x0eA7372338a589e7f0b00E463a53AA464ef04e17), address(outbox).code);
+
+        // create instance of bridge contract from current code, and use it in place of
+        // actual bridge logic code that is deployed on-chain
+        Bridge bridge = new Bridge();
+        vm.etch(address(0x1066CEcC8880948FE55e427E94F1FF221d626591), address(bridge).code);
 
         super.test_withdrawToken();
     }
