@@ -9,4 +9,3 @@ scripts/config.ts
 forge-cache/
 out/
 .env
-.gas-report-simulated
