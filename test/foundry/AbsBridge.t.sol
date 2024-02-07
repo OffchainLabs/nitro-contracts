@@ -35,17 +35,12 @@ abstract contract AbsBridgeTest is Test {
         uint256 newMessageCount = 15;
         (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc) = bridge
             .enqueueSequencerMessage(
-                dataHash,
-                afterDelayedMessagesRead,
-                prevMessageCount,
-                newMessageCount
-            );
+            dataHash, afterDelayedMessagesRead, prevMessageCount, newMessageCount
+        );
 
         // checks
         assertEq(
-            bridge.sequencerReportedSubMessageCount(),
-            newMessageCount,
-            "Invalid newMessageCount"
+            bridge.sequencerReportedSubMessageCount(), newMessageCount, "Invalid newMessageCount"
         );
         bytes32 seqInboxEntry = keccak256(abi.encodePacked(bytes32(0), dataHash, bytes32(0)));
         assertEq(bridge.sequencerInboxAccs(0), seqInboxEntry, "Invalid sequencerInboxAccs entry");
@@ -75,11 +70,8 @@ abstract contract AbsBridgeTest is Test {
         uint256 newMessageCount = 15;
         (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc) = bridge
             .enqueueSequencerMessage(
-                dataHash,
-                afterDelayedMessagesRead,
-                prevMessageCount,
-                newMessageCount
-            );
+            dataHash, afterDelayedMessagesRead, prevMessageCount, newMessageCount
+        );
 
         // checks
         assertEq(
@@ -87,9 +79,8 @@ abstract contract AbsBridgeTest is Test {
             newMessageCount,
             "Invalid sequencerReportedSubMessageCount"
         );
-        bytes32 seqInboxEntry = keccak256(
-            abi.encodePacked(bytes32(0), dataHash, bridge.delayedInboxAccs(1))
-        );
+        bytes32 seqInboxEntry =
+            keccak256(abi.encodePacked(bytes32(0), dataHash, bridge.delayedInboxAccs(1)));
         assertEq(bridge.sequencerInboxAccs(0), seqInboxEntry, "Invalid sequencerInboxAccs entry");
         assertEq(bridge.sequencerMessageCount(), 1, "Invalid sequencerMessageCount");
         assertEq(seqMessageIndex, 0, "Invalid seqMessageIndex");
@@ -118,11 +109,8 @@ abstract contract AbsBridgeTest is Test {
         uint256 newMessageCount = 20;
         (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc) = bridge
             .enqueueSequencerMessage(
-                dataHash,
-                afterDelayedMessagesRead,
-                prevMessageCount,
-                newMessageCount
-            );
+            dataHash, afterDelayedMessagesRead, prevMessageCount, newMessageCount
+        );
 
         // checks
         assertEq(
@@ -178,14 +166,7 @@ abstract contract AbsBridgeTest is Test {
         // expect event
         vm.expectEmit(true, true, true, true);
         emit MessageDelivered(
-            0,
-            0,
-            seqInbox,
-            13,
-            sender,
-            messageDataHash,
-            block.basefee,
-            uint64(block.timestamp)
+            0, 0, seqInbox, 13, sender, messageDataHash, block.basefee, uint64(block.timestamp)
         );
 
         // submit report
@@ -250,20 +231,15 @@ abstract contract AbsBridgeTest is Test {
 
     function test_setSequencerInbox_revert_NonOwnerCall() public {
         // mock the owner() call on rollup
-        address mockRollupOwner = address(10000);
+        address mockRollupOwner = address(10_000);
         vm.mockCall(
-            rollup,
-            abi.encodeWithSelector(IOwnable.owner.selector),
-            abi.encode(mockRollupOwner)
+            rollup, abi.encodeWithSelector(IOwnable.owner.selector), abi.encode(mockRollupOwner)
         );
 
         // setSequencerInbox shall revert
         vm.expectRevert(
             abi.encodeWithSelector(
-                NotRollupOrOwner.selector,
-                address(this),
-                rollup,
-                mockRollupOwner
+                NotRollupOrOwner.selector, address(this), rollup, mockRollupOwner
             )
         );
         bridge.setSequencerInbox(seqInbox);
@@ -343,20 +319,15 @@ abstract contract AbsBridgeTest is Test {
 
     function test_setDelayedInbox_revert_NonOwnerCall() public {
         // mock the owner() call on rollup
-        address mockRollupOwner = address(10000);
+        address mockRollupOwner = address(10_000);
         vm.mockCall(
-            rollup,
-            abi.encodeWithSelector(IOwnable.owner.selector),
-            abi.encode(mockRollupOwner)
+            rollup, abi.encodeWithSelector(IOwnable.owner.selector), abi.encode(mockRollupOwner)
         );
 
         // setDelayedInbox shall revert
         vm.expectRevert(
             abi.encodeWithSelector(
-                NotRollupOrOwner.selector,
-                address(this),
-                rollup,
-                mockRollupOwner
+                NotRollupOrOwner.selector, address(this), rollup, mockRollupOwner
             )
         );
         bridge.setDelayedInbox(inbox, true);
@@ -434,27 +405,22 @@ abstract contract AbsBridgeTest is Test {
 
     function test_setOutbox_revert_NonOwnerCall() public {
         // mock the owner() call on rollup
-        address mockRollupOwner = address(10000);
+        address mockRollupOwner = address(10_000);
         vm.mockCall(
-            rollup,
-            abi.encodeWithSelector(IOwnable.owner.selector),
-            abi.encode(mockRollupOwner)
+            rollup, abi.encodeWithSelector(IOwnable.owner.selector), abi.encode(mockRollupOwner)
         );
 
         // setOutbox shall revert
         vm.expectRevert(
             abi.encodeWithSelector(
-                NotRollupOrOwner.selector,
-                address(this),
-                rollup,
-                mockRollupOwner
+                NotRollupOrOwner.selector, address(this), rollup, mockRollupOwner
             )
         );
         bridge.setOutbox(outbox, true);
     }
 
     function test_setOutbox_revert_InvalidOutboxSet() public {
-        address invalidOutbox = address(type(uint160).max);
+        address invalidOutbox = address(0);
 
         // setOutbox shall revert
         vm.expectRevert(abi.encodeWithSelector(InvalidOutboxSet.selector, invalidOutbox));
@@ -477,29 +443,25 @@ abstract contract AbsBridgeTest is Test {
 
     function test_setSequencerReportedSubMessageCount_revert_NonOwnerCall() public {
         // mock the owner() call on rollup
-        address mockRollupOwner = address(10000);
+        address mockRollupOwner = address(10_000);
         vm.mockCall(
-            rollup,
-            abi.encodeWithSelector(IOwnable.owner.selector),
-            abi.encode(mockRollupOwner)
+            rollup, abi.encodeWithSelector(IOwnable.owner.selector), abi.encode(mockRollupOwner)
         );
 
         // setOutbox shall revert
         vm.expectRevert(
             abi.encodeWithSelector(
-                NotRollupOrOwner.selector,
-                address(this),
-                rollup,
-                mockRollupOwner
+                NotRollupOrOwner.selector, address(this), rollup, mockRollupOwner
             )
         );
         AbsBridge(address(bridge)).setSequencerReportedSubMessageCount(123);
     }
 
-    /****
-     **** Event declarations
-     ***/
-
+    /**
+     *
+     * Event declarations
+     *
+     */
     event SequencerInboxUpdated(address newSequencerInbox);
     event InboxToggle(address indexed inbox, bool enabled);
     event OutboxToggle(address indexed outbox, bool enabled);
@@ -514,9 +476,6 @@ abstract contract AbsBridgeTest is Test {
         uint64 timestamp
     );
     event BridgeCallTriggered(
-        address indexed outbox,
-        address indexed to,
-        uint256 value,
-        bytes data
+        address indexed outbox, address indexed to, uint256 value, bytes data
     );
 }
