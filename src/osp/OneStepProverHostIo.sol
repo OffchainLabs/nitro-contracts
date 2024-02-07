@@ -426,12 +426,13 @@ contract OneStepProverHostIo is IOneStepProver {
         Instruction calldata,
         bytes calldata
     ) internal pure {
-        if (mach.cothread) {
+        if (mach.recoveryPc != MachineLib.NO_RECOVERY_PC) {
             // cannot create new cothread from inside cothread
             mach.status = MachineStatus.ERRORED;
             return;
         }
         mach.frameMultiStack.pushNew();
+        mach.valueMultiStack.pushNew();
     }
 
     function proovePopCothread(MultiStack memory multi, bytes calldata proof) internal pure {
@@ -442,13 +443,14 @@ contract OneStepProverHostIo is IOneStepProver {
         (newRemaining, proofOffset) = Deserialize.b32(proof, proofOffset);
         if (newInactiveCoThread == MultiStackLib.NO_STACK_HASH) {
             require(multi.remainingHash == MultiStackLib.NO_STACK_HASH, "WRONG_COTHREAD_EMPTY");
-            return;
+            require(newRemaining == MultiStackLib.NO_STACK_HASH, "WRONG_COTHREAD_EMPTY");
+        } else {
+            require(
+                keccak256(abi.encodePacked("cothread:", newInactiveCoThread, newRemaining)) ==
+                    multi.remainingHash,
+                "WRONG_COTHREAD_POP"
+            );
         }
-        require(
-            keccak256(abi.encodePacked("cothread: ", newInactiveCoThread, newRemaining)) ==
-                multi.remainingHash,
-            "WRONG_COTHREAD_POP"
-        );
         multi.remainingHash = newRemaining;
         multi.inactiveStackHash = newInactiveCoThread;
         return;
@@ -461,7 +463,7 @@ contract OneStepProverHostIo is IOneStepProver {
         Instruction calldata,
         bytes calldata proof
     ) internal pure {
-        if (mach.cothread) {
+        if (mach.recoveryPc != MachineLib.NO_RECOVERY_PC) {
             // cannot pop cothread from inside cothread
             mach.status = MachineStatus.ERRORED;
             return;
@@ -487,10 +489,22 @@ contract OneStepProverHostIo is IOneStepProver {
             mach.status = MachineStatus.ERRORED;
             return;
         }
-        bool jumpToCoThread = (inst.argumentData != 0);
-        if (jumpToCoThread != mach.cothread) {
-            mach.switchCoThread();
+        if (inst.argumentData == 0) {
+            if (mach.recoveryPc == MachineLib.NO_RECOVERY_PC) {
+                // switching to main thread, from main thread
+                mach.status = MachineStatus.ERRORED;
+                return;
+            }
+            mach.recoveryPc = MachineLib.NO_RECOVERY_PC;
+        } else {
+            if (mach.recoveryPc != MachineLib.NO_RECOVERY_PC) {
+                // switching from cothread to cothread
+                mach.status = MachineStatus.ERRORED;
+                return;
+            }
+            mach.setRecoveryFromPc(uint32(inst.argumentData));
         }
+        mach.switchCoThreadStacks();
     }
 
     function executeOneStep(

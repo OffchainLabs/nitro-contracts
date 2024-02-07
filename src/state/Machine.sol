@@ -27,8 +27,8 @@ struct Machine {
     uint32 moduleIdx;
     uint32 functionIdx;
     uint32 functionPc;
+    bytes32 recoveryPc;
     bytes32 modulesRoot;
-    bool cothread;
 }
 
 library MachineLib {
@@ -36,16 +36,18 @@ library MachineLib {
     using ValueStackLib for ValueStack;
     using MultiStackLib for MultiStack;
 
+    bytes32 internal constant NO_RECOVERY_PC = ~bytes32(0);
+
     function hash(Machine memory mach) internal pure returns (bytes32) {
         // Warning: the non-running hashes are replicated in Challenge
         if (mach.status == MachineStatus.RUNNING) {
             bytes32 valueMultiHash = mach.valueMultiStack.hash(
                 mach.valueStack.hash(),
-                mach.cothread
+                mach.recoveryPc != NO_RECOVERY_PC
             );
             bytes32 frameMultiHash = mach.frameMultiStack.hash(
                 mach.frameStack.hash(),
-                mach.cothread
+                mach.recoveryPc != NO_RECOVERY_PC
             );
             bytes memory preimage = abi.encodePacked(
                 "Machine running:",
@@ -56,6 +58,7 @@ library MachineLib {
                 mach.moduleIdx,
                 mach.functionIdx,
                 mach.functionPc,
+                mach.recoveryPc,
                 mach.modulesRoot
             );
             return keccak256(preimage);
@@ -70,18 +73,52 @@ library MachineLib {
         }
     }
 
-    function switchCoThread(Machine memory mach) internal pure {
+    function switchCoThreadStacks(Machine memory mach) internal pure {
         bytes32 newActiveValue = mach.valueMultiStack.inactiveStackHash;
         bytes32 newActiveFrame = mach.frameMultiStack.inactiveStackHash;
-        if (newActiveFrame == bytes32(0) || newActiveValue == bytes32(0)) {
+        if (
+            newActiveFrame == MultiStackLib.NO_STACK_HASH ||
+            newActiveValue == MultiStackLib.NO_STACK_HASH
+        ) {
             mach.status = MachineStatus.ERRORED;
             return;
         }
-        mach.cothread = !mach.cothread;
         mach.frameMultiStack.inactiveStackHash = mach.frameStack.hash();
         mach.valueMultiStack.inactiveStackHash = mach.valueStack.hash();
-        mach.frameStack.overwrite(newActiveValue);
-        mach.valueStack.overwrite(newActiveFrame);
+        mach.frameStack.overwrite(newActiveFrame);
+        mach.valueStack.overwrite(newActiveValue);
+    }
+
+    function setPcFromData(Machine memory mach, uint256 data) internal pure returns (bool) {
+        if (data >> 96 != 0) {
+            return false;
+        }
+
+        mach.functionPc = uint32(data);
+        mach.functionIdx = uint32(data >> 32);
+        mach.moduleIdx = uint32(data >> 64);
+        return true;
+    }
+
+    function setPcFromRecovery(Machine memory mach) internal pure returns (bool) {
+        if (!setPcFromData(mach, uint256(mach.recoveryPc))) {
+            return false;
+        }
+        mach.recoveryPc = NO_RECOVERY_PC;
+        return true;
+    }
+
+    function setRecoveryFromPc(Machine memory mach, uint32 offset) internal pure returns (bool) {
+        if (mach.recoveryPc != NO_RECOVERY_PC) {
+            return false;
+        }
+
+        uint256 result;
+        result = uint256(mach.moduleIdx) << 64;
+        result = result | (uint256(mach.functionIdx) << 32);
+        result = result | uint256(mach.functionPc + offset - 1);
+        mach.recoveryPc = bytes32(result);
+        return true;
     }
 
     function setPc(Machine memory mach, Value memory pc) internal pure {
@@ -89,13 +126,13 @@ library MachineLib {
             mach.status = MachineStatus.ERRORED;
             return;
         }
-
-        uint256 data = pc.contents;
-        require(pc.valueType == ValueType.INTERNAL_REF, "INVALID_PC_TYPE");
-        require(data >> 96 == 0, "INVALID_PC_DATA");
-
-        mach.functionPc = uint32(data);
-        mach.functionIdx = uint32(data >> 32);
-        mach.moduleIdx = uint32(data >> 64);
+        if (pc.valueType != ValueType.INTERNAL_REF) {
+            mach.status = MachineStatus.ERRORED;
+            return;
+        }
+        if (!setPcFromData(mach, pc.contents)) {
+            mach.status = MachineStatus.ERRORED;
+            return;
+        }
     }
 }

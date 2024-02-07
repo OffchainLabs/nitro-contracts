@@ -305,16 +305,16 @@ library Deserialize {
                 moduleIdx: 0, // filled later
                 functionIdx: 0, // filled later
                 functionPc: 0, // filled later
-                modulesRoot: bytes32(0), // filled later
-                cothread: false // filled later
+                recoveryPc: bytes32(0), // filled later
+                modulesRoot: bytes32(0) // filled later
             });
         }
         (mach.globalStateHash, offset) = b32(proof, offset);
         (mach.moduleIdx, offset) = u32(proof, offset);
         (mach.functionIdx, offset) = u32(proof, offset);
         (mach.functionPc, offset) = u32(proof, offset);
+        (mach.recoveryPc, offset) = b32(proof, offset);
         (mach.modulesRoot, offset) = b32(proof, offset);
-        (mach.cothread, offset) = boolean(proof, offset);
     }
 
     function merkleProof(bytes calldata proof, uint256 startOffset)

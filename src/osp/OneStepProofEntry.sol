@@ -132,10 +132,10 @@ contract OneStepProofEntry is IOneStepProofEntry {
             mach.modulesRoot = modProof.computeRootFromModule(oldModIdx, mod);
         }
 
-        if (mach.status == MachineStatus.ERRORED && mach.cothread) {
-            mach.switchCoThread();
-            // indicate an error and continue
-            mach.valueStack.push(ValueLib.newI32(1));
+        if (mach.status == MachineStatus.ERRORED && mach.recoveryPc != MachineLib.NO_RECOVERY_PC) {
+            // capture error, recover into main thread.
+            mach.switchCoThreadStacks();
+            mach.setPcFromRecovery();
             mach.status = MachineStatus.RUNNING;
         }
 

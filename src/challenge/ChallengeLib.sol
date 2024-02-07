@@ -78,8 +78,8 @@ library ChallengeLib {
             moduleIdx: 0,
             functionIdx: 0,
             functionPc: 0,
-            modulesRoot: wasmModuleRoot,
-            cothread: false
+            recoveryPc: MachineLib.NO_RECOVERY_PC,
+            modulesRoot: wasmModuleRoot
         });
         return mach.hash();
     }

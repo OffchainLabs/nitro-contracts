@@ -16,12 +16,14 @@ library MultiStackLib {
         MultiStack memory multi,
         bytes32 activeStackHash,
         bool cothread
-    ) internal pure returns (bytes32 h) {
+    ) internal pure returns (bytes32) {
+        require(activeStackHash != NO_STACK_HASH, "MULTISTACK_NOSTACK_ACTIVE");
         if (cothread) {
+            require(multi.inactiveStackHash != NO_STACK_HASH, "MULTISTACK_NOSTACK_MAIN");
             return
                 keccak256(
                     abi.encodePacked(
-                        "multistack: ",
+                        "multistack:",
                         multi.inactiveStackHash,
                         activeStackHash,
                         multi.remainingHash
@@ -31,7 +33,7 @@ library MultiStackLib {
             return
                 keccak256(
                     abi.encodePacked(
-                        "multistack: ",
+                        "multistack:",
                         activeStackHash,
                         multi.inactiveStackHash,
                         multi.remainingHash
@@ -48,7 +50,7 @@ library MultiStackLib {
     function pushNew(MultiStack memory multi) internal pure {
         if (multi.inactiveStackHash != NO_STACK_HASH) {
             multi.remainingHash = keccak256(
-                abi.encodePacked("cothread: ", multi.inactiveStackHash, multi.remainingHash)
+                abi.encodePacked("cothread:", multi.inactiveStackHash, multi.remainingHash)
             );
         }
         multi.inactiveStackHash = 0;
