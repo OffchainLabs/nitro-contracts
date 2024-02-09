@@ -109,7 +109,7 @@ interface IDelayBufferable {
     /// @dev    Proves sequenced messages are synchronized in timestamp & blocknumber, extends the sync validity window,
     ///         and posts an L2 batch with blob data.
     /// @notice Normally the sequencer will only call this function once every delayThresholdSeconds / delayThresholdBlocks.
-    ///         The proof stores a time / block range for which the proof is valid and the sequencer can batch without proof.
+    ///         The proof stores a time / block range for which the proof is valid and the sequencer can post batches without proof.
     function addSequencerL2BatchFromBlobs(
         uint256 sequenceNumber,
         uint256 afterDelayedMessagesRead,

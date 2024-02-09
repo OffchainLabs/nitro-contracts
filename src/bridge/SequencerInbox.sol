@@ -224,8 +224,9 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
         );
 
         if (isDelayBufferable) {
-            // delays are applied retroactively, so we need to update the buffer state
-            // first before we check if the message is past the force inclusion threshold
+            // buffer updates are applied retroactively, so we need to update the buffer state
+            // first to apply any pending decrements before we check if the message is past the
+            // force inclusion threshold
             updateBuffers(l1BlockAndTime[0], l1BlockAndTime[1]);
         }
         (uint256 delayBlocks_, , uint256 delaySeconds_, ) = maxTimeVariationInternal();

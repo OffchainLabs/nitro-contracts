@@ -7,28 +7,13 @@ pragma solidity ^0.8.0;
 import "./ISequencerInbox.sol";
 import "./IDelayBufferable.sol";
 
+/**
+ * @title   Manages the delay buffer for the sequencer (SequencerInbox.sol)
+ * @notice  Messages are expected to be delayed up to a threshold, beyond which they are unexpected
+ *          and deplete a delay buffer. Buffer depletion is preveneted from decreasing too fast by only
+ *          depleting by as many seconds / blocks has elapsed in the delayed message queue.
+ */
 abstract contract DelayBufferable is IDelayBufferable {
-    /// @notice The previously proven and sequenced delay message
-    DelayCache private prevDelay;
-
-    /// @notice The delay buffer for blocks
-    uint64 private bufferBlocks;
-
-    /// @notice The delay buffer for seconds
-    uint64 private bufferSeconds;
-
-    /// @notice The block number until delay proofs are required.
-    uint64 private syncExpiryBlockNumber;
-
-    /// @notice The timestamp until delay proofs are required.
-    uint64 private syncExpiryTimestamp;
-
-    /// @notice The round off errors due to delay buffer replenishment, used for internal accounting.
-    uint64 private roundOffBlocks;
-
-    /// @notice The round off errors due to delay buffer replenishment, used for internal accounting.
-    uint64 private roundOffTime;
-
     // see ISequencerInbox.MaxTimeVariation
     uint64 private immutable delayBlocks;
     uint64 private immutable futureBlocks;
@@ -51,6 +36,37 @@ abstract contract DelayBufferable is IDelayBufferable {
     bool public immutable isDelayBufferable;
 
     uint256 private immutable deployTimeChainId = block.chainid;
+
+    /// @dev This struct stores a beginning reference point to apply
+    ///      buffer updates retroactively in the next batch post.
+    /// @notice The previously proven and sequenced delay message
+    DelayCache private prevDelay;
+
+    /// @dev Once this buffer is less than delayBlocks, the force inclusion threshold decreases
+    /// @notice The delay buffer for blocks
+    uint64 private bufferBlocks;
+
+    /// @dev Once this buffer is less than delaySeconds, the force inclusion threshold decreases
+    /// @notice The delay buffer for seconds
+    uint64 private bufferSeconds;
+
+    /// @dev    When messages are sequenced a margin below the delay threshold, that margin defines
+    ///         a sync state during which no delay proofs are required.
+    /// @notice The block number until delay proofs are required.
+    uint64 private syncExpiryBlockNumber;
+
+    /// @dev    When messages are sequenced a margin below the delay threshold, that margin defines
+    ///         a sync state during which no delay proofs are required.
+    /// @notice The timestamp until delay proofs are required.
+    uint64 private syncExpiryTimestamp;
+
+    /// @dev    Used for internal accounting.
+    /// @notice The round off errors due to delay buffer replenishment
+    uint64 private roundOffBlocks;
+
+    /// @dev    Used for internal accounting.
+    /// @notice The round off errors due to delay buffer replenishment
+    uint64 private roundOffTime;
 
     constructor(
         ISequencerInbox.MaxTimeVariation memory maxTimeVariation_,
@@ -81,7 +97,7 @@ abstract contract DelayBufferable is IDelayBufferable {
         }
     }
 
-    /// @dev This proves the current batch is not delayed.
+    /// @dev    Proves delayedMessage is not unexpectedly delayed.
     /// @notice Validates a delayed message against a past inbox acc and
     ///         proves the delayed message is not delayed beyond the threshold.
     function isValidSyncProof(
@@ -100,6 +116,8 @@ abstract contract DelayBufferable is IDelayBufferable {
             (uint64(block.timestamp) - delayedMessage.timestamp <= thresholdSeconds));
     }
 
+    /// @dev    Calculates the margin a sequenced message is below the delay threshold
+    ///         defining a `sync validity` window during which no delay proofs are required.
     /// @notice Updates the time / block until no delay proofs are required.
     function updateSyncValidity(
         bool cacheFullBuffer,
@@ -166,11 +184,9 @@ abstract contract DelayBufferable is IDelayBufferable {
         }
     }
 
-    /// @dev    This is the `happy path` where no extra proofs are required.
-    /// @notice Returns true if the inbox is in a synced state (no unexpectedly delayed messages)
+    /// @dev    This is the `sync validity window` during which no proofs are required.
+    /// @notice Returns true if the inbox is in a synced state (no unexpected delays are possible)
     function isSynced() internal view returns (bool isSynced_) {
-        isSynced_ = false;
-
         // first check if the synced state is cached
         (uint64 expiryBlockNumber, uint64 expiryTimestamp) = cachedFullBufferExpiry();
         // within the fullBufferExpiry window, the inbox is in a synced state
@@ -182,10 +198,11 @@ abstract contract DelayBufferable is IDelayBufferable {
         }
     }
 
-    /// @dev    The prevDelay stores the delay of the previous batch which is
-    ///         used as a starting reference point to calculate an elapsed amount
-    ///         using the current message as the ending reference point. The buffer
-    ///         saturates at the threshold which saves the sequencer margin to catch up.
+    /// @dev    Depletion is rate limited to allow the sequencer to recover properly from outages.
+    ///         In the event the batch poster is offline for X hours and Y blocks, when is comes back
+    ///         online, and sequences delayed messages, the buffer will not be immediately depleted by
+    ///         X hours and Y blocks. Instead, it will be depleted by the time / blocks elapsed in the
+    ///         delayed message queue. The buffer saturates at the threshold which allows recovery margin.
     /// @notice Decrements the delay buffer saturating at the threshold
     /// @param start The beginning reference point (delayPrev)
     /// @param end The ending reference point (current message)
@@ -242,8 +259,43 @@ abstract contract DelayBufferable is IDelayBufferable {
         return (buffer, repelenishRoundoff);
     }
 
+    /// @notice Conditionally depletes or replenishes the delay buffer
+    function updateBuffer(
+        uint64 start,
+        uint64 end,
+        uint64 delay,
+        uint64 threshold,
+        uint64 buffer,
+        uint64 maxBuffer,
+        uint64 amountPerPeriod,
+        uint64 period,
+        uint64 roundOff
+    ) internal pure returns (uint64, uint64) {
+        if (delay > threshold) {
+            // unexpected delay
+            buffer = deplete(start, end, delay, threshold, buffer);
+            roundOff = 0;
+        } else if (buffer < maxBuffer) {
+            // replenish buffer if depleted
+            (buffer, roundOff) = replenish(
+                start,
+                end,
+                buffer,
+                maxBuffer,
+                amountPerPeriod,
+                period,
+                roundOff
+            );
+        }
+        return (buffer, roundOff);
+    }
+
+    /// @dev    Updates both the block and time buffers.
     /// @notice Updates the delay buffers
     function updateBuffers(uint64 blockNumber, uint64 timestamp) internal {
+        // The prevDelay stores the delay of the previous batch which is
+        // used as a starting reference point to calculate an elapsed amount using the current
+        // message as the ending reference point.
         (bufferBlocks, roundOffBlocks) = updateBuffer(
             prevDelay.blockNumber,
             blockNumber,
@@ -268,6 +320,7 @@ abstract contract DelayBufferable is IDelayBufferable {
         );
 
         // store a new starting reference point
+        // any buffer updates will be applied retroactively in the next batch post
         prevDelay = DelayCache({
             blockNumber: blockNumber,
             timestamp: timestamp,
@@ -276,41 +329,9 @@ abstract contract DelayBufferable is IDelayBufferable {
         });
     }
 
-    /// @dev    The prevDelay stores the delay of the previous batch.
-    /// @notice Conditionally depletes or replenishes the delay buffer
-    function updateBuffer(
-        uint64 start,
-        uint64 end,
-        uint64 delay,
-        uint64 threshold,
-        uint64 buffer,
-        uint64 maxBuffer,
-        uint64 amountPerPeriod,
-        uint64 period,
-        uint64 roundOff
-    ) internal pure returns (uint64, uint64) {
-        if (delay > threshold) {
-            // unsynced: prev batch is late
-            // deplete delay buffers due previous batch
-            buffer = deplete(start, end, delay, threshold, buffer);
-            roundOff = 0;
-        } else if (buffer < maxBuffer) {
-            // replenish delay buffer if depleted
-            (buffer, roundOff) = replenish(
-                start,
-                end,
-                buffer,
-                maxBuffer,
-                amountPerPeriod,
-                period,
-                roundOff
-            );
-        }
-        return (buffer, roundOff);
-    }
-
     /// @dev    The delay buffer can change due to pending depletion in the delay cache.
     ///         This function applies pending buffer changes to calculate the force inclusion deadline.
+    ///         This is only relevant when the bufferBlocks or bufferSeconds are less than delayBlocks or delaySeconds.
     /// @notice Calculates the upper bounds of the delay buffer
     function forceInclusionDeadline(uint64 blockNumber, uint64 timestamp)
         external
@@ -366,11 +387,14 @@ abstract contract DelayBufferable is IDelayBufferable {
         return (bufferBlocks, bufferSeconds);
     }
 
+    /// @dev Exposes the synxExpiry state so the sequencer can decide when to renew the sync period.
     function syncExpiry() public view override returns (uint64, uint64) {
         return (syncExpiryBlockNumber, syncExpiryTimestamp);
     }
 
+    /// @dev Inheriting contracts must implement this function to cache the full buffer expiry state.
     function cachedFullBufferExpiry() internal view virtual returns (uint64, uint64);
 
+    /// @dev Inheriting contracts must implement this function to fetch the cached full buffer expiry state.
     function cacheFullBufferExpiry(uint64, uint64) internal virtual;
 }
