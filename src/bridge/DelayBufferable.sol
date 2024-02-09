@@ -90,10 +90,9 @@ abstract contract DelayBufferable is IDelayBufferable {
             delayConfig_.thresholdBlocks != type(uint64).max &&
             delayConfig_.thresholdSeconds != type(uint64).max;
         if (isDelayBufferable) {
+            // initially the buffers are full
             bufferBlocks = delayConfig_.maxBufferBlocks;
             bufferSeconds = delayConfig_.maxBufferSeconds;
-            syncExpiryBlockNumber = uint64(block.number) + delayConfig_.thresholdBlocks;
-            syncExpiryTimestamp = uint64(block.timestamp) + delayConfig_.thresholdSeconds;
         }
     }
 
