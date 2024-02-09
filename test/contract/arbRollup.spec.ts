@@ -97,7 +97,7 @@ let admin: Signer
 let sequencer: Signer
 let challengeManager: ChallengeManager
 let upgradeExecutor: string
-let adminproxy: string
+// let adminproxy: string
 
 async function getDefaultConfig(
   _confirmPeriodBlocks = confirmationPeriodBlocks
@@ -542,7 +542,7 @@ describe('ArbRollup', () => {
     admin = adminI
     validators = validatorsI
     upgradeExecutor = upgradeExecutorAddress
-    adminproxy = adminproxyAddress
+    // adminproxy = adminproxyAddress
     rollup = new RollupContract(rollupUser.connect(validators[0]))
     batchPosterManager = batchPosterManagerI
   })
