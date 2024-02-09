@@ -26,8 +26,8 @@ interface ISequencerInbox is IDelayedMessageProvider {
     /// @dev The cached data is a gas optimization to avoid reading from extra storage slots
     /// @notice The data for batch poster authentication and caching
     /// @param isBatchPoster if the address is a batch poster
-    /// @param cachedBlockNumber the block number of the last cached data
-    /// @param cachedTimestamp the timestamp of the last cached data
+    /// @param cachedBlockNumber last cached block number
+    /// @param cachedTimestamp last cached timestamp
     struct BatchPosterData {
         bool isBatchPoster;
         uint64 cachedBlockNumber;

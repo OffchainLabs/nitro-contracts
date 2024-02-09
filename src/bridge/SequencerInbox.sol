@@ -389,6 +389,8 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
 
         // validates the delayed message against the inbox accumulator
         // and proves the delayed message is synced within the delay threshold
+        // this is a sufficient condition to prove that any delayed messages sequenced
+        // in the current batch are also synced within the delay threshold
         if (!isValidSyncProof(beforeDelayedAcc, delayedMessage, beforeAcc, preimage))
             revert InvalidSyncProof();
 

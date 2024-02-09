@@ -117,7 +117,12 @@ abstract contract DelayBufferable is IDelayBufferable {
 
     /// @dev    Calculates the margin a sequenced message is below the delay threshold
     ///         defining a `sync validity` window during which no delay proofs are required.
+    ///         The caching mechanism saves gas when the same batch poster posts multiple batches.
+    ///         However, in a round robin scenario, the cache might not be used.
     /// @notice Updates the time / block until no delay proofs are required.
+    /// @param cacheFullBuffer Optionally checks if the buffer is full and caches the indicator for gas savings.
+    /// @param blockNumber The block number when the synced message was created.
+    /// @param timestamp The timestamp when the synced message was created.
     function updateSyncValidity(
         bool cacheFullBuffer,
         uint64 blockNumber,
@@ -127,7 +132,8 @@ abstract contract DelayBufferable is IDelayBufferable {
         syncExpiryBlockNumber = uint64(block.number) + thresholdBlocks - blockNumber;
         syncExpiryTimestamp = uint64(block.timestamp) + thresholdSeconds - timestamp;
         // as a gas opt, optionally cache the sync expiry for full buffer state
-        // this state is packed with batch poster authentication so no extra storage reads are required
+        // this state is packed with batch poster authentication so no extra storage reads
+        // are required when the same batch poster posts again during the sync validity window
         if (
             cacheFullBuffer && bufferBlocks == maxBufferBlocks && bufferSeconds == maxBufferSeconds
         ) {
@@ -168,7 +174,7 @@ abstract contract DelayBufferable is IDelayBufferable {
             uint64
         )
     {
-        // first check the happy case where the buffer is full
+        // first check the cache for the full buffer expiry
         (uint64 expiryBlockNumber, uint64 expiryTimestamp) = cachedFullBufferExpiry();
         if (block.number < expiryBlockNumber && block.timestamp < expiryTimestamp) {
             return (delayBlocks, futureBlocks, delaySeconds, futureSeconds);
@@ -192,7 +198,7 @@ abstract contract DelayBufferable is IDelayBufferable {
         if (block.number < expiryBlockNumber && block.timestamp < expiryTimestamp) {
             isSynced_ = true;
         } else if (block.number < syncExpiryBlockNumber && block.timestamp < syncExpiryTimestamp) {
-            // otherwise check the sync proof validity window
+            // otherwise check the sync validity window
             isSynced_ = true;
         }
     }
@@ -329,7 +335,7 @@ abstract contract DelayBufferable is IDelayBufferable {
     }
 
     /// @dev    The delay buffer can change due to pending depletion in the delay cache.
-    ///         This function applies pending buffer changes to calculate the force inclusion deadline.
+    ///         This function applies pending buffer changes to proactively calculate the force inclusion deadline.
     ///         This is only relevant when the bufferBlocks or bufferSeconds are less than delayBlocks or delaySeconds.
     /// @notice Calculates the upper bounds of the delay buffer
     function forceInclusionDeadline(uint64 blockNumber, uint64 timestamp)
