@@ -11,7 +11,7 @@
     "no-empty-blocks": "off",
     "reason-string": ["warn", { "maxLength": 128 }],
     "not-rely-on-time": "off",
-    "max-states-count": ["warn", 30],
+    "max-states-count": ["warn", 40],
     "no-inline-assembly": "off"
   },
   "plugins": ["prettier"]

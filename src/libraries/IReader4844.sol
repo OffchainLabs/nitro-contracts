@@ -1,3 +1,7 @@
+// Copyright 2023-2024, Offchain Labs, Inc.
+// For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
+// SPDX-License-Identifier: BUSL-1.1
+
 pragma solidity >=0.6.9 <0.9.0;
 
 interface IReader4844 {

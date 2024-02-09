@@ -9,7 +9,7 @@ import "./IReader4844.sol";
 import "./IGasRefunder.sol";
 
 abstract contract GasRefundEnabled {
-    uint256 immutable gasPerBlob = 2**17;
+    uint256 internal immutable gasPerBlob = 2**17;
 
     /// @dev this refunds the sender for execution costs of the tx
     /// calldata costs are only refunded if `msg.sender == tx.origin` to guarantee the value refunded relates to charging

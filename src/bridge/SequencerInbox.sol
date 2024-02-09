@@ -52,11 +52,11 @@ import "../libraries/ArbitrumChecker.sol";
 import {IERC20Bridge} from "./IERC20Bridge.sol";
 
 /**
- * @title Accepts batches from the sequencer and adds them to the rollup inbox.
+ * @title  Accepts batches from the sequencer and adds them to the rollup inbox.
  * @notice Contains the inbox accumulator which is the ordering of all data and transactions to be processed by the rollup.
- * As part of submitting a batch the sequencer is also expected to include items enqueued
- * in the delayed inbox (Bridge.sol). If items in the delayed inbox are not included by a
- * sequencer within a time limit they can be force included into the rollup inbox by anyone.
+ *         As part of submitting a batch the sequencer is also expected to include items enqueued
+ *         in the delayed inbox (Bridge.sol). If items in the delayed inbox are not included by a
+ *         sequencer within a time limit they can be force included into the rollup inbox by anyone.
  */
 contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox {
     uint256 public totalDelayedMessagesRead;
@@ -92,6 +92,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     mapping(address => bool) public isBatchPoster;
 
     // we previously stored the max time variation in a (uint,uint,uint,uint) struct here
+    // solhint-disable-next-line var-name-mixedcase
     uint256[4] private __LEGACY_MAX_TIME_VARIATION;
 
     mapping(bytes32 => DasKeySetInfo) public dasKeySetInfo;
@@ -323,9 +324,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         );
         uint256 __totalDelayedMessagesRead = _totalDelayedMessagesRead;
         uint256 prevSeqMsgCount = bridge.sequencerReportedSubMessageCount();
-        uint256 newSeqMsgCount = prevSeqMsgCount +
-            _totalDelayedMessagesRead -
-            totalDelayedMessagesRead;
+        uint256 newSeqMsgCount = prevSeqMsgCount; // force inclusion should not modify sequencer message count
         (
             uint256 seqMessageIndex,
             bytes32 beforeAcc,
@@ -608,8 +607,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         return (keccak256(bytes.concat(header, data)), timeBounds);
     }
 
-    /// @dev   Form a hash of the data being provided in 4844 data blobs
-    /// @param afterDelayedMessagesRead The delayed messages count read up to
+    /// @dev    Form a hash of the data being provided in 4844 data blobs
+    /// @param  afterDelayedMessagesRead The delayed messages count read up to
     /// @return The data hash
     /// @return The timebounds within which the message should be processed
     /// @return The normalized amount of gas used for blob posting

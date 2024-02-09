@@ -15,7 +15,7 @@
  */
 
 /* eslint-env node, mocha */
-import { ethers, network, run } from 'hardhat'
+import { ethers, network } from 'hardhat'
 import { Signer } from '@ethersproject/abstract-signer'
 import { BigNumberish, BigNumber } from '@ethersproject/bignumber'
 import { BytesLike } from '@ethersproject/bytes'
@@ -97,7 +97,7 @@ let admin: Signer
 let sequencer: Signer
 let challengeManager: ChallengeManager
 let upgradeExecutor: string
-let adminproxy: string
+// let adminproxy: string
 
 async function getDefaultConfig(
   _confirmPeriodBlocks = confirmationPeriodBlocks
@@ -542,7 +542,7 @@ describe('ArbRollup', () => {
     admin = adminI
     validators = validatorsI
     upgradeExecutor = upgradeExecutorAddress
-    adminproxy = adminproxyAddress
+    // adminproxy = adminproxyAddress
     rollup = new RollupContract(rollupUser.connect(validators[0]))
     batchPosterManager = batchPosterManagerI
   })
