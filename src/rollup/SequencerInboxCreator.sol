@@ -5,14 +5,15 @@
 pragma solidity ^0.8.0;
 
 import "../bridge/SequencerInbox.sol";
+import "../bridge/IDelayBufferable.sol";
 import "./ISequencerInboxCreator.sol";
 
 contract SequencerInboxCreator is ISequencerInboxCreator {
     function createSequencerInbox(
         IBridge bridge,
         ISequencerInbox.MaxTimeVariation calldata maxTimeVariation,
-        ISequencerInbox.ReplenishRate memory replenishRate_,
-        ISequencerInbox.DelaySettings memory delaySettings_,
+        IDelayBufferable.ReplenishRate memory replenishRate_,
+        IDelayBufferable.DelayConfig memory delayConfig_,
         uint256 maxDataSize,
         IReader4844 reader4844,
         bool isUsingFeeToken
@@ -21,7 +22,7 @@ contract SequencerInboxCreator is ISequencerInboxCreator {
             bridge,
             maxTimeVariation,
             replenishRate_,
-            delaySettings_,
+            delayConfig_,
             maxDataSize,
             reader4844,
             isUsingFeeToken

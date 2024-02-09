@@ -132,7 +132,7 @@ contract RollupCreator is Ownable {
             deployParams.nativeToken,
             deployParams.config.sequencerInboxMaxTimeVariation,
             deployParams.config.sequencerInboxReplenishRate,
-            deployParams.config.sequencerInboxDelaySettings,
+            deployParams.config.sequencerInboxDelayConfig,
             deployParams.maxDataSize,
             deployParams.reader4844
         );

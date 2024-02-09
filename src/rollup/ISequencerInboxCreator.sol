@@ -5,14 +5,15 @@
 pragma solidity ^0.8.0;
 
 import "../bridge/ISequencerInbox.sol";
+import "../bridge/IDelayBufferable.sol";
 import "../libraries/IReader4844.sol";
 
 interface ISequencerInboxCreator {
     function createSequencerInbox(
         IBridge bridge,
         ISequencerInbox.MaxTimeVariation calldata maxTimeVariation,
-        ISequencerInbox.ReplenishRate memory replenishRate_,
-        ISequencerInbox.DelaySettings memory delaySettings_,
+        IDelayBufferable.ReplenishRate memory replenishRate_,
+        IDelayBufferable.DelayConfig memory delayConfig_,
         uint256 maxDataSize,
         IReader4844 reader4844,
         bool isUsingFeeToken

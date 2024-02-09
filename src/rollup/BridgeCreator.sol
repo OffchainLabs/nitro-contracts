@@ -13,6 +13,7 @@ import "../bridge/ERC20Inbox.sol";
 import "../rollup/ERC20RollupEventInbox.sol";
 import "../bridge/ERC20Outbox.sol";
 import "./ISequencerInboxCreator.sol";
+import "../bridge/IDelayBufferable.sol";
 import "../bridge/IBridge.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
@@ -96,8 +97,8 @@ contract BridgeCreator is Ownable {
         address rollup,
         address nativeToken,
         ISequencerInbox.MaxTimeVariation calldata maxTimeVariation,
-        ISequencerInbox.ReplenishRate memory replenishRate_,
-        ISequencerInbox.DelaySettings memory delaySettings_,
+        IDelayBufferable.ReplenishRate memory replenishRate_,
+        IDelayBufferable.DelayConfig memory delayConfig_,
         uint256 maxDataSize,
         IReader4844 reader4844
     ) external returns (BridgeContracts memory) {
@@ -118,7 +119,7 @@ contract BridgeCreator is Ownable {
             IBridge(frame.bridge),
             maxTimeVariation,
             replenishRate_,
-            delaySettings_,
+            delayConfig_,
             maxDataSize,
             reader4844,
             isUsingFeeToken

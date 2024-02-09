@@ -1,11 +1,14 @@
-| Name               | Type                                                       | Slot | Offset | Bytes | Contract                                     |
-|--------------------|------------------------------------------------------------|------|--------|-------|----------------------------------------------|
-| rollup             | contract IOwnable                                          | 0    | 0      | 20    | src/bridge/SequencerInbox.sol:SequencerInbox |
-| batchPosterData    | mapping(address => struct ISequencerInbox.BatchPosterData) | 1    | 0      | 32    | src/bridge/SequencerInbox.sol:SequencerInbox |
-| delayData          | struct ISequencerInbox.DelayData                           | 2    | 0      | 32    | src/bridge/SequencerInbox.sol:SequencerInbox |
-| syncMarker         | struct ISequencerInbox.SyncMarker                          | 3    | 0      | 32    | src/bridge/SequencerInbox.sol:SequencerInbox |
-| delayMsgLastProven | struct ISequencerInbox.DelayMsgData                        | 4    | 0      | 32    | src/bridge/SequencerInbox.sol:SequencerInbox |
-| replenishPool      | struct ISequencerInbox.ReplenishPool                       | 5    | 0      | 32    | src/bridge/SequencerInbox.sol:SequencerInbox |
-| dasKeySetInfo      | mapping(bytes32 => struct ISequencerInbox.DasKeySetInfo)   | 6    | 0      | 32    | src/bridge/SequencerInbox.sol:SequencerInbox |
-| isSequencer        | mapping(address => bool)                                   | 7    | 0      | 32    | src/bridge/SequencerInbox.sol:SequencerInbox |
-| batchPosterManager | address                                                    | 8    | 0      | 20    | src/bridge/SequencerInbox.sol:SequencerInbox |
+| Name                  | Type                                                       | Slot | Offset | Bytes | Contract                                     |
+|-----------------------|------------------------------------------------------------|------|--------|-------|----------------------------------------------|
+| prevDelay             | struct IDelayBufferable.DelayCache                         | 0    | 0      | 32    | src/bridge/SequencerInbox.sol:SequencerInbox |
+| bufferBlocks          | uint64                                                     | 1    | 0      | 8     | src/bridge/SequencerInbox.sol:SequencerInbox |
+| bufferSeconds         | uint64                                                     | 1    | 8      | 8     | src/bridge/SequencerInbox.sol:SequencerInbox |
+| syncExpiryBlockNumber | uint64                                                     | 1    | 16     | 8     | src/bridge/SequencerInbox.sol:SequencerInbox |
+| syncExpiryTimestamp   | uint64                                                     | 1    | 24     | 8     | src/bridge/SequencerInbox.sol:SequencerInbox |
+| roundOffBlocks        | uint64                                                     | 2    | 0      | 8     | src/bridge/SequencerInbox.sol:SequencerInbox |
+| roundOffTime          | uint64                                                     | 2    | 8      | 8     | src/bridge/SequencerInbox.sol:SequencerInbox |
+| rollup                | contract IOwnable                                          | 3    | 0      | 20    | src/bridge/SequencerInbox.sol:SequencerInbox |
+| batchPosterData       | mapping(address => struct ISequencerInbox.BatchPosterData) | 4    | 0      | 32    | src/bridge/SequencerInbox.sol:SequencerInbox |
+| dasKeySetInfo         | mapping(bytes32 => struct ISequencerInbox.DasKeySetInfo)   | 5    | 0      | 32    | src/bridge/SequencerInbox.sol:SequencerInbox |
+| isSequencer           | mapping(address => bool)                                   | 6    | 0      | 32    | src/bridge/SequencerInbox.sol:SequencerInbox |
+| batchPosterManager    | address                                                    | 7    | 0      | 20    | src/bridge/SequencerInbox.sol:SequencerInbox |

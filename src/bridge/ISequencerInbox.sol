@@ -17,104 +17,21 @@ interface ISequencerInbox is IDelayedMessageProvider {
     /// @param delaySeconds The max amount of seconds in the past that a message can be received on L2
     /// @param futureSeconds The max amount of seconds in the future that a message can be received on L2
     struct MaxTimeVariation {
-        uint256 delayBlocks;
-        uint256 futureBlocks;
-        uint256 delaySeconds;
-        uint256 futureSeconds;
+        uint64 delayBlocks;
+        uint64 futureBlocks;
+        uint64 delaySeconds;
+        uint64 futureSeconds;
     }
 
-    /// @notice The rate at which the delay buffer is replenished.
-    /// @param secondsPerPeriod The amount of time in seconds that is added to the delay buffer every period
-    /// @param blocksPerPeriod The amount of blocks that is added to the delay buffer every period
-    /// @param periodSeconds The amount of time in seconds that is waited between replenishing the delay buffer
-    /// @param periodBlocks The amount of blocks that is waited between replenishing the delay buffer
-    struct ReplenishRate {
-        uint256 secondsPerPeriod;
-        uint256 blocksPerPeriod;
-        uint256 periodSeconds;
-        uint256 periodBlocks;
-    }
-
-    /// @notice Delay buffer and delay threshold settings
-    /// @param delayThresholdSeconds The maximum amount of time in seconds that a message is expected to be delayed
-    /// @param delayThresholdBlocks The maximum amount of blocks that a message is expected to be delayed
-    /// @param maxDelayBufferSeconds The maximum the delay buffer seconds can be
-    /// @param maxDelayBufferBlocks The maximum the delay blocks seconds can be
-    struct DelaySettings {
-        uint256 delayThresholdSeconds;
-        uint256 delayThresholdBlocks;
-        uint256 maxDelayBufferSeconds;
-        uint256 maxDelayBufferBlocks;
-    }
-
-    /// @notice Used to keep track of the time and block sync between L1 and L2
-    /// @param blockSeqNum The sequence number when block synchronization began.
-    /// @param timeSeqNum The sequence number when time synchronization began.
-    struct SyncMarker {
-        uint64 blockSeqNum;
-        uint64 timeSeqNum;
-    }
-
-    /// @notice Packs batch poster authentication with sync validity state for gas optimization
-    /// @param isBatchPoster If the mapped address is a batch poster.
-    /// @param maxBufferAndSyncProofValidUntilBlockNumber The block number until which the sequencer can post without a delay / sync proof.
-    /// @param maxBufferAndSyncProofValidUntilTimestamp The timestamp until which the sequencer can post without a delay / sync proof.
+    /// @dev The cached data is a gas optimization to avoid reading from extra storage slots
+    /// @notice The data for batch poster authentication and caching
+    /// @param isBatchPoster if the address is a batch poster
+    /// @param cachedBlockNumber the block number of the last cached data
+    /// @param cachedTimestamp the timestamp of the last cached data
     struct BatchPosterData {
         bool isBatchPoster;
-        uint64 maxBufferAndSyncProofValidUntilBlockNumber;
-        uint64 maxBufferAndSyncProofValidUntilTimestamp;
-    }
-
-    /// @notice The delay buffer packed with the sync proof validity window for gas optimization
-    /// @param bufferBlocks The amount of blocks in the delay buffer.
-    /// @param bufferSeconds The amount of seconds in the delay buffer.
-    /// @param syncProofValidUntilBlockNumber The block number until which the sequencer can post batches in a block synced state without proof.
-    /// @param syncProofValidUntilTimestamp The timestamp until which the sequencer can post batches in a time synced state without proof.
-    struct DelayData {
-        uint64 bufferBlocks;
-        uint64 bufferSeconds;
-        uint64 syncProofValidUntilBlockNumber;
-        uint64 syncProofValidUntilTimestamp;
-    }
-
-    /// @notice The header and delay of a sequenced delayed message.
-    /// @param blockNumber The block number when the message was created.
-    /// @param timestamp The timestamp when the message was created.
-    /// @param delayBlocks The amount of blocks the message was delayed.
-    /// @param delaySeconds The amount of seconds the message was delayed.
-    struct DelayMsgData {
-        uint64 blockNumber;
-        uint64 timestamp;
-        uint64 delayBlocks;
-        uint64 delaySeconds;
-    }
-
-    /// @notice The roundoff calculations for replenishing the delay buffer.
-    /// @param roundOffBlocks The amount of roundoff blocks to carry over to the next replenish calculation.
-    /// @param roundOffSeconds The amount of roundoff seconds to carry over to the next replenish calculation.
-    struct ReplenishPool {
-        uint64 roundOffBlocks;
-        uint64 roundOffSeconds;
-    }
-
-    /// @notice The data for proving a delayed message against a delayed accumulator
-    struct DelayAccPreimage {
-        bytes32 beforeDelayedAcc;
-        uint8 kind;
-        address sender;
-        uint64 blockNumber;
-        uint64 blockTimestamp;
-        uint256 count;
-        uint256 baseFeeL1;
-        bytes32 messageDataHash;
-    }
-
-    /// @notice The data for proving a delayed message against an inbox accumulator
-    struct InboxAccPreimage {
-        bytes32 beforeAccBeforeAcc;
-        bytes32 beforeAccDataHash;
-        bytes32 beforeAccDelayedAcc;
-        DelayAccPreimage delayedAccPreimage;
+        uint64 cachedBlockNumber;
+        uint64 cachedTimestamp;
     }
 
     event OwnerFunctionCalled(uint256 indexed id);
@@ -202,38 +119,6 @@ interface ISequencerInbox is IDelayedMessageProvider {
             uint256 futureSeconds
         );
 
-    function replenishRate()
-        external
-        view
-        returns (
-            uint256 secondsPerPeriod,
-            uint256 blocksPerPeriod,
-            uint256 periodSeconds,
-            uint256 periodBlocks
-        );
-
-    function delaySettings()
-        external
-        view
-        returns (
-            uint256 delayThresholdSeconds,
-            uint256 delayThresholdBlocks,
-            uint256 maxDelayBufferSeconds,
-            uint256 maxDelayBufferBlocks
-        );
-
-    function syncMarker() external view returns (uint64 blocksSeqNum, uint64 timeSeqNum);
-
-    function delayData()
-        external
-        view
-        returns (
-            uint64 bufferBlocks,
-            uint64 bufferSeconds,
-            uint64 syncProofValidUntilBlockNumber,
-            uint64 syncProofValidUntilTimestamp
-        );
-
     function dasKeySetInfo(bytes32) external view returns (bool, uint64);
 
     /// @notice Force messages from the delayed inbox to be included in the chain
@@ -266,8 +151,6 @@ interface ISequencerInbox is IDelayedMessageProvider {
 
     // ---------- BatchPoster functions ----------
 
-    /// @dev Sequences messages without any delay / sync proof, and posts an L2 batch with calldata.
-    /// @notice Normally the sequencer will call this function when posting batches with calldata.
     function addSequencerL2BatchFromOrigin(
         uint256 sequenceNumber,
         bytes calldata data,
@@ -277,9 +160,6 @@ interface ISequencerInbox is IDelayedMessageProvider {
         uint256 newMessageCount
     ) external;
 
-    /// @dev Sequences messages without any delay / sync proof, and posts an L2 batch with calldata. Can be called by contracts.
-    /// @notice Normally the rollup creation process will call this function to post the first batch.
-    ///         The sequencer will not typically call this function since it will not be refunded for gas.
     function addSequencerL2Batch(
         uint256 sequenceNumber,
         bytes calldata data,
@@ -289,41 +169,13 @@ interface ISequencerInbox is IDelayedMessageProvider {
         uint256 newMessageCount
     ) external;
 
-    /// @dev    Proves message delays, updates delay buffers, and posts an L2 batch with blob data.
-    ///         Must read atleast one new delayed message.
-    /// @notice Normally the sequencer will only call this function after the sequencer has been offline for a while.
-    ///         The extra proof adds cost to batch posting, and while the sequencer is online, the proof is unnecessary.
-    function addSequencerL2BatchFromBlobs(
-        uint256 sequenceNumber,
-        uint256 afterDelayedMessagesRead,
-        IGasRefunder gasRefunder,
-        uint256 prevMessageCount,
-        uint256 newMessageCount,
-        DelayAccPreimage calldata delayProof
-    ) external;
-
-    /// @dev    Proves sequenced messages are synchronized in timestamp & blocknumber, extends the sync validity window,
-    ///         and posts an L2 batch with blob data.
-    /// @notice Normally the sequencer will only call this function once every delayThresholdSeconds / delayThresholdBlocks.
-    ///         The proof stores a time / block range for which the proof is valid and the sequencer can batch without proof.
-    function addSequencerL2BatchFromBlobs(
-        uint256 sequenceNumber,
-        uint256 afterDelayedMessagesRead,
-        IGasRefunder gasRefunder,
-        uint256 prevMessageCount,
-        uint256 newMessageCount,
-        InboxAccPreimage calldata syncProof
-    ) external;
-
-    /// @dev Sequences messages without any delay / sync proof, and posts an L2 batch with blob data.
-    /// @notice Normally the sequencer will call this function when posting batches with blob data.
     function addSequencerL2BatchFromBlobs(
         uint256 sequenceNumber,
         uint256 afterDelayedMessagesRead,
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    ) external returns (bytes32);
+    ) external;
 
     // ---------- onlyRollupOrOwner functions ----------
 

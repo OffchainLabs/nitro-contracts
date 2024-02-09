@@ -99,17 +99,17 @@ contract RollupCreatorTest is Test {
             60 * 60 * 24,
             60 * 60
         );
-        ISequencerInbox.ReplenishRate memory replenishRate = ISequencerInbox.ReplenishRate({
-            secondsPerPeriod: 1,
-            blocksPerPeriod: 1,
-            periodSeconds: 12,
-            periodBlocks: 12
+        IDelayBufferable.ReplenishRate memory replenishRate = IDelayBufferable.ReplenishRate({
+            secondsPerPeriod: 0,
+            blocksPerPeriod: 0,
+            periodSeconds: 0,
+            periodBlocks: 0
         });
-        ISequencerInbox.DelaySettings memory delaySettings = ISequencerInbox.DelaySettings({
-            delayThresholdSeconds: 60 * 60,
-            delayThresholdBlocks: 60 * 60 / 12,
-            maxDelayBufferSeconds: 60 * 60 * 24 * 2,
-            maxDelayBufferBlocks: 60 * 60 * 24 * 2 / 12
+        IDelayBufferable.DelayConfig memory delayConfig = IDelayBufferable.DelayConfig({
+            thresholdSeconds: type(uint64).max,
+            thresholdBlocks: type(uint64).max,
+            maxBufferSeconds: 0,
+            maxBufferBlocks: 0
         });
         Config memory config = Config({
             confirmPeriodBlocks: 20,
@@ -124,7 +124,7 @@ contract RollupCreatorTest is Test {
             genesisBlockNum: 15_000_000,
             sequencerInboxMaxTimeVariation: timeVars,
             sequencerInboxReplenishRate: replenishRate,
-            sequencerInboxDelaySettings: delaySettings
+            sequencerInboxDelayConfig: delayConfig
         });
 
         // prepare funds
@@ -270,17 +270,17 @@ contract RollupCreatorTest is Test {
             60 * 60 * 24,
             60 * 60
         );
-        ISequencerInbox.ReplenishRate memory replenishRate = ISequencerInbox.ReplenishRate({
-            secondsPerPeriod: 1,
-            blocksPerPeriod: 1,
-            periodSeconds: 12,
-            periodBlocks: 12
+        IDelayBufferable.ReplenishRate memory replenishRate = IDelayBufferable.ReplenishRate({
+            secondsPerPeriod: 0,
+            blocksPerPeriod: 0,
+            periodSeconds: 0,
+            periodBlocks: 0
         });
-        ISequencerInbox.DelaySettings memory delaySettings = ISequencerInbox.DelaySettings({
-            delayThresholdSeconds: 60 * 60,
-            delayThresholdBlocks: 60 * 60 / 12,
-            maxDelayBufferSeconds: 60 * 60 * 24 * 2,
-            maxDelayBufferBlocks: 60 * 60 * 24 * 2 / 12
+        IDelayBufferable.DelayConfig memory delayConfig = IDelayBufferable.DelayConfig({
+            thresholdSeconds: type(uint64).max,
+            thresholdBlocks: type(uint64).max,
+            maxBufferSeconds: 0,
+            maxBufferBlocks: 0
         });
         Config memory config = Config({
             confirmPeriodBlocks: 20,
@@ -295,7 +295,7 @@ contract RollupCreatorTest is Test {
             genesisBlockNum: 15_000_000,
             sequencerInboxMaxTimeVariation: timeVars,
             sequencerInboxReplenishRate: replenishRate,
-            sequencerInboxDelaySettings: delaySettings
+            sequencerInboxDelayConfig: delayConfig
         });
 
         // approve fee token to pay for deployment of L2 factories
@@ -442,17 +442,17 @@ contract RollupCreatorTest is Test {
             60 * 60 * 24,
             60 * 60
         );
-        ISequencerInbox.ReplenishRate memory replenishRate = ISequencerInbox.ReplenishRate({
-            secondsPerPeriod: 1,
-            blocksPerPeriod: 1,
-            periodSeconds: 12,
-            periodBlocks: 12
+        IDelayBufferable.ReplenishRate memory replenishRate = IDelayBufferable.ReplenishRate({
+            secondsPerPeriod: 0,
+            blocksPerPeriod: 0,
+            periodSeconds: 0,
+            periodBlocks: 0
         });
-        ISequencerInbox.DelaySettings memory delaySettings = ISequencerInbox.DelaySettings({
-            delayThresholdSeconds: 60 * 60,
-            delayThresholdBlocks: 60 * 60 / 12,
-            maxDelayBufferSeconds: 60 * 60 * 24 * 2,
-            maxDelayBufferBlocks: 60 * 60 * 24 * 2 / 12
+        IDelayBufferable.DelayConfig memory delayConfig = IDelayBufferable.DelayConfig({
+            thresholdSeconds: type(uint64).max,
+            thresholdBlocks: type(uint64).max,
+            maxBufferSeconds: 0,
+            maxBufferBlocks: 0
         });
 
         Config memory config = Config({
@@ -468,7 +468,7 @@ contract RollupCreatorTest is Test {
             genesisBlockNum: 15_000_000,
             sequencerInboxMaxTimeVariation: timeVars,
             sequencerInboxReplenishRate: replenishRate,
-            sequencerInboxDelaySettings: delaySettings
+            sequencerInboxDelayConfig: delayConfig
         });
 
         // prepare funds

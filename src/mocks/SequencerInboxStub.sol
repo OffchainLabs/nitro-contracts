@@ -14,16 +14,16 @@ contract SequencerInboxStub is SequencerInbox {
         address sequencer_,
         ISequencerInbox.MaxTimeVariation memory maxTimeVariation_,
         ReplenishRate memory replenishRate_,
-        DelaySettings memory delaySettings_,
+        DelayConfig memory delayConfig_,
         uint256 maxDataSize_,
         IReader4844 reader4844_,
         bool isUsingFeeToken_
     )
         SequencerInbox(
-            bridge,
+            bridge_,
             maxTimeVariation_,
             replenishRate_,
-            delaySettings_,
+            delayConfig_,
             maxDataSize_,
             reader4844_,
             isUsingFeeToken_
@@ -41,11 +41,7 @@ contract SequencerInboxStub is SequencerInbox {
         );
         require(num == 0, "ALREADY_DELAYED_INIT");
         emit InboxMessageDelivered(num, initMsg);
-        (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formEmptyDataHash(
-            1,
-            delayData.bufferBlocks,
-            delayData.bufferSeconds
-        );
+        (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formEmptyDataHash(1);
         (uint256 sequencerMessageCount, , , ) = bridge.enqueueSequencerMessage(
             dataHash,
             1,
@@ -57,12 +53,7 @@ contract SequencerInboxStub is SequencerInbox {
         require(sequencerMessageCount == 0, "ALREADY_SEQ_INIT");
     }
 
-    function getTimeBounds(uint256 delayBufferBlocks, uint256 delayBufferSeconds)
-        internal
-        view
-        override
-        returns (IBridge.TimeBounds memory bounds)
-    {
+    function getTimeBounds() internal view override returns (IBridge.TimeBounds memory bounds) {
         this; // silence warning about function not being view
         return bounds;
     }

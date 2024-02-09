@@ -41,10 +41,7 @@ error NotContract(address addr);
 error MerkleProofTooLong(uint256 actualLength, uint256 maxProofLength);
 
 /// @dev The DelayedAccPreimage is invalid
-error InvalidDelayedAccPreimage();
-
-/// @dev The InboxAccPreimage is invalid
-error InvalidInboxAccPreimage();
+error InvalidDelayProof();
 
 /// @dev Thrown when an un-authorized address tries to access an admin function
 /// @param sender The un-authorized sender
@@ -155,8 +152,8 @@ error DelayedBackwards();
 /// @dev Thrown when someone attempts to read more messages than exist
 error DelayedTooFar();
 
-/// @dev Thrown when someone attempts to read as many messages as already read, but it's expected that atleast one new message should be read.
-error DelayedNotFarEnough();
+/// @dev Thrown when atleast one new message must be read.
+error NotDelayedFarEnough();
 
 /// @dev Force include can only read messages more blocks old than the delay period
 error ForceIncludeBlockTooSoon();
@@ -191,7 +188,14 @@ error NotBatchPosterManager(address);
 /// @dev Thrown when a data blob feature is attempted to be used on a chain that doesnt support it
 error DataBlobsNotSupported();
 
-error SyncProofExpired();
+/// @dev Thrown when batches are posted without delay proof, this is only allowed in a sync state or when no new delayed messages are read
+error DelayProofRequired();
+
+/// @dev Thrown when a batch post fails to prove a message delivery and sequencing are synced within the delay threshold
+error InvalidSyncProof();
+
+/// @dev Thrown when the sequencer attempts to post a batch with delay / sync proofs without delay bufferability enabled
+error NotDelayBufferable();
 
 /// @dev Thrown when an init param was supplied as empty
 error InitParamZero(string name);

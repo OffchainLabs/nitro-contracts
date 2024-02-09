@@ -6,6 +6,7 @@ import "./util/TestUtil.sol";
 import "../../src/rollup/BridgeCreator.sol";
 import "../../src/rollup/SequencerInboxCreator.sol";
 import "../../src/bridge/ISequencerInbox.sol";
+import "../../src/bridge/IDelayBufferable.sol";
 import "../../src/bridge/AbsInbox.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
@@ -124,17 +125,17 @@ contract BridgeCreatorTest is Test {
             30,
             40
         );
-        ISequencerInbox.ReplenishRate memory replenishRate = ISequencerInbox.ReplenishRate({
-            secondsPerPeriod: 1,
-            blocksPerPeriod: 1,
-            periodSeconds: 12,
-            periodBlocks: 12
+        IDelayBufferable.ReplenishRate memory replenishRate = IDelayBufferable.ReplenishRate({
+            secondsPerPeriod: 0,
+            blocksPerPeriod: 0,
+            periodSeconds: 0,
+            periodBlocks: 0
         });
-        ISequencerInbox.DelaySettings memory delaySettings = ISequencerInbox.DelaySettings({
-            delayThresholdSeconds: 60 * 60,
-            delayThresholdBlocks: 60 * 60 / 12,
-            maxDelayBufferSeconds: 60 * 60 * 24 * 2,
-            maxDelayBufferBlocks: 60 * 60 * 24 * 2 / 12
+        IDelayBufferable.DelayConfig memory delayConfig = IDelayBufferable.DelayConfig({
+            thresholdSeconds: type(uint64).max,
+            thresholdBlocks: type(uint64).max,
+            maxBufferSeconds: 0,
+            maxBufferBlocks: 0
         });
         BridgeCreator.BridgeContracts memory contracts = creator.createBridge(
             proxyAdmin,
@@ -142,7 +143,7 @@ contract BridgeCreatorTest is Test {
             nativeToken,
             timeVars,
             replenishRate,
-            delaySettings,
+            delayConfig,
             MAX_DATA_SIZE,
             dummyReader4844
         );
@@ -167,6 +168,7 @@ contract BridgeCreatorTest is Test {
         // seqInbox
         assertEq(address(seqInbox.bridge()), address(bridge), "Invalid bridge ref");
         assertEq(address(seqInbox.rollup()), rollup, "Invalid seq rollup ref");
+        assertEq(IDelayBufferable(address(seqInbox)).isDelayBufferable(), false, "Invalid isDelayBufferable");
         {
         (uint256 delayBlocks, uint256 futureBlocks, uint256 delaySeconds, uint256 futureSeconds) = seqInbox.maxTimeVariation();
         assertEq(delayBlocks, timeVars.delayBlocks, "Invalid delayBlocks");
@@ -205,17 +207,17 @@ contract BridgeCreatorTest is Test {
             30,
             40
         );
-        ISequencerInbox.ReplenishRate memory replenishRate = ISequencerInbox.ReplenishRate({
-            secondsPerPeriod: 1,
-            blocksPerPeriod: 1,
-            periodSeconds: 12,
-            periodBlocks: 12
+        IDelayBufferable.ReplenishRate memory replenishRate = IDelayBufferable.ReplenishRate({
+            secondsPerPeriod: 0,
+            blocksPerPeriod: 0,
+            periodSeconds: 0,
+            periodBlocks: 0
         });
-        ISequencerInbox.DelaySettings memory delaySettings = ISequencerInbox.DelaySettings({
-            delayThresholdSeconds: 60 * 60,
-            delayThresholdBlocks: 60 * 60 / 12,
-            maxDelayBufferSeconds: 60 * 60 * 24 * 2,
-            maxDelayBufferBlocks: 60 * 60 * 24 * 2 / 12
+        IDelayBufferable.DelayConfig memory delayConfig = IDelayBufferable.DelayConfig({
+            thresholdSeconds: type(uint64).max,
+            thresholdBlocks: type(uint64).max,
+            maxBufferSeconds: 0,
+            maxBufferBlocks: 0
         });
         BridgeCreator.BridgeContracts memory contracts = creator.createBridge(
             proxyAdmin,
@@ -223,7 +225,7 @@ contract BridgeCreatorTest is Test {
             nativeToken,
             timeVars,
             replenishRate,
-            delaySettings,
+            delayConfig,
             MAX_DATA_SIZE,
             dummyReader4844
         );

@@ -7,6 +7,7 @@ pragma solidity ^0.8.0;
 import "../state/GlobalState.sol";
 import "../state/Machine.sol";
 import "../bridge/ISequencerInbox.sol";
+import "../bridge/IDelayBufferable.sol";
 import "../bridge/IBridge.sol";
 import "../bridge/IOutbox.sol";
 import "../bridge/IInboxBase.sol";
@@ -26,8 +27,8 @@ struct Config {
     string chainConfig;
     uint64 genesisBlockNum;
     ISequencerInbox.MaxTimeVariation sequencerInboxMaxTimeVariation;
-    ISequencerInbox.ReplenishRate sequencerInboxReplenishRate;
-    ISequencerInbox.DelaySettings sequencerInboxDelaySettings;
+    IDelayBufferable.ReplenishRate sequencerInboxReplenishRate;
+    IDelayBufferable.DelayConfig sequencerInboxDelayConfig;
 }
 
 struct ContractDependencies {
