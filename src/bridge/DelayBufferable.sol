@@ -15,58 +15,58 @@ import "./IDelayBufferable.sol";
  */
 abstract contract DelayBufferable is IDelayBufferable {
     // see ISequencerInbox.MaxTimeVariation
-    uint64 private immutable delayBlocks;
-    uint64 private immutable futureBlocks;
-    uint64 private immutable delaySeconds;
-    uint64 private immutable futureSeconds;
+    uint64 internal immutable delayBlocks;
+    uint64 internal immutable futureBlocks;
+    uint64 internal immutable delaySeconds;
+    uint64 internal immutable futureSeconds;
 
     // see IDelayBufferable.ReplenishRate
-    uint64 private immutable secondsPerPeriod;
-    uint64 private immutable blocksPerPeriod;
-    uint64 private immutable periodSeconds;
-    uint64 private immutable periodBlocks;
+    uint64 internal immutable secondsPerPeriod;
+    uint64 internal immutable blocksPerPeriod;
+    uint64 internal immutable periodSeconds;
+    uint64 internal immutable periodBlocks;
 
     // see IDelayBufferable.DelayConfig
-    uint64 private immutable thresholdBlocks;
-    uint64 private immutable thresholdSeconds;
-    uint64 private immutable maxBufferSeconds;
-    uint64 private immutable maxBufferBlocks;
+    uint64 internal immutable thresholdBlocks;
+    uint64 internal immutable thresholdSeconds;
+    uint64 internal immutable maxBufferSeconds;
+    uint64 internal immutable maxBufferBlocks;
 
     // true if the delay buffer is enabled
     bool public immutable isDelayBufferable;
 
-    uint256 private immutable deployTimeChainId = block.chainid;
+    uint256 internal immutable deployTimeChainId = block.chainid;
 
     /// @dev This struct stores a beginning reference point to apply
     ///      buffer updates retroactively in the next batch post.
     /// @notice The previously proven and sequenced delay message
-    DelayCache private prevDelay;
+    DelayCache internal prevDelay;
 
     /// @dev Once this buffer is less than delayBlocks, the force inclusion threshold decreases
     /// @notice The delay buffer for blocks
-    uint64 private bufferBlocks;
+    uint64 internal bufferBlocks;
 
     /// @dev Once this buffer is less than delaySeconds, the force inclusion threshold decreases
     /// @notice The delay buffer for seconds
-    uint64 private bufferSeconds;
+    uint64 internal bufferSeconds;
 
     /// @dev    When messages are sequenced a margin below the delay threshold, that margin defines
     ///         a sync state during which no delay proofs are required.
     /// @notice The block number until delay proofs are required.
-    uint64 private syncExpiryBlockNumber;
+    uint64 internal syncExpiryBlockNumber;
 
     /// @dev    When messages are sequenced a margin below the delay threshold, that margin defines
     ///         a sync state during which no delay proofs are required.
     /// @notice The timestamp until delay proofs are required.
-    uint64 private syncExpiryTimestamp;
+    uint64 internal syncExpiryTimestamp;
 
     /// @dev    Used for internal accounting.
     /// @notice The round off errors due to delay buffer replenishment
-    uint64 private roundOffBlocks;
+    uint64 internal roundOffBlocks;
 
     /// @dev    Used for internal accounting.
     /// @notice The round off errors due to delay buffer replenishment
-    uint64 private roundOffTime;
+    uint64 internal roundOffTime;
 
     constructor(
         ISequencerInbox.MaxTimeVariation memory maxTimeVariation_,
@@ -388,12 +388,12 @@ abstract contract DelayBufferable is IDelayBufferable {
         return (thresholdBlocks, thresholdSeconds, maxBufferBlocks, maxBufferSeconds);
     }
 
-    function delayBuffer() public view override returns (uint64, uint64) {
+    function delayBuffer() external view override returns (uint64, uint64) {
         return (bufferBlocks, bufferSeconds);
     }
 
     /// @dev Exposes the synxExpiry state so the sequencer can decide when to renew the sync period.
-    function syncExpiry() public view override returns (uint64, uint64) {
+    function syncExpiry() external view override returns (uint64, uint64) {
         return (syncExpiryBlockNumber, syncExpiryTimestamp);
     }
 
