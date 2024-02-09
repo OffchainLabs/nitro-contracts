@@ -391,6 +391,51 @@ describe('SequencerInboxForceInclude', async () => {
     )
   })
 
+  it('can force-include-with-max-seqReportedCount', async () => {
+    const { user, inbox, bridge, messageTester, batchPoster, sequencerInbox } =
+      await setupSequencerInbox()
+
+    await sequencerInbox
+      .connect(batchPoster)
+      [
+        'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256)'
+      ](
+        0,
+        '0x',
+        0,
+        ethers.constants.AddressZero,
+        0,
+        ethers.constants.MaxUint256
+      )
+
+    const delayedTx = await sendDelayedTx(
+      user,
+      inbox,
+      bridge,
+      messageTester,
+      1000000,
+      21000000000,
+      0,
+      await user.getAddress(),
+      BigNumber.from(10),
+      '0x1010'
+    )
+    const maxTimeVariation = await sequencerInbox.maxTimeVariation()
+
+    await mineBlocks(maxTimeVariation[0].toNumber())
+
+    await forceIncludeMessages(
+      sequencerInbox,
+      delayedTx.inboxAccountLength,
+      delayedTx.deliveredMessageEvent.kind,
+      delayedTx.l1BlockNumber,
+      delayedTx.l1BlockTimestamp,
+      delayedTx.baseFeeL1,
+      delayedTx.senderAddr,
+      delayedTx.deliveredMessageEvent.messageDataHash
+    )
+  })
+
   it('can force-include one after another', async () => {
     const { user, inbox, bridge, messageTester, sequencerInbox } =
       await setupSequencerInbox()

@@ -323,9 +323,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         );
         uint256 __totalDelayedMessagesRead = _totalDelayedMessagesRead;
         uint256 prevSeqMsgCount = bridge.sequencerReportedSubMessageCount();
-        uint256 newSeqMsgCount = prevSeqMsgCount +
-            _totalDelayedMessagesRead -
-            totalDelayedMessagesRead;
+        uint256 newSeqMsgCount = prevSeqMsgCount; // force inclusion should not modify sequencer message count
         (
             uint256 seqMessageIndex,
             bytes32 beforeAcc,
