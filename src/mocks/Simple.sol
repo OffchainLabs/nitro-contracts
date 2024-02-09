@@ -130,8 +130,8 @@ contract Simple {
         uint256 before = gasleft();
         // The inner call may revert, but we still want to return the amount of gas used,
         // so we ignore the result of this call.
-        // solc-ignore-next-line unused-call-retval
         // solhint-disable-next-line avoid-low-level-calls
+        // solc-ignore-next-line unused-call-retval
         to.staticcall{gas: before - 10000}(input);
         return before - gasleft();
     }
