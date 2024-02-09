@@ -92,6 +92,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     mapping(address => bool) public isBatchPoster;
 
     // we previously stored the max time variation in a (uint,uint,uint,uint) struct here
+    // solhint-disable-next-line var-name-mixedcase
     uint256[4] private __LEGACY_MAX_TIME_VARIATION;
 
     mapping(bytes32 => DasKeySetInfo) public dasKeySetInfo;

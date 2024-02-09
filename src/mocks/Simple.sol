@@ -32,6 +32,7 @@ contract Simple {
     }
 
     function incrementRedeem() external {
+        // solhint-disable-next-line avoid-tx-origin
         require(msg.sender == tx.origin, "SENDER_NOT_ORIGIN");
         require(ArbSys(address(0x64)).wasMyCallersAddressAliased(), "NOT_ALIASED");
         counter++;
@@ -99,6 +100,7 @@ contract Simple {
             useTopLevel,
             delegateCase
         );
+        // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = address(this).delegatecall(data);
         require(success, "DELEGATE_CALL_FAILED");
 
@@ -119,6 +121,7 @@ contract Simple {
             useTopLevel,
             callCase
         );
+        // solhint-disable-next-line avoid-low-level-calls
         (success, ) = address(this).call(data);
         require(success, "CALL_FAILED");
     }
@@ -128,6 +131,7 @@ contract Simple {
         // The inner call may revert, but we still want to return the amount of gas used,
         // so we ignore the result of this call.
         // solc-ignore-next-line unused-call-retval
+        // solhint-disable-next-line avoid-low-level-calls
         to.staticcall{gas: before - 10000}(input);
         return before - gasleft();
     }

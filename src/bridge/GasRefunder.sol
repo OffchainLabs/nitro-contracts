@@ -165,6 +165,7 @@ contract GasRefunder is IGasRefunder, Ownable {
 
     function withdraw(address payable destination, uint256 amount) external onlyOwner {
         // It's expected that destination is an EOA
+        // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = destination.call{value: amount}("");
         require(success, "WITHDRAW_FAILED");
         emit Withdrawn(msg.sender, destination, amount);
@@ -249,6 +250,7 @@ contract GasRefunder is IGasRefunder, Ownable {
         }
 
         // It's expected that refundee is an EOA
+        // solhint-disable-next-line avoid-low-level-calls
         (success, ) = refundee.call{value: refundAmount}("");
         emit RefundedGasCosts(refundee, msg.sender, success, gasUsed, estGasPrice, refundAmount);
     }
