@@ -222,10 +222,10 @@ describe('SequencerInboxForceInclude', async () => {
     const admin = accounts[0]
     const adminAddr = await admin.getAddress()
     const user = accounts[1]
-    const dummyRollup = accounts[2]
+    // const dummyRollup = accounts[2]
     const rollupOwner = accounts[3]
     const batchPoster = accounts[4]
-    const batchPosterManager = accounts[5]
+    // const batchPosterManager = accounts[5]
 
     const rollupMockFac = (await ethers.getContractFactory(
       'RollupMock'
