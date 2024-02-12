@@ -36,21 +36,7 @@ export function getGasSpendingRecord(
   return { ...recordEth, ...recordToken }
 }
 
-function _parseGasConsumption(report: string): Record<string, number> {
-  const gasUsagePattern =
-    /(depositEth|withdrawEth_executeTransaction|withdrawToken_executeTransaction)\s+\|\s+(\d+)/g
-  const gasConsumption: Record<string, number> = {}
-  let match
-
-  while ((match = gasUsagePattern.exec(report)) !== null) {
-    // match[1] is the function name, match[2] is the gas consumption
-    gasConsumption[match[1]] = parseInt(match[2], 10)
-  }
-
-  return gasConsumption
-}
-
-export function _printGasReportDiff(
+export function printGasReportDiff(
   referentGasReport: Record<string, number>,
   currentImplementationGasReport: Record<string, number>
 ) {
@@ -69,4 +55,18 @@ export function _printGasReportDiff(
       )
     }
   }
+}
+
+function _parseGasConsumption(report: string): Record<string, number> {
+  const gasUsagePattern =
+    /(depositEth|withdrawEth_executeTransaction|withdrawToken_executeTransaction)\s+\|\s+(\d+)/g
+  const gasConsumption: Record<string, number> = {}
+  let match
+
+  while ((match = gasUsagePattern.exec(report)) !== null) {
+    // match[1] is the function name, match[2] is the gas consumption
+    gasConsumption[match[1]] = parseInt(match[2], 10)
+  }
+
+  return gasConsumption
 }
