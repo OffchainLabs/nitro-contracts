@@ -1,4 +1,3 @@
-import { execSync } from 'child_process'
 import dotenv from 'dotenv'
 import { getGasSpendingRecord } from './gasReportLib'
 import { writeFileSync } from 'fs'

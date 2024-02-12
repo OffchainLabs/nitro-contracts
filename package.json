@@ -41,8 +41,8 @@
     "gas:snapshot": "forge snapshot",
     "gas:check": "forge snapshot --check",
     "gas:report:all": "forge test --gas-report",
-    "gas:report:benchmark": "ts-node test/gas-reporter/gasReportBenchmark.ts",
-    "gas:report:gen-referent": "ts-node test/gas-reporter/gasReportGenerateReferent.ts"
+    "gas:report:benchmark": "ts-node test/gas-reporter/scripts/printBenchmarkGasReport.ts",
+    "gas:report:gen-referent": "ts-node test/gas-reporter/scripts/generateReferentGasReport.ts"
   },
   "dependencies": {
     "@offchainlabs/upgrade-executor": "1.1.0-beta.0",

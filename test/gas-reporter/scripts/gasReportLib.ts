@@ -1,7 +1,4 @@
 import { execSync } from 'child_process'
-import dotenv from 'dotenv'
-
-dotenv.config()
 
 const FORK_BLOCK_NUMBER = 19163009
 
