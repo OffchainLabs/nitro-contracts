@@ -12,13 +12,13 @@ function main() {
   }
   const mainnetRpc = `https://mainnet.infura.io/v3/${infuraKey}`
 
-  const referentGasReport = getReferentGasReport(mainnetRpc, true)
-  const currentImplementationGasReport = getReferentGasReport(mainnetRpc, false)
+  const referentGasReport = getGasReport(mainnetRpc, true)
+  const currentImplementationGasReport = getGasReport(mainnetRpc, false)
 
   _printGasReportDiff(referentGasReport, currentImplementationGasReport)
 }
 
-function getReferentGasReport(
+function getGasReport(
   rpc: string,
   referent: boolean
 ): Record<string, number> {

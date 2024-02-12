@@ -41,7 +41,7 @@
     "gas:snapshot": "forge snapshot",
     "gas:check": "forge snapshot --check",
     "gas:report:all": "forge test --gas-report",
-    "gas:report:checker": "ts-node test/gas-reporter/gasReportChecker.ts"
+    "gas:report:benchmark": "ts-node test/gas-reporter/gasReportBenchmark.ts"
   },
   "dependencies": {
     "@offchainlabs/upgrade-executor": "1.1.0-beta.0",
