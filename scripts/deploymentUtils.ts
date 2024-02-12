@@ -7,6 +7,7 @@ import {
   bytecode as UpgradeExecutorBytecode,
 } from '@offchainlabs/upgrade-executor/build/contracts/src/UpgradeExecutor.sol/UpgradeExecutor.json'
 import { maxDataSize } from './config'
+import { Toolkit4844 } from '../test/contract/toolkit4844'
 
 // Define a verification function
 export async function verifyContract(
@@ -55,7 +56,10 @@ export async function deployContract(
 ): Promise<Contract> {
   const factory: ContractFactory = await ethers.getContractFactory(contractName)
   const connectedFactory: ContractFactory = factory.connect(signer)
-  const contract: Contract = await connectedFactory.deploy(...constructorArgs, overrides)
+  const contract: Contract = await connectedFactory.deploy(
+    ...constructorArgs,
+    overrides
+  )
   await contract.deployTransaction.wait()
   console.log(`New ${contractName} created at address:`, contract.address)
 
@@ -80,10 +84,13 @@ export async function deployAllContracts(
   signer: any
 ): Promise<Record<string, Contract>> {
   const ethBridge = await deployContract('Bridge', signer, [])
+  const reader4844 = await Toolkit4844.deployReader4844(signer)
   const ethSequencerInbox = await deployContract('SequencerInbox', signer, [
     maxDataSize,
+    reader4844.address,
     false,
   ])
+
   const ethInbox = await deployContract('Inbox', signer, [maxDataSize])
   const ethRollupEventInbox = await deployContract(
     'RollupEventInbox',
@@ -95,6 +102,7 @@ export async function deployAllContracts(
   const erc20Bridge = await deployContract('ERC20Bridge', signer, [])
   const erc20SequencerInbox = await deployContract('SequencerInbox', signer, [
     maxDataSize,
+    reader4844.address,
     true,
   ])
   const erc20Inbox = await deployContract('ERC20Inbox', signer, [maxDataSize])
