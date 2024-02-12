@@ -93,7 +93,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     // we previously stored the max time variation in a (uint,uint,uint,uint) struct here
     // solhint-disable-next-line var-name-mixedcase
-    uint256[4] private __LEGACY_MAX_TIME_VARIATION;
+    ISequencerInbox.MaxTimeVariation private __LEGACY_MAX_TIME_VARIATION;
 
     mapping(bytes32 => DasKeySetInfo) public dasKeySetInfo;
 
@@ -152,32 +152,32 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         // Assuming we would not upgrade from a version that have MaxTimeVariation all set to zero
         // If that is the case, postUpgradeInit do not need to be called
         if (
-            __LEGACY_MAX_TIME_VARIATION[0] == 0 &&
-            __LEGACY_MAX_TIME_VARIATION[1] == 0 &&
-            __LEGACY_MAX_TIME_VARIATION[2] == 0 &&
-            __LEGACY_MAX_TIME_VARIATION[3] == 0
+            __LEGACY_MAX_TIME_VARIATION.delayBlocks == 0 &&
+            __LEGACY_MAX_TIME_VARIATION.futureBlocks == 0 &&
+            __LEGACY_MAX_TIME_VARIATION.delaySeconds == 0 &&
+            __LEGACY_MAX_TIME_VARIATION.futureSeconds == 0
         ) {
             revert AlreadyInit();
         }
 
         if (
-            __LEGACY_MAX_TIME_VARIATION[0] > type(uint64).max ||
-            __LEGACY_MAX_TIME_VARIATION[1] > type(uint64).max ||
-            __LEGACY_MAX_TIME_VARIATION[2] > type(uint64).max ||
-            __LEGACY_MAX_TIME_VARIATION[3] > type(uint64).max
+            __LEGACY_MAX_TIME_VARIATION.delayBlocks > type(uint64).max ||
+            __LEGACY_MAX_TIME_VARIATION.futureBlocks > type(uint64).max ||
+            __LEGACY_MAX_TIME_VARIATION.delaySeconds > type(uint64).max ||
+            __LEGACY_MAX_TIME_VARIATION.futureSeconds > type(uint64).max
         ) {
             revert BadPostUpgradeInit();
         }
 
-        delayBlocks = uint64(__LEGACY_MAX_TIME_VARIATION[0]);
-        futureBlocks = uint64(__LEGACY_MAX_TIME_VARIATION[1]);
-        delaySeconds = uint64(__LEGACY_MAX_TIME_VARIATION[2]);
-        futureSeconds = uint64(__LEGACY_MAX_TIME_VARIATION[3]);
+        delayBlocks = uint64(__LEGACY_MAX_TIME_VARIATION.delayBlocks);
+        futureBlocks = uint64(__LEGACY_MAX_TIME_VARIATION.futureBlocks);
+        delaySeconds = uint64(__LEGACY_MAX_TIME_VARIATION.delaySeconds);
+        futureSeconds = uint64(__LEGACY_MAX_TIME_VARIATION.futureSeconds);
 
-        __LEGACY_MAX_TIME_VARIATION[0] = 0;
-        __LEGACY_MAX_TIME_VARIATION[1] = 0;
-        __LEGACY_MAX_TIME_VARIATION[2] = 0;
-        __LEGACY_MAX_TIME_VARIATION[3] = 0;
+        __LEGACY_MAX_TIME_VARIATION.delayBlocks = 0;
+        __LEGACY_MAX_TIME_VARIATION.futureBlocks = 0;
+        __LEGACY_MAX_TIME_VARIATION.delaySeconds = 0;
+        __LEGACY_MAX_TIME_VARIATION.futureSeconds = 0;
     }
 
     function initialize(
@@ -201,10 +201,11 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
         bridge = bridge_;
         rollup = bridge_.rollup();
-        delayBlocks = maxTimeVariation_.delayBlocks;
-        futureBlocks = maxTimeVariation_.futureBlocks;
-        delaySeconds = maxTimeVariation_.delaySeconds;
-        futureSeconds = maxTimeVariation_.futureSeconds;
+        // TODO: safe cast
+        delayBlocks = uint64(maxTimeVariation_.delayBlocks);
+        futureBlocks = uint64(maxTimeVariation_.futureBlocks);
+        delaySeconds = uint64(maxTimeVariation_.delaySeconds);
+        futureSeconds = uint64(maxTimeVariation_.futureSeconds);
     }
 
     /// @notice Allows the rollup owner to sync the rollup address
@@ -723,10 +724,11 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         external
         onlyRollupOwner
     {
-        delayBlocks = maxTimeVariation_.delayBlocks;
-        futureBlocks = maxTimeVariation_.futureBlocks;
-        delaySeconds = maxTimeVariation_.delaySeconds;
-        futureSeconds = maxTimeVariation_.futureSeconds;
+        // TODO: safe cast
+        delayBlocks = uint64(maxTimeVariation_.delayBlocks);
+        futureBlocks = uint64(maxTimeVariation_.futureBlocks);
+        delaySeconds = uint64(maxTimeVariation_.delaySeconds);
+        futureSeconds = uint64(maxTimeVariation_.futureSeconds);
         emit OwnerFunctionCalled(0);
     }
 
