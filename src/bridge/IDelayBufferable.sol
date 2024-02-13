@@ -106,6 +106,21 @@ interface IDelayBufferable {
         Messages.Message calldata delayedMessage
     ) external;
 
+    /// @dev    Proves message delays, updates delay buffers, and posts an L2 batch with calldata.
+    ///         Must read atleast one new delayed message.
+    /// @notice Normally the sequencer will only call this function after the sequencer has been offline for a while.
+    ///         The extra proof adds cost to batch posting, and while the sequencer is online, the proof is unnecessary.
+    function addSequencerL2BatchFromOrigin(
+        uint256 sequenceNumber,
+        bytes calldata data,
+        uint256 afterDelayedMessagesRead,
+        IGasRefunder gasRefunder,
+        uint256 prevMessageCount,
+        uint256 newMessageCount,
+        bytes32 beforeDelayedAcc,
+        Messages.Message calldata delayedMessage
+    ) external;
+
     /// @dev    Proves sequenced messages are synchronized in timestamp & blocknumber, extends the sync validity window,
     ///         and posts an L2 batch with blob data.
     /// @notice Normally the sequencer will only call this function once every delayThresholdSeconds / delayThresholdBlocks.
@@ -116,7 +131,24 @@ interface IDelayBufferable {
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount,
-        bool cacheFullBufferExpiry,
+        bool isCachingRequested,
+        bytes32 beforeDelayedAcc,
+        Messages.Message calldata delayedMessage,
+        Messages.InboxAccPreimage calldata preimage
+    ) external;
+
+    /// @dev    Proves sequenced messages are synchronized in timestamp & blocknumber, extends the sync validity window,
+    ///         and posts an L2 batch with calldata.
+    /// @notice Normally the sequencer will only call this function once every delayThresholdSeconds / delayThresholdBlocks.
+    ///         The proof stores a time / block range for which the proof is valid and the sequencer can post batches without proof.
+    function addSequencerL2BatchFromOrigin(
+        uint256 sequenceNumber,
+        bytes calldata data,
+        uint256 afterDelayedMessagesRead,
+        IGasRefunder gasRefunder,
+        uint256 prevMessageCount,
+        uint256 newMessageCount,
+        bool isCachingRequested,
         bytes32 beforeDelayedAcc,
         Messages.Message calldata delayedMessage,
         Messages.InboxAccPreimage calldata preimage

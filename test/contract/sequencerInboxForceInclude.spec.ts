@@ -356,7 +356,9 @@ describe('SequencerInboxForceInclude', async () => {
     await (
       await sequencerInbox
         .connect(batchPoster)
-        .addSequencerL2BatchFromOrigin(
+        [
+          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256)'
+        ](
           0,
           data,
           messagesRead,

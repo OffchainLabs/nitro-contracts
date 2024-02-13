@@ -1476,14 +1476,9 @@ describe('ArbRollup', () => {
 
   it('should fail the batch poster check', async function () {
     await expect(
-      sequencerInbox.addSequencerL2BatchFromOrigin(
-        0,
-        '0x',
-        0,
-        ethers.constants.AddressZero,
-        0,
-        0
-      )
+      sequencerInbox[
+        'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256)'
+      ](0, '0x', 0, ethers.constants.AddressZero, 0, 0)
     ).to.revertedWith('NotBatchPoster()')
   })
 
