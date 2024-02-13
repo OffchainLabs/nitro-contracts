@@ -1379,7 +1379,7 @@ describe('ArbRollup', () => {
 
   it('should fail the chainid fork check', async function () {
     await expect(sequencerInbox.removeDelayAfterFork()).to.revertedWith(
-      'NotForked()'
+      'NotForked'
     )
   })
 
@@ -1393,7 +1393,7 @@ describe('ArbRollup', () => {
         0,
         0
       )
-    ).to.revertedWith('NotBatchPoster()')
+    ).to.revertedWith('NotBatchPoster')
   })
 
   it('should fail the onlyValidator check', async function () {
