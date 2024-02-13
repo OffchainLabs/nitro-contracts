@@ -1,5 +1,4 @@
-import { ethers } from 'hardhat'
-import { ContractFactory, Contract, Overrides } from 'ethers'
+import { ContractFactory, Contract, Overrides, ethers } from 'ethers'
 import '@nomiclabs/hardhat-ethers'
 import { run } from 'hardhat'
 import {
@@ -8,6 +7,8 @@ import {
 } from '@offchainlabs/upgrade-executor/build/contracts/src/UpgradeExecutor.sol/UpgradeExecutor.json'
 import { maxDataSize } from './config'
 import { Toolkit4844 } from '../test/contract/toolkit4844'
+import { ArbSys__factory } from '../build/types'
+import { ARB_SYS_ADDRESS } from '@arbitrum/sdk/dist/lib/dataEntities/constants'
 
 // Define a verification function
 export async function verifyContract(
@@ -83,11 +84,15 @@ export async function deployUpgradeExecutor(): Promise<Contract> {
 export async function deployAllContracts(
   signer: any
 ): Promise<Record<string, Contract>> {
+  const isOnArb = await _isRunningOnArbitrum(signer)
+
   const ethBridge = await deployContract('Bridge', signer, [])
-  const reader4844 = await Toolkit4844.deployReader4844(signer)
+  const reader4844 = isOnArb
+    ? (await Toolkit4844.deployReader4844(signer)).address
+    : ethers.constants.AddressZero
   const ethSequencerInbox = await deployContract('SequencerInbox', signer, [
     maxDataSize,
-    reader4844.address,
+    reader4844,
     false,
   ])
 
@@ -102,7 +107,7 @@ export async function deployAllContracts(
   const erc20Bridge = await deployContract('ERC20Bridge', signer, [])
   const erc20SequencerInbox = await deployContract('SequencerInbox', signer, [
     maxDataSize,
-    reader4844.address,
+    reader4844,
     true,
   ])
   const erc20Inbox = await deployContract('ERC20Inbox', signer, [maxDataSize])
@@ -165,5 +170,16 @@ export async function deployAllContracts(
     validatorWalletCreator,
     rollupCreator,
     deployHelper,
+  }
+}
+
+// Check if we're deploying to an Arbitrum chain
+async function _isRunningOnArbitrum(signer: any): Promise<Boolean> {
+  const arbSys = ArbSys__factory.connect(ARB_SYS_ADDRESS, signer)
+  try {
+    await arbSys.arbOSVersion()
+    return true
+  } catch (error) {
+    return false
   }
 }
