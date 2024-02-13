@@ -66,7 +66,7 @@ abstract contract DelayBufferable is IDelayBufferable {
 
     /// @dev    Used for internal accounting.
     /// @notice The round off errors due to delay buffer replenishment
-    uint64 internal roundOffTime;
+    uint64 internal roundOffSeconds;
 
     constructor(
         ISequencerInbox.MaxTimeVariation memory maxTimeVariation_,
@@ -120,14 +120,16 @@ abstract contract DelayBufferable is IDelayBufferable {
     ///         The caching mechanism saves gas when the same batch poster posts multiple batches.
     ///         However, in a round robin scenario, the cache might not be used.
     /// @notice Updates the time / block until no delay proofs are required.
-    /// @param cacheFullBuffer Optionally checks if the buffer is full and caches the indicator for gas savings.
+    /// @param isCachingRequested Optionally checks if the buffer is full and caches the indicator for gas savings.
     /// @param blockNumber The block number when the synced message was created.
     /// @param timestamp The timestamp when the synced message was created.
     function updateSyncValidity(
-        bool cacheFullBuffer,
+        bool isCachingRequested,
         uint64 blockNumber,
         uint64 timestamp
     ) internal {
+        assert(blockNumber <= uint64(block.number));
+        assert(timestamp <= uint64(block.timestamp));
         // update the sync proof validity window
         syncExpiryBlockNumber = uint64(block.number) + thresholdBlocks - blockNumber;
         syncExpiryTimestamp = uint64(block.timestamp) + thresholdSeconds - timestamp;
@@ -135,9 +137,14 @@ abstract contract DelayBufferable is IDelayBufferable {
         // this state is packed with batch poster authentication so no extra storage reads
         // are required when the same batch poster posts again during the sync validity window
         if (
-            cacheFullBuffer && bufferBlocks == maxBufferBlocks && bufferSeconds == maxBufferSeconds
+            isCachingRequested &&
+            bufferBlocks == maxBufferBlocks &&
+            bufferSeconds == maxBufferSeconds
         ) {
-            cacheFullBufferExpiry(blockNumber + thresholdBlocks, timestamp + thresholdSeconds);
+            cacheFullBufferExpiry(
+                uint64(block.number) + thresholdBlocks - blockNumber,
+                uint64(block.timestamp) + thresholdSeconds - timestamp
+            );
         }
     }
 
@@ -237,31 +244,31 @@ abstract contract DelayBufferable is IDelayBufferable {
     /// @notice Replenishes the delay buffer saturating at maxBuffer
     /// @param start The beginning reference point
     /// @param end The ending reference point
-    /// @param repelenishRoundoff The roundoff from the last replenish
-    /// @param replenishPeriod The replenish period
-    /// @param replenishAmountPerPeriod The amount to replenish per period
     /// @param buffer The buffer to be replenished
     /// @param maxBuffer The maximum buffer
+    /// @param amountPerPeriod The amount to replenish per period
+    /// @param period The replenish period
+    /// @param roundOff The roundoff from the last replenish
     function replenish(
         uint64 start,
         uint64 end,
         uint64 buffer,
         uint64 maxBuffer,
-        uint64 replenishAmountPerPeriod,
-        uint64 replenishPeriod,
-        uint64 repelenishRoundoff
+        uint64 amountPerPeriod,
+        uint64 period,
+        uint64 roundOff
     ) internal pure returns (uint64, uint64) {
         // add the replenish round off from the last replenish
-        uint64 elapsed = end > start ? end - start + repelenishRoundoff : 0;
-        uint64 replenishAmount = (elapsed / replenishPeriod) * replenishAmountPerPeriod;
-        repelenishRoundoff = elapsed % replenishPeriod;
+        uint64 elapsed = end > start ? end - start + roundOff : 0;
+        uint64 replenishAmount = (elapsed / period) * amountPerPeriod;
+        roundOff = elapsed % period;
         buffer += replenishAmount;
         // saturate
         if (buffer > maxBuffer) {
             buffer = maxBuffer;
-            repelenishRoundoff = 0;
+            roundOff = 0;
         }
-        return (buffer, repelenishRoundoff);
+        return (buffer, roundOff);
     }
 
     /// @notice Conditionally depletes or replenishes the delay buffer
@@ -276,6 +283,7 @@ abstract contract DelayBufferable is IDelayBufferable {
         uint64 period,
         uint64 roundOff
     ) internal pure returns (uint64, uint64) {
+        assert(start <= end);
         if (delay > threshold) {
             // unexpected delay
             buffer = deplete(start, end, delay, threshold, buffer);
@@ -312,7 +320,7 @@ abstract contract DelayBufferable is IDelayBufferable {
             periodBlocks,
             roundOffBlocks
         );
-        (bufferSeconds, roundOffTime) = updateBuffer(
+        (bufferSeconds, roundOffSeconds) = updateBuffer(
             prevDelay.timestamp,
             timestamp,
             prevDelay.delaySeconds,
@@ -321,7 +329,7 @@ abstract contract DelayBufferable is IDelayBufferable {
             maxBufferSeconds,
             secondsPerPeriod,
             periodSeconds,
-            roundOffTime
+            roundOffSeconds
         );
 
         // store a new starting reference point
