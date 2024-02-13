@@ -1,4 +1,5 @@
-import { ContractFactory, Contract, Overrides, ethers } from 'ethers'
+import { ethers } from 'hardhat'
+import { ContractFactory, Contract, Overrides } from 'ethers'
 import '@nomiclabs/hardhat-ethers'
 import { run } from 'hardhat'
 import {
@@ -57,10 +58,13 @@ export async function deployContract(
 ): Promise<Contract> {
   const factory: ContractFactory = await ethers.getContractFactory(contractName)
   const connectedFactory: ContractFactory = factory.connect(signer)
-  const contract: Contract = await connectedFactory.deploy(
-    ...constructorArgs,
-    overrides
-  )
+
+  let deploymentArgs = [...constructorArgs]
+  if (overrides) {
+    deploymentArgs.push(overrides)
+  }
+
+  const contract: Contract = await connectedFactory.deploy(...deploymentArgs)
   await contract.deployTransaction.wait()
   console.log(`New ${contractName} created at address:`, contract.address)
 
@@ -71,12 +75,13 @@ export async function deployContract(
 }
 
 // Deploy upgrade executor from imported bytecode
-export async function deployUpgradeExecutor(): Promise<Contract> {
+export async function deployUpgradeExecutor(signer: any): Promise<Contract> {
   const upgradeExecutorFac = await ethers.getContractFactory(
     UpgradeExecutorABI,
     UpgradeExecutorBytecode
   )
-  const upgradeExecutor = await upgradeExecutorFac.deploy()
+  const connectedFactory: ContractFactory = upgradeExecutorFac.connect(signer)
+  const upgradeExecutor = await connectedFactory.deploy()
   return upgradeExecutor
 }
 
@@ -88,8 +93,9 @@ export async function deployAllContracts(
 
   const ethBridge = await deployContract('Bridge', signer, [])
   const reader4844 = isOnArb
-    ? (await Toolkit4844.deployReader4844(signer)).address
-    : ethers.constants.AddressZero
+    ? ethers.constants.AddressZero
+    : (await Toolkit4844.deployReader4844(signer)).address
+
   const ethSequencerInbox = await deployContract('SequencerInbox', signer, [
     maxDataSize,
     reader4844,
@@ -147,7 +153,7 @@ export async function deployAllContracts(
   const challengeManager = await deployContract('ChallengeManager', signer)
   const rollupAdmin = await deployContract('RollupAdminLogic', signer)
   const rollupUser = await deployContract('RollupUserLogic', signer)
-  const upgradeExecutor = await deployUpgradeExecutor()
+  const upgradeExecutor = await deployUpgradeExecutor(signer)
   const validatorUtils = await deployContract('ValidatorUtils', signer)
   const validatorWalletCreator = await deployContract(
     'ValidatorWalletCreator',
