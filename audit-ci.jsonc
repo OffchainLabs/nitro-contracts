@@ -41,6 +41,16 @@
     //  follow-redirects improperly handles URLs in the url.parse() function
     "GHSA-jchw-25xp-jwwc",
     // Undici's cookie header not cleared on cross-origin redirect in fetch,
-    "GHSA-wqq4-5wpv-mx2g"
+    "GHSA-wqq4-5wpv-mx2g",
+    // yargs-parser Vulnerable to Prototype Pollution
+    "GHSA-p9pc-299p-vxgp",
+    // Axios vulnerable to Server-Side Request Forgery
+    "GHSA-4w2v-q235-vp99",
+    // axios Inefficient Regular Expression Complexity vulnerability
+    "GHSA-cph5-m8f7-6c5x",
+    // Exposure of Sensitive Information to an Unauthorized Actor in follow-redirects
+    "GHSA-pw2r-vq6v-hr8c",
+    // Exposure of sensitive information in follow-redirects
+    "GHSA-74fj-2j2h-c42q"
   ]
 }
