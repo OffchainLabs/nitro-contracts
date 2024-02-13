@@ -126,10 +126,12 @@ describe('Validator Wallet', () => {
           [rollupMock1.address, rollupMock2.address],
           [0, 0]
         )
-    ).to.be.revertedWith(
-      `OnlyOwnerDestination("${await owner.getAddress()}", "${await executor.getAddress()}", "${
-        rollupMock2.address
-      }")`
     )
+      .to.be.revertedWith('OnlyOwnerDestination')
+      .withArgs(
+        `${await owner.getAddress()}`,
+        `${await executor.getAddress()}`,
+        `${rollupMock2.address}`
+      )
   })
 })
