@@ -27,7 +27,7 @@
     "build:0.7": "INTERFACE_TESTER_SOLC_VERSION=0.7.0 yarn run build",
     "test:compatibility": "yarn run build:0.6 && yarn run build:0.7",
     "test:storage": "./test/storage/test.bash",
-    "test:signatures": "./test/sginatures/test-sigs.bash",
+    "test:signatures": "./test/signatures/test-sigs.bash",
     "test:e2e": "hardhat test test/e2e/*.ts",
     "postinstall": "patch-package",
     "deploy-factory": "hardhat run scripts/deployment.ts",
