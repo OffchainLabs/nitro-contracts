@@ -5,8 +5,8 @@
 pragma solidity ^0.8.0;
 
 struct MultiStack {
-    bytes32 inactiveStackHash;  // NO_STACK_HASH if no stack, 0 if empty stack
-    bytes32 remainingHash;      // 0 if less than 2 cothreads exist
+    bytes32 inactiveStackHash; // NO_STACK_HASH if no stack, 0 if empty stack
+    bytes32 remainingHash; // 0 if less than 2 cothreads exist
 }
 
 library MultiStackLib {
