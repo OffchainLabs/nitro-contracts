@@ -111,8 +111,12 @@ abstract contract DelayBufferable is IDelayBufferable {
                 beforeDelayedAcc,
                 delayedMessage
             ) &&
-            (uint64(block.number) - delayedMessage.blockNumber <= thresholdBlocks) &&
-            (uint64(block.timestamp) - delayedMessage.timestamp <= thresholdSeconds));
+            isSynced(delayedMessage.blockNumber, delayedMessage.timestamp));
+    }
+
+    function isSynced(uint64 blockNumber, uint64 timestamp) internal view returns (bool) {
+        return ((uint64(block.number) - blockNumber <= thresholdBlocks) &&
+            (uint64(block.timestamp) - timestamp <= thresholdSeconds));
     }
 
     /// @dev    Calculates the margin a sequenced message is below the delay threshold
@@ -131,8 +135,8 @@ abstract contract DelayBufferable is IDelayBufferable {
         assert(blockNumber <= uint64(block.number));
         assert(timestamp <= uint64(block.timestamp));
         // update the sync proof validity window
-        syncExpiryBlockNumber = uint64(block.number) + thresholdBlocks - blockNumber;
-        syncExpiryTimestamp = uint64(block.timestamp) + thresholdSeconds - timestamp;
+        syncExpiryBlockNumber = blockNumber + thresholdBlocks;
+        syncExpiryTimestamp = timestamp + thresholdSeconds;
         // as a gas opt, optionally cache the sync expiry for full buffer state
         // this state is packed with batch poster authentication so no extra storage reads
         // are required when the same batch poster posts again during the sync validity window
@@ -141,10 +145,7 @@ abstract contract DelayBufferable is IDelayBufferable {
             bufferBlocks == maxBufferBlocks &&
             bufferSeconds == maxBufferSeconds
         ) {
-            cacheFullBufferExpiry(
-                uint64(block.number) + thresholdBlocks - blockNumber,
-                uint64(block.timestamp) + thresholdSeconds - timestamp
-            );
+            cacheFullBufferExpiry(blockNumber + thresholdBlocks, timestamp + thresholdSeconds);
         }
     }
 
