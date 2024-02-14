@@ -4,6 +4,10 @@
 
 pragma solidity ^0.8.4;
 
+error ExtraGasNotUint64();
+
+error KeysetTooLarge();
+
 /// @dev Init was already called
 error AlreadyInit();
 
