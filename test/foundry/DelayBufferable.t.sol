@@ -4,9 +4,8 @@ pragma solidity ^0.8.0;
 import "forge-std/Test.sol";
 import "../../src/mocks/SimpleDelayBufferable.sol";
 import "../../src/bridge/Messages.sol";
-import {
-    L2_MSG
-} from "../../src/libraries/MessageTypes.sol";
+import {L2_MSG} from "../../src/libraries/MessageTypes.sol";
+
 contract SimpleDelayBufferableTest is Test {
     ISequencerInbox.MaxTimeVariation maxTimeVariation = ISequencerInbox.MaxTimeVariation({
         delayBlocks: 24 * 60 * 60 / 12,
@@ -67,24 +66,27 @@ contract SimpleDelayBufferableTest is Test {
         );
 
         bytes32 beforeDelayedAcc = bytes32(0);
-        bytes32 delayedAcc = Messages.accumulateInboxMessage(beforeDelayedAcc, Messages.messageHash(message));
+        bytes32 delayedAcc =
+            Messages.accumulateInboxMessage(beforeDelayedAcc, Messages.messageHash(message));
         bytes32 beforeAcc = bytes32(0);
         bytes32 dataHash = bytes32(0);
 
-        Messages.InboxAccPreimage memory preimage = Messages.InboxAccPreimage ({
+        Messages.InboxAccPreimage memory preimage = Messages.InboxAccPreimage({
             beforeAcc: beforeAcc,
             dataHash: dataHash,
-            delayedAcc: delayedAcc 
+            delayedAcc: delayedAcc
         });
         // first batch reads delayed message
         bytes32 acc = Messages.accumulateSequencerInbox(preimage);
 
         // initially message if proven with no delay
-        bool isValidSyncProof = bufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
+        bool isValidSyncProof =
+            bufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
         assertEq(isValidSyncProof, true);
 
         // sanity check
-        isValidSyncProof = bufferable.isValidSyncProof_(beforeDelayedAcc, message, bytes32(0), preimage);
+        isValidSyncProof =
+            bufferable.isValidSyncProof_(beforeDelayedAcc, message, bytes32(0), preimage);
         assertEq(isValidSyncProof, false);
 
         // (blockNumber, timestamp)
@@ -130,7 +132,7 @@ contract SimpleDelayBufferableTest is Test {
         isValidSyncProof = bufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
         assertEq(isValidSyncProof, false);
 
-        // (thresholdBlocks + 1, thresholdSeconds) -> (thresholdBlocks, thresholdSeconds) 
+        // (thresholdBlocks + 1, thresholdSeconds) -> (thresholdBlocks, thresholdSeconds)
         vm.roll(block.number - 1);
         isValidSyncProof = bufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
         assertEq(isValidSyncProof, true);
@@ -148,7 +150,6 @@ contract SimpleDelayBufferableTest is Test {
     }
 
     function testUpdateBuffersDepleteAndReplenish() public {
-        
         SimpleDelayBufferable bufferable = new SimpleDelayBufferable(
             maxTimeVariation,
             replenishRate,
@@ -188,7 +189,6 @@ contract SimpleDelayBufferableTest is Test {
         bufferable.updateBuffers_(9, 9);
 
         bufferable.updateBuffers_(10, 10);
-
 
         prevDelay = bufferable.prevDelay_();
         (bufferBlocks, bufferSeconds) = bufferable.delayBuffer();
@@ -319,8 +319,8 @@ contract SimpleDelayBufferableTest is Test {
         (blockNumber, timestamp) = bufferable.syncExpiry();
         (blockNumberFull, timestampFull) = bufferable.cachedFullBufferExpiry_();
 
-        assertEq(blockNumber,  configBufferable.thresholdBlocks);
-        assertEq(timestamp, configBufferable.thresholdSeconds);
+        assertEq(blockNumber, 10 + configBufferable.thresholdBlocks);
+        assertEq(timestamp, 10 + configBufferable.thresholdSeconds);
         assertEq(blockNumberFull, 0);
         assertEq(timestampFull, 0);
 
@@ -328,10 +328,10 @@ contract SimpleDelayBufferableTest is Test {
         (blockNumber, timestamp) = bufferable.syncExpiry();
         (blockNumberFull, timestampFull) = bufferable.cachedFullBufferExpiry_();
 
-        assertEq(blockNumber,  configBufferable.thresholdBlocks);
-        assertEq(timestamp, configBufferable.thresholdSeconds);
-        assertEq(blockNumberFull, configBufferable.thresholdBlocks);
-        assertEq(timestampFull, configBufferable.thresholdSeconds);
+        assertEq(blockNumber, 10 + configBufferable.thresholdBlocks);
+        assertEq(timestamp, 10 + configBufferable.thresholdSeconds);
+        assertEq(blockNumberFull, 10 + configBufferable.thresholdBlocks);
+        assertEq(timestampFull, 10 + configBufferable.thresholdSeconds);
     }
 
     function testForceInclusionDeadline() public {
@@ -340,7 +340,8 @@ contract SimpleDelayBufferableTest is Test {
             replenishRate,
             configBufferable
         );
-        (uint64 deadlineBlockNumber, uint64 deadlineTimestamp) = bufferable.forceInclusionDeadline(0, 0);
+        (uint64 deadlineBlockNumber, uint64 deadlineTimestamp) =
+            bufferable.forceInclusionDeadline(0, 0);
         assertEq(deadlineBlockNumber, maxTimeVariation.delayBlocks);
         assertEq(deadlineTimestamp, maxTimeVariation.delaySeconds);
 
@@ -353,8 +354,10 @@ contract SimpleDelayBufferableTest is Test {
         assertEq(bufferBlocks, configBufferable.maxBufferBlocks);
         assertEq(bufferSeconds, configBufferable.maxBufferSeconds);
 
-        uint256 delayBlockNumber = maxTimeVariation.delayBlocks + configBufferable.thresholdBlocks + 1;
-        uint256 delayTimestamp = maxTimeVariation.delaySeconds + configBufferable.thresholdSeconds + 1;
+        uint256 delayBlockNumber =
+            maxTimeVariation.delayBlocks + configBufferable.thresholdBlocks + 1;
+        uint256 delayTimestamp =
+            maxTimeVariation.delaySeconds + configBufferable.thresholdSeconds + 1;
 
         vm.roll(delayBlockNumber);
         vm.warp(delayTimestamp);
@@ -364,10 +367,8 @@ contract SimpleDelayBufferableTest is Test {
         assertEq(bufferBlocks, configBufferable.maxBufferBlocks);
         assertEq(bufferSeconds, configBufferable.maxBufferSeconds);
 
-        (deadlineBlockNumber, deadlineTimestamp) = bufferable.forceInclusionDeadline(
-            uint64(delayBlockNumber),
-            uint64(delayTimestamp)
-        );
+        (deadlineBlockNumber, deadlineTimestamp) =
+            bufferable.forceInclusionDeadline(uint64(delayBlockNumber), uint64(delayTimestamp));
 
         assertEq(deadlineBlockNumber, delayBlockNumber + maxTimeVariation.delayBlocks - 1);
         assertEq(deadlineTimestamp, delayTimestamp + maxTimeVariation.delaySeconds - 1);
@@ -379,5 +380,5 @@ contract SimpleDelayBufferableTest is Test {
         (bufferBlocks, bufferSeconds) = bufferable.delayBuffer();
         assertEq(bufferBlocks, maxTimeVariation.delayBlocks - 1);
         assertEq(bufferSeconds, maxTimeVariation.delaySeconds - 1);
-    } 
+    }
 }
