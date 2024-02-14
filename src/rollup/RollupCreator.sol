@@ -35,12 +35,14 @@ contract RollupCreator is Ownable {
 
     struct RollupDeploymentParams {
         Config config;
-        address batchPoster;
         address[] validators;
         uint256 maxDataSize;
         address nativeToken;
         bool deployFactoriesToL2;
         uint256 maxFeePerGasForRetryables;
+        //// @dev The address of the batch poster, not used when set to zero address
+        address[] batchPosters;
+        address batchPosterManager;
     }
 
     BridgeCreator public bridgeCreator;
@@ -102,6 +104,7 @@ contract RollupCreator is Ownable {
      *                          anyone can try to deploy factories and potentially burn the nonce 0 (ie. due to gas price spike when doing direct
      *                          L2 TX). That would mean we permanently lost capability to deploy deterministic factory at expected address.
      *          - maxFeePerGasForRetryables price bid for L2 execution.
+     *          - dataHashReader The address of the data hash reader used to read blob hashes
      * @return The address of the newly created rollup
      */
     function createRollup(RollupDeploymentParams memory deployParams)
@@ -109,22 +112,27 @@ contract RollupCreator is Ownable {
         payable
         returns (address)
     {
-        // Make sure the immutable maxDataSize is as expected
-        (, ISequencerInbox ethSequencerInbox, IInboxBase ethInbox, , ) = bridgeCreator
-            .ethBasedTemplates();
-        require(
-            deployParams.maxDataSize == ethSequencerInbox.maxDataSize(),
-            "SI_MAX_DATA_SIZE_MISMATCH"
-        );
-        require(deployParams.maxDataSize == ethInbox.maxDataSize(), "I_MAX_DATA_SIZE_MISMATCH");
+        {
+            // Make sure the immutable maxDataSize is as expected
+            (, ISequencerInbox ethSequencerInbox, IInboxBase ethInbox, , ) = bridgeCreator
+                .ethBasedTemplates();
+            require(
+                deployParams.maxDataSize == ethSequencerInbox.maxDataSize(),
+                "SI_MAX_DATA_SIZE_MISMATCH"
+            );
+            require(deployParams.maxDataSize == ethInbox.maxDataSize(), "I_MAX_DATA_SIZE_MISMATCH");
 
-        (, ISequencerInbox erc20SequencerInbox, IInboxBase erc20Inbox, , ) = bridgeCreator
-            .erc20BasedTemplates();
-        require(
-            deployParams.maxDataSize == erc20SequencerInbox.maxDataSize(),
-            "SI_MAX_DATA_SIZE_MISMATCH"
-        );
-        require(deployParams.maxDataSize == erc20Inbox.maxDataSize(), "I_MAX_DATA_SIZE_MISMATCH");
+            (, ISequencerInbox erc20SequencerInbox, IInboxBase erc20Inbox, , ) = bridgeCreator
+                .erc20BasedTemplates();
+            require(
+                deployParams.maxDataSize == erc20SequencerInbox.maxDataSize(),
+                "SI_MAX_DATA_SIZE_MISMATCH"
+            );
+            require(
+                deployParams.maxDataSize == erc20Inbox.maxDataSize(),
+                "I_MAX_DATA_SIZE_MISMATCH"
+            );
+        }
 
         // create proxy admin which will manage bridge contracts
         ProxyAdmin proxyAdmin = new ProxyAdmin();
@@ -180,9 +188,12 @@ contract RollupCreator is Ownable {
             })
         );
 
-        // setting batch poster, if the address provided is not zero address
-        if (deployParams.batchPoster != address(0)) {
-            bridgeContracts.sequencerInbox.setIsBatchPoster(deployParams.batchPoster, true);
+        // Setting batch posters and batch poster manager
+        for (uint256 i = 0; i < deployParams.batchPosters.length; i++) {
+            bridgeContracts.sequencerInbox.setIsBatchPoster(deployParams.batchPosters[i], true);
+        }
+        if (deployParams.batchPosterManager != address(0)) {
+            bridgeContracts.sequencerInbox.setBatchPosterManager(deployParams.batchPosterManager);
         }
 
         // Call setValidator on the newly created rollup contract just if validator set is not empty
@@ -257,6 +268,7 @@ contract RollupCreator is Ownable {
             l2FactoriesDeployer.perform{value: cost}(_inbox, _nativeToken, _maxFeePerGas);
 
             // refund the caller
+            // solhint-disable-next-line avoid-low-level-calls
             (bool sent, ) = msg.sender.call{value: address(this).balance}("");
             require(sent, "Refund failed");
         } else {
