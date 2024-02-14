@@ -81,6 +81,9 @@ jobs:
       - name: Test Storage Layouts
         run: yarn run test:storage
 
+      - name: Test function signatures
+        run: yarn run test:signatures
+
       - name: Run coverage
         run: yarn hardhat coverage --testfiles "test/contract/*.spec.ts"
 
