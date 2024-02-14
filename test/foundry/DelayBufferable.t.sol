@@ -21,10 +21,10 @@ contract SimpleDelayBufferableTest is Test {
         periodBlocks: 14
     });
     IDelayBufferable.DelayConfig configBufferable = IDelayBufferable.DelayConfig({
-        thresholdSeconds: 60 * 60 * 2,
         thresholdBlocks: 60 * 60 * 2 / 12,
-        maxBufferSeconds: 24 * 60 * 60 * 2,
-        maxBufferBlocks: 24 * 60 * 60 / 12 * 2
+        thresholdSeconds: 60 * 60 * 2,
+        maxBufferBlocks: 24 * 60 * 60 / 12 * 2,
+        maxBufferSeconds: 24 * 60 * 60 * 2
     });
     IDelayBufferable.DelayConfig configNotBufferable = IDelayBufferable.DelayConfig({
         thresholdSeconds: type(uint64).max,
@@ -333,4 +333,51 @@ contract SimpleDelayBufferableTest is Test {
         assertEq(blockNumberFull, configBufferable.thresholdBlocks);
         assertEq(timestampFull, configBufferable.thresholdSeconds);
     }
+
+    function testForceInclusionDeadline() public {
+        SimpleDelayBufferable bufferable = new SimpleDelayBufferable(
+            maxTimeVariation,
+            replenishRate,
+            configBufferable
+        );
+        (uint64 deadlineBlockNumber, uint64 deadlineTimestamp) = bufferable.forceInclusionDeadline(0, 0);
+        assertEq(deadlineBlockNumber, maxTimeVariation.delayBlocks);
+        assertEq(deadlineTimestamp, maxTimeVariation.delaySeconds);
+
+        IDelayBufferable.DelayCache memory prevDelay = bufferable.prevDelay_();
+        (uint64 bufferBlocks, uint64 bufferSeconds) = bufferable.delayBuffer();
+        assertEq(prevDelay.blockNumber, 0);
+        assertEq(prevDelay.timestamp, 0);
+        assertEq(prevDelay.delaySeconds, 0);
+        assertEq(prevDelay.delayBlocks, 0);
+        assertEq(bufferBlocks, configBufferable.maxBufferBlocks);
+        assertEq(bufferSeconds, configBufferable.maxBufferSeconds);
+
+        uint256 delayBlockNumber = maxTimeVariation.delayBlocks + configBufferable.thresholdBlocks + 1;
+        uint256 delayTimestamp = maxTimeVariation.delaySeconds + configBufferable.thresholdSeconds + 1;
+
+        vm.roll(delayBlockNumber);
+        vm.warp(delayTimestamp);
+        bufferable.updateBuffers_(0, 0);
+
+        (bufferBlocks, bufferSeconds) = bufferable.delayBuffer();
+        assertEq(bufferBlocks, configBufferable.maxBufferBlocks);
+        assertEq(bufferSeconds, configBufferable.maxBufferSeconds);
+
+        (deadlineBlockNumber, deadlineTimestamp) = bufferable.forceInclusionDeadline(
+            uint64(delayBlockNumber),
+            uint64(delayTimestamp)
+        );
+
+        assertEq(deadlineBlockNumber, delayBlockNumber + maxTimeVariation.delayBlocks - 1);
+        assertEq(deadlineTimestamp, delayTimestamp + maxTimeVariation.delaySeconds - 1);
+
+        bufferable.updateBuffers_(
+            maxTimeVariation.delayBlocks + configBufferable.thresholdBlocks + 1,
+            maxTimeVariation.delaySeconds + configBufferable.thresholdSeconds + 1
+        );
+        (bufferBlocks, bufferSeconds) = bufferable.delayBuffer();
+        assertEq(bufferBlocks, maxTimeVariation.delayBlocks - 1);
+        assertEq(bufferSeconds, maxTimeVariation.delaySeconds - 1);
+    } 
 }
