@@ -4,11 +4,13 @@
 
 pragma solidity ^0.8.0;
 
+import "../bridge/ISequencerInbox.sol";
 import "../precompiles/ArbRetryableTx.sol";
 import "../precompiles/ArbSys.sol";
 
 contract Simple {
     uint64 public counter;
+    uint256 public difficulty;
 
     event CounterEvent(uint64 count);
     event RedeemedEvent(address caller, address redeemer);
@@ -30,6 +32,7 @@ contract Simple {
     }
 
     function incrementRedeem() external {
+        // solhint-disable-next-line avoid-tx-origin
         require(msg.sender == tx.origin, "SENDER_NOT_ORIGIN");
         require(ArbSys(address(0x64)).wasMyCallersAddressAliased(), "NOT_ALIASED");
         counter++;
@@ -45,8 +48,12 @@ contract Simple {
         return block.number;
     }
 
+    function storeDifficulty() external {
+        difficulty = block.difficulty;
+    }
+
     function getBlockDifficulty() external view returns (uint256) {
-        return block.difficulty;
+        return difficulty;
     }
 
     function noop() external pure {}
@@ -93,6 +100,7 @@ contract Simple {
             useTopLevel,
             delegateCase
         );
+        // solhint-disable-next-line avoid-low-level-calls
         (bool success, ) = address(this).delegatecall(data);
         require(success, "DELEGATE_CALL_FAILED");
 
@@ -113,6 +121,7 @@ contract Simple {
             useTopLevel,
             callCase
         );
+        // solhint-disable-next-line avoid-low-level-calls
         (success, ) = address(this).call(data);
         require(success, "CALL_FAILED");
     }
@@ -121,8 +130,29 @@ contract Simple {
         uint256 before = gasleft();
         // The inner call may revert, but we still want to return the amount of gas used,
         // so we ignore the result of this call.
+        // solhint-disable-next-line avoid-low-level-calls
         // solc-ignore-next-line unused-call-retval
         to.staticcall{gas: before - 10000}(input);
         return before - gasleft();
+    }
+
+    function postManyBatches(
+        ISequencerInbox sequencerInbox,
+        bytes memory batchData,
+        uint256 numberToPost
+    ) external {
+        uint256 sequenceNumber = sequencerInbox.batchCount();
+        uint256 delayedMessagesRead = sequencerInbox.totalDelayedMessagesRead();
+        for (uint256 i = 0; i < numberToPost; i++) {
+            sequencerInbox.addSequencerL2Batch(
+                sequenceNumber,
+                batchData,
+                delayedMessagesRead,
+                IGasRefunder(address(0)),
+                0,
+                0
+            );
+            sequenceNumber++;
+        }
     }
 }
