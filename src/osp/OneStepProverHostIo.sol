@@ -442,8 +442,8 @@ contract OneStepProverHostIo is IOneStepProver {
         (newInactiveCoThread, proofOffset) = Deserialize.b32(proof, proofOffset);
         (newRemaining, proofOffset) = Deserialize.b32(proof, proofOffset);
         if (newInactiveCoThread == MultiStackLib.NO_STACK_HASH) {
-            require(multi.remainingHash == MultiStackLib.NO_STACK_HASH, "WRONG_COTHREAD_EMPTY");
-            require(newRemaining == MultiStackLib.NO_STACK_HASH, "WRONG_COTHREAD_EMPTY");
+            require(newRemaining == bytes32(0), "WRONG_COTHREAD_EMPTY");
+            require(multi.remainingHash == bytes32(0), "WRONG_COTHREAD_EMPTY");
         } else {
             require(
                 keccak256(abi.encodePacked("cothread:", newInactiveCoThread, newRemaining)) ==
