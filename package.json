@@ -11,13 +11,14 @@
   "files": [
     "src/",
     "build/contracts/src",
-    "build/contracts/@openzeppelin"
+    "build/contracts/@openzeppelin",
+    "out/yul/Reader4844.yul/Reader4844.json"
   ],
   "bugs": {
     "url": "https://github.com/offchainlabs/nitro-contracts/issues"
   },
   "scripts": {
-    "prepublishOnly": "hardhat clean && hardhat compile",
+    "prepublishOnly": "hardhat clean && forge clean && hardhat compile && yarn build:forge:yul",
     "build:all": "yarn build && yarn build:forge",
     "build": "hardhat compile",
     "build:forge:sol": "forge build --skip *.yul",
