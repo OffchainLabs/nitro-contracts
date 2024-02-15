@@ -196,3 +196,6 @@ error NativeTokenMismatch();
 
 /// @dev Thrown when a deprecated function is called
 error Deprecated();
+
+/// @dev Thrown when any component of maxTimeVariation is over uint64
+error BadMaxTimeVariation();

@@ -28,6 +28,7 @@ import {
     NotOwner,
     InvalidHeaderFlag,
     NativeTokenMismatch,
+    BadMaxTimeVariation,
     Deprecated
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
@@ -196,11 +197,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
         bridge = bridge_;
         rollup = bridge_.rollup();
-        // TODO: safe cast
-        delayBlocks = uint64(maxTimeVariation_.delayBlocks);
-        futureBlocks = uint64(maxTimeVariation_.futureBlocks);
-        delaySeconds = uint64(maxTimeVariation_.delaySeconds);
-        futureSeconds = uint64(maxTimeVariation_.futureSeconds);
+
+        _setMaxTimeVariation(maxTimeVariation_);
     }
 
     /// @notice Allows the rollup owner to sync the rollup address
@@ -714,16 +712,29 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         return bridge.sequencerMessageCount();
     }
 
+    function _setMaxTimeVariation(ISequencerInbox.MaxTimeVariation memory maxTimeVariation_)
+        internal
+    {
+        if (
+            maxTimeVariation_.delayBlocks > type(uint64).max ||
+            maxTimeVariation_.futureBlocks > type(uint64).max ||
+            maxTimeVariation_.delaySeconds > type(uint64).max ||
+            maxTimeVariation_.futureSeconds > type(uint64).max
+        ) {
+            revert BadMaxTimeVariation();
+        }
+        delayBlocks = uint64(maxTimeVariation_.delayBlocks);
+        futureBlocks = uint64(maxTimeVariation_.futureBlocks);
+        delaySeconds = uint64(maxTimeVariation_.delaySeconds);
+        futureSeconds = uint64(maxTimeVariation_.futureSeconds);
+    }
+
     /// @inheritdoc ISequencerInbox
     function setMaxTimeVariation(ISequencerInbox.MaxTimeVariation memory maxTimeVariation_)
         external
         onlyRollupOwner
     {
-        // TODO: safe cast
-        delayBlocks = uint64(maxTimeVariation_.delayBlocks);
-        futureBlocks = uint64(maxTimeVariation_.futureBlocks);
-        delaySeconds = uint64(maxTimeVariation_.delaySeconds);
-        futureSeconds = uint64(maxTimeVariation_.futureSeconds);
+        _setMaxTimeVariation(maxTimeVariation_);
         emit OwnerFunctionCalled(0);
     }
 
