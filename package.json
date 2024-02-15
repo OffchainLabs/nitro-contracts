@@ -1,6 +1,6 @@
 {
   "name": "@arbitrum/nitro-contracts",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Layer 2 precompiles and rollup for Arbitrum Nitro",
   "author": "Offchain Labs, Inc.",
   "license": "BUSL-1.1",
@@ -11,7 +11,8 @@
   "files": [
     "src/",
     "build/contracts/src",
-    "build/contracts/@openzeppelin"
+    "build/contracts/@openzeppelin",
+    "out/yul/Reader4844.yul/Reader4844.json"
   ],
   "bugs": {
     "url": "https://github.com/offchainlabs/nitro-contracts/issues"
@@ -19,7 +20,7 @@
   "scripts": {
     "audit:ci": "audit-ci --config ./audit-ci.jsonc",
     "audit:fix": "yarn-audit-fix",
-    "prepublishOnly": "hardhat clean && hardhat compile",
+    "prepublishOnly": "hardhat clean && forge clean && hardhat compile && yarn build:forge:yul",
     "build:all": "yarn build && yarn build:forge",
     "build": "hardhat compile",
     "build:forge:sol": "forge build --skip *.yul",
@@ -35,6 +36,7 @@
     "test:4844": "DISABLE_GAS_REPORTER=true hardhat --network hardhat test test/contract/*.spec.4844.ts",
     "test:compatibility": "yarn run build:0.6 && yarn run build:0.7",
     "test:storage": "./test/storage/test.bash",
+    "test:signatures": "./test/signatures/test-sigs.bash",
     "test:e2e": "hardhat test test/e2e/*.ts",
     "postinstall": "patch-package",
     "deploy-factory": "hardhat run scripts/deployment.ts",

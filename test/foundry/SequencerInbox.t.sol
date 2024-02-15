@@ -566,4 +566,49 @@ contract SequencerInboxTest is Test {
             abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector)
         );
     }
+
+    function testSetMaxTimeVariation(
+        uint256 delayBlocks,
+        uint256 futureBlocks,
+        uint256 delaySeconds,
+        uint256 futureSeconds
+    ) public {
+        vm.assume(delayBlocks <= uint256(type(uint64).max));
+        vm.assume(futureBlocks <= uint256(type(uint64).max));
+        vm.assume(delaySeconds <= uint256(type(uint64).max));
+        vm.assume(futureSeconds <= uint256(type(uint64).max));
+        (SequencerInbox seqInbox, ) = deployRollup(false);
+        vm.prank(rollupOwner);
+        seqInbox.setMaxTimeVariation(
+            ISequencerInbox.MaxTimeVariation({
+                delayBlocks: delayBlocks,
+                futureBlocks: futureBlocks,
+                delaySeconds: delaySeconds,
+                futureSeconds: futureSeconds
+            })
+        );
+    }
+
+    function testSetMaxTimeVariationOverflow(
+        uint256 delayBlocks,
+        uint256 futureBlocks,
+        uint256 delaySeconds,
+        uint256 futureSeconds
+    ) public {
+        vm.assume(delayBlocks > uint256(type(uint64).max));
+        vm.assume(futureBlocks > uint256(type(uint64).max));
+        vm.assume(delaySeconds > uint256(type(uint64).max));
+        vm.assume(futureSeconds > uint256(type(uint64).max));
+        (SequencerInbox seqInbox, ) = deployRollup(false);
+        vm.expectRevert(abi.encodeWithSelector(BadMaxTimeVariation.selector));
+        vm.prank(rollupOwner);
+        seqInbox.setMaxTimeVariation(
+            ISequencerInbox.MaxTimeVariation({
+                delayBlocks: delayBlocks,
+                futureBlocks: futureBlocks,
+                delaySeconds: delaySeconds,
+                futureSeconds: futureSeconds
+            })
+        );
+    }
 }

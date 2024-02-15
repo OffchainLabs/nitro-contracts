@@ -534,7 +534,6 @@ describe('ArbRollup', () => {
       validators: validatorsI,
       batchPosterManager: batchPosterManagerI,
       upgradeExecutorAddress,
-      adminproxy: adminproxyAddress,
     } = await setup()
     rollupAdmin = rollupAdminContract
     rollupUser = rollupUserContract
