@@ -17,7 +17,7 @@
   "forceInclusion(uint256,uint8,uint64[2],uint256,address,bytes32)": "f1981578",
   "getKeysetCreationBlock(bytes32)": "258f0495",
   "inboxAccs(uint256)": "d9dd67ab",
-  "initialize(address,(uint64,uint64,uint64,uint64))": "280c0bfa",
+  "initialize(address,(uint256,uint256,uint256,uint256))": "1f7a92b2",
   "invalidateKeysetHash(bytes32)": "84420860",
   "isBatchPoster(address)": "71c3e6fe",
   "isSequencer(address)": "6d46e987",
@@ -32,7 +32,7 @@
   "setBatchPosterManager(address)": "1ff64790",
   "setIsBatchPoster(address,bool)": "6e7df3e7",
   "setIsSequencer(address,bool)": "1f956632",
-  "setMaxTimeVariation((uint64,uint64,uint64,uint64))": "1184ed67",
+  "setMaxTimeVariation((uint256,uint256,uint256,uint256))": "b31761f8",
   "setValidKeyset(bytes)": "d1ce8da8",
   "totalDelayedMessagesRead()": "7fa3a40e",
   "updateRollupAddress()": "6ae71f12"

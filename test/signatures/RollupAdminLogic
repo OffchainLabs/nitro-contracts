@@ -19,7 +19,7 @@
   "getStaker(address)": "a23c44b1",
   "getStakerAddress(uint64)": "6ddd3744",
   "inbox()": "fb0e722b",
-  "initialize((uint64,uint64,address,uint256,bytes32,address,address,uint256,string,uint64,(uint64,uint64,uint64,uint64)),(address,address,address,address,address,address,address,address,address,address))": "27aa19bd",
+  "initialize((uint64,uint64,address,uint256,bytes32,address,address,uint256,string,uint64,(uint256,uint256,uint256,uint256)),(address,address,address,address,address,address,address,address,address,address))": "28ff127a",
   "isStaked(address)": "6177fd18",
   "isStakedOnLatestConfirmed(address)": "dcd030aa",
   "isValidator(address)": "facd743b",

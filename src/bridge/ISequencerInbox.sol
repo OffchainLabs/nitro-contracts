@@ -12,10 +12,10 @@ import "./IBridge.sol";
 
 interface ISequencerInbox is IDelayedMessageProvider {
     struct MaxTimeVariation {
-        uint64 delayBlocks;
-        uint64 futureBlocks;
-        uint64 delaySeconds;
-        uint64 futureSeconds;
+        uint256 delayBlocks;
+        uint256 futureBlocks;
+        uint256 delaySeconds;
+        uint256 futureSeconds;
     }
 
     event SequencerBatchDelivered(
