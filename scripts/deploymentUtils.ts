@@ -8,6 +8,8 @@ import {
 } from '@offchainlabs/upgrade-executor/build/contracts/src/UpgradeExecutor.sol/UpgradeExecutor.json'
 import { maxDataSize } from './config'
 import { Toolkit4844 } from '../test/contract/toolkit4844'
+import { ArbSys__factory } from '../build/types'
+import { ARB_SYS_ADDRESS } from '@arbitrum/sdk/dist/lib/dataEntities/constants'
 
 // Define a verification function
 export async function verifyContract(
@@ -56,10 +58,13 @@ export async function deployContract(
 ): Promise<Contract> {
   const factory: ContractFactory = await ethers.getContractFactory(contractName)
   const connectedFactory: ContractFactory = factory.connect(signer)
-  const contract: Contract = await connectedFactory.deploy(
-    ...constructorArgs,
-    overrides
-  )
+
+  let deploymentArgs = [...constructorArgs]
+  if (overrides) {
+    deploymentArgs.push(overrides)
+  }
+
+  const contract: Contract = await connectedFactory.deploy(...deploymentArgs)
   await contract.deployTransaction.wait()
   console.log(`New ${contractName} created at address:`, contract.address)
 
@@ -70,12 +75,13 @@ export async function deployContract(
 }
 
 // Deploy upgrade executor from imported bytecode
-export async function deployUpgradeExecutor(): Promise<Contract> {
+export async function deployUpgradeExecutor(signer: any): Promise<Contract> {
   const upgradeExecutorFac = await ethers.getContractFactory(
     UpgradeExecutorABI,
     UpgradeExecutorBytecode
   )
-  const upgradeExecutor = await upgradeExecutorFac.deploy()
+  const connectedFactory: ContractFactory = upgradeExecutorFac.connect(signer)
+  const upgradeExecutor = await connectedFactory.deploy()
   return upgradeExecutor
 }
 
@@ -83,11 +89,16 @@ export async function deployUpgradeExecutor(): Promise<Contract> {
 export async function deployAllContracts(
   signer: any
 ): Promise<Record<string, Contract>> {
+  const isOnArb = await _isRunningOnArbitrum(signer)
+
   const ethBridge = await deployContract('Bridge', signer, [])
-  const reader4844 = await Toolkit4844.deployReader4844(signer)
+  const reader4844 = isOnArb
+    ? ethers.constants.AddressZero
+    : (await Toolkit4844.deployReader4844(signer)).address
+
   const ethSequencerInbox = await deployContract('SequencerInbox', signer, [
     maxDataSize,
-    reader4844.address,
+    reader4844,
     false,
   ])
 
@@ -102,7 +113,7 @@ export async function deployAllContracts(
   const erc20Bridge = await deployContract('ERC20Bridge', signer, [])
   const erc20SequencerInbox = await deployContract('SequencerInbox', signer, [
     maxDataSize,
-    reader4844.address,
+    reader4844,
     true,
   ])
   const erc20Inbox = await deployContract('ERC20Inbox', signer, [maxDataSize])
@@ -142,7 +153,7 @@ export async function deployAllContracts(
   const challengeManager = await deployContract('ChallengeManager', signer)
   const rollupAdmin = await deployContract('RollupAdminLogic', signer)
   const rollupUser = await deployContract('RollupUserLogic', signer)
-  const upgradeExecutor = await deployUpgradeExecutor()
+  const upgradeExecutor = await deployUpgradeExecutor(signer)
   const validatorUtils = await deployContract('ValidatorUtils', signer)
   const validatorWalletCreator = await deployContract(
     'ValidatorWalletCreator',
@@ -165,5 +176,16 @@ export async function deployAllContracts(
     validatorWalletCreator,
     rollupCreator,
     deployHelper,
+  }
+}
+
+// Check if we're deploying to an Arbitrum chain
+async function _isRunningOnArbitrum(signer: any): Promise<Boolean> {
+  const arbSys = ArbSys__factory.connect(ARB_SYS_ADDRESS, signer)
+  try {
+    await arbSys.arbOSVersion()
+    return true
+  } catch (error) {
+    return false
   }
 }
