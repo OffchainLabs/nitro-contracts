@@ -359,6 +359,7 @@ contract OneStepProverHostIo is IOneStepProver {
         bytes calldata commitment
     ) internal view returns (bool) {
         uint256 expected = hotshot.commitments(height);
+        require(expected != 0, "EMPTY HOTSHOT COMMITMENT");
         bytes memory b = new bytes(32);
         assembly { mstore(add(b, 32), expected) }
 
