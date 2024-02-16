@@ -38,7 +38,6 @@ export function printGasReportDiff(
   referentGasReport: Record<string, number>,
   currentImplementationGasReport: Record<string, number>
 ) {
-  console.log('Gas diff compared to referent report:')
   for (const [functionName, referentGas] of Object.entries(referentGasReport)) {
     const currentGas = currentImplementationGasReport[functionName]
     if (currentGas === undefined) {
