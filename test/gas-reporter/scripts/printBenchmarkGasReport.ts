@@ -31,10 +31,10 @@ function main() {
   const currentImplementationGasRecord = getGasSpendingRecord(mainnetRpc, false)
 
   /// compare referent vs current implementation gas report
-  let impleRef = isProd
+  let implRef = isProd
     ? 'production contracts'
     : `snapshot in ${REFERENT_REPORT_FILE_PATH}`
-  console.log(`Gas diff between ${impleRef} and current implementation:`)
+  console.log(`Gas diff between ${implRef} and current implementation:`)
   printGasReportDiff(referentGasRecord, currentImplementationGasRecord)
 }
 
