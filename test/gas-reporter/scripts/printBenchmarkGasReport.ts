@@ -18,17 +18,21 @@ function main() {
 
   /// if referent gas report exists load it, else generate it by running benchmark test on production contracts
   let referentGasRecord
+  let isProd = false
   if (existsSync(REFERENT_REPORT_FILE_PATH)) {
     const data = readFileSync(REFERENT_REPORT_FILE_PATH, 'utf-8')
     referentGasRecord = JSON.parse(data)
   } else {
     referentGasRecord = getGasSpendingRecord(mainnetRpc, true)
+    isProd = true
   }
 
   /// get the gas record for the current implementation
   const currentImplementationGasRecord = getGasSpendingRecord(mainnetRpc, false)
 
   /// compare referent vs current implementation gas report
+  let implementation = isProd ? 'production contracts' : `snapshot in ${REFERENT_REPORT_FILE_PATH}`
+  console.log('Gas diff between and current implementation:')
   printGasReportDiff(referentGasRecord, currentImplementationGasRecord)
 }
 
