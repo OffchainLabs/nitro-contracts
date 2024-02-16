@@ -42,7 +42,7 @@
     "deploy-erc20-rollup": "hardhat run scripts/createERC20Rollup.ts",
     "gas:snapshot": "forge snapshot",
     "gas:check": "forge snapshot --check",
-    "gas:report:all": "forge test --gas-report",
+    "gas:report:all": "forge test --gas-report --tolerance 1",
     "gas:report:benchmark": "ts-node test/gas-reporter/scripts/printBenchmarkGasReport.ts",
     "gas:report:gen-referent": "ts-node test/gas-reporter/scripts/generateReferentGasReport.ts"
   },
