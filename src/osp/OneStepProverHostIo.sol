@@ -337,10 +337,7 @@ contract OneStepProverHostIo is IOneStepProver {
 
         bytes calldata commitment = proof[proofOffset:proofOffset+32];
         bool success = validateHotShotCommitment(execCtx, height, commitment);
-        if (!success) {
-            mach.status = MachineStatus.ERRORED;
-            return;
-        }
+        require(success, "ERROR_HOTSHOT_COMMITMENT");
 
         for (uint32 i = 0; i < 32; i++) {
             leafContents = setLeafByte(
