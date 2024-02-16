@@ -41,10 +41,15 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
     address[] public allowedDelayedInboxList;
     address[] public allowedOutboxList;
 
-    address private _activeOutbox;
+    address private __activeOutbox;
 
     IOwnable public rollup;
     address public sequencerInbox;
+
+    // @dev Transient storage slot for outbox ref. Assembly doesn't allow non-direct constants.
+    //  keccak256("ACTIVE_OUTBOX_TSLOT")
+    bytes32 internal constant ACTIVE_OUTBOX_TSLOT =
+        0xc41fff3d17ba4bab8793e06a4109d51944a6691a09a5c50074165586221f4bcd;
 
     modifier onlyRollupOrOwner() {
         if (msg.sender != address(rollup)) {
@@ -67,10 +72,7 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
     bytes32[] public override sequencerInboxAccs;
     uint256 public override sequencerReportedSubMessageCount;
 
-    address private constant EMPTY_ACTIVEOUTBOX = address(type(uint160).max);
-
     function initialize(IOwnable rollup_) external initializer {
-        _activeOutbox = EMPTY_ACTIVEOUTBOX;
         rollup = rollup_;
     }
 
@@ -78,9 +80,10 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
         rollup = _rollup;
     }
 
-    function activeOutbox() public view returns (address) {
-        if (_activeOutbox == EMPTY_ACTIVEOUTBOX) return address(uint160(0));
-        return _activeOutbox;
+    function activeOutbox() public view returns (address outbox) {
+        assembly {
+            outbox := tload(ACTIVE_OUTBOX_TSLOT)
+        }
     }
 
     function allowedDelayedInboxes(address inbox) external view override returns (bool) {
@@ -180,15 +183,21 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
     ) external override returns (bool success, bytes memory returnData) {
         if (!allowedOutboxesMap[msg.sender].allowed) revert NotOutbox(msg.sender);
         if (data.length > 0 && !to.isContract()) revert NotContract(to);
-        address prevOutbox = _activeOutbox;
-        _activeOutbox = msg.sender;
+
+        address prevOutbox;
+        assembly {
+            prevOutbox := tload(ACTIVE_OUTBOX_TSLOT)
+            tstore(ACTIVE_OUTBOX_TSLOT, caller())
+        }
         // We set and reset active outbox around external call so activeOutbox remains valid during call
 
         // We use a low level call here since we want to bubble up whether it succeeded or failed to the caller
         // rather than reverting on failure as well as allow contract and non-contract calls
-        // solhint-disable-next-line avoid-low-level-calls
         (success, returnData) = to.call{value: value}(data);
-        _activeOutbox = prevOutbox;
+
+        assembly {
+            tstore(ACTIVE_OUTBOX_TSLOT, prevOutbox)
+        }
         emit BridgeCallTriggered(msg.sender, to, value, data);
     }
 

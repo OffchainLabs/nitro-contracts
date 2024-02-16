@@ -11,7 +11,6 @@ import "../bridge/Bridge.sol";
 
 contract BridgeUnproxied is Bridge {
     constructor() {
-        _activeOutbox = EMPTY_ACTIVEOUTBOX;
         rollup = IOwnable(msg.sender);
     }
 }

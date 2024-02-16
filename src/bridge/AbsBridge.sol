@@ -42,7 +42,8 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     address[] public allowedDelayedInboxList;
     address[] public allowedOutboxList;
 
-    address internal _activeOutbox;
+    // @dev Deprecated in place of transient storage
+    address internal __activeOutbox;
 
     /// @inheritdoc IBridge
     bytes32[] public delayedInboxAccs;
@@ -55,7 +56,10 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
 
     uint256 public override sequencerReportedSubMessageCount;
 
-    address internal constant EMPTY_ACTIVEOUTBOX = address(type(uint160).max);
+    // @dev Transient storage slot for outbox ref. Assembly doesn't allow non-direct constants.
+    //  keccak256("ACTIVE_OUTBOX_TSLOT")
+    bytes32 internal constant ACTIVE_OUTBOX_TSLOT =
+        0xc41fff3d17ba4bab8793e06a4109d51944a6691a09a5c50074165586221f4bcd;
 
     modifier onlyRollupOrOwner() {
         if (msg.sender != address(rollup)) {
@@ -74,14 +78,10 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     }
 
     /// @dev returns the address of current active Outbox, or zero if no outbox is active
-    function activeOutbox() public view returns (address) {
-        address outbox = _activeOutbox;
-        // address zero is returned if no outbox is set, but the value used in storage
-        // is non-zero to save users some gas (as storage refunds are usually maxed out)
-        // EIP-1153 would help here.
-        // we don't return `EMPTY_ACTIVEOUTBOX` to avoid a breaking change on the current api
-        if (outbox == EMPTY_ACTIVEOUTBOX) return address(0);
-        return outbox;
+    function activeOutbox() public view returns (address outbox) {
+        assembly {
+            outbox := tload(ACTIVE_OUTBOX_TSLOT)
+        }
     }
 
     function allowedDelayedInboxes(address inbox) public view returns (bool) {
@@ -214,15 +214,21 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     ) external returns (bool success, bytes memory returnData) {
         if (!allowedOutboxes(msg.sender)) revert NotOutbox(msg.sender);
         if (data.length > 0 && !to.isContract()) revert NotContract(to);
-        address prevOutbox = _activeOutbox;
-        _activeOutbox = msg.sender;
+
+        address prevOutbox;
+        assembly {
+            prevOutbox := tload(ACTIVE_OUTBOX_TSLOT)
+            tstore(ACTIVE_OUTBOX_TSLOT, caller())
+        }
         // We set and reset active outbox around external call so activeOutbox remains valid during call
 
         // We use a low level call here since we want to bubble up whether it succeeded or failed to the caller
         // rather than reverting on failure as well as allow contract and non-contract calls
         (success, returnData) = _executeLowLevelCall(to, value, data);
 
-        _activeOutbox = prevOutbox;
+        assembly {
+            tstore(ACTIVE_OUTBOX_TSLOT, prevOutbox)
+        }
         emit BridgeCallTriggered(msg.sender, to, value, data);
     }
 
@@ -252,7 +258,7 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     }
 
     function setOutbox(address outbox, bool enabled) external onlyRollupOrOwner {
-        if (outbox == EMPTY_ACTIVEOUTBOX) revert InvalidOutboxSet(outbox);
+        if (outbox == address(0)) revert InvalidOutboxSet(outbox);
 
         InOutInfo storage info = allowedOutboxesMap[outbox];
         bool alreadyEnabled = info.allowed;

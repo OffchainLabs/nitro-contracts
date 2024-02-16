@@ -22,7 +22,6 @@ contract Bridge is AbsBridge, IEthBridge {
 
     /// @inheritdoc IEthBridge
     function initialize(IOwnable rollup_) external initializer onlyDelegated {
-        _activeOutbox = EMPTY_ACTIVEOUTBOX;
         rollup = rollup_;
     }
 
