@@ -126,6 +126,7 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
 
     constructor(
         IBridge bridge_,
+        IOwnable rollup_,
         ISequencerInbox.MaxTimeVariation memory maxTimeVariation_,
         IDelayBufferable.ReplenishRate memory replenishRate_,
         IDelayBufferable.DelayConfig memory delayConfig_,
@@ -135,7 +136,7 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
     ) DelayBufferable(maxTimeVariation_, replenishRate_, delayConfig_) {
         if (bridge_ == IBridge(address(0))) revert HadZeroInit();
         bridge = bridge_;
-        rollup = bridge_.rollup();
+        rollup = rollup_;
         if (address(rollup) == address(0)) revert RollupNotChanged();
         maxDataSize = _maxDataSize;
         if (hostChainIsArbitrum) {
@@ -148,7 +149,11 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
         if (isDelayBufferable) {
             // if bridge is a new deployment (no delayed messages yet)
             // we can init the sequencer inbox in a synced state
-            if (bridge.delayedMessageCount() == 0) {
+            uint256 delayedMessageCount;
+            try bridge.totalDelayedMessagesRead() returns (uint256 delayedMessageCount_) {
+                delayedMessageCount = delayedMessageCount_;
+            } catch {}
+            if (delayedMessageCount == 0) {
                 updateSyncValidity(false, uint64(block.number), uint64(block.timestamp));
             }
         }
@@ -385,6 +390,53 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
     }
 
     /// @inheritdoc IDelayBufferable
+    function addSequencerL2BatchFromOrigin(
+        uint256 sequenceNumber,
+        bytes calldata data,
+        uint256 afterDelayedMessagesRead,
+        IGasRefunder gasRefunder,
+        uint256 prevMessageCount,
+        uint256 newMessageCount,
+        bool isCachingRequested,
+        bytes32 beforeDelayedAcc,
+        Messages.Message calldata delayedMessage
+    ) external refundsGas(gasRefunder, reader4844) {
+        // solhint-disable-next-line avoid-tx-origin
+        if (msg.sender != tx.origin) revert NotOrigin();
+        if (!isBatchPoster(msg.sender)) revert NotBatchPoster();
+        if (!isDelayBufferable) revert NotDelayBufferable();
+
+        // must read atleast 1 new delayed message
+        uint256 _totalDelayedMessagesRead = bridge.totalDelayedMessagesRead();
+        if (afterDelayedMessagesRead <= _totalDelayedMessagesRead) revert NotDelayedFarEnough();
+
+        // validate the delayed message against the delayed accumulator
+        bytes32 delayedAcc = bridge.delayedInboxAccs(_totalDelayedMessagesRead);
+        if (!Messages.isValidDelayedAccPreimage(delayedAcc, beforeDelayedAcc, delayedMessage)) {
+            revert InvalidDelayProof();
+        }
+
+        if (isSynced(delayedMessage.blockNumber, delayedMessage.timestamp)) {
+            updateSyncValidity(
+                isCachingRequested,
+                delayedMessage.blockNumber,
+                delayedMessage.timestamp
+            );
+        }
+
+        // use the delayed message to update the buffer state
+        updateBuffers(delayedMessage.blockNumber, delayedMessage.timestamp);
+
+        addSequencerL2BatchFromOriginImpl(
+            sequenceNumber,
+            data,
+            afterDelayedMessagesRead,
+            prevMessageCount,
+            newMessageCount
+        );
+    }
+
+    /// @inheritdoc IDelayBufferable
     function addSequencerL2BatchFromBlobs(
         uint256 sequenceNumber,
         uint256 afterDelayedMessagesRead,
@@ -400,6 +452,48 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
         if (!isDelayBufferable) revert NotDelayBufferable();
         bytes32 beforeAcc = addSequencerL2BatchFromBlobsImpl(
             sequenceNumber,
+            afterDelayedMessagesRead,
+            prevMessageCount,
+            newMessageCount
+        );
+
+        // validates the delayed message against the inbox accumulator
+        // and proves the delayed message is synced within the delay threshold
+        // this is a sufficient condition to prove that any delayed messages sequenced
+        // in the current batch are also synced within the delay threshold
+        if (!isValidSyncProof(beforeDelayedAcc, delayedMessage, beforeAcc, preimage)) {
+            revert InvalidSyncProof();
+        }
+
+        // calculate the margin of the delay message below the delay threshold
+        // no sync / delay proofs are required in this margin `sync validity` period.
+        updateSyncValidity(
+            isCachingRequested,
+            delayedMessage.blockNumber,
+            delayedMessage.timestamp
+        );
+    }
+
+    /// @inheritdoc IDelayBufferable
+    function addSequencerL2BatchFromOrigin(
+        uint256 sequenceNumber,
+        bytes calldata data,
+        uint256 afterDelayedMessagesRead,
+        IGasRefunder gasRefunder,
+        uint256 prevMessageCount,
+        uint256 newMessageCount,
+        bool isCachingRequested,
+        bytes32 beforeDelayedAcc,
+        Messages.Message calldata delayedMessage,
+        Messages.InboxAccPreimage calldata preimage
+    ) external refundsGas(gasRefunder, reader4844) {
+        // solhint-disable-next-line avoid-tx-origin
+        if (msg.sender != tx.origin) revert NotOrigin();
+        if (!isBatchPoster(msg.sender)) revert NotBatchPoster();
+        if (!isDelayBufferable) revert NotDelayBufferable();
+        bytes32 beforeAcc = addSequencerL2BatchFromOriginImpl(
+            sequenceNumber,
+            data,
             afterDelayedMessagesRead,
             prevMessageCount,
             newMessageCount
@@ -459,6 +553,40 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender == tx.origin && !isUsingFeeToken) {
             submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, blobGas);
+        }
+
+        return beforeAcc;
+    }
+
+    function addSequencerL2BatchFromOriginImpl(
+        uint256 sequenceNumber,
+        bytes calldata data,
+        uint256 afterDelayedMessagesRead,
+        uint256 prevMessageCount,
+        uint256 newMessageCount
+    ) internal returns (bytes32) {
+        (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formCallDataHash(
+            data,
+            afterDelayedMessagesRead
+        );
+
+        (uint256 seqMessageIndex, bytes32 beforeAcc, , ) = bridge.enqueueSequencerMessage(
+            dataHash,
+            afterDelayedMessagesRead,
+            prevMessageCount,
+            newMessageCount,
+            timeBounds,
+            IBridge.BatchDataLocation.TxInput
+        );
+
+        // ~uint256(0) is type(uint256).max, but ever so slightly cheaper
+        if (seqMessageIndex != sequenceNumber && sequenceNumber != ~uint256(0)) {
+            revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
+        }
+
+        if (!isUsingFeeToken) {
+            // only report batch poster spendings if chain is using ETH as native currency
+            submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, 0);
         }
 
         return beforeAcc;

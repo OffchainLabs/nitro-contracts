@@ -13,8 +13,9 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "@openzeppelin/contracts/access/Ownable.sol";
 import {DeployHelper} from "./DeployHelper.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "./IRollupCreator.sol";
 
-contract RollupCreator is Ownable {
+contract RollupCreator is Ownable, IRollupCreator {
     using SafeERC20 for IERC20;
 
     event RollupCreated(
@@ -32,19 +33,6 @@ contract RollupCreator is Ownable {
         address validatorWalletCreator
     );
     event TemplatesUpdated();
-
-    struct RollupDeploymentParams {
-        Config config;
-        address[] validators;
-        uint256 maxDataSize;
-        address nativeToken;
-        bool deployFactoriesToL2;
-        uint256 maxFeePerGasForRetryables;
-        //// @dev The address of the batch poster, not used when set to zero address
-        address[] batchPosters;
-        address batchPosterManager;
-        IReader4844 reader4844;
-    }
 
     BridgeCreator public bridgeCreator;
     IOneStepProofEntry public osp;
@@ -94,7 +82,7 @@ contract RollupCreator is Ownable {
      * @dev - config.rollupOwner should have executor role on upgradeExecutor
      * @dev - Bridge should have a single inbox and outbox
      * @dev - Validators and batch poster should be set if provided
-     * @param deployParams The parameters for the rollup deployment. It consists of:
+     * @param rollupParams The parameters for the rollup deployment. It consists of:
      *          - config        The configuration for the rollup
      *          - batchPoster   The address of the batch poster, not used when set to zero address
      *          - validators    The list of validator addresses, not used when set to empty list
@@ -106,35 +94,36 @@ contract RollupCreator is Ownable {
      *                          L2 TX). That would mean we permanently lost capability to deploy deterministic factory at expected address.
      *          - maxFeePerGasForRetryables price bid for L2 execution.
      *          - dataHashReader The address of the data hash reader used to read blob hashes
+     * @param nonce The nonce to use for the rollup deployment
+     * @param sequencerInbox The address of the sequencer inbox
      * @return The address of the newly created rollup
      */
-    function createRollup(RollupDeploymentParams memory deployParams)
-        public
-        payable
-        returns (address)
-    {
+    function createRollup(
+        RollupParams memory rollupParams,
+        uint256 nonce,
+        ISequencerInbox sequencerInbox
+    ) public payable returns (address) {
         // Make sure the immutable maxDataSize is as expected
         (, IInboxBase ethInbox, , ) = bridgeCreator.ethBasedTemplates();
-        require(deployParams.maxDataSize == ethInbox.maxDataSize(), "I_MAX_DATA_SIZE_MISMATCH");
+        require(rollupParams.maxDataSize == ethInbox.maxDataSize(), "I_MAX_DATA_SIZE_MISMATCH");
 
         (, IInboxBase erc20Inbox, , ) = bridgeCreator.erc20BasedTemplates();
-        require(deployParams.maxDataSize == erc20Inbox.maxDataSize(), "I_MAX_DATA_SIZE_MISMATCH");
+        require(rollupParams.maxDataSize == erc20Inbox.maxDataSize(), "I_MAX_DATA_SIZE_MISMATCH");
+
+        bytes32 _salt = salt(rollupParams, nonce);
 
         // create proxy admin which will manage bridge contracts
-        ProxyAdmin proxyAdmin = new ProxyAdmin();
+        ProxyAdmin proxyAdmin = new ProxyAdmin{salt: _salt}();
 
         // Create the rollup proxy to figure out the address and initialize it later
-        RollupProxy rollup = new RollupProxy{salt: keccak256(abi.encode(deployParams))}();
+        RollupProxy rollup = new RollupProxy{salt: _salt}();
 
         BridgeCreator.BridgeContracts memory bridgeContracts = bridgeCreator.createBridge(
+            _salt,
+            sequencerInbox,
             address(proxyAdmin),
             address(rollup),
-            deployParams.nativeToken,
-            deployParams.config.sequencerInboxMaxTimeVariation,
-            deployParams.config.sequencerInboxReplenishRate,
-            deployParams.config.sequencerInboxDelayConfig,
-            deployParams.maxDataSize,
-            deployParams.reader4844
+            rollupParams.nativeToken
         );
 
         IChallengeManager challengeManager = IChallengeManager(
@@ -148,25 +137,25 @@ contract RollupCreator is Ownable {
         );
         challengeManager.initialize(
             IChallengeResultReceiver(address(rollup)),
-            bridgeContracts.sequencerInbox,
+            sequencerInbox,
             bridgeContracts.bridge,
             osp
         );
 
         // deploy and init upgrade executor
-        address upgradeExecutor = _deployUpgradeExecutor(deployParams.config.owner, proxyAdmin);
+        address upgradeExecutor = _deployUpgradeExecutor(rollupParams.config.owner, proxyAdmin);
 
         // upgradeExecutor shall be proxyAdmin's owner
         proxyAdmin.transferOwnership(address(upgradeExecutor));
 
         // initialize the rollup with this contract as owner to set batch poster and validators
         // it will transfer the ownership to the upgrade executor later
-        deployParams.config.owner = address(this);
+        rollupParams.config.owner = address(this);
         rollup.initializeProxy(
-            deployParams.config,
+            rollupParams.config,
             ContractDependencies({
                 bridge: bridgeContracts.bridge,
-                sequencerInbox: bridgeContracts.sequencerInbox,
+                sequencerInbox: sequencerInbox,
                 inbox: bridgeContracts.inbox,
                 outbox: bridgeContracts.outbox,
                 rollupEventInbox: bridgeContracts.rollupEventInbox,
@@ -179,41 +168,43 @@ contract RollupCreator is Ownable {
         );
 
         // Setting batch posters and batch poster manager
-        for (uint256 i = 0; i < deployParams.batchPosters.length; i++) {
-            bridgeContracts.sequencerInbox.setIsBatchPoster(deployParams.batchPosters[i], true);
+        for (uint256 i = 0; i < rollupParams.batchPosters.length; i++) {
+            sequencerInbox.setIsBatchPoster(rollupParams.batchPosters[i], true);
         }
-        if (deployParams.batchPosterManager != address(0)) {
-            bridgeContracts.sequencerInbox.setBatchPosterManager(deployParams.batchPosterManager);
+        if (rollupParams.batchPosterManager != address(0)) {
+            sequencerInbox.setBatchPosterManager(rollupParams.batchPosterManager);
         }
 
         // Call setValidator on the newly created rollup contract just if validator set is not empty
-        if (deployParams.validators.length != 0) {
-            bool[] memory _vals = new bool[](deployParams.validators.length);
-            for (uint256 i = 0; i < deployParams.validators.length; i++) {
+        if (rollupParams.validators.length != 0) {
+            bool[] memory _vals = new bool[](rollupParams.validators.length);
+            for (uint256 i = 0; i < rollupParams.validators.length; i++) {
                 _vals[i] = true;
             }
-            IRollupAdmin(address(rollup)).setValidator(deployParams.validators, _vals);
+            IRollupAdmin(address(rollup)).setValidator(rollupParams.validators, _vals);
         }
 
         IRollupAdmin(address(rollup)).setOwner(address(upgradeExecutor));
 
-        if (deployParams.deployFactoriesToL2) {
+        if (rollupParams.deployFactoriesToL2) {
             _deployFactories(
                 address(bridgeContracts.inbox),
-                deployParams.nativeToken,
-                deployParams.maxFeePerGasForRetryables
+                rollupParams.nativeToken,
+                rollupParams.maxFeePerGasForRetryables
             );
         }
 
+        address sequencerInbox_ = address(sequencerInbox);
+
         emit RollupCreated(
             address(rollup),
-            deployParams.nativeToken,
+            rollupParams.nativeToken,
             address(bridgeContracts.inbox),
             address(bridgeContracts.outbox),
             address(bridgeContracts.rollupEventInbox),
             address(challengeManager),
             address(proxyAdmin),
-            address(bridgeContracts.sequencerInbox),
+            address(sequencerInbox_),
             address(bridgeContracts.bridge),
             address(upgradeExecutor),
             address(validatorUtils),
@@ -271,5 +262,60 @@ contract RollupCreator is Ownable {
             // do it
             l2FactoriesDeployer.perform(_inbox, _nativeToken, _maxFeePerGas);
         }
+    }
+
+    function computeProxyAdminAddress(RollupParams calldata rollupParams, uint256 nonce)
+        external
+        view
+        returns (address)
+    {
+        return
+            computeCreate2Address(
+                address(this),
+                salt(rollupParams, nonce),
+                type(ProxyAdmin).creationCode,
+                ""
+            );
+    }
+
+    function computeRollupProxyAddress(RollupParams calldata rollupParams, uint256 nonce)
+        external
+        view
+        returns (address)
+    {
+        return
+            computeCreate2Address(
+                address(this),
+                salt(rollupParams, nonce),
+                type(RollupProxy).creationCode,
+                ""
+            );
+    }
+
+    function salt(RollupParams memory rollupParams, uint256 nonce) internal pure returns (bytes32) {
+        return keccak256(abi.encode(rollupParams, nonce));
+    }
+
+    function computeCreate2Address(
+        address deployer,
+        bytes32 _salt,
+        bytes memory creationCode,
+        bytes memory args
+    ) internal pure returns (address) {
+        return
+            address(
+                uint160(
+                    uint256(
+                        keccak256(
+                            abi.encodePacked(
+                                bytes1(0xff),
+                                deployer,
+                                _salt,
+                                keccak256(abi.encodePacked(creationCode, args))
+                            )
+                        )
+                    )
+                )
+            );
     }
 }

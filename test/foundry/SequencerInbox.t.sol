@@ -79,6 +79,7 @@ contract SequencerInboxTest is Test {
 
         SequencerInbox seqInbox = new SequencerInbox(
             bridge,
+            IOwnable(address(rollupMock)),
             maxTimeVariation,
             replenishRate,
             delayConfig,
@@ -114,6 +115,7 @@ contract SequencerInboxTest is Test {
         );
         SequencerInbox seqInbox = new SequencerInbox(
             bridge,
+            IOwnable(address(rollupMock)),
             maxTimeVariation,
             replenishRate,
             delayConfig,

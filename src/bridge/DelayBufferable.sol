@@ -85,7 +85,7 @@ abstract contract DelayBufferable is IDelayBufferable {
         thresholdSeconds = delayConfig_.thresholdSeconds;
         maxBufferBlocks = delayConfig_.maxBufferBlocks;
         maxBufferSeconds = delayConfig_.maxBufferSeconds;
-        // if the delay buffer is disabled, the threshold is set to the maximum value
+        // if the threshold is set to the maximum value, then the delay buffer is disabled
         isDelayBufferable =
             delayConfig_.thresholdBlocks != type(uint64).max &&
             delayConfig_.thresholdSeconds != type(uint64).max;

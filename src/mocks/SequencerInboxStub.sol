@@ -11,6 +11,7 @@ import {INITIALIZATION_MSG_TYPE} from "../libraries/MessageTypes.sol";
 contract SequencerInboxStub is SequencerInbox {
     constructor(
         IBridge bridge_,
+        IOwnable rollup_,
         address sequencer_,
         ISequencerInbox.MaxTimeVariation memory maxTimeVariation_,
         ReplenishRate memory replenishRate_,
@@ -21,6 +22,7 @@ contract SequencerInboxStub is SequencerInbox {
     )
         SequencerInbox(
             bridge_,
+            rollup_,
             maxTimeVariation_,
             replenishRate_,
             delayConfig_,

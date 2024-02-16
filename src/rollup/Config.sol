@@ -26,9 +26,6 @@ struct Config {
     uint256 chainId;
     string chainConfig;
     uint64 genesisBlockNum;
-    ISequencerInbox.MaxTimeVariation sequencerInboxMaxTimeVariation;
-    IDelayBufferable.ReplenishRate sequencerInboxReplenishRate;
-    IDelayBufferable.DelayConfig sequencerInboxDelayConfig;
 }
 
 struct ContractDependencies {

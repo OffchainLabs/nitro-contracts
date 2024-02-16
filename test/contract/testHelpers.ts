@@ -316,7 +316,7 @@ export const getSequencerBatchDeliveredEvents = (
     receipt,
     bridgeInterface,
     i => i.getEventTopic(i.getEvent('SequencerBatchDelivered'))
-  )
+  )[0] as SequencerBatchDeliveredEvent['args']
 }
 
 export const setupSequencerInbox = async (
@@ -371,6 +371,7 @@ export const setupSequencerInbox = async (
   )) as SequencerInbox__factory
   const sequencerInbox = await sequencerInboxFac.deploy(
     bridgeProxy.address,
+    rollup.address,
     max,
     rate,
     isDelayBufferable ? config : configNotDelayBufferable,

@@ -53,8 +53,39 @@ contract SimpleDelayBufferable is DelayBufferable {
     }
 
     /// @inheritdoc IDelayBufferable
+    function addSequencerL2BatchFromOrigin(
+        uint256 sequenceNumber,
+        bytes calldata data,
+        uint256 afterDelayedMessagesRead,
+        IGasRefunder gasRefunder,
+        uint256 prevMessageCount,
+        uint256 newMessageCount,
+        bool isCachingRequested,
+        bytes32 beforeDelayedAcc,
+        Messages.Message calldata delayedMessage
+    ) external {
+        // no-op
+    }
+
+    /// @inheritdoc IDelayBufferable
     function addSequencerL2BatchFromBlobs(
         uint256 sequenceNumber,
+        uint256 afterDelayedMessagesRead,
+        IGasRefunder gasRefunder,
+        uint256 prevMessageCount,
+        uint256 newMessageCount,
+        bool isCachingRequested,
+        bytes32 beforeDelayedAcc,
+        Messages.Message calldata delayedMessage,
+        Messages.InboxAccPreimage calldata preimage
+    ) external {
+        // no-op
+    }
+
+    /// @inheritdoc IDelayBufferable
+    function addSequencerL2BatchFromOrigin(
+        uint256 sequenceNumber,
+        bytes calldata data,
         uint256 afterDelayedMessagesRead,
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,

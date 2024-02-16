@@ -47,7 +47,6 @@ import {
   SequencerInbox,
   SequencerInbox__factory,
   Bridge,
-  SequencerInboxCreator__factory,
 } from '../../build/types'
 import {
   abi as UpgradeExecutorABI,
@@ -110,29 +109,35 @@ async function getDefaultConfig(
     confirmPeriodBlocks: _confirmPeriodBlocks,
     extraChallengeTimeBlocks: extraChallengeTimeBlocks,
     owner: await accounts[0].getAddress(),
-    sequencerInboxMaxTimeVariation: {
-      delayBlocks: (60 * 60 * 24) / 15,
-      futureBlocks: 12,
-      delaySeconds: 60 * 60 * 24,
-      futureSeconds: 60 * 60,
-    },
-    sequencerInboxReplenishRate: {
-      secondsPerPeriod: 0,
-      blocksPerPeriod: 0,
-      periodSeconds: 0,
-      periodBlocks: 0,
-    },
-    sequencerInboxDelayConfig: {
-      thresholdSeconds: BigNumber.from(2).pow(64).sub(1),
-      thresholdBlocks: BigNumber.from(2).pow(64).sub(1),
-      maxBufferSeconds: 0,
-      maxBufferBlocks: 0,
-    },
     stakeToken: stakeToken,
     wasmModuleRoot: wasmModuleRoot,
     loserStakeEscrow: ZERO_ADDR,
     genesisBlockNum: 0,
   }
+}
+
+const defaultSequencerConfig = {
+  maxTimeVariation_: {
+    delayBlocks: (60 * 60 * 24) / 15,
+    futureBlocks: 12,
+    delaySeconds: 60 * 60 * 24,
+    futureSeconds: 60 * 60,
+  },
+  replenishRate_: {
+    secondsPerPeriod: 0,
+    blocksPerPeriod: 0,
+    periodSeconds: 0,
+    periodBlocks: 0,
+  },
+  delayConfig_: {
+    thresholdSeconds: BigNumber.from(2).pow(64).sub(1),
+    thresholdBlocks: BigNumber.from(2).pow(64).sub(1),
+    maxBufferSeconds: 0,
+    maxBufferBlocks: 0,
+  },
+  _maxDataSize: 117964,
+  reader4844_: dummy4844Reader,
+  _isUsingFeeToken: false,
 }
 
 const setup = async () => {
@@ -236,10 +241,14 @@ const setup = async () => {
   )) as ERC20Outbox__factory
   const erc20Outbox = await erc20OutboxFac.deploy()
 
-  const sequencerInboxCreatorFac = (await ethers.getContractFactory(
-    'SequencerInboxCreator'
-  )) as SequencerInboxCreator__factory
-  const sequencerInboxCreator = await sequencerInboxCreatorFac.deploy()
+  const sequencerInboxFac = (await ethers.getContractFactory(
+    'SequencerInbox'
+  )) as SequencerInbox__factory
+
+  const rollupCreatorFac = (await ethers.getContractFactory(
+    'RollupCreator'
+  )) as RollupCreator__factory
+  const rollupCreator = await rollupCreatorFac.deploy()
 
   const bridgeCreatorFac = (await ethers.getContractFactory(
     'BridgeCreator'
@@ -257,13 +266,45 @@ const setup = async () => {
       rollupEventInbox: erc20RollupEventInbox.address,
       outbox: erc20Outbox.address,
     },
-    sequencerInboxCreator.address
+    rollupCreator.address
   )
 
-  const rollupCreatorFac = (await ethers.getContractFactory(
-    'RollupCreator'
-  )) as RollupCreator__factory
-  const rollupCreator = await rollupCreatorFac.deploy()
+  const maxFeePerGas = BigNumber.from('1000000000')
+
+  const rollupParams = {
+    config: await getDefaultConfig(),
+    batchPosters: [await sequencer.getAddress()],
+    validators: [
+      await val1.getAddress(),
+      await val2.getAddress(),
+      await val3.getAddress(),
+      await val4.getAddress(),
+    ],
+    maxDataSize: 117964,
+    nativeToken: ethers.constants.AddressZero,
+    deployFactoriesToL2: true,
+    maxFeePerGasForRetryables: maxFeePerGas,
+    batchPosterManager: await batchPosterManager.getAddress(),
+  }
+  const nonce = 0
+  const bridgeAddress = await bridgeCreator.computeBridgeAddresss(
+    rollupParams,
+    nonce
+  )
+  const rollupAddress = await rollupCreator.computeRollupProxyAddress(
+    rollupParams,
+    nonce
+  )
+  sequencerInbox = await sequencerInboxFac.deploy(
+    bridgeAddress,
+    rollupAddress,
+    defaultSequencerConfig.maxTimeVariation_,
+    defaultSequencerConfig.replenishRate_,
+    defaultSequencerConfig.delayConfig_,
+    defaultSequencerConfig._maxDataSize,
+    defaultSequencerConfig.reader4844_,
+    defaultSequencerConfig._isUsingFeeToken
+  )
 
   const deployHelperFac = (await ethers.getContractFactory(
     'DeployHelper'
@@ -282,28 +323,14 @@ const setup = async () => {
     deployHelper.address
   )
 
-  const maxFeePerGas = BigNumber.from('1000000000')
-
-  const deployParams = {
-    config: await getDefaultConfig(),
-    batchPosters: [await sequencer.getAddress()],
-    validators: [
-      await val1.getAddress(),
-      await val2.getAddress(),
-      await val3.getAddress(),
-      await val4.getAddress(),
-    ],
-    maxDataSize: 117964,
-    nativeToken: ethers.constants.AddressZero,
-    deployFactoriesToL2: true,
-    maxFeePerGasForRetryables: maxFeePerGas,
-    batchPosterManager: await batchPosterManager.getAddress(),
-    reader4844: dummy4844Reader,
-  }
-
-  const response = await rollupCreator.createRollup(deployParams, {
-    value: ethers.utils.parseEther('0.2'),
-  })
+  const response = await rollupCreator.createRollup(
+    rollupParams,
+    nonce,
+    sequencerInbox.address,
+    {
+      value: ethers.utils.parseEther('0.2'),
+    }
+  )
 
   const rec = await response.wait()
 
@@ -318,12 +345,6 @@ const setup = async () => {
     .attach(rollupCreatedEvent.rollupAddress)
     .connect(user)
   const bridge = ethBridgeFac.attach(rollupCreatedEvent.bridge).connect(user)
-
-  sequencerInbox = (
-    (await ethers.getContractFactory(
-      'SequencerInbox'
-    )) as SequencerInbox__factory
-  ).attach(rollupCreatedEvent.sequencerInbox)
 
   await sequencerInbox
     .connect(await impersonateAccount(rollupCreatedEvent.upgradeExecutor))

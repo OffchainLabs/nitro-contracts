@@ -16,34 +16,20 @@
 
 /* eslint-env node, mocha */
 
-import { ethers, network } from 'hardhat'
 import { BigNumber } from '@ethersproject/bignumber'
-import {
-  Block,
-  JsonRpcProvider,
-  TransactionReceipt,
-} from '@ethersproject/providers'
+import { JsonRpcProvider } from '@ethersproject/providers'
 import { expect } from 'chai'
 import {
-  Bridge,
   Bridge__factory,
   GasRefunder__factory,
-  Inbox,
   Inbox__factory,
-  MessageTester,
   MessageTester__factory,
   RollupMock__factory,
   SequencerInbox__factory,
   TransparentUpgradeableProxy__factory,
 } from '../../build/types'
-import { applyAlias } from './utils'
-import { Event } from '@ethersproject/contracts'
-import { Interface } from '@ethersproject/abi'
-import {
-  BridgeInterface,
-  MessageDeliveredEvent,
-} from '../../build/types/src/bridge/Bridge'
-import { Signer, Wallet, constants, utils } from 'ethers'
+import { Wallet, constants, utils } from 'ethers'
+import { sendDelayedTx, getSequencerBatchDeliveredEvents } from './testHelpers'
 import {
   keccak256,
   parseEther,
@@ -53,146 +39,8 @@ import {
 import { Toolkit4844 } from './toolkit4844'
 import { SequencerInbox } from '../../build/types/src/bridge/SequencerInbox'
 import { InboxMessageDeliveredEvent } from '../../build/types/src/bridge/AbsInbox'
-import { SequencerBatchDeliveredEvent } from '../../build/types/src/bridge/AbsBridge'
-
-const mineBlocks = async (
-  wallet: Wallet,
-  count: number,
-  timeDiffPerBlock = 14
-) => {
-  const block = (await network.provider.send('eth_getBlockByNumber', [
-    'latest',
-    false,
-  ])) as Block
-  let timestamp = BigNumber.from(block.timestamp).toNumber()
-  for (let i = 0; i < count; i++) {
-    timestamp = timestamp + timeDiffPerBlock
-    await (
-      await wallet.sendTransaction({ to: constants.AddressZero, value: 1 })
-    ).wait()
-  }
-}
 
 describe('SequencerInbox', async () => {
-  const findMatchingLogs = <TInterface extends Interface, TEvent extends Event>(
-    receipt: TransactionReceipt,
-    iFace: TInterface,
-    eventTopicGen: (i: TInterface) => string
-  ): TEvent['args'][] => {
-    const logs = receipt.logs.filter(
-      log => log.topics[0] === eventTopicGen(iFace)
-    )
-    return logs.map(l => iFace.parseLog(l).args as TEvent['args'])
-  }
-
-  const getMessageDeliveredEvents = (receipt: TransactionReceipt) => {
-    const bridgeInterface = Bridge__factory.createInterface()
-    return findMatchingLogs<BridgeInterface, MessageDeliveredEvent>(
-      receipt,
-      bridgeInterface,
-      i => i.getEventTopic(i.getEvent('MessageDelivered'))
-    )
-  }
-
-  const sendDelayedTx = async (
-    sender: Signer,
-    inbox: Inbox,
-    bridge: Bridge,
-    messageTester: MessageTester,
-    l2Gas: number,
-    l2GasPrice: number,
-    nonce: number,
-    destAddr: string,
-    amount: BigNumber,
-    data: string
-  ) => {
-    const countBefore = (
-      await bridge.functions.delayedMessageCount()
-    )[0].toNumber()
-    const sendUnsignedTx = await inbox
-      .connect(sender)
-      .sendUnsignedTransaction(l2Gas, l2GasPrice, nonce, destAddr, amount, data)
-    const sendUnsignedTxReceipt = await sendUnsignedTx.wait()
-
-    const countAfter = (
-      await bridge.functions.delayedMessageCount()
-    )[0].toNumber()
-    expect(countAfter, 'Unexpected inbox count').to.eq(countBefore + 1)
-
-    const senderAddr = applyAlias(await sender.getAddress())
-
-    const messageDeliveredEvent = getMessageDeliveredEvents(
-      sendUnsignedTxReceipt
-    )[0]
-    const l1BlockNumber = sendUnsignedTxReceipt.blockNumber
-    const blockL1 = await sender.provider!.getBlock(l1BlockNumber)
-    const baseFeeL1 = blockL1.baseFeePerGas!.toNumber()
-    const l1BlockTimestamp = blockL1.timestamp
-    const delayedAcc = await bridge.delayedInboxAccs(countBefore)
-
-    // need to hex pad the address
-    const messageDataHash = ethers.utils.solidityKeccak256(
-      ['uint8', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256', 'bytes'],
-      [
-        0,
-        l2Gas,
-        l2GasPrice,
-        nonce,
-        ethers.utils.hexZeroPad(destAddr, 32),
-        amount,
-        data,
-      ]
-    )
-    expect(
-      messageDeliveredEvent.messageDataHash,
-      'Incorrect messageDataHash'
-    ).to.eq(messageDataHash)
-
-    const messageHash = (
-      await messageTester.functions.messageHash(
-        3,
-        senderAddr,
-        l1BlockNumber,
-        l1BlockTimestamp,
-        countBefore,
-        baseFeeL1,
-        messageDataHash
-      )
-    )[0]
-
-    const prevAccumulator = messageDeliveredEvent.beforeInboxAcc
-    expect(prevAccumulator, 'Incorrect prev accumulator').to.eq(
-      countBefore === 0
-        ? ethers.utils.hexZeroPad('0x', 32)
-        : await bridge.delayedInboxAccs(countBefore - 1)
-    )
-
-    const nextAcc = (
-      await messageTester.functions.accumulateInboxMessage(
-        prevAccumulator,
-        messageHash
-      )
-    )[0]
-
-    expect(delayedAcc, 'Incorrect delayed acc').to.eq(nextAcc)
-
-    return {
-      baseFeeL1: baseFeeL1,
-      deliveredMessageEvent: messageDeliveredEvent,
-      l1BlockNumber,
-      l1BlockTimestamp,
-      delayedAcc,
-      l2Gas,
-      l2GasPrice,
-      nonce,
-      destAddr,
-      amount,
-      data,
-      senderAddr,
-      inboxAccountLength: countAfter,
-    }
-  }
-
   const fundAccounts = async (
     wallet: Wallet,
     length: number,
@@ -319,6 +167,7 @@ describe('SequencerInbox', async () => {
     const sequencerInboxFac = new SequencerInbox__factory(deployer)
     const sequencerInbox = await sequencerInboxFac.deploy(
       bridge.address,
+      rollupMock.address,
       {
         delayBlocks: maxDelayBlocks,
         futureBlocks: 10,
@@ -426,7 +275,9 @@ describe('SequencerInbox', async () => {
     await (
       await sequencerInbox
         .connect(batchPoster)
-        .functions['addSequencerL2BatchFromOrigin'](
+        [
+          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256)'
+        ](
           await bridge.sequencerMessageCount(),
           '0x0042',
           await bridge.delayedMessageCount(),
@@ -508,16 +359,8 @@ describe('SequencerInbox', async () => {
       afterDelayedMessagesRead.toNumber(),
       blobHashes
     )
-    const batchDeliveredEvent = batchSendReceipt.logs
-      .filter(
-        (b: any) =>
-          b.address.toLowerCase() === bridge.address.toLowerCase() &&
-          b.topics[0] ===
-            bridge.interface.getEventTopic('SequencerBatchDelivered')
-      )
-      .map(
-        (l: any) => bridge.interface.parseLog(l).args
-      )[0] as SequencerBatchDeliveredEvent['args']
+    const batchDeliveredEvent =
+      getSequencerBatchDeliveredEvents(batchSendReceipt)
     if (!batchDeliveredEvent) throw new Error('missing batch event')
 
     const seqMessageCountAfter = (
