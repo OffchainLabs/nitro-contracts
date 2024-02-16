@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.4;
 
-import "./ReferentGasReport.t.sol";
 import {Bridge} from "../../src/bridge/Bridge.sol";
+import "./ProductionGasReport.t.sol";
 
-contract CurrentGasReportTest is ReferentGasReportTest {
+contract CurrentGasReportTest is ProductionGasReportTest {
     /* solhint-disable func-name-mixedcase */
 
     function test_depositEth() public override {

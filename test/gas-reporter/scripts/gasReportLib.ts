@@ -1,29 +1,16 @@
 import { execSync } from 'child_process'
-import dotenv from 'dotenv'
-
-dotenv.config()
 
 const FORK_BLOCK_NUMBER = 19163009
+export const REFERENT_REPORT_FILE_PATH = '.referentGasReport'
 
-function main() {
-  const infuraKey = process.env['INFURA_KEY'] as string
-  if (!infuraKey) {
-    throw new Error('INFURA_KEY env var should be set')
-  }
-  const mainnetRpc = `https://mainnet.infura.io/v3/${infuraKey}`
-
-  const referentGasReport = getReferentGasReport(mainnetRpc, true)
-  const currentImplementationGasReport = getReferentGasReport(mainnetRpc, false)
-
-  _printGasReportDiff(referentGasReport, currentImplementationGasReport)
-}
-
-function getReferentGasReport(
+export function getGasSpendingRecord(
   rpc: string,
-  referent: boolean
+  useProductionCode: boolean
 ): Record<string, number> {
   const gasReportCmd = `FOUNDRY_PROFILE=gasreporter forge test --fork-url ${rpc} --fork-block-number ${FORK_BLOCK_NUMBER} --gas-report`
-  const testFile = referent ? 'ReferentGasReportTest' : 'CurrentGasReportTest'
+  const testFile = useProductionCode
+    ? 'ProductionGasReportTest'
+    : 'CurrentGasReportTest'
 
   let outputEth = execSync(
     gasReportCmd +
@@ -47,21 +34,7 @@ function getReferentGasReport(
   return { ...recordEth, ...recordToken }
 }
 
-function _parseGasConsumption(report: string): Record<string, number> {
-  const gasUsagePattern =
-    /(depositEth|withdrawEth_executeTransaction|withdrawToken_executeTransaction)\s+\|\s+(\d+)/g
-  const gasConsumption: Record<string, number> = {}
-  let match
-
-  while ((match = gasUsagePattern.exec(report)) !== null) {
-    // match[1] is the function name, match[2] is the gas consumption
-    gasConsumption[match[1]] = parseInt(match[2], 10)
-  }
-
-  return gasConsumption
-}
-
-function _printGasReportDiff(
+export function printGasReportDiff(
   referentGasReport: Record<string, number>,
   currentImplementationGasReport: Record<string, number>
 ) {
@@ -82,4 +55,16 @@ function _printGasReportDiff(
   }
 }
 
-main()
+function _parseGasConsumption(report: string): Record<string, number> {
+  const gasUsagePattern =
+    /(depositEth|withdrawEth_executeTransaction|withdrawToken_executeTransaction)\s+\|\s+(\d+)/g
+  const gasConsumption: Record<string, number> = {}
+  let match
+
+  while ((match = gasUsagePattern.exec(report)) !== null) {
+    // match[1] is the function name, match[2] is the gas consumption
+    gasConsumption[match[1]] = parseInt(match[2], 10)
+  }
+
+  return gasConsumption
+}
