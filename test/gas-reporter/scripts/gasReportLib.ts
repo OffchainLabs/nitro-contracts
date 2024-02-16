@@ -1,6 +1,7 @@
 import { execSync } from 'child_process'
 
 const FORK_BLOCK_NUMBER = 19163009
+export const REFERENT_REPORT_FILE_PATH = '.referentGasReport'
 
 export function getGasSpendingRecord(
   rpc: string,
