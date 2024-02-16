@@ -5,6 +5,7 @@ deployments/
 /test/prover/proofs/*.json
 /test/prover/spec-proofs/*.json
 /test/storage/*-old
+/test/signatures/*-old
 scripts/config.ts
 forge-cache/
 out/

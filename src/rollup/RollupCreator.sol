@@ -268,6 +268,7 @@ contract RollupCreator is Ownable {
             l2FactoriesDeployer.perform{value: cost}(_inbox, _nativeToken, _maxFeePerGas);
 
             // refund the caller
+            // solhint-disable-next-line avoid-low-level-calls
             (bool sent, ) = msg.sender.call{value: address(this).balance}("");
             require(sent, "Refund failed");
         } else {

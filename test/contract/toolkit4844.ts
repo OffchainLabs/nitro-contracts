@@ -1,12 +1,12 @@
 import { execSync } from 'child_process'
-import { ContractFactory, Signer, Wallet, ethers } from 'ethers'
+import { ContractFactory, Signer, ethers } from 'ethers'
 import * as http from 'http'
 import { IReader4844, IReader4844__factory } from '../../build/types'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { bytecode as Reader4844Bytecode } from '../../out/yul/Reader4844.yul/Reader4844.json'
 
 const wait = async (ms: number) =>
-  new Promise((res, rej) => {
+  new Promise(res => {
     setTimeout(res, ms)
   })
 

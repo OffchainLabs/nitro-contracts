@@ -63,13 +63,18 @@ abstract contract AbsInboxTest is Test {
         // mock the owner() call on rollup
         address mockRollupOwner = address(10_000);
         vm.mockCall(
-            rollup, abi.encodeWithSelector(IOwnable.owner.selector), abi.encode(mockRollupOwner)
+            rollup,
+            abi.encodeWithSelector(IOwnable.owner.selector),
+            abi.encode(mockRollupOwner)
         );
 
         // setAllowList shall revert
         vm.expectRevert(
             abi.encodeWithSelector(
-                NotRollupOrOwner.selector, address(this), rollup, mockRollupOwner
+                NotRollupOrOwner.selector,
+                address(this),
+                rollup,
+                mockRollupOwner
             )
         );
 
@@ -126,13 +131,18 @@ abstract contract AbsInboxTest is Test {
         // mock the owner() call on rollup
         address mockRollupOwner = address(10_000);
         vm.mockCall(
-            rollup, abi.encodeWithSelector(IOwnable.owner.selector), abi.encode(mockRollupOwner)
+            rollup,
+            abi.encodeWithSelector(IOwnable.owner.selector),
+            abi.encode(mockRollupOwner)
         );
 
         // setAllowListEnabled shall revert
         vm.expectRevert(
             abi.encodeWithSelector(
-                NotRollupOrOwner.selector, address(this), rollup, mockRollupOwner
+                NotRollupOrOwner.selector,
+                address(this),
+                rollup,
+                mockRollupOwner
             )
         );
 
@@ -141,7 +151,9 @@ abstract contract AbsInboxTest is Test {
 
     function test_pause() public {
         assertEq(
-            (PausableUpgradeable(address(inbox))).paused(), false, "Invalid initial paused state"
+            (PausableUpgradeable(address(inbox))).paused(),
+            false,
+            "Invalid initial paused state"
         );
 
         vm.prank(rollup);
@@ -154,7 +166,9 @@ abstract contract AbsInboxTest is Test {
         vm.prank(rollup);
         inbox.pause();
         assertEq(
-            (PausableUpgradeable(address(inbox))).paused(), true, "Invalid initial paused state"
+            (PausableUpgradeable(address(inbox))).paused(),
+            true,
+            "Invalid initial paused state"
         );
         vm.prank(rollup);
         inbox.unpause();
@@ -287,8 +301,14 @@ abstract contract AbsInboxTest is Test {
 
         // send TX
         vm.prank(user, user);
-        uint256 msgNum =
-            inbox.sendUnsignedTransaction(gasLimit, maxFeePerGas, nonce, user, value, data);
+        uint256 msgNum = inbox.sendUnsignedTransaction(
+            gasLimit,
+            maxFeePerGas,
+            nonce,
+            user,
+            value,
+            data
+        );
 
         //// checks
         assertEq(msgNum, 0, "Invalid msgNum");
