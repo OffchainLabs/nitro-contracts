@@ -14,3 +14,4 @@
 | sequencerReportedSubMessageCount | uint256                                        | 10   | 0      | 32    | src/bridge/ERC20Bridge.sol:ERC20Bridge |
 | __gap                            | uint256[40]                                    | 11   | 0      | 1280  | src/bridge/ERC20Bridge.sol:ERC20Bridge |
 | nativeToken                      | address                                        | 51   | 0      | 20    | src/bridge/ERC20Bridge.sol:ERC20Bridge |
+| nativeTokenDecimals              | uint8                                          | 51   | 20     | 1     | src/bridge/ERC20Bridge.sol:ERC20Bridge |

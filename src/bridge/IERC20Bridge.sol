@@ -20,6 +20,13 @@ interface IERC20Bridge is IBridge {
     function nativeToken() external view returns (address);
 
     /**
+     * @dev number of decimals used by the native token
+     *      This is set on bridge initialization using nativeToken.decimals()
+     *      If the token does not have decimals() method, we assume it have 0 decimals
+     */
+    function nativeTokenDecimals() external view returns (uint8);
+
+    /**
      * @dev Enqueue a message in the delayed inbox accumulator.
      *      These messages are later sequenced in the SequencerInbox, either
      *      by the sequencer as part of a normal batch, or by force inclusion.

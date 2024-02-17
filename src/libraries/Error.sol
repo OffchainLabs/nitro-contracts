@@ -119,6 +119,12 @@ error NotForked();
 /// @dev The provided gasLimit is larger than uint64
 error GasLimitTooLarge();
 
+/// @dev The provided amount cannot be adjusted to 18 decimals due to overflow
+error AmountTooLarge(uint256 amount);
+
+/// @dev Number of native token's decimals is restricted to enable conversions to 18 decimals
+error NativeTokenDecimalsTooLarge(uint256 decimals);
+
 // Outbox Errors
 
 /// @dev The provided proof was too long

@@ -25,6 +25,11 @@ contract OutboxTest is AbsOutboxTest {
     }
 
     /* solhint-disable func-name-mixedcase */
+    function test_initialize_revert_AlreadyInit() public {
+        vm.expectRevert(abi.encodeWithSelector(AlreadyInit.selector));
+        ethOutbox.initialize(IBridge(bridge));
+    }
+
     function test_executeTransaction() public {
         // fund bridge with some ether
         vm.deal(address(bridge), 100 ether);
@@ -67,16 +72,12 @@ contract OutboxTest is AbsOutboxTest {
 
         uint256 bridgeBalanceAfter = address(bridge).balance;
         assertEq(
-            bridgeBalanceBefore - bridgeBalanceAfter,
-            withdrawalAmount,
-            "Invalid bridge balance"
+            bridgeBalanceBefore - bridgeBalanceAfter, withdrawalAmount, "Invalid bridge balance"
         );
 
         uint256 targetBalanceAfter = address(target).balance;
         assertEq(
-            targetBalanceAfter - targetBalanceBefore,
-            withdrawalAmount,
-            "Invalid target balance"
+            targetBalanceAfter - targetBalanceBefore, withdrawalAmount, "Invalid target balance"
         );
 
         /// check context was properly set during execution
