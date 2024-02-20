@@ -54,16 +54,10 @@ contract DeployScript is Script {
     }
 
     function _getReader4844Bytecode() internal returns (bytes memory bytecode) {
-        string memory readerBytecodeFile =
+        string memory readerBytecodeFilePath =
             string(abi.encodePacked(vm.projectRoot(), "/out/yul/Reader4844.yul/Reader4844.json"));
-
-        string[] memory inputs = new string[](4);
-        inputs[0] = "jq";
-        inputs[1] = "-r";
-        inputs[2] = ".bytecode.object";
-        inputs[3] = readerBytecodeFile;
-
-        bytecode = vm.ffi(inputs);
+        string memory json = vm.readFile(readerBytecodeFilePath);
+        bytecode = vm.parseJsonBytes(json, ".bytecode.object");
     }
 
     function _readFile() internal returns (string memory) {
