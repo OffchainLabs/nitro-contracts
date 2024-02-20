@@ -13,20 +13,15 @@ import {ChallengeManager} from "../../../src/challenge/ChallengeManager.sol";
 
 contract DeployScript is Script {
     function run() public {
-        bytes memory reader4844Bytecode = _getReader4844Bytecode();
-
-        string memory file = _readFile();
-        console.log(file);
-
         // read deployment parameters from JSON config
-        uint256 maxDataSize = vm.parseJsonUint(file, ".maxDataSize");
-        bool hostChainIsArbitrum = vm.parseJsonBool(file, ".hostChainIsArbitrum");
+        (uint256 maxDataSize, bool hostChainIsArbitrum) = _getDeploymentConfigParams();
 
         vm.startBroadcast();
 
         // deploy reader4844 if deploying to non-arbitrum chain
         address reader4844Address = address(0);
         if (!hostChainIsArbitrum) {
+            bytes memory reader4844Bytecode = _getReader4844Bytecode();
             assembly {
                 reader4844Address :=
                     create(0, add(reader4844Bytecode, 0x20), mload(reader4844Bytecode))
@@ -53,22 +48,34 @@ contract DeployScript is Script {
         vm.stopBroadcast();
     }
 
-    function _getReader4844Bytecode() internal returns (bytes memory bytecode) {
+    function _getReader4844Bytecode() internal returns (bytes memory) {
         string memory readerBytecodeFilePath =
             string(abi.encodePacked(vm.projectRoot(), "/out/yul/Reader4844.yul/Reader4844.json"));
         string memory json = vm.readFile(readerBytecodeFilePath);
-        bytecode = vm.parseJsonBytes(json, ".bytecode.object");
+        return vm.parseJsonBytes(json, ".bytecode.object");
     }
 
-    function _readFile() internal returns (string memory) {
-        string memory path = string(
+    function _getDeploymentConfigParams() internal returns (uint256, bool) {
+        // read deployment parameters from JSON config
+        string memory configFilePath = string(
             abi.encodePacked(
                 vm.projectRoot(),
-                "/scripts/foundry/upgrade-1.2.1/inputs/",
+                "/scripts/foundry/upgrade-1.2.1/config/",
                 vm.toString(block.chainid),
-                "/params.json"
+                ".json"
             )
         );
-        return vm.readFile(path);
+        string memory json = vm.readFile(configFilePath);
+
+        // decode params
+        uint256 maxDataSize = vm.parseJsonUint(json, ".maxDataSize");
+        bool hostChainIsArbitrum = vm.parseJsonBool(json, ".hostChainIsArbitrum");
+
+        // sanity check
+        require(
+            maxDataSize == 117_964 || maxDataSize == 104_857, "Invalid maxDataSize in config file"
+        );
+
+        return (maxDataSize, hostChainIsArbitrum);
     }
 }
