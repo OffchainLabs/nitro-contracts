@@ -43,10 +43,10 @@ contract DeployScript is Script {
         OneStepProverMemory ospMemory = new OneStepProverMemory();
         OneStepProverMath ospMath = new OneStepProverMath();
         OneStepProverHostIo ospHostIo = new OneStepProverHostIo();
-        OneStepProofEntry ospEntry = new OneStepProofEntry(osp0, ospMemory, ospMath, ospHostIo);
+        new OneStepProofEntry(osp0, ospMemory, ospMath, ospHostIo);
 
         // deploy new challenge manager templates
-        ChallengeManager challengeManager = new ChallengeManager();
+        new ChallengeManager();
 
         _updateTemplatesInBridgeCreator(rollupCreator, ethSeqInbox, erc20SeqInbox);
 
