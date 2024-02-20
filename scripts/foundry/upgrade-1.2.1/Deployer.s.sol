@@ -11,26 +11,34 @@ import {OneStepProverHostIo} from "../../../src/osp/OneStepProverHostIo.sol";
 import {OneStepProofEntry} from "../../../src/osp/OneStepProofEntry.sol";
 import {ChallengeManager} from "../../../src/challenge/ChallengeManager.sol";
 
-
-
 contract DeployScript is Script {
     function run() public {
         bytes memory reader4844Bytecode = _getReader4844Bytecode();
 
+        string memory file = _readFile();
+        console.log(file);
+
+        // read deployment parameters from JSON config
+        uint256 maxDataSize = vm.parseJsonUint(file, ".maxDataSize");
+        bool hostChainIsArbitrum = vm.parseJsonBool(file, ".hostChainIsArbitrum");
+
         vm.startBroadcast();
 
-        // deploy reader4844
-        address reader4844Address;
-        assembly {
-            reader4844Address := create(0, add(reader4844Bytecode, 0x20), mload(reader4844Bytecode))
+        // deploy reader4844 if deploying to non-arbitrum chain
+        address reader4844Address = address(0);
+        if (!hostChainIsArbitrum) {
+            assembly {
+                reader4844Address :=
+                    create(0, add(reader4844Bytecode, 0x20), mload(reader4844Bytecode))
+            }
+            require(reader4844Address != address(0), "Reader4844 could not be deployed");
         }
-        require(reader4844Address != address(0), "Reader4844 could not be deployed");
 
         // deploy SequencerInbox templates for eth and fee token based chains
         SequencerInbox ethSeqInbox =
-            new SequencerInbox(104_857, IReader4844(reader4844Address), false);
+            new SequencerInbox(maxDataSize, IReader4844(reader4844Address), false);
         SequencerInbox feeTokenSeqInbox =
-            new SequencerInbox(104_857, IReader4844(reader4844Address), true);
+            new SequencerInbox(maxDataSize, IReader4844(reader4844Address), true);
 
         // deploy OSP templates
         OneStepProver0 osp0 = new OneStepProver0();
@@ -56,5 +64,17 @@ contract DeployScript is Script {
         inputs[3] = readerBytecodeFile;
 
         bytecode = vm.ffi(inputs);
+    }
+
+    function _readFile() internal returns (string memory) {
+        string memory path = string(
+            abi.encodePacked(
+                vm.projectRoot(),
+                "/scripts/foundry/upgrade-1.2.1/inputs/",
+                vm.toString(block.chainid),
+                "/params.json"
+            )
+        );
+        return vm.readFile(path);
     }
 }

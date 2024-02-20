@@ -8,6 +8,7 @@ optimizer = true
 optimizer_runs = 20000
 via_ir = false
 solc_version = '0.8.9'
+fs_permissions = [{ access = "read", path = "./scripts/foundry"}]
 
 [profile.yul]
 src = 'yul'
