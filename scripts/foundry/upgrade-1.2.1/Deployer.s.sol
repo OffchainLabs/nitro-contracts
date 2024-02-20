@@ -4,6 +4,14 @@ pragma solidity ^0.8.9;
 import "forge-std/Script.sol";
 import {SequencerInbox} from "../../../src/bridge/SequencerInbox.sol";
 import {IReader4844} from "../../../src/libraries/IReader4844.sol";
+import {OneStepProver0} from "../../../src/osp/OneStepProver0.sol";
+import {OneStepProverMemory} from "../../../src/osp/OneStepProverMemory.sol";
+import {OneStepProverMath} from "../../../src/osp/OneStepProverMath.sol";
+import {OneStepProverHostIo} from "../../../src/osp/OneStepProverHostIo.sol";
+import {OneStepProofEntry} from "../../../src/osp/OneStepProofEntry.sol";
+import {ChallengeManager} from "../../../src/challenge/ChallengeManager.sol";
+
+
 
 contract DeployScript is Script {
     function run() public {
@@ -23,6 +31,16 @@ contract DeployScript is Script {
             new SequencerInbox(104_857, IReader4844(reader4844Address), false);
         SequencerInbox feeTokenSeqInbox =
             new SequencerInbox(104_857, IReader4844(reader4844Address), true);
+
+        // deploy OSP templates
+        OneStepProver0 osp0 = new OneStepProver0();
+        OneStepProverMemory ospMemory = new OneStepProverMemory();
+        OneStepProverMath ospMath = new OneStepProverMath();
+        OneStepProverHostIo ospHostIo = new OneStepProverHostIo();
+        OneStepProofEntry ospEntry = new OneStepProofEntry(osp0, ospMemory, ospMath, ospHostIo);
+
+        // deploy new challenge manager templates
+        ChallengeManager challengeManager = new ChallengeManager();
 
         vm.stopBroadcast();
     }
