@@ -2,7 +2,7 @@
 pragma solidity ^0.8.9;
 
 import "forge-std/Script.sol";
-import {SequencerInbox} from "../../../src/bridge/SequencerInbox.sol";
+import {ISequencerInbox, SequencerInbox} from "../../../src/bridge/SequencerInbox.sol";
 import {IReader4844} from "../../../src/libraries/IReader4844.sol";
 import {OneStepProver0} from "../../../src/osp/OneStepProver0.sol";
 import {OneStepProverMemory} from "../../../src/osp/OneStepProverMemory.sol";
@@ -10,11 +10,14 @@ import {OneStepProverMath} from "../../../src/osp/OneStepProverMath.sol";
 import {OneStepProverHostIo} from "../../../src/osp/OneStepProverHostIo.sol";
 import {OneStepProofEntry} from "../../../src/osp/OneStepProofEntry.sol";
 import {ChallengeManager} from "../../../src/challenge/ChallengeManager.sol";
+import "../../../src/rollup/RollupCreator.sol";
+import {BridgeCreator} from "../../../src/rollup/BridgeCreator.sol";
 
 contract DeployScript is Script {
     function run() public {
         // read deployment parameters from JSON config
-        (uint256 maxDataSize, bool hostChainIsArbitrum) = _getDeploymentConfigParams();
+        (uint256 maxDataSize, bool hostChainIsArbitrum, address rollupCreator) =
+            _getDeploymentConfigParams();
 
         vm.startBroadcast();
 
@@ -32,7 +35,7 @@ contract DeployScript is Script {
         // deploy SequencerInbox templates for eth and fee token based chains
         SequencerInbox ethSeqInbox =
             new SequencerInbox(maxDataSize, IReader4844(reader4844Address), false);
-        SequencerInbox feeTokenSeqInbox =
+        SequencerInbox erc20SeqInbox =
             new SequencerInbox(maxDataSize, IReader4844(reader4844Address), true);
 
         // deploy OSP templates
@@ -45,7 +48,42 @@ contract DeployScript is Script {
         // deploy new challenge manager templates
         ChallengeManager challengeManager = new ChallengeManager();
 
+        _updateTemplatesInBridgeCreator(rollupCreator, ethSeqInbox, erc20SeqInbox);
+
         vm.stopBroadcast();
+    }
+
+    function _updateTemplatesInBridgeCreator(
+        address rollupCreatorAddress,
+        SequencerInbox ethSeqInbox,
+        SequencerInbox erc20SeqInbox
+    ) internal {
+        // update templates in BridgeCreator
+        BridgeCreator bridgeCreator = RollupCreator(payable(rollupCreatorAddress)).bridgeCreator();
+        (IBridge bridge,, IInboxBase inbox, IRollupEventInbox rollupEventInbox, IOutbox outbox) =
+            bridgeCreator.ethBasedTemplates();
+        (
+            IBridge erc20Bridge,
+            ,
+            IInboxBase erc20Inbox,
+            IRollupEventInbox erc20RollupEventInbox,
+            IOutbox erc20Outbox
+        ) = bridgeCreator.erc20BasedTemplates();
+
+        bridgeCreator.updateTemplates(
+            BridgeCreator.BridgeContracts(
+                bridge, ISequencerInbox(address(ethSeqInbox)), inbox, rollupEventInbox, outbox
+            )
+        );
+        bridgeCreator.updateERC20Templates(
+            BridgeCreator.BridgeContracts(
+                erc20Bridge,
+                ISequencerInbox(address(erc20SeqInbox)),
+                erc20Inbox,
+                erc20RollupEventInbox,
+                erc20Outbox
+            )
+        );
     }
 
     function _getReader4844Bytecode() internal returns (bytes memory) {
@@ -55,7 +93,7 @@ contract DeployScript is Script {
         return vm.parseJsonBytes(json, ".bytecode.object");
     }
 
-    function _getDeploymentConfigParams() internal returns (uint256, bool) {
+    function _getDeploymentConfigParams() internal returns (uint256, bool, address) {
         // read deployment parameters from JSON config
         string memory configFilePath = string(
             abi.encodePacked(
@@ -70,12 +108,18 @@ contract DeployScript is Script {
         // decode params
         uint256 maxDataSize = vm.parseJsonUint(json, ".maxDataSize");
         bool hostChainIsArbitrum = vm.parseJsonBool(json, ".hostChainIsArbitrum");
+        address rollupCreator = vm.parseJsonAddress(json, ".rollupCreator");
 
         // sanity check
         require(
             maxDataSize == 117_964 || maxDataSize == 104_857, "Invalid maxDataSize in config file"
         );
+        require(
+            rollupCreator != address(0)
+                && address(RollupCreator(payable(rollupCreator)).bridgeCreator()) != address(0),
+            "Invalid rollupCreator in config file"
+        );
 
-        return (maxDataSize, hostChainIsArbitrum);
+        return (maxDataSize, hostChainIsArbitrum, rollupCreator);
     }
 }
