@@ -196,9 +196,7 @@ describe('SequencerInboxForceInclude', async () => {
       messageDataHash
     )
     if (expectedErrorType) {
-      await expect(forceInclusionTx).to.be.revertedWith(
-        `reverted with custom error '${expectedErrorType}()'`
-      )
+      await expect(forceInclusionTx).to.be.revertedWith(expectedErrorType)
     } else {
       await (await forceInclusionTx).wait()
 
@@ -222,10 +220,10 @@ describe('SequencerInboxForceInclude', async () => {
     const admin = accounts[0]
     const adminAddr = await admin.getAddress()
     const user = accounts[1]
-    const dummyRollup = accounts[2]
+    // const dummyRollup = accounts[2]
     const rollupOwner = accounts[3]
     const batchPoster = accounts[4]
-    const batchPosterManager = accounts[5]
+    // const batchPosterManager = accounts[5]
 
     const rollupMockFac = (await ethers.getContractFactory(
       'RollupMock'
@@ -378,6 +376,51 @@ describe('SequencerInboxForceInclude', async () => {
 
     const [delayBlocks, , ,] = await sequencerInbox.maxTimeVariation()
     await mineBlocks(delayBlocks.toNumber())
+
+    await forceIncludeMessages(
+      sequencerInbox,
+      delayedTx.inboxAccountLength,
+      delayedTx.deliveredMessageEvent.kind,
+      delayedTx.l1BlockNumber,
+      delayedTx.l1BlockTimestamp,
+      delayedTx.baseFeeL1,
+      delayedTx.senderAddr,
+      delayedTx.deliveredMessageEvent.messageDataHash
+    )
+  })
+
+  it('can force-include-with-max-seqReportedCount', async () => {
+    const { user, inbox, bridge, messageTester, batchPoster, sequencerInbox } =
+      await setupSequencerInbox()
+
+    await sequencerInbox
+      .connect(batchPoster)
+      [
+        'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256)'
+      ](
+        0,
+        '0x',
+        0,
+        ethers.constants.AddressZero,
+        0,
+        ethers.constants.MaxUint256
+      )
+
+    const delayedTx = await sendDelayedTx(
+      user,
+      inbox,
+      bridge,
+      messageTester,
+      1000000,
+      21000000000,
+      0,
+      await user.getAddress(),
+      BigNumber.from(10),
+      '0x1010'
+    )
+    const maxTimeVariation = await sequencerInbox.maxTimeVariation()
+
+    await mineBlocks(maxTimeVariation[0].toNumber())
 
     await forceIncludeMessages(
       sequencerInbox,
@@ -576,7 +619,7 @@ describe('SequencerInboxForceInclude', async () => {
         ethers.constants.AddressZero,
         '0x'
       )
-    ).to.revertedWith('NotForked()')
+    ).to.revertedWith('NotForked')
   })
 
   it('should fail to call sendUnsignedTransactionToFork', async function () {
@@ -590,14 +633,14 @@ describe('SequencerInboxForceInclude', async () => {
         0,
         '0x'
       )
-    ).to.revertedWith('NotForked()')
+    ).to.revertedWith('NotForked')
   })
 
   it('should fail to call sendWithdrawEthToFork', async function () {
     const { inbox } = await setupSequencerInbox()
     await expect(
       inbox.sendWithdrawEthToFork(0, 0, 0, 0, ethers.constants.AddressZero)
-    ).to.revertedWith('NotForked()')
+    ).to.revertedWith('NotForked')
   })
 
   it('can upgrade Inbox', async () => {

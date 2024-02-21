@@ -10,7 +10,6 @@ import {
     BadPostUpgradeInit,
     NotOrigin,
     DataTooLarge,
-    NotRollup,
     DelayedBackwards,
     DelayedTooFar,
     ForceIncludeBlockTooSoon,
@@ -18,7 +17,6 @@ import {
     IncorrectMessagePreimage,
     NotBatchPoster,
     BadSequencerNumber,
-    DataNotAuthenticated,
     AlreadyValidDASKeyset,
     NoSuchKeyset,
     NotForked,
@@ -27,12 +25,10 @@ import {
     DataBlobsNotSupported,
     InitParamZero,
     MissingDataHashes,
-    InvalidBlobMetadata,
     NotOwner,
-    RollupNotChanged,
-    EmptyBatchData,
     InvalidHeaderFlag,
     NativeTokenMismatch,
+    BadMaxTimeVariation,
     Deprecated
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
@@ -52,11 +48,11 @@ import "../libraries/ArbitrumChecker.sol";
 import {IERC20Bridge} from "./IERC20Bridge.sol";
 
 /**
- * @title Accepts batches from the sequencer and adds them to the rollup inbox.
+ * @title  Accepts batches from the sequencer and adds them to the rollup inbox.
  * @notice Contains the inbox accumulator which is the ordering of all data and transactions to be processed by the rollup.
- * As part of submitting a batch the sequencer is also expected to include items enqueued
- * in the delayed inbox (Bridge.sol). If items in the delayed inbox are not included by a
- * sequencer within a time limit they can be force included into the rollup inbox by anyone.
+ *         As part of submitting a batch the sequencer is also expected to include items enqueued
+ *         in the delayed inbox (Bridge.sol). If items in the delayed inbox are not included by a
+ *         sequencer within a time limit they can be force included into the rollup inbox by anyone.
  */
 contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox {
     uint256 public totalDelayedMessagesRead;
@@ -92,7 +88,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     mapping(address => bool) public isBatchPoster;
 
     // we previously stored the max time variation in a (uint,uint,uint,uint) struct here
-    uint256[4] private __LEGACY_MAX_TIME_VARIATION;
+    // solhint-disable-next-line var-name-mixedcase
+    ISequencerInbox.MaxTimeVariation private __LEGACY_MAX_TIME_VARIATION;
 
     mapping(bytes32 => DasKeySetInfo) public dasKeySetInfo;
 
@@ -151,32 +148,32 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         // Assuming we would not upgrade from a version that have MaxTimeVariation all set to zero
         // If that is the case, postUpgradeInit do not need to be called
         if (
-            __LEGACY_MAX_TIME_VARIATION[0] == 0 &&
-            __LEGACY_MAX_TIME_VARIATION[1] == 0 &&
-            __LEGACY_MAX_TIME_VARIATION[2] == 0 &&
-            __LEGACY_MAX_TIME_VARIATION[3] == 0
+            __LEGACY_MAX_TIME_VARIATION.delayBlocks == 0 &&
+            __LEGACY_MAX_TIME_VARIATION.futureBlocks == 0 &&
+            __LEGACY_MAX_TIME_VARIATION.delaySeconds == 0 &&
+            __LEGACY_MAX_TIME_VARIATION.futureSeconds == 0
         ) {
             revert AlreadyInit();
         }
 
         if (
-            __LEGACY_MAX_TIME_VARIATION[0] > type(uint64).max ||
-            __LEGACY_MAX_TIME_VARIATION[1] > type(uint64).max ||
-            __LEGACY_MAX_TIME_VARIATION[2] > type(uint64).max ||
-            __LEGACY_MAX_TIME_VARIATION[3] > type(uint64).max
+            __LEGACY_MAX_TIME_VARIATION.delayBlocks > type(uint64).max ||
+            __LEGACY_MAX_TIME_VARIATION.futureBlocks > type(uint64).max ||
+            __LEGACY_MAX_TIME_VARIATION.delaySeconds > type(uint64).max ||
+            __LEGACY_MAX_TIME_VARIATION.futureSeconds > type(uint64).max
         ) {
             revert BadPostUpgradeInit();
         }
 
-        delayBlocks = uint64(__LEGACY_MAX_TIME_VARIATION[0]);
-        futureBlocks = uint64(__LEGACY_MAX_TIME_VARIATION[1]);
-        delaySeconds = uint64(__LEGACY_MAX_TIME_VARIATION[2]);
-        futureSeconds = uint64(__LEGACY_MAX_TIME_VARIATION[3]);
+        delayBlocks = uint64(__LEGACY_MAX_TIME_VARIATION.delayBlocks);
+        futureBlocks = uint64(__LEGACY_MAX_TIME_VARIATION.futureBlocks);
+        delaySeconds = uint64(__LEGACY_MAX_TIME_VARIATION.delaySeconds);
+        futureSeconds = uint64(__LEGACY_MAX_TIME_VARIATION.futureSeconds);
 
-        __LEGACY_MAX_TIME_VARIATION[0] = 0;
-        __LEGACY_MAX_TIME_VARIATION[1] = 0;
-        __LEGACY_MAX_TIME_VARIATION[2] = 0;
-        __LEGACY_MAX_TIME_VARIATION[3] = 0;
+        __LEGACY_MAX_TIME_VARIATION.delayBlocks = 0;
+        __LEGACY_MAX_TIME_VARIATION.futureBlocks = 0;
+        __LEGACY_MAX_TIME_VARIATION.delaySeconds = 0;
+        __LEGACY_MAX_TIME_VARIATION.futureSeconds = 0;
     }
 
     function initialize(
@@ -200,10 +197,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
         bridge = bridge_;
         rollup = bridge_.rollup();
-        delayBlocks = maxTimeVariation_.delayBlocks;
-        futureBlocks = maxTimeVariation_.futureBlocks;
-        delaySeconds = maxTimeVariation_.delaySeconds;
-        futureSeconds = maxTimeVariation_.futureSeconds;
+
+        _setMaxTimeVariation(maxTimeVariation_);
     }
 
     /// @notice Allows the rollup owner to sync the rollup address
@@ -323,9 +318,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         );
         uint256 __totalDelayedMessagesRead = _totalDelayedMessagesRead;
         uint256 prevSeqMsgCount = bridge.sequencerReportedSubMessageCount();
-        uint256 newSeqMsgCount = prevSeqMsgCount +
-            _totalDelayedMessagesRead -
-            totalDelayedMessagesRead;
+        uint256 newSeqMsgCount = prevSeqMsgCount; // force inclusion should not modify sequencer message count
         (
             uint256 seqMessageIndex,
             bytes32 beforeAcc,
@@ -608,8 +601,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         return (keccak256(bytes.concat(header, data)), timeBounds);
     }
 
-    /// @dev   Form a hash of the data being provided in 4844 data blobs
-    /// @param afterDelayedMessagesRead The delayed messages count read up to
+    /// @dev    Form a hash of the data being provided in 4844 data blobs
+    /// @param  afterDelayedMessagesRead The delayed messages count read up to
     /// @return The data hash
     /// @return The timebounds within which the message should be processed
     /// @return The normalized amount of gas used for blob posting
@@ -719,15 +712,29 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         return bridge.sequencerMessageCount();
     }
 
+    function _setMaxTimeVariation(ISequencerInbox.MaxTimeVariation memory maxTimeVariation_)
+        internal
+    {
+        if (
+            maxTimeVariation_.delayBlocks > type(uint64).max ||
+            maxTimeVariation_.futureBlocks > type(uint64).max ||
+            maxTimeVariation_.delaySeconds > type(uint64).max ||
+            maxTimeVariation_.futureSeconds > type(uint64).max
+        ) {
+            revert BadMaxTimeVariation();
+        }
+        delayBlocks = uint64(maxTimeVariation_.delayBlocks);
+        futureBlocks = uint64(maxTimeVariation_.futureBlocks);
+        delaySeconds = uint64(maxTimeVariation_.delaySeconds);
+        futureSeconds = uint64(maxTimeVariation_.futureSeconds);
+    }
+
     /// @inheritdoc ISequencerInbox
     function setMaxTimeVariation(ISequencerInbox.MaxTimeVariation memory maxTimeVariation_)
         external
         onlyRollupOwner
     {
-        delayBlocks = maxTimeVariation_.delayBlocks;
-        futureBlocks = maxTimeVariation_.futureBlocks;
-        delaySeconds = maxTimeVariation_.delaySeconds;
-        futureSeconds = maxTimeVariation_.futureSeconds;
+        _setMaxTimeVariation(maxTimeVariation_);
         emit OwnerFunctionCalled(0);
     }
 
