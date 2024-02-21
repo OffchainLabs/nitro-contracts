@@ -93,37 +93,45 @@ contract DeployScript is Script {
         SequencerInbox ethSeqInbox,
         SequencerInbox erc20SeqInbox
     ) internal {
-        string memory rootObj = "root";
-
         BridgeCreator bridgeCreator = RollupCreator(payable(rollupCreatorAddress)).bridgeCreator();
+        bytes memory updateTemplatesCalldata;
+        bytes memory updateErc20TemplatesCalldata;
 
-        (IBridge bridge,, IInboxBase inbox, IRollupEventInbox rollupEventInbox, IOutbox outbox) =
-            bridgeCreator.ethBasedTemplates();
-        bytes memory updateTemplatesCalldata = abi.encodeWithSelector(
-            BridgeCreator.updateTemplates.selector,
-            BridgeCreator.BridgeContracts(
-                bridge, ISequencerInbox(address(ethSeqInbox)), inbox, rollupEventInbox, outbox
-            )
-        );
+        {
+            // generate calldata for updating eth templates
+            (IBridge bridge,, IInboxBase inbox, IRollupEventInbox rollupEventInbox, IOutbox outbox)
+            = bridgeCreator.ethBasedTemplates();
+            updateTemplatesCalldata = abi.encodeWithSelector(
+                BridgeCreator.updateTemplates.selector,
+                BridgeCreator.BridgeContracts(
+                    bridge, ISequencerInbox(address(ethSeqInbox)), inbox, rollupEventInbox, outbox
+                )
+            );
 
-        (
-            IBridge erc20Bridge,
-            ,
-            IInboxBase erc20Inbox,
-            IRollupEventInbox erc20RollupEventInbox,
-            IOutbox erc20Outbox
-        ) = bridgeCreator.erc20BasedTemplates();
-        bytes memory updateErc20TemplatesCalldata = abi.encodeWithSelector(
-            BridgeCreator.updateERC20Templates.selector,
-            BridgeCreator.BridgeContracts(
-                erc20Bridge,
-                ISequencerInbox(address(erc20SeqInbox)),
-                erc20Inbox,
-                erc20RollupEventInbox,
-                erc20Outbox
-            )
-        );
+            // generate calldata for updating erc20 templates
+            (
+                IBridge erc20Bridge,
+                ,
+                IInboxBase erc20Inbox,
+                IRollupEventInbox erc20RollupEventInbox,
+                IOutbox erc20Outbox
+            ) = bridgeCreator.erc20BasedTemplates();
+            updateErc20TemplatesCalldata = abi.encodeWithSelector(
+                BridgeCreator.updateERC20Templates.selector,
+                BridgeCreator.BridgeContracts(
+                    erc20Bridge,
+                    ISequencerInbox(address(erc20SeqInbox)),
+                    erc20Inbox,
+                    erc20RollupEventInbox,
+                    erc20Outbox
+                )
+            );
+        }
 
+        // construct JSON and write to file
+        string memory rootObj = "root";
+        vm.serializeString(rootObj, "chainId", vm.toString(block.chainid));
+        vm.serializeString(rootObj, "to", vm.toString(address(bridgeCreator)));
         vm.serializeString(rootObj, "updateTemplatesCalldata", vm.toString(updateTemplatesCalldata));
         string memory finalJson = vm.serializeString(
             rootObj, "updateErc20TemplatesCalldata", vm.toString(updateErc20TemplatesCalldata)
