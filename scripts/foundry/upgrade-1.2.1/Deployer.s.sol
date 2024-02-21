@@ -61,6 +61,9 @@ contract DeployScript is Script {
         vm.stopBroadcast();
     }
 
+    /**
+     * @notice Update eth and erc20 templates in BridgeCreator
+     */
     function _updateTemplatesInBridgeCreator(
         address rollupCreatorAddress,
         SequencerInbox newEthSeqInbox,
@@ -105,6 +108,10 @@ contract DeployScript is Script {
         );
     }
 
+    /**
+     * @notice Generate calldata for updating eth and erc20 templates in BridgeCreator, then write
+     *         it to JSON file at ${root}/scripts/foundry/upgrade-1.2.1/output/${chainId}.json
+     */
     function _generateUpdateTemplatesCalldata(
         address rollupCreatorAddress,
         SequencerInbox ethSeqInbox,
@@ -166,6 +173,9 @@ contract DeployScript is Script {
         );
     }
 
+    /**
+     * @notice Read Reader4844 bytecode from JSON file at ${root}/out/yul/Reader4844.yul/Reader4844.json
+     */
     function _getReader4844Bytecode() internal returns (bytes memory) {
         string memory readerBytecodeFilePath =
             string(abi.encodePacked(vm.projectRoot(), "/out/yul/Reader4844.yul/Reader4844.json"));
@@ -173,6 +183,9 @@ contract DeployScript is Script {
         return vm.parseJsonBytes(json, ".bytecode.object");
     }
 
+    /**
+     * @notice Read deployment parameters from JSON config file at ${root}/scripts/foundry/upgrade-1.2.1/config/${chainId}.json
+     */
     function _getDeploymentConfigParams() internal returns (uint256, bool, address, bool) {
         // read deployment parameters from JSON config
         string memory configFilePath = string(
