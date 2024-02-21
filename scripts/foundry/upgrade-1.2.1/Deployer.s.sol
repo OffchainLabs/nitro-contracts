@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.9;
+pragma solidity ^0.8.0;
 
 import "forge-std/Script.sol";
 import {ISequencerInbox, SequencerInbox} from "../../../src/bridge/SequencerInbox.sol";
@@ -48,7 +48,9 @@ contract DeployScript is Script {
         // deploy new challenge manager templates
         new ChallengeManager();
 
-        _updateTemplatesInBridgeCreator(rollupCreator, ethSeqInbox, erc20SeqInbox);
+        // _updateTemplatesInBridgeCreator(rollupCreator, ethSeqInbox, erc20SeqInbox);
+
+        _generateUpdateTemplatesCalldata(rollupCreator, ethSeqInbox, erc20SeqInbox);
 
         vm.stopBroadcast();
     }
@@ -58,7 +60,7 @@ contract DeployScript is Script {
         SequencerInbox ethSeqInbox,
         SequencerInbox erc20SeqInbox
     ) internal {
-        // update templates in BridgeCreator
+        // update eth templates in BridgeCreator
         BridgeCreator bridgeCreator = RollupCreator(payable(rollupCreatorAddress)).bridgeCreator();
         (IBridge bridge,, IInboxBase inbox, IRollupEventInbox rollupEventInbox, IOutbox outbox) =
             bridgeCreator.ethBasedTemplates();
@@ -82,6 +84,40 @@ contract DeployScript is Script {
                 erc20Inbox,
                 erc20RollupEventInbox,
                 erc20Outbox
+            )
+        );
+    }
+
+    function _generateUpdateTemplatesCalldata(
+        address rollupCreatorAddress,
+        SequencerInbox ethSeqInbox,
+        SequencerInbox erc20SeqInbox
+    ) internal {
+        string memory jsonObject = "jsonObject";
+
+        BridgeCreator bridgeCreator = RollupCreator(payable(rollupCreatorAddress)).bridgeCreator();
+
+        (IBridge bridge,, IInboxBase inbox, IRollupEventInbox rollupEventInbox, IOutbox outbox) =
+            bridgeCreator.ethBasedTemplates();
+        bytes memory updateTemplatesCalldata = abi.encodeWithSelector(
+            BridgeCreator.updateTemplates.selector,
+            BridgeCreator.BridgeContracts(
+                bridge, ISequencerInbox(address(ethSeqInbox)), inbox, rollupEventInbox, outbox
+            )
+        );
+
+        string memory finalJson = vm.serializeString(
+            jsonObject, "updateTemplatesCalldata", vm.toString(updateTemplatesCalldata)
+        );
+        vm.writeJson(
+            finalJson,
+            string(
+                abi.encodePacked(
+                    vm.projectRoot(),
+                    "/scripts/foundry/upgrade-1.2.1/output/",
+                    vm.toString(block.chainid),
+                    ".json"
+                )
             )
         );
     }
