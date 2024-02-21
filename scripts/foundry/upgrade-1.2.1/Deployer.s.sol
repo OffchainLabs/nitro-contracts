@@ -13,6 +13,11 @@ import {ChallengeManager} from "../../../src/challenge/ChallengeManager.sol";
 import "../../../src/rollup/RollupCreator.sol";
 import {BridgeCreator} from "../../../src/rollup/BridgeCreator.sol";
 
+/**
+ * @title DeployScript
+ * @notice This script will deploy blob reader (if supported), SequencerInbox, OSP and ChallengeManager templates,
+ *          and finally update templates in BridgeCreator, or generate calldata for gnosis safe
+ */
 contract DeployScript is Script {
     function run() public {
         // read deployment parameters from JSON config
