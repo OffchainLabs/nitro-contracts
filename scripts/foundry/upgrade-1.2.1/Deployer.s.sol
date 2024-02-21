@@ -93,7 +93,7 @@ contract DeployScript is Script {
         SequencerInbox ethSeqInbox,
         SequencerInbox erc20SeqInbox
     ) internal {
-        string memory jsonObject = "jsonObject";
+        string memory rootObj = "root";
 
         BridgeCreator bridgeCreator = RollupCreator(payable(rollupCreatorAddress)).bridgeCreator();
 
@@ -106,8 +106,27 @@ contract DeployScript is Script {
             )
         );
 
+        (
+            IBridge erc20Bridge,
+            ,
+            IInboxBase erc20Inbox,
+            IRollupEventInbox erc20RollupEventInbox,
+            IOutbox erc20Outbox
+        ) = bridgeCreator.erc20BasedTemplates();
+        bytes memory updateErc20TemplatesCalldata = abi.encodeWithSelector(
+            BridgeCreator.updateERC20Templates.selector,
+            BridgeCreator.BridgeContracts(
+                erc20Bridge,
+                ISequencerInbox(address(erc20SeqInbox)),
+                erc20Inbox,
+                erc20RollupEventInbox,
+                erc20Outbox
+            )
+        );
+
+        vm.serializeString(rootObj, "updateTemplatesCalldata", vm.toString(updateTemplatesCalldata));
         string memory finalJson = vm.serializeString(
-            jsonObject, "updateTemplatesCalldata", vm.toString(updateTemplatesCalldata)
+            rootObj, "updateErc20TemplatesCalldata", vm.toString(updateErc20TemplatesCalldata)
         );
         vm.writeJson(
             finalJson,
