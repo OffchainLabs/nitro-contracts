@@ -16,8 +16,12 @@ import {BridgeCreator} from "../../../src/rollup/BridgeCreator.sol";
 contract DeployScript is Script {
     function run() public {
         // read deployment parameters from JSON config
-        (uint256 maxDataSize, bool hostChainIsArbitrum, address rollupCreator) =
-            _getDeploymentConfigParams();
+        (
+            uint256 maxDataSize,
+            bool hostChainIsArbitrum,
+            address rollupCreator,
+            bool creatorOwnerIsMultisig
+        ) = _getDeploymentConfigParams();
 
         vm.startBroadcast();
 
@@ -48,22 +52,32 @@ contract DeployScript is Script {
         // deploy new challenge manager templates
         new ChallengeManager();
 
-        // _updateTemplatesInBridgeCreator(rollupCreator, ethSeqInbox, erc20SeqInbox);
-
-        _generateUpdateTemplatesCalldata(rollupCreator, ethSeqInbox, erc20SeqInbox);
+        if (creatorOwnerIsMultisig) {
+            _generateUpdateTemplatesCalldata(rollupCreator, ethSeqInbox, erc20SeqInbox);
+        } else {
+            _updateTemplatesInBridgeCreator(rollupCreator, ethSeqInbox, erc20SeqInbox);
+        }
 
         vm.stopBroadcast();
     }
 
     function _updateTemplatesInBridgeCreator(
         address rollupCreatorAddress,
-        SequencerInbox ethSeqInbox,
-        SequencerInbox erc20SeqInbox
+        SequencerInbox newEthSeqInbox,
+        SequencerInbox newErc20SeqInbox
     ) internal {
-        // update eth templates in BridgeCreator
         BridgeCreator bridgeCreator = RollupCreator(payable(rollupCreatorAddress)).bridgeCreator();
+
+        // update eth templates in BridgeCreator
         (IBridge bridge,, IInboxBase inbox, IRollupEventInbox rollupEventInbox, IOutbox outbox) =
             bridgeCreator.ethBasedTemplates();
+        bridgeCreator.updateTemplates(
+            BridgeCreator.BridgeContracts(
+                bridge, ISequencerInbox(address(newEthSeqInbox)), inbox, rollupEventInbox, outbox
+            )
+        );
+
+        // update erc20 templates in BridgeCreator
         (
             IBridge erc20Bridge,
             ,
@@ -71,20 +85,23 @@ contract DeployScript is Script {
             IRollupEventInbox erc20RollupEventInbox,
             IOutbox erc20Outbox
         ) = bridgeCreator.erc20BasedTemplates();
-
-        bridgeCreator.updateTemplates(
-            BridgeCreator.BridgeContracts(
-                bridge, ISequencerInbox(address(ethSeqInbox)), inbox, rollupEventInbox, outbox
-            )
-        );
         bridgeCreator.updateERC20Templates(
             BridgeCreator.BridgeContracts(
                 erc20Bridge,
-                ISequencerInbox(address(erc20SeqInbox)),
+                ISequencerInbox(address(newErc20SeqInbox)),
                 erc20Inbox,
                 erc20RollupEventInbox,
                 erc20Outbox
             )
+        );
+
+        // verify
+        (, ISequencerInbox _ethSeqInbox,,,) = bridgeCreator.ethBasedTemplates();
+        (, ISequencerInbox _erc20SeqInbox,,,) = bridgeCreator.erc20BasedTemplates();
+        require(
+            address(_ethSeqInbox) == address(newEthSeqInbox)
+                && address(_erc20SeqInbox) == address(newErc20SeqInbox),
+            "Templates not updated"
         );
     }
 
@@ -156,7 +173,7 @@ contract DeployScript is Script {
         return vm.parseJsonBytes(json, ".bytecode.object");
     }
 
-    function _getDeploymentConfigParams() internal returns (uint256, bool, address) {
+    function _getDeploymentConfigParams() internal returns (uint256, bool, address, bool) {
         // read deployment parameters from JSON config
         string memory configFilePath = string(
             abi.encodePacked(
@@ -172,6 +189,7 @@ contract DeployScript is Script {
         uint256 maxDataSize = vm.parseJsonUint(json, ".maxDataSize");
         bool hostChainIsArbitrum = vm.parseJsonBool(json, ".hostChainIsArbitrum");
         address rollupCreator = vm.parseJsonAddress(json, ".rollupCreator");
+        bool creatorOwnerIsMultisig = vm.parseJsonBool(json, ".creatorOwnerIsMultisig");
 
         // sanity check
         require(
@@ -183,6 +201,6 @@ contract DeployScript is Script {
             "Invalid rollupCreator in config file"
         );
 
-        return (maxDataSize, hostChainIsArbitrum, rollupCreator);
+        return (maxDataSize, hostChainIsArbitrum, rollupCreator, creatorOwnerIsMultisig);
     }
 }
