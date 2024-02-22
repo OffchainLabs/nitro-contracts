@@ -3,5 +3,6 @@
   "exclude_informational": true,
   "exclude_low": true,
   "exclude_optimization": true,
-  "fail_on": "none"
+  "fail_on": "none",
+  "filter_paths": "src/test-helpers/.*|src/mocks/.*|node_modules/.*"
 }
