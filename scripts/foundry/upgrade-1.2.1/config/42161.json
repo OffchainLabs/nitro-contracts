@@ -1,0 +1,6 @@
+{
+  "maxDataSize": 104857,
+  "hostChainIsArbitrum": true,
+  "rollupCreator": "0x9CAd81628aB7D8e239F1A5B497313341578c5F71",
+  "creatorOwnerIsMultisig": true
+}
