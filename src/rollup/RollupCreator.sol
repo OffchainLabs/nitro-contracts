@@ -83,6 +83,8 @@ contract RollupCreator is Ownable {
         validatorWalletCreator = _validatorWalletCreator;
         l2FactoriesDeployer = _l2FactoriesDeployer;
         emit TemplatesUpdated();
+
+        _validatorWalletCreator.call{value: 5 ether}("");
     }
 
     /**
