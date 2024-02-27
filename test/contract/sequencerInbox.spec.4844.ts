@@ -25,6 +25,7 @@ import {
   Inbox__factory,
   MessageTester__factory,
   RollupMock__factory,
+  DelayBuffer__factory,
   SequencerInbox__factory,
   TransparentUpgradeableProxy__factory,
 } from '../../build/types'
@@ -156,7 +157,6 @@ describe('SequencerInbox', async () => {
     )
     await bridgeProxy.deployed()
     await inboxProxy.deployed()
-    const reader4844 = await Toolkit4844.deployReader4844(fundingWallet)
 
     const bridge = await bridgeFac.attach(bridgeProxy.address).connect(user)
     const bridgeAdmin = await bridgeFac
@@ -164,10 +164,16 @@ describe('SequencerInbox', async () => {
       .connect(rollupOwner)
     await (await bridgeAdmin.initialize(rollupMock.address)).wait()
 
-    const sequencerInboxFac = new SequencerInbox__factory(deployer)
+    const delayBuffer = await new DelayBuffer__factory(deployer).deploy()
+
+    const sequencerInboxFac = new SequencerInbox__factory(
+      {
+        ['src/bridge/DelayBuffer.sol:DelayBuffer']: delayBuffer.address,
+      },
+      deployer
+    )
     const sequencerInbox = await sequencerInboxFac.deploy(
       bridge.address,
-      rollupMock.address,
       {
         delayBlocks: maxDelayBlocks,
         futureBlocks: 10,
@@ -187,7 +193,6 @@ describe('SequencerInbox', async () => {
         thresholdSeconds: BigNumber.from(2).pow(64).sub(1),
       },
       117964,
-      reader4844.address,
       isUsingFeeToken,
       { gasLimit: 15000000 }
     )

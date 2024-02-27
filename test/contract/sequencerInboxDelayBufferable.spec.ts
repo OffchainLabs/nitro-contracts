@@ -92,7 +92,7 @@ describe('SequencerInboxForceInclude', async () => {
       await setupOpt.sequencerInbox
         .connect(setupOpt.batchPoster)
         [
-          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256,bool,bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32))'
+          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256,bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32))'
         ](
           0,
           data,
@@ -100,7 +100,6 @@ describe('SequencerInboxForceInclude', async () => {
           ethers.constants.AddressZero,
           seqReportedMessageSubCountOpt,
           seqReportedMessageSubCountOpt.add(10),
-          true,
           beforeDelayedAcc,
           {
             kind: 3,
@@ -186,7 +185,7 @@ describe('SequencerInboxForceInclude', async () => {
       await setupOpt.sequencerInbox
         .connect(setupOpt.batchPoster)
         .functions[
-          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256,bool,bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32))'
+          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256,bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32))'
         ](
           1,
           data,
@@ -194,7 +193,6 @@ describe('SequencerInboxForceInclude', async () => {
           ethers.constants.AddressZero,
           seqReportedMessageSubCountOpt2,
           seqReportedMessageSubCountOpt2.add(10),
-          true,
           delayedMsgLastRead!.delayedAcc,
           {
             kind: delayedMsgLastRead!.delayedMessage.header.kind,
@@ -237,7 +235,7 @@ describe('SequencerInboxForceInclude', async () => {
       await setupOpt.sequencerInbox
         .connect(setupOpt.batchPoster)
         .functions[
-          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256,bool,bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32),(bytes32,bytes32,bytes32))'
+          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256,bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32),(bytes32,bytes32,bytes32))'
         ](
           3,
           data,
@@ -245,7 +243,6 @@ describe('SequencerInboxForceInclude', async () => {
           ethers.constants.AddressZero,
           seqReportedMessageSubCountOpt2.add(20),
           seqReportedMessageSubCountOpt2.add(30),
-          true,
           lastRead!.delayedAcc,
           {
             kind: lastRead!.delayedMessage.header.kind,

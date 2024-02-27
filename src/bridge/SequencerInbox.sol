@@ -2,7 +2,7 @@
 // For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.24;
 
 import {
     AlreadyInit,
@@ -46,18 +46,18 @@ import "./IBridge.sol";
 import "./IInboxBase.sol";
 import "./ISequencerInbox.sol";
 import "../rollup/IRollupLogic.sol";
-import "./Messages.sol";
 import "../precompiles/ArbGasInfo.sol";
 import "../precompiles/ArbSys.sol";
-import "../libraries/IReader4844.sol";
-import "./DelayBufferable.sol";
+import "./DelayBuffer.sol";
 
 import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
 import "../libraries/DelegateCallAware.sol";
 import {IGasRefunder} from "../libraries/IGasRefunder.sol";
 import {GasRefundEnabled} from "../libraries/GasRefundEnabled.sol";
+import {BlobDataHashReader} from "../libraries/BlobDataHashReader.sol";
 import "../libraries/ArbitrumChecker.sol";
 import {IERC20Bridge} from "./IERC20Bridge.sol";
+import "./DelayBufferable.sol";
 
 /**
  * @title Accepts batches from the sequencer and adds them to the rollup inbox.
@@ -112,10 +112,12 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
     }
 
     mapping(address => bool) public isSequencer;
-    IReader4844 public immutable reader4844;
 
     /// @inheritdoc ISequencerInbox
     address public batchPosterManager;
+
+    bool public immutable isDelayBufferable;
+    uint256 internal immutable deployTimeChainId = block.chainid;
 
     // On L1 this should be set to 117964: 90% of Geth's 128KB tx size limit, leaving ~13KB for proving
     uint256 public immutable maxDataSize;
@@ -126,37 +128,48 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
 
     constructor(
         IBridge bridge_,
-        IOwnable rollup_,
         ISequencerInbox.MaxTimeVariation memory maxTimeVariation_,
         IDelayBufferable.ReplenishRate memory replenishRate_,
-        IDelayBufferable.DelayConfig memory delayConfig_,
+        IDelayBufferable.Config memory config_,
         uint256 _maxDataSize,
-        IReader4844 reader4844_,
         bool _isUsingFeeToken
-    ) DelayBufferable(maxTimeVariation_, replenishRate_, delayConfig_) {
+    ) DelayBufferable(maxTimeVariation_, replenishRate_, config_) {
         if (bridge_ == IBridge(address(0))) revert HadZeroInit();
         bridge = bridge_;
-        rollup = rollup_;
-        if (address(rollup) == address(0)) revert RollupNotChanged();
+        rollup = bridge_.rollup();
         maxDataSize = _maxDataSize;
-        if (hostChainIsArbitrum) {
-            if (reader4844_ != IReader4844(address(0))) revert DataBlobsNotSupported();
-        } else {
-            if (reader4844_ == IReader4844(address(0))) revert InitParamZero("Reader4844");
-        }
-        reader4844 = reader4844_;
         isUsingFeeToken = _isUsingFeeToken;
-        if (isDelayBufferable) {
-            // if bridge is a new deployment (no delayed messages yet)
-            // we can init the sequencer inbox in a synced state
-            uint256 delayedMessageCount;
-            try bridge.totalDelayedMessagesRead() returns (uint256 delayedMessageCount_) {
-                delayedMessageCount = delayedMessageCount_;
-            } catch {}
-            if (delayedMessageCount == 0) {
-                updateSyncValidity(false, uint64(block.number), uint64(block.timestamp));
-            }
+        isDelayBufferable =
+            config_.thresholdBlocks != type(uint64).max ||
+            config_.thresholdSeconds != type(uint64).max;
+        if (
+            isDelayBufferable && bridge.delayedMessageCount() == bridge.totalDelayedMessagesRead()
+        ) {
+            // if the delayed message count is equal to the total delayed messages
+            // then the sequencer inbox is in sync and the sync validity window
+            // can be set to the current block and timestamp
+            updateSyncValidity(uint64(block.number), uint64(block.timestamp));
         }
+    }
+
+    function maxTimeVariationInternal() internal view returns (uint64, uint64, uint64, uint64) {
+        if (_chainIdChanged()) {
+            return (1, 1, 1, 1);
+        } else if (!isDelayBufferable) {
+            return (delayBlocks, futureBlocks, delaySeconds, futureSeconds);
+        } else if (isFullBufferCached()) {
+            return maxTimeVariationBufferable(maxBufferBlocks, maxBufferSeconds);
+        } else {
+            return
+                maxTimeVariationBufferable(
+                    delayBufferData.bufferBlocks,
+                    delayBufferData.bufferSeconds
+                );
+        }
+    }
+
+    function _chainIdChanged() internal view returns (bool) {
+        return deployTimeChainId != block.chainid;
     }
 
     /// @inheritdoc ISequencerInbox
@@ -192,16 +205,7 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
         return bounds;
     }
 
-    function maxTimeVariation()
-        external
-        view
-        returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        )
-    {
+    function maxTimeVariation() external view returns (uint256, uint256, uint256, uint256) {
         (
             uint64 delayBlocks_,
             uint64 futureBlocks_,
@@ -285,12 +289,12 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    ) external refundsGas(gasRefunder, IReader4844(address(0))) {
+    ) external refundsGas(gasRefunder, false) {
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
         if (!isBatchPoster(msg.sender)) revert NotBatchPoster();
         if (isDelayBufferable && !isSynced()) {
-            if (afterDelayedMessagesRead != bridge.totalDelayedMessagesRead()) {
+            if (afterDelayedMessagesRead > bridge.totalDelayedMessagesRead()) {
                 revert DelayProofRequired();
             }
             // if no new delayed messages are read, no buffer updates can be applied
@@ -329,10 +333,10 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    ) external refundsGas(gasRefunder, reader4844) {
+    ) external refundsGas(gasRefunder, true) {
         if (!isBatchPoster(msg.sender)) revert NotBatchPoster();
         if (isDelayBufferable && !isSynced()) {
-            if (afterDelayedMessagesRead != bridge.totalDelayedMessagesRead()) {
+            if (afterDelayedMessagesRead > bridge.totalDelayedMessagesRead()) {
                 revert DelayProofRequired();
             }
             // if no new delayed messages are read, no buffer updates can be applied
@@ -346,17 +350,16 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
         );
     }
 
-    /// @inheritdoc IDelayBufferable
+    /// @inheritdoc ISequencerInbox
     function addSequencerL2BatchFromBlobs(
         uint256 sequenceNumber,
         uint256 afterDelayedMessagesRead,
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount,
-        bool isCachingRequested,
         bytes32 beforeDelayedAcc,
         Messages.Message calldata delayedMessage
-    ) external refundsGas(gasRefunder, reader4844) {
+    ) external refundsGas(gasRefunder, true) {
         if (!isBatchPoster(msg.sender)) revert NotBatchPoster();
         if (!isDelayBufferable) revert NotDelayBufferable();
 
@@ -366,20 +369,7 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
 
         // validate the delayed message against the delayed accumulator
         bytes32 delayedAcc = bridge.delayedInboxAccs(_totalDelayedMessagesRead);
-        if (!Messages.isValidDelayedAccPreimage(delayedAcc, beforeDelayedAcc, delayedMessage)) {
-            revert InvalidDelayProof();
-        }
-
-        if (isSynced(delayedMessage.blockNumber, delayedMessage.timestamp)) {
-            updateSyncValidity(
-                isCachingRequested,
-                delayedMessage.blockNumber,
-                delayedMessage.timestamp
-            );
-        }
-
-        // use the delayed message to update the buffer state
-        updateBuffers(delayedMessage.blockNumber, delayedMessage.timestamp);
+        sync(delayedAcc, beforeDelayedAcc, delayedMessage);
 
         addSequencerL2BatchFromBlobsImpl(
             sequenceNumber,
@@ -389,7 +379,7 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
         );
     }
 
-    /// @inheritdoc IDelayBufferable
+    /// @inheritdoc ISequencerInbox
     function addSequencerL2BatchFromOrigin(
         uint256 sequenceNumber,
         bytes calldata data,
@@ -397,10 +387,9 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount,
-        bool isCachingRequested,
         bytes32 beforeDelayedAcc,
         Messages.Message calldata delayedMessage
-    ) external refundsGas(gasRefunder, reader4844) {
+    ) external refundsGas(gasRefunder, true) {
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
         if (!isBatchPoster(msg.sender)) revert NotBatchPoster();
@@ -412,20 +401,7 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
 
         // validate the delayed message against the delayed accumulator
         bytes32 delayedAcc = bridge.delayedInboxAccs(_totalDelayedMessagesRead);
-        if (!Messages.isValidDelayedAccPreimage(delayedAcc, beforeDelayedAcc, delayedMessage)) {
-            revert InvalidDelayProof();
-        }
-
-        if (isSynced(delayedMessage.blockNumber, delayedMessage.timestamp)) {
-            updateSyncValidity(
-                isCachingRequested,
-                delayedMessage.blockNumber,
-                delayedMessage.timestamp
-            );
-        }
-
-        // use the delayed message to update the buffer state
-        updateBuffers(delayedMessage.blockNumber, delayedMessage.timestamp);
+        sync(delayedAcc, beforeDelayedAcc, delayedMessage);
 
         addSequencerL2BatchFromOriginImpl(
             sequenceNumber,
@@ -436,18 +412,17 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
         );
     }
 
-    /// @inheritdoc IDelayBufferable
+    /// @inheritdoc ISequencerInbox
     function addSequencerL2BatchFromBlobs(
         uint256 sequenceNumber,
         uint256 afterDelayedMessagesRead,
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount,
-        bool isCachingRequested,
         bytes32 beforeDelayedAcc,
         Messages.Message calldata delayedMessage,
         Messages.InboxAccPreimage calldata preimage
-    ) external refundsGas(gasRefunder, reader4844) {
+    ) external refundsGas(gasRefunder, true) {
         if (!isBatchPoster(msg.sender)) revert NotBatchPoster();
         if (!isDelayBufferable) revert NotDelayBufferable();
         bytes32 beforeAcc = addSequencerL2BatchFromBlobsImpl(
@@ -457,24 +432,10 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
             newMessageCount
         );
 
-        // validates the delayed message against the inbox accumulator
-        // and proves the delayed message is synced within the delay threshold
-        // this is a sufficient condition to prove that any delayed messages sequenced
-        // in the current batch are also synced within the delay threshold
-        if (!isValidSyncProof(beforeDelayedAcc, delayedMessage, beforeAcc, preimage)) {
-            revert InvalidSyncProof();
-        }
-
-        // calculate the margin of the delay message below the delay threshold
-        // no sync / delay proofs are required in this margin `sync validity` period.
-        updateSyncValidity(
-            isCachingRequested,
-            delayedMessage.blockNumber,
-            delayedMessage.timestamp
-        );
+        resync(beforeDelayedAcc, delayedMessage, beforeAcc, preimage);
     }
 
-    /// @inheritdoc IDelayBufferable
+    /// @inheritdoc ISequencerInbox
     function addSequencerL2BatchFromOrigin(
         uint256 sequenceNumber,
         bytes calldata data,
@@ -482,11 +443,10 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount,
-        bool isCachingRequested,
         bytes32 beforeDelayedAcc,
         Messages.Message calldata delayedMessage,
         Messages.InboxAccPreimage calldata preimage
-    ) external refundsGas(gasRefunder, reader4844) {
+    ) external refundsGas(gasRefunder, true) {
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
         if (!isBatchPoster(msg.sender)) revert NotBatchPoster();
@@ -499,21 +459,7 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
             newMessageCount
         );
 
-        // validates the delayed message against the inbox accumulator
-        // and proves the delayed message is synced within the delay threshold
-        // this is a sufficient condition to prove that any delayed messages sequenced
-        // in the current batch are also synced within the delay threshold
-        if (!isValidSyncProof(beforeDelayedAcc, delayedMessage, beforeAcc, preimage)) {
-            revert InvalidSyncProof();
-        }
-
-        // calculate the margin of the delay message below the delay threshold
-        // no sync / delay proofs are required in this margin `sync validity` period.
-        updateSyncValidity(
-            isCachingRequested,
-            delayedMessage.blockNumber,
-            delayedMessage.timestamp
-        );
+        resync(beforeDelayedAcc, delayedMessage, beforeAcc, preimage);
     }
 
     function addSequencerL2BatchFromBlobsImpl(
@@ -599,7 +545,7 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    ) external override refundsGas(gasRefunder, IReader4844(address(0))) {
+    ) external override refundsGas(gasRefunder, false) {
         if (!isBatchPoster(msg.sender) && msg.sender != address(rollup)) revert NotBatchPoster();
         if (isDelayBufferable && !isSynced()) {
             if (afterDelayedMessagesRead != bridge.totalDelayedMessagesRead()) {
@@ -630,11 +576,9 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
         emit SequencerBatchData(sequenceNumber, data);
     }
 
-    function packHeader(uint256 afterDelayedMessagesRead)
-        internal
-        view
-        returns (bytes memory, IBridge.TimeBounds memory)
-    {
+    function packHeader(
+        uint256 afterDelayedMessagesRead
+    ) internal view returns (bytes memory, IBridge.TimeBounds memory) {
         IBridge.TimeBounds memory timeBounds = getTimeBounds();
         bytes memory header = abi.encodePacked(
             timeBounds.minTimestamp,
@@ -652,11 +596,9 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
     /// @param  afterDelayedMessagesRead The delayed messages count read up to
     /// @return The data hash
     /// @return The timebounds within which the message should be processed
-    function formEmptyDataHash(uint256 afterDelayedMessagesRead)
-        internal
-        view
-        returns (bytes32, IBridge.TimeBounds memory)
-    {
+    function formEmptyDataHash(
+        uint256 afterDelayedMessagesRead
+    ) internal view returns (bytes32, IBridge.TimeBounds memory) {
         (bytes memory header, IBridge.TimeBounds memory timeBounds) = packHeader(
             afterDelayedMessagesRead
         );
@@ -681,11 +623,10 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
     /// @param  afterDelayedMessagesRead The delayed messages count read up to
     /// @return The data hash
     /// @return The timebounds within which the message should be processed
-    function formCallDataHash(bytes calldata data, uint256 afterDelayedMessagesRead)
-        internal
-        view
-        returns (bytes32, IBridge.TimeBounds memory)
-    {
+    function formCallDataHash(
+        bytes calldata data,
+        uint256 afterDelayedMessagesRead
+    ) internal view returns (bytes32, IBridge.TimeBounds memory) {
         uint256 fullDataLen = HEADER_LENGTH + data.length;
         if (fullDataLen > maxDataSize) revert DataTooLarge(fullDataLen, maxDataSize);
 
@@ -718,23 +659,17 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
     /// @return The data hash
     /// @return The timebounds within which the message should be processed
     /// @return The normalized amount of gas used for blob posting
-    function formBlobDataHash(uint256 afterDelayedMessagesRead)
-        internal
-        view
-        returns (
-            bytes32,
-            IBridge.TimeBounds memory,
-            uint256
-        )
-    {
-        bytes32[] memory dataHashes = reader4844.getDataHashes();
+    function formBlobDataHash(
+        uint256 afterDelayedMessagesRead
+    ) internal view returns (bytes32, IBridge.TimeBounds memory, uint256) {
+        bytes32[] memory dataHashes = BlobDataHashReader.getDataHashes();
         if (dataHashes.length == 0) revert MissingDataHashes();
 
         (bytes memory header, IBridge.TimeBounds memory timeBounds) = packHeader(
             afterDelayedMessagesRead
         );
 
-        uint256 blobCost = reader4844.getBlobBaseFee() * GAS_PER_BLOB * dataHashes.length;
+        uint256 blobCost = block.blobbasefee * GAS_PER_BLOB * dataHashes.length;
         return (
             keccak256(bytes.concat(header, DATA_BLOB_HEADER_FLAG, abi.encodePacked(dataHashes))),
             timeBounds,
@@ -792,10 +727,10 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
     }
 
     /// @inheritdoc ISequencerInbox
-    function setIsBatchPoster(address addr, bool isBatchPoster_)
-        public
-        onlyRollupOwnerOrBatchPosterManager
-    {
+    function setIsBatchPoster(
+        address addr,
+        bool isBatchPoster_
+    ) public onlyRollupOwnerOrBatchPosterManager {
         batchPosterData[addr].isBatchPoster = isBatchPoster_;
         // we used to have OwnerFunctionCalled(0) for setting the maxTimeVariation
         // so we dont use index = 0 here, even though this is the first owner function
@@ -834,10 +769,10 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
     }
 
     /// @inheritdoc ISequencerInbox
-    function setIsSequencer(address addr, bool isSequencer_)
-        external
-        onlyRollupOwnerOrBatchPosterManager
-    {
+    function setIsSequencer(
+        address addr,
+        bool isSequencer_
+    ) external onlyRollupOwnerOrBatchPosterManager {
         isSequencer[addr] = isSequencer_;
         emit OwnerFunctionCalled(4); // Owner in this context can also be batch poster manager
     }
@@ -864,7 +799,7 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
     }
 
     /// @notice Returns cached full buffer & synced happy indicator
-    function cachedFullBufferExpiry() internal view override returns (uint64, uint64) {
+    function cachedFullBufferSyncExpiry() internal view override returns (uint64, uint64) {
         return (
             batchPosterData[msg.sender].cachedBlockNumber,
             batchPosterData[msg.sender].cachedTimestamp
@@ -872,10 +807,10 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
     }
 
     /// @notice Packs full buffer & synced happy indicator with batchPoster authentication
-    function cacheFullBufferExpiry(uint64 expiryBlockNumber, uint64 expiryTimestamp)
-        internal
-        override
-    {
+    function cacheFullBufferSyncExpiry(
+        uint64 expiryBlockNumber,
+        uint64 expiryTimestamp
+    ) internal override {
         batchPosterData[msg.sender].cachedBlockNumber = expiryBlockNumber;
         batchPosterData[msg.sender].cachedTimestamp = expiryTimestamp;
     }

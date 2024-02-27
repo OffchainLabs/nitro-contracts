@@ -11,23 +11,19 @@ import {INITIALIZATION_MSG_TYPE} from "../libraries/MessageTypes.sol";
 contract SequencerInboxStub is SequencerInbox {
     constructor(
         IBridge bridge_,
-        IOwnable rollup_,
         address sequencer_,
         ISequencerInbox.MaxTimeVariation memory maxTimeVariation_,
-        ReplenishRate memory replenishRate_,
-        DelayConfig memory delayConfig_,
+        IDelayBufferable.ReplenishRate memory replenishRate_,
+        IDelayBufferable.Config memory delayBuffer_,
         uint256 maxDataSize_,
-        IReader4844 reader4844_,
         bool isUsingFeeToken_
     )
         SequencerInbox(
             bridge_,
-            rollup_,
             maxTimeVariation_,
             replenishRate_,
-            delayConfig_,
+            delayBuffer_,
             maxDataSize_,
-            reader4844_,
             isUsingFeeToken_
         )
     {

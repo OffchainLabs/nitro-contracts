@@ -29,6 +29,7 @@ import {
   RollupMock__factory,
   SequencerInbox,
   SequencerInbox__factory,
+  DelayBuffer__factory,
   TransparentUpgradeableProxy__factory,
 } from '../../build/types'
 import { applyAlias, initializeAccounts } from './utils'
@@ -364,19 +365,24 @@ export const setupSequencerInbox = async (
     .connect(rollupOwner)
   await bridge.initialize(rollup.address)
 
-  const reader4844 = await Toolkit4844.deployReader4844(admin)
+  const delayBufferFac = (await ethers.getContractFactory(
+    'DelayBuffer'
+  )) as DelayBuffer__factory
 
-  const sequencerInboxFac = (await ethers.getContractFactory(
-    'SequencerInbox'
-  )) as SequencerInbox__factory
+  const delayBuffer = await delayBufferFac.deploy()
+
+  const sequencerInboxFac = (await ethers.getContractFactory('SequencerInbox', {
+    libraries: {
+      DelayBuffer: delayBuffer.address,
+    },
+  })) as SequencerInbox__factory
+
   const sequencerInbox = await sequencerInboxFac.deploy(
     bridgeProxy.address,
-    rollup.address,
     max,
     rate,
     isDelayBufferable ? config : configNotDelayBufferable,
     117964,
-    reader4844.address,
     false
   )
 

@@ -13,89 +13,41 @@ import "../bridge/DelayBufferable.sol";
  *          depleting by as many seconds / blocks has elapsed in the delayed message queue.
  */
 contract SimpleDelayBufferable is DelayBufferable {
-    uint64 internal fullBufferExpiryBlockNumber;
-    uint64 internal fullBufferExpiryTimestamp;
-
     constructor(
         ISequencerInbox.MaxTimeVariation memory maxTimeVariation_,
         ReplenishRate memory replenishRate_,
-        DelayConfig memory delayConfig_
-    ) DelayBufferable(maxTimeVariation_, replenishRate_, delayConfig_) {}
+        Config memory config_
+    ) DelayBufferable(maxTimeVariation_, replenishRate_, config_) {}
+
+    uint64 fullBufferSyncExpiryBlock;
+    uint64 fullBufferSyncExpirySeconds;
 
     /// @dev Inheriting contracts must implement this function to cache the full buffer expiry state.
-    function cachedFullBufferExpiry() internal view override returns (uint64, uint64) {
-        return (fullBufferExpiryBlockNumber, fullBufferExpiryTimestamp);
+    function cachedFullBufferSyncExpiry() internal view override returns (uint64, uint64){
+        return (fullBufferSyncExpiryBlock, fullBufferSyncExpirySeconds);
     }
 
     /// @dev Inheriting contracts must implement this function to fetch the cached full buffer expiry state.
-    function cacheFullBufferExpiry(uint64 blockNumber, uint64 timestamp) internal override {
-        fullBufferExpiryBlockNumber = blockNumber;
-        fullBufferExpiryTimestamp = timestamp;
+    function cacheFullBufferSyncExpiry(uint64 _block, uint64 _time) internal override {
+        fullBufferSyncExpiryBlock = _block;
+        fullBufferSyncExpirySeconds = _time;
     }
 
     /// @dev Inheriting contracts must implement this function to cache the full buffer expiry state.
-    function cachedFullBufferExpiry_() external view returns (uint64, uint64) {
-        return (fullBufferExpiryBlockNumber, fullBufferExpiryTimestamp);
+    function cachedFullBufferSyncExpiry_() external view returns (uint64, uint64){
+        return cachedFullBufferSyncExpiry();
     }
 
-    /// @inheritdoc IDelayBufferable
-    function addSequencerL2BatchFromBlobs(
-        uint256 sequenceNumber,
-        uint256 afterDelayedMessagesRead,
-        IGasRefunder gasRefunder,
-        uint256 prevMessageCount,
-        uint256 newMessageCount,
-        bool isCachingRequested,
-        bytes32 beforeDelayedAcc,
-        Messages.Message calldata delayedMessage
-    ) external {
-        // no-op
+    /// @dev Inheriting contracts must implement this function to fetch the cached full buffer expiry state.
+    function cacheFullBufferSyncExpiry_(uint64 _block, uint64 _time) external {
+        cacheFullBufferSyncExpiry(_block, _time);
     }
 
-    /// @inheritdoc IDelayBufferable
-    function addSequencerL2BatchFromOrigin(
-        uint256 sequenceNumber,
-        bytes calldata data,
-        uint256 afterDelayedMessagesRead,
-        IGasRefunder gasRefunder,
-        uint256 prevMessageCount,
-        uint256 newMessageCount,
-        bool isCachingRequested,
-        bytes32 beforeDelayedAcc,
-        Messages.Message calldata delayedMessage
+    function updateSyncValidity_(
+        uint64 blockNumber,
+        uint64 timestamp
     ) external {
-        // no-op
-    }
-
-    /// @inheritdoc IDelayBufferable
-    function addSequencerL2BatchFromBlobs(
-        uint256 sequenceNumber,
-        uint256 afterDelayedMessagesRead,
-        IGasRefunder gasRefunder,
-        uint256 prevMessageCount,
-        uint256 newMessageCount,
-        bool isCachingRequested,
-        bytes32 beforeDelayedAcc,
-        Messages.Message calldata delayedMessage,
-        Messages.InboxAccPreimage calldata preimage
-    ) external {
-        // no-op
-    }
-
-    /// @inheritdoc IDelayBufferable
-    function addSequencerL2BatchFromOrigin(
-        uint256 sequenceNumber,
-        bytes calldata data,
-        uint256 afterDelayedMessagesRead,
-        IGasRefunder gasRefunder,
-        uint256 prevMessageCount,
-        uint256 newMessageCount,
-        bool isCachingRequested,
-        bytes32 beforeDelayedAcc,
-        Messages.Message calldata delayedMessage,
-        Messages.InboxAccPreimage calldata preimage
-    ) external {
-        // no-op
+        updateSyncValidity(blockNumber, timestamp);
     }
 
     function isValidSyncProof_(
@@ -104,87 +56,19 @@ contract SimpleDelayBufferable is DelayBufferable {
         bytes32 beforeAcc,
         Messages.InboxAccPreimage memory preimage
     ) external view returns (bool) {
-        return isValidSyncProof(beforeDelayedAcc, delayedMessage, beforeAcc, preimage);
-    }
-
-    function updateSyncValidity_(
-        bool isCachingRequested,
-        uint64 blockNumber,
-        uint64 timestamp
-    ) external {
-        updateSyncValidity(isCachingRequested, blockNumber, timestamp);
-    }
-
-    function maxTimeVariationExternal()
-        external
-        view
-        returns (
-            uint64,
-            uint64,
-            uint64,
-            uint64
-        )
-    {
-        return maxTimeVariationInternal();
-    }
-
-    function maxTimeVariationBufferable_()
-        external
-        view
-        returns (
-            uint64,
-            uint64,
-            uint64,
-            uint64
-        )
-    {
-        return maxTimeVariationBufferable();
-    }
-
-    function isSynced_() external view returns (bool) {
-        return isSynced();
-    }
-
-    function deplete_(
-        uint64 start,
-        uint64 end,
-        uint64 delay,
-        uint64 threshold,
-        uint64 buffer
-    ) external pure returns (uint64) {
-        return deplete(start, end, delay, threshold, buffer);
-    }
-
-    function replenish_(
-        uint64 start,
-        uint64 end,
-        uint64 buffer,
-        uint64 maxBuffer,
-        uint64 replenishAmountPerPeriod,
-        uint64 replenishPeriod,
-        uint64 repelenishRoundoff
-    ) external pure returns (uint64, uint64) {
         return
-            replenish(
-                start,
-                end,
-                buffer,
-                maxBuffer,
-                replenishAmountPerPeriod,
-                replenishPeriod,
-                repelenishRoundoff
+            isValidSyncProof(
+                beforeDelayedAcc,
+                delayedMessage,
+                beforeAcc,
+                preimage
             );
     }
 
-    function updateBuffers_(uint64 blockNumber, uint64 timestamp) external {
-        updateBuffers(blockNumber, timestamp);
-    }
-
-    function prevDelay_() external view returns (DelayCache memory) {
-        return prevDelay;
-    }
-
-    function roundOff() external view returns (uint64, uint64) {
-        return (roundOffBlocks, roundOffSeconds);
+    function updateBuffers_(
+        uint64 blockNumber,
+        uint64 timestampe
+    ) external {
+        updateBuffers(blockNumber, timestampe);
     }
 }
