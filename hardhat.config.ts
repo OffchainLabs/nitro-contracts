@@ -6,7 +6,6 @@ import '@typechain/hardhat'
 import 'solidity-coverage'
 import 'hardhat-gas-reporter'
 import 'hardhat-ignore-warnings'
-import 'hardhat-contract-sizer'
 // import '@tovarishfin/hardhat-yul';
 import dotenv from 'dotenv'
 
