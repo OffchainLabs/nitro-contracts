@@ -2,7 +2,9 @@
 // For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.0;
+// solhint-disable-next-line compiler-version
+pragma solidity >=0.6.9 <0.9.0;
+pragma experimental ABIEncoderV2;
 
 library Messages {
     struct Message {

@@ -22,17 +22,19 @@ const cancunSolSettings = {
   },
 }
 
+const defaultSettings = {
+  version: '0.8.9',
+  settings: {
+    optimizer: {
+      enabled: true,
+      runs: 100,
+    },
+  },
+}
+
 const solidity = {
   compilers: [
-    {
-      version: '0.8.9',
-      settings: {
-        optimizer: {
-          enabled: true,
-          runs: 100,
-        },
-      },
-    },
+    defaultSettings
   ],
   overrides: {
     'src/bridge/SequencerInbox.sol': cancunSolSettings,
@@ -44,6 +46,7 @@ const solidity = {
     'src/libraries/BlobDataHashReader.sol': cancunSolSettings,
     'src/rollup/ValidatorWallet.sol': cancunSolSettings,
     'src/rollup/ValidatorWalletCreator.sol': cancunSolSettings,
+    'src/test-helpers/InterfaceCompatibilityTester.sol': defaultSettings,
   },
 }
 
