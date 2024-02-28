@@ -19,10 +19,10 @@ contract SequencerInboxStub is SequencerInbox {
     ) SequencerInbox(maxDataSize_, reader4844_, isUsingFeeToken_) {
         bridge = bridge_;
         rollup = IOwnable(msg.sender);
-        delayBlocks = maxTimeVariation_.delayBlocks;
-        futureBlocks = maxTimeVariation_.futureBlocks;
-        delaySeconds = maxTimeVariation_.delaySeconds;
-        futureSeconds = maxTimeVariation_.futureSeconds;
+        delayBlocks = uint64(maxTimeVariation_.delayBlocks);
+        futureBlocks = uint64(maxTimeVariation_.futureBlocks);
+        delaySeconds = uint64(maxTimeVariation_.delaySeconds);
+        futureSeconds = uint64(maxTimeVariation_.futureSeconds);
         isBatchPoster[sequencer_] = true;
     }
 
