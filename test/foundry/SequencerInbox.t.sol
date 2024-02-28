@@ -56,7 +56,7 @@ contract SequencerInboxTest is Test {
         periodSeconds: 0,
         periodBlocks: 0
     });
-    IDelayBufferable.DelayConfig delayConfig = IDelayBufferable.DelayConfig({
+    IDelayBufferable.Config delayConfig = IDelayBufferable.Config({
         thresholdSeconds: type(uint64).max,
         thresholdBlocks: type(uint64).max,
         maxBufferSeconds: 0,
@@ -64,7 +64,6 @@ contract SequencerInboxTest is Test {
     });
     address dummyInbox = address(139);
     address proxyAdmin = address(140);
-    IReader4844 dummyReader4844 = IReader4844(address(137));
 
     uint256 constant public MAX_DATA_SIZE = 117964;
 
@@ -79,12 +78,10 @@ contract SequencerInboxTest is Test {
 
         SequencerInbox seqInbox = new SequencerInbox(
             bridge,
-            IOwnable(address(rollupMock)),
             maxTimeVariation,
             replenishRate,
             delayConfig,
             maxDataSize,
-            isArbHosted ? IReader4844(address(0)) : dummyReader4844,
             false
         );
 
@@ -115,12 +112,10 @@ contract SequencerInboxTest is Test {
         );
         SequencerInbox seqInbox = new SequencerInbox(
             bridge,
-            IOwnable(address(rollupMock)),
             maxTimeVariation,
             replenishRate,
             delayConfig,
             maxDataSize,
-            isArbHosted ? IReader4844(address(0)) : dummyReader4844,
             true
         );
 

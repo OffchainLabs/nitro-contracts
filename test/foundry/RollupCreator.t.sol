@@ -3,8 +3,8 @@ pragma solidity ^0.8.4;
 
 import "forge-std/Test.sol";
 import "./util/TestUtil.sol";
-import "../../src/bridge/SequencerInbox.sol";
 import "../../src/rollup/RollupCreator.sol";
+import "../../src/rollup/SequencerInboxCreator.sol";
 import "../../src/rollup/RollupAdminLogic.sol";
 import "../../src/rollup/RollupUserLogic.sol";
 import "../../src/rollup/ValidatorUtils.sol";
@@ -23,14 +23,12 @@ import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 
 contract RollupCreatorTest is Test {
     RollupCreator public rollupCreator;
-    BridgeCreator public bridgeCreator;
     address public rollupOwner = makeAddr("rollupOwner");
     address public deployer = makeAddr("deployer");
     IRollupAdmin public rollupAdmin;
     IRollupUser public rollupUser;
     DeployHelper public deployHelper;
-    IReader4844 dummyReader4844 = IReader4844(address(137));
-    
+
     // 1 gwei
     uint256 public constant MAX_FEE_PER_GAS = 1_000_000_000;
     uint256 public constant MAX_DATA_SIZE = 117_964;
@@ -57,8 +55,10 @@ contract RollupCreatorTest is Test {
         rollupCreator = new RollupCreator();
         deployHelper = new DeployHelper();
 
+        // deploy SequencerInboxCreator
+        ISequencerInboxCreator sequencerInboxCreator = new SequencerInboxCreator();
         // deploy BridgeCreators
-        bridgeCreator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates, address(rollupCreator));
+        BridgeCreator bridgeCreator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates, sequencerInboxCreator);
 
         IUpgradeExecutor upgradeExecutorLogic = new UpgradeExecutorMock();
 
@@ -104,11 +104,26 @@ contract RollupCreatorTest is Test {
             periodSeconds: 0,
             periodBlocks: 0
         });
-        IDelayBufferable.DelayConfig memory delayConfig = IDelayBufferable.DelayConfig({
+        IDelayBufferable.Config memory delayConfig = IDelayBufferable.Config({
             thresholdSeconds: type(uint64).max,
             thresholdBlocks: type(uint64).max,
             maxBufferSeconds: 0,
             maxBufferBlocks: 0
+        });
+        Config memory config = Config({
+            confirmPeriodBlocks: 20,
+            extraChallengeTimeBlocks: 200,
+            stakeToken: address(0),
+            baseStake: 1000,
+            wasmModuleRoot: keccak256("wasm"),
+            owner: rollupOwner,
+            loserStakeEscrow: address(200),
+            chainId: 1337,
+            chainConfig: "abc",
+            genesisBlockNum: 15_000_000,
+            maxTimeVariation: timeVars,
+            replenishRate: replenishRate,
+            delayBufferConfig: delayConfig
         });
 
         // prepare funds
@@ -123,86 +138,27 @@ contract RollupCreatorTest is Test {
         address[] memory validators = new address[](2);
         validators[0] = makeAddr("validator1");
         validators[1] = makeAddr("validator2");
-        uint256 nonce = 0;
 
-        address nativeToken = address(0);
-        bool isUsingFeeToken = nativeToken != address(0);
-        address bridgeComputed;
-        address rollupComputed;
-        {
-        IRollupCreator.RollupParams memory rollupParams = IRollupCreator.RollupParams({
-            config: Config({
-            confirmPeriodBlocks: 20,
-            extraChallengeTimeBlocks: 200,
-            stakeToken: address(0),
-            baseStake: 1000,
-            wasmModuleRoot: keccak256("wasm"),
-            owner: rollupOwner,
-            loserStakeEscrow: address(200),
-            chainId: 1337,
-            chainConfig: "abc",
-            genesisBlockNum: 15_000_000
-        }),
-            batchPosters: batchPosters,
-            validators: validators,
-            maxDataSize: MAX_DATA_SIZE,
-            nativeToken: nativeToken,
-            deployFactoriesToL2: true,
-            maxFeePerGasForRetryables: MAX_FEE_PER_GAS,
-            batchPosterManager: batchPosterManager
-        });
-        bridgeComputed = bridgeCreator.computeBridgeAddresss(rollupParams, nonce);
-        rollupComputed = rollupCreator.computeRollupProxyAddress(rollupParams, nonce);
-        }
-        ISequencerInbox seqInbox = new SequencerInbox(
-            IBridge(bridgeComputed),
-            IOwnable(rollupComputed),
-            timeVars,
-            replenishRate,
-            delayConfig,
-            MAX_DATA_SIZE,
-            dummyReader4844,
-            isUsingFeeToken
+        RollupCreator.RollupDeploymentParams memory deployParams = RollupCreator
+            .RollupDeploymentParams({
+                config: config,
+                batchPosters: batchPosters,
+                validators: validators,
+                maxDataSize: MAX_DATA_SIZE,
+                nativeToken: address(0),
+                deployFactoriesToL2: true,
+                maxFeePerGasForRetryables: MAX_FEE_PER_GAS,
+                batchPosterManager: batchPosterManager
+            });
+        address rollupAddress = rollupCreator.createRollup{value: factoryDeploymentFunds}(
+            deployParams
         );
 
-
-        address rollupAddress;
-        {
-        IRollupCreator.RollupParams memory rollupParams = IRollupCreator
-            .RollupParams({
-            config: Config({
-            confirmPeriodBlocks: 20,
-            extraChallengeTimeBlocks: 200,
-            stakeToken: address(0),
-            baseStake: 1000,
-            wasmModuleRoot: keccak256("wasm"),
-            owner: rollupOwner,
-            loserStakeEscrow: address(200),
-            chainId: 1337,
-            chainConfig: "abc",
-            genesisBlockNum: 15_000_000
-        }),
-            batchPosters: batchPosters,
-            validators: validators,
-            maxDataSize: MAX_DATA_SIZE,
-            nativeToken: address(0),
-            deployFactoriesToL2: true,
-            maxFeePerGasForRetryables: MAX_FEE_PER_GAS,
-            batchPosterManager: batchPosterManager
-        });
-        rollupAddress = rollupCreator.createRollup{value: factoryDeploymentFunds}(
-            rollupParams,
-            nonce,
-            seqInbox
-        );
-        }
         vm.stopPrank();
 
-        assertEq(rollupAddress, rollupComputed, "Invalid rollup address");
         /// common checks
 
         /// rollup creator
-        
         assertEq(IOwnable(address(rollupCreator)).owner(), deployer, "Invalid rollupCreator owner");
 
         /// rollup proxy
@@ -227,30 +183,7 @@ contract RollupCreatorTest is Test {
         );
 
         // check proxy admin for non-rollup contracts
-        address proxyAdminExpectedAddress = rollupCreator.computeProxyAdminAddress(
-            IRollupCreator.RollupParams({
-                config: Config({
-                    confirmPeriodBlocks: 20,
-                    extraChallengeTimeBlocks: 200,
-                    stakeToken: address(0),
-                    baseStake: 1000,
-                    wasmModuleRoot: keccak256("wasm"),
-                    owner: rollupOwner,
-                    loserStakeEscrow: address(200),
-                    chainId: 1337,
-                    chainConfig: "abc",
-                    genesisBlockNum: 15_000_000
-                }),
-                batchPosters: batchPosters,
-                validators: validators,
-                maxDataSize: MAX_DATA_SIZE,
-                nativeToken: address(0),
-                deployFactoriesToL2: true,
-                maxFeePerGasForRetryables: MAX_FEE_PER_GAS,
-                batchPosterManager: batchPosterManager
-            }),
-            nonce
-        );
+        address proxyAdminExpectedAddress = computeCreateAddress(address(rollupCreator), 1);
 
         // seq inbox has no proxy admin
         assertEq(
@@ -283,7 +216,7 @@ contract RollupCreatorTest is Test {
             proxyAdminExpectedAddress,
             "Invalid challengeManager's proxyAdmin owner"
         );
-        {
+
         // check upgrade executor owns proxyAdmin
         address upgradeExecutorExpectedAddress = computeCreateAddress(address(rollupCreator), 4);
         assertEq(
@@ -303,6 +236,7 @@ contract RollupCreatorTest is Test {
             upgradeExecutorExpectedAddress,
             "Invalid rollup's proxyAdmin owner"
         );
+
         // check rollupOwner has executor role
         AccessControlUpgradeable executor = AccessControlUpgradeable(
             upgradeExecutorExpectedAddress
@@ -311,13 +245,14 @@ contract RollupCreatorTest is Test {
             executor.hasRole(keccak256("EXECUTOR_ROLE"), rollupOwner),
             "Invalid executor role"
         );
-        }
+
         // check funds are refunded
+        uint256 balanceAfter = deployer.balance;
         uint256 factoryDeploymentCost = deployHelper.getDeploymentTotalCost(
             rollup.inbox(),
             MAX_FEE_PER_GAS
         );
-        assertEq(balanceBefore - deployer.balance, factoryDeploymentCost, "Invalid balance");
+        assertEq(balanceBefore - balanceAfter, factoryDeploymentCost, "Invalid balance");
     }
 
     function test_createErc20Rollup() public {
@@ -339,11 +274,26 @@ contract RollupCreatorTest is Test {
             periodSeconds: 0,
             periodBlocks: 0
         });
-        IDelayBufferable.DelayConfig memory delayConfig = IDelayBufferable.DelayConfig({
+        IDelayBufferable.Config memory delayConfig = IDelayBufferable.Config({
             thresholdSeconds: type(uint64).max,
             thresholdBlocks: type(uint64).max,
             maxBufferSeconds: 0,
             maxBufferBlocks: 0
+        });
+        Config memory config = Config({
+            confirmPeriodBlocks: 20,
+            extraChallengeTimeBlocks: 200,
+            stakeToken: address(0),
+            baseStake: 1000,
+            wasmModuleRoot: keccak256("wasm"),
+            owner: rollupOwner,
+            loserStakeEscrow: address(200),
+            chainId: 1337,
+            chainConfig: "abc",
+            genesisBlockNum: 15_000_000,
+            maxTimeVariation: timeVars,
+            replenishRate: replenishRate,
+            delayBufferConfig: delayConfig
         });
 
         // approve fee token to pay for deployment of L2 factories
@@ -360,20 +310,9 @@ contract RollupCreatorTest is Test {
         validators[0] = makeAddr("validator1");
         validators[1] = makeAddr("validator2");
 
-        IRollupCreator.RollupParams memory rollupParams = IRollupCreator
-            .RollupParams({
-                config: Config({
-                    confirmPeriodBlocks: 20,
-                    extraChallengeTimeBlocks: 200,
-                    stakeToken: address(0),
-                    baseStake: 1000,
-                    wasmModuleRoot: keccak256("wasm"),
-                    owner: rollupOwner,
-                    loserStakeEscrow: address(200),
-                    chainId: 1337,
-                    chainConfig: "abc",
-                    genesisBlockNum: 15_000_000
-                }),
+        RollupCreator.RollupDeploymentParams memory deployParams = RollupCreator
+            .RollupDeploymentParams({
+                config: config,
                 batchPosters: batchPosters,
                 validators: validators,
                 maxDataSize: MAX_DATA_SIZE,
@@ -383,21 +322,7 @@ contract RollupCreatorTest is Test {
                 batchPosterManager: batchPosterManager
             });
 
-        uint256 nonce = 0;
-        address bridgeComputed = bridgeCreator.computeBridgeAddresss(rollupParams, nonce);
-        address rollupComputed = rollupCreator.computeRollupProxyAddress(rollupParams, nonce);
-        address _nativeToken = nativeToken;
-        ISequencerInbox seqInbox = new SequencerInbox(
-            IBridge(bridgeComputed),
-            IOwnable(rollupComputed),
-            timeVars,
-            replenishRate,
-            delayConfig,
-            MAX_DATA_SIZE,
-            dummyReader4844,
-            _nativeToken != address(0)
-        );
-        address rollupAddress = rollupCreator.createRollup(rollupParams, nonce, seqInbox);
+        address rollupAddress = rollupCreator.createRollup(deployParams);
 
         vm.stopPrank();
 
@@ -433,12 +358,12 @@ contract RollupCreatorTest is Test {
         IBridge bridge = RollupCore(address(rollupAddress)).bridge();
         assertEq(
             IERC20Bridge(address(bridge)).nativeToken(),
-            _nativeToken,
+            nativeToken,
             "Invalid native token ref"
         );
 
         // check proxy admin for non-rollup contracts
-        address proxyAdminExpectedAddress = rollupCreator.computeProxyAdminAddress(rollupParams, nonce);
+        address proxyAdminExpectedAddress = computeCreateAddress(address(rollupCreator), 1);
 
         // seq inbox has no proxy admin
         assertEq(
@@ -520,7 +445,7 @@ contract RollupCreatorTest is Test {
             periodSeconds: 0,
             periodBlocks: 0
         });
-        IDelayBufferable.DelayConfig memory delayConfig = IDelayBufferable.DelayConfig({
+        IDelayBufferable.Config memory delayConfig = IDelayBufferable.Config({
             thresholdSeconds: type(uint64).max,
             thresholdBlocks: type(uint64).max,
             maxBufferSeconds: 0,
@@ -537,7 +462,10 @@ contract RollupCreatorTest is Test {
             loserStakeEscrow: address(200),
             chainId: 1337,
             chainConfig: "abc",
-            genesisBlockNum: 15_000_000
+            genesisBlockNum: 15_000_000,
+            maxTimeVariation: timeVars,
+            replenishRate: replenishRate,
+            delayBufferConfig: delayConfig
         });
 
         // prepare funds
@@ -552,8 +480,8 @@ contract RollupCreatorTest is Test {
         validators[0] = makeAddr("validator1");
         validators[1] = makeAddr("validator2");
 
-        IRollupCreator.RollupParams memory rollupParams = IRollupCreator
-            .RollupParams({
+        RollupCreator.RollupDeploymentParams memory deployParams = RollupCreator
+            .RollupDeploymentParams({
                 config: config,
                 batchPosters: batchPosters,
                 validators: validators,
@@ -563,28 +491,16 @@ contract RollupCreatorTest is Test {
                 maxFeePerGasForRetryables: MAX_FEE_PER_GAS,
                 batchPosterManager: batchPosterManager
             });
-
-        uint256 nonce = 0;
-        address bridgeComputed = bridgeCreator.computeBridgeAddresss(rollupParams, nonce);
-        address rollupComputed = rollupCreator.computeRollupProxyAddress(rollupParams, nonce);
-        ISequencerInbox seqInbox = new SequencerInbox(
-            IBridge(bridgeComputed),
-            IOwnable(rollupComputed),
-            timeVars,
-            replenishRate,
-            delayConfig,
-            MAX_DATA_SIZE,
-            dummyReader4844,
-            rollupParams.nativeToken != address(0)
+        address rollupAddress = rollupCreator.createRollup{value: factoryDeploymentFunds}(
+            deployParams
         );
-        address rollupAddress = rollupCreator.createRollup{value: factoryDeploymentFunds}(rollupParams, nonce, seqInbox);
 
         vm.stopPrank();
 
         //// upgrade inbox
         RollupCore rollup = RollupCore(rollupAddress);
         address inbox = address(rollup.inbox());
-        address proxyAdmin = rollupCreator.computeProxyAdminAddress(rollupParams, nonce);
+        address proxyAdmin = computeCreateAddress(address(rollupCreator), 1);
         IUpgradeExecutor upgradeExecutor = IUpgradeExecutor(
             computeCreateAddress(address(rollupCreator), 4)
         );

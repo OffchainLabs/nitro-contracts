@@ -19,13 +19,13 @@ contract SimpleDelayBufferableTest is Test {
         periodSeconds: 14,
         periodBlocks: 14
     });
-    IDelayBufferable.DelayConfig configBufferable = IDelayBufferable.DelayConfig({
+    IDelayBufferable.Config configBufferable = IDelayBufferable.Config({
         thresholdBlocks: 60 * 60 * 2 / 12,
         thresholdSeconds: 60 * 60 * 2,
         maxBufferBlocks: 24 * 60 * 60 / 12 * 2,
         maxBufferSeconds: 24 * 60 * 60 * 2
     });
-    IDelayBufferable.DelayConfig configNotBufferable = IDelayBufferable.DelayConfig({
+    IDelayBufferable.Config configNotBufferable = IDelayBufferable.Config({
         thresholdSeconds: type(uint64).max,
         thresholdBlocks: type(uint64).max,
         maxBufferSeconds: 0,
@@ -42,24 +42,8 @@ contract SimpleDelayBufferableTest is Test {
         messageDataHash: bytes32(0)
     });
 
-    function testIsDelayBufferable() public {
-        DelayBufferable bufferable = new SimpleDelayBufferable(
-            maxTimeVariation,
-            replenishRate,
-            configNotBufferable
-        );
-        assertEq(bufferable.isDelayBufferable(), false);
-
-        bufferable = new SimpleDelayBufferable(
-            maxTimeVariation,
-            replenishRate,
-            configBufferable
-        );
-        assertEq(bufferable.isDelayBufferable(), true);
-    }
-
     function testSyncProof() public {
-        SimpleDelayBufferable bufferable = new SimpleDelayBufferable(
+        SimpleDelayBufferable delayBufferable = new SimpleDelayBufferable(
             maxTimeVariation,
             replenishRate,
             configBufferable
@@ -81,83 +65,83 @@ contract SimpleDelayBufferableTest is Test {
 
         // initially message if proven with no delay
         bool isValidSyncProof =
-            bufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
+            delayBufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
         assertEq(isValidSyncProof, true);
 
         // sanity check
         isValidSyncProof =
-            bufferable.isValidSyncProof_(beforeDelayedAcc, message, bytes32(0), preimage);
+            delayBufferable.isValidSyncProof_(beforeDelayedAcc, message, bytes32(0), preimage);
         assertEq(isValidSyncProof, false);
 
         // (blockNumber, timestamp)
 
         // (0, 0) -> (0, thresholdSeconds)
         vm.warp(block.timestamp + configBufferable.thresholdSeconds);
-        isValidSyncProof = bufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
+        isValidSyncProof = delayBufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
         assertEq(isValidSyncProof, true);
 
         // (0, thresholdSeconds) -> (0, thresholdSeconds + 1)
         vm.warp(block.timestamp + 1);
-        isValidSyncProof = bufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
+        isValidSyncProof = delayBufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
         assertEq(isValidSyncProof, false);
 
         // (0, thresholdSeconds + 1) -> (0, 0)
         vm.warp(block.timestamp - 1 - configBufferable.thresholdSeconds);
-        isValidSyncProof = bufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
+        isValidSyncProof = delayBufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
         assertEq(isValidSyncProof, true);
 
         // (0, 0) -> (thresholdBlocks, 0)
         vm.roll(block.number + configBufferable.thresholdBlocks);
-        isValidSyncProof = bufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
+        isValidSyncProof = delayBufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
         assertEq(isValidSyncProof, true);
 
         // (thresholdBlocks, 0) -> (thresholdBlocks + 1, 0)
         vm.roll(block.number + 1);
-        isValidSyncProof = bufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
+        isValidSyncProof = delayBufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
         assertEq(isValidSyncProof, false);
 
         // (thresholdBlocks + 1, 0) -> (0, 0)
         vm.roll(block.number - 1 - configBufferable.thresholdBlocks);
-        isValidSyncProof = bufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
+        isValidSyncProof = delayBufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
         assertEq(isValidSyncProof, true);
 
         // (0, 0) -> (thresholdBlocks, thresholdSeconds)
         vm.roll(block.number + configBufferable.thresholdBlocks);
         vm.warp(block.timestamp + configBufferable.thresholdSeconds);
-        isValidSyncProof = bufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
+        isValidSyncProof = delayBufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
         assertEq(isValidSyncProof, true);
 
         // (thresholdBlocks, thresholdSeconds) -> (thresholdBlocks + 1, thresholdSeconds)
         vm.roll(block.number + 1);
-        isValidSyncProof = bufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
+        isValidSyncProof = delayBufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
         assertEq(isValidSyncProof, false);
 
         // (thresholdBlocks + 1, thresholdSeconds) -> (thresholdBlocks, thresholdSeconds)
         vm.roll(block.number - 1);
-        isValidSyncProof = bufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
+        isValidSyncProof = delayBufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
         assertEq(isValidSyncProof, true);
 
         // (thresholdBlocks, thresholdSeconds) -> (thresholdBlocks, thresholdSeconds + 1)
         vm.warp(block.timestamp + 1);
-        isValidSyncProof = bufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
+        isValidSyncProof = delayBufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
         assertEq(isValidSyncProof, false);
 
         // (thresholdBlocks, thresholdSeconds + 1) -> (max, max)
         vm.roll(type(uint256).max);
         vm.warp(type(uint256).max);
-        isValidSyncProof = bufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
+        isValidSyncProof = delayBufferable.isValidSyncProof_(beforeDelayedAcc, message, acc, preimage);
         assertEq(isValidSyncProof, false);
     }
 
     function testUpdateBuffersDepleteAndReplenish() public {
-        SimpleDelayBufferable bufferable = new SimpleDelayBufferable(
+        SimpleDelayBufferable delayBufferable = new SimpleDelayBufferable(
             maxTimeVariation,
             replenishRate,
             configBufferable
         );
 
-        IDelayBufferable.DelayCache memory prevDelay = bufferable.prevDelay_();
-        (uint64 bufferBlocks, uint64 bufferSeconds) = bufferable.delayBuffer();
+        (uint64 bufferBlocks,uint64 bufferSeconds,,,DelayBuffer.DelayHistory memory prevDelay) = delayBufferable.delayBufferData();
+
         assertEq(prevDelay.blockNumber, 0);
         assertEq(prevDelay.timestamp, 0);
         assertEq(prevDelay.delaySeconds, 0);
@@ -166,15 +150,14 @@ contract SimpleDelayBufferableTest is Test {
         assertEq(bufferSeconds, configBufferable.maxBufferSeconds);
 
         vm.expectRevert();
-        bufferable.updateBuffers_(10, 10);
+        delayBufferable.updateBuffers_(10, 10);
 
         vm.warp(10);
         vm.roll(10);
 
-        bufferable.updateBuffers_(10, 10);
+        delayBufferable.updateBuffers_(10, 10);
 
-        prevDelay = bufferable.prevDelay_();
-        (bufferBlocks, bufferSeconds) = bufferable.delayBuffer();
+        (bufferBlocks, bufferSeconds, ,, prevDelay) = delayBufferable.delayBufferData();
         assertEq(prevDelay.blockNumber, 10);
         assertEq(prevDelay.timestamp, 10);
         assertEq(prevDelay.delaySeconds, 0);
@@ -186,12 +169,11 @@ contract SimpleDelayBufferableTest is Test {
         vm.roll(11);
 
         vm.expectRevert();
-        bufferable.updateBuffers_(9, 9);
+        delayBufferable.updateBuffers_(9, 9);
 
-        bufferable.updateBuffers_(10, 10);
+        delayBufferable.updateBuffers_(10, 10);
 
-        prevDelay = bufferable.prevDelay_();
-        (bufferBlocks, bufferSeconds) = bufferable.delayBuffer();
+        (bufferBlocks, bufferSeconds, ,, prevDelay) = delayBufferable.delayBufferData();
         assertEq(prevDelay.blockNumber, 10);
         assertEq(prevDelay.timestamp, 10);
         assertEq(prevDelay.delayBlocks, 1);
@@ -202,10 +184,9 @@ contract SimpleDelayBufferableTest is Test {
         vm.roll(block.number + configBufferable.thresholdBlocks);
         vm.warp(block.timestamp + configBufferable.thresholdSeconds);
 
-        bufferable.updateBuffers_(10, 10);
+        delayBufferable.updateBuffers_(10, 10);
 
-        prevDelay = bufferable.prevDelay_();
-        (bufferBlocks, bufferSeconds) = bufferable.delayBuffer();
+        (bufferBlocks, bufferSeconds, ,, prevDelay) = delayBufferable.delayBufferData();
         assertEq(prevDelay.blockNumber, 10);
         assertEq(prevDelay.timestamp, 10);
         assertEq(prevDelay.delayBlocks, configBufferable.thresholdBlocks + 1);
@@ -213,10 +194,9 @@ contract SimpleDelayBufferableTest is Test {
         assertEq(bufferBlocks, configBufferable.maxBufferBlocks);
         assertEq(bufferSeconds, configBufferable.maxBufferSeconds);
 
-        bufferable.updateBuffers_(10, 10);
+        delayBufferable.updateBuffers_(10, 10);
 
-        prevDelay = bufferable.prevDelay_();
-        (bufferBlocks, bufferSeconds) = bufferable.delayBuffer();
+        (bufferBlocks, bufferSeconds, ,, prevDelay) = delayBufferable.delayBufferData();
         assertEq(prevDelay.blockNumber, 10);
         assertEq(prevDelay.timestamp, 10);
         assertEq(prevDelay.delayBlocks, configBufferable.thresholdBlocks + 1);
@@ -224,10 +204,9 @@ contract SimpleDelayBufferableTest is Test {
         assertEq(bufferBlocks, configBufferable.maxBufferBlocks);
         assertEq(bufferSeconds, configBufferable.maxBufferSeconds);
 
-        bufferable.updateBuffers_(11, 11);
+        delayBufferable.updateBuffers_(11, 11);
 
-        prevDelay = bufferable.prevDelay_();
-        (bufferBlocks, bufferSeconds) = bufferable.delayBuffer();
+        (bufferBlocks, bufferSeconds, ,, prevDelay) = delayBufferable.delayBufferData();
         assertEq(prevDelay.blockNumber, 11);
         assertEq(prevDelay.timestamp, 11);
         assertEq(prevDelay.delayBlocks, configBufferable.thresholdBlocks);
@@ -235,10 +214,11 @@ contract SimpleDelayBufferableTest is Test {
         assertEq(bufferBlocks, configBufferable.maxBufferBlocks - 1);
         assertEq(bufferSeconds, configBufferable.maxBufferSeconds - 1);
 
-        bufferable.updateBuffers_(11, 11);
+        delayBufferable.updateBuffers_(11, 11);
 
-        prevDelay = bufferable.prevDelay_();
-        (bufferBlocks, bufferSeconds) = bufferable.delayBuffer();
+        uint64 roundOffBlocks;
+        uint64 roundOffSeconds;
+        (bufferBlocks, bufferSeconds, roundOffBlocks,roundOffSeconds, prevDelay) = delayBufferable.delayBufferData();
         assertEq(prevDelay.blockNumber, 11);
         assertEq(prevDelay.timestamp, 11);
         assertEq(prevDelay.delayBlocks, configBufferable.thresholdBlocks);
@@ -246,15 +226,13 @@ contract SimpleDelayBufferableTest is Test {
         assertEq(bufferBlocks, configBufferable.maxBufferBlocks - 1);
         assertEq(bufferSeconds, configBufferable.maxBufferSeconds - 1);
 
-        (uint64 roundOffBlocks, uint64 roundOffSeconds) = bufferable.roundOff();
+        (, , roundOffBlocks,roundOffSeconds,) = delayBufferable.delayBufferData();
         assertEq(roundOffBlocks, 0);
         assertEq(roundOffSeconds, 0);
 
-        bufferable.updateBuffers_(12, 12);
+        delayBufferable.updateBuffers_(12, 12);
 
-        prevDelay = bufferable.prevDelay_();
-        (bufferBlocks, bufferSeconds) = bufferable.delayBuffer();
-        (roundOffBlocks, roundOffSeconds) = bufferable.roundOff();
+        (bufferBlocks, bufferSeconds, roundOffBlocks,roundOffSeconds, prevDelay) = delayBufferable.delayBufferData();
         assertEq(prevDelay.blockNumber, 12);
         assertEq(prevDelay.timestamp, 12);
         assertEq(roundOffBlocks, 1);
@@ -264,11 +242,9 @@ contract SimpleDelayBufferableTest is Test {
         assertEq(bufferBlocks, configBufferable.maxBufferBlocks - 1);
         assertEq(bufferSeconds, configBufferable.maxBufferSeconds - 1);
 
-        bufferable.updateBuffers_(24, 24);
+        delayBufferable.updateBuffers_(24, 24);
 
-        prevDelay = bufferable.prevDelay_();
-        (bufferBlocks, bufferSeconds) = bufferable.delayBuffer();
-        (roundOffBlocks, roundOffSeconds) = bufferable.roundOff();
+        (bufferBlocks, bufferSeconds, roundOffBlocks,roundOffSeconds, prevDelay) = delayBufferable.delayBufferData();
         assertEq(prevDelay.blockNumber, 24);
         assertEq(prevDelay.timestamp, 24);
         assertEq(roundOffBlocks, 13);
@@ -278,11 +254,9 @@ contract SimpleDelayBufferableTest is Test {
         assertEq(bufferBlocks, configBufferable.maxBufferBlocks - 1);
         assertEq(bufferSeconds, configBufferable.maxBufferSeconds - 1);
 
-        bufferable.updateBuffers_(25, 25);
+        delayBufferable.updateBuffers_(25, 25);
 
-        prevDelay = bufferable.prevDelay_();
-        (bufferBlocks, bufferSeconds) = bufferable.delayBuffer();
-        (roundOffBlocks, roundOffSeconds) = bufferable.roundOff();
+        (bufferBlocks, bufferSeconds, roundOffBlocks,roundOffSeconds, prevDelay) = delayBufferable.delayBufferData();
         assertEq(prevDelay.blockNumber, 25);
         assertEq(prevDelay.timestamp, 25);
         assertEq(roundOffBlocks, 0);
@@ -294,14 +268,16 @@ contract SimpleDelayBufferableTest is Test {
     }
 
     function testUpdateSyncValidityAndCache() public {
-        SimpleDelayBufferable bufferable = new SimpleDelayBufferable(
+        SimpleDelayBufferable delayBufferable = new SimpleDelayBufferable(
             maxTimeVariation,
             replenishRate,
             configBufferable
         );
 
-        (uint64 blockNumber, uint64 timestamp) = bufferable.syncExpiry();
-        (uint64 blockNumberFull, uint64 timestampFull) = bufferable.cachedFullBufferExpiry_();
+
+        (uint64 blockNumberFull, uint64 timestampFull) = delayBufferable.cachedFullBufferSyncExpiry_();
+        uint64 blockNumber = delayBufferable.syncExpiryBlockNumber();
+        uint64 timestamp = delayBufferable.syncExpiryTimestamp();
 
         assertEq(blockNumber, 0);
         assertEq(timestamp, 0);
@@ -309,24 +285,15 @@ contract SimpleDelayBufferableTest is Test {
         assertEq(timestampFull, 0);
 
         vm.expectRevert();
-        bufferable.updateSyncValidity_(false, blockNumber + 10, timestamp + 10);
+        delayBufferable.updateSyncValidity_(blockNumber + 10, timestamp + 10);
 
         vm.warp(10);
         vm.roll(10);
 
-        bufferable.updateSyncValidity_(false, 10, 10);
-
-        (blockNumber, timestamp) = bufferable.syncExpiry();
-        (blockNumberFull, timestampFull) = bufferable.cachedFullBufferExpiry_();
-
-        assertEq(blockNumber, 10 + configBufferable.thresholdBlocks);
-        assertEq(timestamp, 10 + configBufferable.thresholdSeconds);
-        assertEq(blockNumberFull, 0);
-        assertEq(timestampFull, 0);
-
-        bufferable.updateSyncValidity_(true, 10, 10);
-        (blockNumber, timestamp) = bufferable.syncExpiry();
-        (blockNumberFull, timestampFull) = bufferable.cachedFullBufferExpiry_();
+        delayBufferable.updateSyncValidity_(10, 10);
+        blockNumber = delayBufferable.syncExpiryBlockNumber();
+        timestamp = delayBufferable.syncExpiryTimestamp();
+        (blockNumberFull, timestampFull) = delayBufferable.cachedFullBufferSyncExpiry_();
 
         assertEq(blockNumber, 10 + configBufferable.thresholdBlocks);
         assertEq(timestamp, 10 + configBufferable.thresholdSeconds);
@@ -335,18 +302,16 @@ contract SimpleDelayBufferableTest is Test {
     }
 
     function testForceInclusionDeadline() public {
-        SimpleDelayBufferable bufferable = new SimpleDelayBufferable(
+        SimpleDelayBufferable delayBufferable = new SimpleDelayBufferable(
             maxTimeVariation,
             replenishRate,
             configBufferable
         );
         (uint64 deadlineBlockNumber, uint64 deadlineTimestamp) =
-            bufferable.forceInclusionDeadline(0, 0);
+            delayBufferable.forceInclusionDeadline(0, 0);
         assertEq(deadlineBlockNumber, maxTimeVariation.delayBlocks);
         assertEq(deadlineTimestamp, maxTimeVariation.delaySeconds);
-
-        IDelayBufferable.DelayCache memory prevDelay = bufferable.prevDelay_();
-        (uint64 bufferBlocks, uint64 bufferSeconds) = bufferable.delayBuffer();
+        (uint64 bufferBlocks,uint64 bufferSeconds,,,DelayBuffer.DelayHistory memory prevDelay) = delayBufferable.delayBufferData();
         assertEq(prevDelay.blockNumber, 0);
         assertEq(prevDelay.timestamp, 0);
         assertEq(prevDelay.delaySeconds, 0);
@@ -361,23 +326,23 @@ contract SimpleDelayBufferableTest is Test {
 
         vm.roll(delayBlockNumber);
         vm.warp(delayTimestamp);
-        bufferable.updateBuffers_(0, 0);
+        delayBufferable.updateBuffers_(0, 0);
 
-        (bufferBlocks, bufferSeconds) = bufferable.delayBuffer();
+        (bufferBlocks, bufferSeconds,,,) = delayBufferable.delayBufferData();
         assertEq(bufferBlocks, configBufferable.maxBufferBlocks);
         assertEq(bufferSeconds, configBufferable.maxBufferSeconds);
 
         (deadlineBlockNumber, deadlineTimestamp) =
-            bufferable.forceInclusionDeadline(uint64(delayBlockNumber), uint64(delayTimestamp));
+            delayBufferable.forceInclusionDeadline(uint64(delayBlockNumber), uint64(delayTimestamp));
 
         assertEq(deadlineBlockNumber, delayBlockNumber + maxTimeVariation.delayBlocks - 1);
         assertEq(deadlineTimestamp, delayTimestamp + maxTimeVariation.delaySeconds - 1);
 
-        bufferable.updateBuffers_(
+        delayBufferable.updateBuffers_(
             maxTimeVariation.delayBlocks + configBufferable.thresholdBlocks + 1,
             maxTimeVariation.delaySeconds + configBufferable.thresholdSeconds + 1
         );
-        (bufferBlocks, bufferSeconds) = bufferable.delayBuffer();
+        (bufferBlocks, bufferSeconds,,,) = delayBufferable.delayBufferData();
         assertEq(bufferBlocks, maxTimeVariation.delayBlocks - 1);
         assertEq(bufferSeconds, maxTimeVariation.delaySeconds - 1);
     }
