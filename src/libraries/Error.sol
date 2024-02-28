@@ -2,6 +2,8 @@
 // For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
+import "../bridge/Messages.sol";
+
 pragma solidity ^0.8.4;
 
 error ExtraGasNotUint64();
@@ -44,8 +46,6 @@ error NotContract(address addr);
 /// @param maxProofLength The max length a merkle proof can have
 error MerkleProofTooLong(uint256 actualLength, uint256 maxProofLength);
 
-/// @dev The DelayedAccPreimage is invalid
-error InvalidDelayProof();
 
 /// @dev Thrown when an un-authorized address tries to access an admin function
 /// @param sender The un-authorized sender
@@ -194,9 +194,18 @@ error DataBlobsNotSupported();
 
 /// @dev Thrown when batches are posted without delay proof, this is only allowed in a sync state or when no new delayed messages are read
 error DelayProofRequired();
+/// @dev Thrown when a batch post fails to prove a message delivery and sequencing are synced within the delay threshold
+error InvalidSequencerInboxAccPreimage(bytes32 beforeAcc, Messages.InboxAccPreimage preimage);
+
+/// @dev The DelayedAccPreimage is invalid
+error InvalidDelayedAccPreimage(
+    bytes32 delayedAcc,
+    bytes32 beforeDelayedAcc,
+    Messages.Message delayedMessage
+);
 
 /// @dev Thrown when a batch post fails to prove a message delivery and sequencing are synced within the delay threshold
-error InvalidSyncProof();
+error UnexpectedDelay(uint64 delayBlocks, uint64 delaySeconds);
 
 /// @dev Thrown when the sequencer attempts to post a batch with delay / sync proofs without delay bufferability enabled
 error NotDelayBufferable();

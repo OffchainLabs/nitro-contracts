@@ -33,10 +33,8 @@ import {
     InvalidHeaderFlag,
     NativeTokenMismatch,
     Deprecated,
-    InvalidSyncProof,
     NotDelayBufferable,
     NotDelayedFarEnough,
-    InvalidDelayProof,
     DelayProofRequired,
     NotDelayBufferable,
     ExtraGasNotUint64,
@@ -116,7 +114,6 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
     /// @inheritdoc ISequencerInbox
     address public batchPosterManager;
 
-    bool public immutable isDelayBufferable;
     uint256 internal immutable deployTimeChainId = block.chainid;
 
     // On L1 this should be set to 117964: 90% of Geth's 128KB tx size limit, leaving ~13KB for proving
@@ -125,6 +122,8 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
     bool internal immutable hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
     // True if the chain this SequencerInbox is deployed on uses custom fee token
     bool public immutable isUsingFeeToken;
+    // True the SequencerInbox is delay bufferable
+    bool public immutable isDelayBufferable;
 
     constructor(
         IBridge bridge_,
@@ -152,12 +151,21 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
         }
     }
 
-    function maxTimeVariationInternal() internal view returns (uint64, uint64, uint64, uint64) {
+    function maxTimeVariationInternal()
+        internal
+        view
+        returns (
+            uint64,
+            uint64,
+            uint64,
+            uint64
+        )
+    {
         if (_chainIdChanged()) {
             return (1, 1, 1, 1);
         } else if (!isDelayBufferable) {
             return (delayBlocks, futureBlocks, delaySeconds, futureSeconds);
-        } else if (isFullBufferCached()) {
+        } else if (isFullBufferSyncCacheValid()) {
             return maxTimeVariationBufferable(maxBufferBlocks, maxBufferSeconds);
         } else {
             return
@@ -205,7 +213,16 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
         return bounds;
     }
 
-    function maxTimeVariation() external view returns (uint256, uint256, uint256, uint256) {
+    function maxTimeVariation()
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
         (
             uint64 delayBlocks_,
             uint64 futureBlocks_,
@@ -576,9 +593,11 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
         emit SequencerBatchData(sequenceNumber, data);
     }
 
-    function packHeader(
-        uint256 afterDelayedMessagesRead
-    ) internal view returns (bytes memory, IBridge.TimeBounds memory) {
+    function packHeader(uint256 afterDelayedMessagesRead)
+        internal
+        view
+        returns (bytes memory, IBridge.TimeBounds memory)
+    {
         IBridge.TimeBounds memory timeBounds = getTimeBounds();
         bytes memory header = abi.encodePacked(
             timeBounds.minTimestamp,
@@ -596,9 +615,11 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
     /// @param  afterDelayedMessagesRead The delayed messages count read up to
     /// @return The data hash
     /// @return The timebounds within which the message should be processed
-    function formEmptyDataHash(
-        uint256 afterDelayedMessagesRead
-    ) internal view returns (bytes32, IBridge.TimeBounds memory) {
+    function formEmptyDataHash(uint256 afterDelayedMessagesRead)
+        internal
+        view
+        returns (bytes32, IBridge.TimeBounds memory)
+    {
         (bytes memory header, IBridge.TimeBounds memory timeBounds) = packHeader(
             afterDelayedMessagesRead
         );
@@ -623,10 +644,11 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
     /// @param  afterDelayedMessagesRead The delayed messages count read up to
     /// @return The data hash
     /// @return The timebounds within which the message should be processed
-    function formCallDataHash(
-        bytes calldata data,
-        uint256 afterDelayedMessagesRead
-    ) internal view returns (bytes32, IBridge.TimeBounds memory) {
+    function formCallDataHash(bytes calldata data, uint256 afterDelayedMessagesRead)
+        internal
+        view
+        returns (bytes32, IBridge.TimeBounds memory)
+    {
         uint256 fullDataLen = HEADER_LENGTH + data.length;
         if (fullDataLen > maxDataSize) revert DataTooLarge(fullDataLen, maxDataSize);
 
@@ -659,9 +681,15 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
     /// @return The data hash
     /// @return The timebounds within which the message should be processed
     /// @return The normalized amount of gas used for blob posting
-    function formBlobDataHash(
-        uint256 afterDelayedMessagesRead
-    ) internal view returns (bytes32, IBridge.TimeBounds memory, uint256) {
+    function formBlobDataHash(uint256 afterDelayedMessagesRead)
+        internal
+        view
+        returns (
+            bytes32,
+            IBridge.TimeBounds memory,
+            uint256
+        )
+    {
         bytes32[] memory dataHashes = BlobDataHashReader.getDataHashes();
         if (dataHashes.length == 0) revert MissingDataHashes();
 
@@ -727,10 +755,10 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
     }
 
     /// @inheritdoc ISequencerInbox
-    function setIsBatchPoster(
-        address addr,
-        bool isBatchPoster_
-    ) public onlyRollupOwnerOrBatchPosterManager {
+    function setIsBatchPoster(address addr, bool isBatchPoster_)
+        public
+        onlyRollupOwnerOrBatchPosterManager
+    {
         batchPosterData[addr].isBatchPoster = isBatchPoster_;
         // we used to have OwnerFunctionCalled(0) for setting the maxTimeVariation
         // so we dont use index = 0 here, even though this is the first owner function
@@ -769,10 +797,10 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
     }
 
     /// @inheritdoc ISequencerInbox
-    function setIsSequencer(
-        address addr,
-        bool isSequencer_
-    ) external onlyRollupOwnerOrBatchPosterManager {
+    function setIsSequencer(address addr, bool isSequencer_)
+        external
+        onlyRollupOwnerOrBatchPosterManager
+    {
         isSequencer[addr] = isSequencer_;
         emit OwnerFunctionCalled(4); // Owner in this context can also be batch poster manager
     }
@@ -798,19 +826,17 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
         return batchPosterData[addr].isBatchPoster;
     }
 
-    /// @notice Returns cached full buffer & synced happy indicator
-    function cachedFullBufferSyncExpiry() internal view override returns (uint64, uint64) {
-        return (
-            batchPosterData[msg.sender].cachedBlockNumber,
-            batchPosterData[msg.sender].cachedTimestamp
-        );
+    /// @notice Returns true if the inbox is in a synced state (no unexpected delays are possible) and the buffer is full
+    function isFullBufferSyncCacheValid() internal view override returns (bool) {
+        return (block.number <= batchPosterData[msg.sender].cachedBlockNumber &&
+            block.timestamp <= batchPosterData[msg.sender].cachedTimestamp);
     }
 
-    /// @notice Packs full buffer & synced happy indicator with batchPoster authentication
-    function cacheFullBufferSyncExpiry(
-        uint64 expiryBlockNumber,
-        uint64 expiryTimestamp
-    ) internal override {
+    /// @notice Packs full buffer & synced state with batchPoster authentication
+    function cacheFullBufferSyncExpiry(uint64 expiryBlockNumber, uint64 expiryTimestamp)
+        internal
+        override
+    {
         batchPosterData[msg.sender].cachedBlockNumber = expiryBlockNumber;
         batchPosterData[msg.sender].cachedTimestamp = expiryTimestamp;
     }

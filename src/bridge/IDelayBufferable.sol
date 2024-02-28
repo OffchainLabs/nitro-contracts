@@ -60,28 +60,46 @@ interface IDelayBufferable {
         DelayAccPreimage delayedAccPreimage;
     }
 
+    /// @notice The rate at which the delay buffer is replenished.
+    /// @return blocksPerPeriod The amount of blocks that is added to the delay buffer every period
+    /// @return secondsPerPeriod The amount of time in seconds that is added to the delay buffer every period
+    /// @return periodBlocks The amount of blocks that is waited between replenishing the delay buffer
+    /// @return periodSeconds The amount of time in seconds that is waited between replenishing the delay buffer
     function replenishRate()
         external
         view
         returns (
-            uint64 secondsPerPeriod,
             uint64 blocksPerPeriod,
-            uint64 periodSeconds,
-            uint64 periodBlocks
+            uint64 secondsPerPeriod,
+            uint64 periodBlocks,
+            uint64 periodSeconds
         );
 
+    /// @notice The delay threshold and max buffer configuration
+    /// @return thresholdBlocks The maximum amount of blocks that a message is expected to be delayed
+    /// @return thresholdSeconds The maximum amount of time in seconds that a message is expected to be delayed
+    /// @return maxBufferBlocks The maximum the delay blocks seconds can be
+    /// @return maxBufferSeconds The maximum the delay buffer seconds can be
     function delayConfig()
         external
         view
         returns (
-            uint64 thresholdSeconds,
             uint64 thresholdBlocks,
-            uint64 maxBufferSeconds,
-            uint64 maxBufferBlocks
+            uint64 thresholdSeconds,
+            uint64 maxBufferBlocks,
+            uint64 maxBufferSeconds
         );
 
+    /// @dev    The delay buffer can change due to pending depletion.
+    ///         This function applies pending buffer changes to proactively calculate the force inclusion deadline.
+    ///         This is only relevant when the bufferBlocks or bufferSeconds are less than delayBlocks or delaySeconds.
+    /// @notice Calculates the upper bounds of the delay buffer
+    /// @param blockNumber The block number when a delayed message was created
+    /// @param timestamp The timestamp when a delayed message was created
+    /// @return blockNumberDeadline The block number at which the delay buffer is guaranteed to be depleted
+    /// @return timestampDeadline The timestamp at which the delay buffer is guaranteed to be depleted
     function forceInclusionDeadline(uint64 blockNumber, uint64 timestamp)
         external
         view
-        returns (uint64 blocks, uint64 time);
+        returns (uint64 blockNumberDeadline, uint64 timestampDeadline);
 }

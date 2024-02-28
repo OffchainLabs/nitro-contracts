@@ -17,13 +17,14 @@ contract SequencerInboxCreator is ISequencerInboxCreator {
         uint256 maxDataSize,
         bool isUsingFeeToken
     ) external returns (ISequencerInbox) {
-        return new SequencerInbox(
-            bridge,
-            maxTimeVariation,
-            replenishRate,
-            config,
-            maxDataSize,
-            isUsingFeeToken
-        );
+        return
+            new SequencerInbox(
+                bridge,
+                maxTimeVariation,
+                replenishRate,
+                config,
+                maxDataSize,
+                isUsingFeeToken
+            );
     }
 }

@@ -7,25 +7,36 @@ pragma solidity ^0.8.0;
 import "./ISequencerInbox.sol";
 
 /**
- * @title   Manages the delay buffer for the sequencer (SequencerInbox.sol)
+ * @title   Library implements the delay buffer logic used by delay bufferable contracts (DelayBufferable.sol)
  * @notice  Messages are expected to be delayed up to a threshold, beyond which they are unexpected
  *          and deplete a delay buffer. Buffer depletion is preveneted from decreasing too fast by only
  *          depleting by as many seconds / blocks has elapsed in the delayed message queue.
  */
 library DelayBuffer {
+    /// @notice The delay buffer data.
+    /// @param bufferBlocks The block number buffer.
+    /// @param bufferSeconds The time buffer.
+    /// @param roundOffBlocks The round off from the last replenish.
+    /// @param roundOffSeconds The round off from the last replenish.
+    /// @param prevDelay The delay of the previous batch.
+    struct DelayBufferData {
+        uint64 bufferBlocks;
+        uint64 bufferSeconds;
+        uint64 roundOffBlocks;
+        uint64 roundOffSeconds;
+        DelayHistory prevDelay;
+    }
+
+    /// @notice The history of a sequenced delayed message.
+    /// @param blockNumber The block number when the message was created.
+    /// @param timestamp The timestamp when the message was created.
+    /// @param delayBlocks The amount of blocks the message was delayed.
+    /// @param delaySeconds The amount of seconds the message was delayed.
     struct DelayHistory {
         uint64 blockNumber;
         uint64 timestamp;
         uint64 delayBlocks;
         uint64 delaySeconds;
-    }
-
-    struct DelayBufferData {
-        DelayHistory prevDelay;
-        uint64 bufferBlocks;
-        uint64 bufferSeconds;
-        uint64 roundOffBlocks;
-        uint64 roundOffSeconds;
     }
 
     /// @dev    Depletion is rate limited to allow the sequencer to recover properly from outages.
@@ -90,6 +101,16 @@ library DelayBuffer {
     }
 
     /// @notice Conditionally depletes or replenishes the delay buffer
+    /// @notice Decrements or replenishes the delay buffer conditionally
+    /// @param start The beginning reference point (delayPrev)
+    /// @param end The ending reference point (current message)
+    /// @param delay The delay to be applied (delayPrev)
+    /// @param threshold The threshold to saturate at
+    /// @param buffer The buffer to be decremented
+    /// @param maxBuffer The maximum buffer
+    /// @param amountPerPeriod The amount to replenish per period
+    /// @param period The replenish period
+    /// @param roundOff The roundoff from the last replenish
     function update(
         uint64 start,
         uint64 end,
@@ -102,9 +123,10 @@ library DelayBuffer {
         uint64 roundOff
     ) public pure returns (uint64, uint64) {
         assert(start <= end);
-        if (delay > threshold) {
+        if (threshold < delay) {
             // unexpected delay
             buffer = deplete(start, end, delay, threshold, buffer);
+            // reset round off to avoid replenishment with a head start
             roundOff = 0;
         } else if (buffer < maxBuffer) {
             // replenish buffer if depleted
@@ -122,6 +144,12 @@ library DelayBuffer {
     }
 
     /// @notice Updates the block number buffer.
+    /// @param self The delay buffer data
+    /// @param blockNumber The update block number
+    /// @param thresholdBlocks The maximum amount of blocks that a message is expected to be delayed
+    /// @param maxBufferBlocks The maximum the delay blocks can be
+    /// @param blocksPerPeriod The amount to replenish per period
+    /// @param periodBlocks The replenish period
     function updateBlockNumber(
         DelayBufferData storage self,
         uint64 blockNumber,
@@ -152,6 +180,12 @@ library DelayBuffer {
     }
 
     /// @notice Updates the time buffer.
+    /// @param self The delay buffer data
+    /// @param timestamp The update timestamp
+    /// @param thresholdSeconds The maximum amount of time in seconds that a message is expected to be delayed
+    /// @param maxBufferSeconds The maximum the delay buffer seconds can be
+    /// @param secondsPerPeriod The amount to replenish per period
+    /// @param periodSeconds The replenish period
     function updateTimestamp(
         DelayBufferData storage self,
         uint64 timestamp,
@@ -182,6 +216,17 @@ library DelayBuffer {
     }
 
     /// @notice Updates the block number buffer.
+    /// @param self The delay buffer data
+    /// @param blockNumber The update block number
+    /// @param thresholdBlocks The maximum amount of blocks that a message is expected to be delayed
+    /// @param maxBufferBlocks The maximum the delay blocks can be
+    /// @param blocksPerPeriod The amount to replenish per period
+    /// @param periodBlocks The replenish period
+    /// @param timestamp The update timestamp
+    /// @param thresholdSeconds The maximum amount of time in seconds that a message is expected to be delayed
+    /// @param maxBufferSeconds The maximum the delay buffer seconds can be
+    /// @param secondsPerPeriod The amount to replenish per period
+    /// @param periodSeconds The replenish period
     function updateBuffers(
         DelayBufferData storage self,
         uint64 blockNumber,

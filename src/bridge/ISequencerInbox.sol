@@ -178,7 +178,6 @@ interface ISequencerInbox is IDelayedMessageProvider {
         uint256 newMessageCount
     ) external;
 
-
     /// @dev    Proves message delays, updates delay buffers, and posts an L2 batch with blob data.
     ///         Must read atleast one new delayed message.
     /// @notice Normally the sequencer will only call this function after the sequencer has been offline for a while.
@@ -277,5 +276,6 @@ interface ISequencerInbox is IDelayedMessageProvider {
     /// @notice Allows the rollup owner to sync the rollup address
     function updateRollupAddress() external;
 
+    /// @notice True is the sequencer inbox is delay bufferable
     function isDelayBufferable() external view returns (bool);
 }
