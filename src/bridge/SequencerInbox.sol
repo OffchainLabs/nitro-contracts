@@ -9,7 +9,6 @@ import {
     HadZeroInit,
     NotOrigin,
     DataTooLarge,
-    NotRollup,
     DelayedBackwards,
     DelayedTooFar,
     ForceIncludeBlockTooSoon,
@@ -17,7 +16,6 @@ import {
     IncorrectMessagePreimage,
     NotBatchPoster,
     BadSequencerNumber,
-    DataNotAuthenticated,
     AlreadyValidDASKeyset,
     NoSuchKeyset,
     NotForked,
@@ -26,10 +24,8 @@ import {
     DataBlobsNotSupported,
     InitParamZero,
     MissingDataHashes,
-    InvalidBlobMetadata,
     NotOwner,
     RollupNotChanged,
-    EmptyBatchData,
     InvalidHeaderFlag,
     NativeTokenMismatch,
     Deprecated,
@@ -46,7 +42,6 @@ import "./ISequencerInbox.sol";
 import "../rollup/IRollupLogic.sol";
 import "../precompiles/ArbGasInfo.sol";
 import "../precompiles/ArbSys.sol";
-import "./DelayBuffer.sol";
 
 import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
 import "../libraries/DelegateCallAware.sol";
@@ -58,11 +53,11 @@ import {IERC20Bridge} from "./IERC20Bridge.sol";
 import "./DelayBufferable.sol";
 
 /**
- * @title Accepts batches from the sequencer and adds them to the rollup inbox.
+ * @title  Accepts batches from the sequencer and adds them to the rollup inbox.
  * @notice Contains the inbox accumulator which is the ordering of all data and transactions to be processed by the rollup.
- * As part of submitting a batch the sequencer is also expected to include items enqueued
- * in the delayed inbox (Bridge.sol). If items in the delayed inbox are not included by a
- * sequencer within a time limit they can be force included into the rollup inbox by anyone.
+ *         As part of submitting a batch the sequencer is also expected to include items enqueued
+ *         in the delayed inbox (Bridge.sol). If items in the delayed inbox are not included by a
+ *         sequencer within a time limit they can be force included into the rollup inbox by anyone.
  */
 contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
     IBridge public immutable bridge;
@@ -151,31 +146,6 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
         }
     }
 
-    function maxTimeVariationInternal()
-        internal
-        view
-        returns (
-            uint64,
-            uint64,
-            uint64,
-            uint64
-        )
-    {
-        if (_chainIdChanged()) {
-            return (1, 1, 1, 1);
-        } else if (!isDelayBufferable) {
-            return (delayBlocks, futureBlocks, delaySeconds, futureSeconds);
-        } else if (isFullBufferSyncCacheValid()) {
-            return maxTimeVariationBufferable(maxBufferBlocks, maxBufferSeconds);
-        } else {
-            return
-                maxTimeVariationBufferable(
-                    delayBufferData.bufferBlocks,
-                    delayBufferData.bufferSeconds
-                );
-        }
-    }
-
     function _chainIdChanged() internal view returns (bool) {
         return deployTimeChainId != block.chainid;
     }
@@ -187,11 +157,6 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
         IOwnable newRollup = bridge.rollup();
         if (rollup == newRollup) revert RollupNotChanged();
         rollup = newRollup;
-    }
-
-    /// @inheritdoc ISequencerInbox
-    function totalDelayedMessagesRead() public view returns (uint256) {
-        return bridge.totalDelayedMessagesRead();
     }
 
     function getTimeBounds() internal view virtual returns (IBridge.TimeBounds memory) {
@@ -236,6 +201,31 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
             uint256(delaySeconds_),
             uint256(futureSeconds_)
         );
+    }
+
+    function maxTimeVariationInternal()
+        internal
+        view
+        returns (
+            uint64,
+            uint64,
+            uint64,
+            uint64
+        )
+    {
+        if (_chainIdChanged()) {
+            return (1, 1, 1, 1);
+        } else if (!isDelayBufferable) {
+            return (delayBlocks, futureBlocks, delaySeconds, futureSeconds);
+        } else if (isFullBufferSyncCacheValid()) {
+            return maxTimeVariationBufferable(maxBufferBlocks, maxBufferSeconds);
+        } else {
+            return
+                maxTimeVariationBufferable(
+                    delayBufferData.bufferBlocks,
+                    delayBufferData.bufferSeconds
+                );
+        }
     }
 
     /// @inheritdoc ISequencerInbox
@@ -676,8 +666,8 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
         return (keccak256(bytes.concat(header, data)), timeBounds);
     }
 
-    /// @dev   Form a hash of the data being provided in 4844 data blobs
-    /// @param afterDelayedMessagesRead The delayed messages count read up to
+    /// @dev    Form a hash of the data being provided in 4844 data blobs
+    /// @param  afterDelayedMessagesRead The delayed messages count read up to
     /// @return The data hash
     /// @return The timebounds within which the message should be processed
     /// @return The normalized amount of gas used for blob posting
@@ -752,6 +742,11 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
 
     function batchCount() external view returns (uint256) {
         return bridge.sequencerMessageCount();
+    }
+
+    /// @inheritdoc ISequencerInbox
+    function totalDelayedMessagesRead() public view returns (uint256) {
+        return bridge.totalDelayedMessagesRead();
     }
 
     /// @inheritdoc ISequencerInbox
