@@ -41,10 +41,11 @@ async function main() {
 
   const referentBytecodes: BytecodeByVersion = bytecodes
 
-  console.log('Deployed contracts:', deployedContracts)
-  console.log('Contract bytecodes:', referentBytecodes)
-
-  const version = _findMatchingVersion(deployedContracts, referentBytecodes)
+  const version = await _findMatchingVersion(
+    deployedContracts,
+    referentBytecodes,
+    provider
+  )
   console.log('Orbit version:', version)
 }
 
@@ -83,15 +84,19 @@ async function _getAddressAtStorageSlot(
   return ethers.utils.getAddress(formatAddress)
 }
 
-function _findMatchingVersion(
+async function _findMatchingVersion(
   deployedContracts: referentBytecodes,
-  referentBytecodes: BytecodeByVersion
-): string | undefined {
+  referentBytecodes: BytecodeByVersion,
+  provider: Provider
+): Promise<string | undefined> {
   for (const [version, versionBytecodes] of Object.entries(referentBytecodes)) {
     if (
-      deployedContracts.Inbox === versionBytecodes.Inbox &&
-      deployedContracts.Outbox === versionBytecodes.Outbox &&
-      deployedContracts.Rollup === versionBytecodes.Rollup
+      (await provider.getCode(deployedContracts.Inbox)) ===
+        versionBytecodes.Inbox ||
+      (await provider.getCode(deployedContracts.Outbox)) ===
+        versionBytecodes.Outbox ||
+      (await provider.getCode(deployedContracts.Rollup)) ===
+        versionBytecodes.Rollup
     ) {
       return version // Found a matching version
     }
