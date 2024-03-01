@@ -1,0 +1,12 @@
+{
+  "v1.0.0": {
+    "Inbox": "0xaaaa",
+    "Outbox": "0xbbbb",
+    "Rollup": "0xcccc"
+  },
+  "v1.1.0": {
+    "Inbox": "0xdddd",
+    "Outbox": "0xeeee",
+    "Rollup": "0xffff"
+  }
+}
