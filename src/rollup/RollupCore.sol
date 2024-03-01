@@ -50,6 +50,9 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     uint256 public minimumAssertionPeriod;
 
 
+
+
+
     
 
     // uninitialized
