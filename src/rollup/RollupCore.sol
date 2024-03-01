@@ -49,6 +49,8 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     address public stakeToken;
     uint256 public minimumAssertionPeriod;
 
+
+    // adding some lines
     mapping(address => bool) public isValidator;
 
     // Stakers become Zombies after losing a challenge
