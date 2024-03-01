@@ -8,14 +8,17 @@ main()
     console.error(error)
   })
 
-interface referentBytecodes {
+interface ReferentBytecodes {
   Inbox: string
   Outbox: string
   Rollup: string
 }
-
+interface BytecodeByNativeToken {
+  eth: ReferentBytecodes
+  erc20: ReferentBytecodes
+}
 interface BytecodeByVersion {
-  [version: string]: referentBytecodes
+  [version: string]: BytecodeByNativeToken
 }
 
 async function main() {
@@ -43,6 +46,7 @@ async function main() {
 
   const version = await _findMatchingVersion(
     deployedContracts,
+    false,
     referentBytecodes,
     provider
   )
@@ -85,22 +89,24 @@ async function _getAddressAtStorageSlot(
 }
 
 async function _findMatchingVersion(
-  deployedContracts: referentBytecodes,
+  deployedContracts: ReferentBytecodes,
+  isUsingFeeToken: boolean,
   referentBytecodes: BytecodeByVersion,
   provider: Provider
 ): Promise<string | undefined> {
   for (const [version, versionBytecodes] of Object.entries(referentBytecodes)) {
+    const nativeTokenType = isUsingFeeToken ? 'erc20' : 'eth'
     if (
       (await provider.getCode(deployedContracts.Inbox)) ===
-        versionBytecodes.Inbox ||
+        versionBytecodes[nativeTokenType].Inbox ||
       (await provider.getCode(deployedContracts.Outbox)) ===
-        versionBytecodes.Outbox ||
+        versionBytecodes[nativeTokenType].Outbox ||
       (await provider.getCode(deployedContracts.Rollup)) ===
-        versionBytecodes.Rollup
+        versionBytecodes[nativeTokenType].Rollup
     ) {
-      return version // Found a matching version
+      return version
     }
   }
 
-  return undefined // No match found
+  return undefined
 }
