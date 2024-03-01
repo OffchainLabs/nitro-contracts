@@ -49,6 +49,9 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     address public stakeToken;
     uint256 public minimumAssertionPeriod;
 
+
+    
+
     // uninitialized
     uint x;
 
