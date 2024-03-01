@@ -94,6 +94,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
      * @return Node struct
      */
     function getNodeStorage(uint64 nodeNum) internal view returns (Node storage) {
+        uint y = x;
         return _nodes[nodeNum];
     }
 
