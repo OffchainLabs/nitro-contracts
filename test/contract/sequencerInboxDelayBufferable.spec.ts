@@ -11,8 +11,8 @@ import {
   getInboxMessageDeliveredEvents,
 } from './testHelpers'
 
-describe('SequencerInboxForceInclude', async () => {
-  it('can add batch', async () => {
+describe('SequencerInboxDelayBufferable', async () => {
+  it('can add batches with delay proofs', async () => {
     const { user, inbox, bridge, messageTester, sequencerInbox, batchPoster } =
       await setupSequencerInbox()
     let delayedInboxPending: DelayedMsgDelivered[] = []
