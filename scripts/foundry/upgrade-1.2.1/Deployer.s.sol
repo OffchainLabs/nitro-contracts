@@ -11,7 +11,7 @@ import {OneStepProverHostIo} from "../../../src/osp/OneStepProverHostIo.sol";
 import {OneStepProofEntry} from "../../../src/osp/OneStepProofEntry.sol";
 import {ChallengeManager} from "../../../src/challenge/ChallengeManager.sol";
 import "../../../src/rollup/RollupCreator.sol";
-import {BridgeCreator} from "../../../src/rollup/BridgeCreator.sol";
+import {MockArbSys} from "./../../../src/test-helpers/MockArbSys.sol";
 
 /**
  * @title DeployScript
@@ -27,6 +27,12 @@ contract DeployScript is Script {
             address rollupCreator,
             bool creatorOwnerIsMultisig
         ) = _getDeploymentConfigParams();
+
+        if (hostChainIsArbitrum) {
+            // etch a mock ArbSys contract so that foundry simulate it nicely
+            bytes memory mockArbSysCode = address(new MockArbSys()).code;
+            vm.etch(address(100), mockArbSysCode);
+        }
 
         vm.startBroadcast();
 
