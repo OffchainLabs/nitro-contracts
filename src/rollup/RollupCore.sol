@@ -53,10 +53,12 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
 
 
 
-    
+
 
     // uninitialized
     uint x;
+
+    uint x2;
 
 
     // adding some lines
