@@ -66,25 +66,74 @@ async function main() {
   const isUsingFeeToken = await _isUsingFeeToken(bridge.address, provider)
 
   // get metadata hashes
-  const metadataHashes = {
+  const metadataHashes: { [key: string]: string } = {
     Inbox: await _getMetadataHash(inboxAddress, provider),
     Outbox: await _getMetadataHash(outboxAddress, provider),
     SequencerInbox: await _getMetadataHash(seqInboxAddress, provider),
     Bridge: await _getMetadataHash(bridge.address, provider),
   }
 
-  console.log('metadataHashes of deployed contracts:', metadataHashes)
+  console.log('\nMetadataHashes of deployed contracts:', metadataHashes, '\n')
 
-  // get version
-  const version = await _getVersionOfDeployedContracts(
-    metadataHashes,
-    isUsingFeeToken ? 'erc20' : 'eth'
-  )
-  console.log(
-    '\nVersion of deployed contracts:',
-    version ? version : 'unknown',
-    '\n'
-  )
+  // get and print version per bridge contract
+  const nativeType = isUsingFeeToken ? 'erc20' : 'eth'
+  Object.keys(metadataHashes).forEach(key => {
+    const version = _getVersionOfDeployedContract(
+      metadataHashes[key],
+      nativeType,
+      key as keyof ReferentMetadataHashes
+    )
+    console.log(`Version of deployed ${key}: ${version ? version : 'unknown'}`)
+  })
+}
+
+function _getVersionOfDeployedContract(
+  metadataHash: string,
+  type: 'eth' | 'erc20',
+  contractName: keyof ReferentMetadataHashes
+): string | null {
+  for (const [version] of Object.entries(referentMetadataHashes)) {
+    if (metadataHash === referentMetadataHashes[version][type][contractName]) {
+      return version
+    }
+  }
+  return null
+}
+
+async function _getMetadataHash(
+  contractAddress: string,
+  provider: Provider
+): Promise<string> {
+  const implAddress = await _getLogicAddress(contractAddress, provider)
+  const bytecode = await provider.getCode(implAddress)
+
+  // Pattern to match the metadata prefix and the following 64 hex characters (32 bytes)
+  const metadataPattern = /a264697066735822([a-fA-F0-9]{64})/
+  const matches = bytecode.match(metadataPattern)
+
+  if (matches && matches.length > 1) {
+    // The actual metadata hash is in the first capturing group
+    return matches[1]
+  } else {
+    throw new Error('No metadata hash found in bytecode')
+  }
+}
+
+async function _isUsingFeeToken(
+  bridgeAddress: string,
+  provider: Provider
+): Promise<boolean> {
+  const bridge = IERC20Bridge__factory.connect(bridgeAddress, provider)
+  try {
+    const feeToken = await bridge.nativeToken()
+    if (feeToken == ethers.constants.AddressZero) {
+      return false
+    } else {
+      return true
+    }
+  } catch {
+    return false
+  }
 }
 
 async function _getLogicAddress(
@@ -126,58 +175,4 @@ async function _getAddressAtStorageSlot(
 
   // return address as checksum address
   return ethers.utils.getAddress(formatAddress)
-}
-
-async function _getVersionOfDeployedContracts(
-  metadataHashes: any,
-  type: 'eth' | 'erc20'
-): Promise<string | null> {
-  for (const [version] of Object.entries(referentMetadataHashes)) {
-    if (
-      metadataHashes.Inbox === referentMetadataHashes[version][type].Inbox &&
-      metadataHashes.Outbox === referentMetadataHashes[version][type].Outbox &&
-      metadataHashes.SequencerInbox ===
-        referentMetadataHashes[version][type].SequencerInbox &&
-      metadataHashes.Bridge === referentMetadataHashes[version][type].Bridge
-    ) {
-      return version
-    }
-  }
-  return null
-}
-
-async function _getMetadataHash(
-  contractAddress: string,
-  provider: Provider
-): Promise<string> {
-  const implAddress = await _getLogicAddress(contractAddress, provider)
-  const bytecode = await provider.getCode(implAddress)
-
-  // Pattern to match the metadata prefix and the following 64 hex characters (32 bytes)
-  const metadataPattern = /a264697066735822([a-fA-F0-9]{64})/
-  const matches = bytecode.match(metadataPattern)
-
-  if (matches && matches.length > 1) {
-    // The actual metadata hash is in the first capturing group
-    return matches[1]
-  } else {
-    throw new Error('No metadata hash found in bytecode')
-  }
-}
-
-async function _isUsingFeeToken(
-  bridgeAddress: string,
-  provider: Provider
-): Promise<boolean> {
-  const bridge = IERC20Bridge__factory.connect(bridgeAddress, provider)
-  try {
-    const feeToken = await bridge.nativeToken()
-    if (feeToken == ethers.constants.AddressZero) {
-      return false
-    } else {
-      return true
-    }
-  } catch {
-    return false
-  }
 }

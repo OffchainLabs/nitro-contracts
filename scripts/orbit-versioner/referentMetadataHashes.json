@@ -1,16 +1,16 @@
 {
-  "v1.1.1": {
+  "v1.2.1": {
     "eth": {
-      "Inbox": "12207d8dae84fd8ceb28dac40f916f08fa675e52cd1afd436ddf7544861310d2",
-      "Outbox": "12201d864fde4d3fe778dfcfa436cd8c3f70afcdc0a4b262612322c379ba38ff",
-      "SequencerInbox": "122028728ef494db01fb2b2aeb05e75db0f55f0091d2fbe424683280c54d5c18",
-      "Bridge": "122036229552e25569ee81b36ff0079ed482a0f5114c34695a273717057e68b7"
+      "Inbox": "1220b7485c2de1f6dc3591e34e6caaa5c0e85db502f63ee4a2e1395b319d664a",
+      "Outbox": "12202e450a5acd14411d8e2b53eeb592dd06b55b7f63c68edc1a4a9ade28f56e",
+      "SequencerInbox": "1220e4fc6065f422acff75d4a2db15fdea38753da41cb0ce3dbafc57aecdc240",
+      "Bridge": "1220ba7a1cededf660a42a7377a73bb0d14a4397581fcbb24bebdd45d63810c2"
     },
     "erc20": {
-      "Inbox": "1220461ed5b89db5608c1ea62ff3a70317b28240285dcf06730c47fcfd5930e7",
-      "Outbox": "1220085f7605c9e3c80d961629caf55d8fdad41aff6c9599f085d450b0b9be55",
-      "SequencerInbox": "122028728ef494db01fb2b2aeb05e75db0f55f0091d2fbe424683280c54d5c18",
-      "Bridge": "1220acaca6cc8d40714063ec21646cf3fb554ba0394dc105b80d1c758ae649ee"
+      "Inbox": "122049d58bdcb0b372ec561909ccbdc8a8698ab4fd67328e4915702624165ea8",
+      "Outbox": "1220f184c5915a9b00508c8f065f27c0db0022f5b81993633901b875bea47b88",
+      "SequencerInbox": "1220e4fc6065f422acff75d4a2db15fdea38753da41cb0ce3dbafc57aecdc240",
+      "Bridge": "1220f587e602015bef05909a3dc4d3f302450c6b00ea429653353e9c6a202972"
     }
   },
   "v1.2.0": {
@@ -27,18 +27,18 @@
       "Bridge": "1220608c64e88e11ca7c69079c15d6e7a635d96c8c450b764d917d39c39d927a"
     }
   },
-  "v1.2.1": {
+  "v1.1.1": {
     "eth": {
-      "Inbox": "1220b7485c2de1f6dc3591e34e6caaa5c0e85db502f63ee4a2e1395b319d664a",
-      "Outbox": "12202e450a5acd14411d8e2b53eeb592dd06b55b7f63c68edc1a4a9ade28f56e",
-      "SequencerInbox": "1220e4fc6065f422acff75d4a2db15fdea38753da41cb0ce3dbafc57aecdc240",
-      "Bridge": "1220ba7a1cededf660a42a7377a73bb0d14a4397581fcbb24bebdd45d63810c2"
+      "Inbox": "12207d8dae84fd8ceb28dac40f916f08fa675e52cd1afd436ddf7544861310d2",
+      "Outbox": "12201d864fde4d3fe778dfcfa436cd8c3f70afcdc0a4b262612322c379ba38ff",
+      "SequencerInbox": "122028728ef494db01fb2b2aeb05e75db0f55f0091d2fbe424683280c54d5c18",
+      "Bridge": "122036229552e25569ee81b36ff0079ed482a0f5114c34695a273717057e68b7"
     },
     "erc20": {
-      "Inbox": "122049d58bdcb0b372ec561909ccbdc8a8698ab4fd67328e4915702624165ea8",
-      "Outbox": "1220f184c5915a9b00508c8f065f27c0db0022f5b81993633901b875bea47b88",
-      "SequencerInbox": "1220e4fc6065f422acff75d4a2db15fdea38753da41cb0ce3dbafc57aecdc240",
-      "Bridge": "1220f587e602015bef05909a3dc4d3f302450c6b00ea429653353e9c6a202972"
+      "Inbox": "1220461ed5b89db5608c1ea62ff3a70317b28240285dcf06730c47fcfd5930e7",
+      "Outbox": "1220085f7605c9e3c80d961629caf55d8fdad41aff6c9599f085d450b0b9be55",
+      "SequencerInbox": "122028728ef494db01fb2b2aeb05e75db0f55f0091d2fbe424683280c54d5c18",
+      "Bridge": "1220acaca6cc8d40714063ec21646cf3fb554ba0394dc105b80d1c758ae649ee"
     }
   }
 }
