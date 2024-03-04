@@ -14,6 +14,9 @@ main()
     console.error(error)
   })
 
+/**
+ * Interfaces
+ */
 interface ReferentMetadataHashes {
   Inbox: string
   Outbox: string
@@ -33,17 +36,24 @@ interface MetadataHashesByVersion {
  */
 const referentMetadataHashes: MetadataHashesByVersion = metadataHashes
 
+/**
+ * Script will
+ */
 async function main() {
+  if (!process.env.INBOX_ADDRESS) {
+    throw new Error('INBOX_ADDRESS env variable shall be set')
+  }
+
+  ///
   const provider = ethers.provider
   const chainId = (await provider.getNetwork()).chainId
+  const inboxAddress = process.env.INBOX_ADDRESS!
 
   console.log(
-    "Get the version of Orbit chain's nitro contracts, hosted on chain",
-    chainId
+    `Get the version of Orbit chain's nitro contracts (inbox ${inboxAddress}), hosted on chain ${chainId}`
   )
 
   // get all core addresses from inbox address
-  const inboxAddress = process.env.INBOX_ADDRESS!
   const inbox = Inbox__factory.connect(inboxAddress, provider)
   const bridge = IBridge__factory.connect(await inbox.bridge(), provider)
   const seqInboxAddress = await bridge.sequencerInbox()
@@ -64,7 +74,11 @@ async function main() {
 
   // get version
   const version = await _getVersionOfDeployedContracts(metadataHashes, 'eth')
-  console.log('\nVersion of deployed contracts:', version ? version : 'unknown')
+  console.log(
+    '\nVersion of deployed contracts:',
+    version ? version : 'unknown',
+    '\n'
+  )
 }
 
 async function _getLogicAddress(
