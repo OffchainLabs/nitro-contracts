@@ -1,6 +1,6 @@
 import { Provider } from '@ethersproject/providers'
 import { ethers } from 'hardhat'
-import bytecodes from './ref.json'
+import metadataHashes from './ref.json'
 import {
   IBridge__factory,
   Inbox__factory,
@@ -13,32 +13,24 @@ main()
     console.error(error)
   })
 
-interface ReferentBytecodes {
-  Inbox: string[]
-  Outbox: string[]
-  Rollup: string[]
-  SequencerInbox: string[]
-  Bridge: string[]
-}
-interface BytecodeByNativeToken {
-  eth: ReferentBytecodes
-  erc20: ReferentBytecodes
-}
-interface BytecodeByVersion {
-  [version: string]: BytecodeByNativeToken
-}
-interface DeployedContracts {
+interface ReferentMetadataHashes {
   Inbox: string
   Outbox: string
-  Rollup: string
   SequencerInbox: string
   Bridge: string
 }
+interface MetadataHashesByNativeToken {
+  eth: ReferentMetadataHashes
+  erc20: ReferentMetadataHashes
+}
+interface MetadataHashesByVersion {
+  [version: string]: MetadataHashesByNativeToken
+}
 
 /**
- * Load the referent bytecodes
+ * Load the referent metadata hashes
  */
-const referentBytecodes: BytecodeByVersion = bytecodes
+const referentMetadataHashes: MetadataHashesByVersion = metadataHashes
 
 async function main() {
   console.log("Get the version of Orbit chain's nitro contracts")
@@ -46,27 +38,29 @@ async function main() {
   const [signer] = await ethers.getSigners()
   const provider = signer.provider!
 
-  // get all addresses from inbox
+  // get all core addresses from inbox address
   const inboxAddress = process.env.INBOX_ADDRESS!
   const inbox = Inbox__factory.connect(inboxAddress, provider)
   const bridge = IBridge__factory.connect(await inbox.bridge(), provider)
   const seqInboxAddress = await bridge.sequencerInbox()
-  const rollupAddress = await bridge.rollup()
   const outboxAddress = await RollupCore__factory.connect(
-    rollupAddress,
+    await bridge.rollup(),
     provider
   ).outbox()
 
-  // get logic contracts
+  // get metadata hashes
   const metadataHashes = {
     Inbox: await _getMetadataHash(inboxAddress, provider),
     Outbox: await _getMetadataHash(outboxAddress, provider),
-    Rollup: await _getMetadataHash(rollupAddress, provider),
     SequencerInbox: await _getMetadataHash(seqInboxAddress, provider),
     Bridge: await _getMetadataHash(bridge.address, provider),
   }
 
   console.log('metadataHashes of deployed contracts:', metadataHashes)
+
+  // get version
+  const version = await _getVersionOfDeployedContracts(metadataHashes, 'eth')
+  console.log('version of deployed contracts:', version ? version : 'unknown')
 }
 
 async function _getLogicAddress(
@@ -110,51 +104,22 @@ async function _getAddressAtStorageSlot(
   return ethers.utils.getAddress(formatAddress)
 }
 
-async function _findMatchingVersion(
-  deployedContracts: DeployedContracts,
-  isUsingFeeToken: boolean,
-  referentBytecodes: BytecodeByVersion,
-  provider: Provider
+async function _getVersionOfDeployedContracts(
+  metadataHashes: any,
+  type: 'eth' | 'erc20'
 ): Promise<string | null> {
-  const nativeTokenType = isUsingFeeToken ? 'erc20' : 'eth'
-
-  const inbox = await provider.getCode(deployedContracts.Inbox)
-  const outbox = await provider.getCode(deployedContracts.Outbox)
-  const rollup = await provider.getCode(deployedContracts.Rollup)
-  const seqInbox = await provider.getCode(deployedContracts.SequencerInbox)
-  const bridge = await provider.getCode(deployedContracts.Bridge)
-
-  for (const [version] of Object.entries(referentBytecodes)) {
+  for (const [version] of Object.entries(referentMetadataHashes)) {
     if (
-      isMatchingVersion(inbox, version, nativeTokenType, 'Inbox') &&
-      isMatchingVersion(outbox, version, nativeTokenType, 'Outbox') &&
-      isMatchingVersion(rollup, version, nativeTokenType, 'Rollup') &&
-      isMatchingVersion(seqInbox, version, nativeTokenType, 'SequencerInbox') &&
-      isMatchingVersion(bridge, version, nativeTokenType, 'Bridge')
+      metadataHashes.Inbox === referentMetadataHashes[version][type].Inbox &&
+      metadataHashes.Outbox === referentMetadataHashes[version][type].Outbox &&
+      metadataHashes.SequencerInbox ===
+        referentMetadataHashes[version][type].SequencerInbox &&
+      metadataHashes.Bridge === referentMetadataHashes[version][type].Bridge
     ) {
       return version
     }
   }
-
   return null
-}
-
-function isMatchingVersion(
-  deployedBytecode: string,
-  version: string,
-  type: 'eth' | 'erc20',
-  contractName: keyof ReferentBytecodes
-): boolean {
-  const bytecodeToLookAt = referentBytecodes[version]?.[type]?.[contractName]
-
-  if (!bytecodeToLookAt) {
-    throw new Error(
-      `No referent bytecodes found for ${contractName} in version ${version} and type ${type}.`
-    )
-  }
-  return bytecodeToLookAt.some(
-    (referentBytecode: string) => referentBytecode === deployedBytecode
-  )
 }
 
 async function _getMetadataHash(
