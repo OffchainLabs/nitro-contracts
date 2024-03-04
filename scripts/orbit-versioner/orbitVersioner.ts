@@ -1,11 +1,12 @@
 import { Provider } from '@ethersproject/providers'
 import { ethers } from 'hardhat'
-import metadataHashes from './ref.json'
+import metadataHashes from './referentMetadataHashes.json'
 import {
   IBridge__factory,
   Inbox__factory,
   RollupCore__factory,
 } from '../../build/types'
+import '@nomiclabs/hardhat-ethers'
 
 main()
   .then(() => process.exit(0))
@@ -33,10 +34,13 @@ interface MetadataHashesByVersion {
 const referentMetadataHashes: MetadataHashesByVersion = metadataHashes
 
 async function main() {
-  console.log("Get the version of Orbit chain's nitro contracts")
+  const provider = ethers.provider
+  const chainId = (await provider.getNetwork()).chainId
 
-  const [signer] = await ethers.getSigners()
-  const provider = signer.provider!
+  console.log(
+    "Get the version of Orbit chain's nitro contracts, hosted on chain",
+    chainId
+  )
 
   // get all core addresses from inbox address
   const inboxAddress = process.env.INBOX_ADDRESS!
@@ -60,7 +64,7 @@ async function main() {
 
   // get version
   const version = await _getVersionOfDeployedContracts(metadataHashes, 'eth')
-  console.log('version of deployed contracts:', version ? version : 'unknown')
+  console.log('\nVersion of deployed contracts:', version ? version : 'unknown')
 }
 
 async function _getLogicAddress(
