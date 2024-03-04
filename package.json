@@ -38,6 +38,7 @@
     "test:storage": "./test/storage/test.bash",
     "test:signatures": "./test/signatures/test-sigs.bash",
     "test:e2e": "hardhat test test/e2e/*.ts",
+    "orbit:contracts:version": "hardhat run scripts/orbit-versioner/orbitVersioner.ts",
     "postinstall": "patch-package",
     "deploy-factory": "hardhat run scripts/deployment.ts",
     "deploy-eth-rollup": "hardhat run scripts/createEthRollup.ts",
