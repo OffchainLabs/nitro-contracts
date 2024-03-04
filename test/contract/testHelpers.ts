@@ -40,8 +40,7 @@ import {
   MessageDeliveredEvent,
   SequencerBatchDeliveredEvent,
 } from '../../build/types/src/bridge/Bridge'
-import { Signer } from 'ethers'
-import { Toolkit4844 } from './toolkit4844'
+import { ContractReceipt, Signer } from 'ethers'
 import {
   DelayedMsg,
   DelayedMsgDelivered,
@@ -249,7 +248,7 @@ export const forceIncludeMessages = async (
   newTotalDelayedMessagesRead: number,
   delayedMessage: DelayedMsg,
   expectedErrorType?: string
-) => {
+): Promise<ContractReceipt | undefined> => {
   const inboxLengthBefore = (await sequencerInbox.batchCount()).toNumber()
 
   const forceInclusionTx = sequencerInbox.forceInclusion(
@@ -265,7 +264,7 @@ export const forceIncludeMessages = async (
       `reverted with custom error '${expectedErrorType}()'`
     )
   } else {
-    await (await forceInclusionTx).wait()
+    const txnReciept = await (await forceInclusionTx).wait()
 
     const totalDelayedMessagsReadAfter = (
       await sequencerInbox.totalDelayedMessagesRead()
@@ -278,35 +277,36 @@ export const forceIncludeMessages = async (
     expect(inboxLengthAfter - inboxLengthBefore, 'Inbox not incremented').to.eq(
       1
     )
+    return txnReciept
   }
 }
 
-const maxVar: MaxTimeVariation = {
+const maxDelayDefault: MaxTimeVariation = {
   delayBlocks: (60 * 60 * 24) / 12,
   delaySeconds: 60 * 60 * 24,
   futureBlocks: 32 * 2,
   futureSeconds: 12 * 32 * 2,
 }
 
-const rateRepl: ReplenishRate = {
+const replenishRateDefault: ReplenishRate = {
   blocksPerPeriod: 1,
   periodBlocks: 14,
   secondsPerPeriod: 1,
   periodSeconds: 12,
 }
 
-const delayConfig: DelayConfig = {
+const delayConfigDefault: DelayConfig = {
   thresholdBlocks: BigNumber.from((2 * 60 * 60) / 12),
   thresholdSeconds: BigNumber.from(2 * 60 * 60),
-  maxBufferBlocks: maxVar.delayBlocks * 2,
-  maxBufferSeconds: maxVar.delaySeconds * 2,
+  maxBufferBlocks: maxDelayDefault.delayBlocks * 2,
+  maxBufferSeconds: maxDelayDefault.delaySeconds * 2,
 }
 
-const configNotDelayBufferable: DelayConfig = {
+const delayConfigNotDelayBufferable: DelayConfig = {
   thresholdBlocks: BigNumber.from(2).pow(64).sub(1),
   thresholdSeconds: BigNumber.from(2).pow(64).sub(1),
-  maxBufferBlocks: maxVar.delayBlocks * 2,
-  maxBufferSeconds: maxVar.delaySeconds * 2,
+  maxBufferBlocks: maxDelayDefault.delayBlocks * 2,
+  maxBufferSeconds: maxDelayDefault.delaySeconds * 2,
 }
 
 export const getSequencerBatchDeliveredEvents = (
@@ -322,9 +322,9 @@ export const getSequencerBatchDeliveredEvents = (
 
 export const setupSequencerInbox = async (
   isDelayBufferable = false,
-  max: MaxTimeVariation = maxVar,
-  rate: ReplenishRate = rateRepl,
-  config: DelayConfig = delayConfig
+  maxDelay: MaxTimeVariation = maxDelayDefault,
+  replenishRate: ReplenishRate = replenishRateDefault,
+  delayConfig: DelayConfig = delayConfigDefault
 ) => {
   const accounts = await initializeAccounts()
   const admin = accounts[0]
@@ -379,9 +379,9 @@ export const setupSequencerInbox = async (
 
   const sequencerInbox = await sequencerInboxFac.deploy(
     bridgeProxy.address,
-    max,
-    rate,
-    isDelayBufferable ? config : configNotDelayBufferable,
+    maxDelay,
+    replenishRate,
+    isDelayBufferable ? delayConfigDefault : delayConfigNotDelayBufferable,
     117964,
     false
   )
@@ -427,5 +427,8 @@ export const setupSequencerInbox = async (
     bridgeProxy,
     rollup,
     rollupOwner,
+    maxDelay,
+    replenishRate,
+    delayConfig,
   }
 }

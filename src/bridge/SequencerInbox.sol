@@ -275,9 +275,7 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
             _totalDelayedMessagesRead
         );
         uint256 prevSeqMsgCount = bridge.sequencerReportedSubMessageCount();
-        uint256 newSeqMsgCount = prevSeqMsgCount +
-            _totalDelayedMessagesRead -
-            totalDelayedMessagesRead();
+        uint256 newSeqMsgCount = prevSeqMsgCount;
 
         bridge.enqueueSequencerMessage(
             dataHash,
@@ -307,30 +305,13 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
             // if no new delayed messages are read, no buffer updates can be applied
             // and there are no new delayed messages to prove delays, so no proof is required
         }
-
-        (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formCallDataHash(
+        addSequencerL2BatchFromOriginImpl(
+            sequenceNumber,
             data,
-            afterDelayedMessagesRead
-        );
-
-        (uint256 seqMessageIndex, , , ) = bridge.enqueueSequencerMessage(
-            dataHash,
             afterDelayedMessagesRead,
             prevMessageCount,
-            newMessageCount,
-            timeBounds,
-            IBridge.BatchDataLocation.TxInput
+            newMessageCount
         );
-
-        // ~uint256(0) is type(uint256).max, but ever so slightly cheaper
-        if (seqMessageIndex != sequenceNumber && sequenceNumber != ~uint256(0)) {
-            revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
-        }
-
-        if (!isUsingFeeToken) {
-            // only report batch poster spendings if chain is using ETH as native currency
-            submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, 0);
-        }
     }
 
     /// @inheritdoc ISequencerInbox

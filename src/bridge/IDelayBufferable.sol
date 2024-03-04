@@ -80,6 +80,10 @@ interface IDelayBufferable {
     /// @return thresholdSeconds The maximum amount of time in seconds that a message is expected to be delayed
     /// @return maxBufferBlocks The maximum the delay blocks seconds can be
     /// @return maxBufferSeconds The maximum the delay buffer seconds can be
+    /// @return delayBlocks The max amount of blocks a message can be delayed
+    /// @return delaySeconds The max amount of seconds a message can be delayed
+    /// @return futureBlocks The max amount of blocks a message can be in the future
+    /// @return futureSeconds The max amount of seconds a message can be in the future
     function delayConfig()
         external
         view
@@ -87,7 +91,11 @@ interface IDelayBufferable {
             uint64 thresholdBlocks,
             uint64 thresholdSeconds,
             uint64 maxBufferBlocks,
-            uint64 maxBufferSeconds
+            uint64 maxBufferSeconds,
+            uint64 delayBlocks,
+            uint64 delaySeconds,
+            uint64 futureBlocks,
+            uint64 futureSeconds
         );
 
     /// @dev    The delay buffer can change due to pending depletion.

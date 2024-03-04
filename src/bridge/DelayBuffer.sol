@@ -262,31 +262,31 @@ library DelayBuffer {
     ///         This function applies pending buffer changes to proactively calculate the force inclusion deadline.
     ///         This is only relevant when the bufferBlocks or bufferSeconds are less than delayBlocks or delaySeconds.
     /// @notice Calculates the upper bounds of the delay buffer
-    function forceInclusionDeadline(
+    /// @param blockNumber The block number to process the delay up to
+    /// @param timestamp The timestamp to process the delay up to
+    /// @param thresholdBlocks The maximum amount of blocks that a message is expected to be delayed
+    /// @param thresholdSeconds The maximum amount of time in seconds that a message is expected to be delayed
+    function pendingDelay(
         DelayBufferData storage self,
         uint64 blockNumber,
         uint64 timestamp,
         uint64 thresholdBlocks,
-        uint64 thresholdSeconds,
-        uint64 delayBlocks,
-        uint64 delaySeconds
-    ) external view returns (uint64, uint64) {
-        uint64 _bufferBlocks = deplete(
+        uint64 thresholdSeconds
+    ) public view returns (uint64, uint64) {
+        uint64 bufferBlocks = deplete(
             self.prevDelay.blockNumber,
             blockNumber,
             self.prevDelay.delayBlocks,
             thresholdBlocks,
             self.bufferBlocks
         );
-        uint64 _bufferSeconds = deplete(
+        uint64 bufferSeconds = deplete(
             self.prevDelay.timestamp,
             timestamp,
             self.prevDelay.delaySeconds,
             thresholdSeconds,
             self.bufferSeconds
         );
-        uint64 _delayBlocks = _bufferBlocks < delayBlocks ? _bufferBlocks : delayBlocks;
-        uint64 _delaySeconds = _bufferSeconds < delaySeconds ? _bufferSeconds : delaySeconds;
-        return (blockNumber + _delayBlocks, timestamp + _delaySeconds);
+        return (bufferBlocks, bufferSeconds);
     }
 }

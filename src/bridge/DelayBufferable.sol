@@ -219,7 +219,7 @@ abstract contract DelayBufferable is IDelayBufferable {
             uint64
         )
     {
-        return (secondsPerPeriod, blocksPerPeriod, periodSeconds, periodBlocks);
+        return (blocksPerPeriod, secondsPerPeriod, periodBlocks, periodSeconds);
     }
 
     /// @inheritdoc IDelayBufferable
@@ -230,10 +230,23 @@ abstract contract DelayBufferable is IDelayBufferable {
             uint64,
             uint64,
             uint64,
+            uint64,
+            uint64,
+            uint64,
+            uint64,
             uint64
         )
     {
-        return (thresholdBlocks, thresholdSeconds, maxBufferBlocks, maxBufferSeconds);
+        return (
+            thresholdBlocks,
+            thresholdSeconds,
+            maxBufferBlocks,
+            maxBufferSeconds,
+            delayBlocks,
+            futureBlocks,
+            delaySeconds,
+            futureSeconds
+        );
     }
 
     /// @inheritdoc IDelayBufferable
@@ -242,15 +255,17 @@ abstract contract DelayBufferable is IDelayBufferable {
         view
         returns (uint64, uint64)
     {
-        return
-            delayBufferData.forceInclusionDeadline(
-                blockNumber,
-                timestamp,
-                thresholdBlocks,
-                thresholdSeconds,
-                delayBlocks,
-                delaySeconds
-            );
+        (uint64 bufferBlocks, uint64 bufferSeconds) = delayBufferData.pendingDelay(
+            blockNumber,
+            timestamp,
+            thresholdBlocks,
+            thresholdSeconds
+        );
+        (uint64 _delayBlocks, , uint64 _delaySeconds, ) = maxTimeVariationBufferable(
+            bufferBlocks,
+            bufferSeconds
+        );
+        return (blockNumber + _delayBlocks, timestamp + _delaySeconds);
     }
 
     /// @dev Inheriting contracts must implement this function to cache the full buffer expiry state.

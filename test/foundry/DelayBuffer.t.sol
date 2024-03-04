@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 import "../../src/bridge/DelayBuffer.sol";
-import {L2_MSG} from "../../src/libraries/MessageTypes.sol";
 
 contract SimpleDelayBufferableTest is Test {
 
@@ -251,5 +250,25 @@ contract SimpleDelayBufferableTest is Test {
         assertEq(delayBufferData.prevDelay.delayBlocks, 0);
         assertEq(delayBufferData.prevDelay.timestamp, updateTS);
         assertEq(delayBufferData.prevDelay.delaySeconds, 0);
+    }
+
+    function testPendingDelay() public {
+        delayBufferData = DelayBuffer.DelayBufferData({
+            bufferBlocks: 10,
+            bufferSeconds: 10,
+            roundOffBlocks: 10,
+            roundOffSeconds: 10,
+            prevDelay: DelayBuffer.DelayHistory({
+                blockNumber: 10,
+                timestamp: 10,
+                delayBlocks: 10,
+                delaySeconds: 10
+            })
+        });
+
+        (uint64 bufferBlocks, uint64 bufferSeconds) = delayBufferData.pendingDelay(15, 15, threshold, threshold);
+
+        assertEq(bufferBlocks, 5);
+        assertEq(bufferSeconds, 5);
     }
 }
