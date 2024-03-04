@@ -2,7 +2,9 @@ import { Provider } from '@ethersproject/providers'
 import { ethers } from 'hardhat'
 import metadataHashes from './referentMetadataHashes.json'
 import {
+  Bridge,
   IBridge__factory,
+  IERC20Bridge__factory,
   Inbox__factory,
   RollupCore__factory,
 } from '../../build/types'
@@ -61,6 +63,7 @@ async function main() {
     await bridge.rollup(),
     provider
   ).outbox()
+  const isUsingFeeToken = await _isUsingFeeToken(bridge.address, provider)
 
   // get metadata hashes
   const metadataHashes = {
@@ -73,7 +76,10 @@ async function main() {
   console.log('metadataHashes of deployed contracts:', metadataHashes)
 
   // get version
-  const version = await _getVersionOfDeployedContracts(metadataHashes, 'eth')
+  const version = await _getVersionOfDeployedContracts(
+    metadataHashes,
+    isUsingFeeToken ? 'erc20' : 'eth'
+  )
   console.log(
     '\nVersion of deployed contracts:',
     version ? version : 'unknown',
@@ -156,5 +162,22 @@ async function _getMetadataHash(
     return matches[1]
   } else {
     throw new Error('No metadata hash found in bytecode')
+  }
+}
+
+async function _isUsingFeeToken(
+  bridgeAddress: string,
+  provider: Provider
+): Promise<boolean> {
+  const bridge = IERC20Bridge__factory.connect(bridgeAddress, provider)
+  try {
+    const feeToken = await bridge.nativeToken()
+    if (feeToken == ethers.constants.AddressZero) {
+      return false
+    } else {
+      return true
+    }
+  } catch {
+    return false
   }
 }
