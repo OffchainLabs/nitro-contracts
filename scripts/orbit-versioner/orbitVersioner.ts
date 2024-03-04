@@ -10,11 +10,11 @@ main()
   })
 
 interface ReferentBytecodes {
-  Inbox: string
-  Outbox: string
-  Rollup: string
-  SequencerInbox: string
-  Bridge: string
+  Inbox: string[]
+  Outbox: string[]
+  Rollup: string[]
+  SequencerInbox: string[]
+  Bridge: string[]
 }
 interface BytecodeByNativeToken {
   eth: ReferentBytecodes
@@ -23,6 +23,18 @@ interface BytecodeByNativeToken {
 interface BytecodeByVersion {
   [version: string]: BytecodeByNativeToken
 }
+interface DeployedContracts {
+  Inbox: string
+  Outbox: string
+  Rollup: string
+  SequencerInbox: string
+  Bridge: string
+}
+
+/**
+ * Load the referent bytecodes
+ */
+const referentBytecodes: BytecodeByVersion = bytecodes
 
 async function main() {
   console.log("Get the version of Orbit chain's nitro contracts")
@@ -46,9 +58,6 @@ async function main() {
     SequencerInbox: await _getLogicAddress(seqInboxAddress, provider),
     Bridge: await _getLogicAddress(bridge.address, provider),
   }
-
-  // load referent bytecodes
-  const referentBytecodes: BytecodeByVersion = bytecodes
 
   // find version
   const version = await _findMatchingVersion(
@@ -102,28 +111,48 @@ async function _getAddressAtStorageSlot(
 }
 
 async function _findMatchingVersion(
-  deployedContracts: ReferentBytecodes,
+  deployedContracts: DeployedContracts,
   isUsingFeeToken: boolean,
   referentBytecodes: BytecodeByVersion,
   provider: Provider
-): Promise<string | undefined> {
-  for (const [version, versionBytecodes] of Object.entries(referentBytecodes)) {
-    const nativeTokenType = isUsingFeeToken ? 'erc20' : 'eth'
+): Promise<string | null> {
+  const nativeTokenType = isUsingFeeToken ? 'erc20' : 'eth'
+
+  const inbox = await provider.getCode(deployedContracts.Inbox)
+  const outbox = await provider.getCode(deployedContracts.Outbox)
+  const rollup = await provider.getCode(deployedContracts.Rollup)
+  const seqInbox = await provider.getCode(deployedContracts.SequencerInbox)
+  const bridge = await provider.getCode(deployedContracts.Bridge)
+
+  for (const [version] of Object.entries(referentBytecodes)) {
     if (
-      (await provider.getCode(deployedContracts.Inbox)) ===
-        versionBytecodes[nativeTokenType].Inbox &&
-      (await provider.getCode(deployedContracts.Outbox)) ===
-        versionBytecodes[nativeTokenType].Outbox &&
-      (await provider.getCode(deployedContracts.Rollup)) ===
-        versionBytecodes[nativeTokenType].Rollup &&
-      (await provider.getCode(deployedContracts.SequencerInbox)) ===
-        versionBytecodes[nativeTokenType].SequencerInbox &&
-      (await provider.getCode(deployedContracts.Bridge)) ===
-        versionBytecodes[nativeTokenType].Bridge
+      isMatchingVersion(inbox, version, nativeTokenType, 'Inbox') &&
+      isMatchingVersion(outbox, version, nativeTokenType, 'Outbox') &&
+      isMatchingVersion(rollup, version, nativeTokenType, 'Rollup') &&
+      isMatchingVersion(seqInbox, version, nativeTokenType, 'SequencerInbox') &&
+      isMatchingVersion(bridge, version, nativeTokenType, 'Bridge')
     ) {
       return version
     }
   }
 
-  return undefined
+  return null
+}
+
+function isMatchingVersion(
+  deployedBytecode: string,
+  version: string,
+  type: 'eth' | 'erc20',
+  contractName: keyof ReferentBytecodes
+): boolean {
+  const bytecodeToLookAt = referentBytecodes[version]?.[type]?.[contractName]
+
+  if (!bytecodeToLookAt) {
+    throw new Error(
+      `No referent bytecodes found for ${contractName} in version ${version} and type ${type}.`
+    )
+  }
+  return bytecodeToLookAt.some(
+    (referentBytecode: string) => referentBytecode === deployedBytecode
+  )
 }
