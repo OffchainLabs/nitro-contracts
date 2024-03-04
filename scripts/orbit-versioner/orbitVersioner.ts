@@ -93,7 +93,9 @@ function _getVersionOfDeployedContract(
   contractName: keyof ReferentMetadataHashes
 ): string | null {
   for (const [version] of Object.entries(referentMetadataHashes)) {
-    if (metadataHash === referentMetadataHashes[version][type][contractName]) {
+    if (
+      referentMetadataHashes[version][type][contractName].includes(metadataHash)
+    ) {
       return version
     }
   }
