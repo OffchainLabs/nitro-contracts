@@ -1,7 +1,11 @@
 import { Provider } from '@ethersproject/providers'
 import { ethers } from 'hardhat'
 import bytecodes from './ref.json'
-import { IBridge__factory, Inbox__factory } from '../../build/types'
+import {
+  IBridge__factory,
+  Inbox__factory,
+  RollupCore__factory,
+} from '../../build/types'
 
 main()
   .then(() => process.exit(0))
@@ -47,26 +51,22 @@ async function main() {
   const inbox = Inbox__factory.connect(inboxAddress, provider)
   const bridge = IBridge__factory.connect(await inbox.bridge(), provider)
   const seqInboxAddress = await bridge.sequencerInbox()
-  const outboxAddress = await bridge.activeOutbox()
   const rollupAddress = await bridge.rollup()
+  const outboxAddress = await RollupCore__factory.connect(
+    rollupAddress,
+    provider
+  ).outbox()
 
   // get logic contracts
-  const deployedContracts = {
-    Inbox: await _getLogicAddress(inboxAddress, provider),
-    Outbox: await _getLogicAddress(outboxAddress, provider),
-    Rollup: await _getLogicAddress(rollupAddress, provider),
-    SequencerInbox: await _getLogicAddress(seqInboxAddress, provider),
-    Bridge: await _getLogicAddress(bridge.address, provider),
+  const metadataHashes = {
+    Inbox: await _getMetadataHash(inboxAddress, provider),
+    Outbox: await _getMetadataHash(outboxAddress, provider),
+    Rollup: await _getMetadataHash(rollupAddress, provider),
+    SequencerInbox: await _getMetadataHash(seqInboxAddress, provider),
+    Bridge: await _getMetadataHash(bridge.address, provider),
   }
 
-  // find version
-  const version = await _findMatchingVersion(
-    deployedContracts,
-    false,
-    referentBytecodes,
-    provider
-  )
-  console.log('nitro-contracts version:', version)
+  console.log('metadataHashes of deployed contracts:', metadataHashes)
 }
 
 async function _getLogicAddress(
@@ -155,4 +155,23 @@ function isMatchingVersion(
   return bytecodeToLookAt.some(
     (referentBytecode: string) => referentBytecode === deployedBytecode
   )
+}
+
+async function _getMetadataHash(
+  contractAddress: string,
+  provider: Provider
+): Promise<string> {
+  const implAddress = await _getLogicAddress(contractAddress, provider)
+  const bytecode = await provider.getCode(implAddress)
+
+  // Pattern to match the metadata prefix and the following 64 hex characters (32 bytes)
+  const metadataPattern = /a264697066735822([a-fA-F0-9]{64})/
+  const matches = bytecode.match(metadataPattern)
+
+  if (matches && matches.length > 1) {
+    // The actual metadata hash is in the first capturing group
+    return matches[1]
+  } else {
+    throw new Error('No metadata hash found in bytecode')
+  }
 }
