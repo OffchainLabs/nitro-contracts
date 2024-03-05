@@ -112,5 +112,143 @@
         "1220611c0f41c29b817325b2d56fbd2d81ce85b6458fab21ed9f950ad47db5dd"
       ]
     }
+  },
+  "v1.0.0": {
+    "eth": {
+      "Inbox": [
+        "12208ca6a1600bbc2b39ce529a65192a4554e4eb5e051b4bef02555617ea4019"
+      ],
+      "Outbox": [
+      ],
+      "SequencerInbox": [
+      ],
+      "Bridge": [
+      ]
+    },
+    "erc20": {
+      "Inbox": [
+      ],
+      "Outbox": [
+      ],
+      "SequencerInbox": [
+      ],
+      "Bridge": [
+      ]
+    }
+  },
+  "v0.0.0": {
+    "eth": {
+      "Inbox": [
+      ],
+      "Outbox": [
+        "1220f61c7bc567b0517fc8709bc3904e90cb7f1de4c04d0c25670163217fef25"
+      ],
+      "SequencerInbox": [
+      ],
+      "Bridge": [
+      ]
+    },
+    "erc20": {
+      "Inbox": [
+      ],
+      "Outbox": [
+      ],
+      "SequencerInbox": [
+      ],
+      "Bridge": [
+      ]
+    }
+  },
+  "v0.0.0-nova": {
+    "eth": {
+      "Inbox": [
+      ],
+      "Outbox": [
+        "122026bf46ec5721092a84ccfffdaa944c5973c34ca8ee313b37d392cd815cf2"
+      ],
+      "SequencerInbox": [
+      ],
+      "Bridge": [
+      ]
+    },
+    "erc20": {
+      "Inbox": [
+      ],
+      "Outbox": [
+      ],
+      "SequencerInbox": [
+      ],
+      "Bridge": [
+      ]
+    }
+  },
+  "v0.0.1": {
+    "eth": {
+      "Inbox": [
+      ],
+      "Outbox": [
+      ],
+      "SequencerInbox": [
+      ],
+      "Bridge": [
+        "1220d17069b386a4ac377f74e491f5de3f52147ad89de5975e9c3ce797ab135b"
+      ]
+    },
+    "erc20": {
+      "Inbox": [
+      ],
+      "Outbox": [
+      ],
+      "SequencerInbox": [
+      ],
+      "Bridge": [
+      ]
+    }
+  },
+  "v0.0.2": {
+    "eth": {
+      "Inbox": [
+        "1220cf752ad974262f5f7d1959e3bf31395d7251b2416cde0e38c68e1efff075"
+      ],
+      "Outbox": [
+      ],
+      "SequencerInbox": [
+      ],
+      "Bridge": [
+      ]
+    },
+    "erc20": {
+      "Inbox": [
+      ],
+      "Outbox": [
+      ],
+      "SequencerInbox": [
+      ],
+      "Bridge": [
+      ]
+    }
+  },
+  "v0.0.3": {
+    "eth": {
+      "Inbox": [
+      ],
+      "Outbox": [
+      ],
+      "SequencerInbox": [
+        "122037f21842a3c6a5f06afa8ec57c8c24cc8ac1a85878cb0ade9054f4431ddb"
+      ],
+      "Bridge": [
+      ]
+    },
+    "erc20": {
+      "Inbox": [
+      ],
+      "Outbox": [
+      ],
+      "SequencerInbox": [
+      ],
+      "Bridge": [
+      ]
+    }
   }
 }
