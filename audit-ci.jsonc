@@ -45,6 +45,8 @@
     // Exposure of Sensitive Information to an Unauthorized Actor in follow-redirects
     "GHSA-pw2r-vq6v-hr8c",
     // Exposure of sensitive information in follow-redirects
-    "GHSA-74fj-2j2h-c42q"
+    "GHSA-74fj-2j2h-c42q",
+    // Open Zeppelin: Base64 encoding may read from potentially dirty memory
+    "GHSA-9vx6-7xxf-x967"
   ]
 }
