@@ -249,9 +249,7 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
         );
 
         if (isDelayBufferable) {
-            // buffer updates are applied retroactively, so we need to update the buffer state
-            // first to apply any pending decrements before we check if the message is past the
-            // force inclusion threshold
+            // proactively apply any pending delay buffer updates before the force included message l1BlockAndTime
             updateBuffers(l1BlockAndTime[0], l1BlockAndTime[1]);
         }
         (uint256 delayBlocks_, , uint256 delaySeconds_, ) = maxTimeVariationInternal();
@@ -536,7 +534,7 @@ contract SequencerInbox is GasRefundEnabled, DelayBufferable, ISequencerInbox {
     ) external override refundsGas(gasRefunder, false) {
         if (!isBatchPoster(msg.sender) && msg.sender != address(rollup)) revert NotBatchPoster();
         if (isDelayBufferable && !isSynced()) {
-            if (afterDelayedMessagesRead != bridge.totalDelayedMessagesRead()) {
+            if (afterDelayedMessagesRead > bridge.totalDelayedMessagesRead()) {
                 revert DelayProofRequired();
             }
             // if no new delayed messages are read, no buffer updates can be applied

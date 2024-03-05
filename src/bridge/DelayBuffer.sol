@@ -14,10 +14,10 @@ import "./ISequencerInbox.sol";
  */
 library DelayBuffer {
     /// @notice The delay buffer data.
-    /// @param bufferBlocks The block number buffer.
-    /// @param bufferSeconds The time buffer.
-    /// @param roundOffBlocks The round off from the last replenish.
-    /// @param roundOffSeconds The round off from the last replenish.
+    /// @param bufferBlocks The block buffer.
+    /// @param bufferSeconds The time buffer in seconds.
+    /// @param roundOffBlocks The round off in blocks since the last replenish.
+    /// @param roundOffSeconds The round off in seconds since the last replenish.
     /// @param prevDelay The delay of the previous batch.
     struct DelayBufferData {
         uint64 bufferBlocks;
@@ -45,9 +45,9 @@ library DelayBuffer {
     ///         X hours and Y blocks. Instead, it will be depleted by the time / blocks elapsed in the
     ///         delayed message queue. The buffer saturates at the threshold which allows recovery margin.
     /// @notice Decrements the delay buffer saturating at the threshold
-    /// @param start The beginning reference point (delayPrev)
+    /// @param start The beginning reference point (prev delay)
     /// @param end The ending reference point (current message)
-    /// @param delay The delay to be applied (delayPrev)
+    /// @param delay The delay to be applied (prev delay)
     /// @param threshold The threshold to saturate at
     /// @param buffer The buffer to be decremented
     function deplete(
@@ -67,9 +67,6 @@ library DelayBuffer {
         return buffer;
     }
 
-    /// @dev    The prevDelay stores the delay of the previous batch which is
-    ///         used as a starting reference point to calculate an elapsed amount
-    ///         using the current message as the ending reference point.
     /// @notice Replenishes the delay buffer saturating at maxBuffer
     /// @param start The beginning reference point
     /// @param end The ending reference point
@@ -122,11 +119,12 @@ library DelayBuffer {
         uint64 period,
         uint64 roundOff
     ) public pure returns (uint64, uint64) {
+        // updates should only be made forward in time / block number
         assert(start <= end);
         if (threshold < delay) {
             // unexpected delay
             buffer = deplete(start, end, delay, threshold, buffer);
-            // reset round off to avoid replenishment with a head start
+            // reset round off to avoid over-replenishment
             roundOff = 0;
         } else if (buffer < maxBuffer) {
             // replenish buffer if depleted
@@ -258,14 +256,14 @@ library DelayBuffer {
         );
     }
 
-    /// @dev    The delay buffer can change due to pending depletion in the delay cache.
+    /// @dev    The delay buffer can change due to pending depletion in the delay history cache.
     ///         This function applies pending buffer changes to proactively calculate the force inclusion deadline.
     ///         This is only relevant when the bufferBlocks or bufferSeconds are less than delayBlocks or delaySeconds.
     /// @notice Calculates the upper bounds of the delay buffer
     /// @param blockNumber The block number to process the delay up to
     /// @param timestamp The timestamp to process the delay up to
     /// @param thresholdBlocks The maximum amount of blocks that a message is expected to be delayed
-    /// @param thresholdSeconds The maximum amount of time in seconds that a message is expected to be delayed
+    /// @param thresholdSeconds The maximum amount of seconds that a message is expected to be delayed
     function pendingDelay(
         DelayBufferData storage self,
         uint64 blockNumber,
