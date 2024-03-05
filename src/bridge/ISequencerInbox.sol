@@ -6,6 +6,8 @@
 pragma solidity >=0.6.9 <0.9.0;
 pragma experimental ABIEncoderV2;
 
+import "../data-availability/IAvailDABridge.sol";
+import "../data-availability/MerkleProofInput.sol";
 import "../libraries/IGasRefunder.sol";
 import "./IDelayedMessageProvider.sol";
 import "./IBridge.sol";
@@ -40,6 +42,8 @@ interface ISequencerInbox is IDelayedMessageProvider {
         TimeBounds timeBounds,
         BatchDataLocation dataLocation
     );
+
+    event validateBatchDataOverAvailDA(MerkleProofInput indexed merkleProofInput);
 
     event OwnerFunctionCalled(uint256 indexed id);
 
@@ -78,15 +82,7 @@ interface ISequencerInbox is IDelayedMessageProvider {
         uint64 creationBlock;
     }
 
-    function maxTimeVariation()
-        external
-        view
-        returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        );
+    function maxTimeVariation() external view returns (uint256, uint256, uint256, uint256);
 
     function dasKeySetInfo(bytes32) external view returns (bool, uint64);
 
@@ -176,7 +172,11 @@ interface ISequencerInbox is IDelayedMessageProvider {
 
     // ---------- initializer ----------
 
-    function initialize(IBridge bridge_, MaxTimeVariation calldata maxTimeVariation_) external;
+    function initialize(
+        IBridge bridge_,
+        MaxTimeVariation calldata maxTimeVariation_,
+        IAvailDABridge AvailBridge
+    ) external;
 
     function updateRollupAddress() external;
 }

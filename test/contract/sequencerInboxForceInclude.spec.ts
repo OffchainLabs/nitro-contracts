@@ -269,7 +269,7 @@ describe('SequencerInboxForceInclude', async () => {
       delaySeconds: maxDelayTime,
       futureBlocks: 10,
       futureSeconds: 3000,
-    })
+    }, "0x0000000000000000000000000000000000000000")
     await inbox.initialize(bridgeProxy.address, sequencerInbox.address)
 
     await bridgeAdmin.setDelayedInbox(inbox.address, true)

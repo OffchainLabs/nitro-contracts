@@ -176,5 +176,8 @@ error AlreadyValidDASKeyset(bytes32);
 /// @dev Tried to use or invalidate an already invalid Data Availability Service keyset
 error NoSuchKeyset(bytes32);
 
+/// @dev Batch Data validation over avail bridge failed with the given merkle proof input
+error BatchDataValidationForAvailDAFailed(bytes32);
+
 /// @dev Thrown when rollup is not updated with updateRollupAddress
 error RollupNotChanged();

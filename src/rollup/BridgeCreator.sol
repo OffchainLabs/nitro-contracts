@@ -15,6 +15,7 @@ import "../rollup/ERC20RollupEventInbox.sol";
 import "../bridge/ERC20Outbox.sol";
 
 import "../bridge/IBridge.sol";
+import "../data-availability/IAvailDABridge.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
@@ -96,7 +97,7 @@ contract BridgeCreator is Ownable {
         } else {
             IERC20Bridge(address(frame.bridge)).initialize(IOwnable(rollup), nativeToken);
         }
-        frame.sequencerInbox.initialize(frame.bridge, maxTimeVariation);
+        frame.sequencerInbox.initialize(frame.bridge, maxTimeVariation,IAvailDABridge(0x63731B80D092c58f5Cc0e60B70267e4CFBc9a44C));
         frame.inbox.initialize(frame.bridge, frame.sequencerInbox);
         frame.rollupEventInbox.initialize(frame.bridge);
         frame.outbox.initialize(frame.bridge);
