@@ -65,7 +65,7 @@ contract RollupCreatorTest is Test {
         rollupCreator = new RollupCreator();
         deployHelper = new DeployHelper();
 
-        for (uint i = 1; i < 10; i++) {
+        for (uint256 i = 1; i < 10; i++) {
             hotshot.setCommitment(uint256(i), uint256(i));
         }
 

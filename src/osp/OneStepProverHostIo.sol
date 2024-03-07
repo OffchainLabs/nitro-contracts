@@ -16,7 +16,6 @@ interface IHotShot {
     function commitments(uint256) external view returns (uint256);
 }
 
-
 contract OneStepProverHostIo is IOneStepProver {
     using GlobalStateLib for GlobalState;
     using MerkleProofLib for MerkleProof;
@@ -335,16 +334,12 @@ contract OneStepProverHostIo is IOneStepProver {
             proofOffset
         );
 
-        bytes calldata commitment = proof[proofOffset:proofOffset+32];
+        bytes calldata commitment = proof[proofOffset:proofOffset + 32];
         bool success = validateHotShotCommitment(execCtx, height, commitment);
         require(success, "ERROR_HOTSHOT_COMMITMENT");
 
         for (uint32 i = 0; i < 32; i++) {
-            leafContents = setLeafByte(
-                leafContents,
-                i,
-                uint8(proof[proofOffset + i])
-            );
+            leafContents = setLeafByte(leafContents, i, uint8(proof[proofOffset + i]));
         }
 
         mod.moduleMemory.merkleRoot = merkleProof.computeRootFromMemory(leafIdx, leafContents);
@@ -358,13 +353,15 @@ contract OneStepProverHostIo is IOneStepProver {
         uint256 expected = hotshot.commitments(height);
         require(expected != 0, "EMPTY HOTSHOT COMMITMENT");
         bytes memory b = new bytes(32);
-        assembly { mstore(add(b, 32), expected) }
+        assembly {
+            mstore(add(b, 32), expected)
+        }
 
         if (commitment.length != 32) {
             return false;
         }
 
-        for (uint i = 0; i < b.length; i++) {
+        for (uint256 i = 0; i < b.length; i++) {
             if (b[i] != commitment[i]) {
                 return false;
             }
