@@ -1,4 +1,4 @@
-// Copyright 2021-2023, Offchain Labs, Inc.
+// Copyright 2021-2024, Offchain Labs, Inc.
 // For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
@@ -435,7 +435,7 @@ contract OneStepProverHostIo is IOneStepProver {
         mach.valueMultiStack.pushNew();
     }
 
-    function proovePopCothread(MultiStack memory multi, bytes calldata proof) internal pure {
+    function provePopCothread(MultiStack memory multi, bytes calldata proof) internal pure {
         uint256 proofOffset = 0;
         bytes32 newInactiveCoThread;
         bytes32 newRemaining;
@@ -453,7 +453,6 @@ contract OneStepProverHostIo is IOneStepProver {
         }
         multi.remainingHash = newRemaining;
         multi.inactiveStackHash = newInactiveCoThread;
-        return;
     }
 
     function executePopCoThread(
@@ -473,8 +472,8 @@ contract OneStepProverHostIo is IOneStepProver {
             mach.status = MachineStatus.ERRORED;
             return;
         }
-        proovePopCothread(mach.valueMultiStack, proof);
-        proovePopCothread(mach.frameMultiStack, proof[64:]);
+        provePopCothread(mach.valueMultiStack, proof);
+        provePopCothread(mach.frameMultiStack, proof[64:]);
     }
 
     function executeSwitchCoThread(
