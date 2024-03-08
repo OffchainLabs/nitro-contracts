@@ -1,4 +1,4 @@
-// Copyright 2021-2023, Offchain Labs, Inc.
+// Copyright 2021-2024, Offchain Labs, Inc.
 // For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
@@ -7,6 +7,7 @@ pragma solidity ^0.8.0;
 import "../state/Value.sol";
 import "../state/Machine.sol";
 import "../state/MerkleProof.sol";
+import "../state/MultiStack.sol";
 import "../state/Deserialize.sol";
 import "../state/ModuleMemory.sol";
 import "./IOneStepProver.sol";
@@ -15,12 +16,13 @@ import "../bridge/IBridge.sol";
 
 contract OneStepProverHostIo is IOneStepProver {
     using GlobalStateLib for GlobalState;
+    using MachineLib for Machine;
     using MerkleProofLib for MerkleProof;
     using ModuleMemoryLib for ModuleMemory;
+    using MultiStackLib for MultiStack;
     using ValueLib for Value;
     using ValueStackLib for ValueStack;
     using StackFrameLib for StackFrameWindow;
-    using GuardStackLib for GuardStack;
 
     uint256 private constant LEAF_SIZE = 32;
     uint256 private constant INBOX_NUM = 2;
@@ -387,42 +389,6 @@ contract OneStepProverHostIo is IOneStepProver {
         }
     }
 
-    function executePushErrorGuard(
-        ExecutionContext calldata,
-        Machine memory mach,
-        Module memory,
-        Instruction calldata,
-        bytes calldata
-    ) internal pure {
-        bytes32 frames = mach.frameStack.hash();
-        bytes32 values = mach.valueStack.hash();
-        bytes32 inters = mach.internalStack.hash();
-        Value memory onError = ValueLib.newPc(mach.functionPc, mach.functionIdx, mach.moduleIdx);
-        mach.guardStack.push(GuardStackLib.newErrorGuard(frames, values, inters, onError));
-        mach.valueStack.push(ValueLib.newI32(1));
-    }
-
-    function executePopErrorGuard(
-        ExecutionContext calldata,
-        Machine memory mach,
-        Module memory,
-        Instruction calldata,
-        bytes calldata
-    ) internal pure {
-        mach.guardStack.pop();
-    }
-
-    function executeSetErrorPolicy(
-        ExecutionContext calldata,
-        Machine memory mach,
-        Module memory,
-        Instruction calldata inst,
-        bytes calldata
-    ) internal pure {
-        uint32 status = mach.valueStack.pop().assumeI32();
-        mach.guardStack.enabled = status != 0;
-    }
-
     function executeGlobalStateAccess(
         ExecutionContext calldata,
         Machine memory mach,
@@ -451,6 +417,93 @@ contract OneStepProverHostIo is IOneStepProver {
         }
 
         mach.globalStateHash = state.hash();
+    }
+
+    function executeNewCoThread(
+        ExecutionContext calldata,
+        Machine memory mach,
+        Module memory,
+        Instruction calldata,
+        bytes calldata
+    ) internal pure {
+        if (mach.recoveryPc != MachineLib.NO_RECOVERY_PC) {
+            // cannot create new cothread from inside cothread
+            mach.status = MachineStatus.ERRORED;
+            return;
+        }
+        mach.frameMultiStack.pushNew();
+        mach.valueMultiStack.pushNew();
+    }
+
+    function provePopCothread(MultiStack memory multi, bytes calldata proof) internal pure {
+        uint256 proofOffset = 0;
+        bytes32 newInactiveCoThread;
+        bytes32 newRemaining;
+        (newInactiveCoThread, proofOffset) = Deserialize.b32(proof, proofOffset);
+        (newRemaining, proofOffset) = Deserialize.b32(proof, proofOffset);
+        if (newInactiveCoThread == MultiStackLib.NO_STACK_HASH) {
+            require(newRemaining == bytes32(0), "WRONG_COTHREAD_EMPTY");
+            require(multi.remainingHash == bytes32(0), "WRONG_COTHREAD_EMPTY");
+        } else {
+            require(
+                keccak256(abi.encodePacked("cothread:", newInactiveCoThread, newRemaining)) ==
+                    multi.remainingHash,
+                "WRONG_COTHREAD_POP"
+            );
+        }
+        multi.remainingHash = newRemaining;
+        multi.inactiveStackHash = newInactiveCoThread;
+    }
+
+    function executePopCoThread(
+        ExecutionContext calldata,
+        Machine memory mach,
+        Module memory,
+        Instruction calldata,
+        bytes calldata proof
+    ) internal pure {
+        if (mach.recoveryPc != MachineLib.NO_RECOVERY_PC) {
+            // cannot pop cothread from inside cothread
+            mach.status = MachineStatus.ERRORED;
+            return;
+        }
+        if (mach.frameMultiStack.inactiveStackHash == MultiStackLib.NO_STACK_HASH) {
+            // cannot pop cothread if there isn't one
+            mach.status = MachineStatus.ERRORED;
+            return;
+        }
+        provePopCothread(mach.valueMultiStack, proof);
+        provePopCothread(mach.frameMultiStack, proof[64:]);
+    }
+
+    function executeSwitchCoThread(
+        ExecutionContext calldata,
+        Machine memory mach,
+        Module memory,
+        Instruction calldata inst,
+        bytes calldata
+    ) internal pure {
+        if (mach.frameMultiStack.inactiveStackHash == MultiStackLib.NO_STACK_HASH) {
+            // cannot switch cothread if there isn't one
+            mach.status = MachineStatus.ERRORED;
+            return;
+        }
+        if (inst.argumentData == 0) {
+            if (mach.recoveryPc == MachineLib.NO_RECOVERY_PC) {
+                // switching to main thread, from main thread
+                mach.status = MachineStatus.ERRORED;
+                return;
+            }
+            mach.recoveryPc = MachineLib.NO_RECOVERY_PC;
+        } else {
+            if (mach.recoveryPc != MachineLib.NO_RECOVERY_PC) {
+                // switching from cothread to cothread
+                mach.status = MachineStatus.ERRORED;
+                return;
+            }
+            mach.setRecoveryFromPc(uint32(inst.argumentData));
+        }
+        mach.switchCoThreadStacks();
     }
 
     function executeOneStep(
@@ -488,12 +541,12 @@ contract OneStepProverHostIo is IOneStepProver {
             impl = executeLinkModule;
         } else if (opcode == Instructions.UNLINK_MODULE) {
             impl = executeUnlinkModule;
-        } else if (opcode == Instructions.PUSH_ERROR_GUARD) {
-            impl = executePushErrorGuard;
-        } else if (opcode == Instructions.POP_ERROR_GUARD) {
-            impl = executePopErrorGuard;
-        } else if (opcode == Instructions.SET_ERROR_POLICY) {
-            impl = executeSetErrorPolicy;
+        } else if (opcode == Instructions.NEW_COTHREAD) {
+            impl = executeNewCoThread;
+        } else if (opcode == Instructions.POP_COTHREAD) {
+            impl = executePopCoThread;
+        } else if (opcode == Instructions.SWITCH_COTHREAD) {
+            impl = executeSwitchCoThread;
         } else {
             revert("INVALID_MEMORY_OPCODE");
         }

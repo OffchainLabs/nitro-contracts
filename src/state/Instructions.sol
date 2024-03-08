@@ -147,9 +147,10 @@ library Instructions {
     uint16 internal constant HALT_AND_SET_FINISHED = 0x8022;
     uint16 internal constant LINK_MODULE = 0x8023;
     uint16 internal constant UNLINK_MODULE = 0x8024;
-    uint16 internal constant PUSH_ERROR_GUARD = 0x8025;
-    uint16 internal constant POP_ERROR_GUARD = 0x8026;
-    uint16 internal constant SET_ERROR_POLICY = 0x8027;
+
+    uint16 internal constant NEW_COTHREAD = 0x8030;
+    uint16 internal constant POP_COTHREAD = 0x8031;
+    uint16 internal constant SWITCH_COTHREAD = 0x8032;
 
     uint256 internal constant INBOX_INDEX_SEQUENCER = 0;
     uint256 internal constant INBOX_INDEX_DELAYED = 1;
