@@ -10,6 +10,31 @@ on:
       - develop
 
 jobs:
+  test-unit:
+    name: Test unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Setup node/yarn
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: 'yarn'
+          cache-dependency-path: '**/yarn.lock'
+
+      - name: Install packages
+        run: yarn
+
+      - name: Build
+        run: forge test
   tests:
     name: Contract tests
     runs-on: ubuntu-8
@@ -19,13 +44,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
 
       - name: Setup nodejs
         uses: actions/setup-node@v2
         with:
-          node-version: '16'
+          node-version: '18'
           cache: 'yarn'
           cache-dependency-path: '**/yarn.lock'
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
 
       - name: Install dependencies
         run: yarn install
@@ -37,13 +74,16 @@ jobs:
         run: yarn lint:test
 
       - name: Build
-        run: yarn build
+        run: yarn build:all
 
       - name: Run tests
         run: yarn hardhat --network hardhat test test/contract/*.spec.ts
 
       - name: Interface compatibility
         run: yarn run test:compatibility
+
+      - name: Forge build
+        run: forge build
 
       - name: Test Storage Layouts
         run: yarn run test:storage
@@ -58,3 +98,37 @@ jobs:
           files: ./contracts/coverage.json
           verbose: false
           token: ${{ secrets.CODECOV_TOKEN }}
+  test-4844:
+    name: 4844 tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - uses: OffchainLabs/actions/run-nitro-test-node@test-node-args
+        with:
+          nitro-testnode-ref: deneb-integration
+          args: --pos
+          no-token-bridge: true
+
+      - name: Setup nodejs
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+          cache: 'yarn'
+          cache-dependency-path: '**/yarn.lock'
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Build
+        run: yarn build:all
+
+      - name: Test 4844
+        run: yarn test:4844

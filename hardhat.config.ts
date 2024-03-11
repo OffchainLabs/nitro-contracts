@@ -5,6 +5,11 @@ import '@nomiclabs/hardhat-etherscan'
 import '@typechain/hardhat'
 import 'solidity-coverage'
 import 'hardhat-gas-reporter'
+import 'hardhat-ignore-warnings'
+// import '@tovarishfin/hardhat-yul';
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 const solidity = {
   compilers: [
@@ -112,6 +117,12 @@ module.exports = {
         ? [process.env['DEVNET_PRIVKEY']]
         : [],
     },
+    arbSepolia: {
+      url: 'https://sepolia-rollup.arbitrum.io/rpc',
+      accounts: process.env['DEVNET_PRIVKEY']
+        ? [process.env['DEVNET_PRIVKEY']]
+        : [],
+    },
     arb1: {
       url: 'https://arb1.arbitrum.io/rpc',
       accounts: process.env['MAINNET_PRIVKEY']
@@ -138,6 +149,7 @@ module.exports = {
       arbitrumTestnet: process.env['ARBISCAN_API_KEY'],
       nova: process.env['NOVA_ARBISCAN_API_KEY'],
       arbGoerliRollup: process.env['ARBISCAN_API_KEY'],
+      arbSepolia: process.env['ARBISCAN_API_KEY'],
     },
     customChains: [
       {
@@ -154,6 +166,14 @@ module.exports = {
         urls: {
           apiURL: 'https://api-goerli.arbiscan.io/api',
           browserURL: 'https://goerli.arbiscan.io/',
+        },
+      },
+      {
+        network: 'arbSepolia',
+        chainId: 421614,
+        urls: {
+          apiURL: 'https://sepolia-explorer.arbitrum.io/api',
+          browserURL: 'https://sepolia-explorer.arbitrum.io/',
         },
       },
     ],

@@ -8,8 +8,9 @@ import "./InboxStub.sol";
 import {BadSequencerMessageNumber} from "../libraries/Error.sol";
 
 import "../bridge/IBridge.sol";
+import "../bridge/IEthBridge.sol";
 
-contract BridgeStub is IBridge {
+contract BridgeStub is IBridge, IEthBridge {
     struct InOutInfo {
         uint256 index;
         bool allowed;
@@ -41,6 +42,10 @@ contract BridgeStub is IBridge {
     }
 
     function allowedOutboxes(address) external pure override returns (bool) {
+        revert("NOT_IMPLEMENTED");
+    }
+
+    function updateRollupAddress(IOwnable) external pure {
         revert("NOT_IMPLEMENTED");
     }
 
