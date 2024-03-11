@@ -188,6 +188,9 @@ error MissingDataHashes();
 /// @dev Thrown when the data blob meta data is invalid
 error InvalidBlobMetadata();
 
+/// @dev Batch Data validation over avail bridge failed with the given merkle proof input
+error BatchDataValidationForAvailDAFailed(bytes32);
+
 /// @dev Thrown when rollup is not updated with updateRollupAddress
 error RollupNotChanged();
 

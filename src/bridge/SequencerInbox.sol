@@ -21,6 +21,7 @@ import {
     DataNotAuthenticated,
     AlreadyValidDASKeyset,
     NoSuchKeyset,
+    BatchDataValidationForAvailDAFailed,
     NotForked,
     DataBlobsNotSupported,
     InitParamZero,
@@ -40,11 +41,14 @@ import "../precompiles/ArbGasInfo.sol";
 import "../precompiles/ArbSys.sol";
 import "../libraries/IReader4844.sol";
 
+import "../data-availability/IAvailDABridge.sol";
+import "../data-availability/MerkleProofInput.sol";
 import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
 import "../libraries/DelegateCallAware.sol";
 import {IGasRefunder} from "../libraries/IGasRefunder.sol";
 import {GasRefundEnabled} from "../libraries/GasRefundEnabled.sol";
 import "../libraries/ArbitrumChecker.sol";
+
 
 /**
  * @title Accepts batches from the sequencer and adds them to the rollup inbox.
@@ -69,6 +73,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     /// @inheritdoc ISequencerInbox
     bytes1 public constant DAS_MESSAGE_HEADER_FLAG = 0x80;
+
+    /// @inheritdoc ISequencerInbox
+    bytes1 public constant AVAIL_MESSAGE_HEADER_FLAG = 0x0a;
 
     /// @inheritdoc ISequencerInbox
     bytes1 public constant TREE_DAS_MESSAGE_HEADER_FLAG = 0x08;
@@ -109,6 +116,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     uint256 internal immutable deployTimeChainId = block.chainid;
     // If the chain this SequencerInbox is deployed on is an Arbitrum chain.
     bool internal immutable hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
+
+    IAvailDABridge public availBridge;
 
     constructor(uint256 _maxDataSize, IReader4844 reader4844_) {
         maxDataSize = _maxDataSize;
@@ -158,7 +167,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     function initialize(
         IBridge bridge_,
-        ISequencerInbox.MaxTimeVariation calldata maxTimeVariation_
+        ISequencerInbox.MaxTimeVariation calldata maxTimeVariation_,
+        IAvailDABridge availBridge_
     ) external onlyDelegated {
         if (bridge != IBridge(address(0))) revert AlreadyInit();
         if (bridge_ == IBridge(address(0))) revert HadZeroInit();
@@ -168,6 +178,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         futureBlocks = maxTimeVariation_.futureBlocks;
         delaySeconds = maxTimeVariation_.delaySeconds;
         futureSeconds = maxTimeVariation_.futureSeconds;
+        availBridge = availBridge_;
     }
 
     /// @notice Allows the rollup owner to sync the rollup address
@@ -565,7 +576,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             headerByte == BROTLI_MESSAGE_HEADER_FLAG ||
             headerByte == DAS_MESSAGE_HEADER_FLAG ||
             (headerByte == (DAS_MESSAGE_HEADER_FLAG | TREE_DAS_MESSAGE_HEADER_FLAG)) ||
-            headerByte == ZERO_HEAVY_MESSAGE_HEADER_FLAG;
+            headerByte == ZERO_HEAVY_MESSAGE_HEADER_FLAG || headerByte == AVAIL_MESSAGE_HEADER_FLAG;
     }
 
     /// @dev    Form a hash of the data taken from the calldata
@@ -600,6 +611,90 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
                 // we skip the first byte, then read the next 32 bytes for the keyset
                 bytes32 dasKeysetHash = bytes32(data[1:33]);
                 if (!dasKeySetInfo[dasKeysetHash].isValidKeyset) revert NoSuchKeyset(dasKeysetHash);
+            }
+            // Avail batch expect to have the type byte set, followed by
+            if (data.length >= 256 && data[0] & AVAIL_MESSAGE_HEADER_FLAG != 0) {
+                MerkleProofInput memory merkleProofInput;
+                uint256 offset = 1;
+                uint256 len=0;
+
+
+                bytes32 availBlockHash = bytes32(data[offset:(offset+32)]);
+
+                //setting offset for next data
+                offset += 32;
+                //string memory sender = string(data[34:82]);
+
+                //Extracting the data root proof
+                len = uint8(data[offset]);
+                //setting offset for next data
+                offset += 1;
+                //console.logUint(len);
+                merkleProofInput.dataRootProof = new bytes32[](len);
+                for (uint256 index = 0; index < len; index++) {
+                    uint i = offset  + 32 * index;
+                    merkleProofInput.dataRootProof[index] = bytes32(data[i:(i+32)]);
+                // console.logBytes32(dataRootProof[index]);
+                }
+
+
+                //setting offset for next data
+                offset += len * 32;
+
+                //Extracting the leaf proof 
+                len = uint8(data[offset]);
+                //setting offset for next data
+                offset += 1;
+                //console.logUint(len);
+                merkleProofInput.leafProof = new bytes32[](len);
+                for (uint256 index = 0; index < len; index++) {
+                    uint i = 34  + 32 * index;
+                    merkleProofInput.leafProof[index] = bytes32(data[i:(i+32)]);
+                    //console.logBytes32(leafProof[index]);
+                }
+
+                //setting offset for next data
+                offset += len * 32;
+
+                //Extracting range hash
+                merkleProofInput.rangeHash = bytes32(data[offset:(offset+32)]);
+                //console.logBytes32(rangeHash);
+                //setting offset for next data
+                offset += 32;
+
+                //Extracting data root index
+                merkleProofInput.dataRootIndex = uint64(bytes8(data[offset:(offset+8)]));
+                //console.logUint(dataRootIndex);
+                //setting offset for next data
+                offset += 8;
+
+                //Extracting range hash
+                merkleProofInput.blobRoot = bytes32(data[offset:(offset+32)]);
+                //console.logBytes32(blobRoot);
+                //setting offset for next data
+                offset += 32;
+
+                //Extracting bridge root
+                merkleProofInput.bridgeRoot = bytes32(data[offset:(offset+32)]);
+                //console.logBytes32(bridgeRoot);
+                //setting offset for next data
+                offset += 32;
+
+                //Extracting lead
+                merkleProofInput.leaf = bytes32(data[offset:(offset+32)]);
+                //console.logBytes32(leaf);
+                //setting offset for next data
+                offset += 32;
+
+                //Extracting leaf index
+                merkleProofInput.leafIndex = uint64(bytes8(data[offset:(offset+8)]));
+                //console.logUint(leafIndex);
+                //setting offset for next data
+                offset += 8;
+
+                //MerkleProofInput memory merkleProofInput = MerkleProofInput(dataRootProof, leafProof, rangeHash, dataRootIndex, blobRoot, bridgeRoot, leaf, leafIndex);
+                if(!availBridge.verifyBlobLeaf(merkleProofInput)) revert BatchDataValidationForAvailDAFailed(merkleProofInput.leaf);
+                //emit validateBatchDataOverAvailDA(merkleProofInput);
             }
         }
         return (keccak256(bytes.concat(header, data)), timeBounds);
@@ -683,12 +778,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 newMessageCount
     )
         internal
-        returns (
-            uint256 seqMessageIndex,
-            bytes32 beforeAcc,
-            bytes32 delayedAcc,
-            bytes32 acc
-        )
+        returns (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc)
     {
         if (afterDelayedMessagesRead < totalDelayedMessagesRead) revert DelayedBackwards();
         if (afterDelayedMessagesRead > bridge.delayedMessageCount()) revert DelayedTooFar();

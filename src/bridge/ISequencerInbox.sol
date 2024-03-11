@@ -6,6 +6,8 @@
 pragma solidity >=0.6.9 <0.9.0;
 pragma experimental ABIEncoderV2;
 
+import "../data-availability/IAvailDABridge.sol";
+import "../data-availability/MerkleProofInput.sol";
 import "../libraries/IGasRefunder.sol";
 import "./IDelayedMessageProvider.sol";
 import "./IBridge.sol";
@@ -27,6 +29,8 @@ interface ISequencerInbox is IDelayedMessageProvider {
         IBridge.TimeBounds timeBounds,
         IBridge.BatchDataLocation dataLocation
     );
+
+    event validateBatchDataOverAvailDA(MerkleProofInput indexed merkleProofInput);
 
     event OwnerFunctionCalled(uint256 indexed id);
 
@@ -64,6 +68,11 @@ interface ISequencerInbox is IDelayedMessageProvider {
     ///      See: https://github.com/OffchainLabs/nitro/blob/69de0603abf6f900a4128cab7933df60cad54ded/arbstate/das_reader.go
     // solhint-disable-next-line func-name-mixedcase
     function DAS_MESSAGE_HEADER_FLAG() external view returns (bytes1);
+
+    /// @dev If the first data byte after the header has this bit set,
+    ///      then the batch data is a avail blobpointer message
+    // solhint-disable-next-line func-name-mixedcase
+    function AVAIL_MESSAGE_HEADER_FLAG() external view returns (bytes1);
 
     /// @dev If the first data byte after the header has this bit set,
     ///      then the batch data is a das message that employs a merklesization strategy
@@ -195,7 +204,11 @@ interface ISequencerInbox is IDelayedMessageProvider {
 
     // ---------- initializer ----------
 
-    function initialize(IBridge bridge_, MaxTimeVariation calldata maxTimeVariation_) external;
+    function initialize(
+        IBridge bridge_,
+        MaxTimeVariation calldata maxTimeVariation_,
+        IAvailDABridge AvailBridge
+    ) external;
 
     function updateRollupAddress() external;
 }

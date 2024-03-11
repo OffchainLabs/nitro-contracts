@@ -280,7 +280,7 @@ describe('SequencerInboxForceInclude', async () => {
       delaySeconds: maxDelayTime,
       futureBlocks: 10,
       futureSeconds: 3000,
-    })
+    }, "0x0000000000000000000000000000000000000000")
 
     await (
       await sequencerInbox
@@ -344,16 +344,16 @@ describe('SequencerInboxForceInclude', async () => {
       await sequencerInbox
         .connect(batchPoster)
         .functions[
-          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256)'
-        ](
-          0,
-          data,
-          messagesRead,
-          ethers.constants.AddressZero,
-          seqReportedMessageSubCount,
-          seqReportedMessageSubCount.add(10),
-          { gasLimit: 10000000 }
-        )
+        'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256)'
+      ](
+        0,
+        data,
+        messagesRead,
+        ethers.constants.AddressZero,
+        seqReportedMessageSubCount,
+        seqReportedMessageSubCount.add(10),
+        { gasLimit: 10000000 }
+      )
     ).wait()
   })
 

@@ -72,6 +72,8 @@ import { constants, providers } from 'ethers'
 import { blockStateHash, MachineStatus } from './common/challengeLib'
 import * as globalStateLib from './common/globalStateLib'
 import { RollupChallengeStartedEvent } from '../../build/types/src/rollup/IRollupCore'
+import { buffer } from 'stream/consumers'
+import { randomBytes } from 'crypto'
 
 const zerobytes32 = ethers.constants.HashZero
 const stakeRequirement = 10
@@ -1410,5 +1412,16 @@ describe('ArbRollup', () => {
     await expect(rollupUser.removeWhitelistAfterValidatorAfk()).to.revertedWith(
       'VALIDATOR_NOT_AFK'
     )
+  })
+
+  it('should emit vaidate event', async () => {
+    const data = "0x0af53613fa06b6b7f9dc5e4cf5f2849affc94e19d8a9e8999207ece01175c988ed08ad3228b676f7d3cd4284a5443f17f1962b36e491b30a40b2405849e597ba5fb551f84e7279cdf6acb81af77aec64f618f71029b7d9c6d37c035c37134e517af269c8458dd62d27ea9abd40586ce53e5220d43b626c27f76468a57e94347f0d6b5a021e65ea5c6b76469b68db28c7a390836e22c21c6f95cdef4d3408eb6b8050f1f603a14a615fa262f91fa788be910a2347429cba6a39d9d2781190a92cd3bb83aeb54660d9c6158085a50947e76e4ac01c95fd9b30e6d3bc865810ba6e73c4d88ddfeed400a8755596b21942c1497e114c302e6118290f91e6772976041fa17b9b465d4b6271ac97a54fcd2b74423c9150463e6c90b6b609500d696b9ae394004b49a4b090404b1e83797cb77286f91a728a4d9ace03f2855025ccf7523ed72000000000000000aeaa4246713da25ab816ee6a00f3a523f48ce7b711120a7c3cf00e8851b9c99df200000000000000000000000000000000000000000000000000000000000000006aaf64fab0bd05b12cd95b298ce0bf1bdda0f385b81578b60f8242cdb5d1983e00000000000000003545464c71344454384d3254705371553367595266333853416e37783856736269756870373245395269334651786e3700000064f53613fa06b6b7f9dc5e4cf5f2849affc94e19d8a9e8999207ece01175c988ed"
+    const transaction = await sequencerInbox.connect(sequencer).addSequencerL2Batch(1, data, 4, "0x0000000000000000000000000000000000000000", 1, 10)
+    //console.log(transaction)
+    const receipt = await transaction.wait()
+    console.log(receipt)
+    const event = receipt.events?.filter((x) => x.event === "validateBatchDataOverAvailDA")[0];
+    console.log(event)
+    //await expect(transaction).to.emit(sequencerInbox, "validateBatchDataOverAvailDA")
   })
 })
