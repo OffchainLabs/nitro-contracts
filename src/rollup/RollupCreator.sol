@@ -35,12 +35,14 @@ contract RollupCreator is Ownable {
 
     struct RollupDeploymentParams {
         Config config;
-        address batchPoster;
         address[] validators;
         uint256 maxDataSize;
         address nativeToken;
         bool deployFactoriesToL2;
         uint256 maxFeePerGasForRetryables;
+        //// @dev The address of the batch poster, not used when set to zero address
+        address[] batchPosters;
+        address batchPosterManager;
     }
 
     BridgeCreator public bridgeCreator;
@@ -186,9 +188,12 @@ contract RollupCreator is Ownable {
             })
         );
 
-        // setting batch poster, if the address provided is not zero address
-        if (deployParams.batchPoster != address(0)) {
-            bridgeContracts.sequencerInbox.setIsBatchPoster(deployParams.batchPoster, true);
+        // Setting batch posters and batch poster manager
+        for (uint256 i = 0; i < deployParams.batchPosters.length; i++) {
+            bridgeContracts.sequencerInbox.setIsBatchPoster(deployParams.batchPosters[i], true);
+        }
+        if (deployParams.batchPosterManager != address(0)) {
+            bridgeContracts.sequencerInbox.setBatchPosterManager(deployParams.batchPosterManager);
         }
 
         // Call setValidator on the newly created rollup contract just if validator set is not empty
@@ -263,6 +268,7 @@ contract RollupCreator is Ownable {
             l2FactoriesDeployer.perform{value: cost}(_inbox, _nativeToken, _maxFeePerGas);
 
             // refund the caller
+            // solhint-disable-next-line avoid-low-level-calls
             (bool sent, ) = msg.sender.call{value: address(this).balance}("");
             require(sent, "Refund failed");
         } else {

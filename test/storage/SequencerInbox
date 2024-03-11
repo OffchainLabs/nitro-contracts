@@ -11,3 +11,4 @@
 | futureBlocks                | uint64                                                   | 10   | 8      | 8     | src/bridge/SequencerInbox.sol:SequencerInbox |
 | delaySeconds                | uint64                                                   | 10   | 16     | 8     | src/bridge/SequencerInbox.sol:SequencerInbox |
 | futureSeconds               | uint64                                                   | 10   | 24     | 8     | src/bridge/SequencerInbox.sol:SequencerInbox |
+| batchPosterManager          | address                                                  | 11   | 0      | 20    | src/bridge/SequencerInbox.sol:SequencerInbox |
