@@ -32,6 +32,18 @@ library DelayBuffer {
         ReplenishRate replenishRate;
     }
 
+    /// @notice The rate at which the delay buffer is replenished.
+    /// @param blocksPerPeriod The amount of blocks that is added to the delay buffer every period
+    /// @param secondsPerPeriod The amount of time in seconds that is added to the delay buffer every period
+    /// @param periodBlocks The amount of blocks that is waited between replenishing the delay buffer
+    /// @param periodSeconds The amount of time in seconds that is waited between replenishing the delay buffer
+    struct ReplenishRate {
+        uint64 blocksPerPeriod;
+        uint64 secondsPerPeriod;
+        uint64 periodBlocks;
+        uint64 periodSeconds;
+    }
+
     /// @notice The delay buffer data.
     /// @param bufferBlocks The block buffer.
     /// @param bufferSeconds The time buffer in seconds.
@@ -58,18 +70,6 @@ library DelayBuffer {
         uint64 timestamp;
         uint64 delayBlocks;
         uint64 delaySeconds;
-    }
-
-    /// @notice The rate at which the delay buffer is replenished.
-    /// @param blocksPerPeriod The amount of blocks that is added to the delay buffer every period
-    /// @param secondsPerPeriod The amount of time in seconds that is added to the delay buffer every period
-    /// @param periodBlocks The amount of blocks that is waited between replenishing the delay buffer
-    /// @param periodSeconds The amount of time in seconds that is waited between replenishing the delay buffer
-    struct ReplenishRate {
-        uint64 blocksPerPeriod;
-        uint64 secondsPerPeriod;
-        uint64 periodBlocks;
-        uint64 periodSeconds;
     }
 
     /// @dev    This function handles synchronizing the sequencer inbox with the delayed inbox.

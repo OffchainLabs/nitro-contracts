@@ -311,6 +311,7 @@ export const getSequencerBatchDeliveredEvents = (
 
 export const setupSequencerInbox = async (
   isDelayBufferable = false,
+  isBlobMock = false,
   maxDelay: MaxTimeVariation = maxDelayDefault,
   delayConfig: DelayConfig = delayConfigDefault
 ) => {
@@ -328,7 +329,7 @@ export const setupSequencerInbox = async (
   const rollup = await rollupMockFac.deploy(await rollupOwner.getAddress())
   const reader4844 = await Toolkit4844.deployReader4844(admin)
   const sequencerInboxFac = (await ethers.getContractFactory(
-    'SequencerInbox'
+    isBlobMock ? 'SequencerInboxBlobMock' : 'SequencerInbox'
   )) as SequencerInbox__factory
   const seqInboxTemplate = await sequencerInboxFac.deploy(
     117964,
