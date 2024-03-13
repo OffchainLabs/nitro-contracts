@@ -36,7 +36,7 @@ contract RollupCreatorTest is Test {
     BridgeCreator.BridgeContracts public ethBasedTemplates =
         BridgeCreator.BridgeContracts({
             bridge: new Bridge(),
-            sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false),
+            sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false),
             inbox: new Inbox(MAX_DATA_SIZE),
             rollupEventInbox: new RollupEventInbox(),
             outbox: new Outbox()
@@ -44,7 +44,7 @@ contract RollupCreatorTest is Test {
     BridgeCreator.BridgeContracts public erc20BasedTemplates =
         BridgeCreator.BridgeContracts({
             bridge: new ERC20Bridge(),
-            sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true),
+            sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
             inbox: new ERC20Inbox(MAX_DATA_SIZE),
             rollupEventInbox: new ERC20RollupEventInbox(),
             outbox: new ERC20Outbox()
@@ -98,6 +98,18 @@ contract RollupCreatorTest is Test {
             60 * 60 * 24,
             60 * 60
         );
+        DelayBuffer.BufferConfig memory bufferConfig = DelayBuffer.BufferConfig({
+            thresholdSeconds: type(uint64).max,
+            thresholdBlocks: type(uint64).max,
+            maxBufferSeconds: 0,
+            maxBufferBlocks: 0,
+            replenishRate: DelayBuffer.ReplenishRate({
+                secondsPerPeriod: 0,
+                blocksPerPeriod: 0,
+                periodSeconds: 0,
+                periodBlocks: 0
+            })
+        });
         Config memory config = Config({
             confirmPeriodBlocks: 20,
             extraChallengeTimeBlocks: 200,
@@ -109,7 +121,8 @@ contract RollupCreatorTest is Test {
             chainId: 1337,
             chainConfig: "abc",
             genesisBlockNum: 15_000_000,
-            sequencerInboxMaxTimeVariation: timeVars
+            sequencerInboxMaxTimeVariation: timeVars,
+            bufferConfig: bufferConfig
         });
 
         // prepare funds
@@ -253,6 +266,18 @@ contract RollupCreatorTest is Test {
             60 * 60 * 24,
             60 * 60
         );
+        DelayBuffer.BufferConfig memory bufferConfig = DelayBuffer.BufferConfig({
+            thresholdSeconds: type(uint64).max,
+            thresholdBlocks: type(uint64).max,
+            maxBufferSeconds: 0,
+            maxBufferBlocks: 0,
+            replenishRate: DelayBuffer.ReplenishRate({
+                secondsPerPeriod: 0,
+                blocksPerPeriod: 0,
+                periodSeconds: 0,
+                periodBlocks: 0
+            })
+        });
         Config memory config = Config({
             confirmPeriodBlocks: 20,
             extraChallengeTimeBlocks: 200,
@@ -264,7 +289,9 @@ contract RollupCreatorTest is Test {
             chainId: 1337,
             chainConfig: "abc",
             genesisBlockNum: 15_000_000,
-            sequencerInboxMaxTimeVariation: timeVars
+            sequencerInboxMaxTimeVariation: timeVars,
+            bufferConfig: bufferConfig
+
         });
 
         // approve fee token to pay for deployment of L2 factories
@@ -408,6 +435,18 @@ contract RollupCreatorTest is Test {
             60 * 60 * 24,
             60 * 60
         );
+        DelayBuffer.BufferConfig memory bufferConfig = DelayBuffer.BufferConfig({
+            thresholdSeconds: type(uint64).max,
+            thresholdBlocks: type(uint64).max,
+            maxBufferSeconds: 0,
+            maxBufferBlocks: 0,
+            replenishRate: DelayBuffer.ReplenishRate({
+                secondsPerPeriod: 0,
+                blocksPerPeriod: 0,
+                periodSeconds: 0,
+                periodBlocks: 0
+            })
+        });
         Config memory config = Config({
             confirmPeriodBlocks: 20,
             extraChallengeTimeBlocks: 200,
@@ -419,7 +458,8 @@ contract RollupCreatorTest is Test {
             chainId: 1337,
             chainConfig: "abc",
             genesisBlockNum: 15_000_000,
-            sequencerInboxMaxTimeVariation: timeVars
+            sequencerInboxMaxTimeVariation: timeVars,
+            bufferConfig: bufferConfig
         });
 
         // prepare funds

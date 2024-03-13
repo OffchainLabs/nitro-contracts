@@ -179,6 +179,23 @@ error NotBatchPosterManager(address);
 /// @dev Thrown when a data blob feature is attempted to be used on a chain that doesnt support it
 error DataBlobsNotSupported();
 
+/// @dev Thrown when atleast one new message must be read.
+error NotDelayedFarEnough();
+
+/// @dev Thrown when batches are posted without delay proof, this is only allowed in a sync state or when no new delayed messages are read
+error DelayProofRequired();
+/// @dev Thrown when a batch post fails to prove a message delivery and sequencing are synced within the delay threshold
+error InvalidSequencerInboxAccPreimage();
+
+/// @dev The DelayedAccPreimage is invalid
+error InvalidDelayedAccPreimage();
+
+/// @dev Thrown when a batch post fails to prove a message delivery and sequencing are synced within the delay threshold
+error UnexpectedDelay(uint64 delayBlocks, uint64 delaySeconds);
+
+/// @dev Thrown when the sequencer attempts to post a batch with delay / sync proofs without delay bufferability enabled
+error NotDelayBufferable();
+
 /// @dev Thrown when an init param was supplied as empty
 error InitParamZero(string name);
 

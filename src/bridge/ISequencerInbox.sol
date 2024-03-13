@@ -9,8 +9,15 @@ pragma experimental ABIEncoderV2;
 import "../libraries/IGasRefunder.sol";
 import "./IDelayedMessageProvider.sol";
 import "./IBridge.sol";
+import "./Messages.sol";
+import "./DelayBuffer.sol";
 
 interface ISequencerInbox is IDelayedMessageProvider {
+    /// @notice The maximum amount of time variatin between a message being posted on the L1 and being executed on the L2
+    /// @param delayBlocks The max amount of blocks in the past that a message can be received on L2
+    /// @param futureBlocks The max amount of blocks in the future that a message can be received on L2
+    /// @param delaySeconds The max amount of seconds in the past that a message can be received on L2
+    /// @param futureSeconds The max amount of seconds in the future that a message can be received on L2
     struct MaxTimeVariation {
         uint256 delayBlocks;
         uint256 futureBlocks;
@@ -88,6 +95,9 @@ interface ISequencerInbox is IDelayedMessageProvider {
     function isBatchPoster(address) external view returns (bool);
 
     function isSequencer(address) external view returns (bool);
+
+    /// @notice True is the sequencer inbox is delay bufferable
+    function isDelayBufferable() external view returns (bool);
 
     function maxDataSize() external view returns (uint256);
 
@@ -179,6 +189,66 @@ interface ISequencerInbox is IDelayedMessageProvider {
         uint256 newMessageCount
     ) external;
 
+    /// @dev    Proves message delays, updates delay buffers, and posts an L2 batch with blob data.
+    ///         Must read atleast one new delayed message.
+    /// @notice Normally the sequencer will only call this function after the sequencer has been offline for a while.
+    ///         The extra proof adds cost to batch posting, and while the sequencer is online, the proof is unnecessary.
+    function addSequencerL2BatchFromBlobs(
+        uint256 sequenceNumber,
+        uint256 afterDelayedMessagesRead,
+        IGasRefunder gasRefunder,
+        uint256 prevMessageCount,
+        uint256 newMessageCount,
+        bytes32 beforeDelayedAcc,
+        Messages.Message calldata delayedMessage
+    ) external;
+
+    /// @dev    Proves message delays, updates delay buffers, and posts an L2 batch with blob data.
+    ///         Must read atleast one new delayed message.
+    /// @notice Normally the sequencer will only call this function after the sequencer has been offline for a while.
+    ///         The extra proof adds cost to batch posting, and while the sequencer is online, the proof is unnecessary.
+    function addSequencerL2BatchFromOrigin(
+        uint256 sequenceNumber,
+        bytes calldata data,
+        uint256 afterDelayedMessagesRead,
+        IGasRefunder gasRefunder,
+        uint256 prevMessageCount,
+        uint256 newMessageCount,
+        bytes32 beforeDelayedAcc,
+        Messages.Message calldata delayedMessage
+    ) external;
+
+    /// @dev    Proves sequenced messages are synchronized in timestamp & blocknumber, extends the sync validity window,
+    ///         and posts an L2 batch with blob data.
+    /// @notice Normally the sequencer will only call this function once every delayThresholdSeconds / delayThresholdBlocks.
+    ///         The proof stores a time / block range for which the proof is valid and the sequencer can post batches without proof.
+    function addSequencerL2BatchFromBlobs(
+        uint256 sequenceNumber,
+        uint256 afterDelayedMessagesRead,
+        IGasRefunder gasRefunder,
+        uint256 prevMessageCount,
+        uint256 newMessageCount,
+        bytes32 beforeDelayedAcc,
+        Messages.Message calldata delayedMessage,
+        Messages.InboxAccPreimage calldata preimage
+    ) external;
+
+    /// @dev    Proves sequenced messages are synchronized in timestamp & blocknumber, extends the sync validity window,
+    ///         and posts an L2 batch with blob data.
+    /// @notice Normally the sequencer will only call this function once every delayThresholdSeconds / delayThresholdBlocks.
+    ///         The proof stores a time / block range for which the proof is valid and the sequencer can post batches without proof.
+    function addSequencerL2BatchFromOrigin(
+        uint256 sequenceNumber,
+        bytes calldata data,
+        uint256 afterDelayedMessagesRead,
+        IGasRefunder gasRefunder,
+        uint256 prevMessageCount,
+        uint256 newMessageCount,
+        bytes32 beforeDelayedAcc,
+        Messages.Message calldata delayedMessage,
+        Messages.InboxAccPreimage calldata preimage
+    ) external;
+
     // ---------- onlyRollupOrOwner functions ----------
 
     /**
@@ -225,5 +295,9 @@ interface ISequencerInbox is IDelayedMessageProvider {
 
     // ---------- initializer ----------
 
-    function initialize(IBridge bridge_, MaxTimeVariation calldata maxTimeVariation_) external;
+    function initialize(
+        IBridge bridge_,
+        MaxTimeVariation calldata maxTimeVariation_,
+        DelayBuffer.BufferConfig calldata bufferConfig_
+    ) external;
 }

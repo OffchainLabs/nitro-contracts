@@ -82,7 +82,8 @@ contract BridgeCreator is Ownable {
         address adminProxy,
         address rollup,
         address nativeToken,
-        ISequencerInbox.MaxTimeVariation calldata maxTimeVariation
+        ISequencerInbox.MaxTimeVariation calldata maxTimeVariation,
+        DelayBuffer.BufferConfig calldata bufferConfig
     ) external returns (BridgeContracts memory) {
         // create ETH-based bridge if address zero is provided for native token, otherwise create ERC20-based bridge
         BridgeContracts memory frame = _createBridge(
@@ -96,7 +97,7 @@ contract BridgeCreator is Ownable {
         } else {
             IERC20Bridge(address(frame.bridge)).initialize(IOwnable(rollup), nativeToken);
         }
-        frame.sequencerInbox.initialize(IBridge(frame.bridge), maxTimeVariation);
+        frame.sequencerInbox.initialize(IBridge(frame.bridge), maxTimeVariation, bufferConfig);
         frame.inbox.initialize(frame.bridge, frame.sequencerInbox);
         frame.rollupEventInbox.initialize(frame.bridge);
         frame.outbox.initialize(frame.bridge);

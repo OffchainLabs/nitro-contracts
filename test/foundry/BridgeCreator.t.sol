@@ -18,7 +18,7 @@ contract BridgeCreatorTest is Test {
     BridgeCreator.BridgeContracts ethBasedTemplates =
         BridgeCreator.BridgeContracts({
             bridge: new Bridge(),
-            sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false),
+            sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false),
             inbox: new Inbox(MAX_DATA_SIZE),
             rollupEventInbox: new RollupEventInbox(),
             outbox: new Outbox()
@@ -26,7 +26,7 @@ contract BridgeCreatorTest is Test {
     BridgeCreator.BridgeContracts erc20BasedTemplates =
         BridgeCreator.BridgeContracts({
             bridge: new ERC20Bridge(),
-            sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true),
+            sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
             inbox: new ERC20Inbox(MAX_DATA_SIZE),
             rollupEventInbox: new ERC20RollupEventInbox(),
             outbox: new ERC20Outbox()
@@ -122,13 +122,24 @@ contract BridgeCreatorTest is Test {
             30,
             40
         );
-        timeVars.delayBlocks;
-
+        DelayBuffer.BufferConfig memory bufferConfig = DelayBuffer.BufferConfig({
+            thresholdSeconds: type(uint64).max,
+            thresholdBlocks: type(uint64).max,
+            maxBufferSeconds: 0,
+            maxBufferBlocks: 0,
+            replenishRate: DelayBuffer.ReplenishRate({
+                secondsPerPeriod: 0,
+                blocksPerPeriod: 0,
+                periodSeconds: 0,
+                periodBlocks: 0
+            })
+        });
         BridgeCreator.BridgeContracts memory contracts = creator.createBridge(
             proxyAdmin,
             rollup,
             nativeToken,
-            timeVars
+            timeVars,
+            bufferConfig
         );
         (
             IBridge bridge,
@@ -193,13 +204,25 @@ contract BridgeCreatorTest is Test {
             30,
             40
         );
-        timeVars.delayBlocks; // TODO: what is this?
+        DelayBuffer.BufferConfig memory bufferConfig = DelayBuffer.BufferConfig({
+            thresholdSeconds: type(uint64).max,
+            thresholdBlocks: type(uint64).max,
+            maxBufferSeconds: 0,
+            maxBufferBlocks: 0,
+            replenishRate: DelayBuffer.ReplenishRate({
+                secondsPerPeriod: 0,
+                blocksPerPeriod: 0,
+                periodSeconds: 0,
+                periodBlocks: 0
+            })
+        });
 
         BridgeCreator.BridgeContracts memory contracts = creator.createBridge(
             proxyAdmin,
             rollup,
             nativeToken,
-            timeVars
+            timeVars,
+            bufferConfig
         );
         (
             IBridge bridge,

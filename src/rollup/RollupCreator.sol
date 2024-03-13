@@ -144,7 +144,8 @@ contract RollupCreator is Ownable {
             address(proxyAdmin),
             address(rollup),
             deployParams.nativeToken,
-            deployParams.config.sequencerInboxMaxTimeVariation
+            deployParams.config.sequencerInboxMaxTimeVariation,
+            deployParams.config.bufferConfig
         );
 
         IChallengeManager challengeManager = IChallengeManager(

@@ -115,6 +115,18 @@ async function getDefaultConfig(
       delaySeconds: 60 * 60 * 24,
       futureSeconds: 60 * 60,
     },
+    bufferConfig: {
+      thresholdSeconds: 0,
+      thresholdBlocks: 0,
+      maxBufferSeconds: 0,
+      maxBufferBlocks: 0,
+      replenishRate: {
+        secondsPerPeriod: 0,
+        blocksPerPeriod: 0,
+        periodSeconds: 0,
+        periodBlocks: 0,
+      },
+    },
     stakeToken: stakeToken,
     wasmModuleRoot: wasmModuleRoot,
     loserStakeEscrow: ZERO_ADDR,
@@ -194,6 +206,7 @@ const setup = async () => {
   const ethSequencerInbox = await ethSequencerInboxFac.deploy(
     117964,
     dummy4844Reader,
+    false,
     false
   )
 
@@ -223,7 +236,8 @@ const setup = async () => {
   const erc20SequencerInbox = await erc20SequencerInboxFac.deploy(
     117964,
     dummy4844Reader,
-    true
+    true,
+    false
   )
 
   const erc20InboxFac = (await ethers.getContractFactory(
