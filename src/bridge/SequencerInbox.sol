@@ -49,6 +49,7 @@ import {IGasRefunder} from "../libraries/IGasRefunder.sol";
 import {GasRefundEnabled} from "../libraries/GasRefundEnabled.sol";
 import "../libraries/ArbitrumChecker.sol";
 import {IERC20Bridge} from "./IERC20Bridge.sol";
+//import "hardhat/console.sol";
 
 /**
  * @title  Accepts batches from the sequencer and adds them to the rollup inbox.
@@ -613,23 +614,23 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
                 uint256 offset = 1;
                 uint256 len=0;
 
-
-                bytes32 availBlockHash = bytes32(data[offset:(offset+32)]);
-
-                //setting offset for next data
-                offset += 32;
-                //string memory sender = string(data[34:82]);
+                // bytes32 availBlockHash = bytes32(data[offset:(offset+32)]);
+                // //setting offset for next data
+                // offset += 32;
 
                 //Extracting the data root proof
                 len = uint8(data[offset]);
                 //setting offset for next data
                 offset += 1;
+
                 //console.logUint(len);
                 merkleProofInput.dataRootProof = new bytes32[](len);
                 for (uint256 index = 0; index < len; index++) {
                     uint i = offset  + 32 * index;
+                    //console.logUint(i);
+                    //console.logBytes32(merkleProofInput.dataRootProof[index]);
                     merkleProofInput.dataRootProof[index] = bytes32(data[i:(i+32)]);
-                // console.logBytes32(dataRootProof[index]);
+                    //console.logBytes32(merkleProofInput.dataRootProof[index]);
                 }
 
 
