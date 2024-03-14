@@ -33,6 +33,16 @@ contract RollupCreator is Ownable {
     );
     event TemplatesUpdated();
 
+    struct RollupDeploymentParamsV1 {
+        Config config;
+        address batchPoster;
+        address[] validators;
+        uint256 maxDataSize;
+        address nativeToken;
+        bool deployFactoriesToL2;
+        uint256 maxFeePerGasForRetryables;
+    }
+
     struct RollupDeploymentParams {
         Config config;
         address[] validators;
@@ -83,6 +93,32 @@ contract RollupCreator is Ownable {
         validatorWalletCreator = _validatorWalletCreator;
         l2FactoriesDeployer = _l2FactoriesDeployer;
         emit TemplatesUpdated();
+    }
+
+    function createRollup(RollupDeploymentParamsV1 memory deployParams)
+        public
+        payable
+        returns (address)
+    {
+        address[] memory _batchPosters;
+        if (deployParams.batchPoster != address(0)) {
+            _batchPosters = new address[](1);
+            _batchPosters[0] = deployParams.batchPoster;
+        } else {
+            _batchPosters = new address[](0);
+        }
+        return createRollup(
+            RollupDeploymentParams({
+                config: deployParams.config,
+                validators: deployParams.validators,
+                maxDataSize: deployParams.maxDataSize,
+                nativeToken: deployParams.nativeToken,
+                deployFactoriesToL2: deployParams.deployFactoriesToL2,
+                maxFeePerGasForRetryables: deployParams.maxFeePerGasForRetryables,
+                batchPosters: _batchPosters,
+                batchPosterManager: address(0)
+            })
+        );
     }
 
     /**
