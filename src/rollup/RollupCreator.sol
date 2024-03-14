@@ -107,18 +107,19 @@ contract RollupCreator is Ownable {
         } else {
             _batchPosters = new address[](0);
         }
-        return createRollup(
-            RollupDeploymentParams({
-                config: deployParams.config,
-                validators: deployParams.validators,
-                maxDataSize: deployParams.maxDataSize,
-                nativeToken: deployParams.nativeToken,
-                deployFactoriesToL2: deployParams.deployFactoriesToL2,
-                maxFeePerGasForRetryables: deployParams.maxFeePerGasForRetryables,
-                batchPosters: _batchPosters,
-                batchPosterManager: address(0)
-            })
-        );
+        return
+            createRollup(
+                RollupDeploymentParams({
+                    config: deployParams.config,
+                    validators: deployParams.validators,
+                    maxDataSize: deployParams.maxDataSize,
+                    nativeToken: deployParams.nativeToken,
+                    deployFactoriesToL2: deployParams.deployFactoriesToL2,
+                    maxFeePerGasForRetryables: deployParams.maxFeePerGasForRetryables,
+                    batchPosters: _batchPosters,
+                    batchPosterManager: address(0)
+                })
+            );
     }
 
     /**
