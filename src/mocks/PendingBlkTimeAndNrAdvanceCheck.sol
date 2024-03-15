@@ -19,4 +19,12 @@ contract PendingBlkTimeAndNrAdvanceCheck {
         require(block.timestamp > deployedAt, "Time didn't advance");
         require(ArbSys(address(100)).arbBlockNumber() > deployedAtBlock, "Block didn't advance");
     }
+
+    function checkArbBlockHashReturnsLatest(bytes32 expected) external {
+        bytes32 gotBlockHash = ArbSys(address(100)).arbBlockHash(
+            ArbSys(address(100)).arbBlockNumber() - 1
+        );
+        require(gotBlockHash != bytes32(0), "ZERO_BLOCK_HASH");
+        require(gotBlockHash == expected, "WRONG_BLOCK_HASH");
+    }
 }
