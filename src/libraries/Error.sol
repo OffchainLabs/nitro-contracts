@@ -216,3 +216,12 @@ error Deprecated();
 
 /// @dev Thrown when any component of maxTimeVariation is over uint64
 error BadMaxTimeVariation();
+
+/// @dev Thrown when any component of bufferConfig is zero
+error BadBufferConfig();
+
+/// @dev Thrown when extra gas is not a uint64
+error ExtraGasNotUint64();
+
+/// @dev Thrown when keysetBytes is too large
+error KeysetTooLarge();

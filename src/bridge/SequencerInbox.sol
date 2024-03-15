@@ -33,7 +33,10 @@ import {
     NotDelayBufferable,
     NotDelayedFarEnough,
     DelayProofRequired,
-    NotDelayBufferable
+    NotDelayBufferable,
+    BadBufferConfig,
+    ExtraGasNotUint64,
+    KeysetTooLarge
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./IInboxBase.sol";
@@ -157,36 +160,20 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         return deployTimeChainId != block.chainid;
     }
 
-    function postUpgradeInit() external onlyDelegated onlyProxyOwner {
-        // Assuming we would not upgrade from a version that have MaxTimeVariation all set to zero
+    function postUpgradeInit(DelayBuffer.BufferConfig memory bufferConfig_)
+        external
+        onlyDelegated
+        onlyProxyOwner
+    {
+        // Assuming we would not upgrade from a version that does not have the buffer initialized
         // If that is the case, postUpgradeInit do not need to be called
-        if (
-            __LEGACY_MAX_TIME_VARIATION.delayBlocks == 0 &&
-            __LEGACY_MAX_TIME_VARIATION.futureBlocks == 0 &&
-            __LEGACY_MAX_TIME_VARIATION.delaySeconds == 0 &&
-            __LEGACY_MAX_TIME_VARIATION.futureSeconds == 0
-        ) {
+        if (buffer.bufferBlocks != 0 || buffer.bufferSeconds != 0) {
             revert AlreadyInit();
         }
 
-        if (
-            __LEGACY_MAX_TIME_VARIATION.delayBlocks > type(uint64).max ||
-            __LEGACY_MAX_TIME_VARIATION.futureBlocks > type(uint64).max ||
-            __LEGACY_MAX_TIME_VARIATION.delaySeconds > type(uint64).max ||
-            __LEGACY_MAX_TIME_VARIATION.futureSeconds > type(uint64).max
-        ) {
-            revert BadPostUpgradeInit();
-        }
-
-        delayBlocks = uint64(__LEGACY_MAX_TIME_VARIATION.delayBlocks);
-        futureBlocks = uint64(__LEGACY_MAX_TIME_VARIATION.futureBlocks);
-        delaySeconds = uint64(__LEGACY_MAX_TIME_VARIATION.delaySeconds);
-        futureSeconds = uint64(__LEGACY_MAX_TIME_VARIATION.futureSeconds);
-
-        __LEGACY_MAX_TIME_VARIATION.delayBlocks = 0;
-        __LEGACY_MAX_TIME_VARIATION.futureBlocks = 0;
-        __LEGACY_MAX_TIME_VARIATION.delaySeconds = 0;
-        __LEGACY_MAX_TIME_VARIATION.futureSeconds = 0;
+        _setBufferConfig(bufferConfig_);
+        buffer.bufferBlocks = bufferConfig.maxBufferBlocks;
+        buffer.bufferSeconds = bufferConfig.maxBufferSeconds;
     }
 
     function initialize(
@@ -215,31 +202,10 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         _setMaxTimeVariation(maxTimeVariation_);
 
         if (isDelayBufferable) {
-            bufferConfig = bufferConfig_;
-            buffer = DelayBuffer.BufferData({
-                bufferBlocks: bufferConfig.maxBufferBlocks,
-                bufferSeconds: bufferConfig.maxBufferSeconds,
-                syncExpiryBlockNumber: 0,
-                syncExpiryTimestamp: 0,
-                roundOffBlocks: 0,
-                roundOffSeconds: 0,
-                prevDelay: DelayBuffer.DelayHistory({
-                    blockNumber: 0,
-                    timestamp: 0,
-                    delayBlocks: 0,
-                    delaySeconds: 0
-                })
-            });
-            // if the delayed message count is equal to the total delayed messages
-            // then the sequencer inbox is in sync and the sync validity window
-            // can be set to the current block and timestamp
-            if (bridge.delayedMessageCount() == totalDelayedMessagesRead) {
-                buffer.updateSyncValidity(
-                    bufferConfig,
-                    uint64(block.number),
-                    uint64(block.timestamp)
-                );
-            }
+            _setBufferConfig(bufferConfig_);
+            // initially buffers are full
+            buffer.bufferBlocks = bufferConfig.maxBufferBlocks;
+            buffer.bufferSeconds = bufferConfig.maxBufferSeconds;
         }
     }
 
@@ -881,7 +847,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             uint256 l1Fees = ArbGasInfo(address(0x6c)).getCurrentTxL1GasFees();
             extraGas += l1Fees / block.basefee;
         }
-        require(extraGas <= type(uint64).max, "EXTRA_GAS_NOT_UINT64");
+        if (extraGas > type(uint64).max) revert ExtraGasNotUint64();
         bytes memory spendingReportMsg = abi.encodePacked(
             block.timestamp,
             batchPoster,
@@ -979,7 +945,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     function setValidKeyset(bytes calldata keysetBytes) external onlyRollupOwner {
         uint256 ksWord = uint256(keccak256(bytes.concat(hex"fe", keccak256(keysetBytes))));
         bytes32 ksHash = bytes32(ksWord ^ (1 << 255));
-        require(keysetBytes.length < 64 * 1024, "keyset is too large");
+        if (keysetBytes.length >= 64 * 1024) revert KeysetTooLarge();
 
         if (dasKeySetInfo[ksHash].isValidKeyset) revert AlreadyValidDASKeyset(ksHash);
         uint256 creationBlock = block.number;
@@ -1020,6 +986,49 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         emit OwnerFunctionCalled(5);
     }
 
+    function _setBufferConfig(DelayBuffer.BufferConfig memory bufferConfig_) internal {
+        if (!isDelayBufferable) revert NotDelayBufferable();
+        if (!DelayBuffer.isValidBufferConfig(bufferConfig_)) {
+            revert BadBufferConfig();
+        }
+
+        uint64 syncBlockNumber = buffer.syncExpiryBlockNumber > 0 &&
+            buffer.syncExpiryBlockNumber != type(uint64).max
+            ? buffer.syncExpiryBlockNumber - bufferConfig.thresholdBlocks
+            : 0;
+        uint64 syncTimestamp = buffer.syncExpiryTimestamp > 0 &&
+            buffer.syncExpiryBlockNumber != type(uint64).max
+            ? buffer.syncExpiryTimestamp - bufferConfig.thresholdSeconds
+            : 0;
+
+        if (bufferConfig_.maxBufferBlocks < buffer.bufferBlocks)
+            buffer.bufferBlocks = bufferConfig_.maxBufferBlocks;
+        if (bufferConfig_.maxBufferSeconds < buffer.bufferSeconds)
+            buffer.bufferSeconds = bufferConfig_.maxBufferSeconds;
+        if (bufferConfig_.thresholdBlocks > buffer.bufferBlocks)
+            buffer.bufferBlocks = bufferConfig_.thresholdBlocks;
+        if (bufferConfig_.thresholdSeconds > buffer.bufferSeconds)
+            buffer.bufferSeconds = bufferConfig_.thresholdSeconds;
+
+        bufferConfig = bufferConfig_;
+
+        bool isBridgeSynced = bridge.delayedMessageCount() == totalDelayedMessagesRead;
+
+        buffer.updateSyncValidity(
+            bufferConfig,
+            isBridgeSynced ? uint64(block.number) : syncBlockNumber,
+            isBridgeSynced ? uint64(block.timestamp) : syncTimestamp
+        );
+    }
+
+    function setBufferConfig(DelayBuffer.BufferConfig memory bufferConfig_)
+        external
+        onlyRollupOwner
+    {
+        _setBufferConfig(bufferConfig_);
+        emit OwnerFunctionCalled(6);
+    }
+
     function isValidKeysetHash(bytes32 ksHash) external view returns (bool) {
         return dasKeySetInfo[ksHash].isValidKeyset;
     }
@@ -1045,8 +1054,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     {
         (uint64 bufferBlocks, uint64 bufferSeconds) = buffer.pendingDelay(
             blockNumber,
-            bufferConfig.thresholdBlocks,
             timestamp,
+            bufferConfig.thresholdBlocks,
             bufferConfig.thresholdSeconds
         );
         (uint64 _delayBlocks, , uint64 _delaySeconds, ) = maxTimeVariationBufferable(
