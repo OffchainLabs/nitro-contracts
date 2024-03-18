@@ -89,7 +89,7 @@ contract BridgeCreator is Ownable {
         address rollup,
         address nativeToken,
         ISequencerInbox.MaxTimeVariation calldata maxTimeVariation,
-        DelayBuffer.BufferConfig calldata bufferConfig
+        BufferConfig calldata bufferConfig
     ) external returns (BridgeContracts memory) {
         // create ETH-based bridge if address zero is provided for native token, otherwise create ERC20-based bridge
         BridgeContracts memory frame = _createBridge(

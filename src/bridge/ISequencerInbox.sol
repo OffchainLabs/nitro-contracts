@@ -10,7 +10,7 @@ import "../libraries/IGasRefunder.sol";
 import "./IDelayedMessageProvider.sol";
 import "./IBridge.sol";
 import "./Messages.sol";
-import "./DelayBuffer.sol";
+import "./DelayBufferTypes.sol";
 
 interface ISequencerInbox is IDelayedMessageProvider {
     /// @notice The maximum amount of time variatin between a message being posted on the L1 and being executed on the L2
@@ -311,6 +311,6 @@ interface ISequencerInbox is IDelayedMessageProvider {
     function initialize(
         IBridge bridge_,
         MaxTimeVariation calldata maxTimeVariation_,
-        DelayBuffer.BufferConfig calldata bufferConfig_
+        BufferConfig calldata bufferConfig_
     ) external;
 }

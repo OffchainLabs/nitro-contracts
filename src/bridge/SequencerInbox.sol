@@ -135,9 +135,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     // True if the SequencerInbox is delay bufferable
     bool public immutable isDelayBufferable;
 
-    using DelayBuffer for DelayBuffer.BufferData;
-    DelayBuffer.BufferData public buffer;
-    DelayBuffer.BufferConfig public bufferConfig;
+    using DelayBuffer for BufferData;
+    BufferData public buffer;
+    BufferConfig public bufferConfig;
 
     constructor(
         uint256 _maxDataSize,
@@ -160,7 +160,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         return deployTimeChainId != block.chainid;
     }
 
-    function postUpgradeInit(DelayBuffer.BufferConfig memory bufferConfig_)
+    function postUpgradeInit(BufferConfig memory bufferConfig_)
         external
         onlyDelegated
         onlyProxyOwner
@@ -179,7 +179,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     function initialize(
         IBridge bridge_,
         ISequencerInbox.MaxTimeVariation calldata maxTimeVariation_,
-        DelayBuffer.BufferConfig memory bufferConfig_
+        BufferConfig memory bufferConfig_
     ) external onlyDelegated {
         if (bridge != IBridge(address(0))) revert AlreadyInit();
         if (bridge_ == IBridge(address(0))) revert HadZeroInit();
@@ -979,7 +979,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         emit OwnerFunctionCalled(5);
     }
 
-    function _setBufferConfig(DelayBuffer.BufferConfig memory bufferConfig_) internal {
+    function _setBufferConfig(BufferConfig memory bufferConfig_) internal {
         if (!isDelayBufferable) revert NotDelayBufferable();
         if (!DelayBuffer.isValidBufferConfig(bufferConfig_)) {
             revert BadBufferConfig();
@@ -1014,10 +1014,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         );
     }
 
-    function setBufferConfig(DelayBuffer.BufferConfig memory bufferConfig_)
-        external
-        onlyRollupOwner
-    {
+    function setBufferConfig(BufferConfig memory bufferConfig_) external onlyRollupOwner {
         _setBufferConfig(bufferConfig_);
         emit OwnerFunctionCalled(6);
     }

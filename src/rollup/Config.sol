@@ -26,7 +26,7 @@ struct Config {
     string chainConfig;
     uint64 genesisBlockNum;
     ISequencerInbox.MaxTimeVariation sequencerInboxMaxTimeVariation;
-    DelayBuffer.BufferConfig bufferConfig;
+    BufferConfig bufferConfig;
 }
 
 struct ContractDependencies {
