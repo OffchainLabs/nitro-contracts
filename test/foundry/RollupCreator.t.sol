@@ -114,12 +114,12 @@ contract RollupCreatorTest is Test {
             60 * 60 * 24,
             60 * 60
         );
-        DelayBuffer.BufferConfig memory bufferConfig = DelayBuffer.BufferConfig({
+        BufferConfig memory bufferConfig = BufferConfig({
             thresholdSeconds: type(uint64).max,
             thresholdBlocks: type(uint64).max,
             maxBufferSeconds: 0,
             maxBufferBlocks: 0,
-            replenishRate: DelayBuffer.ReplenishRate({
+            replenishRate: ReplenishRate({
                 secondsPerPeriod: 0,
                 blocksPerPeriod: 0,
                 periodSeconds: 0,
@@ -282,12 +282,12 @@ contract RollupCreatorTest is Test {
             60 * 60 * 24,
             60 * 60
         );
-        DelayBuffer.BufferConfig memory bufferConfig = DelayBuffer.BufferConfig({
+        BufferConfig memory bufferConfig = BufferConfig({
             thresholdSeconds: type(uint64).max,
             thresholdBlocks: type(uint64).max,
             maxBufferSeconds: 0,
             maxBufferBlocks: 0,
-            replenishRate: DelayBuffer.ReplenishRate({
+            replenishRate: ReplenishRate({
                 secondsPerPeriod: 0,
                 blocksPerPeriod: 0,
                 periodSeconds: 0,
@@ -451,12 +451,12 @@ contract RollupCreatorTest is Test {
             60 * 60 * 24,
             60 * 60
         );
-        DelayBuffer.BufferConfig memory bufferConfig = DelayBuffer.BufferConfig({
+        BufferConfig memory bufferConfig = BufferConfig({
             thresholdSeconds: type(uint64).max,
             thresholdBlocks: type(uint64).max,
             maxBufferSeconds: 0,
             maxBufferBlocks: 0,
-            replenishRate: DelayBuffer.ReplenishRate({
+            replenishRate: ReplenishRate({
                 secondsPerPeriod: 0,
                 blocksPerPeriod: 0,
                 periodSeconds: 0,

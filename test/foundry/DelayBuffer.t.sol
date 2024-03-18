@@ -13,12 +13,12 @@ contract DelayBufferableTest is Test {
     uint64 constant period = 30;
     uint64 constant threshold = 5;
 
-    DelayBuffer.BufferConfig config = DelayBuffer.BufferConfig({
+    BufferConfig config = BufferConfig({
         thresholdBlocks: 5,
         thresholdSeconds: 5,
         maxBufferBlocks: 1000,
         maxBufferSeconds: 1000,
-        replenishRate: DelayBuffer.ReplenishRate({
+        replenishRate: ReplenishRate({
             blocksPerPeriod: 100, 
             periodBlocks: 30,
             secondsPerPeriod: 100,
@@ -32,28 +32,28 @@ contract DelayBufferableTest is Test {
         delaySeconds: 24 * 60 * 60,
         futureSeconds: 32 * 2 * 12
     });
-    DelayBuffer.BufferConfig configBufferable = DelayBuffer.BufferConfig({
+    BufferConfig configBufferable = BufferConfig({
         thresholdBlocks: 60 * 60 * 2 / 12,
         thresholdSeconds: 60 * 60 * 2,
         maxBufferBlocks: 24 * 60 * 60 / 12 * 2,
         maxBufferSeconds: 24 * 60 * 60 * 2,
-        replenishRate: DelayBuffer.ReplenishRate({
+        replenishRate: ReplenishRate({
             secondsPerPeriod: 1,
             blocksPerPeriod: 1,
             periodSeconds: 14,
             periodBlocks: 14
         })
     });
-    using DelayBuffer for DelayBuffer.BufferData;
-    DelayBuffer.BufferData delayBuffer;
-    DelayBuffer.BufferData delayBufferDefault = DelayBuffer.BufferData({
+    using DelayBuffer for BufferData;
+    BufferData delayBuffer;
+    BufferData delayBufferDefault = BufferData({
             bufferBlocks: configBufferable.maxBufferBlocks,
             bufferSeconds: configBufferable.maxBufferSeconds,
             syncExpiryBlockNumber: 0,
             syncExpiryTimestamp: 0,
             roundOffBlocks: 0,
             roundOffSeconds: 0,
-            prevDelay: DelayBuffer.DelayHistory({
+            prevDelay: DelayHistory({
                 blockNumber: 0,
                 timestamp: 0,
                 delayBlocks: 0,
@@ -148,14 +148,14 @@ contract DelayBufferableTest is Test {
     }
 
     function testUpdateBuffers() public {
-        delayBuffer = DelayBuffer.BufferData({
+        delayBuffer = BufferData({
             bufferBlocks: 10,
             bufferSeconds: 10,
             syncExpiryBlockNumber: 0,
             syncExpiryTimestamp: 0,
             roundOffBlocks: 10,
             roundOffSeconds: 10,
-            prevDelay: DelayBuffer.DelayHistory({
+            prevDelay: DelayHistory({
                 blockNumber: 10,
                 timestamp: 10,
                 delayBlocks: 10,
@@ -176,14 +176,14 @@ contract DelayBufferableTest is Test {
         assertEq(delayBuffer.prevDelay.timestamp, 20);
         assertEq(delayBuffer.prevDelay.delaySeconds, 5);
 
-        delayBuffer = DelayBuffer.BufferData({
+        delayBuffer = BufferData({
             bufferBlocks: 10,
             bufferSeconds: 10,
             syncExpiryBlockNumber: 0,
             syncExpiryTimestamp: 0,
             roundOffBlocks: 10,
             roundOffSeconds: 10,
-            prevDelay: DelayBuffer.DelayHistory({
+            prevDelay: DelayHistory({
                 blockNumber: 10,
                 timestamp: 10,
                 delayBlocks: 3,
@@ -208,14 +208,14 @@ contract DelayBufferableTest is Test {
     }
 
     function testPendingDelay() public {
-        delayBuffer = DelayBuffer.BufferData({
+        delayBuffer = BufferData({
             bufferBlocks: 10,
             bufferSeconds: 10,
             syncExpiryBlockNumber: 0,
             syncExpiryTimestamp: 0,
             roundOffBlocks: 10,
             roundOffSeconds: 10,
-            prevDelay: DelayBuffer.DelayHistory({
+            prevDelay: DelayHistory({
                 blockNumber: 10,
                 timestamp: 10,
                 delayBlocks: 10,
