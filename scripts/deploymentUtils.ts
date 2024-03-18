@@ -199,7 +199,12 @@ export async function deployAllContracts(
   )
   const rollupUser = await deployContract('RollupUserLogic', signer, [], verify)
   const upgradeExecutor = await deployUpgradeExecutor(signer)
-  const validatorUtils = await deployContract('ValidatorUtils', signer)
+  const validatorUtils = await deployContract(
+    'ValidatorUtils',
+    signer,
+    [],
+    verify
+  )
   const validatorWalletCreator = await deployContract(
     'ValidatorWalletCreator',
     signer,

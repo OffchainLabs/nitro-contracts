@@ -1,13 +1,19 @@
 import { ethers } from 'hardhat'
 import '@nomiclabs/hardhat-ethers'
 import { deployAllContracts } from './deploymentUtils'
+import hre from 'hardhat'
 
 async function main() {
   const [signer] = await ethers.getSigners()
 
+  let verifyContracts = true
+  if (hre.network.name.includes('testnode')) {
+    verifyContracts = false
+  }
+
   try {
     // Deploying all contracts
-    const contracts = await deployAllContracts(signer)
+    const contracts = await deployAllContracts(signer, verifyContracts)
 
     // Call setTemplates with the deployed contract addresses
     console.log('Waiting for the Template to be set on the Rollup Creator')
