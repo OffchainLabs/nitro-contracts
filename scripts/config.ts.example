@@ -18,16 +18,31 @@ export const config = {
     chainConfig:
       '{"chainId":13331370,"homesteadBlock":0,"daoForkBlock":null,"daoForkSupport":true,"eip150Block":0,"eip150Hash":"0x0000000000000000000000000000000000000000000000000000000000000000","eip155Block":0,"eip158Block":0,"byzantiumBlock":0,"constantinopleBlock":0,"petersburgBlock":0,"istanbulBlock":0,"muirGlacierBlock":0,"berlinBlock":0,"londonBlock":0,"clique":{"period":0,"epoch":0},"arbitrum":{"EnableArbOS":true,"AllowDebugPrecompiles":false,"DataAvailabilityCommittee":false,"InitialArbOSVersion":10,"InitialChainOwner":"0x1234123412341234123412341234123412341234","GenesisBlockNum":0}}',
     genesisBlockNum: ethers.BigNumber.from('0'),
-    sequencerInboxMaxTimeVariation: {
-      delayBlocks: ethers.BigNumber.from('5760'),
+    maxTimeVariation: {
+      delayBlocks: ethers.BigNumber.from('7200'),
       futureBlocks: ethers.BigNumber.from('12'),
       delaySeconds: ethers.BigNumber.from('86400'),
       futureSeconds: ethers.BigNumber.from('3600'),
     },
+    delayConfig: {
+      thresholdBlocks: ethers.BigNumber.from('600'),
+      thresholdSeconds: ethers.BigNumber.from('7200'),
+      maxBufferBlocks: ethers.BigNumber.from('14400'),
+      maxBufferSeconds: ethers.BigNumber.from('172800'),
+      replenishRate: {
+        blocksPerPeriod: ethers.BigNumber.from('1'),
+        secondsPerPeriod: ethers.BigNumber.from('1'),
+        periodBlocks: ethers.BigNumber.from('12'),
+        periodSeconds: ethers.BigNumber.from('12'),
+      },
+    }
   },
   validators: [
     '0x1234123412341234123412341234123412341234',
     '0x1234512345123451234512345123451234512345',
   ],
-  batchPoster: '0x1234123412341234123412341234123412341234',
+  batchPosterManager: '0x1234123412341234123412341234123412341234',
+  batchPosters: [
+    '0x1234123412341234123412341234123412341234'
+  ]
 }

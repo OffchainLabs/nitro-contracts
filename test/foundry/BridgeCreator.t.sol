@@ -23,6 +23,14 @@ contract BridgeCreatorTest is Test {
             rollupEventInbox: new RollupEventInbox(),
             outbox: new Outbox()
         });
+    BridgeCreator.BridgeContracts public ethBasedDelayBufferableTemplates =
+        BridgeCreator.BridgeContracts({
+            bridge: new Bridge(),
+            sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, true),
+            inbox: new Inbox(MAX_DATA_SIZE),
+            rollupEventInbox: new RollupEventInbox(),
+            outbox: new Outbox()
+        });
     BridgeCreator.BridgeContracts erc20BasedTemplates =
         BridgeCreator.BridgeContracts({
             bridge: new ERC20Bridge(),
@@ -31,10 +39,18 @@ contract BridgeCreatorTest is Test {
             rollupEventInbox: new ERC20RollupEventInbox(),
             outbox: new ERC20Outbox()
         });
-
+    BridgeCreator.BridgeContracts public erc20BasedDelayBufferableTemplates =
+        BridgeCreator.BridgeContracts({
+            bridge: new ERC20Bridge(),
+            sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, true),
+            inbox: new ERC20Inbox(MAX_DATA_SIZE),
+            rollupEventInbox: new ERC20RollupEventInbox(),
+            outbox: new ERC20Outbox()
+        });
+    
     function setUp() public {
         vm.prank(owner);
-        creator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
+        creator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates, ethBasedDelayBufferableTemplates, erc20BasedDelayBufferableTemplates);
     }
 
     function getEthBasedTemplates() internal view returns (BridgeCreator.BridgeContracts memory) {

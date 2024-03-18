@@ -198,8 +198,8 @@ describe('SequencerInbox', async () => {
 
   const setupSequencerInbox = async (
     fundingWallet: Wallet,
-    maxDelayBlocks = 10,
-    maxDelayTime = 0
+    maxDelayBlocks = (24 * 60 * 60) / 12,
+    maxDelayTime = 24 * 60 * 60
   ) => {
     const accounts = await fundAccounts(fundingWallet, 5, utils.parseEther('1'))
 
@@ -285,15 +285,15 @@ describe('SequencerInbox', async () => {
           futureSeconds: 3000,
         },
         {
-          thresholdSeconds: 0,
-          thresholdBlocks: 0,
-          maxBufferSeconds: 0,
-          maxBufferBlocks: 0,
+          thresholdSeconds: 2 * 60 * 60,
+          thresholdBlocks: (2 * 60 * 60) / 12,
+          maxBufferSeconds: 2 * 24 * 60 * 60,
+          maxBufferBlocks: (2 * 24 * 60 * 60) / 12,
           replenishRate: {
-            secondsPerPeriod: 0,
-            blocksPerPeriod: 0,
-            periodSeconds: 0,
-            periodBlocks: 0,
+            secondsPerPeriod: 1,
+            blocksPerPeriod: 1,
+            periodSeconds: 12,
+            periodBlocks: 12,
           },
         }
       )

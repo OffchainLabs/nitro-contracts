@@ -21,6 +21,8 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 contract BridgeCreator is Ownable {
     BridgeContracts public ethBasedTemplates;
     BridgeContracts public erc20BasedTemplates;
+    BridgeContracts public ethBasedDelayBufferableTemplates;
+    BridgeContracts public erc20BasedDelayBufferableTemplates;
 
     event TemplatesUpdated();
     event ERC20TemplatesUpdated();
@@ -35,10 +37,14 @@ contract BridgeCreator is Ownable {
 
     constructor(
         BridgeContracts memory _ethBasedTemplates,
-        BridgeContracts memory _erc20BasedTemplates
+        BridgeContracts memory _erc20BasedTemplates,
+        BridgeContracts memory _ethBasedDelayBufferableTemplates,
+        BridgeContracts memory _erc20BasedDelayBufferableTemplates
     ) Ownable() {
         ethBasedTemplates = _ethBasedTemplates;
         erc20BasedTemplates = _erc20BasedTemplates;
+        ethBasedDelayBufferableTemplates = _ethBasedDelayBufferableTemplates;
+        erc20BasedDelayBufferableTemplates = _erc20BasedDelayBufferableTemplates;
     }
 
     function updateTemplates(BridgeContracts calldata _newTemplates) external onlyOwner {

@@ -209,6 +209,12 @@ const setup = async () => {
     false,
     false
   )
+  const ethDelayBufferableSequencerInbox = await ethSequencerInboxFac.deploy(
+    117964,
+    dummy4844Reader,
+    false,
+    true
+  )
 
   const ethInboxFac = (await ethers.getContractFactory(
     'Inbox'
@@ -239,6 +245,8 @@ const setup = async () => {
     true,
     false
   )
+  const erc20DelayBufferableSequencerInbox =
+    await erc20SequencerInboxFac.deploy(117964, dummy4844Reader, true, true)
 
   const erc20InboxFac = (await ethers.getContractFactory(
     'ERC20Inbox'
@@ -269,6 +277,20 @@ const setup = async () => {
     {
       bridge: erc20Bridge.address,
       sequencerInbox: erc20SequencerInbox.address,
+      inbox: erc20Inbox.address,
+      rollupEventInbox: erc20RollupEventInbox.address,
+      outbox: erc20Outbox.address,
+    },
+    {
+      bridge: ethBridge.address,
+      sequencerInbox: ethDelayBufferableSequencerInbox.address,
+      inbox: ethInbox.address,
+      rollupEventInbox: ethRollupEventInbox.address,
+      outbox: ethOutbox.address,
+    },
+    {
+      bridge: erc20Bridge.address,
+      sequencerInbox: erc20DelayBufferableSequencerInbox.address,
       inbox: erc20Inbox.address,
       rollupEventInbox: erc20RollupEventInbox.address,
       outbox: erc20Outbox.address,
