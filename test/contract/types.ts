@@ -30,15 +30,15 @@ export type MaxTimeVariation = {
 
 export type ReplenishRate = {
   blocksPerPeriod: number
-  periodBlocks: number
   secondsPerPeriod: number
+  periodBlocks: number
   periodSeconds: number
 }
 
 export type DelayConfig = {
-  thresholdSeconds: BigNumber
   thresholdBlocks: BigNumber
-  maxBufferSeconds: number
+  thresholdSeconds: BigNumber
   maxBufferBlocks: number
+  maxBufferSeconds: number
   replenishRate: ReplenishRate
 }

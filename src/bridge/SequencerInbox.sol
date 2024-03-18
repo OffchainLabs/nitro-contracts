@@ -132,7 +132,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     bool internal immutable hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
     // True if the chain this SequencerInbox is deployed on uses custom fee token
     bool public immutable isUsingFeeToken;
-    // True the SequencerInbox is delay bufferable
+    // True if the SequencerInbox is delay bufferable
     bool public immutable isDelayBufferable;
 
     using DelayBuffer for DelayBuffer.BufferData;
@@ -386,6 +386,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         revert Deprecated();
     }
 
+    /// @inheritdoc ISequencerInbox
     function addSequencerL2BatchFromOrigin(
         uint256 sequenceNumber,
         bytes calldata data,
@@ -401,8 +402,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             if (afterDelayedMessagesRead > totalDelayedMessagesRead) {
                 revert DelayProofRequired();
             }
-            // if no new delayed messages are read, no buffer updates can be applied
-            // and there are no new delayed messages to prove delays, so no proof is required
+            // no proof required if no new delayed messages are read since no buffer updates can be applied
         }
         addSequencerL2BatchFromCalldataOriginImpl(
             sequenceNumber,
@@ -426,8 +426,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             if (afterDelayedMessagesRead > totalDelayedMessagesRead) {
                 revert DelayProofRequired();
             }
-            // if no new delayed messages are read, no buffer updates can be applied
-            // and there are no new delayed messages to prove delays, so no proof is required
+            // no proof required if no new delayed messages are read since no buffer updates can be applied
         }
         addSequencerL2BatchFromBlobsImpl(
             sequenceNumber,
@@ -451,11 +450,10 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         if (!isDelayBufferable) revert NotDelayBufferable();
 
         // must read atleast 1 new delayed message
-        uint256 _totalDelayedMessagesRead = totalDelayedMessagesRead;
-        if (afterDelayedMessagesRead <= _totalDelayedMessagesRead) revert NotDelayedFarEnough();
+        if (afterDelayedMessagesRead <= totalDelayedMessagesRead) revert NotDelayedFarEnough();
 
         // validate the delayed message against the delayed accumulator
-        bytes32 delayedAcc = bridge.delayedInboxAccs(_totalDelayedMessagesRead);
+        bytes32 delayedAcc = bridge.delayedInboxAccs(totalDelayedMessagesRead);
         buffer.sync(bufferConfig, delayedAcc, beforeDelayedAcc, delayedMessage);
 
         addSequencerL2BatchFromBlobsImpl(
@@ -483,11 +481,10 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         if (!isDelayBufferable) revert NotDelayBufferable();
 
         // must read atleast 1 new delayed message
-        uint256 _totalDelayedMessagesRead = totalDelayedMessagesRead;
-        if (afterDelayedMessagesRead <= _totalDelayedMessagesRead) revert NotDelayedFarEnough();
+        if (afterDelayedMessagesRead <= totalDelayedMessagesRead) revert NotDelayedFarEnough();
 
         // validate the delayed message against the delayed accumulator
-        bytes32 delayedAcc = bridge.delayedInboxAccs(_totalDelayedMessagesRead);
+        bytes32 delayedAcc = bridge.delayedInboxAccs(totalDelayedMessagesRead);
         buffer.sync(bufferConfig, delayedAcc, beforeDelayedAcc, delayedMessage);
 
         addSequencerL2BatchFromCalldataOriginImpl(
@@ -518,7 +515,6 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             prevMessageCount,
             newMessageCount
         );
-
         buffer.resync(bufferConfig, beforeDelayedAcc, delayedMessage, beforeAcc, preimage);
     }
 
@@ -545,7 +541,6 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             prevMessageCount,
             newMessageCount
         );
-
         buffer.resync(bufferConfig, beforeDelayedAcc, delayedMessage, beforeAcc, preimage);
     }
 
@@ -577,15 +572,13 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
                 newMessageCount
             );
 
-        uint256 _sequenceNumber = sequenceNumber; // stack workaround
-
         // ~uint256(0) is type(uint256).max, but ever so slightly cheaper
-        if (seqMessageIndex != _sequenceNumber && _sequenceNumber != ~uint256(0)) {
-            revert BadSequencerNumber(seqMessageIndex, _sequenceNumber);
+        if (seqMessageIndex != sequenceNumber && sequenceNumber != ~uint256(0)) {
+            revert BadSequencerNumber(seqMessageIndex, sequenceNumber);
         }
 
         emit SequencerBatchDelivered(
-            _sequenceNumber,
+            sequenceNumber,
             beforeAcc,
             afterAcc,
             delayedAcc,
@@ -663,7 +656,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         if (!isBatchPoster[msg.sender] && msg.sender != address(rollup)) revert NotBatchPoster();
         if (isDelayBufferable && !isSynced()) {
             // if no new delayed messages are read, no proof required since no buffer updates can be applied
-            if (totalDelayedMessagesRead != afterDelayedMessagesRead) {
+            if (afterDelayedMessagesRead > totalDelayedMessagesRead) {
                 revert DelayProofRequired();
             }
         }
@@ -1043,8 +1036,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     /// @dev    This is the `sync validity window` during which no proofs are required.
     /// @notice Returns true if the inbox is in a synced state (no unexpected delays are possible)
     function isSynced() internal view returns (bool) {
-        return (block.number < buffer.syncExpiryBlockNumber &&
-            block.timestamp < buffer.syncExpiryTimestamp);
+        return (block.number <= buffer.syncExpiryBlockNumber &&
+            block.timestamp <= buffer.syncExpiryTimestamp);
     }
 
     function forceInclusionDeadline(uint64 blockNumber, uint64 timestamp)

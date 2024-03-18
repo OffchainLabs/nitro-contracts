@@ -223,7 +223,7 @@ contract DelayBufferableTest is Test {
             })
         });
 
-        (uint64 bufferBlocks, uint64 bufferSeconds) = delayBuffer.pendingDelay(15, threshold, 15, threshold);
+        (uint64 bufferBlocks, uint64 bufferSeconds) = delayBuffer.pendingDelay(15, 15, threshold, threshold);
 
         assertEq(bufferBlocks, 5);
         assertEq(bufferSeconds, 5);

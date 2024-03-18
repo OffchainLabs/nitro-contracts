@@ -30,7 +30,6 @@ import {
   DelayedMsgDelivered,
   MaxTimeVariation,
   DelayConfig,
-  ReplenishRate,
 } from './types'
 import { solidityPack } from 'ethers/lib/utils'
 import {

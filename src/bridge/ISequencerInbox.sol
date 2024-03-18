@@ -154,6 +154,19 @@ interface ISequencerInbox is IDelayedMessageProvider {
     /// @notice the creation block is intended to still be available after a keyset is deleted
     function getKeysetCreationBlock(bytes32 ksHash) external view returns (uint256);
 
+    /// @dev    The delay buffer can decrease due to pending depletion.
+    ///         This function applies pending buffer changes to proactively calculate the force inclusion deadline.
+    ///         This is only relevant when the bufferBlocks or bufferSeconds are less than delayBlocks or delaySeconds.
+    /// @notice Calculates the upper bounds of the delay buffer
+    /// @param blockNumber The block number when a delayed message was created
+    /// @param timestamp The timestamp when a delayed message was created
+    /// @return blockNumberDeadline The block number at which the delay buffer is guaranteed to be depleted
+    /// @return timestampDeadline The timestamp at which the delay buffer is guaranteed to be depleted
+    function forceInclusionDeadline(uint64 blockNumber, uint64 timestamp)
+        external
+        view
+        returns (uint64 blockNumberDeadline, uint64 timestampDeadline);
+
     // ---------- BatchPoster functions ----------
 
     function addSequencerL2BatchFromOrigin(

@@ -884,7 +884,7 @@ describe('SequencerInboxDelayBufferable', async () => {
   })
 })
 
-describe('SequencerInboxDelayBufferableBlobs', async () => {
+describe('SequencerInboxDelayBufferableBlobMock', async () => {
   it('can deplete buffer', async () => {
     const { bridge, sequencerInbox, batchPoster, delayConfig, maxDelay } =
       await setupSequencerInbox(true, true)

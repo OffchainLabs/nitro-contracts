@@ -21,8 +21,8 @@ library DelayBuffer {
     /// @notice Delay buffer and delay threshold settings
     /// @param thresholdBlocks The maximum amount of blocks that a message is expected to be delayed
     /// @param thresholdSeconds The maximum amount of time in seconds that a message is expected to be delayed
-    /// @param maxBufferBlocks The maximum the delay blocks seconds can be
-    /// @param maxBufferSeconds The maximum the delay buffer seconds can be
+    /// @param maxBufferBlocks The maximum buffer in blocks
+    /// @param maxBufferSeconds The maximum buffer in seconds
     /// @param replenishRate The rate at which the delay buffer is replenished.
     struct BufferConfig {
         uint64 thresholdBlocks;
@@ -35,8 +35,8 @@ library DelayBuffer {
     /// @notice The rate at which the delay buffer is replenished.
     /// @param blocksPerPeriod The amount of blocks that is added to the delay buffer every period
     /// @param secondsPerPeriod The amount of time in seconds that is added to the delay buffer every period
-    /// @param periodBlocks The amount of blocks that is waited between replenishing the delay buffer
-    /// @param periodSeconds The amount of time in seconds that is waited between replenishing the delay buffer
+    /// @param periodBlocks The period in blocks between replenishment
+    /// @param periodSeconds The period in seconds between replenishment
     struct ReplenishRate {
         uint64 blocksPerPeriod;
         uint64 secondsPerPeriod;
@@ -79,9 +79,9 @@ library DelayBuffer {
     /// @notice Synchronizes the sequencer inbox with the delayed inbox.
     /// @param self The delay buffer data
     /// @param bufferConfig The delay buffer settings
-    /// @param delayedAcc The most recent delayed accumulator sequenced / read
+    /// @param delayedAcc The delayed accumulator of the first delayed message sequenced
     /// @param beforeDelayedAcc The delayed accumulator before the delayedAcc
-    /// @param delayedMessage The delayed message to validate
+    /// @param delayedMessage The first delayed message sequenced
     function sync(
         BufferData storage self,
         BufferConfig memory bufferConfig,
@@ -92,14 +92,12 @@ library DelayBuffer {
         if (!Messages.isValidDelayedAccPreimage(delayedAcc, beforeDelayedAcc, delayedMessage)) {
             revert InvalidDelayedAccPreimage();
         }
-
         updateBuffers(self, bufferConfig, delayedMessage.blockNumber, delayedMessage.timestamp);
-
         if (
             isOnTime(
                 delayedMessage.blockNumber,
-                bufferConfig.thresholdBlocks,
                 delayedMessage.timestamp,
+                bufferConfig.thresholdBlocks,
                 bufferConfig.thresholdSeconds
             )
         ) {
@@ -112,7 +110,7 @@ library DelayBuffer {
         }
     }
 
-    /// @dev    This function handles resynchronizing the sequencer inbox with the delayed inbox.
+    /// @dev    This function handles resyncing the sequencer inbox with the delayed inbox.
     ///         It is called by the sequencer inbox when a delayed message is sequenced, proving
     ///         the message is on-time and updating the sync validity window. This function is called
     ///         called periodically to renew the sync validity window.
@@ -148,8 +146,8 @@ library DelayBuffer {
         if (
             !isOnTime(
                 delayedMessage.blockNumber,
-                bufferConfig.thresholdBlocks,
                 delayedMessage.timestamp,
+                bufferConfig.thresholdBlocks,
                 bufferConfig.thresholdSeconds
             )
         ) {
@@ -177,14 +175,19 @@ library DelayBuffer {
         uint64 blockNumber,
         uint64 timestamp
     ) internal {
-        self.syncExpiryBlockNumber = blockNumber + bufferConfig.thresholdBlocks;
-        self.syncExpiryTimestamp = timestamp + bufferConfig.thresholdSeconds;
+        // saturating at uint64 max gracefully handles large threshold settings
+        self.syncExpiryBlockNumber = bufferConfig.thresholdBlocks > type(uint64).max - blockNumber
+            ? type(uint64).max
+            : blockNumber + bufferConfig.thresholdBlocks;
+        self.syncExpiryTimestamp = bufferConfig.thresholdSeconds > type(uint64).max - timestamp
+            ? type(uint64).max
+            : timestamp + bufferConfig.thresholdSeconds;
     }
 
     function isOnTime(
         uint64 blockNumber,
-        uint64 thresholdBlocks,
         uint64 timestamp,
+        uint64 thresholdBlocks,
         uint64 thresholdSeconds
     ) internal view returns (bool) {
         return ((uint64(block.number) - blockNumber <= thresholdBlocks) &&
@@ -213,7 +216,7 @@ library DelayBuffer {
         uint64 unexpectedDelay = delay > threshold ? delay - threshold : 0;
         uint64 decrease = unexpectedDelay > elapsed ? elapsed : unexpectedDelay;
         // decrease the buffer saturating at zero
-        buffer = decrease > buffer ? 0 : buffer - decrease;
+        buffer = buffer > decrease ? buffer - decrease : 0;
         // saturate at threshold
         buffer = buffer > threshold ? buffer : threshold;
         return buffer;
@@ -237,12 +240,13 @@ library DelayBuffer {
         uint64 roundOff
     ) internal pure returns (uint64, uint64) {
         // add the replenish round off from the last replenish
-        uint64 elapsed = end > start ? end - start + roundOff : 0;
-        uint64 replenishAmount = (elapsed / period) * amountPerPeriod;
-        roundOff = elapsed % period;
-        buffer += replenishAmount;
-        // saturate
-        if (buffer > maxBuffer) {
+        uint64 elapsed = end > start ? end - start : 0;
+        uint64 replenishAmount = ((elapsed + roundOff) / period) * amountPerPeriod;
+        roundOff = (elapsed + roundOff) % period;
+        if (maxBuffer - buffer > replenishAmount) {
+            buffer += replenishAmount;
+        } else {
+            // saturate
             buffer = maxBuffer;
             roundOff = 0;
         }
@@ -271,8 +275,6 @@ library DelayBuffer {
         uint64 period,
         uint64 roundOff
     ) internal pure returns (uint64, uint64) {
-        // updates should only be made forward in time / block number
-        assert(start <= end);
         if (threshold < delay) {
             // unexpected delay
             buffer = deplete(start, end, delay, threshold, buffer);
@@ -351,8 +353,8 @@ library DelayBuffer {
     function pendingDelay(
         BufferData storage self,
         uint64 blockNumber,
-        uint64 thresholdBlocks,
         uint64 timestamp,
+        uint64 thresholdBlocks,
         uint64 thresholdSeconds
     ) internal view returns (uint64, uint64) {
         uint64 bufferBlocks = deplete(
@@ -370,5 +372,22 @@ library DelayBuffer {
             self.bufferSeconds
         );
         return (bufferBlocks, bufferSeconds);
+    }
+
+    function isValidBufferConfig(BufferConfig memory bufferConfig) internal pure returns (bool) {
+        return
+            bufferConfig.thresholdBlocks != 0 &&
+            bufferConfig.thresholdSeconds != 0 &&
+            bufferConfig.maxBufferBlocks != 0 &&
+            bufferConfig.maxBufferSeconds != 0 &&
+            bufferConfig.replenishRate.blocksPerPeriod != 0 &&
+            bufferConfig.replenishRate.secondsPerPeriod != 0 &&
+            bufferConfig.replenishRate.periodSeconds != 0 &&
+            bufferConfig.replenishRate.periodBlocks != 0 &&
+            bufferConfig.replenishRate.secondsPerPeriod <
+            bufferConfig.replenishRate.periodSeconds &&
+            bufferConfig.replenishRate.blocksPerPeriod < bufferConfig.replenishRate.periodBlocks &&
+            bufferConfig.thresholdBlocks <= bufferConfig.maxBufferBlocks &&
+            bufferConfig.thresholdSeconds <= bufferConfig.maxBufferSeconds;
     }
 }
