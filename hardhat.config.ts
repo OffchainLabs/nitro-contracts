@@ -138,6 +138,12 @@ module.exports = {
     geth: {
       url: 'http://localhost:8545',
     },
+    testnode_l1: {
+      url: 'http://localhost:8545',
+      accounts: process.env['DEPLOYER_PRIVKEY']
+        ? [process.env['DEPLOYER_PRIVKEY']]
+        : [],
+    },
   },
   etherscan: {
     apiKey: {
