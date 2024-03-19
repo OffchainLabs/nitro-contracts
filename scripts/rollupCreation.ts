@@ -7,9 +7,12 @@ import { BigNumber } from 'ethers'
 import { IERC20__factory } from '../build/types'
 import { sleep } from './testSetup'
 import hre from 'hardhat'
+import { promises as fs } from 'fs'
 
 // 1 gwei
 const MAX_FER_PER_GAS = BigNumber.from('1000000000')
+
+const isDevDeployment = hre.network.name.includes('testnode')
 
 interface RollupCreatedEvent {
   event: string
@@ -79,15 +82,18 @@ export async function createRollup(feeToken?: string) {
 
     // Call the createRollup function
     console.log('Calling createRollup to generate a new rollup ...')
-    const deployParams = {
-      config: config.rollupConfig,
-      batchPoster: config.batchPoster,
-      validators: config.validators,
-      maxDataSize: maxDataSize,
-      nativeToken: feeToken,
-      deployFactoriesToL2: true,
-      maxFeePerGasForRetryables: MAX_FER_PER_GAS,
-    }
+    const deployParams = isDevDeployment
+      ? await _getDevRollupConfig(feeToken)
+      : {
+          config: config.rollupConfig,
+          validators: config.validators,
+          maxDataSize: maxDataSize,
+          nativeToken: feeToken,
+          deployFactoriesToL2: true,
+          maxFeePerGasForRetryables: MAX_FER_PER_GAS,
+          batchPosters: [config.batchPoster],
+          batchPosterManager: signer.address,
+        }
     const createRollupTx = await rollupCreator.createRollup(deployParams, {
       value: feeCost,
     })
@@ -118,7 +124,7 @@ export async function createRollup(feeToken?: string) {
       console.log('Wait a minute before starting the contract verification')
       await sleep(1 * 60 * 1000)
 
-      if (hre.network.name.includes('testnode')) {
+      if (isDevDeployment) {
         console.log(
           `Attempting to verify Rollup contract at address ${rollupAddress}...`
         )
@@ -168,5 +174,142 @@ export async function createRollup(feeToken?: string) {
       'Deployment failed:',
       error instanceof Error ? error.message : error
     )
+  }
+}
+
+async function _getDevRollupConfig(feeToken: string) {
+  console.log('getting dev rollup config')
+
+  // set up owner address
+  const ownerAddress =
+    process.env.OWNER_ADDRESS !== undefined ? process.env.OWNER_ADDRESS : ''
+
+  // set up max data size
+  const _maxDataSize =
+    process.env.MAX_DATA_SIZE !== undefined
+      ? ethers.BigNumber.from(process.env.MAX_DATA_SIZE)
+      : 117964
+
+  // set up validators
+  const authorizeValidators =
+    process.env.AUTHORIZE_VALIDATORS !== undefined
+      ? parseInt(process.env.AUTHORIZE_VALIDATORS, 0)
+      : 0
+  const validators: string[] = []
+  for (let i = 1; i <= authorizeValidators; i++) {
+    validators.push(ethers.Wallet.createRandom().address)
+  }
+
+  // get chain config
+  const childChainConfigPath =
+    process.env.CHILD_CHAIN_CONFIG_PATH !== undefined
+      ? process.env.CHILD_CHAIN_CONFIG_PATH
+      : 'l2_chain_config.json'
+  const chainConfig = await fs.readFile(childChainConfigPath, {
+    encoding: 'utf8',
+  })
+
+  // get wasmModuleRoot
+  const wasmModuleRoot =
+    process.env.WASM_MODULE_ROOT !== undefined
+      ? process.env.WASM_MODULE_ROOT
+      : ''
+
+  // set up batch posters
+  const sequencerAddress =
+    process.env.SEQUENCER_ADDRESS !== undefined
+      ? process.env.SEQUENCER_ADDRESS
+      : ''
+  const batchPostersString =
+    process.env.BATCH_POSTERS !== undefined ? process.env.BATCH_POSTERS : ''
+  let batchPosters: string[] = []
+  if (batchPostersString.length == 0) {
+    batchPosters.push(sequencerAddress)
+  } else {
+    const batchPostesArr = batchPostersString.split(',')
+    for (let i = 0; i < batchPostesArr.length; i++) {
+      if (ethers.utils.isAddress(batchPostesArr[i])) {
+        batchPosters.push(batchPostesArr[i])
+      } else {
+        throw new Error('Invalid address in batch posters array')
+      }
+    }
+  }
+
+  // set up batch poster manager
+  const batchPosterManagerEnv =
+    process.env.BATCH_POSTER_MANAGER !== undefined
+      ? process.env.BATCH_POSTER_MANAGER
+      : ''
+  let batchPosterManager = ''
+  if (ethers.utils.isAddress(batchPosterManagerEnv)) {
+    batchPosterManager = batchPosterManagerEnv
+  } else {
+    if (batchPosterManagerEnv.length == 0) {
+      batchPosterManager = ownerAddress
+    } else {
+      throw new Error('Invalid address for batch poster manager')
+    }
+  }
+
+  // set up parent chain id
+  let parentChainId =
+    process.env.L1_CHAIN_ID !== undefined
+      ? ethers.BigNumber.from(process.env.L1_CHAIN_ID)
+      : 1337
+
+  console.log('dev rollup config:', {
+    config: {
+      confirmPeriodBlocks: ethers.BigNumber.from('20'),
+      extraChallengeTimeBlocks: ethers.BigNumber.from('200'),
+      stakeToken: ethers.constants.AddressZero,
+      baseStake: ethers.utils.parseEther('1'),
+      wasmModuleRoot: wasmModuleRoot,
+      owner: ownerAddress,
+      loserStakeEscrow: ethers.constants.AddressZero,
+      chainId: parentChainId,
+      chainConfig: chainConfig,
+      sequencerInboxMaxTimeVariation: {
+        delayBlocks: ethers.BigNumber.from('5760'),
+        futureBlocks: ethers.BigNumber.from('12'),
+        delaySeconds: ethers.BigNumber.from('86400'),
+        futureSeconds: ethers.BigNumber.from('3600'),
+      },
+    },
+    validators: validators,
+    maxDataSize: _maxDataSize,
+    nativeToken: feeToken,
+    deployFactoriesToL2: true,
+    maxFeePerGasForRetryables: MAX_FER_PER_GAS,
+    batchPosters: batchPosters,
+    batchPosterManager: batchPosterManager,
+  })
+
+  return {
+    config: {
+      confirmPeriodBlocks: ethers.BigNumber.from('20'),
+      extraChallengeTimeBlocks: ethers.BigNumber.from('200'),
+      stakeToken: ethers.constants.AddressZero,
+      baseStake: ethers.utils.parseEther('1'),
+      wasmModuleRoot: wasmModuleRoot,
+      owner: ownerAddress,
+      loserStakeEscrow: ethers.constants.AddressZero,
+      chainId: parentChainId,
+      chainConfig: chainConfig,
+      genesisBlockNum: 0,
+      sequencerInboxMaxTimeVariation: {
+        delayBlocks: ethers.BigNumber.from('5760'),
+        futureBlocks: ethers.BigNumber.from('12'),
+        delaySeconds: ethers.BigNumber.from('86400'),
+        futureSeconds: ethers.BigNumber.from('3600'),
+      },
+    },
+    validators: validators,
+    maxDataSize: _maxDataSize,
+    nativeToken: feeToken,
+    deployFactoriesToL2: true,
+    maxFeePerGasForRetryables: MAX_FER_PER_GAS,
+    batchPosters: batchPosters,
+    batchPosterManager: batchPosterManager,
   }
 }
