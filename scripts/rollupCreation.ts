@@ -6,6 +6,7 @@ import { config, maxDataSize } from './config'
 import { BigNumber } from 'ethers'
 import { IERC20__factory } from '../build/types'
 import { sleep } from './testSetup'
+import hre from 'hardhat'
 
 // 1 gwei
 const MAX_FER_PER_GAS = BigNumber.from('1000000000')
@@ -116,24 +117,28 @@ export async function createRollup(feeToken?: string) {
       console.log('RollupProxy Contract created at address:', rollupAddress)
       console.log('Wait a minute before starting the contract verification')
       await sleep(1 * 60 * 1000)
-      console.log(
-        `Attempting to verify Rollup contract at address ${rollupAddress}...`
-      )
-      try {
-        await run('verify:verify', {
-          contract: 'src/rollup/RollupProxy.sol:RollupProxy',
-          address: rollupAddress,
-          constructorArguments: [],
-        })
-      } catch (error: any) {
-        if (error.message.includes('Already Verified')) {
-          console.log(`Contract RollupProxy is already verified.`)
-        } else {
-          console.error(
-            `Verification for RollupProxy failed with the following error: ${error.message}`
-          )
+
+      if (hre.network.name.includes('testnode')) {
+        console.log(
+          `Attempting to verify Rollup contract at address ${rollupAddress}...`
+        )
+        try {
+          await run('verify:verify', {
+            contract: 'src/rollup/RollupProxy.sol:RollupProxy',
+            address: rollupAddress,
+            constructorArguments: [],
+          })
+        } catch (error: any) {
+          if (error.message.includes('Already Verified')) {
+            console.log(`Contract RollupProxy is already verified.`)
+          } else {
+            console.error(
+              `Verification for RollupProxy failed with the following error: ${error.message}`
+            )
+          }
         }
       }
+
       console.log('Inbox (proxy) Contract created at address:', inboxAddress)
       console.log('Outbox (proxy) Contract created at address:', outbox)
       console.log(
