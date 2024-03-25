@@ -248,12 +248,12 @@ contract DelayBufferableTest is Test {
 
         // initially message if proven with no delay
         delayBuffer = delayBufferDefault;
-        delayBuffer.resync(configBufferable, beforeDelayedAcc, message, acc, preimage);
+        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // sanity check
         delayBuffer = delayBufferDefault;
         vm.expectRevert();
-        delayBuffer.resync(configBufferable, beforeDelayedAcc, message, bytes32(0), preimage);
+        delayBuffer.resync(configBufferable, bytes32(0), SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // (blockNumber, timestamp)
 
@@ -261,70 +261,70 @@ contract DelayBufferableTest is Test {
         vm.warp(block.timestamp + configBufferable.thresholdSeconds);
         
         delayBuffer = delayBufferDefault;
-        delayBuffer.resync(configBufferable, beforeDelayedAcc, message, acc, preimage);
+        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // (0, thresholdSeconds) -> (0, thresholdSeconds + 1)
         vm.warp(block.timestamp + 1);
 
         delayBuffer = delayBufferDefault;
         vm.expectRevert();
-        delayBuffer.resync(configBufferable, beforeDelayedAcc, message, acc, preimage);
+        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // (0, thresholdSeconds + 1) -> (0, 0)
         vm.warp(block.timestamp - 1 - configBufferable.thresholdSeconds);
 
         delayBuffer = delayBufferDefault;
-        delayBuffer.resync(configBufferable, beforeDelayedAcc, message, acc, preimage);
+        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // (0, 0) -> (thresholdBlocks, 0)
         vm.roll(block.number + configBufferable.thresholdBlocks);
 
         delayBuffer = delayBufferDefault;
-        delayBuffer.resync(configBufferable, beforeDelayedAcc, message, acc, preimage);
+        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // (thresholdBlocks, 0) -> (thresholdBlocks + 1, 0)
         vm.roll(block.number + 1);
         
         delayBuffer = delayBufferDefault;
         vm.expectRevert();
-        delayBuffer.resync(configBufferable, beforeDelayedAcc, message, acc, preimage);
+        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // (thresholdBlocks + 1, 0) -> (0, 0)
         vm.roll(block.number - 1 - configBufferable.thresholdBlocks);
 
         delayBuffer = delayBufferDefault;
         vm.expectRevert();
-        delayBuffer.resync(configBufferable, beforeDelayedAcc, message, acc, preimage);
+        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // (0, 0) -> (thresholdBlocks, thresholdSeconds)
         vm.roll(block.number + configBufferable.thresholdBlocks);
         vm.warp(block.timestamp + configBufferable.thresholdSeconds);
         delayBuffer = delayBufferDefault;
-        delayBuffer.resync(configBufferable, beforeDelayedAcc, message, acc, preimage);
+        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // (thresholdBlocks, thresholdSeconds) -> (thresholdBlocks + 1, thresholdSeconds)
         vm.roll(block.number + 1);
         delayBuffer = delayBufferDefault;
         vm.expectRevert();
-        delayBuffer.resync(configBufferable, beforeDelayedAcc, message, acc, preimage);
+        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // (thresholdBlocks + 1, thresholdSeconds) -> (thresholdBlocks, thresholdSeconds)
         vm.roll(block.number - 1);
         delayBuffer = delayBufferDefault;
-        delayBuffer.resync(configBufferable, beforeDelayedAcc, message, acc, preimage);
+        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // (thresholdBlocks, thresholdSeconds) -> (thresholdBlocks, thresholdSeconds + 1)
         vm.warp(block.timestamp + 1);
         delayBuffer = delayBufferDefault;
         vm.expectRevert();
-        delayBuffer.resync(configBufferable, beforeDelayedAcc, message, acc, preimage);
+        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // (thresholdBlocks, thresholdSeconds + 1) -> (max, max)
         vm.roll(type(uint256).max);
         vm.warp(type(uint256).max);
         delayBuffer = delayBufferDefault;
         vm.expectRevert();
-        delayBuffer.resync(configBufferable, beforeDelayedAcc, message, acc, preimage);
+        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
     }
 
     function testUpdateBuffersDepleteAndReplenish() public {

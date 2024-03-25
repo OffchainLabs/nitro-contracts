@@ -27,23 +27,32 @@ library DelayBuffer {
     /// @param self The delay buffer data
     /// @param bufferConfig The delay buffer settings
     /// @param delayedAcc The delayed accumulator of the first delayed message sequenced
-    /// @param beforeDelayedAcc The delayed accumulator before the delayedAcc
-    /// @param delayedMessage The first delayed message sequenced
+    /// @param delayProof The proof that the delayed message is valid
     function sync(
         BufferData storage self,
         BufferConfig memory bufferConfig,
         bytes32 delayedAcc,
-        bytes32 beforeDelayedAcc,
-        Messages.Message memory delayedMessage
+        DelayProof memory delayProof
     ) internal {
-        if (!Messages.isValidDelayedAccPreimage(delayedAcc, beforeDelayedAcc, delayedMessage)) {
+        if (
+            !Messages.isValidDelayedAccPreimage(
+                delayedAcc,
+                delayProof.beforeDelayedAcc,
+                delayProof.delayedMessage
+            )
+        ) {
             revert InvalidDelayedAccPreimage();
         }
-        updateBuffers(self, bufferConfig, delayedMessage.blockNumber, delayedMessage.timestamp);
+        updateBuffers(
+            self,
+            bufferConfig,
+            delayProof.delayedMessage.blockNumber,
+            delayProof.delayedMessage.timestamp
+        );
         if (
             isOnTime(
-                delayedMessage.blockNumber,
-                delayedMessage.timestamp,
+                delayProof.delayedMessage.blockNumber,
+                delayProof.delayedMessage.timestamp,
                 bufferConfig.thresholdBlocks,
                 bufferConfig.thresholdSeconds
             )
@@ -51,8 +60,8 @@ library DelayBuffer {
             updateSyncValidity(
                 self,
                 bufferConfig,
-                delayedMessage.blockNumber,
-                delayedMessage.timestamp
+                delayProof.delayedMessage.blockNumber,
+                delayProof.delayedMessage.timestamp
             );
         }
     }
@@ -62,43 +71,42 @@ library DelayBuffer {
     ///         the message is on-time and updating the sync validity window. This function is called
     ///         called periodically to renew the sync validity window.
     /// @notice Synchronizes the sequencer inbox with the delayed inbox.
-    /// @param beforeDelayedAcc The delayed accumulator before the delayedAcc
-    /// @param delayedMessage The delayed message to validate
-    /// @param beforeAcc The inbox accumulator before the delayedAcc
-    /// @param preimage The preimage to validate
+    /// @param beforeAcc The inbox accumulator before the current batch
+    /// @param syncProof The proof that the delayed message is valid
     function resync(
         BufferData storage self,
         BufferConfig memory bufferConfig,
-        bytes32 beforeDelayedAcc,
-        Messages.Message memory delayedMessage,
         bytes32 beforeAcc,
-        Messages.InboxAccPreimage memory preimage
+        SyncProof memory syncProof
     ) internal {
         // validates the delayed message against the inbox accumulator
         // and proves the delayed message is synced within the delay threshold
         // this is a sufficient condition to prove that any delayed messages sequenced
         // in the current batch are also synced within the delay threshold
-        if (!Messages.isValidSequencerInboxAccPreimage(beforeAcc, preimage)) {
+        if (!Messages.isValidSequencerInboxAccPreimage(beforeAcc, syncProof.preimage)) {
             revert InvalidSequencerInboxAccPreimage();
         }
         if (
             !Messages.isValidDelayedAccPreimage(
-                preimage.delayedAcc,
-                beforeDelayedAcc,
-                delayedMessage
+                syncProof.preimage.delayedAcc,
+                syncProof.beforeDelayedAcc,
+                syncProof.delayedMessage
             )
         ) {
             revert InvalidDelayedAccPreimage();
         }
         if (
             !isOnTime(
-                delayedMessage.blockNumber,
-                delayedMessage.timestamp,
+                syncProof.delayedMessage.blockNumber,
+                syncProof.delayedMessage.timestamp,
                 bufferConfig.thresholdBlocks,
                 bufferConfig.thresholdSeconds
             )
         ) {
-            revert UnexpectedDelay(delayedMessage.blockNumber, delayedMessage.timestamp);
+            revert UnexpectedDelay(
+                syncProof.delayedMessage.blockNumber,
+                syncProof.delayedMessage.timestamp
+            );
         }
 
         // calculate the margin of the delay message below the delay threshold
@@ -106,8 +114,8 @@ library DelayBuffer {
         updateSyncValidity(
             self,
             bufferConfig,
-            delayedMessage.blockNumber,
-            delayedMessage.timestamp
+            syncProof.delayedMessage.blockNumber,
+            syncProof.delayedMessage.timestamp
         );
     }
 
@@ -200,7 +208,6 @@ library DelayBuffer {
         return (buffer, roundOff);
     }
 
-    /// @notice Conditionally depletes or replenishes the delay buffer
     /// @notice Decrements or replenishes the delay buffer conditionally
     /// @param start The beginning reference point (delayPrev)
     /// @param end The ending reference point (current message)

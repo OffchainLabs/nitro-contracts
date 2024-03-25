@@ -37,6 +37,9 @@ interface ISequencerInbox is IDelayedMessageProvider {
 
     event OwnerFunctionCalled(uint256 indexed id);
 
+    /// @notice The delay buffer has updated
+    event BufferUpdated(uint64 bufferUpdateBlocks, uint64 bufferUpdateSeconds);
+
     /// @dev a separate event that emits batch data when this isn't easily accessible in the tx.input
     event SequencerBatchData(uint256 indexed batchSequenceNumber, bytes data);
 
@@ -212,8 +215,7 @@ interface ISequencerInbox is IDelayedMessageProvider {
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount,
-        bytes32 beforeDelayedAcc,
-        Messages.Message calldata delayedMessage
+        DelayProof calldata delayProof
     ) external;
 
     /// @dev    Proves message delays, updates delay buffers, and posts an L2 batch with blob data.
@@ -227,8 +229,7 @@ interface ISequencerInbox is IDelayedMessageProvider {
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount,
-        bytes32 beforeDelayedAcc,
-        Messages.Message calldata delayedMessage
+        DelayProof calldata delayProof
     ) external;
 
     /// @dev    Proves sequenced messages are synchronized in timestamp & blocknumber, extends the sync validity window,
@@ -241,9 +242,7 @@ interface ISequencerInbox is IDelayedMessageProvider {
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount,
-        bytes32 beforeDelayedAcc,
-        Messages.Message calldata delayedMessage,
-        Messages.InboxAccPreimage calldata preimage
+        SyncProof calldata syncProof
     ) external;
 
     /// @dev    Proves sequenced messages are synchronized in timestamp & blocknumber, extends the sync validity window,
@@ -257,9 +256,7 @@ interface ISequencerInbox is IDelayedMessageProvider {
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount,
-        bytes32 beforeDelayedAcc,
-        Messages.Message calldata delayedMessage,
-        Messages.InboxAccPreimage calldata preimage
+        SyncProof calldata syncProof
     ) external;
 
     // ---------- onlyRollupOrOwner functions ----------

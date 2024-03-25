@@ -2,6 +2,8 @@
 // For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
+import "./Messages.sol";
+
 pragma solidity >=0.6.9 <0.9.0;
 
 /// @notice Delay buffer and delay threshold settings
@@ -56,4 +58,15 @@ struct DelayHistory {
     uint64 timestamp;
     uint64 delayBlocks;
     uint64 delaySeconds;
+}
+
+struct DelayProof {
+    bytes32 beforeDelayedAcc;
+    Messages.Message delayedMessage;
+}
+
+struct SyncProof {
+    bytes32 beforeDelayedAcc;
+    Messages.Message delayedMessage;
+    Messages.InboxAccPreimage preimage;
 }

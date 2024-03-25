@@ -13,6 +13,7 @@ import {
   getInboxMessageDeliveredEvents,
   mineBlocks,
   forceIncludeMessages,
+  getBufferUpdatedEvents,
 } from './testHelpers'
 
 describe('SequencerInboxDelayBufferable', async () => {
@@ -311,7 +312,7 @@ describe('SequencerInboxDelayBufferable', async () => {
       await sequencerInbox
         .connect(batchPoster)
         [
-          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256,bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32))'
+          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256,(bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32)))'
         ](
           3,
           data,
@@ -319,16 +320,18 @@ describe('SequencerInboxDelayBufferable', async () => {
           ethers.constants.AddressZero,
           seqReportedMessageSubCount.add(10),
           seqReportedMessageSubCount.add(20),
-          nextDelayedMsg!.delayedAcc,
           {
-            kind: nextDelayedMsg!.delayedMessage.header.kind,
-            sender: nextDelayedMsg!.delayedMessage.header.sender,
-            blockNumber: nextDelayedMsg!.delayedMessage.header.blockNumber,
-            timestamp: nextDelayedMsg!.delayedMessage.header.timestamp,
-            inboxSeqNum: nextDelayedMsg!.delayedCount,
-            baseFeeL1: nextDelayedMsg!.delayedMessage.header.baseFee,
-            messageDataHash:
-              nextDelayedMsg!.delayedMessage.header.messageDataHash,
+            beforeDelayedAcc: nextDelayedMsg!.delayedAcc,
+            delayedMessage: {
+              kind: nextDelayedMsg!.delayedMessage.header.kind,
+              sender: nextDelayedMsg!.delayedMessage.header.sender,
+              blockNumber: nextDelayedMsg!.delayedMessage.header.blockNumber,
+              timestamp: nextDelayedMsg!.delayedMessage.header.timestamp,
+              inboxSeqNum: nextDelayedMsg!.delayedCount,
+              baseFeeL1: nextDelayedMsg!.delayedMessage.header.baseFee,
+              messageDataHash:
+                nextDelayedMsg!.delayedMessage.header.messageDataHash,
+            },
           },
           { gasLimit: 10000000 }
         )
@@ -346,7 +349,7 @@ describe('SequencerInboxDelayBufferable', async () => {
       await sequencerInbox
         .connect(batchPoster)
         [
-          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256,bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32))'
+          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256,(bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32)))'
         ](
           4,
           data,
@@ -354,16 +357,18 @@ describe('SequencerInboxDelayBufferable', async () => {
           ethers.constants.AddressZero,
           seqReportedMessageSubCount.add(20),
           seqReportedMessageSubCount.add(30),
-          nextDelayedMsg!.delayedAcc,
           {
-            kind: nextDelayedMsg!.delayedMessage.header.kind,
-            sender: nextDelayedMsg!.delayedMessage.header.sender,
-            blockNumber: nextDelayedMsg!.delayedMessage.header.blockNumber,
-            timestamp: nextDelayedMsg!.delayedMessage.header.timestamp,
-            inboxSeqNum: nextDelayedMsg!.delayedCount,
-            baseFeeL1: nextDelayedMsg!.delayedMessage.header.baseFee,
-            messageDataHash:
-              nextDelayedMsg!.delayedMessage.header.messageDataHash,
+            beforeDelayedAcc: nextDelayedMsg!.delayedAcc,
+            delayedMessage: {
+              kind: nextDelayedMsg!.delayedMessage.header.kind,
+              sender: nextDelayedMsg!.delayedMessage.header.sender,
+              blockNumber: nextDelayedMsg!.delayedMessage.header.blockNumber,
+              timestamp: nextDelayedMsg!.delayedMessage.header.timestamp,
+              inboxSeqNum: nextDelayedMsg!.delayedCount,
+              baseFeeL1: nextDelayedMsg!.delayedMessage.header.baseFee,
+              messageDataHash:
+                nextDelayedMsg!.delayedMessage.header.messageDataHash,
+            },
           },
           { gasLimit: 10000000 }
         )
@@ -481,7 +486,7 @@ describe('SequencerInboxDelayBufferable', async () => {
       await sequencerInbox
         .connect(batchPoster)
         [
-          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256,bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32),(bytes32,bytes32,bytes32))'
+          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256,(bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32),(bytes32,bytes32,bytes32)))'
         ](
           2,
           data,
@@ -489,21 +494,24 @@ describe('SequencerInboxDelayBufferable', async () => {
           ethers.constants.AddressZero,
           seqReportedMessageSubCount.add(20),
           seqReportedMessageSubCount.add(30),
-          lastDelayedMsgRead!.delayedAcc,
           {
-            kind: lastDelayedMsgRead!.delayedMessage.header.kind,
-            sender: lastDelayedMsgRead!.delayedMessage.header.sender,
-            blockNumber: lastDelayedMsgRead!.delayedMessage.header.blockNumber,
-            timestamp: lastDelayedMsgRead!.delayedMessage.header.timestamp,
-            inboxSeqNum: lastDelayedMsgRead!.delayedCount,
-            baseFeeL1: lastDelayedMsgRead!.delayedMessage.header.baseFee,
-            messageDataHash:
-              lastDelayedMsgRead!.delayedMessage.header.messageDataHash,
-          },
-          {
-            beforeAcc: batchDelivered!.beforeAcc,
-            dataHash: '0x' + inboxMessageDelivered.data.slice(106, 170),
-            delayedAcc: batchDelivered!.delayedAcc,
+            beforeDelayedAcc: lastDelayedMsgRead!.delayedAcc,
+            delayedMessage: {
+              kind: lastDelayedMsgRead!.delayedMessage.header.kind,
+              sender: lastDelayedMsgRead!.delayedMessage.header.sender,
+              blockNumber:
+                lastDelayedMsgRead!.delayedMessage.header.blockNumber,
+              timestamp: lastDelayedMsgRead!.delayedMessage.header.timestamp,
+              inboxSeqNum: lastDelayedMsgRead!.delayedCount,
+              baseFeeL1: lastDelayedMsgRead!.delayedMessage.header.baseFee,
+              messageDataHash:
+                lastDelayedMsgRead!.delayedMessage.header.messageDataHash,
+            },
+            preimage: {
+              beforeAcc: batchDelivered!.beforeAcc,
+              dataHash: '0x' + inboxMessageDelivered.data.slice(106, 170),
+              delayedAcc: batchDelivered!.delayedAcc,
+            },
           },
           { gasLimit: 10000000 }
         )
@@ -517,7 +525,7 @@ describe('SequencerInboxDelayBufferable', async () => {
   it('unhappy path', async () => {
     const { bridge, sequencerInbox, batchPoster, delayConfig } =
       await setupSequencerInbox(true)
-    const delayedInboxPending: DelayedMsgDelivered[] = []
+    let delayedInboxPending: DelayedMsgDelivered[] = []
     const delayedMessageCount = await bridge.delayedMessageCount()
     const seqReportedMessageSubCount =
       await bridge.sequencerReportedSubMessageCount()
@@ -563,7 +571,7 @@ describe('SequencerInboxDelayBufferable', async () => {
         ](
           1,
           data,
-          delayedMessageCount.add(1),
+          delayedMessageCount,
           ethers.constants.AddressZero,
           seqReportedMessageSubCount.add(10),
           seqReportedMessageSubCount.add(20),
@@ -572,12 +580,11 @@ describe('SequencerInboxDelayBufferable', async () => {
     )
       .wait()
       .then(res => {
-        delayedInboxPending.pop()
         delayedInboxPending.push(getBatchSpendingReport(res))
       })
 
-    const firstReadMsg = delayedInboxPending.pop()
-    await mineBlocks(100, 12)
+    let firstReadMsg = delayedInboxPending[0]
+    await mineBlocks(101, 12)
 
     const txn = sequencerInbox
       .connect(batchPoster)
@@ -598,7 +605,7 @@ describe('SequencerInboxDelayBufferable', async () => {
       await sequencerInbox
         .connect(batchPoster)
         [
-          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256,bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32))'
+          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256,(bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32)))'
         ](
           2,
           data,
@@ -606,24 +613,92 @@ describe('SequencerInboxDelayBufferable', async () => {
           ethers.constants.AddressZero,
           seqReportedMessageSubCount.add(20),
           seqReportedMessageSubCount.add(30),
-          firstReadMsg!.delayedAcc,
           {
-            kind: firstReadMsg!.delayedMessage.header.kind,
-            sender: firstReadMsg!.delayedMessage.header.sender,
-            blockNumber: firstReadMsg!.delayedMessage.header.blockNumber,
-            timestamp: firstReadMsg!.delayedMessage.header.timestamp,
-            inboxSeqNum: firstReadMsg!.delayedCount,
-            baseFeeL1: firstReadMsg!.delayedMessage.header.baseFee,
-            messageDataHash:
-              firstReadMsg!.delayedMessage.header.messageDataHash,
+            beforeDelayedAcc: firstReadMsg!.delayedAcc,
+            delayedMessage: {
+              kind: firstReadMsg!.delayedMessage.header.kind,
+              sender: firstReadMsg!.delayedMessage.header.sender,
+              blockNumber: firstReadMsg!.delayedMessage.header.blockNumber,
+              timestamp: firstReadMsg!.delayedMessage.header.timestamp,
+              inboxSeqNum: firstReadMsg!.delayedCount,
+              baseFeeL1: firstReadMsg!.delayedMessage.header.baseFee,
+              messageDataHash:
+                firstReadMsg!.delayedMessage.header.messageDataHash,
+            },
           },
           { gasLimit: 10000000 }
         )
     )
       .wait()
-      .then(res => {
+      .then(async res => {
+        delayedInboxPending = []
         delayedInboxPending.push(getBatchSpendingReport(res))
+        await expect(getBufferUpdatedEvents(res).length).to.equal(1)
+        return res
       })
+
+    const delayBufferDataBefore = await sequencerInbox.buffer()
+    firstReadMsg = delayedInboxPending[0]
+    const txnBatch = await (
+      await sequencerInbox
+        .connect(batchPoster)
+        [
+          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256,(bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32)))'
+        ](
+          3,
+          data,
+          delayedMessageCount.add(3),
+          ethers.constants.AddressZero,
+          seqReportedMessageSubCount.add(30),
+          seqReportedMessageSubCount.add(40),
+          {
+            beforeDelayedAcc: firstReadMsg!.delayedAcc,
+            delayedMessage: {
+              kind: firstReadMsg!.delayedMessage.header.kind,
+              sender: firstReadMsg!.delayedMessage.header.sender,
+              blockNumber: firstReadMsg!.delayedMessage.header.blockNumber,
+              timestamp: firstReadMsg!.delayedMessage.header.timestamp,
+              inboxSeqNum: firstReadMsg!.delayedCount,
+              baseFeeL1: firstReadMsg!.delayedMessage.header.baseFee,
+              messageDataHash:
+                firstReadMsg!.delayedMessage.header.messageDataHash,
+            },
+          },
+          { gasLimit: 10000000 }
+        )
+    )
+      .wait()
+      .then(async res => {
+        delayedInboxPending = []
+        delayedInboxPending.push(getBatchSpendingReport(res))
+        await expect(getBufferUpdatedEvents(res).length).to.equal(1)
+        return res
+      })
+
+    const unexpectedDelayBlocks =
+      delayBufferDataBefore.prevDelay.delayBlocks.toNumber() -
+      delayConfig.thresholdBlocks.toNumber()
+    const elapsed =
+      firstReadMsg!.delayedMessage.header.blockNumber -
+      delayBufferDataBefore.prevDelay.blockNumber.toNumber()
+    const bufferBlocksUpdate =
+      delayBufferDataBefore.bufferBlocks.toNumber() -
+      Math.min(unexpectedDelayBlocks, elapsed)
+    expect((await sequencerInbox.buffer()).bufferBlocks).to.equal(
+      bufferBlocksUpdate
+    )
+    const unexpectedDelaySeconds =
+      delayBufferDataBefore.prevDelay.delaySeconds.toNumber() -
+      delayConfig.thresholdSeconds.toNumber()
+    const elapsedSeconds =
+      firstReadMsg!.delayedMessage.header.timestamp -
+      delayBufferDataBefore.prevDelay.timestamp.toNumber()
+    const bufferSecondsUpdate =
+      delayBufferDataBefore.bufferSeconds.toNumber() -
+      Math.min(unexpectedDelaySeconds, elapsedSeconds)
+    expect((await sequencerInbox.buffer()).bufferSeconds).to.equal(
+      bufferSecondsUpdate
+    )
   })
 
   it('can sync and resync (gas benchmark)', async () => {
@@ -708,7 +783,7 @@ describe('SequencerInboxDelayBufferable', async () => {
       await setupBufferable.sequencerInbox
         .connect(setupBufferable.batchPoster)
         [
-          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256,bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32))'
+          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256,(bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32)))'
         ](
           0,
           data,
@@ -716,16 +791,19 @@ describe('SequencerInboxDelayBufferable', async () => {
           ethers.constants.AddressZero,
           seqReportedMessageSubCountOpt,
           seqReportedMessageSubCountOpt.add(10),
-          beforeDelayedAcc,
           {
-            kind: 3,
-            sender: delayedMsgLastRead!.delayedMessage.header.sender,
-            blockNumber: delayedMsgLastRead!.delayedMessage.header.blockNumber,
-            timestamp: delayedMsgLastRead!.delayedMessage.header.timestamp,
-            inboxSeqNum: delayedMsgLastRead!.delayedCount,
-            baseFeeL1: delayedMsgLastRead!.delayedMessage.header.baseFee,
-            messageDataHash:
-              delayedMsgLastRead!.delayedMessage.header.messageDataHash,
+            beforeDelayedAcc: beforeDelayedAcc,
+            delayedMessage: {
+              kind: 3,
+              sender: delayedMsgLastRead!.delayedMessage.header.sender,
+              blockNumber:
+                delayedMsgLastRead!.delayedMessage.header.blockNumber,
+              timestamp: delayedMsgLastRead!.delayedMessage.header.timestamp,
+              inboxSeqNum: delayedMsgLastRead!.delayedCount,
+              baseFeeL1: delayedMsgLastRead!.delayedMessage.header.baseFee,
+              messageDataHash:
+                delayedMsgLastRead!.delayedMessage.header.messageDataHash,
+            },
           },
           { gasLimit: 10000000 }
         )
@@ -801,7 +879,7 @@ describe('SequencerInboxDelayBufferable', async () => {
       await setupBufferable.sequencerInbox
         .connect(setupBufferable.batchPoster)
         .functions[
-          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256,bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32))'
+          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256,(bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32)))'
         ](
           1,
           data,
@@ -809,16 +887,19 @@ describe('SequencerInboxDelayBufferable', async () => {
           ethers.constants.AddressZero,
           seqReportedMessageSubCountOpt2,
           seqReportedMessageSubCountOpt2.add(10),
-          delayedMsgLastRead!.delayedAcc,
           {
-            kind: delayedMsgLastRead!.delayedMessage.header.kind,
-            sender: delayedMsgLastRead!.delayedMessage.header.sender,
-            blockNumber: delayedMsgLastRead!.delayedMessage.header.blockNumber,
-            timestamp: delayedMsgLastRead!.delayedMessage.header.timestamp,
-            inboxSeqNum: delayedMsgLastRead!.delayedCount,
-            baseFeeL1: delayedMsgLastRead!.delayedMessage.header.baseFee,
-            messageDataHash:
-              delayedMsgLastRead!.delayedMessage.header.messageDataHash,
+            beforeDelayedAcc: delayedMsgLastRead!.delayedAcc,
+            delayedMessage: {
+              kind: delayedMsgLastRead!.delayedMessage.header.kind,
+              sender: delayedMsgLastRead!.delayedMessage.header.sender,
+              blockNumber:
+                delayedMsgLastRead!.delayedMessage.header.blockNumber,
+              timestamp: delayedMsgLastRead!.delayedMessage.header.timestamp,
+              inboxSeqNum: delayedMsgLastRead!.delayedCount,
+              baseFeeL1: delayedMsgLastRead!.delayedMessage.header.baseFee,
+              messageDataHash:
+                delayedMsgLastRead!.delayedMessage.header.messageDataHash,
+            },
           },
           { gasLimit: 10000000 }
         )
@@ -851,7 +932,7 @@ describe('SequencerInboxDelayBufferable', async () => {
       await setupBufferable.sequencerInbox
         .connect(setupBufferable.batchPoster)
         .functions[
-          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256,bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32),(bytes32,bytes32,bytes32))'
+          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256,(bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32),(bytes32,bytes32,bytes32)))'
         ](
           3,
           data,
@@ -859,20 +940,22 @@ describe('SequencerInboxDelayBufferable', async () => {
           ethers.constants.AddressZero,
           seqReportedMessageSubCountOpt2.add(20),
           seqReportedMessageSubCountOpt2.add(30),
-          lastRead!.delayedAcc,
           {
-            kind: lastRead!.delayedMessage.header.kind,
-            sender: lastRead!.delayedMessage.header.sender,
-            blockNumber: lastRead!.delayedMessage.header.blockNumber,
-            timestamp: lastRead!.delayedMessage.header.timestamp,
-            inboxSeqNum: lastRead!.delayedCount,
-            baseFeeL1: lastRead!.delayedMessage.header.baseFee,
-            messageDataHash: lastRead!.delayedMessage.header.messageDataHash,
-          },
-          {
-            beforeAcc: batchDelivered!.beforeAcc,
-            dataHash: '0x' + inboxMessageDelivered.data.slice(106, 170),
-            delayedAcc: batchDelivered!.delayedAcc,
+            beforeDelayedAcc: lastRead!.delayedAcc,
+            delayedMessage: {
+              kind: lastRead!.delayedMessage.header.kind,
+              sender: lastRead!.delayedMessage.header.sender,
+              blockNumber: lastRead!.delayedMessage.header.blockNumber,
+              timestamp: lastRead!.delayedMessage.header.timestamp,
+              inboxSeqNum: lastRead!.delayedCount,
+              baseFeeL1: lastRead!.delayedMessage.header.baseFee,
+              messageDataHash: lastRead!.delayedMessage.header.messageDataHash,
+            },
+            preimage: {
+              beforeAcc: batchDelivered!.beforeAcc,
+              dataHash: '0x' + inboxMessageDelivered.data.slice(106, 170),
+              delayedAcc: batchDelivered!.delayedAcc,
+            },
           },
           { gasLimit: 10000000 }
         )
@@ -1172,24 +1255,27 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
     await (
       await sequencerInbox
         .connect(batchPoster)
+        .connect(batchPoster)
         [
-          'addSequencerL2BatchFromBlobs(uint256,uint256,address,uint256,uint256,bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32))'
+          'addSequencerL2BatchFromBlobs(uint256,uint256,address,uint256,uint256,(bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32)))'
         ](
           3,
           delayedMessageCount.add(1),
           ethers.constants.AddressZero,
           seqReportedMessageSubCount.add(10),
           seqReportedMessageSubCount.add(20),
-          nextDelayedMsg!.delayedAcc,
           {
-            kind: nextDelayedMsg!.delayedMessage.header.kind,
-            sender: nextDelayedMsg!.delayedMessage.header.sender,
-            blockNumber: nextDelayedMsg!.delayedMessage.header.blockNumber,
-            timestamp: nextDelayedMsg!.delayedMessage.header.timestamp,
-            inboxSeqNum: nextDelayedMsg!.delayedCount,
-            baseFeeL1: nextDelayedMsg!.delayedMessage.header.baseFee,
-            messageDataHash:
-              nextDelayedMsg!.delayedMessage.header.messageDataHash,
+            beforeDelayedAcc: nextDelayedMsg!.delayedAcc,
+            delayedMessage: {
+              kind: nextDelayedMsg!.delayedMessage.header.kind,
+              sender: nextDelayedMsg!.delayedMessage.header.sender,
+              blockNumber: nextDelayedMsg!.delayedMessage.header.blockNumber,
+              timestamp: nextDelayedMsg!.delayedMessage.header.timestamp,
+              inboxSeqNum: nextDelayedMsg!.delayedCount,
+              baseFeeL1: nextDelayedMsg!.delayedMessage.header.baseFee,
+              messageDataHash:
+                nextDelayedMsg!.delayedMessage.header.messageDataHash,
+            },
           },
           { gasLimit: 10000000 }
         )
@@ -1206,24 +1292,27 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
     await (
       await sequencerInbox
         .connect(batchPoster)
+        .connect(batchPoster)
         [
-          'addSequencerL2BatchFromBlobs(uint256,uint256,address,uint256,uint256,bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32))'
+          'addSequencerL2BatchFromBlobs(uint256,uint256,address,uint256,uint256,(bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32)))'
         ](
           4,
           delayedMessageCount.add(2),
           ethers.constants.AddressZero,
           seqReportedMessageSubCount.add(20),
           seqReportedMessageSubCount.add(30),
-          nextDelayedMsg!.delayedAcc,
           {
-            kind: nextDelayedMsg!.delayedMessage.header.kind,
-            sender: nextDelayedMsg!.delayedMessage.header.sender,
-            blockNumber: nextDelayedMsg!.delayedMessage.header.blockNumber,
-            timestamp: nextDelayedMsg!.delayedMessage.header.timestamp,
-            inboxSeqNum: nextDelayedMsg!.delayedCount,
-            baseFeeL1: nextDelayedMsg!.delayedMessage.header.baseFee,
-            messageDataHash:
-              nextDelayedMsg!.delayedMessage.header.messageDataHash,
+            beforeDelayedAcc: nextDelayedMsg!.delayedAcc,
+            delayedMessage: {
+              kind: nextDelayedMsg!.delayedMessage.header.kind,
+              sender: nextDelayedMsg!.delayedMessage.header.sender,
+              blockNumber: nextDelayedMsg!.delayedMessage.header.blockNumber,
+              timestamp: nextDelayedMsg!.delayedMessage.header.timestamp,
+              inboxSeqNum: nextDelayedMsg!.delayedCount,
+              baseFeeL1: nextDelayedMsg!.delayedMessage.header.baseFee,
+              messageDataHash:
+                nextDelayedMsg!.delayedMessage.header.messageDataHash,
+            },
           },
           { gasLimit: 10000000 }
         )
@@ -1339,28 +1428,31 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
       await sequencerInbox
         .connect(batchPoster)
         [
-          'addSequencerL2BatchFromBlobs(uint256,uint256,address,uint256,uint256,bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32),(bytes32,bytes32,bytes32))'
+          'addSequencerL2BatchFromBlobs(uint256,uint256,address,uint256,uint256,(bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32),(bytes32,bytes32,bytes32)))'
         ](
           2,
           delayedMessageCount.add(2),
           ethers.constants.AddressZero,
           seqReportedMessageSubCount.add(20),
           seqReportedMessageSubCount.add(30),
-          lastDelayedMsgRead!.delayedAcc,
           {
-            kind: lastDelayedMsgRead!.delayedMessage.header.kind,
-            sender: lastDelayedMsgRead!.delayedMessage.header.sender,
-            blockNumber: lastDelayedMsgRead!.delayedMessage.header.blockNumber,
-            timestamp: lastDelayedMsgRead!.delayedMessage.header.timestamp,
-            inboxSeqNum: lastDelayedMsgRead!.delayedCount,
-            baseFeeL1: lastDelayedMsgRead!.delayedMessage.header.baseFee,
-            messageDataHash:
-              lastDelayedMsgRead!.delayedMessage.header.messageDataHash,
-          },
-          {
-            beforeAcc: batchDelivered!.beforeAcc,
-            dataHash: '0x' + inboxMessageDelivered.data.slice(106, 170),
-            delayedAcc: batchDelivered!.delayedAcc,
+            beforeDelayedAcc: lastDelayedMsgRead!.delayedAcc,
+            delayedMessage: {
+              kind: lastDelayedMsgRead!.delayedMessage.header.kind,
+              sender: lastDelayedMsgRead!.delayedMessage.header.sender,
+              blockNumber:
+                lastDelayedMsgRead!.delayedMessage.header.blockNumber,
+              timestamp: lastDelayedMsgRead!.delayedMessage.header.timestamp,
+              inboxSeqNum: lastDelayedMsgRead!.delayedCount,
+              baseFeeL1: lastDelayedMsgRead!.delayedMessage.header.baseFee,
+              messageDataHash:
+                lastDelayedMsgRead!.delayedMessage.header.messageDataHash,
+            },
+            preimage: {
+              beforeAcc: batchDelivered!.beforeAcc,
+              dataHash: '0x' + inboxMessageDelivered.data.slice(106, 170),
+              delayedAcc: batchDelivered!.delayedAcc,
+            },
           },
           { gasLimit: 10000000 }
         )
@@ -1449,24 +1541,27 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
     await (
       await sequencerInbox
         .connect(batchPoster)
+        .connect(batchPoster)
         [
-          'addSequencerL2BatchFromBlobs(uint256,uint256,address,uint256,uint256,bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32))'
+          'addSequencerL2BatchFromBlobs(uint256,uint256,address,uint256,uint256,(bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32)))'
         ](
           2,
           delayedMessageCount.add(2),
           ethers.constants.AddressZero,
           seqReportedMessageSubCount.add(20),
           seqReportedMessageSubCount.add(30),
-          firstReadMsg!.delayedAcc,
           {
-            kind: firstReadMsg!.delayedMessage.header.kind,
-            sender: firstReadMsg!.delayedMessage.header.sender,
-            blockNumber: firstReadMsg!.delayedMessage.header.blockNumber,
-            timestamp: firstReadMsg!.delayedMessage.header.timestamp,
-            inboxSeqNum: firstReadMsg!.delayedCount,
-            baseFeeL1: firstReadMsg!.delayedMessage.header.baseFee,
-            messageDataHash:
-              firstReadMsg!.delayedMessage.header.messageDataHash,
+            beforeDelayedAcc: firstReadMsg!.delayedAcc,
+            delayedMessage: {
+              kind: firstReadMsg!.delayedMessage.header.kind,
+              sender: firstReadMsg!.delayedMessage.header.sender,
+              blockNumber: firstReadMsg!.delayedMessage.header.blockNumber,
+              timestamp: firstReadMsg!.delayedMessage.header.timestamp,
+              inboxSeqNum: firstReadMsg!.delayedCount,
+              baseFeeL1: firstReadMsg!.delayedMessage.header.baseFee,
+              messageDataHash:
+                firstReadMsg!.delayedMessage.header.messageDataHash,
+            },
           },
           { gasLimit: 10000000 }
         )
@@ -1558,23 +1653,26 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
       await setupBufferable.sequencerInbox
         .connect(setupBufferable.batchPoster)
         [
-          'addSequencerL2BatchFromBlobs(uint256,uint256,address,uint256,uint256,bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32))'
+          'addSequencerL2BatchFromBlobs(uint256,uint256,address,uint256,uint256,(bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32)))'
         ](
           0,
           messagesReadOpt,
           ethers.constants.AddressZero,
           seqReportedMessageSubCountOpt,
           seqReportedMessageSubCountOpt.add(10),
-          beforeDelayedAcc,
           {
-            kind: 3,
-            sender: delayedMsgLastRead!.delayedMessage.header.sender,
-            blockNumber: delayedMsgLastRead!.delayedMessage.header.blockNumber,
-            timestamp: delayedMsgLastRead!.delayedMessage.header.timestamp,
-            inboxSeqNum: delayedMsgLastRead!.delayedCount,
-            baseFeeL1: delayedMsgLastRead!.delayedMessage.header.baseFee,
-            messageDataHash:
-              delayedMsgLastRead!.delayedMessage.header.messageDataHash,
+            beforeDelayedAcc: beforeDelayedAcc,
+            delayedMessage: {
+              kind: 3,
+              sender: delayedMsgLastRead!.delayedMessage.header.sender,
+              blockNumber:
+                delayedMsgLastRead!.delayedMessage.header.blockNumber,
+              timestamp: delayedMsgLastRead!.delayedMessage.header.timestamp,
+              inboxSeqNum: delayedMsgLastRead!.delayedCount,
+              baseFeeL1: delayedMsgLastRead!.delayedMessage.header.baseFee,
+              messageDataHash:
+                delayedMsgLastRead!.delayedMessage.header.messageDataHash,
+            },
           },
           { gasLimit: 10000000 }
         )
@@ -1649,23 +1747,26 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
       await setupBufferable.sequencerInbox
         .connect(setupBufferable.batchPoster)
         .functions[
-          'addSequencerL2BatchFromBlobs(uint256,uint256,address,uint256,uint256,bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32))'
+          'addSequencerL2BatchFromBlobs(uint256,uint256,address,uint256,uint256,(bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32)))'
         ](
           1,
           messagesReadOpt2.sub(1),
           ethers.constants.AddressZero,
           seqReportedMessageSubCountOpt2,
           seqReportedMessageSubCountOpt2.add(10),
-          delayedMsgLastRead!.delayedAcc,
           {
-            kind: delayedMsgLastRead!.delayedMessage.header.kind,
-            sender: delayedMsgLastRead!.delayedMessage.header.sender,
-            blockNumber: delayedMsgLastRead!.delayedMessage.header.blockNumber,
-            timestamp: delayedMsgLastRead!.delayedMessage.header.timestamp,
-            inboxSeqNum: delayedMsgLastRead!.delayedCount,
-            baseFeeL1: delayedMsgLastRead!.delayedMessage.header.baseFee,
-            messageDataHash:
-              delayedMsgLastRead!.delayedMessage.header.messageDataHash,
+            beforeDelayedAcc: delayedMsgLastRead!.delayedAcc,
+            delayedMessage: {
+              kind: delayedMsgLastRead!.delayedMessage.header.kind,
+              sender: delayedMsgLastRead!.delayedMessage.header.sender,
+              blockNumber:
+                delayedMsgLastRead!.delayedMessage.header.blockNumber,
+              timestamp: delayedMsgLastRead!.delayedMessage.header.timestamp,
+              inboxSeqNum: delayedMsgLastRead!.delayedCount,
+              baseFeeL1: delayedMsgLastRead!.delayedMessage.header.baseFee,
+              messageDataHash:
+                delayedMsgLastRead!.delayedMessage.header.messageDataHash,
+            },
           },
           { gasLimit: 10000000 }
         )
@@ -1697,27 +1798,29 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
       await setupBufferable.sequencerInbox
         .connect(setupBufferable.batchPoster)
         .functions[
-          'addSequencerL2BatchFromBlobs(uint256,uint256,address,uint256,uint256,bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32),(bytes32,bytes32,bytes32))'
+          'addSequencerL2BatchFromBlobs(uint256,uint256,address,uint256,uint256,(bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32),(bytes32,bytes32,bytes32)))'
         ](
           3,
           messagesReadOpt2.add(1),
           ethers.constants.AddressZero,
           seqReportedMessageSubCountOpt2.add(20),
           seqReportedMessageSubCountOpt2.add(30),
-          lastRead!.delayedAcc,
           {
-            kind: lastRead!.delayedMessage.header.kind,
-            sender: lastRead!.delayedMessage.header.sender,
-            blockNumber: lastRead!.delayedMessage.header.blockNumber,
-            timestamp: lastRead!.delayedMessage.header.timestamp,
-            inboxSeqNum: lastRead!.delayedCount,
-            baseFeeL1: lastRead!.delayedMessage.header.baseFee,
-            messageDataHash: lastRead!.delayedMessage.header.messageDataHash,
-          },
-          {
-            beforeAcc: batchDelivered!.beforeAcc,
-            dataHash: '0x' + inboxMessageDelivered.data.slice(106, 170),
-            delayedAcc: batchDelivered!.delayedAcc,
+            beforeDelayedAcc: lastRead!.delayedAcc,
+            delayedMessage: {
+              kind: lastRead!.delayedMessage.header.kind,
+              sender: lastRead!.delayedMessage.header.sender,
+              blockNumber: lastRead!.delayedMessage.header.blockNumber,
+              timestamp: lastRead!.delayedMessage.header.timestamp,
+              inboxSeqNum: lastRead!.delayedCount,
+              baseFeeL1: lastRead!.delayedMessage.header.baseFee,
+              messageDataHash: lastRead!.delayedMessage.header.messageDataHash,
+            },
+            preimage: {
+              beforeAcc: batchDelivered!.beforeAcc,
+              dataHash: '0x' + inboxMessageDelivered.data.slice(106, 170),
+              delayedAcc: batchDelivered!.delayedAcc,
+            },
           },
           { gasLimit: 10000000 }
         )
