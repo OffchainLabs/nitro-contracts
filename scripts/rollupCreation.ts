@@ -178,8 +178,6 @@ export async function createRollup(feeToken?: string) {
 }
 
 async function _getDevRollupConfig(feeToken: string) {
-  console.log('getting dev rollup config')
-
   // set up owner address
   const ownerAddress =
     process.env.OWNER_ADDRESS !== undefined ? process.env.OWNER_ADDRESS : ''
@@ -188,7 +186,7 @@ async function _getDevRollupConfig(feeToken: string) {
   const _maxDataSize =
     process.env.MAX_DATA_SIZE !== undefined
       ? ethers.BigNumber.from(process.env.MAX_DATA_SIZE)
-      : 117964
+      : ethers.BigNumber.from(117964)
 
   // set up validators
   const authorizeValidators =
@@ -256,7 +254,7 @@ async function _getDevRollupConfig(feeToken: string) {
   let parentChainId =
     process.env.L1_CHAIN_ID !== undefined
       ? ethers.BigNumber.from(process.env.L1_CHAIN_ID)
-      : 1337
+      : ethers.BigNumber.from(1337)
 
   console.log('dev rollup config:', {
     config: {

@@ -1,5 +1,5 @@
 import { ethers } from 'hardhat'
-import { ContractFactory, Contract, Overrides } from 'ethers'
+import { ContractFactory, Contract, Overrides, BigNumber } from 'ethers'
 import '@nomiclabs/hardhat-ethers'
 import { run } from 'hardhat'
 import {
@@ -10,6 +10,9 @@ import { maxDataSize } from './config'
 import { Toolkit4844 } from '../test/contract/toolkit4844'
 import { ArbSys__factory } from '../build/types'
 import { ARB_SYS_ADDRESS } from '@arbitrum/sdk/dist/lib/dataEntities/constants'
+import hre from 'hardhat'
+
+const isDevDeployment = hre.network.name.includes('testnode')
 
 // Define a verification function
 export async function verifyContract(
@@ -97,14 +100,15 @@ export async function deployAllContracts(
     ? ethers.constants.AddressZero
     : (await Toolkit4844.deployReader4844(signer)).address
 
+  const _maxDataSize = _getMaxDataSize()
   const ethSequencerInbox = await deployContract(
     'SequencerInbox',
     signer,
-    [maxDataSize, reader4844, false],
+    [_maxDataSize, reader4844, false],
     verify
   )
 
-  const ethInbox = await deployContract('Inbox', signer, [maxDataSize], verify)
+  const ethInbox = await deployContract('Inbox', signer, [_maxDataSize], verify)
   const ethRollupEventInbox = await deployContract(
     'RollupEventInbox',
     signer,
@@ -117,13 +121,13 @@ export async function deployAllContracts(
   const erc20SequencerInbox = await deployContract(
     'SequencerInbox',
     signer,
-    [maxDataSize, reader4844, true],
+    [_maxDataSize, reader4844, true],
     verify
   )
   const erc20Inbox = await deployContract(
     'ERC20Inbox',
     signer,
-    [maxDataSize],
+    [_maxDataSize],
     verify
   )
   const erc20RollupEventInbox = await deployContract(
@@ -245,4 +249,16 @@ async function _isRunningOnArbitrum(signer: any): Promise<Boolean> {
   } catch (error) {
     return false
   }
+}
+
+function _getMaxDataSize(): BigNumber {
+  if (isDevDeployment) {
+    const _maxDataSizeDev =
+      process.env.MAX_DATA_SIZE !== undefined
+        ? ethers.BigNumber.from(process.env.MAX_DATA_SIZE)
+        : ethers.BigNumber.from(117964)
+    return _maxDataSizeDev
+  }
+
+  return maxDataSize
 }
