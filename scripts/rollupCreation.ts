@@ -16,6 +16,7 @@ interface RollupCreatedEvent {
   address: string
   args?: {
     rollupAddress: string
+    nativeToken: string
     inboxAddress: string
     outbox: string
     rollupEventInbox: string
@@ -23,9 +24,22 @@ interface RollupCreatedEvent {
     adminProxy: string
     sequencerInbox: string
     bridge: string
+    upgradeExecutor: string
     validatorUtils: string
     validatorWalletCreator: string
   }
+}
+
+interface RollupCreationResult {
+  Bridge: string
+  Inbox: string
+  SequencerInbox: string
+  DeployedAt: number
+  Rollup: string
+  NativeToken: string
+  UpgradeExecutor: string
+  ValidatorUtils: string
+  ValidatorWalletCreator: string
 }
 
 export async function createRollup(
@@ -33,7 +47,7 @@ export async function createRollup(
   isDevDeployment: boolean,
   rollupCreatorAddress: string,
   feeToken?: string
-) {
+): Promise<RollupCreationResult | null> {
   if (!rollupCreatorAbi) {
     throw new Error(
       'You need to first run <deployment.ts> script to deploy and compile the contracts first'
@@ -94,6 +108,7 @@ export async function createRollup(
     // Checking for RollupCreated event for new rollup address
     if (rollupCreatedEvent) {
       const rollupAddress = rollupCreatedEvent.args?.rollupAddress
+      const nativeToken = rollupCreatedEvent.args?.nativeToken
       const inboxAddress = rollupCreatedEvent.args?.inboxAddress
       const outbox = rollupCreatedEvent.args?.outbox
       const rollupEventInbox = rollupCreatedEvent.args?.rollupEventInbox
@@ -101,6 +116,7 @@ export async function createRollup(
       const adminProxy = rollupCreatedEvent.args?.adminProxy
       const sequencerInbox = rollupCreatedEvent.args?.sequencerInbox
       const bridge = rollupCreatedEvent.args?.bridge
+      const upgradeExecutor = rollupCreatedEvent.args?.upgradeExecutor
       const validatorUtils = rollupCreatedEvent.args?.validatorUtils
       const validatorWalletCreator =
         rollupCreatedEvent.args?.validatorWalletCreator
@@ -152,6 +168,18 @@ export async function createRollup(
 
       const blockNumber = createRollupReceipt.blockNumber
       console.log('All deployed at block number:', blockNumber)
+
+      return {
+        Bridge: bridge,
+        Inbox: inboxAddress,
+        SequencerInbox: sequencerInbox,
+        DeployedAt: blockNumber,
+        Rollup: rollupAddress,
+        NativeToken: nativeToken,
+        UpgradeExecutor: upgradeExecutor,
+        ValidatorUtils: validatorUtils,
+        ValidatorWalletCreator: validatorWalletCreator,
+      }
     } else {
       console.error('RollupCreated event not found')
     }
@@ -161,6 +189,8 @@ export async function createRollup(
       error instanceof Error ? error.message : error
     )
   }
+
+  return null
 }
 
 async function _getDevRollupConfig(feeToken: string) {
@@ -236,8 +266,8 @@ async function _getDevRollupConfig(feeToken: string) {
 
   // set up parent chain id
   let parentChainId =
-    process.env.L1_CHAIN_ID !== undefined
-      ? ethers.BigNumber.from(process.env.L1_CHAIN_ID)
+    process.env.PARENT_CHAIN_ID !== undefined
+      ? ethers.BigNumber.from(process.env.PARENT_CHAIN_ID)
       : ethers.BigNumber.from(1337)
 
   return {
