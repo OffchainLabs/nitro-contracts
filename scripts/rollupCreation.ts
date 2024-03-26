@@ -51,13 +51,7 @@ export async function createRollup(
   }
 
   try {
-    let vals: boolean[] = []
-    for (let i = 0; i < config.validators.length; i++) {
-      vals.push(true)
-    }
-
     //// funds for deploying L2 factories
-
     // 0.13 ETH is enough to deploy L2 factories via retryables. Excess is refunded
     let feeCost = ethers.utils.parseEther('0.13')
     if (feeToken != ethers.constants.AddressZero) {
@@ -181,10 +175,8 @@ async function _getDevRollupConfig(feeToken: string) {
       : ethers.BigNumber.from(117964)
 
   // set up validators
-  const authorizeValidators =
-    process.env.AUTHORIZE_VALIDATORS !== undefined
-      ? parseInt(process.env.AUTHORIZE_VALIDATORS, 0)
-      : 0
+  const authorizeValidators: number =
+    parseInt(process.env.AUTHORIZE_VALIDATORS as string, 0) || 0
   const validators: string[] = []
   for (let i = 1; i <= authorizeValidators; i++) {
     validators.push(ethers.Wallet.createRandom().address)
