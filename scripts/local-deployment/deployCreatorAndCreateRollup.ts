@@ -6,6 +6,12 @@ import { promises as fs } from 'fs'
 import { BigNumber } from 'ethers'
 
 async function main() {
+  /// read env vars needed for deployment
+  let childChainName = process.env.CHILD_CHAIN_NAME as string
+  if (!childChainName) {
+    throw new Error('CHILD_CHAIN_NAME not set')
+  }
+
   let deployerPrivKey = process.env.DEPLOYER_PRIVKEY as string
   if (!deployerPrivKey) {
     throw new Error('DEPLOYER_PRIVKEY not set')
@@ -45,7 +51,7 @@ async function main() {
     )
   ).wait()
 
-  // Create rollup
+  /// Create rollup
   const chainId = (await deployerWallet.provider.getNetwork()).chainId
   const feeToken = undefined
 
@@ -55,34 +61,37 @@ async function main() {
     'using RollupCreator',
     contracts.rollupCreator.address
   )
-  const rollupCreationResult = await createRollup(
+  const result = await createRollup(
     deployerWallet,
     true,
     contracts.rollupCreator.address,
     feeToken
   )
 
-  if (!rollupCreationResult) {
+  if (!result) {
     throw new Error('Rollup creation failed')
   }
 
+  const { rollupCreationResult, chainInfo } = result
+
   /// store deployment address
-  // parent deployment info
-  const parentDeploymentInfo =
-    process.env.PARENT_DEPLOYMENT_INFO !== undefined
-      ? process.env.PARENT_DEPLOYMENT_INFO
+  // chain deployment info
+  const chainDeploymentInfo =
+    process.env.CHAIN_DEPLOYMENT_INFO !== undefined
+      ? process.env.CHAIN_DEPLOYMENT_INFO
       : 'deploy.json'
   await fs.writeFile(
-    parentDeploymentInfo,
+    chainDeploymentInfo,
     JSON.stringify(rollupCreationResult, null, 2),
     'utf8'
   )
 
   // get child deployment info
-  const childDeploymentInfo =
-    process.env.CHILD_DEPLOYMENT_INFO !== undefined
-      ? process.env.CHILD_DEPLOYMENT_INFO
+  const childChainInfo =
+    process.env.CHILD_CHAIN_INFO !== undefined
+      ? process.env.CHILD_CHAIN_INFO
       : 'l2_chain_info.json'
+  await fs.writeFile(childChainInfo, JSON.stringify(chainInfo, null, 2), 'utf8')
 }
 
 main()

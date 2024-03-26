@@ -7,6 +7,8 @@ import { BigNumber, Signer } from 'ethers'
 import { IERC20__factory } from '../build/types'
 import { sleep } from './testSetup'
 import { promises as fs } from 'fs'
+import { Provider } from '@ethersproject/providers'
+import { _isRunningOnArbitrum } from './deploymentUtils'
 
 // 1 gwei
 const MAX_FER_PER_GAS = BigNumber.from('1000000000')
@@ -42,12 +44,23 @@ interface RollupCreationResult {
   ValidatorWalletCreator: string
 }
 
+interface ChainInfo {
+  ChainName: string
+  ParentChainId: number
+  ParentChainIsArbitrum: boolean
+  ChainConfig: any
+  RollupAddresses: RollupCreationResult
+}
+
 export async function createRollup(
   signer: Signer,
   isDevDeployment: boolean,
   rollupCreatorAddress: string,
   feeToken?: string
-): Promise<RollupCreationResult | null> {
+): Promise<{
+  rollupCreationResult: RollupCreationResult
+  chainInfo: ChainInfo
+} | null> {
   if (!rollupCreatorAbi) {
     throw new Error(
       'You need to first run <deployment.ts> script to deploy and compile the contracts first'
@@ -169,7 +182,7 @@ export async function createRollup(
       const blockNumber = createRollupReceipt.blockNumber
       console.log('All deployed at block number:', blockNumber)
 
-      return {
+      const rollupCreationResult: RollupCreationResult = {
         Bridge: bridge,
         Inbox: inboxAddress,
         SequencerInbox: sequencerInbox,
@@ -180,6 +193,17 @@ export async function createRollup(
         ValidatorUtils: validatorUtils,
         ValidatorWalletCreator: validatorWalletCreator,
       }
+
+
+      const chainInfo: ChainInfo = {
+        ChainName: 'dev-chain',
+        ParentChainId: deployParams.config.chainId.toNumber(),
+        ParentChainIsArbitrum: await _isRunningOnArbitrum(signer),
+        ChainConfig: deployParams.config,
+        RollupAddresses: rollupCreationResult,
+      }
+
+      return { rollupCreationResult, chainInfo }
     } else {
       console.error('RollupCreated event not found')
     }

@@ -237,7 +237,7 @@ export async function deployAllContracts(
 }
 
 // Check if we're deploying to an Arbitrum chain
-async function _isRunningOnArbitrum(signer: any): Promise<Boolean> {
+export async function _isRunningOnArbitrum(signer: any): Promise<boolean> {
   const arbSys = ArbSys__factory.connect(ARB_SYS_ADDRESS, signer)
   try {
     await arbSys.arbOSVersion()
