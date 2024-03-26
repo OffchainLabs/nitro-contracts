@@ -3,16 +3,13 @@ import '@nomiclabs/hardhat-ethers'
 import { run } from 'hardhat'
 import { abi as rollupCreatorAbi } from '../build/contracts/src/rollup/RollupCreator.sol/RollupCreator.json'
 import { config, maxDataSize } from './config'
-import { BigNumber } from 'ethers'
+import { BigNumber, Signer } from 'ethers'
 import { IERC20__factory } from '../build/types'
 import { sleep } from './testSetup'
-import hre from 'hardhat'
 import { promises as fs } from 'fs'
 
 // 1 gwei
 const MAX_FER_PER_GAS = BigNumber.from('1000000000')
-
-const isDevDeployment = hre.network.name.includes('testnode')
 
 interface RollupCreatedEvent {
   event: string
@@ -31,23 +28,17 @@ interface RollupCreatedEvent {
   }
 }
 
-export async function createRollup(feeToken?: string) {
-  const rollupCreatorAddress = process.env.ROLLUP_CREATOR_ADDRESS
-
-  if (!rollupCreatorAddress) {
-    console.error(
-      'Please provide ROLLUP_CREATOR_ADDRESS as an environment variable.'
-    )
-    process.exit(1)
-  }
-
+export async function createRollup(
+  signer: Signer,
+  isDevDeployment: boolean,
+  rollupCreatorAddress: string,
+  feeToken?: string
+) {
   if (!rollupCreatorAbi) {
     throw new Error(
       'You need to first run <deployment.ts> script to deploy and compile the contracts first'
     )
   }
-
-  const [signer] = await ethers.getSigners()
 
   const rollupCreator = new ethers.Contract(
     rollupCreatorAddress,
@@ -87,13 +78,14 @@ export async function createRollup(feeToken?: string) {
       : {
           config: config.rollupConfig,
           validators: config.validators,
-          maxDataSize: maxDataSize,
+          maxDataSize: ethers.BigNumber.from(maxDataSize),
           nativeToken: feeToken,
           deployFactoriesToL2: true,
           maxFeePerGasForRetryables: MAX_FER_PER_GAS,
-          batchPosters: [config.batchPoster],
-          batchPosterManager: signer.address,
+          batchPosters: config.batchPosters,
+          batchPosterManager: config.batchPosterManager,
         }
+
     const createRollupTx = await rollupCreator.createRollup(deployParams, {
       value: feeCost,
     })
@@ -122,7 +114,7 @@ export async function createRollup(feeToken?: string) {
       console.log("Congratulations! 🎉🎉🎉 All DONE! Here's your addresses:")
       console.log('RollupProxy Contract created at address:', rollupAddress)
 
-      if (isDevDeployment) {
+      if (!isDevDeployment) {
         console.log('Wait a minute before starting the contract verification')
         await sleep(1 * 60 * 1000)
         console.log(
@@ -255,33 +247,6 @@ async function _getDevRollupConfig(feeToken: string) {
     process.env.L1_CHAIN_ID !== undefined
       ? ethers.BigNumber.from(process.env.L1_CHAIN_ID)
       : ethers.BigNumber.from(1337)
-
-  console.log('dev rollup config:', {
-    config: {
-      confirmPeriodBlocks: ethers.BigNumber.from('20'),
-      extraChallengeTimeBlocks: ethers.BigNumber.from('200'),
-      stakeToken: ethers.constants.AddressZero,
-      baseStake: ethers.utils.parseEther('1'),
-      wasmModuleRoot: wasmModuleRoot,
-      owner: ownerAddress,
-      loserStakeEscrow: ethers.constants.AddressZero,
-      chainId: parentChainId,
-      chainConfig: chainConfig,
-      sequencerInboxMaxTimeVariation: {
-        delayBlocks: ethers.BigNumber.from('5760'),
-        futureBlocks: ethers.BigNumber.from('12'),
-        delaySeconds: ethers.BigNumber.from('86400'),
-        futureSeconds: ethers.BigNumber.from('3600'),
-      },
-    },
-    validators: validators,
-    maxDataSize: _maxDataSize,
-    nativeToken: feeToken,
-    deployFactoriesToL2: true,
-    maxFeePerGasForRetryables: MAX_FER_PER_GAS,
-    batchPosters: batchPosters,
-    batchPosterManager: batchPosterManager,
-  })
 
   return {
     config: {
