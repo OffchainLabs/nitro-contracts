@@ -115,6 +115,18 @@ async function getDefaultConfig(
       delaySeconds: 60 * 60 * 24,
       futureSeconds: 60 * 60,
     },
+    bufferConfig: {
+      thresholdSeconds: 0,
+      thresholdBlocks: 0,
+      maxBufferSeconds: 0,
+      maxBufferBlocks: 0,
+      replenishRate: {
+        secondsPerPeriod: 0,
+        blocksPerPeriod: 0,
+        periodSeconds: 0,
+        periodBlocks: 0,
+      },
+    },
     stakeToken: stakeToken,
     wasmModuleRoot: wasmModuleRoot,
     loserStakeEscrow: ZERO_ADDR,
@@ -194,7 +206,14 @@ const setup = async () => {
   const ethSequencerInbox = await ethSequencerInboxFac.deploy(
     117964,
     dummy4844Reader,
+    false,
     false
+  )
+  const ethDelayBufferableSequencerInbox = await ethSequencerInboxFac.deploy(
+    117964,
+    dummy4844Reader,
+    false,
+    true
   )
 
   const ethInboxFac = (await ethers.getContractFactory(
@@ -223,8 +242,11 @@ const setup = async () => {
   const erc20SequencerInbox = await erc20SequencerInboxFac.deploy(
     117964,
     dummy4844Reader,
-    true
+    true,
+    false
   )
+  const erc20DelayBufferableSequencerInbox =
+    await erc20SequencerInboxFac.deploy(117964, dummy4844Reader, true, true)
 
   const erc20InboxFac = (await ethers.getContractFactory(
     'ERC20Inbox'
@@ -255,6 +277,20 @@ const setup = async () => {
     {
       bridge: erc20Bridge.address,
       sequencerInbox: erc20SequencerInbox.address,
+      inbox: erc20Inbox.address,
+      rollupEventInbox: erc20RollupEventInbox.address,
+      outbox: erc20Outbox.address,
+    },
+    {
+      bridge: ethBridge.address,
+      sequencerInbox: ethDelayBufferableSequencerInbox.address,
+      inbox: ethInbox.address,
+      rollupEventInbox: ethRollupEventInbox.address,
+      outbox: ethOutbox.address,
+    },
+    {
+      bridge: erc20Bridge.address,
+      sequencerInbox: erc20DelayBufferableSequencerInbox.address,
       inbox: erc20Inbox.address,
       rollupEventInbox: erc20RollupEventInbox.address,
       outbox: erc20Outbox.address,

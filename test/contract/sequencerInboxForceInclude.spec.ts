@@ -237,6 +237,7 @@ describe('SequencerInboxForceInclude', async () => {
     const seqInboxTemplate = await sequencerInboxFac.deploy(
       117964,
       reader4844.address,
+      false,
       false
     )
     const inboxFac = (await ethers.getContractFactory(
@@ -275,12 +276,27 @@ describe('SequencerInboxForceInclude', async () => {
       .connect(user)
     await bridge.initialize(rollup.address)
 
-    await sequencerInbox.initialize(bridgeProxy.address, {
-      delayBlocks: maxDelayBlocks,
-      delaySeconds: maxDelayTime,
-      futureBlocks: 10,
-      futureSeconds: 3000,
-    })
+    await sequencerInbox.initialize(
+      bridgeProxy.address,
+      {
+        delayBlocks: maxDelayBlocks,
+        delaySeconds: maxDelayTime,
+        futureBlocks: 10,
+        futureSeconds: 3000,
+      },
+      {
+        thresholdSeconds: 0,
+        thresholdBlocks: 0,
+        maxBufferSeconds: 0,
+        maxBufferBlocks: 0,
+        replenishRate: {
+          secondsPerPeriod: 0,
+          blocksPerPeriod: 0,
+          periodSeconds: 0,
+          periodBlocks: 0,
+        },
+      }
+    )
 
     await (
       await sequencerInbox

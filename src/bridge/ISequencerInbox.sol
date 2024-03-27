@@ -9,8 +9,15 @@ pragma experimental ABIEncoderV2;
 import "../libraries/IGasRefunder.sol";
 import "./IDelayedMessageProvider.sol";
 import "./IBridge.sol";
+import "./Messages.sol";
+import "./DelayBufferTypes.sol";
 
 interface ISequencerInbox is IDelayedMessageProvider {
+    /// @notice The maximum amount of time variatin between a message being posted on the L1 and being executed on the L2
+    /// @param delayBlocks The max amount of blocks in the past that a message can be received on L2
+    /// @param futureBlocks The max amount of blocks in the future that a message can be received on L2
+    /// @param delaySeconds The max amount of seconds in the past that a message can be received on L2
+    /// @param futureSeconds The max amount of seconds in the future that a message can be received on L2
     struct MaxTimeVariation {
         uint256 delayBlocks;
         uint256 futureBlocks;
@@ -29,6 +36,9 @@ interface ISequencerInbox is IDelayedMessageProvider {
     );
 
     event OwnerFunctionCalled(uint256 indexed id);
+
+    /// @notice The delay buffer has updated
+    event BufferUpdated(uint64 bufferUpdateBlocks, uint64 bufferUpdateSeconds);
 
     /// @dev a separate event that emits batch data when this isn't easily accessible in the tx.input
     event SequencerBatchData(uint256 indexed batchSequenceNumber, bytes data);
@@ -89,6 +99,9 @@ interface ISequencerInbox is IDelayedMessageProvider {
 
     function isSequencer(address) external view returns (bool);
 
+    /// @notice True is the sequencer inbox is delay bufferable
+    function isDelayBufferable() external view returns (bool);
+
     function maxDataSize() external view returns (uint256);
 
     /// @notice The batch poster manager has the ability to change the batch poster addresses
@@ -144,6 +157,19 @@ interface ISequencerInbox is IDelayedMessageProvider {
     /// @notice the creation block is intended to still be available after a keyset is deleted
     function getKeysetCreationBlock(bytes32 ksHash) external view returns (uint256);
 
+    /// @dev    The delay buffer can decrease due to pending depletion.
+    ///         This function applies pending buffer changes to proactively calculate the force inclusion deadline.
+    ///         This is only relevant when the bufferBlocks or bufferSeconds are less than delayBlocks or delaySeconds.
+    /// @notice Calculates the upper bounds of the delay buffer
+    /// @param blockNumber The block number when a delayed message was created
+    /// @param timestamp The timestamp when a delayed message was created
+    /// @return blockNumberDeadline The block number at which the delay buffer is guaranteed to be depleted
+    /// @return timestampDeadline The timestamp at which the delay buffer is guaranteed to be depleted
+    function forceInclusionDeadline(uint64 blockNumber, uint64 timestamp)
+        external
+        view
+        returns (uint64 blockNumberDeadline, uint64 timestampDeadline);
+
     // ---------- BatchPoster functions ----------
 
     function addSequencerL2BatchFromOrigin(
@@ -177,6 +203,60 @@ interface ISequencerInbox is IDelayedMessageProvider {
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
+    ) external;
+
+    /// @dev    Proves message delays, updates delay buffers, and posts an L2 batch with blob data.
+    ///         Must read atleast one new delayed message.
+    /// @notice Normally the sequencer will only call this function after the sequencer has been offline for a while.
+    ///         The extra proof adds cost to batch posting, and while the sequencer is online, the proof is unnecessary.
+    function addSequencerL2BatchFromBlobs(
+        uint256 sequenceNumber,
+        uint256 afterDelayedMessagesRead,
+        IGasRefunder gasRefunder,
+        uint256 prevMessageCount,
+        uint256 newMessageCount,
+        DelayProof calldata delayProof
+    ) external;
+
+    /// @dev    Proves message delays, updates delay buffers, and posts an L2 batch with blob data.
+    ///         Must read atleast one new delayed message.
+    /// @notice Normally the sequencer will only call this function after the sequencer has been offline for a while.
+    ///         The extra proof adds cost to batch posting, and while the sequencer is online, the proof is unnecessary.
+    function addSequencerL2BatchFromOrigin(
+        uint256 sequenceNumber,
+        bytes calldata data,
+        uint256 afterDelayedMessagesRead,
+        IGasRefunder gasRefunder,
+        uint256 prevMessageCount,
+        uint256 newMessageCount,
+        DelayProof calldata delayProof
+    ) external;
+
+    /// @dev    Proves sequenced messages are synchronized in timestamp & blocknumber, extends the sync validity window,
+    ///         and posts an L2 batch with blob data.
+    /// @notice Normally the sequencer will only call this function once every delayThresholdSeconds / delayThresholdBlocks.
+    ///         The proof stores a time / block range for which the proof is valid and the sequencer can post batches without proof.
+    function addSequencerL2BatchFromBlobs(
+        uint256 sequenceNumber,
+        uint256 afterDelayedMessagesRead,
+        IGasRefunder gasRefunder,
+        uint256 prevMessageCount,
+        uint256 newMessageCount,
+        SyncProof calldata syncProof
+    ) external;
+
+    /// @dev    Proves sequenced messages are synchronized in timestamp & blocknumber, extends the sync validity window,
+    ///         and posts an L2 batch with blob data.
+    /// @notice Normally the sequencer will only call this function once every delayThresholdSeconds / delayThresholdBlocks.
+    ///         The proof stores a time / block range for which the proof is valid and the sequencer can post batches without proof.
+    function addSequencerL2BatchFromOrigin(
+        uint256 sequenceNumber,
+        bytes calldata data,
+        uint256 afterDelayedMessagesRead,
+        IGasRefunder gasRefunder,
+        uint256 prevMessageCount,
+        uint256 newMessageCount,
+        SyncProof calldata syncProof
     ) external;
 
     // ---------- onlyRollupOrOwner functions ----------
@@ -225,5 +305,9 @@ interface ISequencerInbox is IDelayedMessageProvider {
 
     // ---------- initializer ----------
 
-    function initialize(IBridge bridge_, MaxTimeVariation calldata maxTimeVariation_) external;
+    function initialize(
+        IBridge bridge_,
+        MaxTimeVariation calldata maxTimeVariation_,
+        BufferConfig calldata bufferConfig_
+    ) external;
 }

@@ -21,6 +21,8 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 contract BridgeCreator is Ownable {
     BridgeContracts public ethBasedTemplates;
     BridgeContracts public erc20BasedTemplates;
+    BridgeContracts public ethBasedDelayBufferableTemplates;
+    BridgeContracts public erc20BasedDelayBufferableTemplates;
 
     event TemplatesUpdated();
     event ERC20TemplatesUpdated();
@@ -35,10 +37,14 @@ contract BridgeCreator is Ownable {
 
     constructor(
         BridgeContracts memory _ethBasedTemplates,
-        BridgeContracts memory _erc20BasedTemplates
+        BridgeContracts memory _erc20BasedTemplates,
+        BridgeContracts memory _ethBasedDelayBufferableTemplates,
+        BridgeContracts memory _erc20BasedDelayBufferableTemplates
     ) Ownable() {
         ethBasedTemplates = _ethBasedTemplates;
         erc20BasedTemplates = _erc20BasedTemplates;
+        ethBasedDelayBufferableTemplates = _ethBasedDelayBufferableTemplates;
+        erc20BasedDelayBufferableTemplates = _erc20BasedDelayBufferableTemplates;
     }
 
     function updateTemplates(BridgeContracts calldata _newTemplates) external onlyOwner {
@@ -82,7 +88,8 @@ contract BridgeCreator is Ownable {
         address adminProxy,
         address rollup,
         address nativeToken,
-        ISequencerInbox.MaxTimeVariation calldata maxTimeVariation
+        ISequencerInbox.MaxTimeVariation calldata maxTimeVariation,
+        BufferConfig calldata bufferConfig
     ) external returns (BridgeContracts memory) {
         // create ETH-based bridge if address zero is provided for native token, otherwise create ERC20-based bridge
         BridgeContracts memory frame = _createBridge(
@@ -96,7 +103,7 @@ contract BridgeCreator is Ownable {
         } else {
             IERC20Bridge(address(frame.bridge)).initialize(IOwnable(rollup), nativeToken);
         }
-        frame.sequencerInbox.initialize(IBridge(frame.bridge), maxTimeVariation);
+        frame.sequencerInbox.initialize(IBridge(frame.bridge), maxTimeVariation, bufferConfig);
         frame.inbox.initialize(frame.bridge, frame.sequencerInbox);
         frame.rollupEventInbox.initialize(frame.bridge);
         frame.outbox.initialize(frame.bridge);

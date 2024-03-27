@@ -50,13 +50,25 @@ contract SequencerInboxTest is Test {
             delaySeconds: 100,
             futureSeconds: 100
         });
+    BufferConfig bufferConfigDefault = BufferConfig({
+        thresholdSeconds: type(uint64).max,
+        thresholdBlocks: type(uint64).max,
+        maxBufferSeconds: type(uint64).max,
+        maxBufferBlocks: type(uint64).max,
+        replenishRate: ReplenishRate({
+        secondsPerPeriod: 1,
+        blocksPerPeriod: 1,
+        periodSeconds: 12,
+        periodBlocks: 14
+        })
+    });
     address dummyInbox = address(139);
     address proxyAdmin = address(140);
     IReader4844 dummyReader4844 = IReader4844(address(137));
 
     uint256 public constant MAX_DATA_SIZE = 117964;
 
-    function deployRollup(bool isArbHosted) internal returns (SequencerInbox, Bridge) {
+    function deployRollup(bool isArbHosted, bool isDelayBufferable, BufferConfig memory bufferConfig) internal returns (SequencerInbox, Bridge) {
         RollupMock rollupMock = new RollupMock(rollupOwner);
         Bridge bridgeImpl = new Bridge();
         Bridge bridge = Bridge(
@@ -70,12 +82,13 @@ contract SequencerInboxTest is Test {
         SequencerInbox seqInboxImpl = new SequencerInbox(
             maxDataSize,
             isArbHosted ? IReader4844(address(0)) : dummyReader4844,
-            false
+            false,
+            isDelayBufferable
         );
         SequencerInbox seqInbox = SequencerInbox(
             address(new TransparentUpgradeableProxy(address(seqInboxImpl), proxyAdmin, ""))
         );
-        seqInbox.initialize(bridge, maxTimeVariation);
+        seqInbox.initialize(bridge, maxTimeVariation, bufferConfig);
 
         vm.prank(rollupOwner);
         seqInbox.setIsBatchPoster(tx.origin, true);
@@ -107,12 +120,13 @@ contract SequencerInboxTest is Test {
         SequencerInbox seqInboxImpl = new SequencerInbox(
             maxDataSize,
             IReader4844(address(0)),
-            true
+            true,
+            false
         );
         SequencerInbox seqInbox = SequencerInbox(
             address(new TransparentUpgradeableProxy(address(seqInboxImpl), proxyAdmin, ""))
         );
-        seqInbox.initialize(bridge, maxTimeVariation);
+        seqInbox.initialize(bridge, maxTimeVariation, bufferConfigDefault);
 
         vm.prank(rollupOwner);
         seqInbox.setIsBatchPoster(tx.origin, true);
@@ -217,8 +231,8 @@ contract SequencerInboxTest is Test {
     bytes biggerData =
         hex"00a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890a4567890";
 
-    function testAddSequencerL2BatchFromOrigin() public {
-        (SequencerInbox seqInbox, Bridge bridge) = deployRollup(false);
+    function testAddSequencerL2BatchFromOrigin(BufferConfig memory bufferConfig) public {
+        (SequencerInbox seqInbox, Bridge bridge) = deployRollup(false, false, bufferConfig);
         address delayedInboxSender = address(140);
         uint8 delayedInboxKind = 3;
         bytes32 messageDataHash = RAND.Bytes32();
@@ -249,7 +263,7 @@ contract SequencerInboxTest is Test {
 
     /* solhint-disable func-name-mixedcase */
     function testConstructor() public {
-        SequencerInbox seqInboxLogic = new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false);
+        SequencerInbox seqInboxLogic = new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false);
         assertEq(seqInboxLogic.maxDataSize(), MAX_DATA_SIZE, "Invalid MAX_DATA_SIZE");
         assertEq(seqInboxLogic.isUsingFeeToken(), false, "Invalid isUsingFeeToken");
 
@@ -260,7 +274,8 @@ contract SequencerInboxTest is Test {
         SequencerInbox seqInboxLogicFeeToken = new SequencerInbox(
             MAX_DATA_SIZE,
             dummyReader4844,
-            true
+            true,
+            false
         );
         assertEq(seqInboxLogicFeeToken.maxDataSize(), MAX_DATA_SIZE, "Invalid MAX_DATA_SIZE");
         assertEq(seqInboxLogicFeeToken.isUsingFeeToken(), true, "Invalid isUsingFeeToken");
@@ -272,72 +287,72 @@ contract SequencerInboxTest is Test {
         assertEq(seqInboxProxyFeeToken.isUsingFeeToken(), true, "Invalid isUsingFeeToken");
     }
 
-    function testInitialize() public {
+    function testInitialize(BufferConfig memory bufferConfig) public {
         Bridge _bridge = Bridge(
             address(new TransparentUpgradeableProxy(address(new Bridge()), proxyAdmin, ""))
         );
         _bridge.initialize(IOwnable(address(new RollupMock(rollupOwner))));
 
-        address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false));
+        address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false));
         SequencerInbox seqInboxProxy = SequencerInbox(TestUtil.deployProxy(seqInboxLogic));
-        seqInboxProxy.initialize(IBridge(_bridge), maxTimeVariation);
+        seqInboxProxy.initialize(IBridge(_bridge), maxTimeVariation, bufferConfig);
 
         assertEq(seqInboxProxy.isUsingFeeToken(), false, "Invalid isUsingFeeToken");
         assertEq(address(seqInboxProxy.bridge()), address(_bridge), "Invalid bridge");
         assertEq(address(seqInboxProxy.rollup()), address(_bridge.rollup()), "Invalid rollup");
     }
 
-    function testInitialize_FeeTokenBased() public {
+    function testInitialize_FeeTokenBased(BufferConfig memory bufferConfig) public {
         ERC20Bridge _bridge = ERC20Bridge(
             address(new TransparentUpgradeableProxy(address(new ERC20Bridge()), proxyAdmin, ""))
         );
         address nativeToken = address(new ERC20PresetMinterPauser("Appchain Token", "App"));
         _bridge.initialize(IOwnable(address(new RollupMock(rollupOwner))), nativeToken);
 
-        address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true));
+        address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false));
         SequencerInbox seqInboxProxy = SequencerInbox(TestUtil.deployProxy(seqInboxLogic));
-        seqInboxProxy.initialize(IBridge(_bridge), maxTimeVariation);
+        seqInboxProxy.initialize(IBridge(_bridge), maxTimeVariation, bufferConfig);
 
         assertEq(seqInboxProxy.isUsingFeeToken(), true, "Invalid isUsingFeeToken");
         assertEq(address(seqInboxProxy.bridge()), address(_bridge), "Invalid bridge");
         assertEq(address(seqInboxProxy.rollup()), address(_bridge.rollup()), "Invalid rollup");
     }
 
-    function testInitialize_revert_NativeTokenMismatch_EthFeeToken() public {
+    function testInitialize_revert_NativeTokenMismatch_EthFeeToken(BufferConfig memory bufferConfig) public {
         Bridge _bridge = Bridge(
             address(new TransparentUpgradeableProxy(address(new Bridge()), proxyAdmin, ""))
         );
         _bridge.initialize(IOwnable(address(new RollupMock(rollupOwner))));
 
-        address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true));
+        address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false));
         SequencerInbox seqInboxProxy = SequencerInbox(TestUtil.deployProxy(seqInboxLogic));
 
         vm.expectRevert(abi.encodeWithSelector(NativeTokenMismatch.selector));
-        seqInboxProxy.initialize(IBridge(_bridge), maxTimeVariation);
+        seqInboxProxy.initialize(IBridge(_bridge), maxTimeVariation, bufferConfig);
     }
 
-    function testInitialize_revert_NativeTokenMismatch_FeeTokenEth() public {
+    function testInitialize_revert_NativeTokenMismatch_FeeTokenEth(BufferConfig memory bufferConfig) public {
         ERC20Bridge _bridge = ERC20Bridge(
             address(new TransparentUpgradeableProxy(address(new ERC20Bridge()), proxyAdmin, ""))
         );
         address nativeToken = address(new ERC20PresetMinterPauser("Appchain Token", "App"));
         _bridge.initialize(IOwnable(address(new RollupMock(rollupOwner))), nativeToken);
 
-        address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false));
+        address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false));
         SequencerInbox seqInboxProxy = SequencerInbox(TestUtil.deployProxy(seqInboxLogic));
 
         vm.expectRevert(abi.encodeWithSelector(NativeTokenMismatch.selector));
-        seqInboxProxy.initialize(IBridge(_bridge), maxTimeVariation);
+        seqInboxProxy.initialize(IBridge(_bridge), maxTimeVariation, bufferConfig);
     }
 
-    function testAddSequencerL2BatchFromOrigin_ArbitrumHosted() public {
+    function testAddSequencerL2BatchFromOrigin_ArbitrumHosted(BufferConfig memory bufferConfig) public {
         // this will result in 'hostChainIsArbitrum = true'
         vm.mockCall(
             address(100),
             abi.encodeWithSelector(ArbSys.arbOSVersion.selector),
             abi.encode(uint256(11))
         );
-        (SequencerInbox seqInbox, Bridge bridge) = deployRollup(true);
+        (SequencerInbox seqInbox, Bridge bridge) = deployRollup(true, false, bufferConfig);
 
         address delayedInboxSender = address(140);
         uint8 delayedInboxKind = 3;
@@ -396,7 +411,7 @@ contract SequencerInboxTest is Test {
     }
 
     function testAddSequencerL2BatchFromOriginReverts() public {
-        (SequencerInbox seqInbox, Bridge bridge) = deployRollup(false);
+        (SequencerInbox seqInbox, Bridge bridge) = deployRollup(false, false, bufferConfigDefault);
         address delayedInboxSender = address(140);
         uint8 delayedInboxKind = 3;
         bytes32 messageDataHash = RAND.Bytes32();
@@ -483,9 +498,123 @@ contract SequencerInboxTest is Test {
         );
     }
 
+    function isValidBufferConfig(BufferConfig memory bufferConfig) internal pure returns (bool) {
+        return bufferConfig.thresholdBlocks != 0 &&
+            bufferConfig.thresholdSeconds != 0 &&
+            bufferConfig.maxBufferBlocks != 0 &&
+            bufferConfig.maxBufferSeconds != 0 &&
+            bufferConfig.replenishRate.blocksPerPeriod != 0 &&
+            bufferConfig.replenishRate.secondsPerPeriod != 0 &&
+            bufferConfig.replenishRate.periodSeconds != 0 &&
+            bufferConfig.replenishRate.periodBlocks != 0 &&
+            bufferConfig.replenishRate.secondsPerPeriod <
+            bufferConfig.replenishRate.periodSeconds &&
+            bufferConfig.replenishRate.blocksPerPeriod < bufferConfig.replenishRate.periodBlocks &&
+            bufferConfig.thresholdBlocks <= bufferConfig.maxBufferBlocks &&
+            bufferConfig.thresholdSeconds <= bufferConfig.maxBufferSeconds;
+    }
+
+    function testPostUpgradeInitAlreadyInitBuffer(BufferConfig memory bufferConfig) public returns (SequencerInbox, SequencerInbox) {
+        vm.assume(isValidBufferConfig(bufferConfig));
+        (SequencerInbox seqInbox, ) = deployRollup(false, false, bufferConfigDefault);
+        SequencerInbox seqInboxImpl = new SequencerInbox(maxDataSize, dummyReader4844, false, true);
+        vm.prank(proxyAdmin);
+        TransparentUpgradeableProxy(payable(address(seqInbox))).upgradeToAndCall(
+            address(seqInboxImpl),
+            abi.encodeWithSelector(SequencerInbox.postUpgradeInitBuffer.selector, bufferConfig)
+        );
+                
+        vm.expectRevert(abi.encodeWithSelector(AlreadyInit.selector));
+        vm.prank(proxyAdmin);
+        TransparentUpgradeableProxy(payable(address(seqInbox))).upgradeToAndCall(
+            address(seqInboxImpl),
+            abi.encodeWithSelector(SequencerInbox.postUpgradeInitBuffer.selector, bufferConfig)
+        );
+        return (seqInbox, seqInboxImpl);
+    }
+
+    function testPostUpgradeInitBuffer(BufferConfig memory bufferConfig) public {
+        vm.assume(isValidBufferConfig(bufferConfig));
+
+        (SequencerInbox seqInbox, SequencerInbox seqInboxImpl) = testPostUpgradeInitAlreadyInitBuffer(bufferConfig);
+
+        vm.expectRevert(abi.encodeWithSelector(AlreadyInit.selector));
+        vm.prank(proxyAdmin);
+        TransparentUpgradeableProxy(payable(address(seqInbox))).upgradeToAndCall(
+            address(seqInboxImpl),
+            abi.encodeWithSelector(SequencerInbox.postUpgradeInitBuffer.selector, bufferConfig)
+        );
+
+        // reset buffer and config
+        vm.store(address(seqInbox), bytes32(uint256(12)), bytes32(0));
+        vm.store(address(seqInbox), bytes32(uint256(13)), bytes32(0));
+        vm.store(address(seqInbox), bytes32(uint256(14)), bytes32(0));
+        vm.store(address(seqInbox), bytes32(uint256(15)), bytes32(0));
+        vm.store(address(seqInbox), bytes32(uint256(16)), bytes32(0));
+        
+        vm.prank(proxyAdmin);
+        TransparentUpgradeableProxy(payable(address(seqInbox))).upgradeToAndCall(
+            address(seqInboxImpl),
+            abi.encodeWithSelector(SequencerInbox.postUpgradeInitBuffer.selector, bufferConfig)
+        );
+
+        (
+            uint64 thresholdBlocks,
+            uint64 thresholdSeconds,
+            uint64 maxBufferBlocks,
+            uint64 maxBufferSeconds,
+            ReplenishRate memory replenishRate
+        ) = seqInbox.bufferConfig();
+        (uint64 bufferBlocks,
+        uint64 bufferSeconds,
+        uint64 syncExpiryBlockNumber,
+        uint64 syncExpiryTimestamp,,,) = seqInbox.buffer();
+        assertEq(maxBufferBlocks, bufferConfig.maxBufferBlocks);
+        assertEq(maxBufferSeconds, bufferConfig.maxBufferSeconds);
+        assertEq(thresholdBlocks, bufferConfig.thresholdBlocks);
+        assertEq(thresholdSeconds, bufferConfig.thresholdSeconds);
+        assertEq(replenishRate.blocksPerPeriod, bufferConfig.replenishRate.blocksPerPeriod);
+        assertEq(replenishRate.secondsPerPeriod, bufferConfig.replenishRate.secondsPerPeriod);
+        assertEq(replenishRate.periodBlocks, bufferConfig.replenishRate.periodBlocks);
+        assertEq(replenishRate.periodSeconds, bufferConfig.replenishRate.periodSeconds);
+        assertEq(bufferBlocks, bufferConfig.maxBufferBlocks);
+        assertEq(bufferSeconds, bufferConfig.maxBufferSeconds);
+        
+        assertEq(syncExpiryBlockNumber, block.number + bufferConfig.thresholdBlocks > type(uint64).max ? type(uint64).max : block.number + bufferConfig.thresholdBlocks);
+        assertEq(syncExpiryTimestamp, block.timestamp + bufferConfig.thresholdSeconds > type(uint64).max ? type(uint64).max : block.timestamp + bufferConfig.thresholdSeconds);
+
+        vm.expectRevert(abi.encodeWithSelector(AlreadyInit.selector));
+        vm.prank(proxyAdmin);
+        TransparentUpgradeableProxy(payable(address(seqInbox))).upgradeToAndCall(
+            address(seqInboxImpl),
+            abi.encodeWithSelector(SequencerInbox.postUpgradeInitBuffer.selector, bufferConfig)
+        );
+    }
+
+    function testPostUpgradeInitBadInitBuffer(BufferConfig memory config, BufferConfig memory configInvalid) public {
+        vm.assume(isValidBufferConfig(config));
+        vm.assume(!isValidBufferConfig(configInvalid));
+
+        (SequencerInbox seqInbox, SequencerInbox seqInboxImpl) = testPostUpgradeInitAlreadyInitBuffer(config);
+
+        // reset buffer and config
+        vm.store(address(seqInbox), bytes32(uint256(12)), bytes32(0));
+        vm.store(address(seqInbox), bytes32(uint256(13)), bytes32(0));
+        vm.store(address(seqInbox), bytes32(uint256(14)), bytes32(0));
+        vm.store(address(seqInbox), bytes32(uint256(15)), bytes32(0));
+        vm.store(address(seqInbox), bytes32(uint256(16)), bytes32(0));
+        
+        vm.expectRevert(abi.encodeWithSelector(BadBufferConfig.selector));
+        vm.prank(proxyAdmin);
+        TransparentUpgradeableProxy(payable(address(seqInbox))).upgradeToAndCall(
+            address(seqInboxImpl),
+            abi.encodeWithSelector(SequencerInbox.postUpgradeInitBuffer.selector, configInvalid)
+        );
+    }
+
     function testPostUpgradeInitAlreadyInit() public returns (SequencerInbox, SequencerInbox) {
-        (SequencerInbox seqInbox, ) = deployRollup(false);
-        SequencerInbox seqInboxImpl = new SequencerInbox(maxDataSize, dummyReader4844, false);
+        (SequencerInbox seqInbox, ) = deployRollup(false, false, bufferConfigDefault);
+        SequencerInbox seqInboxImpl = new SequencerInbox(maxDataSize, dummyReader4844, false, false);
 
         vm.expectRevert(abi.encodeWithSelector(AlreadyInit.selector));
         vm.prank(proxyAdmin);
@@ -577,7 +706,7 @@ contract SequencerInboxTest is Test {
         vm.assume(futureBlocks <= uint256(type(uint64).max));
         vm.assume(delaySeconds <= uint256(type(uint64).max));
         vm.assume(futureSeconds <= uint256(type(uint64).max));
-        (SequencerInbox seqInbox, ) = deployRollup(false);
+        (SequencerInbox seqInbox, ) = deployRollup(false, false, bufferConfigDefault);
         vm.prank(rollupOwner);
         seqInbox.setMaxTimeVariation(
             ISequencerInbox.MaxTimeVariation({
@@ -587,6 +716,22 @@ contract SequencerInboxTest is Test {
                 futureSeconds: futureSeconds
             })
         );
+    }
+
+
+    function testSetBufferConfig(BufferConfig memory bufferConfig) public {
+        vm.assume(isValidBufferConfig(bufferConfig));
+        (SequencerInbox seqInbox, ) = deployRollup(false, true, bufferConfig);
+        vm.prank(rollupOwner);
+        seqInbox.setBufferConfig(bufferConfig);
+    }
+
+    function testSetBufferConfigInvalid(BufferConfig memory bufferConfigInvalid) public {
+        vm.assume(!isValidBufferConfig(bufferConfigInvalid));
+        (SequencerInbox seqInbox, ) = deployRollup(false, true, bufferConfigDefault);
+        vm.expectRevert(abi.encodeWithSelector(BadBufferConfig.selector));
+        vm.prank(rollupOwner);
+        seqInbox.setBufferConfig(bufferConfigInvalid);
     }
 
     function testSetMaxTimeVariationOverflow(
@@ -599,7 +744,7 @@ contract SequencerInboxTest is Test {
         vm.assume(futureBlocks > uint256(type(uint64).max));
         vm.assume(delaySeconds > uint256(type(uint64).max));
         vm.assume(futureSeconds > uint256(type(uint64).max));
-        (SequencerInbox seqInbox, ) = deployRollup(false);
+        (SequencerInbox seqInbox, ) = deployRollup(false, false, bufferConfigDefault);
         vm.expectRevert(abi.encodeWithSelector(BadMaxTimeVariation.selector));
         vm.prank(rollupOwner);
         seqInbox.setMaxTimeVariation(

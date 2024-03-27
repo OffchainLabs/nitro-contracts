@@ -198,8 +198,8 @@ describe('SequencerInbox', async () => {
 
   const setupSequencerInbox = async (
     fundingWallet: Wallet,
-    maxDelayBlocks = 10,
-    maxDelayTime = 0
+    maxDelayBlocks = (24 * 60 * 60) / 12,
+    maxDelayTime = 24 * 60 * 60
   ) => {
     const accounts = await fundAccounts(fundingWallet, 5, utils.parseEther('1'))
 
@@ -232,6 +232,7 @@ describe('SequencerInbox', async () => {
     const seqInboxTemplate = await sequencerInboxFac.deploy(
       117964,
       reader4844.address,
+      false,
       false
     )
     const inboxFac = new Inbox__factory(deployer)
@@ -275,12 +276,27 @@ describe('SequencerInbox', async () => {
       .connect(user)
     await (await bridgeAdmin.initialize(rollupMock.address)).wait()
     await (
-      await sequencerInbox.initialize(bridgeProxy.address, {
-        delayBlocks: maxDelayBlocks,
-        delaySeconds: maxDelayTime,
-        futureBlocks: 10,
-        futureSeconds: 3000,
-      })
+      await sequencerInbox.initialize(
+        bridgeProxy.address,
+        {
+          delayBlocks: maxDelayBlocks,
+          delaySeconds: maxDelayTime,
+          futureBlocks: 10,
+          futureSeconds: 3000,
+        },
+        {
+          thresholdSeconds: 2 * 60 * 60,
+          thresholdBlocks: (2 * 60 * 60) / 12,
+          maxBufferSeconds: 2 * 24 * 60 * 60,
+          maxBufferBlocks: (2 * 24 * 60 * 60) / 12,
+          replenishRate: {
+            secondsPerPeriod: 1,
+            blocksPerPeriod: 1,
+            periodSeconds: 12,
+            periodBlocks: 12,
+          },
+        }
+      )
     ).wait()
 
     const inbox = await inboxFac.attach(inboxProxy.address).connect(user)
@@ -417,7 +433,7 @@ describe('SequencerInbox', async () => {
       sequencerInbox.address,
       ['0x0142', '0x0143'],
       sequencerInbox.interface.encodeFunctionData(
-        'addSequencerL2BatchFromBlobs',
+        'addSequencerL2BatchFromBlobs(uint256,uint256,address,uint256,uint256)',
         [
           sequenceNumber,
           afterDelayedMessagesRead,
