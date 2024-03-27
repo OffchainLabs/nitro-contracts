@@ -1007,11 +1007,6 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         );
     }
 
-    function setBufferConfig(BufferConfig memory bufferConfig_) external onlyRollupOwner {
-        _setBufferConfig(bufferConfig_);
-        emit OwnerFunctionCalled(6);
-    }
-
     function _setMaxTimeVariation(ISequencerInbox.MaxTimeVariation memory maxTimeVariation_)
         internal
     {
@@ -1090,6 +1085,11 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     function setBatchPosterManager(address newBatchPosterManager) external onlyRollupOwner {
         batchPosterManager = newBatchPosterManager;
         emit OwnerFunctionCalled(5);
+    }
+
+    function setBufferConfig(BufferConfig memory bufferConfig_) external onlyRollupOwner {
+        _setBufferConfig(bufferConfig_);
+        emit OwnerFunctionCalled(6);
     }
 
     function isValidKeysetHash(bytes32 ksHash) external view returns (bool) {
