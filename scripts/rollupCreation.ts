@@ -7,7 +7,6 @@ import { BigNumber, Signer } from 'ethers'
 import { IERC20__factory } from '../build/types'
 import { sleep } from './testSetup'
 import { promises as fs } from 'fs'
-import { Provider } from '@ethersproject/providers'
 import { _isRunningOnArbitrum } from './deploymentUtils'
 
 // 1 gwei
@@ -33,23 +32,29 @@ interface RollupCreatedEvent {
 }
 
 interface RollupCreationResult {
-  Bridge: string
-  Inbox: string
-  SequencerInbox: string
-  DeployedAt: number
-  Rollup: string
-  NativeToken: string
-  UpgradeExecutor: string
-  ValidatorUtils: string
-  ValidatorWalletCreator: string
+  bridge: string
+  inbox: string
+  'sequencer-inbox': string
+  'deployed-at': number
+  rollup: string
+  'native-token': string
+  'upgrade-executor': string
+  'validator-utils': string
+  'validator-wallet-creator': string
 }
 
 interface ChainInfo {
-  ChainName: string
-  ParentChainId: number
-  ParentChainIsArbitrum: boolean
-  ChainConfig: any
-  RollupAddresses: RollupCreationResult
+  'chain-name': string
+  'parent-chain-id': number
+  'parent-chain-is-arbitrum': boolean
+  'chain-config': any
+  rollup: RollupCreationResult
+  'sequencer-url': string
+  'secondary-forwarding-target': string
+  'feed-url': string
+  'secondary-feed-url': string
+  'das-index-url': string
+  'has-genesis-state': boolean
 }
 
 export async function createRollup(
@@ -183,24 +188,29 @@ export async function createRollup(
       console.log('All deployed at block number:', blockNumber)
 
       const rollupCreationResult: RollupCreationResult = {
-        Bridge: bridge,
-        Inbox: inboxAddress,
-        SequencerInbox: sequencerInbox,
-        DeployedAt: blockNumber,
-        Rollup: rollupAddress,
-        NativeToken: nativeToken,
-        UpgradeExecutor: upgradeExecutor,
-        ValidatorUtils: validatorUtils,
-        ValidatorWalletCreator: validatorWalletCreator,
+        bridge: bridge,
+        inbox: inboxAddress,
+        'sequencer-inbox': sequencerInbox,
+        'deployed-at': blockNumber,
+        rollup: rollupAddress,
+        'native-token': nativeToken,
+        'upgrade-executor': upgradeExecutor,
+        'validator-utils': validatorUtils,
+        'validator-wallet-creator': validatorWalletCreator,
       }
 
-
       const chainInfo: ChainInfo = {
-        ChainName: 'dev-chain',
-        ParentChainId: deployParams.config.chainId.toNumber(),
-        ParentChainIsArbitrum: await _isRunningOnArbitrum(signer),
-        ChainConfig: deployParams.config,
-        RollupAddresses: rollupCreationResult,
+        'chain-name': 'dev-chain',
+        'parent-chain-id': deployParams.config.chainId.toNumber(),
+        'parent-chain-is-arbitrum': await _isRunningOnArbitrum(signer),
+        'sequencer-url': '',
+        'secondary-forwarding-target': '',
+        'feed-url': '',
+        'secondary-feed-url': '',
+        'das-index-url': '',
+        'has-genesis-state': false,
+        'chain-config': JSON.parse(deployParams.config.chainConfig),
+        rollup: rollupCreationResult,
       }
 
       return { rollupCreationResult, chainInfo }
@@ -241,6 +251,7 @@ async function _getDevRollupConfig(feeToken: string) {
     process.env.CHILD_CHAIN_CONFIG_PATH !== undefined
       ? process.env.CHILD_CHAIN_CONFIG_PATH
       : 'l2_chain_config.json'
+
   const chainConfig = await fs.readFile(childChainConfigPath, {
     encoding: 'utf8',
   })

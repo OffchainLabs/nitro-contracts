@@ -86,7 +86,8 @@ async function main() {
     'utf8'
   )
 
-  // get child deployment info
+  // child chain info
+  chainInfo['chain-name'] = childChainName
   const childChainInfo =
     process.env.CHILD_CHAIN_INFO !== undefined
       ? process.env.CHILD_CHAIN_INFO
