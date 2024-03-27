@@ -92,7 +92,11 @@ async function main() {
     process.env.CHILD_CHAIN_INFO !== undefined
       ? process.env.CHILD_CHAIN_INFO
       : 'l2_chain_info.json'
-  await fs.writeFile(childChainInfo, JSON.stringify(chainInfo, null, 2), 'utf8')
+  await fs.writeFile(
+    childChainInfo,
+    JSON.stringify([chainInfo], null, 2),
+    'utf8'
+  )
 }
 
 main()
