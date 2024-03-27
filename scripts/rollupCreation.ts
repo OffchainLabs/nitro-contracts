@@ -201,7 +201,7 @@ export async function createRollup(
 
       const chainInfo: ChainInfo = {
         'chain-name': 'dev-chain',
-        'parent-chain-id': deployParams.config.chainId.toNumber(),
+        'parent-chain-id': +process.env.PARENT_CHAIN_ID!,
         'parent-chain-is-arbitrum': await _isRunningOnArbitrum(signer),
         'sequencer-url': '',
         'secondary-forwarding-target': '',
@@ -299,12 +299,6 @@ async function _getDevRollupConfig(feeToken: string) {
     }
   }
 
-  // set up parent chain id
-  let parentChainId =
-    process.env.PARENT_CHAIN_ID !== undefined
-      ? ethers.BigNumber.from(process.env.PARENT_CHAIN_ID)
-      : ethers.BigNumber.from(1337)
-
   return {
     config: {
       confirmPeriodBlocks: ethers.BigNumber.from('20'),
@@ -314,7 +308,7 @@ async function _getDevRollupConfig(feeToken: string) {
       wasmModuleRoot: wasmModuleRoot,
       owner: ownerAddress,
       loserStakeEscrow: ethers.constants.AddressZero,
-      chainId: parentChainId,
+      chainId: JSON.parse(chainConfig)['chainId'],
       chainConfig: chainConfig,
       genesisBlockNum: 0,
       sequencerInboxMaxTimeVariation: {

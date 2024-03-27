@@ -22,6 +22,10 @@ async function main() {
     throw new Error('PARENT_CHAIN_RPC not set')
   }
 
+  if (!process.env.PARENT_CHAIN_ID) {
+    throw new Error('PARENT_CHAIN_ID not set')
+  }
+
   const deployerWallet = new ethers.Wallet(
     deployerPrivKey,
     new ethers.providers.JsonRpcProvider(parentChainRpc)
