@@ -1,11 +1,10 @@
 #!/bin/bash
-output_dir="./test/storage"
-for CONTRACTNAME in Bridge Inbox Outbox RollupCore RollupUserLogic RollupAdminLogic SequencerInbox ChallengeManager ERC20Bridge ERC20Inbox ERC20Outbox  
+for CONTRACTNAME in Bridge Inbox Outbox RollupCore RollupUserLogic RollupAdminLogic SequencerInbox EdgeChallengeManager
 do
     echo "Checking storage change of $CONTRACTNAME"
-    [ -f "$output_dir/$CONTRACTNAME" ] && mv "$output_dir/$CONTRACTNAME" "$output_dir/$CONTRACTNAME-old"
-    forge inspect "$CONTRACTNAME" --pretty storage > "$output_dir/$CONTRACTNAME"
-    diff "$output_dir/$CONTRACTNAME-old" "$output_dir/$CONTRACTNAME"
+    [ -f "./test/storage/$CONTRACTNAME.dot" ] && mv "./test/storage/$CONTRACTNAME.dot" "./test/storage/$CONTRACTNAME-old.dot"
+    yarn sol2uml storage ./ -c "$CONTRACTNAME" -o "./test/storage/$CONTRACTNAME.dot" -f dot
+    diff "./test/storage/$CONTRACTNAME-old.dot" "./test/storage/$CONTRACTNAME.dot"
     if [[ $? != "0" ]]
     then
         CHANGED=1
