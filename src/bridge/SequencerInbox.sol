@@ -946,6 +946,72 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         return bridge.sequencerMessageCount();
     }
 
+    /// @dev    This is the `sync validity window` during which no proofs are required.
+    /// @notice Returns true if the inbox is in a synced state (no unexpected delays are possible)
+    function isSynced() internal view returns (bool) {
+        return (block.number <= buffer.syncExpiryBlockNumber &&
+            block.timestamp <= buffer.syncExpiryTimestamp);
+    }
+
+    /// @inheritdoc ISequencerInbox
+    function forceInclusionDeadline(uint64 blockNumber, uint64 timestamp)
+        external
+        view
+        returns (uint64, uint64)
+    {
+        (uint64 bufferBlocks, uint64 bufferSeconds) = buffer.pendingDelay(
+            blockNumber,
+            timestamp,
+            bufferConfig.thresholdBlocks,
+            bufferConfig.thresholdSeconds
+        );
+        (uint64 _delayBlocks, , uint64 _delaySeconds, ) = maxTimeVariationBufferable(
+            bufferBlocks,
+            bufferSeconds
+        );
+        return (blockNumber + _delayBlocks, timestamp + _delaySeconds);
+    }
+
+    function _setBufferConfig(BufferConfig memory bufferConfig_) internal {
+        if (!isDelayBufferable) revert NotDelayBufferable();
+        if (!DelayBuffer.isValidBufferConfig(bufferConfig_)) {
+            revert BadBufferConfig();
+        }
+
+        uint64 syncBlockNumber = buffer.syncExpiryBlockNumber > 0 &&
+            buffer.syncExpiryBlockNumber != type(uint64).max
+            ? buffer.syncExpiryBlockNumber - bufferConfig.thresholdBlocks
+            : 0;
+        uint64 syncTimestamp = buffer.syncExpiryTimestamp > 0 &&
+            buffer.syncExpiryBlockNumber != type(uint64).max
+            ? buffer.syncExpiryTimestamp - bufferConfig.thresholdSeconds
+            : 0;
+
+        if (bufferConfig_.maxBufferBlocks < buffer.bufferBlocks)
+            buffer.bufferBlocks = bufferConfig_.maxBufferBlocks;
+        if (bufferConfig_.maxBufferSeconds < buffer.bufferSeconds)
+            buffer.bufferSeconds = bufferConfig_.maxBufferSeconds;
+        if (bufferConfig_.thresholdBlocks > buffer.bufferBlocks)
+            buffer.bufferBlocks = bufferConfig_.thresholdBlocks;
+        if (bufferConfig_.thresholdSeconds > buffer.bufferSeconds)
+            buffer.bufferSeconds = bufferConfig_.thresholdSeconds;
+
+        bufferConfig = bufferConfig_;
+
+        bool isBridgeSynced = bridge.delayedMessageCount() == totalDelayedMessagesRead;
+
+        buffer.updateSyncValidity(
+            bufferConfig,
+            isBridgeSynced ? uint64(block.number) : syncBlockNumber,
+            isBridgeSynced ? uint64(block.timestamp) : syncTimestamp
+        );
+    }
+
+    function setBufferConfig(BufferConfig memory bufferConfig_) external onlyRollupOwner {
+        _setBufferConfig(bufferConfig_);
+        emit OwnerFunctionCalled(6);
+    }
+
     function _setMaxTimeVariation(ISequencerInbox.MaxTimeVariation memory maxTimeVariation_)
         internal
     {
@@ -1026,46 +1092,6 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         emit OwnerFunctionCalled(5);
     }
 
-    function _setBufferConfig(BufferConfig memory bufferConfig_) internal {
-        if (!isDelayBufferable) revert NotDelayBufferable();
-        if (!DelayBuffer.isValidBufferConfig(bufferConfig_)) {
-            revert BadBufferConfig();
-        }
-
-        uint64 syncBlockNumber = buffer.syncExpiryBlockNumber > 0 &&
-            buffer.syncExpiryBlockNumber != type(uint64).max
-            ? buffer.syncExpiryBlockNumber - bufferConfig.thresholdBlocks
-            : 0;
-        uint64 syncTimestamp = buffer.syncExpiryTimestamp > 0 &&
-            buffer.syncExpiryBlockNumber != type(uint64).max
-            ? buffer.syncExpiryTimestamp - bufferConfig.thresholdSeconds
-            : 0;
-
-        if (bufferConfig_.maxBufferBlocks < buffer.bufferBlocks)
-            buffer.bufferBlocks = bufferConfig_.maxBufferBlocks;
-        if (bufferConfig_.maxBufferSeconds < buffer.bufferSeconds)
-            buffer.bufferSeconds = bufferConfig_.maxBufferSeconds;
-        if (bufferConfig_.thresholdBlocks > buffer.bufferBlocks)
-            buffer.bufferBlocks = bufferConfig_.thresholdBlocks;
-        if (bufferConfig_.thresholdSeconds > buffer.bufferSeconds)
-            buffer.bufferSeconds = bufferConfig_.thresholdSeconds;
-
-        bufferConfig = bufferConfig_;
-
-        bool isBridgeSynced = bridge.delayedMessageCount() == totalDelayedMessagesRead;
-
-        buffer.updateSyncValidity(
-            bufferConfig,
-            isBridgeSynced ? uint64(block.number) : syncBlockNumber,
-            isBridgeSynced ? uint64(block.timestamp) : syncTimestamp
-        );
-    }
-
-    function setBufferConfig(BufferConfig memory bufferConfig_) external onlyRollupOwner {
-        _setBufferConfig(bufferConfig_);
-        emit OwnerFunctionCalled(6);
-    }
-
     function isValidKeysetHash(bytes32 ksHash) external view returns (bool) {
         return dasKeySetInfo[ksHash].isValidKeyset;
     }
@@ -1075,30 +1101,5 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         DasKeySetInfo memory ksInfo = dasKeySetInfo[ksHash];
         if (ksInfo.creationBlock == 0) revert NoSuchKeyset(ksHash);
         return uint256(ksInfo.creationBlock);
-    }
-
-    /// @dev    This is the `sync validity window` during which no proofs are required.
-    /// @notice Returns true if the inbox is in a synced state (no unexpected delays are possible)
-    function isSynced() internal view returns (bool) {
-        return (block.number <= buffer.syncExpiryBlockNumber &&
-            block.timestamp <= buffer.syncExpiryTimestamp);
-    }
-
-    function forceInclusionDeadline(uint64 blockNumber, uint64 timestamp)
-        external
-        view
-        returns (uint64, uint64)
-    {
-        (uint64 bufferBlocks, uint64 bufferSeconds) = buffer.pendingDelay(
-            blockNumber,
-            timestamp,
-            bufferConfig.thresholdBlocks,
-            bufferConfig.thresholdSeconds
-        );
-        (uint64 _delayBlocks, , uint64 _delaySeconds, ) = maxTimeVariationBufferable(
-            bufferBlocks,
-            bufferSeconds
-        );
-        return (blockNumber + _delayBlocks, timestamp + _delaySeconds);
     }
 }
