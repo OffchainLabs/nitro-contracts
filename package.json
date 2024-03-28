@@ -34,6 +34,7 @@
     "build:0.7": "INTERFACE_TESTER_SOLC_VERSION=0.7.0 yarn run build",
     "test:compatibility": "yarn run build:0.6 && yarn run build:0.7",
     "test:storage": "./test/storage/test.bash",
+    "test:signatures": "./test/signatures/test-sigs.bash",
     "postinstall": "patch-package",
     "script:bold-prepare": "hardhat run ./scripts/prepareBoldUpgrade.ts",
     "script:bold-populate-lookup": "hardhat run ./scripts/populateLookup.ts",
