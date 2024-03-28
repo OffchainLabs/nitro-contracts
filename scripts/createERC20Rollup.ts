@@ -29,8 +29,18 @@ async function main() {
     )
   }
 
+  const rollupCreatorAddress = process.env.ROLLUP_CREATOR_ADDRESS
+  if (!rollupCreatorAddress) {
+    throw new Error('ROLLUP_CREATOR_ADDRESS not set')
+  }
+
   console.log('Creating new rollup with', customFeeTokenAddress, 'as fee token')
-  await createRollup(customFeeTokenAddress)
+  await createRollup(
+    deployer,
+    false,
+    rollupCreatorAddress,
+    customFeeTokenAddress
+  )
 }
 
 main()
