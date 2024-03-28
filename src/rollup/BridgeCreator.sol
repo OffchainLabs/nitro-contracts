@@ -52,10 +52,10 @@ contract BridgeCreator is Ownable {
         emit ERC20TemplatesUpdated();
     }
 
-    function _createBridge(address adminProxy, BridgeContracts storage templates)
-        internal
-        returns (BridgeContracts memory)
-    {
+    function _createBridge(
+        address adminProxy,
+        BridgeContracts storage templates
+    ) internal returns (BridgeContracts memory) {
         BridgeContracts memory frame;
         frame.bridge = IBridge(
             address(new TransparentUpgradeableProxy(address(templates.bridge), adminProxy, ""))
@@ -97,7 +97,11 @@ contract BridgeCreator is Ownable {
         } else {
             IERC20Bridge(address(frame.bridge)).initialize(IOwnable(rollup), nativeToken);
         }
-        frame.sequencerInbox.initialize(IBridge(frame.bridge), maxTimeVariation,IAvailDABridge(0x63731B80D092c58f5Cc0e60B70267e4CFBc9a44C));
+        frame.sequencerInbox.initialize(
+            IBridge(frame.bridge),
+            maxTimeVariation,
+            IAvailDABridge(0xd7000aA5B9142C70b183E4956b6eAC23dF4d3aAc)
+        );
         frame.inbox.initialize(frame.bridge, frame.sequencerInbox);
         frame.rollupEventInbox.initialize(frame.bridge);
         frame.outbox.initialize(frame.bridge);

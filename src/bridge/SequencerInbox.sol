@@ -43,6 +43,7 @@ import "../libraries/IReader4844.sol";
 
 import "../data-availability/IAvailDABridge.sol";
 import "../data-availability/MerkleProofInput.sol";
+import "../data-availability/BlobPointer.sol";
 import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
 import "../libraries/DelegateCallAware.sol";
 import {IGasRefunder} from "../libraries/IGasRefunder.sol";
@@ -134,11 +135,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     IAvailDABridge public availBridge;
 
-    constructor(
-        uint256 _maxDataSize,
-        IReader4844 reader4844_,
-        bool _isUsingFeeToken
-    ) {
+    constructor(uint256 _maxDataSize, IReader4844 reader4844_, bool _isUsingFeeToken) {
         maxDataSize = _maxDataSize;
         if (hostChainIsArbitrum) {
             if (reader4844_ != IReader4844(address(0))) revert DataBlobsNotSupported();
@@ -249,16 +246,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         futureSeconds = 1;
     }
 
-    function maxTimeVariation()
-        external
-        view
-        returns (
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        )
-    {
+    function maxTimeVariation() external view returns (uint256, uint256, uint256, uint256) {
         (
             uint64 delayBlocks_,
             uint64 futureBlocks_,
@@ -274,16 +262,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         );
     }
 
-    function maxTimeVariationInternal()
-        internal
-        view
-        returns (
-            uint64,
-            uint64,
-            uint64,
-            uint64
-        )
-    {
+    function maxTimeVariationInternal() internal view returns (uint64, uint64, uint64, uint64) {
         if (_chainIdChanged()) {
             return (1, 1, 1, 1);
         } else {
@@ -529,11 +508,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         emit SequencerBatchData(seqMessageIndex, data);
     }
 
-    function packHeader(uint256 afterDelayedMessagesRead)
-        internal
-        view
-        returns (bytes memory, IBridge.TimeBounds memory)
-    {
+    function packHeader(
+        uint256 afterDelayedMessagesRead
+    ) internal view returns (bytes memory, IBridge.TimeBounds memory) {
         IBridge.TimeBounds memory timeBounds = getTimeBounds();
         bytes memory header = abi.encodePacked(
             timeBounds.minTimestamp,
@@ -551,11 +528,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     /// @param  afterDelayedMessagesRead The delayed messages count read up to
     /// @return The data hash
     /// @return The timebounds within which the message should be processed
-    function formEmptyDataHash(uint256 afterDelayedMessagesRead)
-        internal
-        view
-        returns (bytes32, IBridge.TimeBounds memory)
-    {
+    function formEmptyDataHash(
+        uint256 afterDelayedMessagesRead
+    ) internal view returns (bytes32, IBridge.TimeBounds memory) {
         (bytes memory header, IBridge.TimeBounds memory timeBounds) = packHeader(
             afterDelayedMessagesRead
         );
@@ -572,7 +547,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             headerByte == BROTLI_MESSAGE_HEADER_FLAG ||
             headerByte == DAS_MESSAGE_HEADER_FLAG ||
             (headerByte == (DAS_MESSAGE_HEADER_FLAG | TREE_DAS_MESSAGE_HEADER_FLAG)) ||
-            headerByte == ZERO_HEAVY_MESSAGE_HEADER_FLAG || headerByte == AVAIL_MESSAGE_HEADER_FLAG;
+            headerByte == ZERO_HEAVY_MESSAGE_HEADER_FLAG ||
+            headerByte == AVAIL_MESSAGE_HEADER_FLAG;
     }
 
     /// @dev    Form a hash of the data taken from the calldata
@@ -580,11 +556,10 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     /// @param  afterDelayedMessagesRead The delayed messages count read up to
     /// @return The data hash
     /// @return The timebounds within which the message should be processed
-    function formCallDataHash(bytes calldata data, uint256 afterDelayedMessagesRead)
-        internal
-        view
-        returns (bytes32, IBridge.TimeBounds memory)
-    {
+    function formCallDataHash(
+        bytes calldata data,
+        uint256 afterDelayedMessagesRead
+    ) internal view returns (bytes32, IBridge.TimeBounds memory) {
         uint256 fullDataLen = HEADER_LENGTH + data.length;
         if (fullDataLen > maxDataSize) revert DataTooLarge(fullDataLen, maxDataSize);
 
@@ -609,10 +584,16 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
                 if (!dasKeySetInfo[dasKeysetHash].isValidKeyset) revert NoSuchKeyset(dasKeysetHash);
             }
             // Avail batch expect to have the type byte set, followed by
-            if (data.length >= 256 && data[0] & AVAIL_MESSAGE_HEADER_FLAG != 0) {
+            if (data.length >= 1 && data[0] & AVAIL_MESSAGE_HEADER_FLAG != 0) {
+                //verifyAvailMerkleProof(data[1:]);
+
+                // BlobPointer memory blobPointer;
+                // (blobPointer.blockhash, blobPointer.sender, blobPointer.nonce, blobPointer.dasTreeRootHash)= abi.decode(data[1:], (bytes32, string, uint32, bytes32));
+                // console.logBytes32(blobPointer.blockhash);
+
                 MerkleProofInput memory merkleProofInput;
                 uint256 offset = 1;
-                uint256 len=0;
+                uint256 len = 0;
 
                 // bytes32 availBlockHash = bytes32(data[offset:(offset+32)]);
                 // //setting offset for next data
@@ -626,70 +607,71 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
                 //console.logUint(len);
                 merkleProofInput.dataRootProof = new bytes32[](len);
                 for (uint256 index = 0; index < len; index++) {
-                    uint i = offset  + 32 * index;
+                    uint i = offset + 32 * index;
                     //console.logUint(i);
                     //console.logBytes32(merkleProofInput.dataRootProof[index]);
-                    merkleProofInput.dataRootProof[index] = bytes32(data[i:(i+32)]);
+                    merkleProofInput.dataRootProof[index] = bytes32(data[i:(i + 32)]);
                     //console.logBytes32(merkleProofInput.dataRootProof[index]);
                 }
-
 
                 //setting offset for next data
                 offset += len * 32;
 
-                //Extracting the leaf proof 
+                //Extracting the leaf proof
                 len = uint8(data[offset]);
                 //setting offset for next data
                 offset += 1;
                 //console.logUint(len);
                 merkleProofInput.leafProof = new bytes32[](len);
                 for (uint256 index = 0; index < len; index++) {
-                    uint i = 34  + 32 * index;
-                    merkleProofInput.leafProof[index] = bytes32(data[i:(i+32)]);
-                    //console.logBytes32(leafProof[index]);
+                    uint i = 34 + 32 * index;
+                    merkleProofInput.leafProof[index] = bytes32(data[i:(i + 32)]);
+                    //console.logBytes32(merkleProofInput.leafProof[index]);
                 }
 
                 //setting offset for next data
                 offset += len * 32;
 
                 //Extracting range hash
-                merkleProofInput.rangeHash = bytes32(data[offset:(offset+32)]);
-                //console.logBytes32(rangeHash);
+                merkleProofInput.rangeHash = bytes32(data[offset:(offset + 32)]);
+                //console.logBytes32(merkleProofInput.rangeHash);
                 //setting offset for next data
                 offset += 32;
 
                 //Extracting data root index
-                merkleProofInput.dataRootIndex = uint64(bytes8(data[offset:(offset+8)]));
-                //console.logUint(dataRootIndex);
+                merkleProofInput.dataRootIndex = uint64(bytes8(data[offset:(offset + 8)]));
+                //console.logUint(merkleProofInput.dataRootIndex);
                 //setting offset for next data
                 offset += 8;
 
                 //Extracting range hash
-                merkleProofInput.blobRoot = bytes32(data[offset:(offset+32)]);
-                //console.logBytes32(blobRoot);
+                merkleProofInput.blobRoot = bytes32(data[offset:(offset + 32)]);
+                //console.logBytes32(merkleProofInput.blobRoot);
                 //setting offset for next data
                 offset += 32;
 
                 //Extracting bridge root
-                merkleProofInput.bridgeRoot = bytes32(data[offset:(offset+32)]);
-                //console.logBytes32(bridgeRoot);
+                merkleProofInput.bridgeRoot = bytes32(data[offset:(offset + 32)]);
+                //console.logBytes32(merkleProofInput.bridgeRoot);
                 //setting offset for next data
                 offset += 32;
 
                 //Extracting lead
-                merkleProofInput.leaf = bytes32(data[offset:(offset+32)]);
-                //console.logBytes32(leaf);
+                merkleProofInput.leaf = bytes32(data[offset:(offset + 32)]);
+                //console.logBytes32(merkleProofInput.leaf);
                 //setting offset for next data
                 offset += 32;
 
                 //Extracting leaf index
-                merkleProofInput.leafIndex = uint64(bytes8(data[offset:(offset+8)]));
-                //console.logUint(leafIndex);
+                merkleProofInput.leafIndex = uint64(bytes8(data[offset:(offset + 8)]));
+                //console.logUint(merkleProofInput.leafIndex);
                 //setting offset for next data
                 offset += 8;
 
+                if (!availBridge.verifyBlobLeaf(merkleProofInput))
+                    revert BatchDataValidationForAvailDAFailed(merkleProofInput.leaf);
+
                 //MerkleProofInput memory merkleProofInput = MerkleProofInput(dataRootProof, leafProof, rangeHash, dataRootIndex, blobRoot, bridgeRoot, leaf, leafIndex);
-                if(!availBridge.verifyBlobLeaf(merkleProofInput)) revert BatchDataValidationForAvailDAFailed(merkleProofInput.leaf);
                 //emit validateBatchDataOverAvailDA(merkleProofInput);
             }
         }
@@ -701,15 +683,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     /// @return The data hash
     /// @return The timebounds within which the message should be processed
     /// @return The normalized amount of gas used for blob posting
-    function formBlobDataHash(uint256 afterDelayedMessagesRead)
-        internal
-        view
-        returns (
-            bytes32,
-            IBridge.TimeBounds memory,
-            uint256
-        )
-    {
+    function formBlobDataHash(
+        uint256 afterDelayedMessagesRead
+    ) internal view returns (bytes32, IBridge.TimeBounds memory, uint256) {
         bytes32[] memory dataHashes = reader4844.getDataHashes();
         if (dataHashes.length == 0) revert MissingDataHashes();
 
@@ -802,9 +778,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         return bridge.sequencerMessageCount();
     }
 
-    function _setMaxTimeVariation(ISequencerInbox.MaxTimeVariation memory maxTimeVariation_)
-        internal
-    {
+    function _setMaxTimeVariation(
+        ISequencerInbox.MaxTimeVariation memory maxTimeVariation_
+    ) internal {
         if (
             maxTimeVariation_.delayBlocks > type(uint64).max ||
             maxTimeVariation_.futureBlocks > type(uint64).max ||
@@ -820,19 +796,18 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @inheritdoc ISequencerInbox
-    function setMaxTimeVariation(ISequencerInbox.MaxTimeVariation memory maxTimeVariation_)
-        external
-        onlyRollupOwner
-    {
+    function setMaxTimeVariation(
+        ISequencerInbox.MaxTimeVariation memory maxTimeVariation_
+    ) external onlyRollupOwner {
         _setMaxTimeVariation(maxTimeVariation_);
         emit OwnerFunctionCalled(0);
     }
 
     /// @inheritdoc ISequencerInbox
-    function setIsBatchPoster(address addr, bool isBatchPoster_)
-        external
-        onlyRollupOwnerOrBatchPosterManager
-    {
+    function setIsBatchPoster(
+        address addr,
+        bool isBatchPoster_
+    ) external onlyRollupOwnerOrBatchPosterManager {
         isBatchPoster[addr] = isBatchPoster_;
         emit OwnerFunctionCalled(1);
     }
@@ -868,10 +843,10 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @inheritdoc ISequencerInbox
-    function setIsSequencer(address addr, bool isSequencer_)
-        external
-        onlyRollupOwnerOrBatchPosterManager
-    {
+    function setIsSequencer(
+        address addr,
+        bool isSequencer_
+    ) external onlyRollupOwnerOrBatchPosterManager {
         isSequencer[addr] = isSequencer_;
         emit OwnerFunctionCalled(4); // Owner in this context can also be batch poster manager
     }
