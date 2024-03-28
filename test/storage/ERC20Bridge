@@ -1,6 +1,6 @@
 | Name                             | Type                                           | Slot | Offset | Bytes | Contract                               |
 |----------------------------------|------------------------------------------------|------|--------|-------|----------------------------------------|
-| _initialized                     | bool                                           | 0    | 0      | 1     | src/bridge/ERC20Bridge.sol:ERC20Bridge |
+| _initialized                     | uint8                                          | 0    | 0      | 1     | src/bridge/ERC20Bridge.sol:ERC20Bridge |
 | _initializing                    | bool                                           | 0    | 1      | 1     | src/bridge/ERC20Bridge.sol:ERC20Bridge |
 | allowedDelayedInboxesMap         | mapping(address => struct AbsBridge.InOutInfo) | 1    | 0      | 32    | src/bridge/ERC20Bridge.sol:ERC20Bridge |
 | allowedOutboxesMap               | mapping(address => struct AbsBridge.InOutInfo) | 2    | 0      | 32    | src/bridge/ERC20Bridge.sol:ERC20Bridge |

@@ -1,33 +1,32 @@
-# Arbitrum Nitro Rollup Contracts
+# Contracts
 
-This is the package with the smart contract code that powers Arbitrum Nitro.
-It includes the rollup and fraud proof smart contracts, as well as interfaces for interacting with precompiles.
+This folder contains the smart contracts needed for the rollup protocol, which are
+a solidity implementation of the specification meant to match the behavior of the Go
+implementation also contained in this repository.
 
-For more information see https://developer.arbitrum.io/intro
+This subfolder was initialized using [Foundry](https://github.com/foundry-rs/foundry) with `forge init`
 
-For the deployed addresses of these contracts for Arbitrum chains see https://developer.arbitrum.io/useful-addresses
+## Setup
 
-For the token bridge contracts see https://github.com/OffchainLabs/token-bridge-contracts
+Requirements: [nvm](https://github.com/nvm-sh/nvm)
 
-Compile these contracts locally by running
+```sh
+# Use nvm to install node 16.x
+nvm install 16
+nvm use 16
 
-```bash
-git clone https://github.com/offchainlabs/nitro-contracts
-cd nitro-contracts
-yarn install
-yarn build
+# Install yarn, if you don't have it already
+npm i -g yarn
+
+# Run yarn to install deps
+yarn
+
+# Install forge deps
+forge install
 ```
 
-## License
+## Run Tests
 
-Nitro is currently licensed under a [Business Source License](./LICENSE), similar to our friends at Uniswap and Aave, with an "Additional Use Grant" to ensure that everyone can have full comfort using and running nodes on all public Arbitrum chains.
-
-The Additional Use Grant also permits the deployment of the Nitro software, in a permissionless fashion and without cost, as a new blockchain provided that the chain settles to either Arbitrum One or Arbitrum Nova.
-
-For those that prefer to deploy the Nitro software either directly on Ethereum (i.e. an L2) or have it settle to another Layer-2 on top of Ethereum, the [Arbitrum Expansion Program (the "AEP")](https://docs.arbitrum.foundation/assets/files/Arbitrum%20Expansion%20Program%20Jan182024-4f08b0c2cb476a55dc153380fa3e64b0.pdf) was recently established. The AEP allows for the permissionless deployment in the aforementioned fashion provided that 10% of net revenue is contributed back to the Arbitrum community in accordance with the requirements of the AEP.
-
-## Contact
-
-Discord - [Arbitrum](https://discord.com/invite/5KE54JwyTs)
-
-Twitter: [Arbitrum](https://twitter.com/arbitrum)
+```
+forge test
+```
