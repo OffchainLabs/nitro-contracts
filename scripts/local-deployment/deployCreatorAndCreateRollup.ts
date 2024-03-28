@@ -36,6 +36,14 @@ async function main() {
       ? ethers.BigNumber.from(process.env.MAX_DATA_SIZE)
       : ethers.BigNumber.from(117964)
 
+  /// get fee token address, if undefined use address(0) to have ETH as fee token
+  let feeToken = process.env.FEE_TOKEN_ADDRESS as string
+  if (!feeToken) {
+    feeToken = ethers.constants.AddressZero
+  }
+  console.log('Fee token address:', feeToken)
+
+  /// deploy templates and rollup creator
   console.log('Deploy RollupCreator')
   const contracts = await deployAllContracts(deployerWallet, maxDataSize, false)
 
@@ -57,8 +65,6 @@ async function main() {
 
   /// Create rollup
   const chainId = (await deployerWallet.provider.getNetwork()).chainId
-  const feeToken = undefined
-
   console.log(
     'Create rollup on top of chain',
     chainId,

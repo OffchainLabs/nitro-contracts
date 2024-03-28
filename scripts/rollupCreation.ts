@@ -61,7 +61,7 @@ export async function createRollup(
   signer: Signer,
   isDevDeployment: boolean,
   rollupCreatorAddress: string,
-  feeToken?: string
+  feeToken: string
 ): Promise<{
   rollupCreationResult: RollupCreationResult
   chainInfo: ChainInfo
@@ -77,10 +77,6 @@ export async function createRollup(
     rollupCreatorAbi,
     signer
   )
-
-  if (!feeToken) {
-    feeToken = ethers.constants.AddressZero
-  }
 
   try {
     //// funds for deploying L2 factories
