@@ -452,7 +452,11 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     ) external refundsGas(gasRefunder, IReader4844(address(0))) {
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
+        // @review batch poster check can be moved into the impl internal function
+        //         add comment in caller to say that batchposter would be checked in impl
+        //         also please make sure there is test coverge
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
+        // @review agree to make this a internal function to reduce code duplication
         if (isDelayBufferable && !isSynced()) {
             if (afterDelayedMessagesRead > totalDelayedMessagesRead) {
                 revert DelayProofRequired();
@@ -546,7 +550,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     // @review lets not overload the same function name 4 times
-    ///         but instead name them e.g. addSequencerL2BatchFromBlobsUpdateSync
+    //         but instead name them e.g. addSequencerL2BatchFromBlobsUpdateSync
+    //         might as well combine DelayProof and SyncProof to e.g. BufferProof
+    //         switch behavior based on if preimage is provided
     /// @inheritdoc ISequencerInbox
     function addSequencerL2BatchFromBlobs(
         uint256 sequenceNumber,
