@@ -761,6 +761,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         emit SequencerBatchData(seqMessageIndex, data);
     }
 
+    // @review some comment on what this internal function do would help
     function syncBuffer(DelayProof calldata delayProof) internal {
         // delayedAcc of the next delayed message
         bytes32 delayedAcc = bridge.delayedInboxAccs(totalDelayedMessagesRead);
@@ -964,6 +965,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         return bridge.sequencerMessageCount();
     }
 
+    // @review feel like this belongs to DelayBuffer lib
     /// @dev    This is the `sync validity window` during which no proofs are required.
     /// @notice Returns true if the inbox is in a synced state (no unexpected delays are possible)
     function isSynced() internal view returns (bool) {
