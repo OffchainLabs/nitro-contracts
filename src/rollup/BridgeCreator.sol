@@ -21,6 +21,7 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 contract BridgeCreator is Ownable {
     BridgeContracts public ethBasedTemplates;
     BridgeContracts public erc20BasedTemplates;
+    // @review bug: lack setter, lack actual use of these templates
     BridgeContracts public ethBasedDelayBufferableTemplates;
     BridgeContracts public erc20BasedDelayBufferableTemplates;
 
