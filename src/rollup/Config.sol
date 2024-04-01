@@ -26,7 +26,8 @@ struct Config {
     string chainConfig;
     uint64 genesisBlockNum;
     ISequencerInbox.MaxTimeVariation sequencerInboxMaxTimeVariation;
-    BufferConfig bufferConfig;
+    BufferConfig bufferConfig; 
+    // @review would change 4bytes and need to ugprade rollupCreator and sdk
 }
 
 struct ContractDependencies {
