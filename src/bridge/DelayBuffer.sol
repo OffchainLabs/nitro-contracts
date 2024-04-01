@@ -22,13 +22,13 @@ library DelayBuffer {
     /// @dev    This function handles synchronizing the sequencer inbox with the delayed inbox.
     ///         It is called by the sequencer inbox when a delayed message is sequenced, proving
     ///         any delays and updating the delay buffers. This function is only called when the
-    ///         sequencer inbox has been unexpectedly delayed (rare case)
+    ///         sequencer inbox has been unexpectedly delayed (unhappy case)
     /// @notice Synchronizes the sequencer inbox with the delayed inbox.
     /// @param self The delay buffer data
     /// @param bufferConfig The delay buffer settings
     /// @param delayedAcc The delayed accumulator of the first delayed message sequenced
     /// @param delayProof The proof that the delayed message is valid
-    function sync(
+    function sync( // @review maybe rename this to `delay` and `resync`->`sync`?
         BufferData storage self,
         BufferConfig memory bufferConfig,
         bytes32 delayedAcc,
@@ -130,6 +130,7 @@ library DelayBuffer {
         uint64 blockNumber,
         uint64 timestamp
     ) internal {
+        // @review we can also prevent this by limiting the value you can set as threshold
         // saturating at uint64 max gracefully handles large threshold settings
         self.syncExpiryBlockNumber = bufferConfig.thresholdBlocks > type(uint64).max - blockNumber
             ? type(uint64).max
@@ -149,6 +150,9 @@ library DelayBuffer {
             (uint64(block.timestamp) - timestamp <= thresholdSeconds));
     }
 
+    // @review  I think a better explaination is capping the depletion to time elasped avoid double counting delays
+    //          For example, 2 consecutive batches with 20 minutes delay is still 20 minutes delay, not 40 minutes
+    //          Capping the depletion to delayed time elasped allow us track incremental delay properly
     /// @dev    Depletion is rate limited to allow the sequencer to recover properly from outages.
     ///         In the event the batch poster is offline for X hours and Y blocks, when is comes back
     ///         online, and sequences delayed messages, the buffer will not be immediately depleted by
@@ -169,11 +173,15 @@ library DelayBuffer {
     ) internal pure returns (uint64) {
         uint64 elapsed = end > start ? end - start : 0;
         uint64 unexpectedDelay = delay > threshold ? delay - threshold : 0;
-        uint64 decrease = unexpectedDelay > elapsed ? elapsed : unexpectedDelay;
+        if (unexpectedDelay > elapsed) {
+            unexpectedDelay = elapsed;
+        }
         // decrease the buffer saturating at zero
-        buffer = buffer > decrease ? buffer - decrease : 0;
+        buffer = buffer > unexpectedDelay ? buffer - unexpectedDelay : 0;
         // saturate at threshold
-        buffer = buffer > threshold ? buffer : threshold;
+        if(buffer < threshold){
+            buffer = threshold;
+        }
         return buffer;
     }
 
@@ -192,7 +200,9 @@ library DelayBuffer {
         uint64 maxBuffer,
         uint64 amountPerPeriod,
         uint64 period,
-        uint64 roundOff
+        uint64 roundOff 
+        // @review would rather blend (amountPerPeriod, period) together to a fixed unit
+        // instead of needing to keep track of 3 terms (amountPerPeriod, period, roundOff)
     ) internal pure returns (uint64, uint64) {
         // add the replenish round off from the last replenish
         uint64 elapsed = end > start ? end - start : 0;
@@ -208,6 +218,8 @@ library DelayBuffer {
         return (buffer, roundOff);
     }
 
+    // @review it might be better we refactor everything to uint256 in this library
+    ///         and only cast (and clamp) when we need to return a uint64 for storage
     /// @notice Decrements or replenishes the delay buffer conditionally
     /// @param start The beginning reference point (delayPrev)
     /// @param end The ending reference point (current message)
@@ -249,10 +261,11 @@ library DelayBuffer {
         return (buffer, roundOff);
     }
 
-    /// @notice Updates the block number buffer.
+    /// @notice Updates both the block number and timestamp buffer.
     /// @param self The delay buffer data
     /// @param bufferConfig The delay buffer settings
     /// @param blockNumber The update block number
+    /// @param timestamp The update timestamp
     function updateBuffers(
         BufferData storage self,
         BufferConfig memory bufferConfig,
@@ -262,29 +275,29 @@ library DelayBuffer {
         // The prevDelay stores the delay of the previous batch which is
         // used as a starting reference point to calculate an elapsed amount using the current
         // message as the ending reference point.
-        (self.bufferBlocks, self.roundOffBlocks) = update(
-            self.prevDelay.blockNumber,
-            blockNumber,
-            self.prevDelay.delayBlocks,
-            bufferConfig.thresholdBlocks,
-            self.bufferBlocks,
-            bufferConfig.maxBufferBlocks,
-            bufferConfig.replenishRate.blocksPerPeriod,
-            bufferConfig.replenishRate.periodBlocks,
-            self.roundOffBlocks
-        );
+        (self.bufferBlocks, self.roundOffBlocks) = update({
+            start: self.prevDelay.blockNumber,
+            end: blockNumber,
+            delay: self.prevDelay.delayBlocks,
+            threshold: bufferConfig.thresholdBlocks,
+            buffer: self.bufferBlocks,
+            maxBuffer: bufferConfig.maxBufferBlocks,
+            amountPerPeriod: bufferConfig.replenishRate.blocksPerPeriod,
+            period: bufferConfig.replenishRate.periodBlocks,
+            roundOff: self.roundOffBlocks
+        });
 
-        (self.bufferSeconds, self.roundOffSeconds) = update(
-            self.prevDelay.timestamp,
-            timestamp,
-            self.prevDelay.delaySeconds,
-            bufferConfig.thresholdSeconds,
-            self.bufferSeconds,
-            bufferConfig.maxBufferSeconds,
-            bufferConfig.replenishRate.secondsPerPeriod,
-            bufferConfig.replenishRate.periodSeconds,
-            self.roundOffSeconds
-        );
+        (self.bufferSeconds, self.roundOffSeconds) = update({
+            start: self.prevDelay.timestamp,
+            end: timestamp,
+            delay: self.prevDelay.delaySeconds,
+            threshold: bufferConfig.thresholdSeconds,
+            buffer: self.bufferSeconds,
+            maxBuffer: bufferConfig.maxBufferSeconds,
+            amountPerPeriod: bufferConfig.replenishRate.secondsPerPeriod,
+            period: bufferConfig.replenishRate.periodSeconds,
+            roundOff: self.roundOffSeconds
+        });
 
         // store a new starting reference point
         // any buffer updates will be applied retroactively in the next batch post

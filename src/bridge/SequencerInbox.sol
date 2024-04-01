@@ -196,6 +196,10 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         __LEGACY_MAX_TIME_VARIATION.futureSeconds = 0;
     }
 
+    // @review I suggest we not to support skipping version 1.2, that is we should assume
+    //         they already have max time variation fixed and we only need to init buffer
+    //         thus we can remove postUpgradeInitBuffer and postUpgradeInitBufferAndMaxTimeVar
+    //         only keep postUpgradeInit(BufferConfig)
     function postUpgradeInitBuffer(BufferConfig memory bufferConfig_)
         external
         onlyDelegated
@@ -205,6 +209,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     function initBuffer(BufferConfig memory bufferConfig_) internal {
+        if (!isDelayBufferable) revert NotDelayBufferable();
         // Assuming we would not upgrade from a version that does not have the buffer initialized
         // If that is the case, postUpgradeInit do not need to be called
         if (buffer.bufferBlocks != 0 || buffer.bufferSeconds != 0) {
@@ -540,6 +545,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         );
     }
 
+    // @review lets not overload the same function name 4 times
+    ///         but instead name them e.g. addSequencerL2BatchFromBlobsUpdateSync
     /// @inheritdoc ISequencerInbox
     function addSequencerL2BatchFromBlobs(
         uint256 sequenceNumber,
@@ -551,12 +558,15 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     ) external refundsGas(gasRefunder, reader4844) {
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
         if (!isDelayBufferable) revert NotDelayBufferable();
+        // we did not check isSynced here, but would revert later during resync if not synced
         bytes32 beforeAcc = addSequencerL2BatchFromBlobsImpl(
             sequenceNumber,
             afterDelayedMessagesRead,
             prevMessageCount,
             newMessageCount
         );
+        // @review unsure why we use beforeAcc (previous batch) instead of afterAcc (current batch)
+        //         seems `T <= T(lastDelayMsg) + threshold` is sufficient to ensure unexpected delay is impossible
         buffer.resync(bufferConfig, beforeAcc, syncProof);
     }
 
@@ -590,6 +600,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 prevMessageCount,
         uint256 newMessageCount
     ) internal returns (bytes32) {
+        if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
         (
             bytes32 dataHash,
             IBridge.TimeBounds memory timeBounds,
@@ -745,8 +756,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     function syncBuffer(DelayProof calldata delayProof) internal {
-        // validate the delayed message against the delayed accumulator
+        // delayedAcc of the next delayed message
         bytes32 delayedAcc = bridge.delayedInboxAccs(totalDelayedMessagesRead);
+        // DelayProof is validated against the delayed accumulator in buffer.sync
         buffer.sync(bufferConfig, delayedAcc, delayProof);
         emit BufferUpdated(buffer.bufferBlocks, buffer.bufferSeconds);
     }

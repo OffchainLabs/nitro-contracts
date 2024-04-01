@@ -35,6 +35,8 @@ struct ReplenishRate {
 /// @notice The delay buffer data.
 /// @param bufferBlocks The block buffer.
 /// @param bufferSeconds The time buffer in seconds.
+/// @param syncExpiryBlockNumber
+/// @param syncExpiryTimestamp
 /// @param roundOffBlocks The round off in blocks since the last replenish.
 /// @param roundOffSeconds The round off in seconds since the last replenish.
 /// @param prevDelay The delay of the previous batch.

@@ -4,7 +4,6 @@
 
 // solhint-disable-next-line compiler-version
 pragma solidity >=0.6.9 <0.9.0;
-pragma experimental ABIEncoderV2;
 
 library Messages {
     struct Message {
@@ -25,16 +24,14 @@ library Messages {
 
     function messageHash(Message memory message) internal pure returns (bytes32) {
         return
-            keccak256(
-                abi.encodePacked(
-                    message.kind,
-                    message.sender,
-                    message.blockNumber,
-                    message.timestamp,
-                    message.inboxSeqNum,
-                    message.baseFeeL1,
-                    message.messageDataHash
-                )
+            messageHash(
+                message.kind,
+                message.sender,
+                message.blockNumber,
+                message.timestamp,
+                message.inboxSeqNum,
+                message.baseFeeL1,
+                message.messageDataHash
             );
     }
 
