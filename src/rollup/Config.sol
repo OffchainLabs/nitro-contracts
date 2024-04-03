@@ -9,7 +9,7 @@ import "../state/Machine.sol";
 import "../bridge/ISequencerInbox.sol";
 import "../bridge/IBridge.sol";
 import "../bridge/IOutbox.sol";
-import "../bridge/IInbox.sol";
+import "../bridge/IInboxBase.sol";
 import "./IRollupEventInbox.sol";
 import "./IRollupLogic.sol";
 import "../challenge/IChallengeManager.sol";
@@ -31,7 +31,7 @@ struct Config {
 struct ContractDependencies {
     IBridge bridge;
     ISequencerInbox sequencerInbox;
-    IInbox inbox;
+    IInboxBase inbox;
     IOutbox outbox;
     IRollupEventInbox rollupEventInbox;
     IChallengeManager challengeManager;

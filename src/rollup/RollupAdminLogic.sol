@@ -336,7 +336,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      * @notice sets the rollup's inbox reference. Does not update the bridge's view.
      * @param newInbox new address of inbox
      */
-    function setInbox(IInbox newInbox) external {
+    function setInbox(IInboxBase newInbox) external {
         inbox = newInbox;
         emit OwnerFunctionCalled(28);
     }

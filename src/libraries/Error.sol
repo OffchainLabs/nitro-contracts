@@ -7,8 +7,11 @@ pragma solidity ^0.8.4;
 /// @dev Init was already called
 error AlreadyInit();
 
-/// Init was called with param set to zero that must be nonzero
+/// @dev Init was called with param set to zero that must be nonzero
 error HadZeroInit();
+
+/// @dev Thrown when post upgrade init validation fails
+error BadPostUpgradeInit();
 
 /// @dev Thrown when non owner tries to access an only-owner function
 /// @param sender The msg.sender who is not the owner
@@ -60,6 +63,17 @@ error NotOutbox(address sender);
 /// @dev the provided outbox address isn't valid
 /// @param outbox address of outbox being set
 error InvalidOutboxSet(address outbox);
+
+/// @dev The provided token address isn't valid
+/// @param token address of token being set
+error InvalidTokenSet(address token);
+
+/// @dev Call to this specific address is not allowed
+/// @param target address of the call receiver
+error CallTargetNotAllowed(address target);
+
+/// @dev Call that changes the balance of ERC20Bridge is not allowed
+error CallNotAllowed();
 
 // Inbox Errors
 
@@ -161,3 +175,24 @@ error AlreadyValidDASKeyset(bytes32);
 
 /// @dev Tried to use or invalidate an already invalid Data Availability Service keyset
 error NoSuchKeyset(bytes32);
+
+/// @dev Thrown when a data blob feature is attempted to be used on a chain that doesnt support it
+error DataBlobsNotSupported();
+
+/// @dev Thrown when an init param was supplied as empty
+error InitParamZero(string name);
+
+/// @dev Thrown when data hashes where expected but not where present on the tx
+error MissingDataHashes();
+
+/// @dev Thrown when the data blob meta data is invalid
+error InvalidBlobMetadata();
+
+/// @dev Thrown when rollup is not updated with updateRollupAddress
+error RollupNotChanged();
+
+/// @dev Batch data was empty when non empty was expected
+error EmptyBatchData();
+
+/// @dev Unsupported header flag was provided
+error InvalidHeaderFlag(bytes1);
