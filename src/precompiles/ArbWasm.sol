@@ -36,7 +36,11 @@ interface ArbWasm {
 
     /// @notice gets the cost to invoke the program (not including minInitGas)
     /// @return gas the amount of gas
-    function programInitGas(address program) external view returns (uint32 gas);
+    /// @return gasWhenCached the amount of gas if the program was recently used
+    function programInitGas(address program)
+        external
+        view
+        returns (uint16 gas, uint16 gasWhenCached);
 
     /// @notice gets the memory footprint of the program at the given address in pages
     /// @return footprint the memory footprint of program in pages (reverts for EVM contracts)
