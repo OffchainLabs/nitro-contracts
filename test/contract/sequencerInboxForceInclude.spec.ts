@@ -289,12 +289,8 @@ describe('SequencerInboxForceInclude', async () => {
         thresholdBlocks: 0,
         maxBufferSeconds: 0,
         maxBufferBlocks: 0,
-        replenishRate: {
-          secondsPerPeriod: 0,
-          blocksPerPeriod: 0,
-          periodSeconds: 0,
-          periodBlocks: 0,
-        },
+        periodSeconds: 0,
+        periodBlocks: 0,
       }
     )
 

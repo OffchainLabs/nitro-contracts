@@ -26,6 +26,8 @@ contract BridgeCreator is Ownable {
 
     event TemplatesUpdated();
     event ERC20TemplatesUpdated();
+    event DelayBufferableTemplatesUpdated();
+    event ERC20DelayBufferableTemplatesUpdated();
 
     struct BridgeContracts {
         IBridge bridge;
@@ -57,7 +59,23 @@ contract BridgeCreator is Ownable {
         emit ERC20TemplatesUpdated();
     }
 
-    function _createBridge(address adminProxy, BridgeContracts storage templates)
+    function updateDelayBufferableTemplates(BridgeContracts calldata _newTemplates)
+        external
+        onlyOwner
+    {
+        ethBasedDelayBufferableTemplates = _newTemplates;
+        emit TemplatesUpdated();
+    }
+
+    function updateERC20DelayBufferableTemplates(BridgeContracts calldata _newTemplates)
+        external
+        onlyOwner
+    {
+        erc20BasedDelayBufferableTemplates = _newTemplates;
+        emit ERC20TemplatesUpdated();
+    }
+
+    function _createBridge(address adminProxy, BridgeContracts memory templates)
         internal
         returns (BridgeContracts memory)
     {
@@ -91,10 +109,20 @@ contract BridgeCreator is Ownable {
         ISequencerInbox.MaxTimeVariation calldata maxTimeVariation,
         BufferConfig calldata bufferConfig
     ) external returns (BridgeContracts memory) {
+        // create delay bufferable if address zero is provided for native token, otherwise create ERC20-based bridge
+        bool isDelayBufferable = bufferConfig.thresholdBlocks != type(uint64).max &&
+            bufferConfig.thresholdSeconds != type(uint64).max;
+        BridgeContracts memory _ethBasedTemplates = isDelayBufferable
+            ? ethBasedDelayBufferableTemplates
+            : ethBasedTemplates;
+        BridgeContracts memory _erc20BasedTemplates = isDelayBufferable
+            ? erc20BasedDelayBufferableTemplates
+            : erc20BasedTemplates;
+
         // create ETH-based bridge if address zero is provided for native token, otherwise create ERC20-based bridge
         BridgeContracts memory frame = _createBridge(
             adminProxy,
-            nativeToken == address(0) ? ethBasedTemplates : erc20BasedTemplates
+            nativeToken == address(0) ? _ethBasedTemplates : _erc20BasedTemplates
         );
 
         // init contracts

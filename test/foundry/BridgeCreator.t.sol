@@ -143,12 +143,8 @@ contract BridgeCreatorTest is Test {
             thresholdBlocks: type(uint64).max,
             maxBufferSeconds: 0,
             maxBufferBlocks: 0,
-            replenishRate: ReplenishRate({
-                secondsPerPeriod: 0,
-                blocksPerPeriod: 0,
-                periodSeconds: 0,
-                periodBlocks: 0
-            })
+            periodSeconds: 0,
+            periodBlocks: 0
         });
         BridgeCreator.BridgeContracts memory contracts = creator.createBridge(
             proxyAdmin,
@@ -225,12 +221,8 @@ contract BridgeCreatorTest is Test {
             thresholdBlocks: type(uint64).max,
             maxBufferSeconds: 0,
             maxBufferBlocks: 0,
-            replenishRate: ReplenishRate({
-                secondsPerPeriod: 0,
-                blocksPerPeriod: 0,
-                periodSeconds: 0,
-                periodBlocks: 0
-            })
+            periodSeconds: 0,
+            periodBlocks: 0
         });
 
         BridgeCreator.BridgeContracts memory contracts = creator.createBridge(

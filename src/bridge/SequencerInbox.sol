@@ -160,51 +160,13 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         return deployTimeChainId != block.chainid;
     }
 
-    function postUpgradeInit() external onlyDelegated onlyProxyOwner {
-        initMaxTimeVariation();
-    }
-
-    function initMaxTimeVariation() internal {
-        // Assuming we would not upgrade from a version that have MaxTimeVariation all set to zero
-        // If that is the case, postUpgradeInit do not need to be called
-        if (
-            __LEGACY_MAX_TIME_VARIATION.delayBlocks == 0 &&
-            __LEGACY_MAX_TIME_VARIATION.futureBlocks == 0 &&
-            __LEGACY_MAX_TIME_VARIATION.delaySeconds == 0 &&
-            __LEGACY_MAX_TIME_VARIATION.futureSeconds == 0
-        ) {
-            revert AlreadyInit();
-        }
-
-        if (
-            __LEGACY_MAX_TIME_VARIATION.delayBlocks > type(uint64).max ||
-            __LEGACY_MAX_TIME_VARIATION.futureBlocks > type(uint64).max ||
-            __LEGACY_MAX_TIME_VARIATION.delaySeconds > type(uint64).max ||
-            __LEGACY_MAX_TIME_VARIATION.futureSeconds > type(uint64).max
-        ) {
-            revert BadPostUpgradeInit();
-        }
-
-        delayBlocks = uint64(__LEGACY_MAX_TIME_VARIATION.delayBlocks);
-        futureBlocks = uint64(__LEGACY_MAX_TIME_VARIATION.futureBlocks);
-        delaySeconds = uint64(__LEGACY_MAX_TIME_VARIATION.delaySeconds);
-        futureSeconds = uint64(__LEGACY_MAX_TIME_VARIATION.futureSeconds);
-
-        __LEGACY_MAX_TIME_VARIATION.delayBlocks = 0;
-        __LEGACY_MAX_TIME_VARIATION.futureBlocks = 0;
-        __LEGACY_MAX_TIME_VARIATION.delaySeconds = 0;
-        __LEGACY_MAX_TIME_VARIATION.futureSeconds = 0;
-    }
-
-    function postUpgradeInitBuffer(BufferConfig memory bufferConfig_)
+    function postUpgradeInit(BufferConfig memory bufferConfig_)
         external
         onlyDelegated
         onlyProxyOwner
     {
-        initBuffer(bufferConfig_);
-    }
+        if (!isDelayBufferable) revert NotDelayBufferable();
 
-    function initBuffer(BufferConfig memory bufferConfig_) internal {
         // Assuming we would not upgrade from a version that does not have the buffer initialized
         // If that is the case, postUpgradeInit do not need to be called
         if (buffer.bufferBlocks != 0 || buffer.bufferSeconds != 0) {
@@ -214,15 +176,6 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         _setBufferConfig(bufferConfig_);
         buffer.bufferBlocks = bufferConfig.maxBufferBlocks;
         buffer.bufferSeconds = bufferConfig.maxBufferSeconds;
-    }
-
-    function postUpgradeInitBufferAndMaxTimeVar(BufferConfig memory bufferConfig_)
-        external
-        onlyDelegated
-        onlyProxyOwner
-    {
-        initMaxTimeVariation();
-        initBuffer(bufferConfig_);
     }
 
     function initialize(
@@ -447,13 +400,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     ) external refundsGas(gasRefunder, IReader4844(address(0))) {
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
-        if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
-        if (isDelayBufferable && !isSynced()) {
-            if (afterDelayedMessagesRead > totalDelayedMessagesRead) {
-                revert DelayProofRequired();
-            }
-            // no proof required if no new delayed messages are read since no buffer updates can be applied
-        }
+        // batch poster authentication checked in delayProofOmittedImpl
+        bufferProofOmittedImpl(afterDelayedMessagesRead);
         addSequencerL2BatchFromCalldataOriginImpl(
             sequenceNumber,
             data,
@@ -471,13 +419,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 prevMessageCount,
         uint256 newMessageCount
     ) external refundsGas(gasRefunder, reader4844) {
-        if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
-        if (isDelayBufferable && !isSynced()) {
-            if (afterDelayedMessagesRead > totalDelayedMessagesRead) {
-                revert DelayProofRequired();
-            }
-            // no proof required if no new delayed messages are read since no buffer updates can be applied
-        }
+        // batch poster authentication checked in delayProofOmittedImpl
+        bufferProofOmittedImpl(afterDelayedMessagesRead);
         addSequencerL2BatchFromBlobsImpl(
             sequenceNumber,
             afterDelayedMessagesRead,
@@ -487,93 +430,42 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @inheritdoc ISequencerInbox
-    function addSequencerL2BatchFromBlobs(
+    function addSequencerL2BatchFromBlobsBufferProof(
         uint256 sequenceNumber,
         uint256 afterDelayedMessagesRead,
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount,
-        DelayProof calldata delayProof
+        BufferProof calldata bufferProof
     ) external refundsGas(gasRefunder, reader4844) {
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
         if (!isDelayBufferable) revert NotDelayBufferable();
-
-        // must read atleast 1 new delayed message
-        if (afterDelayedMessagesRead <= totalDelayedMessagesRead) revert NotDelayedFarEnough();
-
-        syncBuffer(delayProof);
-
-        addSequencerL2BatchFromBlobsImpl(
-            sequenceNumber,
-            afterDelayedMessagesRead,
-            prevMessageCount,
-            newMessageCount
-        );
-    }
-
-    /// @inheritdoc ISequencerInbox
-    function addSequencerL2BatchFromOrigin(
-        uint256 sequenceNumber,
-        bytes calldata data,
-        uint256 afterDelayedMessagesRead,
-        IGasRefunder gasRefunder,
-        uint256 prevMessageCount,
-        uint256 newMessageCount,
-        DelayProof calldata delayProof
-    ) external refundsGas(gasRefunder, IReader4844(address(0))) {
-        // solhint-disable-next-line avoid-tx-origin
-        if (msg.sender != tx.origin) revert NotOrigin();
-        if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
-        if (!isDelayBufferable) revert NotDelayBufferable();
-
-        // must read atleast 1 new delayed message
-        if (afterDelayedMessagesRead <= totalDelayedMessagesRead) revert NotDelayedFarEnough();
-
-        syncBuffer(delayProof);
-
-        addSequencerL2BatchFromCalldataOriginImpl(
-            sequenceNumber,
-            data,
-            afterDelayedMessagesRead,
-            prevMessageCount,
-            newMessageCount
-        );
-    }
-
-    /// @inheritdoc ISequencerInbox
-    function addSequencerL2BatchFromBlobs(
-        uint256 sequenceNumber,
-        uint256 afterDelayedMessagesRead,
-        IGasRefunder gasRefunder,
-        uint256 prevMessageCount,
-        uint256 newMessageCount,
-        SyncProof calldata syncProof
-    ) external refundsGas(gasRefunder, reader4844) {
-        if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
-        if (!isDelayBufferable) revert NotDelayBufferable();
+        uint256 beforeTotalDelayedMessagesRead = totalDelayedMessagesRead;
         bytes32 beforeAcc = addSequencerL2BatchFromBlobsImpl(
             sequenceNumber,
             afterDelayedMessagesRead,
             prevMessageCount,
             newMessageCount
         );
-        buffer.resync(bufferConfig, beforeAcc, syncProof);
+        bufferProofImpl(beforeTotalDelayedMessagesRead, beforeAcc, bufferProof);
     }
 
     /// @inheritdoc ISequencerInbox
-    function addSequencerL2BatchFromOrigin(
+    function addSequencerL2BatchFromOriginBufferProof(
         uint256 sequenceNumber,
         bytes calldata data,
         uint256 afterDelayedMessagesRead,
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount,
-        SyncProof calldata syncProof
+        BufferProof calldata bufferProof
     ) external refundsGas(gasRefunder, IReader4844(address(0))) {
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
         if (!isDelayBufferable) revert NotDelayBufferable();
+
+        uint256 beforeTotalDelayedMessagesRead = totalDelayedMessagesRead;
         bytes32 beforeAcc = addSequencerL2BatchFromCalldataOriginImpl(
             sequenceNumber,
             data,
@@ -581,7 +473,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             prevMessageCount,
             newMessageCount
         );
-        buffer.resync(bufferConfig, beforeAcc, syncProof);
+        bufferProofImpl(beforeTotalDelayedMessagesRead, beforeAcc, bufferProof);
     }
 
     function addSequencerL2BatchFromBlobsImpl(
@@ -694,7 +586,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 newMessageCount
     ) external override refundsGas(gasRefunder, IReader4844(address(0))) {
         if (!isBatchPoster[msg.sender] && msg.sender != address(rollup)) revert NotBatchPoster();
-        if (isDelayBufferable && !isSynced()) {
+        if (isDelayBufferable && !buffer.isSynced()) {
             // if no new delayed messages are read, no proof required since no buffer updates can be applied
             if (afterDelayedMessagesRead > totalDelayedMessagesRead) {
                 revert DelayProofRequired();
@@ -744,11 +636,41 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         emit SequencerBatchData(seqMessageIndex, data);
     }
 
-    function syncBuffer(DelayProof calldata delayProof) internal {
-        // validate the delayed message against the delayed accumulator
-        bytes32 delayedAcc = bridge.delayedInboxAccs(totalDelayedMessagesRead);
-        buffer.sync(bufferConfig, delayedAcc, delayProof);
-        emit BufferUpdated(buffer.bufferBlocks, buffer.bufferSeconds);
+    function bufferProofImpl(
+        uint256 beforeTotalDelayedMessagesRead,
+        bytes32 beforeAcc,
+        BufferProof memory bufferProof
+    ) internal {
+        if (bufferProof.preimage.dataHash != bytes32(0)) {
+            buffer.sync(bufferConfig, beforeAcc, bufferProof);
+        } else {
+            // must read atleast 1 new delayed message
+            if (beforeTotalDelayedMessagesRead == totalDelayedMessagesRead)
+                revert NotDelayedFarEnough();
+
+            // delayedAcc of the next delayed message
+            bytes32 delayedAcc = bridge.delayedInboxAccs(beforeTotalDelayedMessagesRead);
+            // delayProof is validated against the delayed accumulator in buffer.sync
+            buffer.delay(
+                bufferConfig,
+                delayedAcc,
+                DelayProof({
+                    beforeDelayedAcc: bufferProof.beforeDelayedAcc,
+                    delayedMessage: bufferProof.delayedMessage
+                })
+            );
+            emit BufferUpdated(buffer.bufferBlocks, buffer.bufferSeconds);
+        }
+    }
+
+    function bufferProofOmittedImpl(uint256 afterDelayedMessagesRead) internal view {
+        if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
+        if (isDelayBufferable && !buffer.isSynced()) {
+            if (afterDelayedMessagesRead > totalDelayedMessagesRead) {
+                revert DelayProofRequired();
+            }
+            // no proof required if no new delayed messages are read since no buffer updates can be applied
+        }
     }
 
     function packHeader(uint256 afterDelayedMessagesRead)
@@ -944,13 +866,6 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     function batchCount() external view returns (uint256) {
         return bridge.sequencerMessageCount();
-    }
-
-    /// @dev    This is the `sync validity window` during which no proofs are required.
-    /// @notice Returns true if the inbox is in a synced state (no unexpected delays are possible)
-    function isSynced() internal view returns (bool) {
-        return (block.number <= buffer.syncExpiryBlockNumber &&
-            block.timestamp <= buffer.syncExpiryTimestamp);
     }
 
     /// @inheritdoc ISequencerInbox

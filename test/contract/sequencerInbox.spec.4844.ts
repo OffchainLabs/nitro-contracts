@@ -289,12 +289,8 @@ describe('SequencerInbox', async () => {
           thresholdBlocks: (2 * 60 * 60) / 12,
           maxBufferSeconds: 2 * 24 * 60 * 60,
           maxBufferBlocks: (2 * 24 * 60 * 60) / 12,
-          replenishRate: {
-            secondsPerPeriod: 1,
-            blocksPerPeriod: 1,
-            periodSeconds: 12,
-            periodBlocks: 12,
-          },
+          periodSeconds: 12,
+          periodBlocks: 12,
         }
       )
     ).wait()
@@ -433,7 +429,7 @@ describe('SequencerInbox', async () => {
       sequencerInbox.address,
       ['0x0142', '0x0143'],
       sequencerInbox.interface.encodeFunctionData(
-        'addSequencerL2BatchFromBlobs(uint256,uint256,address,uint256,uint256)',
+        'addSequencerL2BatchFromBlobs',
         [
           sequenceNumber,
           afterDelayedMessagesRead,

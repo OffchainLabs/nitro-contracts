@@ -280,12 +280,8 @@ const delayConfigDefault: DelayConfig = {
   thresholdSeconds: BigNumber.from(2 * 60 * 60),
   maxBufferBlocks: maxDelayDefault.delayBlocks * 2,
   maxBufferSeconds: maxDelayDefault.delaySeconds * 2,
-  replenishRate: {
-    blocksPerPeriod: 1,
-    periodBlocks: 14,
-    secondsPerPeriod: 1,
-    periodSeconds: 12,
-  },
+  periodBlocks: 14,
+  periodSeconds: 12,
 }
 
 const delayConfigNotDelayBufferable: DelayConfig = {
@@ -293,12 +289,8 @@ const delayConfigNotDelayBufferable: DelayConfig = {
   thresholdSeconds: BigNumber.from(2).pow(64).sub(1),
   maxBufferBlocks: maxDelayDefault.delayBlocks * 2,
   maxBufferSeconds: maxDelayDefault.delaySeconds * 2,
-  replenishRate: {
-    blocksPerPeriod: 1,
-    periodBlocks: 14,
-    secondsPerPeriod: 1,
-    periodSeconds: 12,
-  },
+  periodBlocks: 14,
+  periodSeconds: 12,
 }
 
 export const getSequencerBatchDeliveredEvents = (

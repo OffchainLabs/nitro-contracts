@@ -12,22 +12,13 @@ pragma solidity >=0.6.9 <0.9.0;
 /// @param maxBufferBlocks The maximum buffer in blocks
 /// @param maxBufferSeconds The maximum buffer in seconds
 /// @param replenishRate The rate at which the delay buffer is replenished.
+/// @param periodBlocks The period in blocks between replenishment
+/// @param periodSeconds The period in seconds between replenishment
 struct BufferConfig {
     uint64 thresholdBlocks;
     uint64 thresholdSeconds;
     uint64 maxBufferBlocks;
     uint64 maxBufferSeconds;
-    ReplenishRate replenishRate;
-}
-
-/// @notice The rate at which the delay buffer is replenished.
-/// @param blocksPerPeriod The amount of blocks that is added to the delay buffer every period
-/// @param secondsPerPeriod The amount of time in seconds that is added to the delay buffer every period
-/// @param periodBlocks The period in blocks between replenishment
-/// @param periodSeconds The period in seconds between replenishment
-struct ReplenishRate {
-    uint64 blocksPerPeriod;
-    uint64 secondsPerPeriod;
     uint64 periodBlocks;
     uint64 periodSeconds;
 }
@@ -37,14 +28,14 @@ struct ReplenishRate {
 /// @param bufferSeconds The time buffer in seconds.
 /// @param roundOffBlocks The round off in blocks since the last replenish.
 /// @param roundOffSeconds The round off in seconds since the last replenish.
+/// @param syncExpiryBlockNumber The block number until no unexpected delays are possible
+/// @param syncExpiryTimestamp The timestamp until no unexpected delays are possible
 /// @param prevDelay The delay of the previous batch.
 struct BufferData {
     uint64 bufferBlocks;
     uint64 bufferSeconds;
     uint64 syncExpiryBlockNumber;
     uint64 syncExpiryTimestamp;
-    uint64 roundOffBlocks;
-    uint64 roundOffSeconds;
     DelayHistory prevDelay;
 }
 
@@ -65,7 +56,7 @@ struct DelayProof {
     Messages.Message delayedMessage;
 }
 
-struct SyncProof {
+struct BufferProof {
     bytes32 beforeDelayedAcc;
     Messages.Message delayedMessage;
     Messages.InboxAccPreimage preimage;

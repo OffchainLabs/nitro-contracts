@@ -9,7 +9,6 @@ import {L2_MSG} from "../../src/libraries/MessageTypes.sol";
 contract DelayBufferableTest is Test {
 
     uint64 constant maxBuffer = 1000;
-    uint64 constant amountPerPeriod = 100;
     uint64 constant period = 30;
     uint64 constant threshold = 5;
 
@@ -18,12 +17,8 @@ contract DelayBufferableTest is Test {
         thresholdSeconds: 5,
         maxBufferBlocks: 1000,
         maxBufferSeconds: 1000,
-        replenishRate: ReplenishRate({
-            blocksPerPeriod: 100, 
-            periodBlocks: 30,
-            secondsPerPeriod: 100,
-            periodSeconds: 30
-        })
+        periodBlocks: 30,
+        periodSeconds: 30
     });
 
     ISequencerInbox.MaxTimeVariation maxTimeVariation = ISequencerInbox.MaxTimeVariation({
@@ -37,12 +32,8 @@ contract DelayBufferableTest is Test {
         thresholdSeconds: 60 * 60 * 2,
         maxBufferBlocks: 24 * 60 * 60 / 12 * 2,
         maxBufferSeconds: 24 * 60 * 60 * 2,
-        replenishRate: ReplenishRate({
-            secondsPerPeriod: 1,
-            blocksPerPeriod: 1,
-            periodSeconds: 14,
-            periodBlocks: 14
-        })
+        periodSeconds: 14,
+        periodBlocks: 14
     });
     using DelayBuffer for BufferData;
     BufferData delayBuffer;
@@ -51,8 +42,6 @@ contract DelayBufferableTest is Test {
             bufferSeconds: configBufferable.maxBufferSeconds,
             syncExpiryBlockNumber: 0,
             syncExpiryTimestamp: 0,
-            roundOffBlocks: 0,
-            roundOffSeconds: 0,
             prevDelay: DelayHistory({
                 blockNumber: 0,
                 timestamp: 0,
@@ -87,64 +76,48 @@ contract DelayBufferableTest is Test {
     function testReplenish() public {
         uint64 start = 10;
         uint64 buffer = 100;
-        uint64 roundOff = 0;
 
-        (uint64 newBuffer, uint64 newRoundOff) = DelayBuffer.replenish(start, start, buffer, maxBuffer, amountPerPeriod, period, roundOff);
+        uint64 newBuffer = DelayBuffer.replenish(start, start, buffer, maxBuffer, period);
         assertEq(newBuffer, buffer);
-        assertEq(newRoundOff, roundOff);
 
-        (newBuffer, newRoundOff) = DelayBuffer.replenish(start, start + 1, buffer, maxBuffer, amountPerPeriod, period, roundOff);
+        newBuffer = DelayBuffer.replenish(start, start + 1, buffer, maxBuffer, period);
         assertEq(newBuffer, buffer);
-        assertEq(newRoundOff, roundOff + 1);
 
-        (newBuffer, newRoundOff) = DelayBuffer.replenish(start, start + period - 1, buffer, maxBuffer, amountPerPeriod, period, roundOff);
+        newBuffer = DelayBuffer.replenish(start, start + period - 1, buffer, maxBuffer, period);
         assertEq(newBuffer, buffer);
-        assertEq(newRoundOff, roundOff + period - 1);
 
-        (newBuffer, newRoundOff) = DelayBuffer.replenish(start, start + 1, buffer, maxBuffer, amountPerPeriod, period, period - 1);
-        assertEq(newBuffer, buffer + amountPerPeriod);
-        assertEq(newRoundOff, 0);
+        newBuffer = DelayBuffer.replenish(start, start + 1, buffer, maxBuffer, period);
+        assertEq(newBuffer, buffer);
 
-        (newBuffer, newRoundOff) = DelayBuffer.replenish(start, start + period, buffer, maxBuffer, amountPerPeriod, period, roundOff);
-        assertEq(newBuffer, buffer + amountPerPeriod);
-        assertEq(newRoundOff, roundOff);
+        newBuffer = DelayBuffer.replenish(start, start + period, buffer, maxBuffer, period);
+        assertEq(newBuffer, buffer + 1);
 
-        uint64 remaining = ((maxBuffer - buffer)/amountPerPeriod + 1)*period;
+        uint64 remaining = ((maxBuffer - buffer) + 1)*period;
 
-        (newBuffer, newRoundOff) = DelayBuffer.replenish(start, start + remaining, buffer, maxBuffer, amountPerPeriod, period, roundOff);
+        newBuffer = DelayBuffer.replenish(start, start + remaining, buffer, maxBuffer, period);
         assertEq(newBuffer, maxBuffer);
-        assertEq(newRoundOff, roundOff);
 
-        (newBuffer, newRoundOff) = DelayBuffer.replenish(start, start + remaining + period, buffer, maxBuffer, amountPerPeriod, period, roundOff);
+        newBuffer = DelayBuffer.replenish(start, start + remaining + period, buffer, maxBuffer, period);
         assertEq(newBuffer, maxBuffer);
-        assertEq(newRoundOff, roundOff);
     }
 
     function testUpdate() public {
         uint64 start = 10;
         uint64 delay = 10;
         uint64 buffer = 100;
-        uint64 roundOff = 10;
         
-        (uint64 newBuffer, uint64 newRoundOff) = DelayBuffer.update(start, start, delay, threshold, buffer, maxBuffer, amountPerPeriod, period, roundOff);
+        uint64 newBuffer = DelayBuffer.update(start, start, delay, threshold, buffer, maxBuffer, period);
         assertEq(newBuffer, buffer);
-        assertEq(newRoundOff, 0);
 
-        (newBuffer, newRoundOff) = DelayBuffer.update(start, start + 1, delay, threshold, buffer, maxBuffer, amountPerPeriod, period, roundOff);
+        newBuffer = DelayBuffer.update(start, start + 1, delay, threshold, buffer, maxBuffer, period);
         assertEq(newBuffer, buffer - 1);
-        assertEq(newRoundOff, 0);
 
-        (newBuffer, newRoundOff) = DelayBuffer.update(start, start + 1, 0, threshold, buffer, maxBuffer, amountPerPeriod, period, roundOff);
+        newBuffer = DelayBuffer.update(start, start + 1, 0, threshold, buffer, maxBuffer, period);
         assertEq(newBuffer, buffer);
-        assertEq(newRoundOff, roundOff + 1);
 
-        (newBuffer, newRoundOff) = DelayBuffer.update(start, start + period - roundOff, 0, threshold, buffer, maxBuffer, amountPerPeriod, period, roundOff);
-        assertEq(newBuffer, buffer + amountPerPeriod);
-        assertEq(newRoundOff, 0);
 
-        (newBuffer, newRoundOff) = DelayBuffer.update(start, start + period, 0, threshold, buffer, maxBuffer, amountPerPeriod, period, roundOff);
-        assertEq(newBuffer, buffer + amountPerPeriod);
-        assertEq(newRoundOff, roundOff);
+        newBuffer = DelayBuffer.update(start, start + period, 0, threshold, buffer, maxBuffer, period);
+        assertEq(newBuffer, buffer + 1);
     }
 
     function testUpdateBuffers() public {
@@ -153,8 +126,6 @@ contract DelayBufferableTest is Test {
             bufferSeconds: 10,
             syncExpiryBlockNumber: 0,
             syncExpiryTimestamp: 0,
-            roundOffBlocks: 10,
-            roundOffSeconds: 10,
             prevDelay: DelayHistory({
                 blockNumber: 10,
                 timestamp: 10,
@@ -169,8 +140,6 @@ contract DelayBufferableTest is Test {
         delayBuffer.updateBuffers(config, 20, 20);
         assertEq(delayBuffer.bufferBlocks, 5);
         assertEq(delayBuffer.bufferSeconds, 5);
-        assertEq(delayBuffer.roundOffBlocks, 0);
-        assertEq(delayBuffer.roundOffSeconds, 0);
         assertEq(delayBuffer.prevDelay.blockNumber, 20);
         assertEq(delayBuffer.prevDelay.delayBlocks, 5);
         assertEq(delayBuffer.prevDelay.timestamp, 20);
@@ -181,8 +150,6 @@ contract DelayBufferableTest is Test {
             bufferSeconds: 10,
             syncExpiryBlockNumber: 0,
             syncExpiryTimestamp: 0,
-            roundOffBlocks: 10,
-            roundOffSeconds: 10,
             prevDelay: DelayHistory({
                 blockNumber: 10,
                 timestamp: 10,
@@ -196,11 +163,9 @@ contract DelayBufferableTest is Test {
         vm.roll(updateBN);
 
         delayBuffer.updateBuffers(config, updateBN, updateTS);
-        assertEq(delayBuffer.bufferBlocks, 10 + amountPerPeriod);
-        assertEq(delayBuffer.bufferSeconds, 10 + amountPerPeriod);
-        assertEq(delayBuffer.roundOffBlocks, 10);
-        assertEq(delayBuffer.roundOffSeconds, 10);
-        
+        assertEq(delayBuffer.bufferBlocks, 10 + 1);
+        assertEq(delayBuffer.bufferSeconds, 10 + 1);
+
         assertEq(delayBuffer.prevDelay.blockNumber, updateBN);
         assertEq(delayBuffer.prevDelay.delayBlocks, 0);
         assertEq(delayBuffer.prevDelay.timestamp, updateTS);
@@ -213,8 +178,6 @@ contract DelayBufferableTest is Test {
             bufferSeconds: 10,
             syncExpiryBlockNumber: 0,
             syncExpiryTimestamp: 0,
-            roundOffBlocks: 10,
-            roundOffSeconds: 10,
             prevDelay: DelayHistory({
                 blockNumber: 10,
                 timestamp: 10,
@@ -229,7 +192,7 @@ contract DelayBufferableTest is Test {
         assertEq(bufferSeconds, 5);
     }
 
-    function testSyncProof() public {
+    function testBufferProof() public {
         delayBuffer = delayBufferDefault;
 
         bytes32 beforeDelayedAcc = bytes32(0);
@@ -248,12 +211,12 @@ contract DelayBufferableTest is Test {
 
         // initially message if proven with no delay
         delayBuffer = delayBufferDefault;
-        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
+        delayBuffer.sync(configBufferable, acc, BufferProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // sanity check
         delayBuffer = delayBufferDefault;
         vm.expectRevert();
-        delayBuffer.resync(configBufferable, bytes32(0), SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
+        delayBuffer.sync(configBufferable, bytes32(0), BufferProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // (blockNumber, timestamp)
 
@@ -261,70 +224,70 @@ contract DelayBufferableTest is Test {
         vm.warp(block.timestamp + configBufferable.thresholdSeconds);
         
         delayBuffer = delayBufferDefault;
-        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
+        delayBuffer.sync(configBufferable, acc, BufferProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // (0, thresholdSeconds) -> (0, thresholdSeconds + 1)
         vm.warp(block.timestamp + 1);
 
         delayBuffer = delayBufferDefault;
         vm.expectRevert();
-        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
+        delayBuffer.sync(configBufferable, acc, BufferProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // (0, thresholdSeconds + 1) -> (0, 0)
         vm.warp(block.timestamp - 1 - configBufferable.thresholdSeconds);
 
         delayBuffer = delayBufferDefault;
-        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
+        delayBuffer.sync(configBufferable, acc, BufferProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // (0, 0) -> (thresholdBlocks, 0)
         vm.roll(block.number + configBufferable.thresholdBlocks);
 
         delayBuffer = delayBufferDefault;
-        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
+        delayBuffer.sync(configBufferable, acc, BufferProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // (thresholdBlocks, 0) -> (thresholdBlocks + 1, 0)
         vm.roll(block.number + 1);
         
         delayBuffer = delayBufferDefault;
         vm.expectRevert();
-        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
+        delayBuffer.sync(configBufferable, acc, BufferProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // (thresholdBlocks + 1, 0) -> (0, 0)
         vm.roll(block.number - 1 - configBufferable.thresholdBlocks);
 
         delayBuffer = delayBufferDefault;
         vm.expectRevert();
-        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
+        delayBuffer.sync(configBufferable, acc, BufferProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // (0, 0) -> (thresholdBlocks, thresholdSeconds)
         vm.roll(block.number + configBufferable.thresholdBlocks);
         vm.warp(block.timestamp + configBufferable.thresholdSeconds);
         delayBuffer = delayBufferDefault;
-        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
+        delayBuffer.sync(configBufferable, acc, BufferProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // (thresholdBlocks, thresholdSeconds) -> (thresholdBlocks + 1, thresholdSeconds)
         vm.roll(block.number + 1);
         delayBuffer = delayBufferDefault;
         vm.expectRevert();
-        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
+        delayBuffer.sync(configBufferable, acc, BufferProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // (thresholdBlocks + 1, thresholdSeconds) -> (thresholdBlocks, thresholdSeconds)
         vm.roll(block.number - 1);
         delayBuffer = delayBufferDefault;
-        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
+        delayBuffer.sync(configBufferable, acc, BufferProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // (thresholdBlocks, thresholdSeconds) -> (thresholdBlocks, thresholdSeconds + 1)
         vm.warp(block.timestamp + 1);
         delayBuffer = delayBufferDefault;
         vm.expectRevert();
-        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
+        delayBuffer.sync(configBufferable, acc, BufferProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
 
         // (thresholdBlocks, thresholdSeconds + 1) -> (max, max)
         vm.roll(type(uint256).max);
         vm.warp(type(uint256).max);
         delayBuffer = delayBufferDefault;
         vm.expectRevert();
-        delayBuffer.resync(configBufferable, acc, SyncProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
+        delayBuffer.sync(configBufferable, acc, BufferProof({beforeDelayedAcc: beforeDelayedAcc, delayedMessage: message, preimage: preimage}));
     }
 
     function testUpdateBuffersDepleteAndReplenish() public {
@@ -406,15 +369,10 @@ contract DelayBufferableTest is Test {
         assertEq(delayBuffer.bufferBlocks, configBufferable.maxBufferBlocks - 1);
         assertEq(delayBuffer.bufferSeconds, configBufferable.maxBufferSeconds - 1);
 
-        assertEq(delayBuffer.roundOffBlocks, 0);
-        assertEq(delayBuffer.roundOffSeconds, 0);
-
         delayBuffer.updateBuffers(configBufferable, 12, 12);
 
         assertEq(delayBuffer.prevDelay.blockNumber, 12);
         assertEq(delayBuffer.prevDelay.timestamp, 12);
-        assertEq(delayBuffer.roundOffBlocks, 1);
-        assertEq(delayBuffer.roundOffSeconds, 1);
         assertEq(delayBuffer.prevDelay.delayBlocks, configBufferable.thresholdBlocks - 1);
         assertEq(delayBuffer.prevDelay.delaySeconds, configBufferable.thresholdSeconds - 1);
         assertEq(delayBuffer.bufferBlocks, configBufferable.maxBufferBlocks - 1);
@@ -424,8 +382,6 @@ contract DelayBufferableTest is Test {
 
         assertEq(delayBuffer.prevDelay.blockNumber, 24);
         assertEq(delayBuffer.prevDelay.timestamp, 24);
-        assertEq(delayBuffer.roundOffBlocks, 13);
-        assertEq(delayBuffer.roundOffSeconds, 13);
         assertEq(delayBuffer.prevDelay.delayBlocks, configBufferable.thresholdBlocks - 13);
         assertEq(delayBuffer.prevDelay.delaySeconds, configBufferable.thresholdSeconds - 13);
         assertEq(delayBuffer.bufferBlocks, configBufferable.maxBufferBlocks - 1);
@@ -435,8 +391,6 @@ contract DelayBufferableTest is Test {
 
         assertEq(delayBuffer.prevDelay.blockNumber, 25);
         assertEq(delayBuffer.prevDelay.timestamp, 25);
-        assertEq(delayBuffer.roundOffBlocks, 0);
-        assertEq(delayBuffer.roundOffSeconds, 0);
         assertEq(delayBuffer.prevDelay.delayBlocks, configBufferable.thresholdBlocks - 14);
         assertEq(delayBuffer.prevDelay.delaySeconds, configBufferable.thresholdSeconds - 14);
         assertEq(delayBuffer.bufferBlocks, configBufferable.maxBufferBlocks);
