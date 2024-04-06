@@ -74,9 +74,10 @@ interface ArbWasm {
     /// @return limit the number of pages
     function pageLimit() external view returns (uint16 limit);
 
-    /// @notice gets the minimum cost to invoke a program
-    /// @return gas amount of gas
-    function minInitGas() external view returns (uint16 gas);
+    /// @notice gets the minimum costs to invoke a program
+    /// @return gas amount of gas in increments of 256 when not cached
+    /// @return cached amount of gas in increments of 64 when cached
+    function minInitGas() external view returns (uint8 gas, uint8 cached);
 
     /// @notice gets the number of days after which programs deactivate
     /// @return _days the number of days

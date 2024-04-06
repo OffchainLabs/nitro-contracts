@@ -111,8 +111,10 @@ interface ArbOwner {
     /// @notice sets the maximum number of pages a wasm may allocate
     function setWasmPageLimit(uint16 limit) external;
 
-    /// @notice sets the minimum cost to invoke a program
-    function setWasmMinInitGas(uint16 gas) external;
+    /// @notice sets the minimum costs to invoke a program
+    /// @param gas amount of gas paid in increments of 256 when not the program is not cached
+    /// @param cached amount of gas paid in increments of 64 when the program is cached
+    function setWasmMinInitGas(uint8 gas, uint16 cached) external;
 
     /// @notice sets the number of days after which programs deactivate
     function setWasmExpiryDays(uint16 _days) external;
