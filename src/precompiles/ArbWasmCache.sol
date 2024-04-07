@@ -24,6 +24,7 @@ interface ArbWasmCache {
     function setTrieTableParams(uint8 bits, uint8 reads) external;
 
     /// @notice Caches all programs with the given codehash.
+    /// @notice Reverts if the programs have expired.
     /// @notice Caller must be a cache manager or chain owner.
     /// @notice If you're looking for how to bid for position, interact with the chain's cache manager contract.
     function cacheCodehash(bytes32 codehash) external;
@@ -31,6 +32,9 @@ interface ArbWasmCache {
     /// @notice Evicts all programs with the given codehash.
     /// @notice Caller must be a cache manager or chain owner.
     function evictCodehash(bytes32 codehash) external;
+
+    /// @notice Gets whether a program is cached. Note that the program may be expired.
+    function codehashIsCached(bytes32 codehash) external view returns (bool);
 
     /// @notice Reads the trie table record at the given offset.
     /// @notice Caller must be a cache manager or chain owner.
