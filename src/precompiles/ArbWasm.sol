@@ -96,6 +96,7 @@ interface ArbWasm {
     );
     event ProgramLifetimeExtended(bytes32 indexed codehash, uint256 dataFee);
 
+    error ProgramNotWasm();
     error ProgramNotActivated();
     error ProgramNeedsUpgrade(uint16 version, uint16 stylusVersion);
     error ProgramExpired(uint64 ageInSeconds);
