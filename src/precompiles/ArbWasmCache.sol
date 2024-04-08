@@ -12,6 +12,10 @@ interface ArbWasmCache {
     /// @notice See if the user is a cache manager.
     function isCacheManager(address manager) external view returns (bool);
 
+    /// @notice Retrieve all address managers.
+    /// @return managers the list of managers.
+    function allCacheManagers() external view returns (address[] memory managers);
+
     /// @notice Gets the trie table params.
     /// @return bits size of the cache as a power of 2.
     /// @return reads the number of items to read when determining inclusion.
@@ -64,4 +68,13 @@ interface ArbWasmCache {
         uint64 next,
         uint64 offset
     ) external;
+
+    event UpdateProgramCache(address indexed manager, bytes32 indexed codehash, bool cached);
+    event UpdateTrieTable(
+        address indexed manager,
+        uint256 indexed slot,
+        address indexed program,
+        bool cached
+    );
+    event UpdateTrieTableParams(address indexed manager, uint8 bits, uint8 reads);
 }
