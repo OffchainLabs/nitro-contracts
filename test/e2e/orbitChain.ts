@@ -7,7 +7,7 @@ import {
   addCustomNetwork,
 } from '@arbitrum/sdk'
 import { getBaseFee } from '@arbitrum/sdk/dist/lib/utils/lib'
-import { JsonRpcProvider } from '@ethersproject/providers'
+import { Filter, JsonRpcProvider } from '@ethersproject/providers'
 import { expect } from 'chai'
 import {
   ArbSys__factory,
@@ -25,11 +25,10 @@ import {
 import { getLocalNetworks, sleep } from '../../scripts/testSetup'
 import { applyAlias } from '../contract/utils'
 import { BigNumber, ContractTransaction, Wallet, ethers } from 'ethers'
+import { rollup } from '../../build/types/src'
 
 const LOCALHOST_L2_RPC = 'http://localhost:8547'
 const LOCALHOST_L3_RPC = 'http://localhost:3347'
-const L2_ROLLUP_CREATOR_ADDRESS = '0x3baf9f08bad68869eedea90f2cc546bd80f1a651'
-const L2_DEPLOY_HELPER_ADDRESS = '0x4287839696d650A0cf93b98351e85199102335D0'
 
 // when code at address is empty, ethers.js returns '0x'
 const EMPTY_CODE_LENGTH = 2
@@ -627,8 +626,13 @@ describe('Orbit Chain', () => {
   })
 
   it('can deploy deterministic factories to L2', async function () {
+    const rollupCreator = RollupCreator__factory.connect(
+      await _getRollupCreatorFromLogs(l1Provider),
+      l1Provider
+    )
+
     const deployHelper = DeployHelper__factory.connect(
-      L2_DEPLOY_HELPER_ADDRESS,
+      await rollupCreator.l2FactoriesDeployer(),
       l1Provider
     )
 
@@ -721,14 +725,15 @@ describe('Orbit Chain', () => {
 
   it('can deploy deterministic factories to L2 through RollupCreator', async function () {
     const rollupCreator = RollupCreator__factory.connect(
-      L2_ROLLUP_CREATOR_ADDRESS,
+      await _getRollupCreatorFromLogs(l1Provider),
       l1Provider
     )
 
     const deployHelper = DeployHelper__factory.connect(
-      L2_DEPLOY_HELPER_ADDRESS,
+      await rollupCreator.l2FactoriesDeployer(),
       l1Provider
     )
+
     const inbox = l2Network.ethBridge.inbox
     const maxFeePerGas = BigNumber.from('100000000') // 0.1 gwei
     let fee = await deployHelper.getDeploymentTotalCost(inbox, maxFeePerGas)
@@ -813,7 +818,8 @@ describe('Orbit Chain', () => {
         futureSeconds: ethers.BigNumber.from('3600'),
       },
     }
-    const batchPoster = ethers.Wallet.createRandom().address
+    const batchPosters = [ethers.Wallet.createRandom().address]
+    const batchPosterManager = ethers.Wallet.createRandom().address
     const validators = [ethers.Wallet.createRandom().address]
     const maxDataSize = 104857
     const nativeTokenAddress = nativeToken
@@ -824,7 +830,8 @@ describe('Orbit Chain', () => {
 
     const deployParams = {
       config,
-      batchPoster,
+      batchPosters,
+      batchPosterManager,
       validators,
       maxDataSize,
       nativeToken: nativeTokenAddress,
@@ -850,7 +857,8 @@ describe('Orbit Chain', () => {
       events[1].inboxMessageEvent.data,
       await deployHelper.NICK_CREATE2_DEPLOYER(),
       await deployHelper.NICK_CREATE2_VALUE(),
-      receipt.effectiveGasPrice
+      receipt.effectiveGasPrice,
+      rollupCreator.address
     )
     expect(events[2].inboxMessageEvent.messageNum.toString()).to.be.eq('2')
     expect(events[2].inboxMessageEvent.data).to.be.eq(
@@ -863,7 +871,8 @@ describe('Orbit Chain', () => {
       events[3].inboxMessageEvent.data,
       await deployHelper.ERC2470_DEPLOYER(),
       await deployHelper.ERC2470_VALUE(),
-      receipt.effectiveGasPrice
+      receipt.effectiveGasPrice,
+      rollupCreator.address
     )
     expect(events[4].inboxMessageEvent.messageNum.toString()).to.be.eq('4')
     expect(events[4].inboxMessageEvent.data).to.be.eq(
@@ -876,7 +885,8 @@ describe('Orbit Chain', () => {
       events[5].inboxMessageEvent.data,
       await deployHelper.ZOLTU_CREATE2_DEPLOYER(),
       await deployHelper.ZOLTU_VALUE(),
-      receipt.effectiveGasPrice
+      receipt.effectiveGasPrice,
+      rollupCreator.address
     )
     expect(events[6].inboxMessageEvent.messageNum.toString()).to.be.eq('6')
     expect(events[6].inboxMessageEvent.data).to.be.eq(
@@ -889,7 +899,8 @@ describe('Orbit Chain', () => {
       events[7].inboxMessageEvent.data,
       await deployHelper.ERC1820_DEPLOYER(),
       await deployHelper.ERC1820_VALUE(),
-      receipt.effectiveGasPrice
+      receipt.effectiveGasPrice,
+      rollupCreator.address
     )
     expect(events[8].inboxMessageEvent.messageNum.toString()).to.be.eq('8')
     expect(events[8].inboxMessageEvent.data).to.be.eq(
@@ -1007,7 +1018,8 @@ async function _verifyInboxMsg(
   inboxMsg: string,
   create2Deployer: string,
   create2Value: BigNumber,
-  gasPrice: BigNumber
+  gasPrice: BigNumber,
+  rollupCreatorAddress: string
 ) {
   const maxFeePerGasForRetryables = BigNumber.from('100000000') // 0.1 gwei
 
@@ -1026,12 +1038,8 @@ async function _verifyInboxMsg(
   }
   expect(msg1.amountToBeMintedOnChildChain).to.be.eq(expectedAmountToBeMinted)
   expect(msg1.maxSubmissionCost).to.be.eq(_submissionCost(gasPrice))
-  expect(msg1.excessFeeRefundAddress).to.be.eq(
-    applyAlias(L2_ROLLUP_CREATOR_ADDRESS)
-  )
-  expect(msg1.callValueRefundAddress).to.be.eq(
-    applyAlias(L2_ROLLUP_CREATOR_ADDRESS)
-  )
+  expect(msg1.excessFeeRefundAddress).to.be.eq(applyAlias(rollupCreatorAddress))
+  expect(msg1.callValueRefundAddress).to.be.eq(applyAlias(rollupCreatorAddress))
   expect(msg1.gasLimit).to.be.eq('21000')
   expect(msg1.maxFeePerGas).to.be.eq(maxFeePerGasForRetryables)
   expect(msg1.dataLength).to.be.eq('0')
@@ -1150,4 +1158,27 @@ async function _getPrescaledAmount(
   }
 
   return amount
+}
+
+async function _getRollupCreatorFromLogs(
+  provider: JsonRpcProvider
+): Promise<string> {
+  const filter: Filter = {
+    topics: [
+      ethers.utils.id(
+        'RollupCreated(address,address,address,address,address,address,address,address,address,address,address,address)'
+      ),
+    ],
+  }
+
+  const logs = await provider.getLogs({
+    ...filter,
+    fromBlock: '0x1',
+    toBlock: 'latest',
+  })
+  if (logs.length === 0) {
+    throw new Error(`Couldn't find any RollupCreated event`)
+  }
+
+  return logs[0].address
 }
