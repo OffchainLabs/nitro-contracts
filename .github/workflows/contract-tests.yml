@@ -135,3 +135,35 @@ jobs:
 
       - name: Test 4844
         run: yarn test:4844
+
+  test-e2e:
+    name: Test e2e
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: OffchainLabs/actions/run-nitro-test-node@customize-branches
+        with:
+          nitro-testnode-ref: decouple-contracts
+          l3-node: true
+          no-token-bridge: false
+          no-l3-token-bridge: false
+          nitro-contracts-branch: testnode-deploy
+
+      - name: Setup node/yarn
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: 'yarn'
+          cache-dependency-path: '**/yarn.lock'
+
+      - name: Install packages
+        run: yarn
+
+      - name: Compile contracts
+        run: yarn build
+
+      - name: Run e2e tests
+        run: yarn test:e2e
