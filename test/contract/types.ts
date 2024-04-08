@@ -29,10 +29,7 @@ export type MaxTimeVariation = {
 }
 
 export type DelayConfig = {
-  thresholdBlocks: BigNumber
-  thresholdSeconds: BigNumber
-  maxBufferBlocks: number
-  maxBufferSeconds: number
-  periodBlocks: number
-  periodSeconds: number
+  threshold: BigNumber
+  max: number
+  period: number
 }

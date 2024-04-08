@@ -276,21 +276,15 @@ const maxDelayDefault: MaxTimeVariation = {
 }
 
 const delayConfigDefault: DelayConfig = {
-  thresholdBlocks: BigNumber.from((2 * 60 * 60) / 12),
-  thresholdSeconds: BigNumber.from(2 * 60 * 60),
-  maxBufferBlocks: maxDelayDefault.delayBlocks * 2,
-  maxBufferSeconds: maxDelayDefault.delaySeconds * 2,
-  periodBlocks: 14,
-  periodSeconds: 12,
+  threshold: BigNumber.from((2 * 60 * 60) / 12),
+  max: maxDelayDefault.delayBlocks * 2,
+  period: 14,
 }
 
 const delayConfigNotDelayBufferable: DelayConfig = {
-  thresholdBlocks: BigNumber.from(2).pow(64).sub(1),
-  thresholdSeconds: BigNumber.from(2).pow(64).sub(1),
-  maxBufferBlocks: maxDelayDefault.delayBlocks * 2,
-  maxBufferSeconds: maxDelayDefault.delaySeconds * 2,
-  periodBlocks: 14,
-  periodSeconds: 12,
+  threshold: BigNumber.from(2).pow(64).sub(1),
+  max: maxDelayDefault.delayBlocks * 2,
+  period: 14,
 }
 
 export const getSequencerBatchDeliveredEvents = (

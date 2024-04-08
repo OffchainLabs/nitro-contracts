@@ -191,7 +191,7 @@ error InvalidSequencerInboxAccPreimage();
 error InvalidDelayedAccPreimage();
 
 /// @dev Thrown when a batch post fails to prove a message delivery and sequencing are synced within the delay threshold
-error UnexpectedDelay(uint64 delayBlocks, uint64 delaySeconds);
+error UnexpectedDelay(uint64 delayBlocks);
 
 /// @dev Thrown when the sequencer attempts to post a batch with delay / sync proofs without delay bufferability enabled
 error NotDelayBufferable();

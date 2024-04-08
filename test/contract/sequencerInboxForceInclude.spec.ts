@@ -285,12 +285,9 @@ describe('SequencerInboxForceInclude', async () => {
         futureSeconds: 3000,
       },
       {
-        thresholdSeconds: 0,
-        thresholdBlocks: 0,
-        maxBufferSeconds: 0,
-        maxBufferBlocks: 0,
-        periodSeconds: 0,
-        periodBlocks: 0,
+        threshold: 0,
+        max: 0,
+        period: 0,
       }
     )
 
@@ -584,40 +581,6 @@ describe('SequencerInboxForceInclude', async () => {
       delayedTx.senderAddr,
       delayedTx.deliveredMessageEvent.messageDataHash,
       'ForceIncludeBlockTooSoon'
-    )
-  })
-
-  it('cannot include before max time delay', async () => {
-    const { user, inbox, bridge, messageTester, sequencerInbox } =
-      await setupSequencerInbox(10, 100)
-    const delayedTx = await sendDelayedTx(
-      user,
-      inbox,
-      bridge,
-      messageTester,
-      1000000,
-      21000000000,
-      0,
-      await user.getAddress(),
-      BigNumber.from(10),
-      '0x1010'
-    )
-
-    const [delayBlocks, , ,] = await sequencerInbox.maxTimeVariation()
-    // mine a lot of blocks - but use a short time per block
-    // this should mean enough blocks have passed, but not enough time
-    await mineBlocks(delayBlocks.toNumber() + 1, 5)
-
-    await forceIncludeMessages(
-      sequencerInbox,
-      delayedTx.inboxAccountLength,
-      delayedTx.deliveredMessageEvent.kind,
-      delayedTx.l1BlockNumber,
-      delayedTx.l1BlockTimestamp,
-      delayedTx.baseFeeL1,
-      delayedTx.senderAddr,
-      delayedTx.deliveredMessageEvent.messageDataHash,
-      'ForceIncludeTimeTooSoon'
     )
   })
 

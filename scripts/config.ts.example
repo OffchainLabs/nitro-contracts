@@ -4,6 +4,8 @@ import { ethers } from 'ethers'
 // This need to be adjusted for Orbit chains
 export const maxDataSize = 117964
 
+export const isUsingFeeToken = false;
+
 export const config = {
   rollupConfig: {
     confirmPeriodBlocks: ethers.BigNumber.from('45818'),
@@ -29,12 +31,8 @@ export const config = {
       thresholdSeconds: ethers.BigNumber.from('7200'),
       maxBufferBlocks: ethers.BigNumber.from('14400'),
       maxBufferSeconds: ethers.BigNumber.from('172800'),
-      replenishRate: {
-        blocksPerPeriod: ethers.BigNumber.from('1'),
-        secondsPerPeriod: ethers.BigNumber.from('1'),
-        periodBlocks: ethers.BigNumber.from('12'),
-        periodSeconds: ethers.BigNumber.from('12'),
-      },
+      periodBlocks: ethers.BigNumber.from('12'),
+      periodSeconds: ethers.BigNumber.from('12'),
     }
   },
   validators: [

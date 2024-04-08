@@ -37,8 +37,9 @@ interface ISequencerInbox is IDelayedMessageProvider {
 
     event OwnerFunctionCalled(uint256 indexed id);
 
+    /// @dev Event may be emitted for null update (buffer updated to same value)
     /// @notice The delay buffer has updated
-    event BufferUpdated(uint64 bufferUpdateBlocks, uint64 bufferUpdateSeconds);
+    event BufferUpdated(uint64 bufferUpdateBlocks);
 
     /// @dev a separate event that emits batch data when this isn't easily accessible in the tx.input
     event SequencerBatchData(uint256 indexed batchSequenceNumber, bytes data);
@@ -130,8 +131,8 @@ interface ISequencerInbox is IDelayedMessageProvider {
     function removeDelayAfterFork() external;
 
     /// @notice Force messages from the delayed inbox to be included in the chain
-    ///         Callable by any address, but message can only be force-included after maxTimeVariation.delayBlocks and
-    ///         maxTimeVariation.delaySeconds has elapsed. As part of normal behaviour the sequencer will include these
+    ///         Callable by any address, but message can only be force-included after maxTimeVariation.delayBlocks
+    ///         has elapsed. As part of normal behaviour the sequencer will include these
     ///         messages so it's only necessary to call this if the sequencer is down, or not including any delayed messages.
     /// @param _totalDelayedMessagesRead The total number of messages to read up to
     /// @param kind The kind of the last message to be included
@@ -157,18 +158,16 @@ interface ISequencerInbox is IDelayedMessageProvider {
     /// @notice the creation block is intended to still be available after a keyset is deleted
     function getKeysetCreationBlock(bytes32 ksHash) external view returns (uint256);
 
-    /// @dev    The delay buffer can decrease due to pending depletion.
+    /// @dev    The delay buffer can change due to pending depletion/replenishment.
     ///         This function applies pending buffer changes to proactively calculate the force inclusion deadline.
-    ///         This is only relevant when the bufferBlocks or bufferSeconds are less than delayBlocks or delaySeconds.
+    ///         This is only relevant when the buffer is less than the delayBlocks (unhappy case), otherwise force inclusion deadline is fixed at delayBlocks.
     /// @notice Calculates the upper bounds of the delay buffer
     /// @param blockNumber The block number when a delayed message was created
-    /// @param timestamp The timestamp when a delayed message was created
-    /// @return blockNumberDeadline The block number at which the delay buffer is guaranteed to be depleted
-    /// @return timestampDeadline The timestamp at which the delay buffer is guaranteed to be depleted
-    function forceInclusionDeadline(uint64 blockNumber, uint64 timestamp)
+    /// @return blockNumberDeadline The block number at when the message can be force included
+    function forceInclusionDeadline(uint64 blockNumber)
         external
         view
-        returns (uint64 blockNumberDeadline, uint64 timestampDeadline);
+        returns (uint64 blockNumberDeadline);
 
     // ---------- BatchPoster functions ----------
 
@@ -206,7 +205,8 @@ interface ISequencerInbox is IDelayedMessageProvider {
     ) external;
 
     /// @dev    Proves message delays, updates delay buffers, and posts an L2 batch with blob data.
-    ///         Must read atleast one new delayed message.
+    ///         BufferProof is used to prove the delay of the message and syncs the delay buffer.
+    ///         If bufferProof contains a zero InboxAccPreimage, the batch must read atleast one new delayed message.
     function addSequencerL2BatchFromBlobsBufferProof(
         uint256 sequenceNumber,
         uint256 afterDelayedMessagesRead,
@@ -216,8 +216,9 @@ interface ISequencerInbox is IDelayedMessageProvider {
         BufferProof calldata bufferProof
     ) external;
 
-    /// @dev    Proves message delays, updates delay buffers, and posts an L2 batch with blob data.
-    ///         Must read atleast one new delayed message.
+    /// @dev    Proves message delays, updates delay buffers, and posts an L2 batch with calldata.
+    ///         BufferProof is used to prove the delay of the message and syncs the delay buffer.
+    ///         If bufferProof contains a zero InboxAccPreimage, the batch must read atleast one new delayed message.
     function addSequencerL2BatchFromOriginBufferProof(
         uint256 sequenceNumber,
         bytes calldata data,

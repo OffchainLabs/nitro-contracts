@@ -139,12 +139,9 @@ contract BridgeCreatorTest is Test {
             40
         );
         BufferConfig memory bufferConfig = BufferConfig({
-            thresholdSeconds: type(uint64).max,
-            thresholdBlocks: type(uint64).max,
-            maxBufferSeconds: 0,
-            maxBufferBlocks: 0,
-            periodSeconds: 0,
-            periodBlocks: 0
+            threshold: type(uint64).max,
+            max: 0,
+            period: 0
         });
         BridgeCreator.BridgeContracts memory contracts = creator.createBridge(
             proxyAdmin,
@@ -217,12 +214,9 @@ contract BridgeCreatorTest is Test {
             40
         );
         BufferConfig memory bufferConfig = BufferConfig({
-            thresholdSeconds: type(uint64).max,
-            thresholdBlocks: type(uint64).max,
-            maxBufferSeconds: 0,
-            maxBufferBlocks: 0,
-            periodSeconds: 0,
-            periodBlocks: 0
+            threshold: type(uint64).max,
+            max: 0,
+            period: 0
         });
 
         BridgeCreator.BridgeContracts memory contracts = creator.createBridge(

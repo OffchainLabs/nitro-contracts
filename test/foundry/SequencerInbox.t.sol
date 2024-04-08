@@ -51,12 +51,9 @@ contract SequencerInboxTest is Test {
             futureSeconds: 100
         });
     BufferConfig bufferConfigDefault = BufferConfig({
-        thresholdSeconds: type(uint64).max,
-        thresholdBlocks: type(uint64).max,
-        maxBufferSeconds: type(uint64).max,
-        maxBufferBlocks: type(uint64).max,
-        periodSeconds: 12,
-        periodBlocks: 14
+        threshold: type(uint64).max,
+        max: type(uint64).max,
+        period: 14
     });
     address dummyInbox = address(139);
     address proxyAdmin = address(140);
@@ -494,19 +491,8 @@ contract SequencerInboxTest is Test {
         );
     }
 
-    function isValidBufferConfig(BufferConfig memory bufferConfig) internal pure returns (bool) {
-        return bufferConfig.thresholdBlocks != 0 &&
-            bufferConfig.thresholdSeconds != 0 &&
-            bufferConfig.maxBufferBlocks != 0 &&
-            bufferConfig.maxBufferSeconds != 0 &&
-            bufferConfig.periodSeconds != 0 &&
-            bufferConfig.periodBlocks != 0 &&
-            bufferConfig.thresholdBlocks <= bufferConfig.maxBufferBlocks &&
-            bufferConfig.thresholdSeconds <= bufferConfig.maxBufferSeconds;
-    }
-
     function testPostUpgradeInitAlreadyInitBuffer(BufferConfig memory bufferConfig) public returns (SequencerInbox, SequencerInbox) {
-        vm.assume(isValidBufferConfig(bufferConfig));
+        vm.assume(DelayBuffer.isValidBufferConfig(bufferConfig));
         (SequencerInbox seqInbox, ) = deployRollup(false, false, bufferConfigDefault);
         SequencerInbox seqInboxImpl = new SequencerInbox(maxDataSize, dummyReader4844, false, true);
         vm.prank(proxyAdmin);
@@ -525,7 +511,7 @@ contract SequencerInboxTest is Test {
     }
 
     function testPostUpgradeInitBuffer(BufferConfig memory bufferConfig) public {
-        vm.assume(isValidBufferConfig(bufferConfig));
+        vm.assume(DelayBuffer.isValidBufferConfig(bufferConfig));
 
         (SequencerInbox seqInbox, SequencerInbox seqInboxImpl) = testPostUpgradeInitAlreadyInitBuffer(bufferConfig);
 
@@ -550,28 +536,17 @@ contract SequencerInboxTest is Test {
         );
         {
         (
-            uint64 thresholdBlocks,
-            uint64 thresholdSeconds,
-            uint64 maxBufferBlocks,
-            uint64 maxBufferSeconds,
-            uint64 periodBlocks,
-            uint64 periodSeconds
+            uint64 threshold,
+            uint64 max,
+            uint64 period
         ) = seqInbox.bufferConfig();
-        (uint64 bufferBlocks,
-        uint64 bufferSeconds,
-        uint64 syncExpiryBlockNumber,
-        uint64 syncExpiryTimestamp,) = seqInbox.buffer();
-        assertEq(maxBufferBlocks, bufferConfig.maxBufferBlocks);
-        assertEq(maxBufferSeconds, bufferConfig.maxBufferSeconds);
-        assertEq(thresholdBlocks, bufferConfig.thresholdBlocks);
-        assertEq(thresholdSeconds, bufferConfig.thresholdSeconds);
-        assertEq(periodBlocks, bufferConfig.periodBlocks);
-        assertEq(periodSeconds, bufferConfig.periodSeconds);
-        assertEq(bufferBlocks, bufferConfig.maxBufferBlocks);
-        assertEq(bufferSeconds, bufferConfig.maxBufferSeconds);
+        (uint64 bufferBlocks, uint64 syncExpiry, , ) = seqInbox.bufferData();
+        assertEq(max, bufferConfig.max);
+        assertEq(threshold, bufferConfig.threshold);
+        assertEq(period, bufferConfig.period);
+        assertEq(bufferBlocks, bufferConfig.max);
         
-        assertEq(syncExpiryBlockNumber, block.number + bufferConfig.thresholdBlocks > type(uint64).max ? type(uint64).max : block.number + bufferConfig.thresholdBlocks);
-        assertEq(syncExpiryTimestamp, block.timestamp + bufferConfig.thresholdSeconds > type(uint64).max ? type(uint64).max : block.timestamp + bufferConfig.thresholdSeconds);
+        assertEq(syncExpiry, block.number + bufferConfig.threshold > type(uint64).max ? type(uint64).max : block.number + bufferConfig.threshold);
         }
         vm.expectRevert(abi.encodeWithSelector(AlreadyInit.selector));
         vm.prank(proxyAdmin);
@@ -582,8 +557,8 @@ contract SequencerInboxTest is Test {
     }
 
     function testPostUpgradeInitBadInitBuffer(BufferConfig memory config, BufferConfig memory configInvalid) public {
-        vm.assume(isValidBufferConfig(config));
-        vm.assume(!isValidBufferConfig(configInvalid));
+        vm.assume(DelayBuffer.isValidBufferConfig(config));
+        vm.assume(!DelayBuffer.isValidBufferConfig(configInvalid));
 
         (SequencerInbox seqInbox, SequencerInbox seqInboxImpl) = testPostUpgradeInitAlreadyInitBuffer(config);
 
@@ -603,14 +578,14 @@ contract SequencerInboxTest is Test {
     }
 
     function testSetBufferConfig(BufferConfig memory bufferConfig) public {
-        vm.assume(isValidBufferConfig(bufferConfig));
+        vm.assume(DelayBuffer.isValidBufferConfig(bufferConfig));
         (SequencerInbox seqInbox, ) = deployRollup(false, true, bufferConfig);
         vm.prank(rollupOwner);
         seqInbox.setBufferConfig(bufferConfig);
     }
 
     function testSetBufferConfigInvalid(BufferConfig memory bufferConfigInvalid) public {
-        vm.assume(!isValidBufferConfig(bufferConfigInvalid));
+        vm.assume(!DelayBuffer.isValidBufferConfig(bufferConfigInvalid));
         (SequencerInbox seqInbox, ) = deployRollup(false, true, bufferConfigDefault);
         vm.expectRevert(abi.encodeWithSelector(BadBufferConfig.selector));
         vm.prank(rollupOwner);

@@ -20,17 +20,13 @@ import "./DelayBufferTypes.sol";
  */
 library DelayBuffer {
     /// @dev    This function proves delays (or lack thereof) and updates the buffer.
-    ///         It is called by the sequencer inbox when a delayed message is sequenced, proving
-    ///         any delays and updating the delay buffers. This function should only be called when the
-    ///         sequencer inbox has been unexpectedly delayed (unhappy case) and the buffer is depleting or replenishing.
-    /// @notice Synchronizes the sequencer inbox with the delayed inbox.
     /// @param self The delay buffer data
-    /// @param bufferConfig The delay buffer settings
+    /// @param config The delay buffer settings
     /// @param delayedAcc The delayed accumulator of the first delayed message sequenced
-    /// @param delayProof The proof that the delayed message is valid
+    /// @param delayProof The proof of the delay of the first delayed message sequenced
     function delay(
         BufferData storage self,
-        BufferConfig memory bufferConfig,
+        BufferConfig memory config,
         bytes32 delayedAcc,
         DelayProof memory delayProof
     ) internal {
@@ -43,39 +39,20 @@ library DelayBuffer {
         ) {
             revert InvalidDelayedAccPreimage();
         }
-        updateBuffers(
-            self,
-            bufferConfig,
-            delayProof.delayedMessage.blockNumber,
-            delayProof.delayedMessage.timestamp
-        );
-        if (
-            isOnTime(
-                delayProof.delayedMessage.blockNumber,
-                delayProof.delayedMessage.timestamp,
-                bufferConfig.thresholdBlocks,
-                bufferConfig.thresholdSeconds
-            )
-        ) {
-            updateSyncValidity(
-                self,
-                bufferConfig,
-                delayProof.delayedMessage.blockNumber,
-                delayProof.delayedMessage.timestamp
-            );
+        update(self, config, delayProof.delayedMessage.blockNumber);
+        if (isOnTime(delayProof.delayedMessage.blockNumber, config.threshold)) {
+            updateSyncValidity(self, config, delayProof.delayedMessage.blockNumber);
         }
     }
 
-    /// @dev    This function syncs the sequencer inbox with the delayed inbox.
-    ///         It is called by the sequencer inbox when a delayed message is sequenced, proving
-    ///         the message is on-time and updating the sync validity window. This function is called
-    ///         called periodically to renew the sync validity window.
+    /// @dev    This function is called by the sequencer inbox when a delayed message is sequenced, 
+    ///         proving the message is on-time and updating the sync validity window. 
     /// @notice Synchronizes the sequencer inbox with the delayed inbox.
     /// @param beforeAcc The inbox accumulator before the current batch
     /// @param bufferProof The proof that the delayed message is valid
     function sync(
         BufferData storage self,
-        BufferConfig memory bufferConfig,
+        BufferConfig memory config,
         bytes32 beforeAcc,
         BufferProof memory bufferProof
     ) internal {
@@ -95,58 +72,28 @@ library DelayBuffer {
         ) {
             revert InvalidDelayedAccPreimage();
         }
-        if (
-            !isOnTime(
-                bufferProof.delayedMessage.blockNumber,
-                bufferProof.delayedMessage.timestamp,
-                bufferConfig.thresholdBlocks,
-                bufferConfig.thresholdSeconds
-            )
-        ) {
-            revert UnexpectedDelay(
-                bufferProof.delayedMessage.blockNumber,
-                bufferProof.delayedMessage.timestamp
-            );
+        if (!isOnTime(bufferProof.delayedMessage.blockNumber, config.threshold)) {
+            revert UnexpectedDelay(bufferProof.delayedMessage.blockNumber);
         }
 
         // calculate the margin of the delay message below the delay threshold
         // no sync / delay proofs are required in this margin `sync validity` period.
-        updateSyncValidity(
-            self,
-            bufferConfig,
-            bufferProof.delayedMessage.blockNumber,
-            bufferProof.delayedMessage.timestamp
-        );
+        updateSyncValidity(self, config, bufferProof.delayedMessage.blockNumber);
     }
 
     /// @dev    Calculates the margin a sequenced message is below the delay threshold
     ///         defining a `sync validity` window during which no delay proofs are required.
     /// @notice Updates the time / block until no delay proofs are required.
     /// @param blockNumber The block number when the synced message was created.
-    /// @param timestamp The timestamp when the synced message was created.
     function updateSyncValidity(
         BufferData storage self,
-        BufferConfig memory bufferConfig,
-        uint64 blockNumber,
-        uint64 timestamp
+        BufferConfig memory config,
+        uint64 blockNumber
     ) internal {
-        // saturating at uint64 max gracefully handles large threshold settings
-        self.syncExpiryBlockNumber = bufferConfig.thresholdBlocks > type(uint64).max - blockNumber
+        // saturating at uint64 max handles large threshold settings
+        self.syncExpiry = config.threshold > type(uint64).max - blockNumber
             ? type(uint64).max
-            : blockNumber + bufferConfig.thresholdBlocks;
-        self.syncExpiryTimestamp = bufferConfig.thresholdSeconds > type(uint64).max - timestamp
-            ? type(uint64).max
-            : timestamp + bufferConfig.thresholdSeconds;
-    }
-
-    function isOnTime(
-        uint64 blockNumber,
-        uint64 timestamp,
-        uint64 thresholdBlocks,
-        uint64 thresholdSeconds
-    ) internal view returns (bool) {
-        return ((uint64(block.number) - blockNumber <= thresholdBlocks) &&
-            (uint64(block.timestamp) - timestamp <= thresholdSeconds));
+            : blockNumber + config.threshold;
     }
 
     /// @dev    Depletion is limited by the elapsed time / blocks in the delayed message queue to avoid double counting and potential L2 reorgs.
@@ -164,9 +111,9 @@ library DelayBuffer {
     function deplete(
         uint64 start,
         uint64 end,
+        uint64 buffer,
         uint64 prevDelay,
-        uint64 threshold,
-        uint64 buffer
+        uint64 threshold
     ) internal pure returns (uint64) {
         uint64 elapsed = end > start ? end - start : 0;
         uint64 unexpectedDelay = prevDelay > threshold ? prevDelay - threshold : 0;
@@ -180,151 +127,130 @@ library DelayBuffer {
         return buffer;
     }
 
-    /// @notice Replenishes the delay buffer saturating at maxBuffer
+    /// @notice Replenishes the delay buffer saturating at max
     /// @param start The beginning reference point
     /// @param end The ending reference point
     /// @param buffer The buffer to be replenished
-    /// @param maxBuffer The maximum buffer
+    /// @param max The maximum buffer
     /// @param period The replenish period
     function replenish(
         uint64 start,
         uint64 end,
         uint64 buffer,
-        uint64 maxBuffer,
+        uint64 max,
         uint64 period
     ) internal pure returns (uint64) {
         // add the replenish round off from the last replenish
         uint64 elapsed = end > start ? end - start : 0;
-        // purposely ignores rounds down for simplicity
+        // purposely ignores rounding for simplicity
         uint64 replenishAmount = elapsed / period;
-        if (maxBuffer - buffer > replenishAmount) {
+        if (max - buffer > replenishAmount) {
             buffer += replenishAmount;
         } else {
             // saturate
-            buffer = maxBuffer;
+            buffer = max;
         }
         return buffer;
     }
 
-    /// @notice Decrements or replenishes the delay buffer conditionally
-    /// @param start The beginning reference point (delayPrev)
-    /// @param end The ending reference point (current message)
-    /// @param prevDelay The delay to be applied
-    /// @param threshold The threshold to saturate at
-    /// @param buffer The buffer to be decremented
-    /// @param maxBuffer The maximum buffer
-    /// @param period The replenish period
     function update(
         uint64 start,
         uint64 end,
+        uint64 buffer,
         uint64 prevDelay,
         uint64 threshold,
-        uint64 buffer,
-        uint64 maxBuffer,
+        uint64 max,
         uint64 period
     ) internal pure returns (uint64) {
         if (threshold < prevDelay) {
             // unexpected delay
-            return deplete(start, end, prevDelay, threshold, buffer);
-        } else if (buffer < maxBuffer) {
-            // replenish buffer if depleted
-            return replenish(start, end, buffer, maxBuffer, period);
+            buffer = deplete(start, end, buffer, prevDelay, threshold);
+        } else if (buffer < max) {
+            buffer = replenish(start, end, buffer, max, period);
         }
         return buffer;
     }
 
-    /// @notice Updates both block number and time buffers.
+    /// @notice Updates buffer and prevDelay
     /// @param self The delay buffer data
-    /// @param bufferConfig The delay buffer settings
+    /// @param config The delay buffer settings
     /// @param blockNumber The update block number
-    /// @param timestamp The update timestamp
-    function updateBuffers(
+    function update(
         BufferData storage self,
-        BufferConfig memory bufferConfig,
-        uint64 blockNumber,
-        uint64 timestamp
+        BufferConfig memory config,
+        uint64 blockNumber
     ) internal {
         // The prevDelay stores the delay of the previous batch which is
         // used as a starting reference point to calculate an elapsed amount using the current
         // message as the ending reference point.
-        self.bufferBlocks = update({
-            start: self.prevDelay.blockNumber,
-            end: blockNumber,
-            prevDelay: self.prevDelay.delayBlocks,
-            threshold: bufferConfig.thresholdBlocks,
-            buffer: self.bufferBlocks,
-            maxBuffer: bufferConfig.maxBufferBlocks,
-            period: bufferConfig.periodBlocks
-        });
 
-        self.bufferSeconds = update({
-            start: self.prevDelay.timestamp,
-            end: timestamp,
-            prevDelay: self.prevDelay.delaySeconds,
-            threshold: bufferConfig.thresholdSeconds,
-            buffer: self.bufferSeconds,
-            maxBuffer: bufferConfig.maxBufferSeconds,
-            period: bufferConfig.periodSeconds
-        });
+        self.buffer = pendingUpdate(self, config, blockNumber);
 
         // store a new starting reference point
         // any buffer updates will be applied retroactively in the next batch post
-        self.prevDelay = DelayHistory({
-            blockNumber: blockNumber,
-            timestamp: timestamp,
-            delayBlocks: uint64(block.number) - blockNumber,
-            delaySeconds: uint64(block.timestamp) - timestamp
-        });
+        self.prevBlockNumber = blockNumber;
+        self.prevDelay = uint64(block.number) - blockNumber;
     }
 
-    /// @dev    The delay buffer can change due to pending depletion in the delay history cache.
-    ///         This function applies pending buffer changes to proactively calculate the force inclusion deadline.
-    ///         This is only relevant when the bufferBlocks or bufferSeconds are less than delayBlocks or delaySeconds.
-    /// @notice Calculates the upper bounds of the delay buffer
+    /// @dev    The delay buffer can change due to pending depletion / replenishment due to previous delays.
+    ///         This function applies pending buffer changes to proactively calculate the buffer changes.
+    ///         This is only relevant when the bufferBlocks is less than delayBlocks.
+    /// @notice Proactively calculates the buffer changes up to the requested block number
+    /// @param self The delay buffer data
+    /// @param config The delay buffer settings
     /// @param blockNumber The block number to process the delay up to
-    /// @param thresholdBlocks The maximum amount of blocks that a message is expected to be delayed
-    /// @param timestamp The timestamp to process the delay up to
-    /// @param thresholdSeconds The maximum amount of seconds that a message is expected to be delayed
-    function pendingDelay(
+    function pendingUpdate(
         BufferData storage self,
-        uint64 blockNumber,
-        uint64 timestamp,
-        uint64 thresholdBlocks,
-        uint64 thresholdSeconds
-    ) internal view returns (uint64, uint64) {
-        uint64 bufferBlocks = deplete(
-            self.prevDelay.blockNumber,
-            blockNumber,
-            self.prevDelay.delayBlocks,
-            thresholdBlocks,
-            self.bufferBlocks
-        );
-        uint64 bufferSeconds = deplete(
-            self.prevDelay.timestamp,
-            timestamp,
-            self.prevDelay.delaySeconds,
-            thresholdSeconds,
-            self.bufferSeconds
-        );
-        return (bufferBlocks, bufferSeconds);
+        BufferConfig memory config,
+        uint64 blockNumber
+    ) internal view returns (uint64) {
+        return
+            update({
+                start: self.prevBlockNumber,
+                end: blockNumber,
+                buffer: self.buffer,
+                threshold: config.threshold,
+                prevDelay: self.prevDelay,
+                max: config.max,
+                period: config.period
+            });
     }
 
     /// @dev    This is the `sync validity window` during which no proofs are required.
     /// @notice Returns true if the inbox is in a synced state (no unexpected delays are possible)
     function isSynced(BufferData storage self) internal view returns (bool) {
-        return (block.number <= self.syncExpiryBlockNumber &&
-            block.timestamp <= self.syncExpiryTimestamp);
+        return block.number <= self.syncExpiry;
     }
 
-    function isValidBufferConfig(BufferConfig memory bufferConfig) internal pure returns (bool) {
+    function isOnTime(uint64 blockNumber, uint64 thresholdBlocks) internal view returns (bool) {
+        return uint64(block.number) - blockNumber <= thresholdBlocks;
+    }
+
+    function isValidBufferConfig(BufferConfig memory config) internal pure returns (bool) {
         return
-            bufferConfig.thresholdBlocks != 0 &&
-            bufferConfig.thresholdSeconds != 0 &&
-            bufferConfig.maxBufferBlocks != 0 &&
-            bufferConfig.maxBufferSeconds != 0 &&
-            bufferConfig.periodSeconds != 0 &&
-            bufferConfig.periodBlocks != 0 &&
-            bufferConfig.thresholdBlocks <= bufferConfig.maxBufferBlocks &&
-            bufferConfig.thresholdSeconds <= bufferConfig.maxBufferSeconds;
+            config.threshold != 0 &&
+            config.max != 0 &&
+            config.period != 0 &&
+            config.threshold <= config.max;
+    }
+
+    function isMutable(BufferData storage self, BufferConfig memory config)
+        internal
+        view
+        returns (bool)
+    {
+        return isDelayable(self) || isReplenishable(self, config);
+    }
+
+    function isDelayable(BufferData storage self) internal view returns (bool) {
+        return !isSynced(self);
+    }
+
+    function isReplenishable(BufferData storage self, BufferConfig memory config)
+        internal
+        view
+        returns (bool)
+    {
+        return self.buffer < config.max;
     }
 }

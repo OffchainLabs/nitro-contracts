@@ -110,8 +110,7 @@ contract BridgeCreator is Ownable {
         BufferConfig calldata bufferConfig
     ) external returns (BridgeContracts memory) {
         // create delay bufferable if address zero is provided for native token, otherwise create ERC20-based bridge
-        bool isDelayBufferable = bufferConfig.thresholdBlocks != type(uint64).max &&
-            bufferConfig.thresholdSeconds != type(uint64).max;
+        bool isDelayBufferable = bufferConfig.threshold != type(uint64).max;
         BridgeContracts memory _ethBasedTemplates = isDelayBufferable
             ? ethBasedDelayBufferableTemplates
             : ethBasedTemplates;
