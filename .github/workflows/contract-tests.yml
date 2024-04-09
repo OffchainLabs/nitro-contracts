@@ -150,7 +150,7 @@ jobs:
           l3-node: true
           no-token-bridge: false
           no-l3-token-bridge: false
-          nitro-contracts-branch: testnode-deploy
+          nitro-contracts-branch: "${{ github.head_ref }}"
 
       - name: Setup node/yarn
         uses: actions/setup-node@v3
