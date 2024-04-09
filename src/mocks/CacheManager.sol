@@ -11,18 +11,25 @@ import "solady/src/utils/MinHeapLib.sol";
 contract CacheManager {
     using MinHeapLib for MinHeapLib.Heap;
 
-    MinHeapLib.Heap bids;
-    Entry[] entries;
+    ArbOwnerPublic internal constant ARB_OWNER_PUBLIC = ArbOwnerPublic(address(0x6b));
+    ArbWasm internal constant ARB_WASM = ArbWasm(address(0x71));
+    ArbWasmCache internal constant ARB_WASM_CACHE = ArbWasmCache(address(0x72));
 
-    uint64 cacheSize;
-    uint64 queueSize;
-    uint64 decay;
+    MinHeapLib.Heap internal bids;
+    Entry[] public entries;
+
+    uint64 public cacheSize;
+    uint64 public queueSize;
+    uint64 public decay;
+
+    error NotChainOwner(address sender);
+    error AsmTooLarge(uint256 asm, uint256 cacheSize);
+    error AlreadyCached(bytes32 codehash);
+    error BidTooSmall(uint256 bid, uint256 min);
 
     struct Entry {
         bytes32 code;
-        uint256 paid;
         uint64 size;
-        address payable bidder;
     }
 
     constructor(uint64 initCacheSize, uint64 initDecay) {
@@ -30,41 +37,53 @@ contract CacheManager {
         decay = initDecay;
     }
 
+    modifier onlyOwner() {
+        if (!ARB_OWNER_PUBLIC.isChainOwner(msg.sender)) {
+            revert NotChainOwner(msg.sender);
+        }
+        _;
+    }
+
     /// Sets the intended cache size. Note that the queue may temporarily be larger.
-    function setCacheSize(uint64 newSize) external {
-        _requireOwner();
+    function setCacheSize(uint64 newSize) external onlyOwner {
         cacheSize = newSize;
     }
 
-    /// Evicts all programs in the cache and returns all payments.
-    function evictAll() external {
-        _requireOwner();
-
+    /// Evicts all programs in the cache.
+    function evictAll() external onlyOwner {
         while (bids.length() != 0) {
             uint64 index = _getIndex(bids.pop());
             Entry memory entry = entries[index];
             _evict(entry.code);
-
-            // return funds to user
-            entry.bidder.call{value: entry.paid, gas: 0};
             delete entries[index];
         }
         queueSize = 0;
     }
 
+    function sweepFunds() external {
+        (bool success, bytes memory data) = ARB_OWNER_PUBLIC.getNetworkFeeAccount().call{
+            value: address(this).balance
+        }("");
+        if (!success) {
+            assembly {
+                revert(add(data, 32), mload(data))
+            }
+        }
+    }
+
     function placeBid(bytes32 codehash) external payable {
-        require(!_isCached(codehash), "ALREADY_CACHED");
+        if (_isCached(codehash)) {
+            revert AlreadyCached(codehash);
+        }
 
         // discount historical bids by the number of seconds
         uint256 bid = msg.value + block.timestamp * uint256(decay);
         uint64 asm = _asmSize(codehash);
+        if (asm > cacheSize) {
+            revert AsmTooLarge(asm, cacheSize);
+        }
 
-        Entry memory candidate = Entry({
-            size: asm,
-            code: codehash,
-            paid: msg.value,
-            bidder: payable(msg.sender)
-        });
+        Entry memory candidate = Entry({size: asm, code: codehash});
 
         uint64 index;
 
@@ -85,8 +104,9 @@ contract CacheManager {
             uint256 min = bids.root();
             index = _getIndex(min);
             bid = _setIndex(bid, index); // make both have same index
-
-            require(bid > min, "BID_TOO_SMALL");
+            if (bid > min) {
+                revert BidTooSmall(_clearIndex(bid), _clearIndex(min));
+            }
 
             // evict the entry
             Entry memory entry = entries[index];
@@ -106,11 +126,6 @@ contract CacheManager {
         bids.push(bid);
     }
 
-    function _requireOwner() internal view {
-        bool owner = ArbOwnerPublic(address(0x6b)).isChainOwner(address(msg.sender));
-        require(owner, "NOT_OWNER");
-    }
-
     function _getIndex(uint256 info) internal pure returns (uint64) {
         return uint64(info >> 192);
     }
@@ -120,20 +135,24 @@ contract CacheManager {
         return (info & mask) | (uint256(index) << 192);
     }
 
+    function _clearIndex(uint256 info) internal pure returns (uint256) {
+        return _setIndex(info, 0);
+    }
+
     function _asmSize(bytes32 codehash) internal view returns (uint64) {
-        uint32 size = ArbWasm(address(0x71)).codehashAsmSize(codehash);
+        uint32 size = ARB_WASM.codehashAsmSize(codehash);
         return uint64(size >= 4096 ? size : 4096); // pretend it's at least 4Kb
     }
 
     function _isCached(bytes32 codehash) internal view returns (bool) {
-        return ArbWasmCache(address(0x72)).codehashIsCached(codehash);
+        return ARB_WASM_CACHE.codehashIsCached(codehash);
     }
 
     function _cache(bytes32 codehash) internal {
-        ArbWasmCache(address(0x72)).cacheCodehash(codehash);
+        ARB_WASM_CACHE.cacheCodehash(codehash);
     }
 
     function _evict(bytes32 codehash) internal {
-        ArbWasmCache(address(0x72)).evictCodehash(codehash);
+        ARB_WASM_CACHE.evictCodehash(codehash);
     }
 }
