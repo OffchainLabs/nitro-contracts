@@ -25,7 +25,6 @@ import {
 import { getLocalNetworks, sleep } from '../../scripts/testSetup'
 import { applyAlias } from '../contract/utils'
 import { BigNumber, ContractTransaction, Wallet, ethers } from 'ethers'
-import { rollup } from '../../build/types/src'
 
 const LOCALHOST_L2_RPC = 'http://localhost:8547'
 const LOCALHOST_L3_RPC = 'http://localhost:3347'
