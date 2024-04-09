@@ -21,11 +21,18 @@ contract CacheManager {
     uint64 public cacheSize;
     uint64 public queueSize;
     uint64 public decay;
+    bool public isPaused;
 
     error NotChainOwner(address sender);
-    error AsmTooLarge(uint256 asm, uint256 cacheSize);
+    error AsmTooLarge(uint256 asm, uint256 queueSize, uint256 cacheSize);
     error AlreadyCached(bytes32 codehash);
     error BidTooSmall(uint256 bid, uint256 min);
+    error BidsArePaused();
+
+    event InsertBid(uint256 bid, bytes32 indexed codehash, uint64 size);
+    event DeleteBid(uint256 bid, bytes32 indexed codehash, uint64 size);
+    event Pause();
+    event Unpause();
 
     struct Entry {
         bytes32 code;
@@ -49,17 +56,38 @@ contract CacheManager {
         cacheSize = newSize;
     }
 
-    /// Evicts all programs in the cache.
-    function evictAll() external onlyOwner {
-        while (bids.length() != 0) {
-            uint64 index = _getIndex(bids.pop());
-            Entry memory entry = entries[index];
-            _evict(entry.code);
-            delete entries[index];
-        }
-        queueSize = 0;
+    /// Sets the intended decay factor. Does not modify existing bids.
+    function setDecayRate(uint64 newDecay) external onlyOwner {
+        decay = newDecay;
     }
 
+    /// Disable new bids.
+    function paused() external onlyOwner {
+        isPaused = true;
+        emit Pause();
+    }
+
+    /// Enable new bids.
+    function unpause() external onlyOwner {
+        isPaused = false;
+        emit Unpause();
+    }
+
+    /// Evicts all programs in the cache.
+    function evictAll() external onlyOwner {
+        evictPrograms(type(uint256).max);
+    }
+
+    /// Evicts up to `count` programs from the cache.
+    function evictPrograms(uint256 count) public onlyOwner {
+        while (bids.length() != 0 && count > 0) {
+            (uint256 bid, uint64 index) = _getBid(bids.pop());
+            _deleteEntry(bid, index);
+            count -= 1;
+        }
+    }
+
+    /// Sends all revenue to the network fee account.
     function sweepFunds() external {
         (bool success, bytes memory data) = ARB_OWNER_PUBLIC.getNetworkFeeAccount().call{
             value: address(this).balance
@@ -71,7 +99,18 @@ contract CacheManager {
         }
     }
 
+    /// Gets the minimum bid needed to cache the given program.
+    /// Call this function with the program's codehash.
+    function getMinBid(bytes32) external view returns (uint256) {
+        (uint256 bid, ) = _getBid(bids.root());
+        return bid;
+    }
+
+    /// Places a bid, reverting if payment is insufficient.
     function placeBid(bytes32 codehash) external payable {
+        if (isPaused) {
+            revert BidsArePaused();
+        }
         if (_isCached(codehash)) {
             revert AlreadyCached(codehash);
         }
@@ -79,80 +118,69 @@ contract CacheManager {
         // discount historical bids by the number of seconds
         uint256 bid = msg.value + block.timestamp * uint256(decay);
         uint64 asm = _asmSize(codehash);
-        if (asm > cacheSize) {
-            revert AsmTooLarge(asm, cacheSize);
-        }
-
-        Entry memory candidate = Entry({size: asm, code: codehash});
-
-        uint64 index;
-
-        // if there's space, append to the end
-        if (queueSize + asm < cacheSize) {
-            index = uint64(entries.length);
-            bid = _setIndex(bid, index);
-
-            bids.push(bid);
-            queueSize += asm;
-            _cache(codehash);
-            entries[index] = candidate;
-            return;
-        }
+        uint64 index = uint64(entries.length);
 
         // pop entries until we have enough space
-        while (true) {
-            uint256 min = bids.root();
-            index = _getIndex(min);
-            bid = _setIndex(bid, index); // make both have same index
+        while (queueSize + asm > cacheSize) {
+            uint256 min;
+            (min, index) = _getBid(bids.pop());
             if (bid > min) {
-                revert BidTooSmall(_clearIndex(bid), _clearIndex(min));
+                revert BidTooSmall(bid, min);
             }
-
-            // evict the entry
-            Entry memory entry = entries[index];
-            _evict(entry.code);
-            queueSize -= entry.size;
-            bids.pop();
-            delete entries[index];
-
-            if (queueSize + asm < cacheSize) {
-                break;
-            }
+            _deleteEntry(min, index);
         }
 
-        // replace the min with the new bid
-        _cache(codehash);
-        entries[index] = candidate;
-        bids.push(bid);
+        return _addBid(bid, codehash, asm, index);
     }
 
-    function _getIndex(uint256 info) internal pure returns (uint64) {
-        return uint64(info >> 192);
+    /// Adds a bid
+    function _addBid(
+        uint256 bid,
+        bytes32 code,
+        uint64 size,
+        uint64 index
+    ) internal {
+        if (queueSize + size < cacheSize) {
+            revert AsmTooLarge(size, queueSize, cacheSize);
+        }
+
+        Entry memory entry = Entry({size: size, code: code});
+        ARB_WASM_CACHE.cacheCodehash(code);
+        bids.push(_packBid(bid, index));
+        queueSize += size;
+        entries[index] = entry;
+        emit InsertBid(bid, code, size);
     }
 
-    function _setIndex(uint256 info, uint64 index) internal pure returns (uint256) {
+    /// Clears the entry at the given index
+    function _deleteEntry(uint256 bid, uint64 index) internal {
+        Entry memory entry = entries[index];
+        ARB_WASM_CACHE.evictCodehash(entry.code);
+        queueSize -= entry.size;
+        emit DeleteBid(bid, entry.code, entry.size);
+        delete entries[index];
+    }
+
+    /// Gets the bid and index from a packed bid item
+    function _getBid(uint256 info) internal pure returns (uint256 bid, uint64 index) {
+        bid = _packBid(info, 0);
+        index = uint64(info >> 192);
+    }
+
+    /// Creates a packed bid item
+    function _packBid(uint256 bid, uint64 index) internal pure returns (uint256) {
         uint256 mask = 0xffffffffffffffffffffffffffffffffffffffffffffffff;
-        return (info & mask) | (uint256(index) << 192);
+        return (bid & mask) | (uint256(index) << 192);
     }
 
-    function _clearIndex(uint256 info) internal pure returns (uint256) {
-        return _setIndex(info, 0);
-    }
-
+    /// Gets the size of the given program in bytes
     function _asmSize(bytes32 codehash) internal view returns (uint64) {
         uint32 size = ARB_WASM.codehashAsmSize(codehash);
         return uint64(size >= 4096 ? size : 4096); // pretend it's at least 4Kb
     }
 
+    /// Determines whether a program is cached
     function _isCached(bytes32 codehash) internal view returns (bool) {
         return ARB_WASM_CACHE.codehashIsCached(codehash);
-    }
-
-    function _cache(bytes32 codehash) internal {
-        ARB_WASM_CACHE.cacheCodehash(codehash);
-    }
-
-    function _evict(bytes32 codehash) internal {
-        ARB_WASM_CACHE.evictCodehash(codehash);
     }
 }
