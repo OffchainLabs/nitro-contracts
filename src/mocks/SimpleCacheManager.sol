@@ -1,4 +1,4 @@
-// Copyright 2022-2023, Offchain Labs, Inc.
+// Copyright 2022-2024, Offchain Labs, Inc.
 // For license information, see https://github.com/nitro/blob/master/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
@@ -14,9 +14,9 @@ contract SimpleCacheManager {
         ArbWasmCache(address(0x72)).evictCodehash(codehash(program));
     }
 
-    function codehash(address program) internal returns (bytes32 codehash) {
+    function codehash(address program) internal view returns (bytes32 hash) {
         assembly {
-            codehash := extcodehash(program)
+            hash := extcodehash(program)
         }
     }
 }

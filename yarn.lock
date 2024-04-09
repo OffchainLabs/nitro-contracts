@@ -10227,6 +10227,11 @@ sol2uml@2.2.0:
     js-graph-algorithms "^1.0.18"
     klaw "^4.0.1"
 
+solady@^0.0.182:
+  version "0.0.182"
+  resolved "https://registry.yarnpkg.com/solady/-/solady-0.0.182.tgz#bd8c47f128a3a752358ad052782773966d74c400"
+  integrity sha512-FW6xo1akJoYpkXMzu58/56FcNU3HYYNamEbnFO3iSibXk0nSHo0DV2Gu/zI3FPg3So5CCX6IYli1TT1IWATnvg==
+
 solc@0.5.7:
   version "0.5.7"
   resolved "https://registry.yarnpkg.com/solc/-/solc-0.5.7.tgz#d84697ac5cc63d9b2139bfb349cec64b64861cdc"

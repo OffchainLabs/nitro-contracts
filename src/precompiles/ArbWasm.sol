@@ -30,6 +30,11 @@ interface ArbWasm {
     /// Reverts if too soon or if the program is not up to date.
     function codehashKeepalive(bytes32 codehash) external payable;
 
+    /// @notice gets a program's asm size.
+    /// Reverts if program is not active.
+    /// @return size the size in bytes
+    function codehashAsmSize(bytes32 codehash) external view returns (uint64 size);
+    
     /// @notice gets the stylus version the program was most recently activated against
     /// @return version the program version (reverts for EVM contracts)
     function programVersion(address program) external view returns (uint16 version);
@@ -41,7 +46,7 @@ interface ArbWasm {
         external
         view
         returns (uint16 gas, uint16 gasWhenCached);
-
+    
     /// @notice gets the memory footprint of the program at the given address in pages
     /// @return footprint the memory footprint of program in pages (reverts for EVM contracts)
     function programMemoryFootprint(address program) external view returns (uint16 footprint);
