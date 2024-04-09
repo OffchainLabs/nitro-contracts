@@ -127,13 +127,7 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
         if (afterDelayedMessagesRead > 0) {
             delayedAcc = delayedInboxAccs[afterDelayedMessagesRead - 1];
         }
-        acc = Messages.accumulateSequencerInbox(
-            Messages.InboxAccPreimage({
-                beforeAcc: beforeAcc,
-                dataHash: dataHash,
-                delayedAcc: delayedAcc
-            })
-        );
+        acc = keccak256(abi.encodePacked(beforeAcc, dataHash, delayedAcc));
         sequencerInboxAccs.push(acc);
     }
 

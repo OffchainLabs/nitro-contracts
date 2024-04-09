@@ -287,7 +287,7 @@ describe('SequencerInboxForceInclude', async () => {
       {
         threshold: 0,
         max: 0,
-        period: 0,
+        replenishRateInBasis: 0,
       }
     )
 

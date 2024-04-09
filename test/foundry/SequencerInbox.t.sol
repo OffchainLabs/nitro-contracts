@@ -53,7 +53,7 @@ contract SequencerInboxTest is Test {
     BufferConfig bufferConfigDefault = BufferConfig({
         threshold: type(uint64).max,
         max: type(uint64).max,
-        period: 14
+        replenishRateInBasis: 714
     });
     address dummyInbox = address(139);
     address proxyAdmin = address(140);
@@ -535,15 +535,10 @@ contract SequencerInboxTest is Test {
             abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector, bufferConfig)
         );
         {
-        (
-            uint64 threshold,
-            uint64 max,
-            uint64 period
-        ) = seqInbox.bufferConfig();
-        (uint64 bufferBlocks, uint64 syncExpiry, , ) = seqInbox.bufferData();
+        (uint64 bufferBlocks, uint64 syncExpiry, uint64 max, uint64 threshold, uint64 replenishRateInBasis,,) = seqInbox.buffer();
         assertEq(max, bufferConfig.max);
         assertEq(threshold, bufferConfig.threshold);
-        assertEq(period, bufferConfig.period);
+        assertEq(replenishRateInBasis, bufferConfig.replenishRateInBasis);
         assertEq(bufferBlocks, bufferConfig.max);
         
         assertEq(syncExpiry, block.number + bufferConfig.threshold > type(uint64).max ? type(uint64).max : block.number + bufferConfig.threshold);

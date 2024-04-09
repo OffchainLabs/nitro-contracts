@@ -116,8 +116,8 @@ contract RollupCreatorTest is Test {
         );
         BufferConfig memory bufferConfig = BufferConfig({
             threshold: type(uint64).max,
-            max: 0,
-            period: 0
+            max: type(uint64).max,
+            replenishRateInBasis: 0
         });
         Config memory config = Config({
             confirmPeriodBlocks: 20,
@@ -277,8 +277,8 @@ contract RollupCreatorTest is Test {
         );
         BufferConfig memory bufferConfig = BufferConfig({
             threshold: type(uint64).max,
-            max: 0,
-            period: 0
+            max: type(uint64).max,
+            replenishRateInBasis: 0
         });
         Config memory config = Config({
             confirmPeriodBlocks: 20,
@@ -439,8 +439,8 @@ contract RollupCreatorTest is Test {
         );
         BufferConfig memory bufferConfig = BufferConfig({
             threshold: type(uint64).max,
-            max: 0,
-            period: 0
+            max: type(uint64).max,
+            replenishRateInBasis: 0
         });
         Config memory config = Config({
             confirmPeriodBlocks: 20,

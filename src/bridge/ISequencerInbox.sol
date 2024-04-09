@@ -205,28 +205,28 @@ interface ISequencerInbox is IDelayedMessageProvider {
     ) external;
 
     /// @dev    Proves message delays, updates delay buffers, and posts an L2 batch with blob data.
-    ///         BufferProof is used to prove the delay of the message and syncs the delay buffer.
-    ///         If bufferProof contains a zero InboxAccPreimage, the batch must read atleast one new delayed message.
-    function addSequencerL2BatchFromBlobsBufferProof(
+    ///         delayProof is used to prove the delay of the message and syncs the delay buffer.
+    ///         If delayProof contains a zero InboxAccPreimage, the batch must read atleast one new delayed message.
+    function addSequencerL2BatchFromBlobsDelayProof(
         uint256 sequenceNumber,
         uint256 afterDelayedMessagesRead,
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount,
-        BufferProof calldata bufferProof
+        DelayProof calldata delayProof
     ) external;
 
     /// @dev    Proves message delays, updates delay buffers, and posts an L2 batch with calldata.
-    ///         BufferProof is used to prove the delay of the message and syncs the delay buffer.
-    ///         If bufferProof contains a zero InboxAccPreimage, the batch must read atleast one new delayed message.
-    function addSequencerL2BatchFromOriginBufferProof(
+    ///         delayProof is used to prove the delay of the message and syncs the delay buffer.
+    ///         If delayProof contains a zero InboxAccPreimage, the batch must read atleast one new delayed message.
+    function addSequencerL2BatchFromOriginDelayProof(
         uint256 sequenceNumber,
         bytes calldata data,
         uint256 afterDelayedMessagesRead,
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount,
-        BufferProof calldata bufferProof
+        DelayProof calldata delayProof
     ) external;
 
     // ---------- onlyRollupOrOwner functions ----------

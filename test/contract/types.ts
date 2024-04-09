@@ -31,5 +31,5 @@ export type MaxTimeVariation = {
 export type DelayConfig = {
   threshold: BigNumber
   max: number
-  period: number
+  replenishRateInBasis: number
 }

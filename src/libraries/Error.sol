@@ -182,10 +182,8 @@ error DataBlobsNotSupported();
 /// @dev Thrown when atleast one new message must be read.
 error NotDelayedFarEnough();
 
-/// @dev Thrown when batches are posted without delay proof, this is only allowed in a sync state or when no new delayed messages are read
+/// @dev Thrown when batches are posted without buffer proof, this is only allowed in a sync state or when no new delayed messages are read
 error DelayProofRequired();
-/// @dev Thrown when a batch post fails to prove a message delivery and sequencing are synced within the delay threshold
-error InvalidSequencerInboxAccPreimage();
 
 /// @dev The DelayedAccPreimage is invalid
 error InvalidDelayedAccPreimage();

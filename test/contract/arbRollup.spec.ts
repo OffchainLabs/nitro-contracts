@@ -118,7 +118,7 @@ async function getDefaultConfig(
     bufferConfig: {
       threshold: BigNumber.from(1).shl(64).sub(1),
       max: BigNumber.from(1).shl(64).sub(1),
-      period: BigNumber.from(1).shl(64).sub(1),
+      replenishRateInBasis: BigNumber.from(1).shl(64).sub(1),
     },
     stakeToken: stakeToken,
     wasmModuleRoot: wasmModuleRoot,
