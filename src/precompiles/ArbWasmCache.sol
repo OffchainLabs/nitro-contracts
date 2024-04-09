@@ -16,17 +16,6 @@ interface ArbWasmCache {
     /// @return managers the list of managers.
     function allCacheManagers() external view returns (address[] memory managers);
 
-    /// @notice Gets the trie table params.
-    /// @return bits size of the cache as a power of 2.
-    /// @return reads the number of items to read when determining inclusion.
-    function trieTableParams() external view returns (uint8 bits, uint8 reads);
-
-    /// @notice Configures the trie table.
-    /// @notice Caller must be a cache manager or chain owner.
-    /// @param bits size of the cache as a power of 2.
-    /// @param reads the number of items to read when determining inclusion.
-    function setTrieTableParams(uint8 bits, uint8 reads) external;
-
     /// @notice Caches all programs with the given codehash.
     /// @notice Reverts if the programs have expired.
     /// @notice Caller must be a cache manager or chain owner.
@@ -40,41 +29,5 @@ interface ArbWasmCache {
     /// @notice Gets whether a program is cached. Note that the program may be expired.
     function codehashIsCached(bytes32 codehash) external view returns (bool);
 
-    /// @notice Reads the trie table record at the given offset.
-    /// @notice Caller must be a cache manager or chain owner.
-    /// @param offset the record's offset.
-    /// @return slot the cached slot.
-    /// @return program the slot's account.
-    /// @return next the next record to read when determining inclusion.
-    function ReadTrieTableRecord(uint64 offset)
-        external
-        view
-        returns (
-            uint256 slot,
-            address program,
-            uint64 next
-        );
-
-    /// @notice Writes a trie table record.
-    /// @notice Caller must be a cache manager or chain owner.
-    /// @notice If you're looking for how to bid for position, interact with the chain's cache manager contract.
-    /// @param slot the slot to cache.
-    /// @param program the slot's account.
-    /// @param next the next record to read when determining inclusion.
-    /// @param offset the record's offset.
-    function WriteTrieTableRecord(
-        uint256 slot,
-        address program,
-        uint64 next,
-        uint64 offset
-    ) external;
-
     event UpdateProgramCache(address indexed manager, bytes32 indexed codehash, bool cached);
-    event UpdateTrieTable(
-        address indexed manager,
-        uint256 indexed slot,
-        address indexed program,
-        bool cached
-    );
-    event UpdateTrieTableParams(address indexed manager, uint8 bits, uint8 reads);
 }

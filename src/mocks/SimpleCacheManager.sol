@@ -14,10 +14,6 @@ contract SimpleCacheManager {
         ArbWasmCache(address(0x72)).evictCodehash(codehash(program));
     }
 
-    function setParams(uint8 bits, uint8 reads) external {
-        ArbWasmCache(address(0x72)).setTrieTableParams(bits, reads);
-    }
-
     function codehash(address program) internal returns (bytes32 codehash) {
         assembly {
             codehash := extcodehash(program)
