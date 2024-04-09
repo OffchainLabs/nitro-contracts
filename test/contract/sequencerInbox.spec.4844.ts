@@ -16,13 +16,9 @@
 
 /* eslint-env node, mocha */
 
-import { ethers, network } from 'hardhat'
+import { ethers } from 'hardhat'
 import { BigNumber } from '@ethersproject/bignumber'
-import {
-  Block,
-  JsonRpcProvider,
-  TransactionReceipt,
-} from '@ethersproject/providers'
+import { JsonRpcProvider, TransactionReceipt } from '@ethersproject/providers'
 import { expect } from 'chai'
 import {
   Bridge,
@@ -54,24 +50,6 @@ import { Toolkit4844 } from './toolkit4844'
 import { SequencerInbox } from '../../build/types/src/bridge/SequencerInbox'
 import { InboxMessageDeliveredEvent } from '../../build/types/src/bridge/AbsInbox'
 import { SequencerBatchDeliveredEvent } from '../../build/types/src/bridge/ISequencerInbox'
-
-const mineBlocks = async (
-  wallet: Wallet,
-  count: number,
-  timeDiffPerBlock = 14
-) => {
-  const block = (await network.provider.send('eth_getBlockByNumber', [
-    'latest',
-    false,
-  ])) as Block
-  let timestamp = BigNumber.from(block.timestamp).toNumber()
-  for (let i = 0; i < count; i++) {
-    timestamp = timestamp + timeDiffPerBlock
-    await (
-      await wallet.sendTransaction({ to: constants.AddressZero, value: 1 })
-    ).wait()
-  }
-}
 
 describe('SequencerInbox', async () => {
   const findMatchingLogs = <TInterface extends Interface, TEvent extends Event>(
@@ -218,40 +196,6 @@ describe('SequencerInbox', async () => {
     return wallets
   }
 
-  const connectAddreses = (
-    user: Wallet,
-    deployer: Wallet,
-    batchPoster: Wallet,
-    addresses: {
-      user: string
-      bridge: string
-      inbox: string
-      sequencerInbox: string
-      messageTester: string
-      batchPoster: string
-      gasRefunder: string
-    }
-  ) => {
-    return {
-      user,
-      batchPoster,
-      bridge: Bridge__factory.connect(addresses.bridge, user),
-      inbox: Inbox__factory.connect(addresses.inbox, user),
-      sequencerInbox: SequencerInbox__factory.connect(
-        addresses.sequencerInbox,
-        user
-      ),
-      messageTester: MessageTester__factory.connect(
-        addresses.messageTester,
-        deployer
-      ),
-      gasRefunder: GasRefunder__factory.connect(
-        addresses.gasRefunder,
-        deployer
-      ),
-    }
-  }
-
   const setupSequencerInbox = async (
     fundingWallet: Wallet,
     maxDelayBlocks = 10,
@@ -287,7 +231,8 @@ describe('SequencerInbox', async () => {
     const sequencerInboxFac = new SequencerInbox__factory(deployer)
     const seqInboxTemplate = await sequencerInboxFac.deploy(
       117964,
-      reader4844.address
+      reader4844.address,
+      false
     )
     const inboxFac = new Inbox__factory(deployer)
     const inboxTemplate = await inboxFac.deploy(117964)
