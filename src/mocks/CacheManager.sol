@@ -17,14 +17,14 @@ contract CacheManager {
     uint64 cacheSize;
     uint64 queueSize;
     uint64 decay;
-    
+
     struct Entry {
         bytes32 code;
         uint256 paid;
         uint64 size;
         address payable bidder;
     }
-    
+
     constructor(uint64 initCacheSize, uint64 initDecay) {
         cacheSize = initCacheSize;
         decay = initDecay;
@@ -39,7 +39,7 @@ contract CacheManager {
     /// Evicts all programs in the cache and returns all payments.
     function evictAll() external {
         _requireOwner();
-        
+
         while (bids.length() != 0) {
             uint64 index = _getIndex(bids.pop());
             Entry memory entry = entries[index];
@@ -51,12 +51,12 @@ contract CacheManager {
         }
         queueSize = 0;
     }
-    
+
     function placeBid(bytes32 codehash) external payable {
         require(!_isCached(codehash), "ALREADY_CACHED");
 
         // discount historical bids by the number of seconds
-        uint bid = msg.value + block.timestamp * uint(decay);
+        uint256 bid = msg.value + block.timestamp * uint256(decay);
         uint64 asm = _asmSize(codehash);
 
         Entry memory candidate = Entry({
@@ -82,7 +82,7 @@ contract CacheManager {
 
         // pop entries until we have enough space
         while (true) {
-            uint min = bids.root();
+            uint256 min = bids.root();
             index = _getIndex(min);
             bid = _setIndex(bid, index); // make both have same index
 
@@ -101,7 +101,7 @@ contract CacheManager {
         }
 
         // replace the min with the new bid
-        _cache(codehash);        
+        _cache(codehash);
         entries[index] = candidate;
         bids.push(bid);
     }
@@ -110,29 +110,29 @@ contract CacheManager {
         bool owner = ArbOwnerPublic(address(0x6b)).isChainOwner(address(msg.sender));
         require(owner, "NOT_OWNER");
     }
-    
-    function _getIndex(uint info) internal pure returns(uint64) {
+
+    function _getIndex(uint256 info) internal pure returns (uint64) {
         return uint64(info >> 192);
     }
 
-    function _setIndex(uint info, uint64 index) internal pure returns(uint) {
-        uint mask = 0xffffffffffffffffffffffffffffffffffffffffffffffff;
-        return (info & mask) | (uint(index) << 192);
+    function _setIndex(uint256 info, uint64 index) internal pure returns (uint256) {
+        uint256 mask = 0xffffffffffffffffffffffffffffffffffffffffffffffff;
+        return (info & mask) | (uint256(index) << 192);
     }
-    
-    function _asmSize(bytes32 codehash) internal view returns(uint64) {
+
+    function _asmSize(bytes32 codehash) internal view returns (uint64) {
         uint64 size = ArbWasm(address(0x71)).codehashAsmSize(codehash);
         return size >= 4096 ? size : 4096; // pretend it's at least 4Kb
     }
-    
-    function _isCached(bytes32 codehash) internal view returns(bool) {
+
+    function _isCached(bytes32 codehash) internal view returns (bool) {
         return ArbWasmCache(address(0x72)).codehashIsCached(codehash);
     }
-    
+
     function _cache(bytes32 codehash) internal {
         ArbWasmCache(address(0x72)).cacheCodehash(codehash);
     }
-    
+
     function _evict(bytes32 codehash) internal {
         ArbWasmCache(address(0x72)).evictCodehash(codehash);
     }
