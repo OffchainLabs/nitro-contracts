@@ -33,7 +33,7 @@ interface ArbWasm {
     /// @notice gets a program's asm size.
     /// Reverts if program is not active.
     /// @return size the size in bytes
-    function codehashAsmSize(bytes32 codehash) external view returns (uint64 size);
+    function codehashAsmSize(bytes32 codehash) external view returns (uint32 size);
 
     /// @notice gets the stylus version the program was most recently activated against
     /// @return version the program version (reverts for EVM contracts)

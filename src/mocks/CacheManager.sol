@@ -121,8 +121,8 @@ contract CacheManager {
     }
 
     function _asmSize(bytes32 codehash) internal view returns (uint64) {
-        uint64 size = ArbWasm(address(0x71)).codehashAsmSize(codehash);
-        return size >= 4096 ? size : 4096; // pretend it's at least 4Kb
+        uint32 size = ArbWasm(address(0x71)).codehashAsmSize(codehash);
+        return uint64(size >= 4096 ? size : 4096); // pretend it's at least 4Kb
     }
 
     function _isCached(bytes32 codehash) internal view returns (bool) {
