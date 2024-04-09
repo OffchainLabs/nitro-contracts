@@ -12,10 +12,10 @@ import "./IBridge.sol";
 
 interface ISequencerInbox is IDelayedMessageProvider {
     struct MaxTimeVariation {
-        uint64 delayBlocks;
-        uint64 futureBlocks;
-        uint64 delaySeconds;
-        uint64 futureSeconds;
+        uint256 delayBlocks;
+        uint256 futureBlocks;
+        uint256 delaySeconds;
+        uint256 futureSeconds;
     }
 
     event SequencerBatchDelivered(
@@ -91,6 +91,10 @@ interface ISequencerInbox is IDelayedMessageProvider {
 
     function maxDataSize() external view returns (uint256);
 
+    /// @notice The batch poster manager has the ability to change the batch poster addresses
+    ///         This enables the batch poster to do key rotation
+    function batchPosterManager() external view returns (address);
+
     struct DasKeySetInfo {
         bool isValidKeyset;
         uint64 creationBlock;
@@ -149,9 +153,26 @@ interface ISequencerInbox is IDelayedMessageProvider {
         IGasRefunder gasRefunder
     ) external;
 
+    function addSequencerL2BatchFromOrigin(
+        uint256 sequenceNumber,
+        bytes calldata data,
+        uint256 afterDelayedMessagesRead,
+        IGasRefunder gasRefunder,
+        uint256 prevMessageCount,
+        uint256 newMessageCount
+    ) external;
+
     function addSequencerL2Batch(
         uint256 sequenceNumber,
         bytes calldata data,
+        uint256 afterDelayedMessagesRead,
+        IGasRefunder gasRefunder,
+        uint256 prevMessageCount,
+        uint256 newMessageCount
+    ) external;
+
+    function addSequencerL2BatchFromBlobs(
+        uint256 sequenceNumber,
         uint256 afterDelayedMessagesRead,
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
@@ -193,9 +214,16 @@ interface ISequencerInbox is IDelayedMessageProvider {
      */
     function setIsSequencer(address addr, bool isSequencer_) external;
 
+    /**
+     * @notice Updates the batch poster manager, the address which has the ability to rotate batch poster keys
+     * @param newBatchPosterManager The new batch poster manager to be set
+     */
+    function setBatchPosterManager(address newBatchPosterManager) external;
+
+    /// @notice Allows the rollup owner to sync the rollup address
+    function updateRollupAddress() external;
+
     // ---------- initializer ----------
 
     function initialize(IBridge bridge_, MaxTimeVariation calldata maxTimeVariation_) external;
-
-    function updateRollupAddress() external;
 }

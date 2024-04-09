@@ -18,10 +18,7 @@ contract BridgeCreatorTest is Test {
     BridgeCreator.BridgeContracts ethBasedTemplates =
         BridgeCreator.BridgeContracts({
             bridge: new Bridge(),
-            sequencerInbox: new SequencerInbox(
-                MAX_DATA_SIZE,
-                dummyReader4844
-            ),
+            sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false),
             inbox: new Inbox(MAX_DATA_SIZE),
             rollupEventInbox: new RollupEventInbox(),
             outbox: new Outbox()
@@ -29,7 +26,7 @@ contract BridgeCreatorTest is Test {
     BridgeCreator.BridgeContracts erc20BasedTemplates =
         BridgeCreator.BridgeContracts({
             bridge: new ERC20Bridge(),
-            sequencerInbox: ethBasedTemplates.sequencerInbox,
+            sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true),
             inbox: new ERC20Inbox(MAX_DATA_SIZE),
             rollupEventInbox: new ERC20RollupEventInbox(),
             outbox: new ERC20Outbox()
@@ -40,7 +37,7 @@ contract BridgeCreatorTest is Test {
         creator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
     }
 
-    function getEthBasedTemplates() internal returns (BridgeCreator.BridgeContracts memory) {
+    function getEthBasedTemplates() internal view returns (BridgeCreator.BridgeContracts memory) {
         BridgeCreator.BridgeContracts memory templates;
         (
             templates.bridge,
@@ -52,7 +49,7 @@ contract BridgeCreatorTest is Test {
         return templates;
     }
 
-    function getErc20BasedTemplates() internal returns (BridgeCreator.BridgeContracts memory) {
+    function getErc20BasedTemplates() internal view returns (BridgeCreator.BridgeContracts memory) {
         BridgeCreator.BridgeContracts memory templates;
         (
             templates.bridge,
