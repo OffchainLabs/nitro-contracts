@@ -140,7 +140,7 @@ contract CacheManager {
         uint64 size,
         uint64 index
     ) internal {
-        if (queueSize + size < cacheSize) {
+        if (queueSize + size > cacheSize) {
             revert AsmTooLarge(size, queueSize, cacheSize);
         }
 
