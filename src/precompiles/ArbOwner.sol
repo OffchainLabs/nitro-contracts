@@ -122,6 +122,9 @@ interface ArbOwner {
     /// @notice Sets the age a program must be to perform a keepalive
     function setWasmKeepaliveDays(uint16 _days) external;
 
+    /// @notice Sets the number of extra programs ArbOS caches during a given tx
+    function setWasmTxCacheSize(uint8 count) external;
+
     /// @notice Adds account as a wasm cache manager
     function addWasmCacheManager(address manager) external;
 
