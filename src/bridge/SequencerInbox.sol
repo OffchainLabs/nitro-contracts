@@ -304,14 +304,14 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             messageDataHash
         );
 
+        uint256 delayBlocks_ = delayBlocks;
+
         if (isDelayBufferable) {
             // proactively apply any pending delay buffer updates before the force included message l1BlockAndTime
             buffer.update(l1BlockAndTime[0]);
+            delayBlocks_ = delayBufferableBlocks(buffer.bufferBlocks);
             emit BufferUpdated(buffer.bufferBlocks);
         }
-        uint256 delayBlocks_ = isDelayBufferable && buffer.bufferBlocks < delayBlocks
-            ? buffer.bufferBlocks
-            : delayBlocks;
         // Can only force-include after the Sequencer-only window has expired.
         if (l1BlockAndTime[0] + delayBlocks_ >= block.number) revert ForceIncludeBlockTooSoon();
 
@@ -836,11 +836,14 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint64 _delayBlocks = delayBlocks;
         if (isDelayBufferable) {
             uint64 _buffer = buffer.pendingBufferUpdate(blockNumber);
-            if (_buffer < _delayBlocks) {
-                _delayBlocks = _buffer;
-            }
+            _delayBlocks = delayBufferableBlocks(_buffer);
         }
         return blockNumber + _delayBlocks;
+    }
+
+    /// @notice Calculates the buffer dependent delay blocks
+    function delayBufferableBlocks(uint64 _buffer) internal view returns (uint64) {
+        return _buffer < delayBlocks ? _buffer : delayBlocks;
     }
 
     function _setBufferConfig(BufferConfig memory bufferConfig_) internal {
@@ -850,7 +853,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         if (buffer.bufferBlocks == 0 || buffer.bufferBlocks > bufferConfig_.max) {
             buffer.bufferBlocks = bufferConfig_.max;
         }
-        if (buffer.bufferBlocks < bufferConfig_.threshold){
+        if (buffer.bufferBlocks < bufferConfig_.threshold) {
             buffer.bufferBlocks = bufferConfig_.threshold;
         }
         buffer.max = bufferConfig_.max;
