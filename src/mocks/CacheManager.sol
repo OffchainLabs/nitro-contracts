@@ -124,7 +124,7 @@ contract CacheManager {
         while (queueSize + asm > cacheSize) {
             uint256 min;
             (min, index) = _getBid(bids.pop());
-            if (bid > min) {
+            if (bid < min) {
                 revert BidTooSmall(bid, min);
             }
             _deleteEntry(min, index);
