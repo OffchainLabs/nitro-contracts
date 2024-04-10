@@ -28,7 +28,6 @@ contract RollupCreator is Ownable {
         address sequencerInbox,
         address bridge,
         address upgradeExecutor,
-        address validatorUtils,
         address validatorWalletCreator
     );
     event TemplatesUpdated();
@@ -47,12 +46,11 @@ contract RollupCreator is Ownable {
 
     BridgeCreator public bridgeCreator;
     IOneStepProofEntry public osp;
-    IChallengeManager public challengeManagerTemplate;
+    IEdgeChallengeManager public challengeManagerTemplate;
     IRollupAdmin public rollupAdminLogic;
     IRollupUser public rollupUserLogic;
     IUpgradeExecutor public upgradeExecutorLogic;
 
-    address public validatorUtils;
     address public validatorWalletCreator;
 
     DeployHelper public l2FactoriesDeployer;
@@ -65,11 +63,10 @@ contract RollupCreator is Ownable {
     function setTemplates(
         BridgeCreator _bridgeCreator,
         IOneStepProofEntry _osp,
-        IChallengeManager _challengeManagerLogic,
+        IEdgeChallengeManager _challengeManagerLogic,
         IRollupAdmin _rollupAdminLogic,
         IRollupUser _rollupUserLogic,
         IUpgradeExecutor _upgradeExecutorLogic,
-        address _validatorUtils,
         address _validatorWalletCreator,
         DeployHelper _l2FactoriesDeployer
     ) external onlyOwner {
@@ -79,10 +76,40 @@ contract RollupCreator is Ownable {
         rollupAdminLogic = _rollupAdminLogic;
         rollupUserLogic = _rollupUserLogic;
         upgradeExecutorLogic = _upgradeExecutorLogic;
-        validatorUtils = _validatorUtils;
         validatorWalletCreator = _validatorWalletCreator;
         l2FactoriesDeployer = _l2FactoriesDeployer;
         emit TemplatesUpdated();
+    }
+
+    // internal function to workaround stack limit
+    function createChallengeManager(address rollupAddr, address proxyAdminAddr, Config memory config)
+        internal
+        returns (IEdgeChallengeManager)
+    {
+        IEdgeChallengeManager challengeManager = IEdgeChallengeManager(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(challengeManagerTemplate),
+                    proxyAdminAddr,
+                    ""
+                )
+            )
+        );
+
+        challengeManager.initialize({
+            _assertionChain: IAssertionChain(rollupAddr),
+            _challengePeriodBlocks: config.confirmPeriodBlocks,
+            _oneStepProofEntry: osp,
+            layerZeroBlockEdgeHeight: config.layerZeroBlockEdgeHeight,
+            layerZeroBigStepEdgeHeight: config.layerZeroBigStepEdgeHeight,
+            layerZeroSmallStepEdgeHeight: config.layerZeroSmallStepEdgeHeight,
+            _stakeToken: IERC20(config.stakeToken),
+            _stakeAmounts: config.miniStakeValues,
+            _excessStakeReceiver: config.owner,
+            _numBigStepLevel: config.numBigStepLevel
+        });
+
+        return challengeManager;
     }
 
     /**
@@ -147,21 +174,7 @@ contract RollupCreator is Ownable {
             deployParams.config.sequencerInboxMaxTimeVariation
         );
 
-        IChallengeManager challengeManager = IChallengeManager(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(challengeManagerTemplate),
-                    address(proxyAdmin),
-                    ""
-                )
-            )
-        );
-        challengeManager.initialize(
-            IChallengeResultReceiver(address(rollup)),
-            bridgeContracts.sequencerInbox,
-            bridgeContracts.bridge,
-            osp
-        );
+        IEdgeChallengeManager challengeManager = createChallengeManager(address(rollup), address(proxyAdmin), deployParams.config);
 
         // deploy and init upgrade executor
         address upgradeExecutor = _deployUpgradeExecutor(deployParams.config.owner, proxyAdmin);
@@ -183,7 +196,6 @@ contract RollupCreator is Ownable {
                 challengeManager: challengeManager,
                 rollupAdminLogic: address(rollupAdminLogic),
                 rollupUserLogic: rollupUserLogic,
-                validatorUtils: validatorUtils,
                 validatorWalletCreator: validatorWalletCreator
             })
         );
@@ -226,7 +238,6 @@ contract RollupCreator is Ownable {
             address(bridgeContracts.sequencerInbox),
             address(bridgeContracts.bridge),
             address(upgradeExecutor),
-            address(validatorUtils),
             address(validatorWalletCreator)
         );
         return address(rollup);
