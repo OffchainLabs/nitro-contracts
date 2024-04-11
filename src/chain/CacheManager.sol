@@ -109,21 +109,31 @@ contract CacheManager {
             revert AlreadyCached(codehash);
         }
 
-        // discount historical bids by the number of seconds
-        uint256 bid = msg.value + block.timestamp * uint256(decay);
         uint64 asm = _asmSize(codehash);
-        uint64 index = uint64(entries.length);
-        uint256 min;
+        (uint256 bid, uint64 index) = _makeSpace(asm);
+        return _addBid(bid, codehash, asm, index);
+    }
 
-        // pop entries until we have enough space
-        while (queueSize + asm > cacheSize) {
+    /// Evicts entries until enough space exists in the cache, reverting if payment is insufficient.
+    function makeSpace(uint64 size) external payable {
+        _makeSpace(size);
+    }
+
+    /// Evicts entries until enough space exists in the cache, reverting if payment is insufficient.
+    /// Returns the bid and the index to use for insertion.
+    function _makeSpace(uint64 size) internal returns (uint256 bid, uint64 index) {
+        // discount historical bids by the number of seconds
+        bid = msg.value + block.timestamp * uint256(decay);
+        index = uint64(entries.length);
+
+        uint256 min;
+        while (queueSize + size > cacheSize) {
             (min, index) = _getBid(bids.pop());
             _deleteEntry(min, index);
         }
         if (bid < min) {
             revert BidTooSmall(bid, min);
         }
-        return _addBid(bid, codehash, asm, index);
     }
 
     /// Adds a bid
