@@ -116,9 +116,9 @@ async function getDefaultConfig(
       futureSeconds: 60 * 60,
     },
     bufferConfig: {
-      threshold: BigNumber.from(1).shl(64).sub(1),
-      max: BigNumber.from(1).shl(64).sub(1),
-      replenishRateInBasis: BigNumber.from(1).shl(64).sub(1),
+      threshold: 0,
+      max: 0,
+      replenishRateInBasis: 0,
     },
     stakeToken: stakeToken,
     wasmModuleRoot: wasmModuleRoot,
@@ -263,6 +263,7 @@ const setup = async () => {
     {
       bridge: ethBridge.address,
       sequencerInbox: ethSequencerInbox.address,
+      delayBufferableSequencerInbox: ethDelayBufferableSequencerInbox.address,
       inbox: ethInbox.address,
       rollupEventInbox: ethRollupEventInbox.address,
       outbox: ethOutbox.address,
@@ -270,20 +271,7 @@ const setup = async () => {
     {
       bridge: erc20Bridge.address,
       sequencerInbox: erc20SequencerInbox.address,
-      inbox: erc20Inbox.address,
-      rollupEventInbox: erc20RollupEventInbox.address,
-      outbox: erc20Outbox.address,
-    },
-    {
-      bridge: ethBridge.address,
-      sequencerInbox: ethDelayBufferableSequencerInbox.address,
-      inbox: ethInbox.address,
-      rollupEventInbox: ethRollupEventInbox.address,
-      outbox: ethOutbox.address,
-    },
-    {
-      bridge: erc20Bridge.address,
-      sequencerInbox: erc20DelayBufferableSequencerInbox.address,
+      delayBufferableSequencerInbox: erc20DelayBufferableSequencerInbox.address,
       inbox: erc20Inbox.address,
       rollupEventInbox: erc20RollupEventInbox.address,
       outbox: erc20Outbox.address,

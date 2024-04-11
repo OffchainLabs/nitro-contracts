@@ -19,14 +19,7 @@ contract BridgeCreatorTest is Test {
         BridgeCreator.BridgeContracts({
             bridge: new Bridge(),
             sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false),
-            inbox: new Inbox(MAX_DATA_SIZE),
-            rollupEventInbox: new RollupEventInbox(),
-            outbox: new Outbox()
-        });
-    BridgeCreator.BridgeContracts public ethBasedDelayBufferableTemplates =
-        BridgeCreator.BridgeContracts({
-            bridge: new Bridge(),
-            sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, true),
+            delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, true),
             inbox: new Inbox(MAX_DATA_SIZE),
             rollupEventInbox: new RollupEventInbox(),
             outbox: new Outbox()
@@ -35,14 +28,7 @@ contract BridgeCreatorTest is Test {
         BridgeCreator.BridgeContracts({
             bridge: new ERC20Bridge(),
             sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
-            inbox: new ERC20Inbox(MAX_DATA_SIZE),
-            rollupEventInbox: new ERC20RollupEventInbox(),
-            outbox: new ERC20Outbox()
-        });
-    BridgeCreator.BridgeContracts public erc20BasedDelayBufferableTemplates =
-        BridgeCreator.BridgeContracts({
-            bridge: new ERC20Bridge(),
-            sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, true),
+            delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, true),
             inbox: new ERC20Inbox(MAX_DATA_SIZE),
             rollupEventInbox: new ERC20RollupEventInbox(),
             outbox: new ERC20Outbox()
@@ -50,7 +36,7 @@ contract BridgeCreatorTest is Test {
     
     function setUp() public {
         vm.prank(owner);
-        creator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates, ethBasedDelayBufferableTemplates, erc20BasedDelayBufferableTemplates);
+        creator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
     }
 
     function getEthBasedTemplates() internal view returns (BridgeCreator.BridgeContracts memory) {
@@ -58,6 +44,7 @@ contract BridgeCreatorTest is Test {
         (
             templates.bridge,
             templates.sequencerInbox,
+            templates.delayBufferableSequencerInbox,
             templates.inbox,
             templates.rollupEventInbox,
             templates.outbox
@@ -70,6 +57,7 @@ contract BridgeCreatorTest is Test {
         (
             templates.bridge,
             templates.sequencerInbox,
+            templates.delayBufferableSequencerInbox,
             templates.inbox,
             templates.rollupEventInbox,
             templates.outbox
@@ -102,9 +90,10 @@ contract BridgeCreatorTest is Test {
         BridgeCreator.BridgeContracts memory templs = BridgeCreator.BridgeContracts({
             bridge: Bridge(address(200)),
             sequencerInbox: SequencerInbox(address(201)),
-            inbox: Inbox(address(202)),
-            rollupEventInbox: RollupEventInbox(address(203)),
-            outbox: Outbox(address(204))
+            delayBufferableSequencerInbox: SequencerInbox(address(202)),
+            inbox: Inbox(address(203)),
+            rollupEventInbox: RollupEventInbox(address(204)),
+            outbox: Outbox(address(205))
         });
 
         vm.prank(owner);
@@ -117,9 +106,10 @@ contract BridgeCreatorTest is Test {
         BridgeCreator.BridgeContracts memory templs = BridgeCreator.BridgeContracts({
             bridge: ERC20Bridge(address(400)),
             sequencerInbox: SequencerInbox(address(401)),
-            inbox: ERC20Inbox(address(402)),
-            rollupEventInbox: ERC20RollupEventInbox(address(403)),
-            outbox: ERC20Outbox(address(404))
+            delayBufferableSequencerInbox: SequencerInbox(address(402)),
+            inbox: ERC20Inbox(address(403)),
+            rollupEventInbox: ERC20RollupEventInbox(address(404)),
+            outbox: ERC20Outbox(address(405))
         });
 
         vm.prank(owner);

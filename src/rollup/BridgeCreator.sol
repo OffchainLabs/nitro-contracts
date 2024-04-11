@@ -21,8 +21,6 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 contract BridgeCreator is Ownable {
     BridgeContracts public ethBasedTemplates;
     BridgeContracts public erc20BasedTemplates;
-    BridgeContracts public ethBasedDelayBufferableTemplates;
-    BridgeContracts public erc20BasedDelayBufferableTemplates;
 
     event TemplatesUpdated();
     event ERC20TemplatesUpdated();
@@ -32,6 +30,7 @@ contract BridgeCreator is Ownable {
     struct BridgeContracts {
         IBridge bridge;
         ISequencerInbox sequencerInbox;
+        ISequencerInbox delayBufferableSequencerInbox;
         IInboxBase inbox;
         IRollupEventInbox rollupEventInbox;
         IOutbox outbox;
@@ -39,14 +38,10 @@ contract BridgeCreator is Ownable {
 
     constructor(
         BridgeContracts memory _ethBasedTemplates,
-        BridgeContracts memory _erc20BasedTemplates,
-        BridgeContracts memory _ethBasedDelayBufferableTemplates,
-        BridgeContracts memory _erc20BasedDelayBufferableTemplates
+        BridgeContracts memory _erc20BasedTemplates
     ) Ownable() {
         ethBasedTemplates = _ethBasedTemplates;
         erc20BasedTemplates = _erc20BasedTemplates;
-        ethBasedDelayBufferableTemplates = _ethBasedDelayBufferableTemplates;
-        erc20BasedDelayBufferableTemplates = _erc20BasedDelayBufferableTemplates;
     }
 
     function updateTemplates(BridgeContracts calldata _newTemplates) external onlyOwner {
@@ -59,33 +54,26 @@ contract BridgeCreator is Ownable {
         emit ERC20TemplatesUpdated();
     }
 
-    function updateDelayBufferableTemplates(BridgeContracts calldata _newTemplates)
-        external
-        onlyOwner
-    {
-        ethBasedDelayBufferableTemplates = _newTemplates;
-        emit TemplatesUpdated();
-    }
-
-    function updateERC20DelayBufferableTemplates(BridgeContracts calldata _newTemplates)
-        external
-        onlyOwner
-    {
-        erc20BasedDelayBufferableTemplates = _newTemplates;
-        emit ERC20TemplatesUpdated();
-    }
-
-    function _createBridge(address adminProxy, BridgeContracts memory templates)
-        internal
-        returns (BridgeContracts memory)
-    {
+    function _createBridge(
+        address adminProxy,
+        BridgeContracts memory templates,
+        bool isDelayBufferable
+    ) internal returns (BridgeContracts memory) {
         BridgeContracts memory frame;
         frame.bridge = IBridge(
             address(new TransparentUpgradeableProxy(address(templates.bridge), adminProxy, ""))
         );
         frame.sequencerInbox = ISequencerInbox(
             address(
-                new TransparentUpgradeableProxy(address(templates.sequencerInbox), adminProxy, "")
+                new TransparentUpgradeableProxy(
+                    address(
+                        isDelayBufferable
+                            ? templates.delayBufferableSequencerInbox
+                            : templates.sequencerInbox
+                    ),
+                    adminProxy,
+                    ""
+                )
             )
         );
         frame.inbox = IInboxBase(
@@ -109,19 +97,14 @@ contract BridgeCreator is Ownable {
         ISequencerInbox.MaxTimeVariation calldata maxTimeVariation,
         BufferConfig calldata bufferConfig
     ) external returns (BridgeContracts memory) {
-        // create delay bufferable if address zero is provided for native token, otherwise create ERC20-based bridge
-        bool isDelayBufferable = bufferConfig.threshold != type(uint64).max;
-        BridgeContracts memory _ethBasedTemplates = isDelayBufferable
-            ? ethBasedDelayBufferableTemplates
-            : ethBasedTemplates;
-        BridgeContracts memory _erc20BasedTemplates = isDelayBufferable
-            ? erc20BasedDelayBufferableTemplates
-            : erc20BasedTemplates;
+        // create delay bufferable sequencer inbox if threshold is set
+        bool isDelayBufferable = bufferConfig.threshold != 0;
 
         // create ETH-based bridge if address zero is provided for native token, otherwise create ERC20-based bridge
         BridgeContracts memory frame = _createBridge(
             adminProxy,
-            nativeToken == address(0) ? _ethBasedTemplates : _erc20BasedTemplates
+            nativeToken == address(0) ? ethBasedTemplates : erc20BasedTemplates,
+            isDelayBufferable
         );
 
         // init contracts

@@ -285,12 +285,9 @@ describe('SequencerInbox', async () => {
           futureSeconds: 3000,
         },
         {
-          thresholdSeconds: 2 * 60 * 60,
-          thresholdBlocks: (2 * 60 * 60) / 12,
-          maxBufferSeconds: 2 * 24 * 60 * 60,
-          maxBufferBlocks: (2 * 24 * 60 * 60) / 12,
-          periodSeconds: 12,
-          periodBlocks: 12,
+          threshold: (2 * 60 * 60) / 12,
+          max: (2 * 24 * 60 * 60) / 12,
+          replenishRateInBasis: 833,
         }
       )
     ).wait()

@@ -37,14 +37,7 @@ contract RollupCreatorTest is Test {
         BridgeCreator.BridgeContracts({
             bridge: new Bridge(),
             sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false),
-            inbox: new Inbox(MAX_DATA_SIZE),
-            rollupEventInbox: new RollupEventInbox(),
-            outbox: new Outbox()
-        });
-    BridgeCreator.BridgeContracts public ethBasedDelayBufferableTemplates =
-        BridgeCreator.BridgeContracts({
-            bridge: new Bridge(),
-            sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, true),
+            delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, true),
             inbox: new Inbox(MAX_DATA_SIZE),
             rollupEventInbox: new RollupEventInbox(),
             outbox: new Outbox()
@@ -53,14 +46,7 @@ contract RollupCreatorTest is Test {
         BridgeCreator.BridgeContracts({
             bridge: new ERC20Bridge(),
             sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
-            inbox: new ERC20Inbox(MAX_DATA_SIZE),
-            rollupEventInbox: new ERC20RollupEventInbox(),
-            outbox: new ERC20Outbox()
-        });
-    BridgeCreator.BridgeContracts public erc20BasedDelayBufferableTemplates =
-        BridgeCreator.BridgeContracts({
-            bridge: new ERC20Bridge(),
-            sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, true),
+            delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, true),
             inbox: new ERC20Inbox(MAX_DATA_SIZE),
             rollupEventInbox: new ERC20RollupEventInbox(),
             outbox: new ERC20Outbox()
@@ -74,7 +60,7 @@ contract RollupCreatorTest is Test {
         deployHelper = new DeployHelper();
 
         // deploy BridgeCreators
-        BridgeCreator bridgeCreator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates, ethBasedDelayBufferableTemplates, erc20BasedDelayBufferableTemplates);
+        BridgeCreator bridgeCreator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
 
         IUpgradeExecutor upgradeExecutorLogic = new UpgradeExecutorMock();
 
