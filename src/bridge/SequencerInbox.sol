@@ -584,95 +584,41 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
                 if (!dasKeySetInfo[dasKeysetHash].isValidKeyset) revert NoSuchKeyset(dasKeysetHash);
             }
             // Avail batch expect to have the type byte set, followed by
-            if (data.length >= 1 && data[0] & AVAIL_MESSAGE_HEADER_FLAG != 0) {
-                //verifyAvailMerkleProof(data[1:]);
+            if (data[0] & AVAIL_MESSAGE_HEADER_FLAG != 0 && data.length >= 100) {
+                // console.logString("Avail header found");
+                BlobPointer memory blobPointer;
+                (
+                    blobPointer.blockHash,
+                    blobPointer.sender,
+                    blobPointer.nonce,
+                    blobPointer.dasTreeRootHash,
+                    blobPointer.merkleProofInput
+                ) = abi.decode(data[1:], (bytes32, string, uint32, bytes32, MerkleProofInput));
 
-                // BlobPointer memory blobPointer;
-                // (blobPointer.blockhash, blobPointer.sender, blobPointer.nonce, blobPointer.dasTreeRootHash)= abi.decode(data[1:], (bytes32, string, uint32, bytes32));
-                // console.logBytes32(blobPointer.blockhash);
+                // console.logBytes32(blobPointer.blockHash);
+                // console.logString(blobPointer.sender);
+                // console.logUint(blobPointer.nonce);
+                // console.logBytes32(blobPointer.dasTreeRootHash);
 
-                MerkleProofInput memory merkleProofInput;
-                uint256 offset = 1;
-                uint256 len = 0;
+                // for (uint256 i = 0; i < blobPointer.merkleProofInput.dataRootProof.length; i++) {
+                //     console.logBytes32(blobPointer.merkleProofInput.dataRootProof[i]);
+                // }
 
-                // bytes32 availBlockHash = bytes32(data[offset:(offset+32)]);
-                // //setting offset for next data
-                // offset += 32;
+                // for (uint256 i = 0; i < blobPointer.merkleProofInput.leafProof.length; i++) {
+                //     console.logBytes32(blobPointer.merkleProofInput.leafProof[i]);
+                // }
 
-                //Extracting the data root proof
-                len = uint8(data[offset]);
-                //setting offset for next data
-                offset += 1;
+                // console.logBytes32(blobPointer.merkleProofInput.rangeHash);
+                // console.logUint(blobPointer.merkleProofInput.dataRootIndex);
+                // console.logBytes32(blobPointer.merkleProofInput.blobRoot);
+                // console.logBytes32(blobPointer.merkleProofInput.bridgeRoot);
+                // console.logBytes32(blobPointer.merkleProofInput.leaf);
+                // console.logUint(blobPointer.merkleProofInput.leafIndex);
+                if (!availBridge.verifyBlobLeaf(blobPointer.merkleProofInput))
+                    revert BatchDataValidationForAvailDAFailed(blobPointer.merkleProofInput.leaf);
 
-                //console.logUint(len);
-                merkleProofInput.dataRootProof = new bytes32[](len);
-                for (uint256 index = 0; index < len; index++) {
-                    uint i = offset + 32 * index;
-                    //console.logUint(i);
-                    //console.logBytes32(merkleProofInput.dataRootProof[index]);
-                    merkleProofInput.dataRootProof[index] = bytes32(data[i:(i + 32)]);
-                    //console.logBytes32(merkleProofInput.dataRootProof[index]);
-                }
-
-                //setting offset for next data
-                offset += len * 32;
-
-                //Extracting the leaf proof
-                len = uint8(data[offset]);
-                //setting offset for next data
-                offset += 1;
-                //console.logUint(len);
-                merkleProofInput.leafProof = new bytes32[](len);
-                for (uint256 index = 0; index < len; index++) {
-                    uint i = 34 + 32 * index;
-                    merkleProofInput.leafProof[index] = bytes32(data[i:(i + 32)]);
-                    //console.logBytes32(merkleProofInput.leafProof[index]);
-                }
-
-                //setting offset for next data
-                offset += len * 32;
-
-                //Extracting range hash
-                merkleProofInput.rangeHash = bytes32(data[offset:(offset + 32)]);
-                //console.logBytes32(merkleProofInput.rangeHash);
-                //setting offset for next data
-                offset += 32;
-
-                //Extracting data root index
-                merkleProofInput.dataRootIndex = uint64(bytes8(data[offset:(offset + 8)]));
-                //console.logUint(merkleProofInput.dataRootIndex);
-                //setting offset for next data
-                offset += 8;
-
-                //Extracting range hash
-                merkleProofInput.blobRoot = bytes32(data[offset:(offset + 32)]);
-                //console.logBytes32(merkleProofInput.blobRoot);
-                //setting offset for next data
-                offset += 32;
-
-                //Extracting bridge root
-                merkleProofInput.bridgeRoot = bytes32(data[offset:(offset + 32)]);
-                //console.logBytes32(merkleProofInput.bridgeRoot);
-                //setting offset for next data
-                offset += 32;
-
-                //Extracting lead
-                merkleProofInput.leaf = bytes32(data[offset:(offset + 32)]);
-                //console.logBytes32(merkleProofInput.leaf);
-                //setting offset for next data
-                offset += 32;
-
-                //Extracting leaf index
-                merkleProofInput.leafIndex = uint64(bytes8(data[offset:(offset + 8)]));
-                //console.logUint(merkleProofInput.leafIndex);
-                //setting offset for next data
-                offset += 8;
-
-                if (!availBridge.verifyBlobLeaf(merkleProofInput))
-                    revert BatchDataValidationForAvailDAFailed(merkleProofInput.leaf);
-
-                //MerkleProofInput memory merkleProofInput = MerkleProofInput(dataRootProof, leafProof, rangeHash, dataRootIndex, blobRoot, bridgeRoot, leaf, leafIndex);
-                //emit validateBatchDataOverAvailDA(merkleProofInput);
+                // Not included this event as this function declared as view
+                //emit validateBatchDataOverAvailDA(blobPointer.merkleProofInput);
             }
         }
         return (keccak256(bytes.concat(header, data)), timeBounds);
