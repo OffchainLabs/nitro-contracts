@@ -76,6 +76,7 @@ contract CacheManager {
     /// Evicts all programs in the cache.
     function evictAll() external onlyOwner {
         evictPrograms(type(uint256).max);
+        delete entries;
     }
 
     /// Evicts up to `count` programs from the cache.
@@ -99,13 +100,6 @@ contract CacheManager {
         }
     }
 
-    /// Gets the minimum bid needed to cache the given program.
-    /// Call this function with the program's codehash.
-    function getMinBid(bytes32) external view returns (uint256) {
-        (uint256 bid, ) = _getBid(bids.root());
-        return bid;
-    }
-
     /// Places a bid, reverting if payment is insufficient.
     function placeBid(bytes32 codehash) external payable {
         if (isPaused) {
@@ -119,17 +113,16 @@ contract CacheManager {
         uint256 bid = msg.value + block.timestamp * uint256(decay);
         uint64 asm = _asmSize(codehash);
         uint64 index = uint64(entries.length);
+        uint256 min;
 
         // pop entries until we have enough space
         while (queueSize + asm > cacheSize) {
-            uint256 min;
             (min, index) = _getBid(bids.pop());
-            if (bid < min) {
-                revert BidTooSmall(bid, min);
-            }
             _deleteEntry(min, index);
         }
-
+        if (bid < min) {
+            revert BidTooSmall(bid, min);
+        }
         return _addBid(bid, codehash, asm, index);
     }
 
@@ -148,7 +141,11 @@ contract CacheManager {
         ARB_WASM_CACHE.cacheCodehash(code);
         bids.push(_packBid(bid, index));
         queueSize += size;
-        entries[index] = entry;
+        if (index == entries.length) {
+            entries.push(entry);
+        } else {
+            entries[index] = entry;
+        }
         emit InsertBid(bid, code, size);
     }
 
@@ -163,14 +160,13 @@ contract CacheManager {
 
     /// Gets the bid and index from a packed bid item
     function _getBid(uint256 info) internal pure returns (uint256 bid, uint64 index) {
-        bid = _packBid(info, 0);
-        index = uint64(info >> 192);
+        bid = info >> 64;
+        index = uint64(info);
     }
 
     /// Creates a packed bid item
     function _packBid(uint256 bid, uint64 index) internal pure returns (uint256) {
-        uint256 mask = 0xffffffffffffffffffffffffffffffffffffffffffffffff;
-        return (bid & mask) | (uint256(index) << 192);
+        return (bid << 64) | uint256(index);
     }
 
     /// Gets the size of the given program in bytes

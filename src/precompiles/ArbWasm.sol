@@ -92,9 +92,9 @@ interface ArbWasm {
     /// @return _days the number of days
     function keepaliveDays() external view returns (uint16 _days);
 
-    /// @notice Gets the number of extra programs ArbOS caches during a given tx.
-    /// @return count the number of same-tx programs.
-    function txCacheSize() external view returns (uint8 count);
+    /// @notice Gets the number of extra programs ArbOS caches during a given block.
+    /// @return count the number of same-block programs.
+    function blockCacheSize() external view returns (uint16 count);
 
     event ProgramActivated(
         bytes32 indexed codehash,
