@@ -15,7 +15,7 @@ import "./DelayBufferTypes.sol";
  *          depleting by as many blocks as elapsed in the delayed message queue.
  */
 library DelayBuffer {
-    uint256 constant BASIS = 10000;
+    uint256 public constant BASIS = 10000;
 
     /// @dev    Depletion is limited by the elapsed blocks in the delayed message queue to avoid double counting and potential L2 reorgs.
     //          Eg. 2 simultaneous batches sequencing multiple delayed messages with the same 100 blocks delay each
