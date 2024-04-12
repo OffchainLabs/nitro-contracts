@@ -52,6 +52,7 @@ contract ProgramTest {
         bytes calldata data
     ) external view returns (bytes memory) {
         (bool success, bytes memory result) = address(program).staticcall{gas: gas}(data);
+        require(success, "call failed");
 
         address arbPrecompile = address(0x69);
         address ethPrecompile = address(0x01);
@@ -98,5 +99,28 @@ contract ProgramTest {
             require(result[i] == expected[i], "revert data mismatch");
         }
         return result;
+    }
+
+    function mathTest(address program) external {
+        uint256 value = 0xeddecf107b5740cef7f5a01e3ea7e287665c4e75a8eb6afae2fda2e3d4367786;
+        value = mulmod(
+            value,
+            0xc6178c2de1078cd36c3bd302cde755340d7f17fcb3fcc0b9c333ba03b217029f,
+            0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f
+        );
+        value = addmod(
+            value,
+            0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f,
+            0xc6178c2de1078cd36c3bd302cde755340d7f17fcb3fcc0b9c333ba03b217029f
+        );
+        unchecked {
+            value /= 0xeddecf107b5740ce;
+            value = value**0xfffffffefffffc2f;
+            value = value % 0xc6178c2de1078cd3;
+        }
+
+        (bool success, bytes memory result) = address(program).call("");
+        require(success, "call failed");
+        require(keccak256(result) == keccak256(abi.encodePacked(value)));
     }
 }
