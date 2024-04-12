@@ -378,12 +378,13 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
         if (isDelayProofRequired(afterDelayedMessagesRead)) revert DelayProofRequired();
 
-        addSequencerL2BatchFromCalldataOriginImpl(
+        addSequencerL2BatchFromCalldataImpl(
             sequenceNumber,
             data,
             afterDelayedMessagesRead,
             prevMessageCount,
-            newMessageCount
+            newMessageCount,
+            true
         );
     }
 
@@ -443,12 +444,13 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         if (!isDelayBufferable) revert NotDelayBufferable();
 
         delayProofImpl(afterDelayedMessagesRead, delayProof);
-        addSequencerL2BatchFromCalldataOriginImpl(
+        addSequencerL2BatchFromCalldataImpl(
             sequenceNumber,
             data,
             afterDelayedMessagesRead,
             prevMessageCount,
-            newMessageCount
+            newMessageCount,
+            true
         );
     }
 
@@ -509,12 +511,13 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         }
     }
 
-    function addSequencerL2BatchFromCalldataOriginImpl(
+    function addSequencerL2BatchFromCalldataImpl(
         uint256 sequenceNumber,
         bytes calldata data,
         uint256 afterDelayedMessagesRead,
         uint256 prevMessageCount,
-        uint256 newMessageCount
+        uint256 newMessageCount,
+        bool isFromOrigin
     ) internal {
         (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formCallDataHash(
             data,
@@ -528,7 +531,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         ) = addSequencerL2BatchImpl(
                 dataHash,
                 afterDelayedMessagesRead,
-                data.length,
+                isFromOrigin ? data.length : 0,
                 prevMessageCount,
                 newMessageCount
             );
@@ -545,10 +548,17 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             delayedAcc,
             totalDelayedMessagesRead,
             timeBounds,
-            IBridge.BatchDataLocation.TxInput
+            isFromOrigin
+                ? IBridge.BatchDataLocation.TxInput
+                : IBridge.BatchDataLocation.SeparateBatchEvent
         );
+
+        if (!isFromOrigin) {
+            emit SequencerBatchData(seqMessageIndex, data);
+        }
     }
 
+    /// @inheritdoc ISequencerInbox
     function addSequencerL2Batch(
         uint256 sequenceNumber,
         bytes calldata data,
@@ -559,48 +569,39 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     ) external override refundsGas(gasRefunder, IReader4844(address(0))) {
         if (!isBatchPoster[msg.sender] && msg.sender != address(rollup)) revert NotBatchPoster();
         if (isDelayProofRequired(afterDelayedMessagesRead)) revert DelayProofRequired();
-        (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formCallDataHash(
+
+        addSequencerL2BatchFromCalldataImpl(
+            sequenceNumber,
             data,
-            afterDelayedMessagesRead
+            afterDelayedMessagesRead,
+            prevMessageCount,
+            newMessageCount,
+            false
         );
-        uint256 seqMessageIndex;
-        {
-            // Reformat the stack to prevent "Stack too deep"
-            uint256 sequenceNumber_ = sequenceNumber;
-            IBridge.TimeBounds memory timeBounds_ = timeBounds;
-            bytes32 dataHash_ = dataHash;
-            uint256 afterDelayedMessagesRead_ = afterDelayedMessagesRead;
-            uint256 prevMessageCount_ = prevMessageCount;
-            uint256 newMessageCount_ = newMessageCount;
-            // we set the calldata length posted to 0 here since the caller isn't the origin
-            // of the tx, so they might have not paid tx input cost for the calldata
-            bytes32 beforeAcc;
-            bytes32 delayedAcc;
-            bytes32 afterAcc;
-            (seqMessageIndex, beforeAcc, delayedAcc, afterAcc) = addSequencerL2BatchImpl(
-                dataHash_,
-                afterDelayedMessagesRead_,
-                0,
-                prevMessageCount_,
-                newMessageCount_
-            );
+    }
 
-            // ~uint256(0) is type(uint256).max, but ever so slightly cheaper
-            if (seqMessageIndex != sequenceNumber_ && sequenceNumber_ != ~uint256(0)) {
-                revert BadSequencerNumber(seqMessageIndex, sequenceNumber_);
-            }
+    /// @inheritdoc ISequencerInbox
+    function addSequencerL2BatchDelayProof(
+        uint256 sequenceNumber,
+        bytes calldata data,
+        uint256 afterDelayedMessagesRead,
+        IGasRefunder gasRefunder,
+        uint256 prevMessageCount,
+        uint256 newMessageCount,
+        DelayProof calldata delayProof
+    ) external refundsGas(gasRefunder, IReader4844(address(0))) {
+        if (!isBatchPoster[msg.sender] && msg.sender != address(rollup)) revert NotBatchPoster();
+        if (!isDelayBufferable) revert NotDelayBufferable();
 
-            emit SequencerBatchDelivered(
-                seqMessageIndex,
-                beforeAcc,
-                afterAcc,
-                delayedAcc,
-                totalDelayedMessagesRead,
-                timeBounds_,
-                IBridge.BatchDataLocation.SeparateBatchEvent
-            );
-        }
-        emit SequencerBatchData(seqMessageIndex, data);
+        delayProofImpl(afterDelayedMessagesRead, delayProof);
+        addSequencerL2BatchFromCalldataImpl(
+            sequenceNumber,
+            data,
+            afterDelayedMessagesRead,
+            prevMessageCount,
+            newMessageCount,
+            false
+        );
     }
 
     function delayProofImpl(uint256 afterDelayedMessagesRead, DelayProof memory delayProof)

@@ -7,6 +7,7 @@
   "TREE_DAS_MESSAGE_HEADER_FLAG()": "6c890450",
   "ZERO_HEAVY_MESSAGE_HEADER_FLAG()": "02c99275",
   "addSequencerL2Batch(uint256,bytes,uint256,address,uint256,uint256)": "e0bc9729",
+  "addSequencerL2BatchDelayProof(uint256,bytes,uint256,address,uint256,uint256,(bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32)))": "6e620055",
   "addSequencerL2BatchFromBlobs(uint256,uint256,address,uint256,uint256)": "3e5aa082",
   "addSequencerL2BatchFromBlobsDelayProof(uint256,uint256,address,uint256,uint256,(bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32)))": "917cf8ac",
   "addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address)": "6f12b0c9",
