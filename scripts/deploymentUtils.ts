@@ -146,19 +146,6 @@ export async function deployAllContracts(
     [
       ethBridge.address,
       ethSequencerInbox.address,
-      ethInbox.address,
-      ethRollupEventInbox.address,
-      ethOutbox.address,
-    ],
-    [
-      erc20Bridge.address,
-      erc20SequencerInbox.address,
-      erc20Inbox.address,
-      erc20RollupEventInbox.address,
-      erc20Outbox.address,
-    ],
-    [
-      ethBridge.address,
       ethDelayBufferableSequencerInbox.address,
       ethInbox.address,
       ethRollupEventInbox.address,
@@ -166,11 +153,12 @@ export async function deployAllContracts(
     ],
     [
       erc20Bridge.address,
+      erc20SequencerInbox.address,
       erc20DelayBufferableSequencerInbox.address,
       erc20Inbox.address,
       erc20RollupEventInbox.address,
       erc20Outbox.address,
-    ],
+    ]
   ])
   const prover0 = await deployContract('OneStepProver0', signer)
   const proverMem = await deployContract('OneStepProverMemory', signer)
