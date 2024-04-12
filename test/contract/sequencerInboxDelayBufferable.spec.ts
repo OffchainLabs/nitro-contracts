@@ -1,16 +1,12 @@
 import { ethers, network } from 'hardhat'
 import { Block } from '@ethersproject/providers'
-import { BigNumber } from '@ethersproject/bignumber'
 import { data } from './batchData.json'
 import { DelayedMsgDelivered } from './types'
 import { expect } from 'chai'
 
 import {
-  getSequencerBatchDeliveredEvents,
   getBatchSpendingReport,
-  sendDelayedTx,
   setupSequencerInbox,
-  getInboxMessageDeliveredEvents,
   mineBlocks,
   forceIncludeMessages,
   getBufferUpdatedEvents,
@@ -76,16 +72,12 @@ describe('SequencerInboxDelayBufferable', async () => {
       delayedInboxPending[0].delayedMessage
     )
 
-    let forceIncludedMsg = delayedInboxPending.pop()
+    let forceIncludedMsg = delayedInboxPending.shift()
     const delayBlocks =
       txnReciept!.blockNumber -
       forceIncludedMsg!.delayedMessage.header.blockNumber
     const unexpectedDelayBlocks = delayBlocks - delayConfig.threshold.toNumber()
 
-    const block = (await network.provider.send('eth_getBlockByNumber', [
-      '0x' + txnReciept!.blockNumber.toString(16),
-      false,
-    ])) as Block
     expect(await sequencerInbox.totalDelayedMessagesRead()).to.equal(1)
 
     delayBufferData = await sequencerInbox.buffer()
@@ -125,7 +117,7 @@ describe('SequencerInboxDelayBufferable', async () => {
       delayedInboxPending[0].delayedCount + 1,
       delayedInboxPending[0].delayedMessage
     )
-    forceIncludedMsg = delayedInboxPending.pop()
+    forceIncludedMsg = delayedInboxPending.shift()
     delayBufferData = await sequencerInbox.buffer()
 
     const depletedBufferBlocks = delayConfig.max - unexpectedDelayBlocks
@@ -135,12 +127,6 @@ describe('SequencerInboxDelayBufferable', async () => {
       txnReciept2!.blockNumber -
       forceIncludedMsg!.delayedMessage.header.blockNumber
 
-    const block2 = (await network.provider.send('eth_getBlockByNumber', [
-      '0x' + txnReciept2!.blockNumber.toString(16),
-      false,
-    ])) as Block
-    const delaySeconds2 =
-      block2.timestamp - forceIncludedMsg!.delayedMessage.header.timestamp
     expect(await sequencerInbox.totalDelayedMessagesRead()).to.equal(2)
     // prevDelay should be updated
     expect(delayBufferData.prevBlockNumber).to.equal(
@@ -523,7 +509,7 @@ describe('SequencerInboxDelayBufferable', async () => {
 
     const delayBufferDataBefore = await sequencerInbox.buffer()
     firstReadMsg = delayedInboxPending[0]
-    const txnBatch = await (
+    await (
       await sequencerInbox
         .connect(batchPoster)
         .addSequencerL2BatchFromOriginDelayProof(
@@ -569,232 +555,6 @@ describe('SequencerInboxDelayBufferable', async () => {
     expect((await sequencerInbox.buffer()).bufferBlocks).to.equal(
       bufferBlocksUpdate
     )
-  })
-
-  it('can sync and resync (gas benchmark)', async () => {
-    const { user, inbox, bridge, messageTester, sequencerInbox, batchPoster } =
-      await setupSequencerInbox()
-    let delayedInboxPending: DelayedMsgDelivered[] = []
-    const setupBufferable = await setupSequencerInbox(true)
-
-    await sendDelayedTx(
-      user,
-      inbox,
-      bridge,
-      messageTester,
-      1000000,
-      21000000000,
-      0,
-      await user.getAddress(),
-      BigNumber.from(10),
-      '0x1010'
-    )
-
-    await sendDelayedTx(
-      setupBufferable.user,
-      setupBufferable.inbox,
-      setupBufferable.bridge,
-      setupBufferable.messageTester,
-      1000000,
-      21000000000,
-      0,
-      await setupBufferable.user.getAddress(),
-      BigNumber.from(10),
-      '0x1011'
-    ).then(res => {
-      delayedInboxPending.push({
-        delayedMessage: res.delayedMsg,
-        delayedAcc: res.prevAccumulator,
-        delayedCount: res.countBefore,
-      })
-    })
-
-    // read all messages
-    const messagesRead = await bridge.delayedMessageCount()
-    const seqReportedMessageSubCount =
-      await bridge.sequencerReportedSubMessageCount()
-
-    await (
-      await sequencerInbox
-        .connect(batchPoster)
-        [
-          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256)'
-        ](
-          0,
-          data,
-          messagesRead,
-          ethers.constants.AddressZero,
-          seqReportedMessageSubCount,
-          seqReportedMessageSubCount.add(10),
-          { gasLimit: 10000000 }
-        )
-    ).wait()
-
-    // read all delayed messages
-    const messagesReadOpt = await setupBufferable.bridge.delayedMessageCount()
-    const totalDelayedMessagesRead = (
-      await setupBufferable.sequencerInbox.totalDelayedMessagesRead()
-    ).toNumber()
-
-    const beforeDelayedAcc =
-      totalDelayedMessagesRead == 0
-        ? ethers.constants.HashZero
-        : await setupBufferable.bridge.delayedInboxAccs(
-            totalDelayedMessagesRead - 1
-          )
-
-    const seqReportedMessageSubCountOpt =
-      await setupBufferable.bridge.sequencerReportedSubMessageCount()
-
-    // pass proof of the last read delayed message
-    let delayedMsgLastRead = delayedInboxPending[delayedInboxPending.length - 1]
-    delayedInboxPending = []
-    await (
-      await setupBufferable.sequencerInbox
-        .connect(setupBufferable.batchPoster)
-        .addSequencerL2BatchFromOriginDelayProof(
-          0,
-          data,
-          messagesReadOpt,
-          ethers.constants.AddressZero,
-          seqReportedMessageSubCountOpt,
-          seqReportedMessageSubCountOpt.add(10),
-          {
-            beforeDelayedAcc: beforeDelayedAcc,
-            delayedMessage: {
-              kind: 3,
-              sender: delayedMsgLastRead!.delayedMessage.header.sender,
-              blockNumber:
-                delayedMsgLastRead!.delayedMessage.header.blockNumber,
-              timestamp: delayedMsgLastRead!.delayedMessage.header.timestamp,
-              inboxSeqNum: delayedMsgLastRead!.delayedCount,
-              baseFeeL1: delayedMsgLastRead!.delayedMessage.header.baseFee,
-              messageDataHash:
-                delayedMsgLastRead!.delayedMessage.header.messageDataHash,
-            },
-          },
-          { gasLimit: 10000000 }
-        )
-    )
-      .wait()
-      .then(res => {
-        delayedInboxPending.push(getBatchSpendingReport(res))
-      })
-
-    await sendDelayedTx(
-      user,
-      inbox,
-      bridge,
-      messageTester,
-      1000000,
-      21000000000,
-      0,
-      await user.getAddress(),
-      BigNumber.from(10),
-      '0x1010'
-    )
-
-    await sendDelayedTx(
-      setupBufferable.user,
-      setupBufferable.inbox,
-      setupBufferable.bridge,
-      setupBufferable.messageTester,
-      1000000,
-      21000000000,
-      0,
-      await setupBufferable.user.getAddress(),
-      BigNumber.from(10),
-      '0x1011'
-    ).then(res => {
-      delayedInboxPending.push({
-        delayedMessage: res.delayedMsg,
-        delayedAcc: res.prevAccumulator,
-        delayedCount: res.countBefore,
-      })
-    })
-
-    // 2 delayed messages in the inbox, read 1 messages
-    const messagesReadAdd1 = await bridge.delayedMessageCount()
-    const seqReportedMessageSubCountAdd1 =
-      await bridge.sequencerReportedSubMessageCount()
-
-    const res11 = await (
-      await sequencerInbox
-        .connect(batchPoster)
-        [
-          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256)'
-        ](
-          1,
-          data,
-          messagesReadAdd1.sub(1),
-          ethers.constants.AddressZero,
-          seqReportedMessageSubCountAdd1,
-          seqReportedMessageSubCountAdd1.add(10),
-          { gasLimit: 10000000 }
-        )
-    ).wait()
-
-    const messagesReadOpt2 = await setupBufferable.bridge.delayedMessageCount()
-    const seqReportedMessageSubCountOpt2 =
-      await setupBufferable.bridge.sequencerReportedSubMessageCount()
-
-    // start parole
-    // pass delayed message proof
-    // read 1 message
-    delayedMsgLastRead = delayedInboxPending[delayedInboxPending.length - 2]
-    const delayedMessageRecent =
-      delayedInboxPending[delayedInboxPending.length - 1]
-    delayedInboxPending = []
-    const res3 = await (
-      await setupBufferable.sequencerInbox
-        .connect(setupBufferable.batchPoster)
-        .addSequencerL2BatchFromOriginDelayProof(
-          1,
-          data,
-          messagesReadOpt2,
-          ethers.constants.AddressZero,
-          seqReportedMessageSubCountOpt2,
-          seqReportedMessageSubCountOpt2.add(10),
-          {
-            beforeDelayedAcc: delayedMsgLastRead!.delayedAcc,
-            delayedMessage: {
-              kind: delayedMsgLastRead!.delayedMessage.header.kind,
-              sender: delayedMsgLastRead!.delayedMessage.header.sender,
-              blockNumber:
-                delayedMsgLastRead!.delayedMessage.header.blockNumber,
-              timestamp: delayedMsgLastRead!.delayedMessage.header.timestamp,
-              inboxSeqNum: delayedMsgLastRead!.delayedCount,
-              baseFeeL1: delayedMsgLastRead!.delayedMessage.header.baseFee,
-              messageDataHash:
-                delayedMsgLastRead!.delayedMessage.header.messageDataHash,
-            },
-          },
-          { gasLimit: 10000000 }
-        )
-    ).wait()
-    const lastRead = delayedMessageRecent
-
-    delayedInboxPending.push(getBatchSpendingReport(res3))
-
-    const res4 = await (
-      await setupBufferable.sequencerInbox
-        .connect(setupBufferable.batchPoster)
-        .functions[
-          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256)'
-        ](
-          2,
-          data,
-          messagesReadOpt2,
-          ethers.constants.AddressZero,
-          seqReportedMessageSubCountOpt2.add(10),
-          seqReportedMessageSubCountOpt2.add(20),
-          { gasLimit: 10000000 }
-        )
-    ).wait()
-    const batchSpendingReport = getBatchSpendingReport(res4)
-    delayedInboxPending.push(batchSpendingReport)
-    const batchDelivered = getSequencerBatchDeliveredEvents(res4)
-    const inboxMessageDelivered = getInboxMessageDeliveredEvents(res4)[0]
   })
 })
 
@@ -861,10 +621,6 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
       forceIncludedMsg!.delayedMessage.header.blockNumber
     const unexpectedDelayBlocks = delayBlocks - delayConfig.threshold.toNumber()
 
-    const block = (await network.provider.send('eth_getBlockByNumber', [
-      '0x' + txnReciept!.blockNumber.toString(16),
-      false,
-    ])) as Block
     expect(await sequencerInbox.totalDelayedMessagesRead()).to.equal(1)
 
     delayBufferData = await sequencerInbox.buffer()
@@ -912,12 +668,6 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
       txnReciept2!.blockNumber -
       forceIncludedMsg!.delayedMessage.header.blockNumber
 
-    const block2 = (await network.provider.send('eth_getBlockByNumber', [
-      '0x' + txnReciept2!.blockNumber.toString(16),
-      false,
-    ])) as Block
-    const delaySeconds2 =
-      block2.timestamp - forceIncludedMsg!.delayedMessage.header.timestamp
     expect(await sequencerInbox.totalDelayedMessagesRead()).to.equal(2)
     // prevDelay should be updated
     expect(delayBufferData.prevBlockNumber).to.equal(
@@ -1121,7 +871,6 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
       false,
     ])) as Block
     const blockNumber = Number.parseInt(block.number.toString(10))
-    const blockTimestamp = Number.parseInt(block.timestamp.toString(10))
     expect(
       (await sequencerInbox.buffer()).syncExpiry.toNumber()
     ).greaterThanOrEqual(blockNumber)
@@ -1143,8 +892,7 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
       })
 
     await mineBlocks(delayConfig.threshold.toNumber() - 100, 12)
-    const lastDelayedMsgRead = delayedInboxPending.pop()
-    const res = await (
+    await (
       await sequencerInbox
         .connect(batchPoster)
         .addSequencerL2BatchFromBlobs(
@@ -1161,9 +909,6 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
         delayedInboxPending.push(getBatchSpendingReport(res))
         return res
       })
-
-    const batchDelivered = getSequencerBatchDeliveredEvents(res)
-    const inboxMessageDelivered = getInboxMessageDeliveredEvents(res)[0]
   })
 
   it('unhappy path', async () => {
@@ -1179,7 +924,6 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
       false,
     ])) as Block
     const blockNumber = Number.parseInt(block.number.toString(10))
-    const blockTimestamp = Number.parseInt(block.timestamp.toString(10))
     expect(
       (await sequencerInbox.buffer()).syncExpiry.toNumber()
     ).greaterThanOrEqual(blockNumber)

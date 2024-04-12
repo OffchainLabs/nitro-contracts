@@ -281,12 +281,6 @@ const delayConfigDefault: DelayConfig = {
   replenishRateInBasis: 714,
 }
 
-const delayConfigNotDelayBufferable: DelayConfig = {
-  threshold: BigNumber.from(2).pow(64).sub(1),
-  max: maxDelayDefault.delayBlocks * 2,
-  replenishRateInBasis: 714,
-}
-
 export const getSequencerBatchDeliveredEvents = (
   receipt: TransactionReceipt
 ) => {

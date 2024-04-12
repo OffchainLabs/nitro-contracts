@@ -1,15 +1,10 @@
 {
   "createBridge(address,address,address,(uint256,uint256,uint256,uint256),(uint64,uint64,uint64))": "57d3a200",
-  "erc20BasedDelayBufferableSequencerInboxTemplate()": "5686e81d",
-  "erc20BasedSequencerInboxTemplate()": "23ff1318",
   "erc20BasedTemplates()": "76768ab9",
-  "ethBasedDelayBufferableSequencerInboxTemplate()": "3c08e071",
-  "ethBasedSequencerInboxTemplate()": "74bc9296",
   "ethBasedTemplates()": "11f02227",
   "owner()": "8da5cb5b",
   "renounceOwnership()": "715018a6",
   "transferOwnership(address)": "f2fde38b",
-  "updateERC20Templates((address,address,address,address))": "3aedb404",
-  "updateSequencerInboxTemplates(address,address,address,address)": "015fe658",
-  "updateTemplates((address,address,address,address))": "e7c681f3"
+  "updateERC20Templates((address,address,address,address,address,address))": "ceab9410",
+  "updateTemplates((address,address,address,address,address,address))": "e83b0e16"
 }

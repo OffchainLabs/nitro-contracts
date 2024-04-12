@@ -89,7 +89,6 @@ contract DelayBufferableTest is Test {
             prevDelay: 0
         });
 
-        vm.warp(25);
         vm.roll(25);
 
         delayBuffer.update(20);
@@ -132,7 +131,7 @@ contract DelayBufferableTest is Test {
         assertEq(buffer, 9);
     }
 
-    function testupdateDepleteAndReplenish() public {
+    function testUpdateDepleteAndReplenish() public {
         delayBuffer = delayBufferDefault;
 
         assertEq(delayBuffer.prevBlockNumber, 0);
