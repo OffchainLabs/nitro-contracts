@@ -109,11 +109,10 @@ library DelayBuffer {
     ///         defining a `sync validity` window during which no delay proofs are required.
     /// @notice Updates the time / block until no delay proofs are required.
     /// @param blockNumber The block number when the synced message was created.
-    function updateSyncValidity(BufferData storage self, uint64 blockNumber) internal {
+    function updateSyncValidity(BufferData storage self, uint256 blockNumber) internal {
         // saturating at uint64 max handles large threshold settings
-        self.syncExpiry = self.threshold > type(uint64).max - blockNumber
-            ? type(uint64).max
-            : blockNumber + self.threshold;
+        uint256 expiry = blockNumber + self.threshold;
+        self.syncExpiry = expiry > type(uint64).max ? type(uint64).max : uint64(expiry);
     }
 
     /// @dev    This is the `sync validity window` during which no proofs are required.
