@@ -116,12 +116,14 @@ contract CacheManager {
     }
 
     /// Evicts entries until enough space exists in the cache, reverting if payment is insufficient.
+    /// Returns the new amount of space available on success.
     /// Note: will only make up to 5Mb of space. Call repeatedly for more.
-    function makeSpace(uint64 size) external payable {
+    function makeSpace(uint64 size) external payable returns (uint64 space) {
         if (size > MAX_MAKE_SPACE) {
             size = MAX_MAKE_SPACE;
         }
         _makeSpace(size);
+        return cacheSize - queueSize;
     }
 
     /// Evicts entries until enough space exists in the cache, reverting if payment is insufficient.
