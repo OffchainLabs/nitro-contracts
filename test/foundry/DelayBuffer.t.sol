@@ -51,31 +51,21 @@ contract DelayBufferableTest is Test {
         messageDataHash: bytes32(0)
     });
 
-    function testDeplete() public {
+    function testBufferUpdate() public {
         uint64 start = 10;
         uint64 delay = 10;
         uint64 buffer = 100;
         uint64 unexpectedDelay = (delay - threshold);
 
-        assertEq(buffer, DelayBuffer.deplete(start, start, buffer, delay, threshold));
-        assertEq(buffer - 1, DelayBuffer.deplete(start, start + 1, buffer, delay, threshold));
-        assertEq(buffer - unexpectedDelay, DelayBuffer.deplete(start, start + unexpectedDelay, buffer, delay, threshold));
-        assertEq(threshold, DelayBuffer.deplete(start, start + buffer, buffer, threshold + buffer, threshold));
-        assertEq(threshold, DelayBuffer.deplete(start, start + buffer + 100, buffer, threshold + buffer + 100, threshold));
-    }
+        assertEq(buffer, DelayBuffer.bufferUpdate(start, start, buffer, delay, threshold, maxBuffer, replenishRateInBasis));
+        assertEq(buffer - 1, DelayBuffer.bufferUpdate(start, start + 1, buffer, delay, threshold, maxBuffer, replenishRateInBasis));
+        uint64 replenishAmount = unexpectedDelay * replenishRateInBasis / 10000;
+        assertEq(buffer + replenishAmount - unexpectedDelay, DelayBuffer.bufferUpdate(start, start + unexpectedDelay, buffer, delay, threshold, maxBuffer, replenishRateInBasis));
+        replenishAmount = buffer * replenishRateInBasis / 10000;
+        assertEq(threshold, DelayBuffer.bufferUpdate(start, start + buffer, buffer, threshold + buffer, threshold, maxBuffer, replenishRateInBasis));
+        replenishAmount = (buffer + 100) * replenishRateInBasis / 10000;
+        assertEq(threshold, DelayBuffer.bufferUpdate(start, start + buffer + 100, buffer, threshold + buffer + 100, threshold, maxBuffer, replenishRateInBasis));
 
-    function testReplenish() public {
-        uint64 start = 10;
-        uint256 buffer = 100;
-
-        uint256 newBuffer = DelayBuffer.replenish(start, start, buffer, maxBuffer, replenishRateInBasis);
-        assertEq(newBuffer, buffer);
-
-        newBuffer = DelayBuffer.replenish(start, start + 1, buffer, maxBuffer, replenishRateInBasis);
-        assertEq(newBuffer, buffer);
-
-        newBuffer = DelayBuffer.replenish(start, start + 10000, buffer, maxBuffer, replenishRateInBasis);
-        assertEq(newBuffer, buffer + replenishRateInBasis);
     }
 
     function testUpdate() public {

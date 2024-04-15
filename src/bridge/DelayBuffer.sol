@@ -18,65 +18,12 @@ library DelayBuffer {
     uint256 public constant BASIS = 10000;
 
     /// @dev    Depletion is limited by the elapsed blocks in the delayed message queue to avoid double counting and potential L2 reorgs.
-    //          Eg. 2 simultaneous batches sequencing multiple delayed messages with the same 100 blocks delay each
-    //          should count once as a single 100 block delay, not twice as a 200 block delay. This also prevents L2 reorg risk in edge cases.
-    //          Eg. If the buffer is 300 blocks, decrementing the buffer when processing the first batch would allow the second delay message to be force included before the sequencer could add the second batch.
-    //          Buffer depletion also saturates at the threshold instead of zero to allow a recovery margin.
-    //          Eg. when the sequencer recovers from an outage, it is able to wait threshold > finality time before queueing delayed messages to avoid L1 reorgs.
-    /// @notice Decrements the delay buffer saturating at the threshold
-    /// @param start The beginning reference point (prev delay)
-    /// @param end The ending reference point (current message)
-    /// @param buffer The buffer to be decremented
-    /// @param prevDelay The delay to be applied
-    /// @param threshold The threshold to saturate at
-    function deplete(
-        uint256 start,
-        uint256 end,
-        uint256 buffer,
-        uint256 prevDelay,
-        uint256 threshold
-    ) internal pure returns (uint256) {
-        uint256 elapsed = end > start ? end - start : 0;
-        uint256 unexpectedDelay = prevDelay > threshold ? prevDelay - threshold : 0;
-        if (unexpectedDelay > elapsed) {
-            unexpectedDelay = elapsed;
-        }
-        // decrease the buffer saturating at the threshold
-        if (buffer > unexpectedDelay) {
-            buffer = buffer - unexpectedDelay;
-            if (buffer > threshold) {
-                return buffer;
-            }
-        }
-        return threshold;
-    }
-
-    /// @notice Replenishes the delay buffer saturating at max
-    /// @param start The beginning reference point
-    /// @param end The ending reference point
-    /// @param buffer The buffer to be replenished
-    /// @param max The maximum buffer
-    /// @param replenishRateInBasis The amount to replenish the buffer per block in basis points.
-    function replenish(
-        uint256 start,
-        uint256 end,
-        uint256 buffer,
-        uint256 max,
-        uint256 replenishRateInBasis
-    ) internal pure returns (uint256) {
-        uint256 elapsed = end > start ? end - start : 0;
-        // rounds down for simplicity
-        uint256 replenishAmount = (elapsed * replenishRateInBasis) / BASIS;
-        if (max - buffer > replenishAmount) {
-            buffer += replenishAmount;
-        } else {
-            // saturate
-            buffer = max;
-        }
-        return buffer;
-    }
-
-    /// @notice Conditionally updates the buffer. Depletes if the delay is unexpected, otherwise replenishes if the buffer is depleted.
+    ///         Eg. 2 simultaneous batches sequencing multiple delayed messages with the same 100 blocks delay each
+    ///         should count once as a single 100 block delay, not twice as a 200 block delay. This also prevents L2 reorg risk in edge cases.
+    ///         Eg. If the buffer is 300 blocks, decrementing the buffer when processing the first batch would allow the second delay message to be force included before the sequencer could add the second batch.
+    ///         Buffer depletion also saturates at the threshold instead of zero to allow a recovery margin.
+    ///         Eg. when the sequencer recovers from an outage, it is able to wait threshold > finality time before queueing delayed messages to avoid L1 reorgs.
+    /// @notice Conditionally updates the buffer. Replenishes the buffer and depletes if delay is unexpected.
     /// @param start The beginning reference point
     /// @param end The ending reference point
     /// @param buffer The buffer to be updated
@@ -93,14 +40,25 @@ library DelayBuffer {
         uint256 max,
         uint256 replenishRateInBasis
     ) internal pure returns (uint256) {
-        if (threshold < prevDelay) {
-            // deplete due to unexpected delay
-            buffer = deplete(start, end, buffer, prevDelay, threshold);
-        } else if (buffer < max) {
-            // replenish depleted buffer
-            buffer = replenish(start, end, buffer, max, replenishRateInBasis);
+        uint256 elapsed = end > start ? end - start : 0;
+        // replenishment rounds down
+        buffer += (elapsed * replenishRateInBasis) / BASIS;
+
+        uint256 unexpectedDelay = prevDelay > threshold ? prevDelay - threshold : 0;
+        if (unexpectedDelay > elapsed) {
+            unexpectedDelay = elapsed;
         }
-        return buffer;
+
+        // decrease the buffer
+        if (buffer > unexpectedDelay) {
+            buffer -= unexpectedDelay;
+            if (buffer > threshold) {
+                // saturating above at the max
+                return buffer > max ? max : buffer;
+            }
+        }
+        // saturating below at the threshold
+        return threshold;
     }
 
     /// @notice Applies full update to buffer data (buffer, sync validity, and prev delay)
