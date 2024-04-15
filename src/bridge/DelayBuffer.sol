@@ -64,7 +64,6 @@ library DelayBuffer {
         uint256 max,
         uint256 replenishRateInBasis
     ) internal pure returns (uint256) {
-        // add the replenish round off from the last replenish
         uint256 elapsed = end > start ? end - start : 0;
         // rounds down for simplicity
         uint256 replenishAmount = (elapsed * replenishRateInBasis) / BASIS;
