@@ -171,6 +171,7 @@ interface ISequencerInbox is IDelayedMessageProvider {
 
     // ---------- BatchPoster functions ----------
 
+    /// @dev Deprecated, kept for abi generation and will be removed in the future
     function addSequencerL2BatchFromOrigin(
         uint256 sequenceNumber,
         bytes calldata data,
@@ -178,6 +179,7 @@ interface ISequencerInbox is IDelayedMessageProvider {
         IGasRefunder gasRefunder
     ) external;
 
+    /// @dev Will be deprecated due to EIP-3074, use `addSequencerL2Batch` instead
     function addSequencerL2BatchFromOrigin(
         uint256 sequenceNumber,
         bytes calldata data,
@@ -217,6 +219,7 @@ interface ISequencerInbox is IDelayedMessageProvider {
 
     /// @dev    Proves message delays, updates delay buffers, and posts an L2 batch with calldata posted from an EOA.
     ///         DelayProof proves the delay of the message and syncs the delay buffer.
+    ///         Will be deprecated due to EIP-3074, use `addSequencerL2BatchDelayProof` instead
     function addSequencerL2BatchFromOriginDelayProof(
         uint256 sequenceNumber,
         bytes calldata data,
