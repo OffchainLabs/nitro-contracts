@@ -68,17 +68,22 @@ contract OneStepProofEntry is IOneStepProofEntry {
             );
 
             {
-                MerkleProof memory instProof;
+                Instruction[] memory codeChunk;
+                MerkleProof memory codeProof;
                 MerkleProof memory funcProof;
-                (inst, offset) = Deserialize.instruction(proof, offset);
-                (instProof, offset) = Deserialize.merkleProof(proof, offset);
+                (codeChunk, offset) = Deserialize.instructions(proof, offset);
+                (codeProof, offset) = Deserialize.merkleProof(proof, offset);
                 (funcProof, offset) = Deserialize.merkleProof(proof, offset);
-                bytes32 codeHash = instProof.computeRootFromInstruction(mach.functionPc, inst);
+                bytes32 codeHash = codeProof.computeRootFromInstructions(
+                    mach.functionPc / 64,
+                    codeChunk
+                );
                 bytes32 recomputedRoot = funcProof.computeRootFromFunction(
                     mach.functionIdx,
                     codeHash
                 );
                 require(recomputedRoot == mod.functionsMerkleRoot, "BAD_FUNCTIONS_ROOT");
+                inst = codeChunk[mach.functionPc % 64];
             }
             proof = proof[offset:];
         }
