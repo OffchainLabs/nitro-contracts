@@ -160,7 +160,7 @@ library Deserialize {
             uint16 opcode;
             uint256 data;
             (opcode, offset) = u16(proof, offset);
-            (data, offset) = u64(proof, offset);
+            (data, offset) = u256(proof, offset);
             code[i] = Instruction({opcode: opcode, argumentData: data});
         }
     }

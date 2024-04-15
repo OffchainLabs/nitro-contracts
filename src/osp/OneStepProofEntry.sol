@@ -75,7 +75,7 @@ contract OneStepProofEntry is IOneStepProofEntry {
                 (codeProof, offset) = Deserialize.merkleProof(proof, offset);
                 (funcProof, offset) = Deserialize.merkleProof(proof, offset);
                 bytes32 codeHash = codeProof.computeRootFromInstructions(
-                    mach.functionPc,
+                    mach.functionPc / 64,
                     codeChunk
                 );
                 bytes32 recomputedRoot = funcProof.computeRootFromFunction(
