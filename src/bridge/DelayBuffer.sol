@@ -26,9 +26,9 @@ library DelayBuffer {
     /// @notice Decrements the delay buffer saturating at the threshold
     /// @param start The beginning reference point (prev delay)
     /// @param end The ending reference point (current message)
+    /// @param buffer The buffer to be decremented
     /// @param prevDelay The delay to be applied
     /// @param threshold The threshold to saturate at
-    /// @param buffer The buffer to be decremented
     function deplete(
         uint256 start,
         uint256 end,
@@ -77,7 +77,9 @@ library DelayBuffer {
     /// @notice Conditionally updates the buffer. Depletes if the delay is unexpected, otherwise replenishes if the buffer is depleted.
     /// @param start The beginning reference point
     /// @param end The ending reference point
-    /// @param buffer The buffer to be replenished
+    /// @param buffer The buffer to be updated
+    /// @param prevDelay The delay to be applied
+    /// @param threshold The threshold to saturate at
     /// @param max The maximum buffer
     /// @param replenishRateInBasis The amount to replenish the buffer per block in basis points.
     function bufferUpdate(

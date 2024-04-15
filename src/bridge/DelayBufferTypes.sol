@@ -9,7 +9,7 @@ pragma solidity >=0.6.9 <0.9.0;
 /// @notice Delay buffer and delay threshold settings
 /// @param threshold The maximum amount of blocks that a message is expected to be delayed
 /// @param max The maximum buffer in blocks
-/// @param period The period in blocks between replenishment
+/// @param replenishRateInBasis The amount to replenish the buffer per block in basis points.
 struct BufferConfig {
     uint64 threshold;
     uint64 max;
