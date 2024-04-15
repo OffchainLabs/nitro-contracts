@@ -92,33 +92,44 @@ interface ArbOwner {
     /// @notice Releases surplus funds from L1PricerFundsPoolAddress for use
     function releaseL1PricerSurplusFunds(uint256 maxWeiToRelease) external returns (uint256);
 
-    /// @notice sets the amount of ink 1 gas buys
+    /// @notice Sets the amount of ink 1 gas buys
     /// @param price the conversion rate (must fit in a uint24)
     function setInkPrice(uint32 price) external;
 
-    /// @notice sets the maximum depth (in wasm words) a wasm stack may grow
+    /// @notice Sets the maximum depth (in wasm words) a wasm stack may grow
     function setWasmMaxStackDepth(uint32 depth) external;
 
-    /// @notice sets the number of free wasm pages a tx gets
+    /// @notice Sets the number of free wasm pages a tx gets
     function setWasmFreePages(uint16 pages) external;
 
-    /// @notice sets the base cost of each additional wasm page
+    /// @notice Sets the base cost of each additional wasm page
     function setWasmPageGas(uint16 gas) external;
 
-    /// @notice sets the ramp that drives exponential wasm memory costs
+    /// @notice Sets the ramp that drives exponential wasm memory costs
     function setWasmPageRamp(uint64 ramp) external;
 
-    /// @notice sets the maximum number of pages a wasm may allocate
+    /// @notice Sets the maximum number of pages a wasm may allocate
     function setWasmPageLimit(uint16 limit) external;
 
-    /// @notice sets the minimum cost to invoke a program
-    function setWasmMinInitGas(uint16 gas) external;
+    /// @notice Sets the minimum costs to invoke a program
+    /// @param gas amount of gas paid in increments of 256 when not the program is not cached
+    /// @param cached amount of gas paid in increments of 64 when the program is cached
+    function setWasmMinInitGas(uint8 gas, uint16 cached) external;
 
-    /// @notice sets the number of days after which programs deactivate
+    /// @notice Sets the number of days after which programs deactivate
     function setWasmExpiryDays(uint16 _days) external;
 
-    /// @notice sets the age a program must be to perform a keepalive
+    /// @notice Sets the age a program must be to perform a keepalive
     function setWasmKeepaliveDays(uint16 _days) external;
+
+    /// @notice Sets the number of extra programs ArbOS caches during a given block
+    function setWasmBlockCacheSize(uint16 count) external;
+
+    /// @notice Adds account as a wasm cache manager
+    function addWasmCacheManager(address manager) external;
+
+    /// @notice Removes account from the list of wasm cache managers
+    function removeWasmCacheManager(address manager) external;
 
     /// @notice Sets serialized chain config in ArbOS state
     function setChainConfig(string calldata chainConfig) external;
