@@ -156,10 +156,32 @@ library Instructions {
     uint256 internal constant INBOX_INDEX_DELAYED = 1;
 
     function hash(Instruction[] memory code) internal pure returns (bytes32) {
-        bytes memory data = "Instructions:";
-        data = abi.encodePacked(data, uint8(code.length));
+        // To avoid quadratic expense, we declare a `bytes` early and populate its contents.
+        bytes memory data = new bytes(13 + 1 + 34 * code.length);
+        assembly {
+            // Represents the string "Instructions:", which we place after the length word.
+            mstore(
+                add(data, 32),
+                0x496e737472756374696f6e733a00000000000000000000000000000000000000
+            )
+        }
+
+        // write the instruction count
+        uint256 offset = 13;
+        data[offset] = bytes1(uint8(code.length));
+        offset++;
+
+        // write each instruction
         for (uint256 i = 0; i < code.length; i++) {
-            data = abi.encodePacked(data, code[i].opcode, code[i].argumentData);
+            Instruction memory inst = code[i];
+            data[offset] = bytes1(uint8(inst.opcode >> 8));
+            data[offset + 1] = bytes1(uint8(inst.opcode));
+            offset += 2;
+            uint256 argumentData = inst.argumentData;
+            assembly {
+                mstore(add(add(data, 32), offset), argumentData)
+            }
+            offset += 32;
         }
         return keccak256(data);
     }
