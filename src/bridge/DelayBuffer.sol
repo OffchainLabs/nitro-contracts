@@ -41,11 +41,14 @@ library DelayBuffer {
         if (unexpectedDelay > elapsed) {
             unexpectedDelay = elapsed;
         }
-        // decrease the buffer saturating at zero
-        buffer = buffer > unexpectedDelay ? buffer - unexpectedDelay : 0;
-        // saturate at threshold
-        buffer = buffer > threshold ? buffer : threshold;
-        return buffer;
+        // decrease the buffer saturating at the threshold
+        if (buffer > unexpectedDelay) {
+            buffer = buffer - unexpectedDelay;
+            if (buffer > threshold) {
+                return buffer;
+            }
+        }
+        return threshold;
     }
 
     /// @notice Replenishes the delay buffer saturating at max
