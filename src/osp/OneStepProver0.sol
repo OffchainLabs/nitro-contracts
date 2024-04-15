@@ -143,7 +143,7 @@ contract OneStepProver0 is IOneStepProver {
 
     function executeCrossModuleForward(
         Machine memory mach,
-        Module memory mod,
+        Module memory,
         Instruction calldata inst,
         bytes calldata
     ) internal pure {

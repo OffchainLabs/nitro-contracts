@@ -24,12 +24,12 @@ library MerkleProofLib {
         return computeRootUnsafe(proof, index, leaf.hash(), "Value merkle tree:");
     }
 
-    function computeRootFromInstruction(
+    function computeRootFromInstructions(
         MerkleProof memory proof,
         uint256 index,
-        Instruction memory inst
+        Instruction[] memory code
     ) internal pure returns (bytes32) {
-        return computeRootUnsafe(proof, index, Instructions.hash(inst), "Instruction merkle tree:");
+        return computeRootUnsafe(proof, index, Instructions.hash(code), "Instruction merkle tree:");
     }
 
     function computeRootFromFunction(

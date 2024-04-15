@@ -155,7 +155,12 @@ library Instructions {
     uint256 internal constant INBOX_INDEX_SEQUENCER = 0;
     uint256 internal constant INBOX_INDEX_DELAYED = 1;
 
-    function hash(Instruction memory inst) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked("Instruction:", inst.opcode, inst.argumentData));
+    function hash(Instruction[] memory code) internal pure returns (bytes32) {
+        bytes memory data = "Instructions:";
+        data = abi.encodePacked(data, uint8(code.length));
+        for (uint256 i = 0; i < code.length; i++) {
+            data = abi.encodePacked(data, code[i].opcode, code[i].argumentData);
+        }
+        return keccak256(data);
     }
 }
