@@ -132,7 +132,7 @@ export async function deployAllContracts(
     maxDataSize,
     reader4844,
     true,
-    false
+    true
   ])
   const erc20Inbox = await deployContract('ERC20Inbox', signer, [maxDataSize])
   const erc20RollupEventInbox = await deployContract(
