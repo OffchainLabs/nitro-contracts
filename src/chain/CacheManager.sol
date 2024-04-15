@@ -14,6 +14,7 @@ contract CacheManager {
     ArbOwnerPublic internal constant ARB_OWNER_PUBLIC = ArbOwnerPublic(address(0x6b));
     ArbWasm internal constant ARB_WASM = ArbWasm(address(0x71));
     ArbWasmCache internal constant ARB_WASM_CACHE = ArbWasmCache(address(0x72));
+    uint64 internal constant MAX_MAKE_SPACE = 5 * 1024 * 1024;
 
     MinHeapLib.Heap internal bids;
     Entry[] public entries;
@@ -115,7 +116,11 @@ contract CacheManager {
     }
 
     /// Evicts entries until enough space exists in the cache, reverting if payment is insufficient.
+    /// Note: will only make up to 5Mb of space. Call repeatedly for more.
     function makeSpace(uint64 size) external payable {
+        if (size > MAX_MAKE_SPACE) {
+            size = MAX_MAKE_SPACE;
+        }
         _makeSpace(size);
     }
 
