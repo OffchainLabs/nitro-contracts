@@ -122,7 +122,7 @@ contract ChallengeManager is DelegateCallAware, IChallengeManager {
         ospCond[wasmModuleRoot] = osp_;
     }
 
-    function getOSP(bytes32 wasmModuleRoot) internal view returns (IOneStepProofEntry) {
+    function getOSP(bytes32 wasmModuleRoot) public view returns (IOneStepProofEntry) {
         IOneStepProofEntry t = ospCond[wasmModuleRoot];
         if (address(t) == address(0)){
             return osp;
