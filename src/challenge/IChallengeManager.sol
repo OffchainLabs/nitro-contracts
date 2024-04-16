@@ -39,7 +39,6 @@ interface IChallengeManager {
     event OneStepProofCompleted(uint64 indexed challengeIndex);
 
     event ChallengeEnded(uint64 indexed challengeIndex, ChallengeTerminationType kind);
-    event ConditonalOSPSet(bytes32 indexed wasmModuleRoot, IOneStepProofEntry osp_);
 
     function initialize(
         IChallengeResultReceiver resultReceiver_,

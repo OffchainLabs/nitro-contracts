@@ -116,7 +116,6 @@ contract ChallengeManager is DelegateCallAware, IChallengeManager {
         bytes32 condRoot,
         IOneStepProofEntry condOsp
     ) external onlyDelegated onlyProxyOwner {
-        emit ConditonalOSPSet(condRoot, condOsp);
         ospCond[condRoot] = condOsp;
         osp = osp_;
     }
