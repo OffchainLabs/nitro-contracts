@@ -9,7 +9,6 @@ import {
   setupSequencerInbox,
   mineBlocks,
   forceIncludeMessages,
-  getBufferUpdatedEvents,
 } from './testHelpers'
 
 describe('SequencerInboxDelayBufferable', async () => {
@@ -91,7 +90,9 @@ describe('SequencerInboxDelayBufferable', async () => {
     expect(delayBufferData.prevBlockNumber).to.equal(
       forceIncludedMsg?.delayedMessage.header.blockNumber
     )
-    expect(delayBufferData.prevDelay).to.equal(delayBlocks)
+    expect(delayBufferData.prevSequencedBlockNumber).to.equal(
+      txnReciept!.blockNumber
+    )
 
     await (
       await sequencerInbox
@@ -127,16 +128,14 @@ describe('SequencerInboxDelayBufferable', async () => {
       delayConfig.max - unexpectedDelayBlocks + replenishAmount
     expect(delayBufferData.bufferBlocks).to.equal(depletedBufferBlocks)
 
-    const delayBlocks2 =
-      txnReciept2!.blockNumber -
-      forceIncludedMsg!.delayedMessage.header.blockNumber
-
     expect(await sequencerInbox.totalDelayedMessagesRead()).to.equal(2)
     // prevDelay should be updated
     expect(delayBufferData.prevBlockNumber).to.equal(
       forceIncludedMsg?.delayedMessage.header.blockNumber
     )
-    expect(delayBufferData.prevDelay).to.equal(delayBlocks2)
+    expect(delayBufferData.prevSequencedBlockNumber).to.equal(
+      txnReciept2!.blockNumber
+    )
 
     const deadline = await sequencerInbox.forceInclusionDeadline(
       delayBufferData.prevBlockNumber
@@ -149,16 +148,17 @@ describe('SequencerInboxDelayBufferable', async () => {
       delayBufferData.prevBlockNumber.add(delayBlocksDeadline)
     )
 
-    const unexpectedDelayBlocks2 = delayBufferData.prevDelay
+    const unexpectedDelayBlocks2 = delayBufferData.prevSequencedBlockNumber
+      .sub(delayBufferData.prevBlockNumber)
       .sub(delayConfig.threshold)
       .toNumber()
+    const delay = delayBufferData.prevSequencedBlockNumber.sub(
+      delayBufferData.prevBlockNumber
+    )
     const futureBlock =
-      forceIncludedMsg!.delayedMessage.header.blockNumber +
-      delayBufferData.prevDelay.toNumber()
+      forceIncludedMsg!.delayedMessage.header.blockNumber + delay.toNumber()
     const replenishAmount2 = Math.floor(
-      (delayBufferData.prevDelay.toNumber() *
-        delayConfig.replenishRateInBasis) /
-        10000
+      (delay.toNumber() * delayConfig.replenishRateInBasis) / 10000
     )
     const deadline2 = await sequencerInbox.forceInclusionDeadline(futureBlock)
     const calcBufferBlocks =
@@ -512,7 +512,6 @@ describe('SequencerInboxDelayBufferable', async () => {
       .then(async res => {
         delayedInboxPending = []
         delayedInboxPending.push(getBatchSpendingReport(res))
-        await expect(getBufferUpdatedEvents(res).length).to.equal(1)
         return res
       })
 
@@ -548,12 +547,12 @@ describe('SequencerInboxDelayBufferable', async () => {
       .then(async res => {
         delayedInboxPending = []
         delayedInboxPending.push(getBatchSpendingReport(res))
-        await expect(getBufferUpdatedEvents(res).length).to.equal(1)
         return res
       })
 
     const unexpectedDelayBlocks =
-      delayBufferDataBefore.prevDelay.toNumber() -
+      delayBufferDataBefore.prevSequencedBlockNumber.toNumber() -
+      delayBufferDataBefore.prevBlockNumber.toNumber() -
       delayConfig.threshold.toNumber()
     const elapsed =
       firstReadMsg!.delayedMessage.header.blockNumber -
@@ -648,7 +647,9 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
       forceIncludedMsg?.delayedMessage.header.blockNumber
     )
 
-    expect(delayBufferData.prevDelay).to.equal(delayBlocks)
+    expect(delayBufferData.prevSequencedBlockNumber).to.equal(
+      txnReciept!.blockNumber
+    )
 
     await (
       await sequencerInbox
@@ -681,16 +682,14 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
       delayConfig.max - unexpectedDelayBlocks + replenishAmount
     expect(delayBufferData.bufferBlocks).to.equal(depletedBufferBlocks)
 
-    const delayBlocks2 =
-      txnReciept2!.blockNumber -
-      forceIncludedMsg!.delayedMessage.header.blockNumber
-
     expect(await sequencerInbox.totalDelayedMessagesRead()).to.equal(2)
     // prevDelay should be updated
     expect(delayBufferData.prevBlockNumber).to.equal(
       forceIncludedMsg?.delayedMessage.header.blockNumber
     )
-    expect(delayBufferData.prevDelay).to.equal(delayBlocks2)
+    expect(delayBufferData.prevSequencedBlockNumber).to.equal(
+      txnReciept2!.blockNumber
+    )
 
     const deadline = await sequencerInbox.forceInclusionDeadline(
       delayBufferData.prevBlockNumber
@@ -702,18 +701,15 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
     expect(deadline).to.equal(
       delayBufferData.prevBlockNumber.add(delayBlocksDeadline)
     )
-
-    const unexpectedDelayBlocks2 = delayBufferData.prevDelay
-      .sub(delayConfig.threshold)
-      .toNumber()
+    const delay = delayBufferData.prevSequencedBlockNumber.sub(
+      delayBufferData.prevBlockNumber
+    )
+    const unexpectedDelayBlocks2 = delay.sub(delayConfig.threshold).toNumber()
     const futureBlock =
-      forceIncludedMsg!.delayedMessage.header.blockNumber +
-      delayBufferData.prevDelay.toNumber()
+      forceIncludedMsg!.delayedMessage.header.blockNumber + delay.toNumber()
     const deadline2 = await sequencerInbox.forceInclusionDeadline(futureBlock)
     const replenishAmount2 = Math.floor(
-      (delayBufferData.prevDelay.toNumber() *
-        delayConfig.replenishRateInBasis) /
-        10000
+      (delay.toNumber() * delayConfig.replenishRateInBasis) / 10000
     )
     const calcBufferBlocks =
       depletedBufferBlocks - unexpectedDelayBlocks2 >
@@ -1028,7 +1024,6 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
       .then(async res => {
         delayedInboxPending = []
         delayedInboxPending.push(getBatchSpendingReport(res))
-        await expect(getBufferUpdatedEvents(res).length).to.equal(1)
         return res
       })
 
@@ -1063,12 +1058,12 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
       .then(async res => {
         delayedInboxPending = []
         delayedInboxPending.push(getBatchSpendingReport(res))
-        await expect(getBufferUpdatedEvents(res).length).to.equal(1)
         return res
       })
 
     const unexpectedDelayBlocks =
-      delayBufferDataBefore.prevDelay.toNumber() -
+      delayBufferDataBefore.prevSequencedBlockNumber.toNumber() -
+      delayBufferDataBefore.prevBlockNumber.toNumber() -
       delayConfig.threshold.toNumber()
     const elapsed =
       firstReadMsg!.delayedMessage.header.blockNumber -
