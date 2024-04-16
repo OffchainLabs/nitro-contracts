@@ -27,11 +27,14 @@ contract CacheManager {
     error NotChainOwner(address sender);
     error AsmTooLarge(uint256 asm, uint256 queueSize, uint256 cacheSize);
     error AlreadyCached(bytes32 codehash);
-    error BidTooSmall(uint256 bid, uint256 min);
+    error BidTooSmall(uint192 bid, uint192 min);
     error BidsArePaused();
+    error MakeSpaceTooLarge(uint64 size, uint64 limit);
 
-    event InsertBid(uint256 bid, bytes32 indexed codehash, uint64 size);
-    event DeleteBid(uint256 bid, bytes32 indexed codehash, uint64 size);
+    event InsertBid(bytes32 indexed codehash, uint192 bid, uint64 size);
+    event DeleteBid(bytes32 indexed codehash, uint192 bid, uint64 size);
+    event SetCacheSize(uint64 size);
+    event SetDecayRate(uint64 decay);
     event Pause();
     event Unpause();
 
@@ -55,11 +58,13 @@ contract CacheManager {
     /// Sets the intended cache size. Note that the queue may temporarily be larger.
     function setCacheSize(uint64 newSize) external onlyOwner {
         cacheSize = newSize;
+        emit SetCacheSize(newSize);
     }
 
     /// Sets the intended decay factor. Does not modify existing bids.
     function setDecayRate(uint64 newDecay) external onlyOwner {
         decay = newDecay;
+        emit SetDecayRate(newDecay);
     }
 
     /// Disable new bids.
@@ -83,7 +88,7 @@ contract CacheManager {
     /// Evicts up to `count` programs from the cache.
     function evictPrograms(uint256 count) public onlyOwner {
         while (bids.length() != 0 && count > 0) {
-            (uint256 bid, uint64 index) = _getBid(bids.pop());
+            (uint192 bid, uint64 index) = _getBid(bids.pop());
             _deleteEntry(bid, index);
             count -= 1;
         }
@@ -111,16 +116,19 @@ contract CacheManager {
         }
 
         uint64 asm = _asmSize(codehash);
-        (uint256 bid, uint64 index) = _makeSpace(asm);
+        (uint192 bid, uint64 index) = _makeSpace(asm);
         return _addBid(bid, codehash, asm, index);
     }
 
     /// Evicts entries until enough space exists in the cache, reverting if payment is insufficient.
     /// Returns the new amount of space available on success.
-    /// Note: will only make up to 5Mb of space. Call repeatedly for more.
+    /// Note: will revert for requests larger than 5Mb. Call repeatedly for more.
     function makeSpace(uint64 size) external payable returns (uint64 space) {
+        if (isPaused) {
+            revert BidsArePaused();
+        }
         if (size > MAX_MAKE_SPACE) {
-            size = MAX_MAKE_SPACE;
+            revert MakeSpaceTooLarge(size, MAX_MAKE_SPACE);
         }
         _makeSpace(size);
         return cacheSize - queueSize;
@@ -128,13 +136,14 @@ contract CacheManager {
 
     /// Evicts entries until enough space exists in the cache, reverting if payment is insufficient.
     /// Returns the bid and the index to use for insertion.
-    function _makeSpace(uint64 size) internal returns (uint256 bid, uint64 index) {
+    function _makeSpace(uint64 size) internal returns (uint192 bid, uint64 index) {
         // discount historical bids by the number of seconds
-        bid = msg.value + block.timestamp * uint256(decay);
+        bid = uint192(msg.value + block.timestamp * uint256(decay));
         index = uint64(entries.length);
 
-        uint256 min;
-        while (queueSize + size > cacheSize) {
+        uint192 min;
+        uint64 limit = cacheSize;
+        while (queueSize + size > limit) {
             (min, index) = _getBid(bids.pop());
             _deleteEntry(min, index);
         }
@@ -145,7 +154,7 @@ contract CacheManager {
 
     /// Adds a bid
     function _addBid(
-        uint256 bid,
+        uint192 bid,
         bytes32 code,
         uint64 size,
         uint64 index
@@ -163,27 +172,27 @@ contract CacheManager {
         } else {
             entries[index] = entry;
         }
-        emit InsertBid(bid, code, size);
+        emit InsertBid(code, bid, size);
     }
 
     /// Clears the entry at the given index
-    function _deleteEntry(uint256 bid, uint64 index) internal {
+    function _deleteEntry(uint192 bid, uint64 index) internal {
         Entry memory entry = entries[index];
         ARB_WASM_CACHE.evictCodehash(entry.code);
         queueSize -= entry.size;
-        emit DeleteBid(bid, entry.code, entry.size);
+        emit DeleteBid(entry.code, bid, entry.size);
         delete entries[index];
     }
 
     /// Gets the bid and index from a packed bid item
-    function _getBid(uint256 info) internal pure returns (uint256 bid, uint64 index) {
-        bid = info >> 64;
+    function _getBid(uint256 info) internal pure returns (uint192 bid, uint64 index) {
+        bid = uint192(info >> 64);
         index = uint64(info);
     }
 
     /// Creates a packed bid item
-    function _packBid(uint256 bid, uint64 index) internal pure returns (uint256) {
-        return (bid << 64) | uint256(index);
+    function _packBid(uint192 bid, uint64 index) internal pure returns (uint256) {
+        return (uint256(bid) << 64) | uint256(index);
     }
 
     /// Gets the size of the given program in bytes
