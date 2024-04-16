@@ -111,6 +111,10 @@ contract ChallengeManager is DelegateCallAware, IChallengeManager {
         osp = osp_;
     }
 
+    /// @dev A osp breaking change is introduced as part of Stylus upgrade, where the new osp would not support
+    ///      pre-Stylus legacy wasmModuleRoot. To ensure that the new osp is not used for legacy wasmModuleRoot,
+    ///      we introduce a conditional OSP where condRoot should be set to the pre-Stylus root and condOsp should
+    ///      be set to the pre-Stylus osp. The correct value should be handled by the upgrade action contract.
     function postUpgradeInit(
         IOneStepProofEntry osp_,
         bytes32 condRoot,
