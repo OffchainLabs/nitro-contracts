@@ -310,7 +310,6 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             // proactively apply any pending delay buffer updates before the force included message l1BlockAndTime
             buffer.update(l1BlockAndTime[0]);
             delayBlocks_ = delayBufferableBlocks(buffer.bufferBlocks);
-            emit BufferUpdated(buffer.bufferBlocks);
         }
         // Can only force-include after the Sequencer-only window has expired.
         if (l1BlockAndTime[0] + delayBlocks_ >= block.number) revert ForceIncludeBlockTooSoon();
@@ -623,7 +622,6 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
                     revert InvalidDelayedAccPreimage();
                 }
                 buffer.update(delayProof.delayedMessage.blockNumber);
-                emit BufferUpdated(buffer.bufferBlocks);
             }
         }
     }
@@ -862,13 +860,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         buffer.replenishRateInBasis = bufferConfig_.replenishRateInBasis;
 
         // if all delayed messages are read, the buffer is considered synced
-        bool isBridgeSynced = bridge.delayedMessageCount() == totalDelayedMessagesRead;
-        // otherwise, we readjust any existing sync validity
-        uint64 syncBlockNumber = buffer.syncExpiry > 0 && buffer.syncExpiry != type(uint64).max
-            ? buffer.syncExpiry - buffer.threshold
-            : 0;
-
-        buffer.updateSyncValidity(isBridgeSynced ? uint64(block.number) : syncBlockNumber);
+        if (bridge.delayedMessageCount() == totalDelayedMessagesRead) {
+            buffer.update(uint64(block.number));
+        }
     }
 
     function _setMaxTimeVariation(ISequencerInbox.MaxTimeVariation memory maxTimeVariation_)

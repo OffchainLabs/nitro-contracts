@@ -27,7 +27,7 @@ library DelayBuffer {
     /// @param start The beginning reference point
     /// @param end The ending reference point
     /// @param buffer The buffer to be updated
-    /// @param prevDelay The delay to be applied
+    /// @param sequenced The reference point when messages were sequenced
     /// @param threshold The threshold to saturate at
     /// @param max The maximum buffer
     /// @param replenishRateInBasis The amount to replenish the buffer per block in basis points.
@@ -35,16 +35,17 @@ library DelayBuffer {
         uint256 start,
         uint256 end,
         uint256 buffer,
-        uint256 prevDelay,
+        uint256 sequenced,
         uint256 threshold,
         uint256 max,
         uint256 replenishRateInBasis
     ) internal pure returns (uint256) {
         uint256 elapsed = end > start ? end - start : 0;
+        uint256 delay = sequenced > start ? sequenced - start : 0;
         // replenishment rounds down
         buffer += (elapsed * replenishRateInBasis) / BASIS;
 
-        uint256 unexpectedDelay = prevDelay > threshold ? prevDelay - threshold : 0;
+        uint256 unexpectedDelay = delay > threshold ? delay - threshold : 0;
         if (unexpectedDelay > elapsed) {
             unexpectedDelay = elapsed;
         }
@@ -74,11 +75,7 @@ library DelayBuffer {
         // store a new starting reference point
         // any buffer updates will be applied retroactively in the next batch post
         self.prevBlockNumber = blockNumber;
-        self.prevDelay = uint64(block.number) - blockNumber;
-
-        if (uint64(block.number) - blockNumber <= self.threshold) {
-            updateSyncValidity(self, blockNumber);
-        }
+        self.prevSequencedBlockNumber = uint64(block.number);
     }
 
     /// @dev    The delay buffer can change due to pending depletion / replenishment due to previous delays.
@@ -98,27 +95,17 @@ library DelayBuffer {
                     end: blockNumber,
                     buffer: self.bufferBlocks,
                     threshold: self.threshold,
-                    prevDelay: self.prevDelay,
+                    sequenced: self.prevSequencedBlockNumber,
                     max: self.max,
                     replenishRateInBasis: self.replenishRateInBasis
                 })
             );
     }
 
-    /// @dev    Calculates the margin a sequenced message is below the delay threshold
-    ///         defining a `sync validity` window during which no delay proofs are required.
-    /// @notice Updates the time / block until no delay proofs are required.
-    /// @param blockNumber The block number when the synced message was created.
-    function updateSyncValidity(BufferData storage self, uint256 blockNumber) internal {
-        // saturating at uint64 max handles large threshold settings
-        uint256 expiry = blockNumber + self.threshold;
-        self.syncExpiry = expiry > type(uint64).max ? type(uint64).max : uint64(expiry);
-    }
-
     /// @dev    This is the `sync validity window` during which no proofs are required.
     /// @notice Returns true if the inbox is in a synced state (no unexpected delays are possible)
     function isSynced(BufferData storage self) internal view returns (bool) {
-        return block.number <= self.syncExpiry;
+        return block.number - self.prevBlockNumber <= self.threshold;
     }
 
     function isUpdatable(BufferData storage self) internal view returns (bool) {

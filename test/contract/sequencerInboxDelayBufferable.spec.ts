@@ -350,8 +350,8 @@ describe('SequencerInboxDelayBufferable', async () => {
     ])) as Block
     const blockNumber = Number.parseInt(block.number.toString(10))
     expect(
-      (await sequencerInbox.buffer()).syncExpiry.toNumber()
-    ).greaterThanOrEqual(blockNumber)
+      blockNumber - (await sequencerInbox.buffer()).prevBlockNumber.toNumber()
+    ).lessThanOrEqual((await sequencerInbox.buffer()).threshold.toNumber())
     await (
       await sequencerInbox
         .connect(batchPoster)
@@ -421,8 +421,8 @@ describe('SequencerInboxDelayBufferable', async () => {
     ])) as Block
     const blockNumber = Number.parseInt(block.number.toString(10))
     expect(
-      (await sequencerInbox.buffer()).syncExpiry.toNumber()
-    ).greaterThanOrEqual(blockNumber)
+      blockNumber - (await sequencerInbox.buffer()).prevBlockNumber.toNumber()
+    ).lessThanOrEqual((await sequencerInbox.buffer()).threshold.toNumber())
     await (
       await sequencerInbox
         .connect(batchPoster)
@@ -894,8 +894,8 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
     ])) as Block
     const blockNumber = Number.parseInt(block.number.toString(10))
     expect(
-      (await sequencerInbox.buffer()).syncExpiry.toNumber()
-    ).greaterThanOrEqual(blockNumber)
+      blockNumber - (await sequencerInbox.buffer()).prevBlockNumber.toNumber()
+    ).lessThanOrEqual((await sequencerInbox.buffer()).threshold.toNumber())
     await (
       await sequencerInbox
         .connect(batchPoster)
@@ -947,8 +947,8 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
     ])) as Block
     const blockNumber = Number.parseInt(block.number.toString(10))
     expect(
-      (await sequencerInbox.buffer()).syncExpiry.toNumber()
-    ).greaterThanOrEqual(blockNumber)
+      blockNumber - (await sequencerInbox.buffer()).prevBlockNumber.toNumber()
+    ).lessThanOrEqual((await sequencerInbox.buffer()).threshold.toNumber())
     await (
       await sequencerInbox
         .connect(batchPoster)

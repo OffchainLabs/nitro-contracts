@@ -26,12 +26,11 @@ struct BufferConfig {
 /// @param prevDelay The delay in blocks of the last included delay message.
 struct BufferData {
     uint64 bufferBlocks;
-    uint64 syncExpiry;
     uint64 max;
     uint64 threshold;
-    uint64 replenishRateInBasis;
     uint64 prevBlockNumber;
-    uint64 prevDelay;
+    uint64 replenishRateInBasis;
+    uint64 prevSequencedBlockNumber;
 }
 
 struct DelayProof {

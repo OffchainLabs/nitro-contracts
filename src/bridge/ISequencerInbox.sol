@@ -37,10 +37,6 @@ interface ISequencerInbox is IDelayedMessageProvider {
 
     event OwnerFunctionCalled(uint256 indexed id);
 
-    /// @dev Event may be emitted for null update (buffer updated to same value)
-    /// @notice The delay buffer has updated
-    event BufferUpdated(uint64 bufferUpdateBlocks);
-
     /// @dev a separate event that emits batch data when this isn't easily accessible in the tx.input
     event SequencerBatchData(uint256 indexed batchSequenceNumber, bytes data);
 

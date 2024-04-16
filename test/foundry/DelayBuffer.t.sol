@@ -33,12 +33,11 @@ contract DelayBufferableTest is Test {
     BufferData delayBuffer;
     BufferData delayBufferDefault = BufferData({
             bufferBlocks: configBufferable.max,
-            syncExpiry: 0,
             max: configBufferable.max,
             threshold: configBufferable.threshold,
-            replenishRateInBasis: configBufferable.replenishRateInBasis,
             prevBlockNumber: 0,
-            prevDelay: 0
+            replenishRateInBasis: configBufferable.replenishRateInBasis,
+            prevSequencedBlockNumber: 0
         });
 
     Messages.Message message = Messages.Message({
@@ -53,30 +52,29 @@ contract DelayBufferableTest is Test {
 
     function testBufferUpdate() public {
         uint64 start = 10;
-        uint64 delay = 10;
+        uint64 sequenced = 20;
         uint64 buffer = 100;
-        uint64 unexpectedDelay = (delay - threshold);
+        uint64 unexpectedDelay = (sequenced - start - threshold);
 
-        assertEq(buffer, DelayBuffer.bufferUpdate(start, start, buffer, delay, threshold, maxBuffer, replenishRateInBasis));
-        assertEq(buffer - 1, DelayBuffer.bufferUpdate(start, start + 1, buffer, delay, threshold, maxBuffer, replenishRateInBasis));
+        assertEq(buffer, DelayBuffer.bufferUpdate(start, start, buffer, sequenced, threshold, maxBuffer, replenishRateInBasis));
+        assertEq(buffer - 1, DelayBuffer.bufferUpdate(start, start + 1, buffer, sequenced, threshold, maxBuffer, replenishRateInBasis));
         uint64 replenishAmount = unexpectedDelay * replenishRateInBasis / 10000;
-        assertEq(buffer + replenishAmount - unexpectedDelay, DelayBuffer.bufferUpdate(start, start + unexpectedDelay, buffer, delay, threshold, maxBuffer, replenishRateInBasis));
+        assertEq(buffer + replenishAmount - unexpectedDelay, DelayBuffer.bufferUpdate(start, start + unexpectedDelay, buffer, sequenced, threshold, maxBuffer, replenishRateInBasis));
         replenishAmount = buffer * replenishRateInBasis / 10000;
-        assertEq(threshold, DelayBuffer.bufferUpdate(start, start + buffer, buffer, threshold + buffer, threshold, maxBuffer, replenishRateInBasis));
+        assertEq(threshold, DelayBuffer.bufferUpdate(start, start + buffer, buffer, start + threshold + buffer, threshold, maxBuffer, replenishRateInBasis));
         replenishAmount = (buffer + 100) * replenishRateInBasis / 10000;
-        assertEq(threshold, DelayBuffer.bufferUpdate(start, start + buffer + 100, buffer, threshold + buffer + 100, threshold, maxBuffer, replenishRateInBasis));
+        assertEq(threshold, DelayBuffer.bufferUpdate(start, start + buffer + 100, buffer, start + threshold + buffer + 100, threshold, maxBuffer, replenishRateInBasis));
 
     }
 
     function testUpdate() public {
         delayBuffer = BufferData({
             bufferBlocks: 10,
-            syncExpiry: 0,
             max: config.max,
             threshold: config.threshold,
-            replenishRateInBasis: config.replenishRateInBasis,
             prevBlockNumber: 0,
-            prevDelay: 0
+            replenishRateInBasis: config.replenishRateInBasis,
+            prevSequencedBlockNumber: 0
         });
 
         vm.roll(25);
@@ -84,16 +82,15 @@ contract DelayBufferableTest is Test {
         delayBuffer.update(20);
         assertEq(delayBuffer.bufferBlocks, 10);
         assertEq(delayBuffer.prevBlockNumber, 20);
-        assertEq(delayBuffer.prevDelay, 5);
+        assertEq(delayBuffer.prevSequencedBlockNumber, 25);
 
         delayBuffer = BufferData({
             bufferBlocks: 10,
-            syncExpiry: 0,
             max: config.max,
             threshold: config.threshold,
-            replenishRateInBasis: config.replenishRateInBasis,
             prevBlockNumber: 0,
-            prevDelay: 0
+            replenishRateInBasis: config.replenishRateInBasis,
+            prevSequencedBlockNumber: 0
         });
         uint64 updateBN = delayBuffer.prevBlockNumber + 10000;
         vm.roll(updateBN);
@@ -102,18 +99,17 @@ contract DelayBufferableTest is Test {
         assertEq(delayBuffer.bufferBlocks, 10 + config.replenishRateInBasis);
 
         assertEq(delayBuffer.prevBlockNumber, updateBN);
-        assertEq(delayBuffer.prevDelay, 0);
+        assertEq(delayBuffer.prevSequencedBlockNumber, updateBN);
     }
 
     function testPendingBufferUpdate() public {
         delayBuffer = BufferData({
             bufferBlocks: 10,
-            syncExpiry: 0,
             max: config.max,
             threshold: config.threshold,
-            replenishRateInBasis: config.replenishRateInBasis,
             prevBlockNumber: 0,
-            prevDelay: 6
+            replenishRateInBasis: config.replenishRateInBasis,
+            prevSequencedBlockNumber: 6
         });
 
         uint64 buffer = delayBuffer.pendingBufferUpdate(15);
@@ -125,7 +121,7 @@ contract DelayBufferableTest is Test {
         delayBuffer = delayBufferDefault;
 
         assertEq(delayBuffer.prevBlockNumber, 0);
-        assertEq(delayBuffer.prevDelay, 0);
+        assertEq(delayBuffer.prevSequencedBlockNumber, 0);
         assertEq(delayBuffer.bufferBlocks, configBufferable.max);
 
         vm.expectRevert();
@@ -137,7 +133,7 @@ contract DelayBufferableTest is Test {
         delayBuffer.update(10);
 
         assertEq(delayBuffer.prevBlockNumber, 10);
-        assertEq(delayBuffer.prevDelay, 0);
+        assertEq(delayBuffer.prevSequencedBlockNumber, 10);
         assertEq(delayBuffer.bufferBlocks, configBufferable.max);
 
         vm.warp(11);
@@ -149,7 +145,7 @@ contract DelayBufferableTest is Test {
         delayBuffer.update(10);
 
         assertEq(delayBuffer.prevBlockNumber, 10);
-        assertEq(delayBuffer.prevDelay, 1);
+        assertEq(delayBuffer.prevSequencedBlockNumber, 11);
         assertEq(delayBuffer.bufferBlocks, configBufferable.max);
 
         vm.roll(block.number + configBufferable.threshold);
@@ -157,43 +153,43 @@ contract DelayBufferableTest is Test {
         delayBuffer.update(10);
 
         assertEq(delayBuffer.prevBlockNumber, 10);
-        assertEq(delayBuffer.prevDelay, configBufferable.threshold + 1);
+        assertEq(delayBuffer.prevSequencedBlockNumber, configBufferable.threshold + 11);
         assertEq(delayBuffer.bufferBlocks, configBufferable.max);
 
         delayBuffer.update(10);
 
         assertEq(delayBuffer.prevBlockNumber, 10);
-        assertEq(delayBuffer.prevDelay, configBufferable.threshold + 1);
+        assertEq(delayBuffer.prevSequencedBlockNumber, configBufferable.threshold + 11);
         assertEq(delayBuffer.bufferBlocks, configBufferable.max);
 
         delayBuffer.update(11);
 
         assertEq(delayBuffer.prevBlockNumber, 11);
-        assertEq(delayBuffer.prevDelay, configBufferable.threshold);
+        assertEq(delayBuffer.prevSequencedBlockNumber, configBufferable.threshold + 11);
         assertEq(delayBuffer.bufferBlocks, configBufferable.max - 1);
 
         delayBuffer.update(11);
 
         assertEq(delayBuffer.prevBlockNumber, 11);
-        assertEq(delayBuffer.prevDelay, configBufferable.threshold);
+        assertEq(delayBuffer.prevSequencedBlockNumber, configBufferable.threshold + 11);
         assertEq(delayBuffer.bufferBlocks, configBufferable.max - 1);
 
         delayBuffer.update(12);
 
         assertEq(delayBuffer.prevBlockNumber, 12);
-        assertEq(delayBuffer.prevDelay, configBufferable.threshold - 1);
+        assertEq(delayBuffer.prevSequencedBlockNumber, configBufferable.threshold + 11);
         assertEq(delayBuffer.bufferBlocks, configBufferable.max - 1);
 
         delayBuffer.update(24);
 
         assertEq(delayBuffer.prevBlockNumber, 24);
-        assertEq(delayBuffer.prevDelay, configBufferable.threshold - 13);
+        assertEq(delayBuffer.prevSequencedBlockNumber, configBufferable.threshold + 11);
         assertEq(delayBuffer.bufferBlocks, configBufferable.max - 1);
 
         delayBuffer.update(25);
 
         assertEq(delayBuffer.prevBlockNumber, 25);
-        assertEq(delayBuffer.prevDelay, configBufferable.threshold - 14);
+        assertEq(delayBuffer.prevSequencedBlockNumber, configBufferable.threshold + 11);
         assertEq(delayBuffer.bufferBlocks, configBufferable.max);
     }
 }

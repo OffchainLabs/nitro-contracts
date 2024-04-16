@@ -535,13 +535,11 @@ contract SequencerInboxTest is Test {
             abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector, bufferConfig)
         );
         {
-        (uint64 bufferBlocks, uint64 syncExpiry, uint64 max, uint64 threshold, uint64 replenishRateInBasis,,) = seqInbox.buffer();
+        (uint64 bufferBlocks, uint64 max, uint64 threshold, ,uint64 replenishRateInBasis,) = seqInbox.buffer();
         assertEq(max, bufferConfig.max);
         assertEq(threshold, bufferConfig.threshold);
         assertEq(replenishRateInBasis, bufferConfig.replenishRateInBasis);
         assertEq(bufferBlocks, bufferConfig.max);
-        
-        assertEq(syncExpiry, block.number + bufferConfig.threshold > type(uint64).max ? type(uint64).max : block.number + bufferConfig.threshold);
         }
         vm.expectRevert(abi.encodeWithSelector(AlreadyInit.selector));
         vm.prank(proxyAdmin);
