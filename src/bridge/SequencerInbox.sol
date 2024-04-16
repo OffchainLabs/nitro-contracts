@@ -834,7 +834,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     function forceInclusionDeadline(uint64 blockNumber) external view returns (uint64) {
         uint64 _delayBlocks = delayBlocks;
         if (isDelayBufferable) {
-            uint64 _buffer = buffer.pendingBufferUpdate(blockNumber);
+            uint64 _buffer = buffer.calcPendingBuffer(blockNumber);
             _delayBlocks = delayBufferableBlocks(_buffer);
         }
         return blockNumber + _delayBlocks;

@@ -50,20 +50,20 @@ contract DelayBufferableTest is Test {
         messageDataHash: bytes32(0)
     });
 
-    function testBufferUpdate() public {
+    function testCalcBuffer() public {
         uint64 start = 10;
         uint64 sequenced = 20;
         uint64 buffer = 100;
         uint64 unexpectedDelay = (sequenced - start - threshold);
 
-        assertEq(buffer, DelayBuffer.bufferUpdate(start, start, buffer, sequenced, threshold, maxBuffer, replenishRateInBasis));
-        assertEq(buffer - 1, DelayBuffer.bufferUpdate(start, start + 1, buffer, sequenced, threshold, maxBuffer, replenishRateInBasis));
+        assertEq(buffer, DelayBuffer.calcBuffer(start, start, buffer, sequenced, threshold, maxBuffer, replenishRateInBasis));
+        assertEq(buffer - 1, DelayBuffer.calcBuffer(start, start + 1, buffer, sequenced, threshold, maxBuffer, replenishRateInBasis));
         uint64 replenishAmount = unexpectedDelay * replenishRateInBasis / 10000;
-        assertEq(buffer + replenishAmount - unexpectedDelay, DelayBuffer.bufferUpdate(start, start + unexpectedDelay, buffer, sequenced, threshold, maxBuffer, replenishRateInBasis));
+        assertEq(buffer + replenishAmount - unexpectedDelay, DelayBuffer.calcBuffer(start, start + unexpectedDelay, buffer, sequenced, threshold, maxBuffer, replenishRateInBasis));
         replenishAmount = buffer * replenishRateInBasis / 10000;
-        assertEq(threshold, DelayBuffer.bufferUpdate(start, start + buffer, buffer, start + threshold + buffer, threshold, maxBuffer, replenishRateInBasis));
+        assertEq(threshold, DelayBuffer.calcBuffer(start, start + buffer, buffer, start + threshold + buffer, threshold, maxBuffer, replenishRateInBasis));
         replenishAmount = (buffer + 100) * replenishRateInBasis / 10000;
-        assertEq(threshold, DelayBuffer.bufferUpdate(start, start + buffer + 100, buffer, start + threshold + buffer + 100, threshold, maxBuffer, replenishRateInBasis));
+        assertEq(threshold, DelayBuffer.calcBuffer(start, start + buffer + 100, buffer, start + threshold + buffer + 100, threshold, maxBuffer, replenishRateInBasis));
 
     }
 
@@ -112,7 +112,7 @@ contract DelayBufferableTest is Test {
             prevSequencedBlockNumber: 6
         });
 
-        uint64 buffer = delayBuffer.pendingBufferUpdate(15);
+        uint64 buffer = delayBuffer.calcPendingBuffer(15);
 
         assertEq(buffer, 9);
     }

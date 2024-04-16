@@ -31,7 +31,7 @@ library DelayBuffer {
     /// @param threshold The threshold to saturate at
     /// @param max The maximum buffer
     /// @param replenishRateInBasis The amount to replenish the buffer per block in basis points.
-    function bufferUpdate(
+    function calcBuffer(
         uint256 start,
         uint256 end,
         uint256 buffer,
@@ -42,7 +42,8 @@ library DelayBuffer {
     ) internal pure returns (uint256) {
         uint256 elapsed = end > start ? end - start : 0;
         uint256 delay = sequenced > start ? sequenced - start : 0;
-        // replenishment rounds down
+        // replenishment rounds down and will not overflow since all inputs including
+        // replenishRateInBasis are cast from uint64 in calcPendingBuffer
         buffer += (elapsed * replenishRateInBasis) / BASIS;
 
         uint256 unexpectedDelay = delay > threshold ? delay - threshold : 0;
@@ -70,7 +71,7 @@ library DelayBuffer {
         // used as a starting reference point to calculate an elapsed amount using the current
         // message as the ending reference point.
 
-        self.bufferBlocks = pendingBufferUpdate(self, blockNumber);
+        self.bufferBlocks = calcPendingBuffer(self, blockNumber);
 
         // store a new starting reference point
         // any buffer updates will be applied retroactively in the next batch post
@@ -83,14 +84,15 @@ library DelayBuffer {
     /// @notice Calculates the buffer changes up to the requested block number
     /// @param self The delay buffer data
     /// @param blockNumber The block number to process the delay up to
-    function pendingBufferUpdate(BufferData storage self, uint64 blockNumber)
+    function calcPendingBuffer(BufferData storage self, uint64 blockNumber)
         internal
         view
         returns (uint64)
     {
+        // bufferUpdate will not overflow since inputs are uint64
         return
             uint64(
-                bufferUpdate({
+                calcBuffer({
                     start: self.prevBlockNumber,
                     end: blockNumber,
                     buffer: self.bufferBlocks,
