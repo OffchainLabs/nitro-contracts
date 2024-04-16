@@ -48,9 +48,18 @@ interface IChallengeManager {
         IOneStepProofEntry osp_
     ) external;
 
-    function setConditionalOsp(bytes32 wasmModuleRoot, IOneStepProofEntry osp_) external;
+    function postUpgradeInit(
+        IOneStepProofEntry osp_,
+        bytes32 condRoot,
+        IOneStepProofEntry condOsp
+    ) external;
 
-    function getOSP(bytes32 wasmModuleRoot) external view returns (IOneStepProofEntry);
+    /// @notice Get the default osp, which is used for all wasm module roots that don't have a conditional OSP set
+    ///         Use getOsp(wasmModuleRoot) to get the OSP for a specific wasm module root
+    function osp() external view returns (IOneStepProofEntry);
+
+    /// @notice Get the OSP for a given wasm module root
+    function getOsp(bytes32 wasmModuleRoot) external view returns (IOneStepProofEntry);
 
     function createChallenge(
         bytes32 wasmModuleRoot_,

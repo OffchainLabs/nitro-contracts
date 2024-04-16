@@ -11,8 +11,11 @@ contract ChallengeManagerTest is Test {
     IBridge bridge = IBridge(address(139));
     IOneStepProofEntry osp = IOneStepProofEntry(address(140));
     IOneStepProofEntry newOsp = IOneStepProofEntry(address(141));
+    IOneStepProofEntry condOsp = IOneStepProofEntry(address(142));
     address proxyAdmin = address(141);
     ChallengeManager chalmanImpl = new ChallengeManager();
+
+    bytes32 randomRoot = keccak256(abi.encodePacked("randomRoot"));
 
     function deploy() public returns (ChallengeManager) {
         ChallengeManager chalman = ChallengeManager(
@@ -40,10 +43,16 @@ contract ChallengeManagerTest is Test {
         vm.prank(proxyAdmin);
         TransparentUpgradeableProxy(payable(address(chalman))).upgradeToAndCall(
             address(chalmanImpl),
-            abi.encodeWithSelector(ChallengeManager.postUpgradeInit.selector, newOsp)
+            abi.encodeWithSelector(
+                ChallengeManager.postUpgradeInit.selector,
+                newOsp,
+                randomRoot,
+                condOsp
+            )
         );
 
-        assertEq(address(chalman.osp()), address(newOsp), "New osp not set");
+        assertEq(address(chalman.getOsp(bytes32(0))), address(newOsp), "New osp not set");
+        assertEq(address(chalman.getOsp(randomRoot)), address(condOsp), "Cond osp not set");
     }
 
     function testPostUpgradeInitFailsNotAdmin() public {
@@ -51,12 +60,12 @@ contract ChallengeManagerTest is Test {
 
         vm.expectRevert(abi.encodeWithSelector(NotOwner.selector, address(151), proxyAdmin));
         vm.prank(address(151));
-        chalman.postUpgradeInit(osp);
+        chalman.postUpgradeInit(newOsp, randomRoot, condOsp);
     }
 
     function testPostUpgradeInitFailsNotDelCall() public {
         vm.expectRevert(bytes("Function must be called through delegatecall"));
         vm.prank(proxyAdmin);
-        chalmanImpl.postUpgradeInit(osp);
+        chalmanImpl.postUpgradeInit(newOsp, randomRoot, condOsp);
     }
 }
