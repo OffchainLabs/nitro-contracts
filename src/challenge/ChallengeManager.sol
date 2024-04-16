@@ -35,6 +35,7 @@ contract ChallengeManager is DelegateCallAware, IChallengeManager {
     ISequencerInbox public sequencerInbox;
     IBridge public bridge;
     IOneStepProofEntry public osp;
+    mapping(bytes32 => IOneStepProofEntry) public ospCond;
 
     function challengeInfo(uint64 challengeIndex)
         external
@@ -114,6 +115,20 @@ contract ChallengeManager is DelegateCallAware, IChallengeManager {
         // when updating to 4844 we need to create new osp contracts and set them here
         // on the challenge manager
         osp = osp_;
+    }
+
+    function setConditionalOsp(bytes32 wasmModuleRoot, IOneStepProofEntry osp_) external onlyDelegated onlyProxyOwner {
+        emit ConditonalOSPSet(wasmModuleRoot, osp_);
+        ospCond[wasmModuleRoot] = osp_;
+    }
+
+    function getOSP(bytes32 wasmModuleRoot) internal view returns (IOneStepProofEntry) {
+        IOneStepProofEntry t = ospCond[wasmModuleRoot];
+        if (address(t) == address(0)){
+            return osp;
+        } else {
+            return t;
+        }
     }
 
     function createChallenge(
@@ -259,7 +274,7 @@ contract ChallengeManager is DelegateCallAware, IChallengeManager {
             require(challengeLength == 1, "TOO_LONG");
         }
 
-        bytes32 afterHash = osp.proveOneStep(
+        bytes32 afterHash = getOSP(challenge.wasmModuleRoot).proveOneStep(
             ExecutionContext({maxInboxMessagesRead: challenge.maxInboxMessages, bridge: bridge}),
             challengeStart,
             selection.oldSegments[selection.challengePosition],
