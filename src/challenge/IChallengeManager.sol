@@ -39,6 +39,7 @@ interface IChallengeManager {
     event OneStepProofCompleted(uint64 indexed challengeIndex);
 
     event ChallengeEnded(uint64 indexed challengeIndex, ChallengeTerminationType kind);
+    event ConditonalOSPSet(bytes32 indexed wasmModuleRoot, IOneStepProofEntry osp_);
 
     function initialize(
         IChallengeResultReceiver resultReceiver_,
@@ -46,6 +47,10 @@ interface IChallengeManager {
         IBridge bridge_,
         IOneStepProofEntry osp_
     ) external;
+
+    function setConditionalOsp(bytes32 wasmModuleRoot, IOneStepProofEntry osp_) external;
+
+    function getOSP(bytes32 wasmModuleRoot) external view returns (IOneStepProofEntry);
 
     function createChallenge(
         bytes32 wasmModuleRoot_,
