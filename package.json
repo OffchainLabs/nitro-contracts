@@ -48,7 +48,7 @@
     "@openzeppelin/contracts": "4.5.0",
     "@openzeppelin/contracts-upgradeable": "4.5.2",
     "patch-package": "^6.4.7",
-    "solady": "=0.0.182"
+    "solady": "0.0.182"
   },
   "private": false,
   "devDependencies": {
