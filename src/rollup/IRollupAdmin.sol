@@ -13,8 +13,7 @@ import "./Config.sol";
 interface IRollupAdmin {
     event OwnerFunctionCalled(uint256 indexed id);
 
-    function initialize(Config calldata config, ContractDependencies calldata connectedContracts)
-        external;
+    function initialize(Config calldata config, ContractDependencies calldata connectedContracts) external;
 
     /**
      * @notice Add a contract authorized to put messages into this rollup's inbox
@@ -67,16 +66,10 @@ interface IRollupAdmin {
     function setMinimumAssertionPeriod(uint256 newPeriod) external;
 
     /**
-     * @notice Set number of blocks until a node is considered confirmed
-     * @param newConfirmPeriod new number of blocks until a node is confirmed
+     * @notice Set number of blocks until a assertion is considered confirmed
+     * @param newConfirmPeriod new number of blocks until a assertion is confirmed
      */
     function setConfirmPeriodBlocks(uint64 newConfirmPeriod) external;
-
-    /**
-     * @notice Set number of extra blocks after a challenge
-     * @param newExtraTimeBlocks new number of blocks
-     */
-    function setExtraChallengeTimeBlocks(uint64 newExtraTimeBlocks) external;
 
     /**
      * @notice Set base stake required for an assertion
@@ -84,36 +77,19 @@ interface IRollupAdmin {
      */
     function setBaseStake(uint256 newBaseStake) external;
 
-    /**
-     * @notice Set the token used for stake, where address(0) == eth
-     * @dev Before changing the base stake token, you might need to change the
-     * implementation of the Rollup User logic!
-     * @param newStakeToken address of token used for staking
-     */
-    function setStakeToken(address newStakeToken) external;
-
-    /**
-     * @notice Upgrades the implementation of a beacon controlled by the rollup
-     * @param beacon address of beacon to be upgraded
-     * @param newImplementation new address of implementation
-     */
-    function upgradeBeacon(address beacon, address newImplementation) external;
-
-    function forceResolveChallenge(address[] memory stackerA, address[] memory stackerB) external;
-
     function forceRefundStaker(address[] memory stacker) external;
 
-    function forceCreateNode(
-        uint64 prevNode,
-        uint256 prevNodeInboxMaxCount,
-        Assertion memory assertion,
-        bytes32 expectedNodeHash
+    function forceCreateAssertion(
+        bytes32 prevAssertionHash,
+        AssertionInputs calldata assertion,
+        bytes32 expectedAssertionHash
     ) external;
 
-    function forceConfirmNode(
-        uint64 nodeNum,
-        bytes32 blockHash,
-        bytes32 sendRoot
+    function forceConfirmAssertion(
+        bytes32 assertionHash,
+        bytes32 parentAssertionHash,
+        AssertionState calldata confirmState,
+        bytes32 inboxAcc
     ) external;
 
     function setLoserStakeEscrow(address newLoserStakerEscrow) external;
@@ -135,4 +111,10 @@ interface IRollupAdmin {
      * @param _validatorWhitelistDisabled new value of validatorWhitelistDisabled, i.e. true = disabled
      */
     function setValidatorWhitelistDisabled(bool _validatorWhitelistDisabled) external;
+
+    /**
+     * @notice set a new challengeManager contract
+     * @param _challengeManager new value of challengeManager
+     */
+    function setChallengeManager(address _challengeManager) external;
 }
