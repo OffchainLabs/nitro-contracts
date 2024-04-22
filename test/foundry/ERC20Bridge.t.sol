@@ -293,7 +293,7 @@ contract ERC20BridgeTest is AbsBridgeTest {
             "Invalid bridge native token balance after unsuccessful extra call"
         );
 
-        // vault successfully recieved native token even though extra call was unsuccessful (we didn't revert it)
+        // vault successfully received native token even though extra call was unsuccessful (we didn't revert it)
         uint256 vaultNativeTokenBalanceAfter = nativeToken.balanceOf(address(vault));
         assertEq(
             vaultNativeTokenBalanceAfter - vaultNativeTokenBalanceBefore,

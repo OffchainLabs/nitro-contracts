@@ -235,7 +235,7 @@ abstract contract AbsRollupUserLogic is
     /**
      * @notice Refund a staker that is currently staked on or before the latest confirmed node
      * @dev Since a staker is initially placed in the latest confirmed node, if they don't move it
-     * a griefer can remove their stake. It is recomended to batch together the txs to place a stake
+     * a griefer can remove their stake. It is recommended to batch together the txs to place a stake
      * and move it to the desired node.
      * @param stakerAddress Address of the staker whose stake is refunded
      */
@@ -265,7 +265,7 @@ abstract contract AbsRollupUserLogic is
     }
 
     /**
-     * @notice Reduce the amount staked for the sender (difference between initial amount staked and target is creditted back to the sender).
+     * @notice Reduce the amount staked for the sender (difference between initial amount staked and target is credited back to the sender).
      * @param target Target amount of stake for the staker. If this is below the current minimum, it will be set to minimum instead
      */
     function reduceDeposit(uint256 target) external onlyValidator whenNotPausedOrDeprecated {
