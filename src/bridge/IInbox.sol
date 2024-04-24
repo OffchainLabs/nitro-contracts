@@ -77,7 +77,7 @@ interface IInbox is IInboxBase {
      * @param to destination L2 contract address
      * @param l2CallValue call value for retryable L2 message
      * @param maxSubmissionCost Max gas deducted from user's L2 balance to cover base submission fee
-     * @param excessFeeRefundAddress max(0, (gasLimit x maxFeePerGas - execution cost) + (maxSubmission - (autoredeem ? 0 : submission cost))) gets credited here on L2 balance
+     * @param excessFeeRefundAddress the address which receives the difference between execution fee paid and the actual execution cost
      * @param callValueRefundAddress l2Callvalue gets credited here on L2 if retryable txn times out or gets cancelled
      * @param gasLimit Max gas deducted from user's L2 balance to cover L2 execution. Should not be set to 1 (magic value used to trigger the RetryableData error)
      * @param maxFeePerGas price bid for L2 execution. Should not be set to 1 (magic value used to trigger the RetryableData error)
@@ -105,7 +105,7 @@ interface IInbox is IInboxBase {
      * @param to destination L2 contract address
      * @param l2CallValue call value for retryable L2 message
      * @param maxSubmissionCost Max gas deducted from user's L2 balance to cover base submission fee
-     * @param excessFeeRefundAddress max(0, (gasLimit x maxFeePerGas - execution cost) + (maxSubmission - (autoredeem ? 0 : submission cost))) gets credited here on L2 balance
+     * @param excessFeeRefundAddress the address which receives the difference between execution fee paid and the actual execution cost
      * @param callValueRefundAddress l2Callvalue gets credited here on L2 if retryable txn times out or gets cancelled
      * @param gasLimit Max gas deducted from user's L2 balance to cover L2 execution. Should not be set to 1 (magic value used to trigger the RetryableData error)
      * @param maxFeePerGas price bid for L2 execution. Should not be set to 1 (magic value used to trigger the RetryableData error)
