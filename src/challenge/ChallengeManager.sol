@@ -250,8 +250,9 @@ contract ChallengeManager is DelegateCallAware, IChallengeManager {
         }
 
         bytes32[] memory segments = new bytes32[](2);
-        segments[0] = osp.getStartMachineHash(globalStateHashes[0], challenge.wasmModuleRoot);
-        segments[1] = osp.getEndMachineHash(machineStatuses[1], globalStateHashes[1]);
+        IOneStepProofEntry _osp = getOsp(challenge.wasmModuleRoot);
+        segments[0] = _osp.getStartMachineHash(globalStateHashes[0], challenge.wasmModuleRoot);
+        segments[1] = _osp.getEndMachineHash(machineStatuses[1], globalStateHashes[1]);
 
         challenge.mode = ChallengeLib.ChallengeMode.EXECUTION;
 
