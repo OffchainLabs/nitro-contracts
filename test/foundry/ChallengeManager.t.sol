@@ -123,6 +123,10 @@ contract ChallengeManagerTest is Test {
             newSegment1,
             "Unexpected end machine hash"
         );
+
+        /// check hashes are different
+        assertNotEq(legacySegment0, newSegment0, "Start machine hash should be different");
+        assertNotEq(legacySegment1, newSegment1, "End machine hash should be different");
     }
 
     function testPostUpgradeInit() public {
