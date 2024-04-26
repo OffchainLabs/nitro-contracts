@@ -80,7 +80,8 @@ export async function createRollup(feeToken?: string) {
     console.log('Calling createRollup to generate a new rollup ...')
     const deployParams = {
       config: config.rollupConfig,
-      batchPoster: config.batchPoster,
+      batchPosters: config.batchPosters,
+      batchPosterManager: config.batchPosterManager,
       validators: config.validators,
       maxDataSize: maxDataSize,
       nativeToken: feeToken,
