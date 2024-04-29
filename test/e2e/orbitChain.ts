@@ -551,7 +551,7 @@ describe('Orbit Chain', () => {
     )
   })
 
-  xit('can withdraw funds from L2 to L1', async function () {
+  it.only('can withdraw funds from L2 to L1', async function () {
     // snapshot state before issuing retryable
     let userL1NativeAssetBalance: BigNumber
     let bridgeL1NativeAssetBalance: BigNumber
@@ -579,6 +579,15 @@ describe('Orbit Chain', () => {
       l2Provider
     )
     const withdrawAmount = await _applyDecimalsToAmount('1')
+
+    console.log(
+      'User',
+      userL2Wallet.address,
+      ' balance before withdrawal: ',
+      userL2Balance.toString()
+    )
+    console.log('Withdrawal amount: ', withdrawAmount.toString())
+
     const withdrawTx = await arbSys
       .connect(userL2Wallet)
       .sendTxToL1(userL1Wallet.address, '0x', {
@@ -588,13 +597,16 @@ describe('Orbit Chain', () => {
     const l2Receipt = new L2TransactionReceipt(withdrawReceipt)
 
     // wait until dispute period passes and withdrawal is ready for execution
-    await sleep(5 * 1000)
+    console.log('Sleeping for 60 seconds to wait for withdrawal to be ready')
+    await sleep(60 * 1000)
 
     const messages = await l2Receipt.getL2ToL1Messages(userL1Wallet)
     const l2ToL1Msg = messages[0]
     const timeToWaitMs = 60 * 1000
+    console.log('Waiting for withdrawal to be ready for execution')
     await l2ToL1Msg.waitUntilReadyToExecute(l2Provider, timeToWaitMs)
 
+    console.log('Executing withdrawal')
     // execute
     await (await l2ToL1Msg.execute(l2Provider)).wait()
 
