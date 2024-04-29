@@ -46,7 +46,7 @@ import {
   solidityKeccak256,
   solidityPack,
 } from 'ethers/lib/utils'
-import { Toolkit4844 } from './toolkit4844'
+import { Toolkit4844 } from '../../scripts/common'
 import { SequencerInbox } from '../../build/types/src/bridge/SequencerInbox'
 import { InboxMessageDeliveredEvent } from '../../build/types/src/bridge/AbsInbox'
 import { SequencerBatchDeliveredEvent } from '../../build/types/src/bridge/ISequencerInbox'

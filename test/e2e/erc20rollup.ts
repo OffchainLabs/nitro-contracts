@@ -8,7 +8,7 @@ import {
 import { getBaseFee } from '@arbitrum/sdk/dist/lib/utils/lib'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { expect } from 'chai'
-import { ethers, Wallet } from '@arbitrum/sdk/node_modules/ethers'
+import { ethers, Wallet } from 'ethers'
 import {
   ArbSys__factory,
   ERC20,
@@ -19,7 +19,7 @@ import {
   EthVault__factory,
   RollupCore__factory,
 } from '../../build/types'
-import { setupNetworks, sleep } from '../../scripts/testSetup'
+import { setupNetworks, sleep } from '../../scripts/common'
 import { applyAlias } from '../contract/utils'
 
 export const config = {

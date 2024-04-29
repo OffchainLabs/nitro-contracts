@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat'
 import '@nomiclabs/hardhat-ethers'
-import { deployAllContracts } from './deploymentUtils'
+import { deployAllContracts } from './common/index'
 
 async function main() {
   const [signer] = await ethers.getSigners()

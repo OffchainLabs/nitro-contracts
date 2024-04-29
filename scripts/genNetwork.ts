@@ -1,4 +1,4 @@
-import { setupNetworks, config } from './testSetup'
+import { setupNetworks, config } from './common/setup'
 import * as fs from 'fs'
 
 async function main() {
