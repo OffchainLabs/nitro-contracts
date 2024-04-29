@@ -3,7 +3,7 @@ import { ContractFactory, Contract, Overrides } from 'ethers'
 import '@nomiclabs/hardhat-ethers'
 import { IReader4844__factory } from '../../build/types'
 import { bytecode as Reader4844Bytecode } from '../../out/yul/Reader4844.yul/Reader4844.json'
-import { deployContract, verifyContract } from '../deploymentUtils'
+import { deployContract, verifyContract } from '../common/deploymentUtils'
 import { maxDataSize, isUsingFeeToken } from '../config'
 
 async function main() {

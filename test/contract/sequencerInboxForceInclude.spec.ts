@@ -39,7 +39,7 @@ import {
   MessageDeliveredEvent,
 } from '../../build/types/src/bridge/Bridge'
 import { Signer } from 'ethers'
-import { Toolkit4844 } from './toolkit4844'
+import { Toolkit4844 } from '../../scripts/common'
 import { data } from './batchData.json'
 
 const mineBlocks = async (count: number, timeDiffPerBlock = 14) => {

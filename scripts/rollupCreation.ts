@@ -5,7 +5,7 @@ import { abi as rollupCreatorAbi } from '../build/contracts/src/rollup/RollupCre
 import { config, maxDataSize } from './config'
 import { BigNumber } from 'ethers'
 import { IERC20__factory } from '../build/types'
-import { sleep } from './testSetup'
+import { sleep } from './common'
 
 // 1 gwei
 const MAX_FER_PER_GAS = BigNumber.from('1000000000')
