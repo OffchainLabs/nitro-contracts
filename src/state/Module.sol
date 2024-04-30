@@ -11,6 +11,7 @@ struct Module {
     ModuleMemory moduleMemory;
     bytes32 tablesMerkleRoot;
     bytes32 functionsMerkleRoot;
+    bytes32 extraHash;
     uint32 internalsOffset;
 }
 
@@ -26,6 +27,7 @@ library ModuleLib {
                     mod.moduleMemory.hash(),
                     mod.tablesMerkleRoot,
                     mod.functionsMerkleRoot,
+                    mod.extraHash,
                     mod.internalsOffset
                 )
             );
