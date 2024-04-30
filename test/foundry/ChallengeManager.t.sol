@@ -5,7 +5,6 @@ import "forge-std/Test.sol";
 import "./util/TestUtil.sol";
 import "../../src/challenge/ChallengeManager.sol";
 import "../../src/osp/OneStepProofEntry.sol";
-import "forge-std/console.sol";
 
 contract ChallengeManagerTest is Test {
     IChallengeResultReceiver resultReceiver = IChallengeResultReceiver(address(137));
