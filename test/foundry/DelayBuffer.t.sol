@@ -117,35 +117,35 @@ contract DelayBufferableTest is Test {
         assertEq(buffer, 9);
     }
 
-    function testUpdateDepleteAndReplenish(BufferConfig memory config) public {
-        vm.assume(DelayBuffer.isValidBufferConfig(config));
+    function testUpdateDepleteAndReplenish(BufferConfig memory _config) public {
+        vm.assume(DelayBuffer.isValidBufferConfig(_config));
 
         // set config
-        delayBuffer.max = config.max;
-        delayBuffer.threshold = config.threshold;
-        delayBuffer.replenishRateInBasis = config.replenishRateInBasis;
+        delayBuffer.max = _config.max;
+        delayBuffer.threshold = _config.threshold;
+        delayBuffer.replenishRateInBasis = _config.replenishRateInBasis;
 
         // init full buffer
-        delayBuffer.bufferBlocks = config.max;
+        delayBuffer.bufferBlocks = _config.max;
         delayBuffer.prevBlockNumber = 0;
         delayBuffer.prevSequencedBlockNumber = 0;
         // only advance a plausible amount of blocks (< 2**32 blocks)
-        uint64 elapse = uint256(config.max) + config.threshold > type(uint32).max ? type(uint32).max : config.max + config.threshold;
+        uint64 elapse = uint256(_config.max) + _config.threshold > type(uint32).max ? type(uint32).max : _config.max + _config.threshold;
         delayBuffer.prevSequencedBlockNumber = elapse;
         delayBuffer.prevBlockNumber = 0;
 
         vm.roll(elapse);        
 
-        uint256 bufferCalc = uint256(delayBuffer.bufferBlocks) + (uint256(elapse) * uint256(config.replenishRateInBasis)) / 10000;
-        uint256 decrement = elapse > config.threshold ? elapse - config.threshold : 0;
+        uint256 bufferCalc = uint256(delayBuffer.bufferBlocks) + (uint256(elapse) * uint256(_config.replenishRateInBasis)) / 10000;
+        uint256 decrement = elapse > _config.threshold ? elapse - _config.threshold : 0;
 
         // decrease the buffer
         bufferCalc = bufferCalc > decrement ? bufferCalc - decrement : 0;
-        if (bufferCalc < config.threshold) {
-            bufferCalc = config.threshold;
+        if (bufferCalc < _config.threshold) {
+            bufferCalc = _config.threshold;
         }
-        if (bufferCalc > config.max) {
-            bufferCalc = config.max;
+        if (bufferCalc > _config.max) {
+            bufferCalc = _config.max;
         }
 
         delayBuffer.update(elapse);
@@ -155,9 +155,9 @@ contract DelayBufferableTest is Test {
 
         // replenish after 10000 blocks
         vm.roll(elapse + 10000);
-        bufferCalc += config.replenishRateInBasis;
-        if (bufferCalc > config.max){
-            bufferCalc = config.max;
+        bufferCalc += _config.replenishRateInBasis;
+        if (bufferCalc > _config.max){
+            bufferCalc = _config.max;
         
         }
         delayBuffer.update(elapse + 10000);
