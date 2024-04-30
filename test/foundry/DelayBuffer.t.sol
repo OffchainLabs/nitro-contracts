@@ -117,79 +117,50 @@ contract DelayBufferableTest is Test {
         assertEq(buffer, 9);
     }
 
-    function testUpdateDepleteAndReplenish() public {
-        delayBuffer = delayBufferDefault;
+    function testUpdateDepleteAndReplenish(BufferConfig memory config) public {
+        vm.assume(DelayBuffer.isValidBufferConfig(config));
 
-        assertEq(delayBuffer.prevBlockNumber, 0);
-        assertEq(delayBuffer.prevSequencedBlockNumber, 0);
-        assertEq(delayBuffer.bufferBlocks, configBufferable.max);
+        // set config
+        delayBuffer.max = config.max;
+        delayBuffer.threshold = config.threshold;
+        delayBuffer.replenishRateInBasis = config.replenishRateInBasis;
 
-        vm.expectRevert();
-        delayBuffer.update(10);
+        // init full buffer
+        delayBuffer.bufferBlocks = config.max;
+        delayBuffer.prevBlockNumber = 0;
+        delayBuffer.prevSequencedBlockNumber = 0;
+        // only advance a plausible amount of blocks (< 2**32 blocks)
+        uint64 elapse = uint256(config.max) + config.threshold > type(uint32).max ? type(uint32).max : config.max + config.threshold;
+        delayBuffer.prevSequencedBlockNumber = elapse;
+        delayBuffer.prevBlockNumber = 0;
 
-        vm.warp(10);
-        vm.roll(10);
+        vm.roll(elapse);        
 
-        delayBuffer.update(10);
+        uint256 bufferCalc = uint256(delayBuffer.bufferBlocks) + (uint256(elapse) * uint256(config.replenishRateInBasis)) / 10000;
+        uint256 decrement = elapse > config.threshold ? elapse - config.threshold : 0;
 
-        assertEq(delayBuffer.prevBlockNumber, 10);
-        assertEq(delayBuffer.prevSequencedBlockNumber, 10);
-        assertEq(delayBuffer.bufferBlocks, configBufferable.max);
+        // decrease the buffer
+        bufferCalc = bufferCalc > decrement ? bufferCalc - decrement : 0;
+        if (bufferCalc < config.threshold) {
+            bufferCalc = config.threshold;
+        }
+        if (bufferCalc > config.max) {
+            bufferCalc = config.max;
+        }
 
-        vm.warp(11);
-        vm.roll(11);
+        delayBuffer.update(elapse);
+        assertEq(delayBuffer.bufferBlocks, bufferCalc);
+        assertEq(delayBuffer.prevBlockNumber, elapse);
+        assertEq(delayBuffer.prevSequencedBlockNumber, elapse);
 
-        vm.expectRevert();
-        delayBuffer.update(9);
-
-        delayBuffer.update(10);
-
-        assertEq(delayBuffer.prevBlockNumber, 10);
-        assertEq(delayBuffer.prevSequencedBlockNumber, 11);
-        assertEq(delayBuffer.bufferBlocks, configBufferable.max);
-
-        vm.roll(block.number + configBufferable.threshold);
-
-        delayBuffer.update(10);
-
-        assertEq(delayBuffer.prevBlockNumber, 10);
-        assertEq(delayBuffer.prevSequencedBlockNumber, configBufferable.threshold + 11);
-        assertEq(delayBuffer.bufferBlocks, configBufferable.max);
-
-        delayBuffer.update(10);
-
-        assertEq(delayBuffer.prevBlockNumber, 10);
-        assertEq(delayBuffer.prevSequencedBlockNumber, configBufferable.threshold + 11);
-        assertEq(delayBuffer.bufferBlocks, configBufferable.max);
-
-        delayBuffer.update(11);
-
-        assertEq(delayBuffer.prevBlockNumber, 11);
-        assertEq(delayBuffer.prevSequencedBlockNumber, configBufferable.threshold + 11);
-        assertEq(delayBuffer.bufferBlocks, configBufferable.max - 1);
-
-        delayBuffer.update(11);
-
-        assertEq(delayBuffer.prevBlockNumber, 11);
-        assertEq(delayBuffer.prevSequencedBlockNumber, configBufferable.threshold + 11);
-        assertEq(delayBuffer.bufferBlocks, configBufferable.max - 1);
-
-        delayBuffer.update(12);
-
-        assertEq(delayBuffer.prevBlockNumber, 12);
-        assertEq(delayBuffer.prevSequencedBlockNumber, configBufferable.threshold + 11);
-        assertEq(delayBuffer.bufferBlocks, configBufferable.max - 1);
-
-        delayBuffer.update(24);
-
-        assertEq(delayBuffer.prevBlockNumber, 24);
-        assertEq(delayBuffer.prevSequencedBlockNumber, configBufferable.threshold + 11);
-        assertEq(delayBuffer.bufferBlocks, configBufferable.max - 1);
-
-        delayBuffer.update(25);
-
-        assertEq(delayBuffer.prevBlockNumber, 25);
-        assertEq(delayBuffer.prevSequencedBlockNumber, configBufferable.threshold + 11);
-        assertEq(delayBuffer.bufferBlocks, configBufferable.max);
+        // replenish after 10000 blocks
+        vm.roll(elapse + 10000);
+        bufferCalc += config.replenishRateInBasis;
+        if (bufferCalc > config.max){
+            bufferCalc = config.max;
+        
+        }
+        delayBuffer.update(elapse + 10000);
+        assertEq(delayBuffer.bufferBlocks, bufferCalc);
     }
 }
