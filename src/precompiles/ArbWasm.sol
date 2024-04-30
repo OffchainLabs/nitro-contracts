@@ -39,13 +39,13 @@ interface ArbWasm {
     /// @return version the program version (reverts for EVM contracts)
     function programVersion(address program) external view returns (uint16 version);
 
-    /// @notice Gets the cost to invoke the program (not including minInitGas)
+    /// @notice Gets the cost to invoke the program
     /// @return gas the amount of gas
     /// @return gasWhenCached the amount of gas if the program was recently used
     function programInitGas(address program)
         external
         view
-        returns (uint16 gas, uint16 gasWhenCached);
+        returns (uint64 gas, uint64 gasWhenCached);
 
     /// @notice Gets the memory footprint of the program at the given address in pages
     /// @return footprint the memory footprint of program in pages (reverts for EVM contracts)
@@ -83,6 +83,10 @@ interface ArbWasm {
     /// @return gas amount of gas in increments of 256 when not cached
     /// @return cached amount of gas in increments of 64 when cached
     function minInitGas() external view returns (uint8 gas, uint8 cached);
+
+    /// @notice Gets the linear adjustment made to program init costs.
+    /// @return percent the adjustment (100% = no adjustment).
+    function initCostScalar() external view returns (uint64 percent);
 
     /// @notice Gets the number of days after which programs deactivate
     /// @return _days the number of days

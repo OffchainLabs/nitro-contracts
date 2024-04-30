@@ -232,17 +232,20 @@ library Deserialize {
         ModuleMemory memory mem;
         bytes32 tablesMerkleRoot;
         bytes32 functionsMerkleRoot;
+        bytes32 wasmHash;
         uint32 internalsOffset;
         (globalsMerkleRoot, offset) = b32(proof, offset);
         (mem, offset) = moduleMemory(proof, offset);
         (tablesMerkleRoot, offset) = b32(proof, offset);
         (functionsMerkleRoot, offset) = b32(proof, offset);
+        (wasmHash, offset) = b32(proof, offset);
         (internalsOffset, offset) = u32(proof, offset);
         mod = Module({
             globalsMerkleRoot: globalsMerkleRoot,
             moduleMemory: mem,
             tablesMerkleRoot: tablesMerkleRoot,
             functionsMerkleRoot: functionsMerkleRoot,
+            wasmHash: wasmHash,
             internalsOffset: internalsOffset
         });
     }

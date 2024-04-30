@@ -105,9 +105,6 @@ interface ArbOwner {
     /// @notice Sets the base cost of each additional wasm page
     function setWasmPageGas(uint16 gas) external;
 
-    /// @notice Sets the ramp that drives exponential wasm memory costs
-    function setWasmPageRamp(uint64 ramp) external;
-
     /// @notice Sets the maximum number of pages a wasm may allocate
     function setWasmPageLimit(uint16 limit) external;
 
@@ -115,6 +112,10 @@ interface ArbOwner {
     /// @param gas amount of gas paid in increments of 256 when not the program is not cached
     /// @param cached amount of gas paid in increments of 64 when the program is cached
     function setWasmMinInitGas(uint8 gas, uint16 cached) external;
+
+    /// @notice Sets the linear adjustment made to program init costs.
+    /// @param percent the adjustment (100% = no adjustment).
+    function setWasmInitCostScalar(uint64 percent) external;
 
     /// @notice Sets the number of days after which programs deactivate
     function setWasmExpiryDays(uint16 _days) external;
