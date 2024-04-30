@@ -4,7 +4,6 @@
 
 pragma solidity ^0.8.0;
 
-import {InvalidDelayedAccPreimage, UnexpectedDelay} from "../libraries/Error.sol";
 import "./Messages.sol";
 import "./DelayBufferTypes.sol";
 
@@ -63,14 +62,10 @@ library DelayBuffer {
         return threshold;
     }
 
-    /// @notice Applies full update to buffer data (buffer, sync validity, and prev delay)
+    /// @notice Applies update to buffer data
     /// @param self The delay buffer data
     /// @param blockNumber The update block number
     function update(BufferData storage self, uint64 blockNumber) internal {
-        // The prevDelay stores the delay of the previous batch which is
-        // used as a starting reference point to calculate an elapsed amount using the current
-        // message as the ending reference point.
-
         self.bufferBlocks = calcPendingBuffer(self, blockNumber);
 
         // store a new starting reference point

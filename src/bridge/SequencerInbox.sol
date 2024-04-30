@@ -31,9 +31,8 @@ import {
     BadMaxTimeVariation,
     Deprecated,
     NotDelayBufferable,
-    NotDelayedFarEnough,
+    InvalidDelayedAccPreimage,
     DelayProofRequired,
-    NotDelayBufferable,
     BadBufferConfig,
     ExtraGasNotUint64,
     KeysetTooLarge

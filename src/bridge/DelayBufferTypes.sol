@@ -17,10 +17,9 @@ struct BufferConfig {
 }
 
 /// @notice The delay buffer data.
-/// @param blocks The buffer in blocks.
-/// @param syncExpiry The block number until no unexpected delays are possible.
-/// @param threshold The maximum amount of blocks that a message is expected to be delayed
+/// @param bufferBlocks The buffer in blocks.
 /// @param max The maximum buffer in blocks
+/// @param threshold The maximum amount of blocks that a message is expected to be delayed
 /// @param prevBlockNumber The blocknumber of the last included delay message.
 /// @param replenishRateInBasis The amount to replenish the buffer per block in basis points.
 /// @param prevSequencedBlockNumber The blocknumber when last included delay message was sequenced.

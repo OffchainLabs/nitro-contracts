@@ -86,7 +86,7 @@ describe('SequencerInboxDelayBufferable', async () => {
 
     // full
     expect(delayBufferData.bufferBlocks).to.equal(delayConfig.max)
-    // prevDelay should be updated
+
     expect(delayBufferData.prevBlockNumber).to.equal(
       forceIncludedMsg?.delayedMessage.header.blockNumber
     )
@@ -129,7 +129,7 @@ describe('SequencerInboxDelayBufferable', async () => {
     expect(delayBufferData.bufferBlocks).to.equal(depletedBufferBlocks)
 
     expect(await sequencerInbox.totalDelayedMessagesRead()).to.equal(2)
-    // prevDelay should be updated
+
     expect(delayBufferData.prevBlockNumber).to.equal(
       forceIncludedMsg?.delayedMessage.header.blockNumber
     )
@@ -642,7 +642,7 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
 
     // full
     expect(delayBufferData.bufferBlocks).to.equal(delayConfig.max)
-    // prevDelay should be updated
+
     expect(delayBufferData.prevBlockNumber).to.equal(
       forceIncludedMsg?.delayedMessage.header.blockNumber
     )
@@ -683,7 +683,7 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
     expect(delayBufferData.bufferBlocks).to.equal(depletedBufferBlocks)
 
     expect(await sequencerInbox.totalDelayedMessagesRead()).to.equal(2)
-    // prevDelay should be updated
+
     expect(delayBufferData.prevBlockNumber).to.equal(
       forceIncludedMsg?.delayedMessage.header.blockNumber
     )
