@@ -5,13 +5,11 @@
 pragma solidity ^0.8.0;
 
 import "../state/Machine.sol";
-import "../state/MultiStack.sol";
 import "../state/GlobalState.sol";
 
 library ChallengeLib {
     using MachineLib for Machine;
     using ChallengeLib for Challenge;
-    using MultiStackLib for MultiStack;
 
     /// @dev It's assumed that that uninitialzed challenges have mode NONE
     enum ChallengeMode {
@@ -48,56 +46,6 @@ library ChallengeLib {
 
     function isTimedOut(Challenge storage challenge) internal view returns (bool) {
         return challenge.timeUsedSinceLastMove() > challenge.current.timeLeft;
-    }
-
-    function getStartMachineHash(bytes32 globalStateHash, bytes32 wasmModuleRoot)
-        internal
-        pure
-        returns (bytes32)
-    {
-        // Start the value stack with the function call ABI for the entrypoint
-        Value[] memory startingValues = new Value[](3);
-        startingValues[0] = ValueLib.newRefNull();
-        startingValues[1] = ValueLib.newI32(0);
-        startingValues[2] = ValueLib.newI32(0);
-        ValueArray memory valuesArray = ValueArray({inner: startingValues});
-        ValueStack memory values = ValueStack({proved: valuesArray, remainingHash: 0});
-        ValueStack memory internalStack;
-        StackFrameWindow memory frameStack;
-        MultiStack memory emptyMultiStack;
-        emptyMultiStack.setEmpty();
-
-        Machine memory mach = Machine({
-            status: MachineStatus.RUNNING,
-            valueStack: values,
-            valueMultiStack: emptyMultiStack,
-            internalStack: internalStack,
-            frameStack: frameStack,
-            frameMultiStack: emptyMultiStack,
-            globalStateHash: globalStateHash,
-            moduleIdx: 0,
-            functionIdx: 0,
-            functionPc: 0,
-            recoveryPc: MachineLib.NO_RECOVERY_PC,
-            modulesRoot: wasmModuleRoot
-        });
-        return mach.hash();
-    }
-
-    function getEndMachineHash(MachineStatus status, bytes32 globalStateHash)
-        internal
-        pure
-        returns (bytes32)
-    {
-        if (status == MachineStatus.FINISHED) {
-            return keccak256(abi.encodePacked("Machine finished:", globalStateHash));
-        } else if (status == MachineStatus.ERRORED) {
-            return keccak256(abi.encodePacked("Machine errored:"));
-        } else if (status == MachineStatus.TOO_FAR) {
-            return keccak256(abi.encodePacked("Machine too far:"));
-        } else {
-            revert("BAD_BLOCK_STATUS");
-        }
     }
 
     function extractChallengeSegment(SegmentSelection calldata selection)
