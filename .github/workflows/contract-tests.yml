@@ -21,7 +21,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly-11e7dfdacf7292e135efb21a717f4c6ebbfe6fdb
+          version: nightly
 
       - name: Setup node/yarn
         uses: actions/setup-node@v3
@@ -50,7 +50,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly-11e7dfdacf7292e135efb21a717f4c6ebbfe6fdb
+          version: nightly
 
       - name: Setup nodejs
         uses: actions/setup-node@v2
@@ -62,7 +62,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly-11e7dfdacf7292e135efb21a717f4c6ebbfe6fdb
+          version: nightly
 
       - name: Install dependencies
         run: yarn install
