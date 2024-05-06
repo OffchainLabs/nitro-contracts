@@ -112,7 +112,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: nightly-11e7dfdacf7292e135efb21a717f4c6ebbfe6fdb
 
       - uses: OffchainLabs/actions/run-nitro-test-node@test-node-args
         with:
