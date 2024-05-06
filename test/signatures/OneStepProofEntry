@@ -1,0 +1,9 @@
+{
+  "getEndMachineHash(uint8,bytes32)": "d8558b87",
+  "getStartMachineHash(bytes32,bytes32)": "04997be4",
+  "proveOneStep((uint256,address),uint256,bytes32,bytes)": "5d3adcfb",
+  "prover0()": "30a5509f",
+  "proverHostIo()": "5f52fd7c",
+  "proverMath()": "66e5d9c3",
+  "proverMem()": "1f128bc0"
+}
