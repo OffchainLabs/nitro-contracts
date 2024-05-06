@@ -8,7 +8,10 @@ optimizer = true
 optimizer_runs = 100
 via_ir = false
 solc_version = '0.8.9'
-remappings = ['ds-test/=lib/forge-std/lib/ds-test/src/','forge-std/=lib/forge-std/src/','@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/','@openzeppelin/contracts-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable/']
+remappings = ['ds-test/=lib/forge-std/lib/ds-test/src/',
+              'forge-std/=lib/forge-std/src/',
+              '@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/',
+              '@openzeppelin/contracts-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable/']
 
 [profile.yul]
 src = 'yul'
