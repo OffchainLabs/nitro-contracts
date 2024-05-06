@@ -1,4 +1,4 @@
-// Copyright 2021-2022, Offchain Labs, Inc.
+// Copyright 2021-2023, Offchain Labs, Inc.
 // For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
@@ -7,12 +7,17 @@ pragma solidity ^0.8.0;
 import "../state/Deserialize.sol";
 import "../state/Machine.sol";
 import "../state/MerkleProof.sol";
+import "../state/MultiStack.sol";
 import "./IOneStepProver.sol";
 import "./IOneStepProofEntry.sol";
 
 contract OneStepProofEntry is IOneStepProofEntry {
     using MerkleProofLib for MerkleProof;
     using MachineLib for Machine;
+    using MultiStackLib for MultiStack;
+
+    using ValueStackLib for ValueStack;
+    using StackFrameLib for StackFrameWindow;
 
     IOneStepProver public prover0;
     IOneStepProver public proverMem;
@@ -46,16 +51,21 @@ contract OneStepProofEntry is IOneStepProofEntry {
         ValueStack memory values = ValueStack({proved: valuesArray, remainingHash: 0});
         ValueStack memory internalStack;
         StackFrameWindow memory frameStack;
+        MultiStack memory emptyMultiStack;
+        emptyMultiStack.setEmpty();
 
         Machine memory mach = Machine({
             status: MachineStatus.RUNNING,
             valueStack: values,
+            valueMultiStack: emptyMultiStack,
             internalStack: internalStack,
             frameStack: frameStack,
+            frameMultiStack: emptyMultiStack,
             globalStateHash: globalStateHash,
             moduleIdx: 0,
             functionIdx: 0,
             functionPc: 0,
+            recoveryPc: MachineLib.NO_RECOVERY_PC,
             modulesRoot: wasmModuleRoot
         });
         return mach.hash();
@@ -112,17 +122,22 @@ contract OneStepProofEntry is IOneStepProofEntry {
             );
 
             {
-                MerkleProof memory instProof;
+                Instruction[] memory codeChunk;
+                MerkleProof memory codeProof;
                 MerkleProof memory funcProof;
-                (inst, offset) = Deserialize.instruction(proof, offset);
-                (instProof, offset) = Deserialize.merkleProof(proof, offset);
+                (codeChunk, offset) = Deserialize.instructions(proof, offset);
+                (codeProof, offset) = Deserialize.merkleProof(proof, offset);
                 (funcProof, offset) = Deserialize.merkleProof(proof, offset);
-                bytes32 codeHash = instProof.computeRootFromInstruction(mach.functionPc, inst);
+                bytes32 codeHash = codeProof.computeRootFromInstructions(
+                    mach.functionPc / 64,
+                    codeChunk
+                );
                 bytes32 recomputedRoot = funcProof.computeRootFromFunction(
                     mach.functionIdx,
                     codeHash
                 );
                 require(recomputedRoot == mod.functionsMerkleRoot, "BAD_FUNCTIONS_ROOT");
+                inst = codeChunk[mach.functionPc % 64];
             }
             proof = proof[offset:];
         }
@@ -160,7 +175,8 @@ contract OneStepProofEntry is IOneStepProofEntry {
         } else if (
             (opcode >= Instructions.GET_GLOBAL_STATE_BYTES32 &&
                 opcode <= Instructions.SET_GLOBAL_STATE_U64) ||
-            (opcode >= Instructions.READ_PRE_IMAGE && opcode <= Instructions.HALT_AND_SET_FINISHED)
+            (opcode >= Instructions.READ_PRE_IMAGE && opcode <= Instructions.UNLINK_MODULE) ||
+            (opcode >= Instructions.NEW_COTHREAD && opcode <= Instructions.SWITCH_COTHREAD)
         ) {
             prover = proverHostIo;
         } else {
@@ -169,7 +185,18 @@ contract OneStepProofEntry is IOneStepProofEntry {
 
         (mach, mod) = prover.executeOneStep(execCtx, mach, mod, inst, proof);
 
-        mach.modulesRoot = modProof.computeRootFromModule(oldModIdx, mod);
+        bool updateRoot = !(opcode == Instructions.LINK_MODULE ||
+            opcode == Instructions.UNLINK_MODULE);
+        if (updateRoot) {
+            mach.modulesRoot = modProof.computeRootFromModule(oldModIdx, mod);
+        }
+
+        if (mach.status == MachineStatus.ERRORED && mach.recoveryPc != MachineLib.NO_RECOVERY_PC) {
+            // capture error, recover into main thread.
+            mach.switchCoThreadStacks();
+            mach.setPcFromRecovery();
+            mach.status = MachineStatus.RUNNING;
+        }
 
         return mach.hash();
     }
