@@ -551,7 +551,7 @@ describe('Orbit Chain', () => {
     )
   })
 
-  xit('can withdraw funds from L2 to L1', async function () {
+  it('can withdraw funds from L2 to L1', async function () {
     // snapshot state before issuing retryable
     let userL1NativeAssetBalance: BigNumber
     let bridgeL1NativeAssetBalance: BigNumber
@@ -578,7 +578,8 @@ describe('Orbit Chain', () => {
       '0x0000000000000000000000000000000000000064',
       l2Provider
     )
-    const withdrawAmount = await _applyDecimalsToAmount('1')
+    const withdrawAmount = await _applyDecimalsToAmount('0.033')
+
     const withdrawTx = await arbSys
       .connect(userL2Wallet)
       .sendTxToL1(userL1Wallet.address, '0x', {
@@ -588,8 +589,6 @@ describe('Orbit Chain', () => {
     const l2Receipt = new L2TransactionReceipt(withdrawReceipt)
 
     // wait until dispute period passes and withdrawal is ready for execution
-    await sleep(5 * 1000)
-
     const messages = await l2Receipt.getL2ToL1Messages(userL1Wallet)
     const l2ToL1Msg = messages[0]
     const timeToWaitMs = 60 * 1000
@@ -599,26 +598,36 @@ describe('Orbit Chain', () => {
     await (await l2ToL1Msg.execute(l2Provider)).wait()
 
     // check balances after withdrawal is processed
-    let userL1TokenAfter, bridgeL1TokenAfter: BigNumber
+    let userL1NativeAssetBalanceAfter,
+      bridgeL1NativeAssetBalanceAfter: BigNumber
     if (nativeToken) {
-      userL1TokenAfter = await nativeToken.balanceOf(userL1Wallet.address)
-
-      bridgeL1TokenAfter = await nativeToken.balanceOf(
+      userL1NativeAssetBalanceAfter = await nativeToken.balanceOf(
+        userL1Wallet.address
+      )
+      bridgeL1NativeAssetBalanceAfter = await nativeToken.balanceOf(
         l2Network.ethBridge.bridge
       )
+      expect(
+        userL1NativeAssetBalanceAfter.sub(userL1NativeAssetBalance)
+      ).to.be.eq(withdrawAmount)
     } else {
-      userL1TokenAfter = await l1Provider.getBalance(userL1Wallet.address)
-
-      bridgeL1TokenAfter = await l1Provider.getBalance(
+      userL1NativeAssetBalanceAfter = await l1Provider.getBalance(
+        userL1Wallet.address
+      )
+      bridgeL1NativeAssetBalanceAfter = await l1Provider.getBalance(
         l2Network.ethBridge.bridge
       )
+      expect(
+        userL1NativeAssetBalanceAfter.sub(userL1NativeAssetBalance)
+      ).to.be.lte(withdrawAmount)
+      expect(
+        userL1NativeAssetBalanceAfter.sub(userL1NativeAssetBalance)
+      ).to.be.gt(BigNumber.from(0))
     }
-    expect(userL1NativeAssetBalance.sub(userL1TokenAfter)).to.be.eq(
-      withdrawAmount
-    )
-    expect(bridgeL1TokenAfter.sub(bridgeL1NativeAssetBalance)).to.be.eq(
-      withdrawAmount
-    )
+
+    expect(
+      bridgeL1NativeAssetBalance.sub(bridgeL1NativeAssetBalanceAfter)
+    ).to.be.eq(withdrawAmount)
 
     const userL2BalanceAfter = await l2Provider.getBalance(userL2Wallet.address)
     expect(userL2BalanceAfter).to.be.lte(userL2Balance.sub(withdrawAmount))
