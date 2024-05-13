@@ -578,7 +578,7 @@ describe('Orbit Chain', () => {
       '0x0000000000000000000000000000000000000064',
       l2Provider
     )
-    const withdrawAmount = await _applyDecimalsToAmount('0.033')
+    const withdrawAmount = await _applyDecimalsToAmount('1')
 
     const withdrawTx = await arbSys
       .connect(userL2Wallet)
