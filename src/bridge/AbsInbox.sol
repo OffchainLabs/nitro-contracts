@@ -13,14 +13,17 @@ import {
     NotAllowedOrigin,
     NotOrigin,
     NotRollupOrOwner,
-    RetryableData
+    RetryableData,
+    MintTooMuch
 } from "../libraries/Error.sol";
 import "./IInboxBase.sol";
 import "./ISequencerInbox.sol";
 import "./IBridge.sol";
+
 import "../libraries/AddressAliasHelper.sol";
 import "../libraries/DelegateCallAware.sol";
 import {
+    L1MessageType_ethDeposit,
     L1MessageType_submitRetryableTx,
     L2MessageType_unsignedContractTx,
     L2MessageType_unsignedEOATx,
@@ -128,6 +131,20 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         sequencerInbox = _sequencerInbox;
         allowListEnabled = false;
         __Pausable_init();
+    }
+
+    /// @inheritdoc IInboxBase
+    function adminMint(address dest, uint256 amount) public whenNotPaused onlyRollupOrOwner returns (uint256) {
+        if(amount > type(uint128).max) {
+            revert MintTooMuch();
+        }
+        return
+            _deliverMessage(
+                L1MessageType_ethDeposit,
+                msg.sender,
+                abi.encodePacked(dest, amount),
+                amount
+            );
     }
 
     /// @inheritdoc IInboxBase

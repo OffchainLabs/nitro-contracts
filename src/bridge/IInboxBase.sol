@@ -17,6 +17,11 @@ interface IInboxBase is IDelayedMessageProvider {
     function maxDataSize() external view returns (uint256);
 
     /**
+     * @notice Allow rollup admin to mint native token on child chain
+     */
+    function adminMint(address dest, uint256 amount) external returns (uint256);
+
+    /**
      * @notice Send a generic L2 message to the chain
      * @dev This method is an optimization to avoid having to emit the entirety of the messageData in a log. Instead validators are expected to be able to parse the data from the transaction's input
      * @param messageData Data of the message being sent
