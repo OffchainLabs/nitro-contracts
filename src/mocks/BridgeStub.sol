@@ -14,6 +14,7 @@ contract BridgeStub is IBridge, IEthBridge {
     struct InOutInfo {
         uint256 index;
         bool allowed;
+        bool outboxCallDisabled;
     }
 
     mapping(address => InOutInfo) private allowedDelayedInboxesMap;
@@ -148,7 +149,7 @@ contract BridgeStub is IBridge, IEthBridge {
             return;
         }
         if (enabled) {
-            allowedDelayedInboxesMap[inbox] = InOutInfo(allowedDelayedInboxList.length, true);
+            allowedDelayedInboxesMap[inbox] = InOutInfo(allowedDelayedInboxList.length, true, false);
             allowedDelayedInboxList.push(inbox);
         } else {
             allowedDelayedInboxList[info.index] = allowedDelayedInboxList[
@@ -161,6 +162,13 @@ contract BridgeStub is IBridge, IEthBridge {
     }
 
     function setOutbox(
+        address, /* outbox */
+        bool /* enabled*/
+    ) external pure override {
+        revert("NOT_IMPLEMENTED");
+    }
+
+    function setCallDisabledOutbox(
         address, /* outbox */
         bool /* enabled*/
     ) external pure override {

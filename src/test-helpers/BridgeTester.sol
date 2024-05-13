@@ -33,6 +33,7 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
     struct InOutInfo {
         uint256 index;
         bool allowed;
+        bool outboxCallDisabled;
     }
 
     mapping(address => InOutInfo) private allowedInboxesMap;
@@ -200,7 +201,7 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
             return;
         }
         if (enabled) {
-            allowedInboxesMap[inbox] = InOutInfo(allowedDelayedInboxList.length, true);
+            allowedInboxesMap[inbox] = InOutInfo(allowedDelayedInboxList.length, true, false);
             allowedDelayedInboxList.push(inbox);
         } else {
             allowedDelayedInboxList[info.index] = allowedDelayedInboxList[
@@ -220,7 +221,7 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
             return;
         }
         if (enabled) {
-            allowedOutboxesMap[outbox] = InOutInfo(allowedOutboxList.length, true);
+            allowedOutboxesMap[outbox] = InOutInfo(allowedOutboxList.length, true, false);
             allowedOutboxList.push(outbox);
         } else {
             allowedOutboxList[info.index] = allowedOutboxList[allowedOutboxList.length - 1];
@@ -228,6 +229,13 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
             allowedOutboxList.pop();
             delete allowedOutboxesMap[outbox];
         }
+    }
+
+    function setCallDisabledOutbox( 
+        address, /* outbox */
+        bool /* enabled*/
+    ) external pure override {
+        revert("NOT_IMPLEMENTED");
     }
 
     function delayedMessageCount() external view override returns (uint256) {

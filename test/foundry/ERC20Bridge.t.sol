@@ -243,6 +243,73 @@ contract ERC20BridgeTest is AbsBridgeTest {
         );
     }
 
+    function test_executeCall_EmptyCalldata_outboxCallDisabled() public {
+        // fund bridge native tokens
+        ERC20PresetMinterPauser(address(nativeToken)).mint(address(bridge), 15);
+
+        // allow outbox
+        vm.prank(rollup);
+        bridge.setCallDisabledOutbox(outbox, true);
+
+        uint256 bridgeNativeTokenBalanceBefore = nativeToken.balanceOf(address(bridge));
+        uint256 userTokenBalanceBefore = nativeToken.balanceOf(address(user));
+
+        // call params
+        uint256 withdrawalAmount = 15;
+        bytes memory data = "";
+
+        // expect event
+        vm.expectEmit(true, true, true, true);
+        emit BridgeCallTriggered(outbox, user, withdrawalAmount, data);
+
+        //// execute call
+        vm.prank(outbox);
+        (bool success, ) = bridge.executeCall(user, withdrawalAmount, data);
+
+        //// checks
+        assertTrue(success, "Execute call failed");
+
+        uint256 bridgeNativeTokenBalanceAfter = nativeToken.balanceOf(address(bridge));
+        assertEq(
+            bridgeNativeTokenBalanceBefore - bridgeNativeTokenBalanceAfter,
+            withdrawalAmount,
+            "Invalid bridge token balance"
+        );
+
+        uint256 userTokenBalanceAfter = nativeToken.balanceOf(address(user));
+        assertEq(
+            userTokenBalanceAfter - userTokenBalanceBefore,
+            withdrawalAmount,
+            "Invalid user token balance"
+        );
+    }
+
+    function test_executeCall_ExtraCall_outboxCallDisabled() public {
+        // fund bridge with native tokens
+        ERC20PresetMinterPauser(address(nativeToken)).mint(address(bridge), 15);
+
+        // allow outbox
+        vm.prank(rollup);
+        bridge.setCallDisabledOutbox(outbox, true);
+
+        // deploy some contract that will be call receiver
+        EthVault vault = new EthVault();
+
+        // call params
+        uint256 withdrawalAmount = 15;
+        uint256 newVaultVersion = 7;
+        bytes memory data = abi.encodeWithSelector(EthVault.setVersion.selector, newVaultVersion);
+
+        //// execute call
+        vm.expectRevert(abi.encodeWithSelector(OutboxCallDisabled.selector));
+        vm.prank(outbox);
+        bridge.executeCall({
+            to: address(vault),
+            value: withdrawalAmount,
+            data: data
+        });
+    }
+
     function test_executeCall_UnsuccessfulExtraCall() public {
         // fund bridge with native tokens
         ERC20PresetMinterPauser(address(nativeToken)).mint(address(bridge), 15);

@@ -14,7 +14,8 @@ import {
     NotSequencerInbox,
     NotOutbox,
     InvalidOutboxSet,
-    BadSequencerMessageNumber
+    BadSequencerMessageNumber,
+    OutboxCallDisabled
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./Messages.sol";
@@ -34,6 +35,7 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     struct InOutInfo {
         uint256 index;
         bool allowed;
+        bool outboxCallDisabled;
     }
 
     mapping(address => InOutInfo) private allowedDelayedInboxesMap;
@@ -214,6 +216,9 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     ) external returns (bool success, bytes memory returnData) {
         if (!allowedOutboxes(msg.sender)) revert NotOutbox(msg.sender);
         if (data.length > 0 && !to.isContract()) revert NotContract(to);
+        if (data.length > 0 && allowedOutboxesMap[msg.sender].outboxCallDisabled) {
+            revert OutboxCallDisabled();
+        }
         address prevOutbox = _activeOutbox;
         _activeOutbox = msg.sender;
         // We set and reset active outbox around external call so activeOutbox remains valid during call
@@ -239,7 +244,7 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
             return;
         }
         if (enabled) {
-            allowedDelayedInboxesMap[inbox] = InOutInfo(allowedDelayedInboxList.length, true);
+            allowedDelayedInboxesMap[inbox] = InOutInfo(allowedDelayedInboxList.length, true, false);
             allowedDelayedInboxList.push(inbox);
         } else {
             allowedDelayedInboxList[info.index] = allowedDelayedInboxList[
@@ -261,7 +266,27 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
             return;
         }
         if (enabled) {
-            allowedOutboxesMap[outbox] = InOutInfo(allowedOutboxList.length, true);
+            allowedOutboxesMap[outbox] = InOutInfo(allowedOutboxList.length, true, false);
+            allowedOutboxList.push(outbox);
+        } else {
+            allowedOutboxList[info.index] = allowedOutboxList[allowedOutboxList.length - 1];
+            allowedOutboxesMap[allowedOutboxList[info.index]].index = info.index;
+            allowedOutboxList.pop();
+            delete allowedOutboxesMap[outbox];
+        }
+    }
+
+    function setCallDisabledOutbox(address outbox, bool enabled) external onlyRollupOrOwner {
+        if (outbox == EMPTY_ACTIVEOUTBOX) revert InvalidOutboxSet(outbox);
+
+        InOutInfo storage info = allowedOutboxesMap[outbox];
+        bool alreadyEnabled = info.allowed;
+        emit OutboxToggle(outbox, enabled);
+        if (alreadyEnabled == enabled) {
+            return;
+        }
+        if (enabled) {
+            allowedOutboxesMap[outbox] = InOutInfo(allowedOutboxList.length, true, true);
             allowedOutboxList.push(outbox);
         } else {
             allowedOutboxList[info.index] = allowedOutboxList[allowedOutboxList.length - 1];

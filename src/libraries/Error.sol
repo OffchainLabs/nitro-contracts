@@ -199,3 +199,6 @@ error Deprecated();
 
 /// @dev Thrown when any component of maxTimeVariation is over uint64
 error BadMaxTimeVariation();
+
+/// @dev Throw when outbox call disabled
+error OutboxCallDisabled();

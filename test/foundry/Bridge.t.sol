@@ -242,6 +242,69 @@ contract BridgeTest is AbsBridgeTest {
         );
     }
 
+    function test_executeCall_EmptyCalldata_outboxCallDisabled() public {
+        // fund bridge with some eth
+        vm.deal(address(bridge), 10 ether);
+        uint256 bridgeEthBalanceBefore = address(bridge).balance;
+        uint256 userEthBalanceBefore = address(user).balance;
+
+        // allow outbox
+        vm.prank(rollup);
+        bridge.setCallDisabledOutbox(outbox, true);
+
+        uint256 withdrawalAmount = 3 ether;
+
+        // expect event
+        vm.expectEmit(true, true, true, true);
+        emit BridgeCallTriggered(outbox, user, withdrawalAmount, "");
+
+        //// execute call
+        vm.prank(outbox);
+        (bool success, ) = bridge.executeCall({to: user, value: withdrawalAmount, data: ""});
+
+        //// checks
+        assertTrue(success, "Execute call failed");
+
+        uint256 bridgeEthBalanceAfter = address(bridge).balance;
+        assertEq(
+            bridgeEthBalanceBefore - bridgeEthBalanceAfter,
+            withdrawalAmount,
+            "Invalid bridge eth balance"
+        );
+
+        uint256 userEthBalanceAfter = address(user).balance;
+        assertEq(
+            userEthBalanceAfter - userEthBalanceBefore,
+            withdrawalAmount,
+            "Invalid user eth balance"
+        );
+    }
+
+    function test_executeCall_WithCalldata_outboxCallDisabled() public {
+        // fund bridge with some eth
+        vm.deal(address(bridge), 10 ether);
+
+        // allow outbox
+        vm.prank(rollup);
+        bridge.setCallDisabledOutbox(outbox, true);
+
+        // deploy some contract that will be call receiver
+        EthVault vault = new EthVault();
+        // call params
+        uint256 newVaultVersion = 7;
+        uint256 withdrawalAmount = 3 ether;
+        bytes memory data = abi.encodeWithSelector(EthVault.setVersion.selector, newVaultVersion);
+
+        //// execute call
+        vm.expectRevert(abi.encodeWithSelector(OutboxCallDisabled.selector));
+        vm.prank(outbox);
+        bridge.executeCall({
+            to: address(vault),
+            value: withdrawalAmount,
+            data: data
+        });
+    }
+
     function test_executeCall_UnsuccessfulCall() public {
         // fund bridge with some eth
         vm.deal(address(bridge), 10 ether);

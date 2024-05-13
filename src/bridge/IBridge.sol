@@ -122,5 +122,7 @@ interface IBridge {
 
     function setOutbox(address inbox, bool enabled) external;
 
+    function setCallDisabledOutbox(address inbox, bool enabled) external;
+
     function updateRollupAddress(IOwnable _rollup) external;
 }
