@@ -588,9 +588,10 @@ describe('Orbit Chain', () => {
     await (await l2ToL1Msg.execute(l2Provider)).wait()
 
     // check balances after withdrawal is processed
-    const withdrawAmountInNativeDecimals = await _scaleFrom18ToNative(
-      withdrawAmount
-    )
+    const withdrawAmountInNativeDecimals =
+      nativeToken == undefined
+        ? withdrawAmount
+        : await _scaleFrom18ToNative(withdrawAmount)
 
     let userL1NativeAssetBalanceAfter,
       bridgeL1NativeAssetBalanceAfter: BigNumber
