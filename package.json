@@ -41,13 +41,15 @@
     "postinstall": "patch-package",
     "deploy-factory": "hardhat run scripts/deployment.ts",
     "deploy-eth-rollup": "hardhat run scripts/createEthRollup.ts",
-    "deploy-erc20-rollup": "hardhat run scripts/createERC20Rollup.ts"
+    "deploy-erc20-rollup": "hardhat run scripts/createERC20Rollup.ts",
+    "create-rollup-testnode": "hardhat run scripts/local-deployment/deployCreatorAndCreateRollup.ts"
   },
   "dependencies": {
     "@offchainlabs/upgrade-executor": "1.1.0-beta.0",
     "@openzeppelin/contracts": "4.5.0",
     "@openzeppelin/contracts-upgradeable": "4.5.2",
-    "patch-package": "^6.4.7"
+    "patch-package": "^6.4.7",
+    "solady": "0.0.182"
   },
   "private": false,
   "devDependencies": {
