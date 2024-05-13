@@ -183,10 +183,7 @@ describe('Orbit Chain', () => {
     const userL2BalanceAfter = await l2Provider.getBalance(userL2Wallet.address)
     let expectedL2BalanceIncrease = amountToDeposit
     if (nativeToken) {
-      expectedL2BalanceIncrease = await _getScaledAmount(
-        nativeToken,
-        amountToDeposit
-      )
+      expectedL2BalanceIncrease = await _scaleFromNativeTo18(amountToDeposit)
     }
     expect(userL2BalanceAfter.sub(userL2Balance)).to.be.eq(
       expectedL2BalanceIncrease
@@ -267,10 +264,7 @@ describe('Orbit Chain', () => {
     /// deposit tokens using retryable
     let retryableTx: ContractTransaction
     if (nativeToken) {
-      tokenTotalFeeAmount = await _getPrescaledAmount(
-        nativeToken,
-        retryableParams.deposit
-      )
+      tokenTotalFeeAmount = await _scaleFrom18ToNative(retryableParams.deposit)
 
       await (
         await nativeToken
@@ -353,7 +347,7 @@ describe('Orbit Chain', () => {
     // due to rounding effect there can be some funds left on alias address
     if (nativeToken && (await nativeToken.decimals()) < 18) {
       expectedAliasL2BalanceExtraFunds = (
-        await _getScaledAmount(nativeToken, tokenTotalFeeAmount)
+        await _scaleFromNativeTo18(tokenTotalFeeAmount)
       ).sub(retryableParams.deposit)
     }
     expect(aliasL2BalanceAfter.sub(expectedAliasL2BalanceExtraFunds)).to.be.eq(
@@ -442,10 +436,7 @@ describe('Orbit Chain', () => {
     /// execute retryable
     let retryableTx: ContractTransaction
     if (nativeToken) {
-      tokenTotalFeeAmount = await _getPrescaledAmount(
-        nativeToken,
-        retryableParams.deposit
-      )
+      tokenTotalFeeAmount = await _scaleFrom18ToNative(retryableParams.deposit)
 
       await (
         await nativeToken
@@ -531,7 +522,7 @@ describe('Orbit Chain', () => {
     // due to rounding effect there can be some funds left on alias address
     if (nativeToken && (await nativeToken.decimals()) < 18) {
       expectedAliasL2BalanceExtraFunds = (
-        await _getScaledAmount(nativeToken, tokenTotalFeeAmount)
+        await _scaleFromNativeTo18(tokenTotalFeeAmount)
       ).sub(retryableParams.deposit)
     }
     expect(aliasL2BalanceAfter.sub(expectedAliasL2BalanceExtraFunds)).to.be.eq(
@@ -578,8 +569,7 @@ describe('Orbit Chain', () => {
       '0x0000000000000000000000000000000000000064',
       l2Provider
     )
-    const withdrawAmount = await _applyDecimalsToAmount('1')
-
+    const withdrawAmount = ethers.utils.parseEther('1')
     const withdrawTx = await arbSys
       .connect(userL2Wallet)
       .sendTxToL1(userL1Wallet.address, '0x', {
@@ -598,6 +588,10 @@ describe('Orbit Chain', () => {
     await (await l2ToL1Msg.execute(l2Provider)).wait()
 
     // check balances after withdrawal is processed
+    const withdrawAmountInNativeDecimals = await _scaleFrom18ToNative(
+      withdrawAmount
+    )
+
     let userL1NativeAssetBalanceAfter,
       bridgeL1NativeAssetBalanceAfter: BigNumber
     if (nativeToken) {
@@ -609,7 +603,7 @@ describe('Orbit Chain', () => {
       )
       expect(
         userL1NativeAssetBalanceAfter.sub(userL1NativeAssetBalance)
-      ).to.be.eq(withdrawAmount)
+      ).to.be.eq(withdrawAmountInNativeDecimals)
     } else {
       userL1NativeAssetBalanceAfter = await l1Provider.getBalance(
         userL1Wallet.address
@@ -627,10 +621,12 @@ describe('Orbit Chain', () => {
 
     expect(
       bridgeL1NativeAssetBalance.sub(bridgeL1NativeAssetBalanceAfter)
-    ).to.be.eq(withdrawAmount)
+    ).to.be.eq(withdrawAmountInNativeDecimals)
 
     const userL2BalanceAfter = await l2Provider.getBalance(userL2Wallet.address)
-    expect(userL2BalanceAfter).to.be.lte(userL2Balance.sub(withdrawAmount))
+    expect(userL2BalanceAfter).to.be.lte(
+      userL2Balance.sub(withdrawAmountInNativeDecimals)
+    )
   })
 
   it('can deploy deterministic factories to L2', async function () {
@@ -655,39 +651,35 @@ describe('Orbit Chain', () => {
         // as there could be rounding effect for each one of them
         fee = BigNumber.from(0)
         fee = fee.add(
-          await _getPrescaledAmount(
-            nativeToken,
+          await _scaleFrom18ToNative(
             (
               await deployHelper.NICK_CREATE2_VALUE()
             ).add(maxFeePerGas.mul(BigNumber.from(21000)))
           )
         )
         fee = fee.add(
-          await _getPrescaledAmount(
-            nativeToken,
+          await _scaleFrom18ToNative(
             (
               await deployHelper.ERC2470_VALUE()
             ).add(maxFeePerGas.mul(BigNumber.from(21000)))
           )
         )
         fee = fee.add(
-          await _getPrescaledAmount(
-            nativeToken,
+          await _scaleFrom18ToNative(
             (
               await deployHelper.ZOLTU_VALUE()
             ).add(maxFeePerGas.mul(BigNumber.from(21000)))
           )
         )
         fee = fee.add(
-          await _getPrescaledAmount(
-            nativeToken,
+          await _scaleFrom18ToNative(
             (
               await deployHelper.ERC1820_VALUE()
             ).add(maxFeePerGas.mul(BigNumber.from(21000)))
           )
         )
       } else {
-        fee = await _getPrescaledAmount(nativeToken, fee)
+        fee = await _scaleFrom18ToNative(fee)
       }
 
       await (
@@ -752,39 +744,35 @@ describe('Orbit Chain', () => {
         // as there could be rounding effect for each one of them
         fee = BigNumber.from(0)
         fee = fee.add(
-          await _getPrescaledAmount(
-            nativeToken,
+          await _scaleFrom18ToNative(
             (
               await deployHelper.NICK_CREATE2_VALUE()
             ).add(maxFeePerGas.mul(BigNumber.from(21000)))
           )
         )
         fee = fee.add(
-          await _getPrescaledAmount(
-            nativeToken,
+          await _scaleFrom18ToNative(
             (
               await deployHelper.ERC2470_VALUE()
             ).add(maxFeePerGas.mul(BigNumber.from(21000)))
           )
         )
         fee = fee.add(
-          await _getPrescaledAmount(
-            nativeToken,
+          await _scaleFrom18ToNative(
             (
               await deployHelper.ZOLTU_VALUE()
             ).add(maxFeePerGas.mul(BigNumber.from(21000)))
           )
         )
         fee = fee.add(
-          await _getPrescaledAmount(
-            nativeToken,
+          await _scaleFrom18ToNative(
             (
               await deployHelper.ERC1820_VALUE()
             ).add(maxFeePerGas.mul(BigNumber.from(21000)))
           )
         )
       } else {
-        fee = await _getPrescaledAmount(nativeToken, fee)
+        fee = await _scaleFrom18ToNative(fee)
       }
 
       await (
@@ -935,31 +923,26 @@ describe('Orbit Chain', () => {
       const gasCost = maxFeePerGas.mul(BigNumber.from(21000))
       expectedAmountToBeMinted = BigNumber.from(0)
       expectedAmountToBeMinted = expectedAmountToBeMinted.add(
-        await _getPrescaledAmount(
-          nativeToken,
+        await _scaleFrom18ToNative(
           (await deployHelper.NICK_CREATE2_VALUE()).add(gasCost)
         )
       )
       expectedAmountToBeMinted = expectedAmountToBeMinted.add(
-        await _getPrescaledAmount(
-          nativeToken,
+        await _scaleFrom18ToNative(
           (await deployHelper.ERC2470_VALUE()).add(gasCost)
         )
       )
       expectedAmountToBeMinted = expectedAmountToBeMinted.add(
-        await _getPrescaledAmount(
-          nativeToken,
+        await _scaleFrom18ToNative(
           (await deployHelper.ZOLTU_VALUE()).add(gasCost)
         )
       )
       expectedAmountToBeMinted = expectedAmountToBeMinted.add(
-        await _getPrescaledAmount(
-          nativeToken,
+        await _scaleFrom18ToNative(
           (await deployHelper.ERC1820_VALUE()).add(gasCost)
         )
       )
-      expectedAmountToBeMinted = await _getScaledAmount(
-        nativeToken,
+      expectedAmountToBeMinted = await _scaleFromNativeTo18(
         expectedAmountToBeMinted
       )
     }
@@ -980,9 +963,9 @@ describe('Orbit Chain', () => {
       )
       expect(transferedFromDeployer.length).to.be.eq(1)
       amountTransferedFromDeployer = transferedFromDeployer[0].value
-      expect(
-        await _getScaledAmount(nativeToken, amountTransferedFromDeployer)
-      ).to.be.eq(amountToBeMinted)
+      expect(await _scaleFromNativeTo18(amountTransferedFromDeployer)).to.be.eq(
+        amountToBeMinted
+      )
     } else {
       amountTransferedFromDeployer = userL1NativeAssetBalance.sub(
         await l1Provider.getBalance(userL1Wallet.address)
@@ -1039,9 +1022,8 @@ async function _verifyInboxMsg(
     .add(maxFeePerGasForRetryables.mul(21000))
     .add(_submissionCost(gasPrice))
   if (nativeToken && (await nativeToken.decimals()) < 18) {
-    expectedAmountToBeMinted = await _getScaledAmount(
-      nativeToken,
-      await _getPrescaledAmount(nativeToken, expectedAmountToBeMinted)
+    expectedAmountToBeMinted = await _scaleFromNativeTo18(
+      await _scaleFrom18ToNative(expectedAmountToBeMinted)
     )
   }
   expect(msg1.amountToBeMintedOnChildChain).to.be.eq(expectedAmountToBeMinted)
@@ -1132,11 +1114,8 @@ async function _getFeeToken(
   return feeToken
 }
 
-async function _getScaledAmount(
-  nativeToken: ERC20,
-  amount: BigNumber
-): Promise<BigNumber> {
-  const decimals = BigNumber.from(await nativeToken.decimals())
+async function _scaleFromNativeTo18(amount: BigNumber): Promise<BigNumber> {
+  const decimals = BigNumber.from(await nativeToken!.decimals())
   if (decimals.lt(BigNumber.from(18))) {
     return amount.mul(BigNumber.from(10).pow(BigNumber.from(18).sub(decimals)))
   } else if (decimals.gt(BigNumber.from(18))) {
@@ -1146,11 +1125,10 @@ async function _getScaledAmount(
   return amount
 }
 
-async function _getPrescaledAmount(
-  nativeToken: ERC20,
+async function _scaleFrom18ToNative(
   amount: ethers.BigNumber
 ): Promise<BigNumber> {
-  const decimals = BigNumber.from(await nativeToken.decimals())
+  const decimals = BigNumber.from(await nativeToken!.decimals())
   if (decimals.lt(BigNumber.from(18))) {
     const scalingFactor = BigNumber.from(10).pow(
       BigNumber.from(18).sub(decimals)
