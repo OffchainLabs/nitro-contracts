@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity ^0.8.0;
+
 import "../precompiles/ArbOwnerPublic.sol";
 import "../precompiles/ArbWasm.sol";
 import "../precompiles/ArbWasmCache.sol";
@@ -27,6 +28,7 @@ contract CacheManager {
     error NotChainOwner(address sender);
     error AsmTooLarge(uint256 asm, uint256 queueSize, uint256 cacheSize);
     error AlreadyCached(bytes32 codehash);
+    error BidTooLarge(uint256 bid);
     error BidTooSmall(uint192 bid, uint192 min);
     error BidsArePaused();
     error MakeSpaceTooLarge(uint64 size, uint64 limit);
@@ -41,6 +43,7 @@ contract CacheManager {
     struct Entry {
         bytes32 code;
         uint64 size;
+        uint192 bid;
     }
 
     constructor(uint64 initCacheSize, uint64 initDecay) {
@@ -94,6 +97,63 @@ contract CacheManager {
         }
     }
 
+    /// Returns all entries in the cache. Might revert if the cache is too large.
+    function getEntries() external view returns (Entry[] memory) {
+        return entries;
+    }
+
+    /// Returns the `k` smallest entries in the cache sorted in ascending order.
+    /// If the cache have less than `k` entries, returns all entries.
+    function getSmallestEntries(uint256 k) public view returns (Entry[] memory result) {
+        if (bids.length() < k) {
+            k = bids.length();
+        }
+        result = new Entry[](k);
+        uint256[] memory kbids = bids.smallest(k);
+        for (uint256 i = 0; i < k; i++) {
+            (, uint64 index) = _getBid(kbids[i]);
+            result[i] = entries[index];
+        }
+        return result;
+    }
+
+    /// Returns the minimum bid required to cache a program of the given size.
+    /// Value returned here is the minimum bid that you can send with msg.value
+    function getMinBid(uint64 size) public view returns (uint192 min) {
+        if (size > cacheSize) {
+            revert AsmTooLarge(size, 0, cacheSize);
+        }
+        uint256 freeSize = cacheSize - queueSize;
+        if (size < freeSize) {
+            return 0;
+        }
+        uint256 chunkSize = 10;
+        uint256 k = chunkSize;
+        while (true) {
+            // this loop must terminate as size <= cacheSize
+            Entry[] memory smallest = getSmallestEntries(k);
+            for (uint256 i = k - chunkSize; i < smallest.length; i++) {
+                freeSize += smallest[i].size;
+                if (freeSize >= size) {
+                    min = smallest[i].bid;
+                    break;
+                }
+            }
+            if (min > 0) break;
+            k += chunkSize;
+        }
+        if (min < _calcDecay()) {
+            return 0;
+        }
+        min = min - uint192(_calcDecay());
+    }
+
+    /// Returns the minimum bid required to cache the program with given codehash.
+    /// Value returned here is the minimum bid that you can send with msg.value
+    function getMinBid(bytes32 codehash) external view returns (uint192 min) {
+        return getMinBid(_asmSize(codehash));
+    }
+
     /// Sends all revenue to the network fee account.
     function sweepFunds() external {
         (bool success, bytes memory data) = ARB_OWNER_PUBLIC.getNetworkFeeAccount().call{
@@ -134,11 +194,24 @@ contract CacheManager {
         return cacheSize - queueSize;
     }
 
+    function _calcDecay() internal view returns (uint256) {
+        return block.timestamp * decay;
+    }
+
+    /// Converts a value to a bid by adding the time decay term.
+    function _toBid(uint256 value) internal view returns (uint192 bid) {
+        uint256 _bid = value + _calcDecay();
+        if (_bid > type(uint192).max) {
+            revert BidTooLarge(_bid);
+        }
+        return uint192(_bid);
+    }
+
     /// Evicts entries until enough space exists in the cache, reverting if payment is insufficient.
     /// Returns the bid and the index to use for insertion.
     function _makeSpace(uint64 size) internal returns (uint192 bid, uint64 index) {
         // discount historical bids by the number of seconds
-        bid = uint192(msg.value + block.timestamp * uint256(decay));
+        bid = _toBid(msg.value);
         index = uint64(entries.length);
 
         uint192 min;
@@ -147,6 +220,7 @@ contract CacheManager {
             (min, index) = _getBid(bids.pop());
             _deleteEntry(min, index);
         }
+        // if the new bid equals to the minimum bid, a random entry with minimum bid will be evicted
         if (bid < min) {
             revert BidTooSmall(bid, min);
         }
@@ -163,7 +237,7 @@ contract CacheManager {
             revert AsmTooLarge(size, queueSize, cacheSize);
         }
 
-        Entry memory entry = Entry({size: size, code: code});
+        Entry memory entry = Entry({size: size, code: code, bid: bid});
         ARB_WASM_CACHE.cacheCodehash(code);
         bids.push(_packBid(bid, index));
         queueSize += size;
