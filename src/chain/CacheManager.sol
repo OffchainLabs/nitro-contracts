@@ -114,7 +114,6 @@ contract CacheManager {
             (, uint64 index) = _getBid(kbids[i]);
             result[i] = entries[index];
         }
-        return result;
     }
 
     /// @notice Returns the minimum bid required to cache a program of the given size.
@@ -131,11 +130,9 @@ contract CacheManager {
         // we use chunk size of 3 to reduce the number of iterations to save gas
         // although this function is expected to be called infrequently offchain
         uint256 chunkSize = 3;
-        uint256 k = chunkSize;
-        while (true) {
-            // this loop must terminate as size <= cacheSize
-            Entry[] memory smallest = getSmallestEntries(k);
-            for (uint256 i = k - chunkSize; i < smallest.length; i++) {
+        for (uint256 k = 0; k < bids.length(); k += chunkSize) {
+            Entry[] memory smallest = getSmallestEntries(k + chunkSize);
+            for (uint256 i = k; i < smallest.length; i++) {
                 freeSize += smallest[i].size;
                 if (freeSize >= size) {
                     min = smallest[i].bid;
@@ -143,8 +140,8 @@ contract CacheManager {
                 }
             }
             if (min > 0) break;
-            k += chunkSize;
         }
+        if (min == 0) return 0;
         uint256 currentDecay = _calcDecay();
         if (min < currentDecay) {
             return 0;
