@@ -143,7 +143,7 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: OffchainLabs/actions/run-nitro-test-node@main
+      - uses: OffchainLabs/actions/run-nitro-test-node@testnode-debug
         with:
           l3-node: true
           no-token-bridge: true
@@ -173,7 +173,7 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: OffchainLabs/actions/run-nitro-test-node@main
+      - uses: OffchainLabs/actions/run-nitro-test-node@testnode-debug
         with:
           l3-node: true
           args: --l3-fee-token
