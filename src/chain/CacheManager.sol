@@ -126,22 +126,17 @@ contract CacheManager {
         if (size < freeSize) {
             return 0;
         }
-        // code size is at least 4Kb, and vary no more than 10x right now
-        // we use chunk size of 3 to reduce the number of iterations to save gas
-        // although this function is expected to be called infrequently offchain
-        uint256 chunkSize = 3;
-        for (uint256 k = 0; k < bids.length(); k += chunkSize) {
-            Entry[] memory smallest = getSmallestEntries(k + chunkSize);
-            for (uint256 i = k; i < smallest.length; i++) {
-                freeSize += smallest[i].size;
-                if (freeSize >= size) {
-                    min = smallest[i].bid;
-                    break;
-                }
+        // code size is at least 4Kb, and vary no more than 10x right now, so we can safely assume 
+        // for a given size, we need at most need to clear roundUp(size/4096) entries to make space
+        uint256 k = (size+4095)/4096;
+        Entry[] memory smallest = getSmallestEntries(k);
+        for (uint256 i = k; i < smallest.length; i++) {
+            freeSize += smallest[i].size;
+            if (freeSize >= size) {
+                min = smallest[i].bid;
+                break;
             }
-            if (min > 0) break;
         }
-        if (min == 0) return 0;
         uint256 currentDecay = _calcDecay();
         if (min < currentDecay) {
             return 0;
