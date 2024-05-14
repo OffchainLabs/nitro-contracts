@@ -40,12 +40,14 @@ contract CacheManagerTest is Test {
 
                 vm.warp(block.timestamp + 1); // move time forward to test decay and make bid unique
                 uint256 pay;
+                bool mustCache;
                 if (round < 256) {
                     // for the first half of the round, we use a random bid
                     pay = uint256(keccak256(abi.encodePacked("value", epoch, round))) % MAX_PAY;
                 } else {
                     // for the second half of the round, we use the minimum bid
                     pay = cacheManager.getMinBid(codehash);
+                    mustCache = true;
                     if (pay > 0) {
                         vm.expectRevert();
                         cacheManager.placeBid{value: pay - 1}(codehash);
@@ -100,6 +102,13 @@ contract CacheManagerTest is Test {
                 }
 
                 cacheManager.placeBid{value: pay}(codehash);
+
+                if(mustCache) {
+                    require(
+                        ARB_WASM_CACHE.codehashIsCached(codehash),
+                        "must cache codehash not cached"
+                    );
+                }
 
                 require(
                     ARB_WASM_CACHE.numCached() == expectedCache.length,
