@@ -127,7 +127,10 @@ contract CacheManager {
         if (size < freeSize) {
             return 0;
         }
-        uint256 chunkSize = 10;
+        // code size is at least 4Kb, and vary no more than 10x right now
+        // we use chunk size of 3 to reduce the number of iterations to save gas
+        // although this function is expected to be called infrequently offchain
+        uint256 chunkSize = 3;
         uint256 k = chunkSize;
         while (true) {
             // this loop must terminate as size <= cacheSize
