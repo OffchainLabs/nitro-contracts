@@ -122,8 +122,10 @@ contract CacheManager {
         if (size > cacheSize) {
             revert AsmTooLarge(size, 0, cacheSize);
         }
-        uint256 freeSize = cacheSize - queueSize;
-        if (size < freeSize) {
+        // sizes are uint64, so we can safely cast to int128
+        // freeSize can be negative because cacheSize is reduced below queueSize
+        int128 freeSize = int128(uint128(cacheSize)) - int128(uint128(queueSize));
+        if (int64(size) < freeSize) {
             return 0;
         }
         // code size is at least 4Kb, and vary no more than 10x right now, so we can safely assume 
@@ -131,8 +133,8 @@ contract CacheManager {
         uint256 k = (size+4095)/4096;
         Entry[] memory smallest = getSmallestEntries(k);
         for (uint256 i = 0; i < smallest.length; i++) {
-            freeSize += smallest[i].size;
-            if (freeSize >= size) {
+            freeSize += int128(uint128(smallest[i].size));
+            if (freeSize >= int64(size)) {
                 min = smallest[i].bid;
                 break;
             }

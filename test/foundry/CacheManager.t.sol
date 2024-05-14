@@ -33,7 +33,7 @@ contract CacheManagerTest is Test {
 
     function test_randomBids() external {
         for (uint256 epoch = 0; epoch < 4; epoch++) {
-            for (uint256 round = 0; round < 512; round++) {
+            for (uint256 round = 0; round < 1024; round++) {
                 // roll one of 256 random codehashes
                 bytes32 codehash = keccak256(abi.encodePacked("code", epoch, round));
                 codehash = keccak256(abi.encodePacked(uint256(codehash) % 256));
@@ -41,7 +41,7 @@ contract CacheManagerTest is Test {
                 vm.warp(block.timestamp + 1); // move time forward to test decay and make bid unique
                 uint256 pay;
                 bool mustCache;
-                if (round < 256) {
+                if (round < 512) {
                     // for the first half of the round, we use a random bid
                     pay = uint256(keccak256(abi.encodePacked("value", epoch, round))) % MAX_PAY;
                 } else {
@@ -121,9 +121,14 @@ contract CacheManagerTest is Test {
                     );
                 }
 
-                if (round == 768) {
-                    uint256 newCacheSize = 500_000
-                        + (uint256(keccak256(abi.encodePacked("cacheSize", epoch))) % 1_000_000);
+                if (round == 700) {
+                    // double current cache size
+                    uint256 newCacheSize = cacheManager.cacheSize() * 2;
+                    cacheManager.setCacheSize(uint64(newCacheSize));
+                }
+                if (round == 900) {
+                    // halve current cache size
+                    uint256 newCacheSize = cacheManager.cacheSize() / 2;
                     cacheManager.setCacheSize(uint64(newCacheSize));
                 }
             }
