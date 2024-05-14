@@ -142,10 +142,11 @@ contract CacheManager {
             if (min > 0) break;
             k += chunkSize;
         }
-        if (min < _calcDecay()) {
+        uint256 currentDecay = _calcDecay();
+        if (min < currentDecay) {
             return 0;
         }
-        min = min - uint192(_calcDecay());
+        min = min - uint192(currentDecay);
     }
 
     /// @notice Returns the minimum bid required to cache the program with given codehash.
