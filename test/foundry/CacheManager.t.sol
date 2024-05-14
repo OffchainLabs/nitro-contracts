@@ -15,7 +15,7 @@ contract CacheManagerTest is Test {
 
     constructor() {
         uint64 cacheSize = 1_000_000;
-        uint64 decay = 0.1 ether;
+        uint64 decay = 100;
         cacheManager = new CacheManager(cacheSize, decay);
         require(cacheManager.cacheSize() == cacheSize, "wrong cache size");
         require(cacheManager.decay() == decay, "wrong decay rate");
@@ -58,6 +58,7 @@ contract CacheManagerTest is Test {
                 // determine the expected insertion index on success and the bid needed
                 uint256 index;
                 uint256 asmSize = ARB_WASM.codehashAsmSize(codehash);
+                asmSize = asmSize > 4096 ? asmSize : 4096;
                 uint256 cumulativeCacheSize = asmSize;
                 uint256 neededBid;
                 // this algo does not replicate the exact logic of CacheManager if bid size are not unique
@@ -122,14 +123,17 @@ contract CacheManagerTest is Test {
                 }
 
                 if (round == 700) {
-                    // double current cache size
-                    uint256 newCacheSize = cacheManager.cacheSize() * 2;
-                    cacheManager.setCacheSize(uint64(newCacheSize));
+                    // increase cache size
+                    cacheManager.setCacheSize(uint64(1_200_000));
                 }
                 if (round == 900) {
-                    // reduce current cache size
-                    uint256 newCacheSize = cacheManager.cacheSize() / 3;
-                    cacheManager.setCacheSize(uint64(newCacheSize));
+                    // reduce cache size
+                    cacheManager.setCacheSize(uint64(200_000));
+                    console.log("queue size", cacheManager.queueSize());
+                }
+                if (round == 901) {
+                    console.log(pay);
+                    console.log("queue size", cacheManager.queueSize());
                 }
             }
 
@@ -162,11 +166,7 @@ contract ArbOwnerPublicMock {
 contract ArbWasmMock {
     // returns a non-uniform distribution of mock code sizes
     function codehashAsmSize(bytes32 codehash) external pure returns (uint64) {
-        uint256 size;
-        for (uint256 i = 0; i < 3; i++) {
-            size += uint256(keccak256(abi.encodePacked(codehash, i))) % 65_536;
-        }
-        return uint64(size);
+        return uint64(uint256(keccak256(abi.encodePacked(codehash))) % 65_536);
     }
 }
 
