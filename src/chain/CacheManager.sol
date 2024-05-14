@@ -130,7 +130,7 @@ contract CacheManager {
         // for a given size, we need at most need to clear roundUp(size/4096) entries to make space
         uint256 k = (size+4095)/4096;
         Entry[] memory smallest = getSmallestEntries(k);
-        for (uint256 i = k; i < smallest.length; i++) {
+        for (uint256 i = 0; i < smallest.length; i++) {
             freeSize += smallest[i].size;
             if (freeSize >= size) {
                 min = smallest[i].bid;
