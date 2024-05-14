@@ -35,6 +35,7 @@ contract RollupCreatorTest is Test {
     IRollupAdmin public rollupAdmin;
     IRollupUser public rollupUser;
     DeployHelper public deployHelper;
+    IReader4844 dummyReader4844 = IReader4844(address(137));
     MockHotShot public hotshot = new MockHotShot();
 
     // 1 gwei
