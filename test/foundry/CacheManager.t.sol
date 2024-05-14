@@ -129,11 +129,6 @@ contract CacheManagerTest is Test {
                 if (round == 900) {
                     // reduce cache size
                     cacheManager.setCacheSize(uint64(200_000));
-                    console.log("queue size", cacheManager.queueSize());
-                }
-                if (round == 901) {
-                    console.log(pay);
-                    console.log("queue size", cacheManager.queueSize());
                 }
             }
 
