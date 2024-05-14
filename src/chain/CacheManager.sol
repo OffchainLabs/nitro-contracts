@@ -132,7 +132,7 @@ contract CacheManager {
         uint256 needToFree = totalSize - cacheSize;
 
         // size is at least MIN_CODESIZE, and vary no more than 10x right now, so we can safely assume
-        // for a given size, we need at most need to clear roundUp(size/4096) entries to make space
+        // for a given size, we need at most need to clear roundUp(size/MIN_CODESIZE) entries to make space
         uint256 k = (needToFree + MIN_CODESIZE - 1) / MIN_CODESIZE;
         Entry[] memory smallest = getSmallestEntries(k);
         for (uint256 i = 0; i < smallest.length; i++) {
