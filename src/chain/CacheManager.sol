@@ -16,6 +16,7 @@ contract CacheManager {
     ArbWasm internal constant ARB_WASM = ArbWasm(address(0x71));
     ArbWasmCache internal constant ARB_WASM_CACHE = ArbWasmCache(address(0x72));
     uint64 internal constant MAX_MAKE_SPACE = 5 * 1024 * 1024;
+    uint64 internal constant MIN_CODESIZE = 4096;
 
     MinHeapLib.Heap internal bids;
     Entry[] public entries;
@@ -123,6 +124,7 @@ contract CacheManager {
             revert AsmTooLarge(size, 0, cacheSize);
         }
 
+        size = size >= MIN_CODESIZE ? size : MIN_CODESIZE;
         uint256 totalSize = queueSize + size;
         if (totalSize <= cacheSize) {
             return 0;
@@ -131,7 +133,7 @@ contract CacheManager {
 
         // code size is at least 4Kb, and vary no more than 10x right now, so we can safely assume
         // for a given size, we need at most need to clear roundUp(size/4096) entries to make space
-        uint256 k = (needToFree + 4095) / 4096;
+        uint256 k = (needToFree + MIN_CODESIZE - 1) / MIN_CODESIZE;
         Entry[] memory smallest = getSmallestEntries(k);
         for (uint256 i = 0; i < smallest.length; i++) {
             if (needToFree <= smallest[i].size) {
@@ -271,7 +273,7 @@ contract CacheManager {
     /// @dev Gets the size of the given program in bytes
     function _asmSize(bytes32 codehash) internal view returns (uint64) {
         uint32 size = ARB_WASM.codehashAsmSize(codehash);
-        return uint64(size >= 4096 ? size : 4096); // pretend it's at least 4Kb
+        return uint64(size >= MIN_CODESIZE ? size : MIN_CODESIZE); // pretend it's at least 4Kb
     }
 
     /// @dev Determines whether a program is cached
