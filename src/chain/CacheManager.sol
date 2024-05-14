@@ -111,7 +111,7 @@ contract CacheManager {
         }
         uint256[] memory kbids = bids.smallest(k);
         result = new Entry[](kbids.length);
-        for (uint256 i = 0; i < k; i++) {
+        for (uint256 i = 0; i < kbids.length; i++) {
             (, uint64 index) = _getBid(kbids[i]);
             result[i] = entries[index];
         }
