@@ -122,22 +122,23 @@ contract CacheManager {
         if (size > cacheSize) {
             revert AsmTooLarge(size, 0, cacheSize);
         }
-        // sizes are uint64, so we can safely cast to int128
-        // freeSize can be negative because cacheSize is reduced below queueSize
-        int128 freeSize = int128(uint128(cacheSize)) - int128(uint128(queueSize));
-        if (int64(size) < freeSize) {
+
+        uint256 totalSize = queueSize + size;
+        if (totalSize <= cacheSize) {
             return 0;
         }
+        uint256 needToFree = totalSize - cacheSize;
+
         // code size is at least 4Kb, and vary no more than 10x right now, so we can safely assume 
         // for a given size, we need at most need to clear roundUp(size/4096) entries to make space
-        uint256 k = (size+4095)/4096;
+        uint256 k = (needToFree+4095)/4096;
         Entry[] memory smallest = getSmallestEntries(k);
         for (uint256 i = 0; i < smallest.length; i++) {
-            freeSize += int128(uint128(smallest[i].size));
-            if (freeSize >= int64(size)) {
+            if (needToFree <= smallest[i].size) {
                 min = smallest[i].bid;
                 break;
             }
+            needToFree -= smallest[i].size;
         }
         uint256 currentDecay = _calcDecay();
         if (min < currentDecay) {

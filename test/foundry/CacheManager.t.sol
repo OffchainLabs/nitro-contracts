@@ -127,8 +127,8 @@ contract CacheManagerTest is Test {
                     cacheManager.setCacheSize(uint64(newCacheSize));
                 }
                 if (round == 900) {
-                    // halve current cache size
-                    uint256 newCacheSize = cacheManager.cacheSize() / 2;
+                    // reduce current cache size
+                    uint256 newCacheSize = cacheManager.cacheSize() / 3;
                     cacheManager.setCacheSize(uint64(newCacheSize));
                 }
             }
