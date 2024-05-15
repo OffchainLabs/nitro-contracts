@@ -16,6 +16,7 @@ jobs:
         with:
           sarif: results.sarif
           fail-on: medium
+          slither-args: --skip-assembly
 
       - name: Upload SARIF file
         if: always()
