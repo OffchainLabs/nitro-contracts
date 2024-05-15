@@ -11,6 +11,16 @@ library OneStepProofEntryLib {
 }
 
 interface IOneStepProofEntry {
+    function getStartMachineHash(bytes32 globalStateHash, bytes32 wasmModuleRoot)
+        external
+        pure
+        returns (bytes32);
+
+    function getEndMachineHash(MachineStatus status, bytes32 globalStateHash)
+        external
+        pure
+        returns (bytes32);
+
     function proveOneStep(
         ExecutionContext calldata execCtx,
         uint256 machineStep,

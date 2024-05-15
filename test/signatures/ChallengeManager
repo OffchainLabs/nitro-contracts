@@ -1,0 +1,21 @@
+{
+  "bisectExecution(uint64,(uint256,uint256,bytes32[],uint256),bytes32[])": "a521b032",
+  "bridge()": "e78cea92",
+  "challengeExecution(uint64,(uint256,uint256,bytes32[],uint256),uint8[2],bytes32[2],uint256)": "fb7be0a1",
+  "challengeInfo(uint64)": "7fd07a9c",
+  "challenges(uint256)": "8f1d3776",
+  "clearChallenge(uint64)": "56e9df97",
+  "createChallenge(bytes32,uint8[2],(bytes32[2],uint64[2])[2],uint64,address,address,uint256,uint256)": "14eab5e7",
+  "currentResponder(uint64)": "23a9ef23",
+  "getOsp(bytes32)": "3690b011",
+  "initialize(address,address,address,address)": "f8c8765e",
+  "isTimedOut(uint64)": "9ede42b9",
+  "oneStepProveExecution(uint64,(uint256,uint256,bytes32[],uint256),bytes)": "d248d124",
+  "osp()": "f26a62c6",
+  "ospCond(bytes32)": "dc74bf8b",
+  "postUpgradeInit(address,bytes32,address)": "5038934d",
+  "resultReceiver()": "3504f1d7",
+  "sequencerInbox()": "ee35f327",
+  "timeout(uint64)": "1b45c86a",
+  "totalChallengesCreated()": "5ef489e6"
+}

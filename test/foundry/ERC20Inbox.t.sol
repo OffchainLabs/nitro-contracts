@@ -297,7 +297,8 @@ contract ERC20InboxTest is AbsInboxTest {
         // expect event
         vm.expectEmit(true, true, true, true);
         emit InboxMessageDelivered(
-            0, abi.encodePacked(AddressAliasHelper.applyL1ToL2Alias(user), depositAmount)
+            0,
+            abi.encodePacked(AddressAliasHelper.applyL1ToL2Alias(user), depositAmount)
         );
 
         // deposit tokens -> tx.origin != msg.sender
