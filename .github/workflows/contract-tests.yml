@@ -26,7 +26,7 @@ jobs:
       - name: Setup node/yarn
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 16
           cache: 'yarn'
           cache-dependency-path: '**/yarn.lock'
 
@@ -37,7 +37,7 @@ jobs:
         run: forge test
   tests:
     name: Contract tests
-    runs-on: ubuntu-8
+    runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash
@@ -55,7 +55,7 @@ jobs:
       - name: Setup nodejs
         uses: actions/setup-node@v2
         with:
-          node-version: 18
+          node-version: '18'
           cache: 'yarn'
           cache-dependency-path: '**/yarn.lock'
 
@@ -123,7 +123,7 @@ jobs:
       - name: Setup nodejs
         uses: actions/setup-node@v2
         with:
-          node-version: 18
+          node-version: '18'
           cache: 'yarn'
           cache-dependency-path: '**/yarn.lock'
 
@@ -143,7 +143,7 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: OffchainLabs/actions/run-nitro-test-node@testnode-debug
+      - uses: OffchainLabs/actions/run-nitro-test-node@main
         with:
           l3-node: true
           no-token-bridge: true
@@ -153,7 +153,7 @@ jobs:
       - name: Setup node/yarn
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 16
           cache: 'yarn'
           cache-dependency-path: '**/yarn.lock'
 
@@ -184,7 +184,7 @@ jobs:
       - name: Setup node/yarn
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 16
           cache: 'yarn'
           cache-dependency-path: '**/yarn.lock'
 
