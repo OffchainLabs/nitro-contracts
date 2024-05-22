@@ -9,7 +9,7 @@ contract MockHotShot {
         commitments[height] = commitment;
     }
 
-    function setAvailability(uint256 l1Height, bool isAlive) external {
-        availabilities[l1Height] = isAlive;
+    function setAvailability(uint256 l1Height, bool isLive) external {
+        availabilities[l1Height] = isLive;
     }
 }

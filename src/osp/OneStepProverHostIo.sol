@@ -315,7 +315,7 @@ contract OneStepProverHostIo is IOneStepProver {
         return true;
     }
 
-    function executeIsHotShotAlive(
+    function executeIsHotShotLive(
         ExecutionContext calldata execCtx,
         Machine memory mach,
         Module memory,
@@ -324,7 +324,7 @@ contract OneStepProverHostIo is IOneStepProver {
     ) internal view {
         uint256 height = mach.valueStack.pop().assumeI64();
         uint8 liveness = uint8(proof[0]);
-        validateHotShotLiveness(execCtx, height, liveness > 0);
+        require(validateHotShotLiveness(execCtx, height, liveness > 0), "WRONG_HOTSHOT_LIVENESS");
 
     }
 
@@ -740,8 +740,8 @@ contract OneStepProverHostIo is IOneStepProver {
             impl = executeSwitchCoThread;
         } else if (opcode == Instructions.READ_HOTSHOT_COMMITMENT) {
             impl = executeReadHotShotCommitment;
-        } else if (opcode == Instructions.IS_HOTSHOT_ALIVE) {
-            impl = executeIsHotShotAlive;
+        } else if (opcode == Instructions.IS_HOTSHOT_LIVE) {
+            impl = executeIsHotShotLive;
         }
         else {
             revert("INVALID_MEMORY_OPCODE");

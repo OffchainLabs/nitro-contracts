@@ -153,7 +153,7 @@ library Instructions {
     uint16 internal constant SWITCH_COTHREAD = 0x8032;
 
     uint16 internal constant READ_HOTSHOT_COMMITMENT = 0x9001;
-    uint16 internal constant IS_HOTSHOT_ALIVE = 0x9002;
+    uint16 internal constant IS_HOTSHOT_LIVE = 0x9002;
 
     uint256 internal constant INBOX_INDEX_SEQUENCER = 0;
     uint256 internal constant INBOX_INDEX_DELAYED = 1;

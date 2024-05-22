@@ -177,7 +177,7 @@ contract OneStepProofEntry is IOneStepProofEntry {
                 opcode <= Instructions.SET_GLOBAL_STATE_U64) ||
             (opcode >= Instructions.READ_PRE_IMAGE && opcode <= Instructions.UNLINK_MODULE) ||
             (opcode >= Instructions.NEW_COTHREAD && opcode <= Instructions.SWITCH_COTHREAD) ||
-            (opcode == Instructions.READ_HOTSHOT_COMMITMENT || opcode == Instructions.IS_HOTSHOT_ALIVE)
+            (opcode == Instructions.READ_HOTSHOT_COMMITMENT || opcode == Instructions.IS_HOTSHOT_LIVE)
         ) {
             prover = proverHostIo;
         } else {
