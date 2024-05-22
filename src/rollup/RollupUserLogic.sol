@@ -168,7 +168,7 @@ abstract contract AbsRollupUserLogic is
     }
 
     /**
-     * @notice This allow the anyTrustFastConfirmer to force confirm any pending assertion
+     * @notice This allow anyTrustFastConfirmer to confirm next node regardless of deadline
      *         the anyTrustFastConfirmer is supposed to be set only on an AnyTrust chain to
      *         a contract that can call this function when received sufficient signatures
      */
