@@ -379,4 +379,13 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
         validatorWhitelistDisabled = _validatorWhitelistDisabled;
         emit OwnerFunctionCalled(30);
     }
+
+    /**
+     * @notice set the anyTrustFastConfirmer address
+     * @param _anyTrustFastConfirmer new value of anyTrustFastConfirmer
+     */
+    function setAnyTrustFastConfirmer(address _anyTrustFastConfirmer) external {
+        anyTrustFastConfirmer = _anyTrustFastConfirmer;
+        emit OwnerFunctionCalled(31);
+    }
 }
