@@ -16,6 +16,7 @@ import "../bridge/IBridge.sol";
 
 interface IHotShot {
     function commitments(uint256) external view returns (uint256);
+    function availabilities(uint256) external view returns (bool);
 }
 
 contract OneStepProverHostIo is IOneStepProver {
@@ -312,6 +313,28 @@ contract OneStepProverHostIo is IOneStepProver {
 
         require(acc == execCtx.bridge.delayedInboxAccs(msgIndex), "BAD_DELAYED_MESSAGE");
         return true;
+    }
+
+    function executeIsHotShotLive(
+        ExecutionContext calldata execCtx,
+        Machine memory mach,
+        Module memory,
+        Instruction calldata,
+        bytes calldata proof
+    ) internal view {
+        uint256 height = mach.valueStack.pop().assumeI64();
+        uint8 liveness = uint8(proof[0]);
+        require(validateHotShotLiveness(execCtx, height, liveness > 0), "WRONG_HOTSHOT_LIVENESS");
+
+    }
+
+    function validateHotShotLiveness(
+        ExecutionContext calldata,
+        uint256 height,
+        bool result
+    ) internal view returns (bool) {
+        bool expected = hotshot.availabilities(height);
+        return result == expected;
     }
 
     function executeReadHotShotCommitment(
@@ -717,7 +740,10 @@ contract OneStepProverHostIo is IOneStepProver {
             impl = executeSwitchCoThread;
         } else if (opcode == Instructions.READ_HOTSHOT_COMMITMENT) {
             impl = executeReadHotShotCommitment;
-        } else {
+        } else if (opcode == Instructions.IS_HOTSHOT_LIVE) {
+            impl = executeIsHotShotLive;
+        }
+        else {
             revert("INVALID_MEMORY_OPCODE");
         }
 
