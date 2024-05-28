@@ -583,8 +583,43 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
                 bytes32 dasKeysetHash = bytes32(data[1:33]);
                 if (!dasKeySetInfo[dasKeysetHash].isValidKeyset) revert NoSuchKeyset(dasKeysetHash);
             }
+            // Avail batch expect to have the type byte set, followed by
+            if (data[0] & AVAIL_MESSAGE_HEADER_FLAG != 0 && data.length >= 100) {
+                // console.logString("Avail header found");
+                BlobPointer memory blobPointer;
+                (
+                    blobPointer.blockHash,
+                    blobPointer.sender,
+                    blobPointer.nonce,
+                    blobPointer.dasTreeRootHash,
+                    blobPointer.merkleProofInput
+                ) = abi.decode(data[1:], (bytes32, string, uint32, bytes32, MerkleProofInput));
 
-            // TODO: Need to add on-chain data-availability verifiaction over Avail Bridge
+                // console.logBytes32(blobPointer.blockHash);
+                // console.logString(blobPointer.sender);
+                // console.logUint(blobPointer.nonce);
+                // console.logBytes32(blobPointer.dasTreeRootHash);
+
+                // for (uint256 i = 0; i < blobPointer.merkleProofInput.dataRootProof.length; i++) {
+                //     console.logBytes32(blobPointer.merkleProofInput.dataRootProof[i]);
+                // }
+
+                // for (uint256 i = 0; i < blobPointer.merkleProofInput.leafProof.length; i++) {
+                //     console.logBytes32(blobPointer.merkleProofInput.leafProof[i]);
+                // }
+
+                // console.logBytes32(blobPointer.merkleProofInput.rangeHash);
+                // console.logUint(blobPointer.merkleProofInput.dataRootIndex);
+                // console.logBytes32(blobPointer.merkleProofInput.blobRoot);
+                // console.logBytes32(blobPointer.merkleProofInput.bridgeRoot);
+                // console.logBytes32(blobPointer.merkleProofInput.leaf);
+                // console.logUint(blobPointer.merkleProofInput.leafIndex);
+                if (!availBridge.verifyBlobLeaf(blobPointer.merkleProofInput))
+                    revert BatchDataValidationForAvailDAFailed(blobPointer.merkleProofInput.leaf);
+
+                // Not included this event as this function declared as view
+                //emit validateBatchDataOverAvailDA(blobPointer.merkleProofInput);
+            }
         }
         return (keccak256(bytes.concat(header, data)), timeBounds);
     }

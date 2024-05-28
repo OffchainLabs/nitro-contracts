@@ -239,5 +239,4 @@ interface ISequencerInbox is IDelayedMessageProvider {
         MaxTimeVariation calldata maxTimeVariation_,
         IAvailDABridge AvailBridge
     ) external;
-
 }
