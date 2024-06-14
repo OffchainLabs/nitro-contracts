@@ -1,6 +1,9 @@
 import { ethers } from 'hardhat'
 import '@nomiclabs/hardhat-ethers'
-import { deployAllContracts } from '../deploymentUtils'
+import {
+  deployAllContracts,
+  deployAndSetCacheManager,
+} from '../deploymentUtils'
 import { createRollup } from '../rollupCreation'
 import { promises as fs } from 'fs'
 import { BigNumber } from 'ethers'
@@ -80,6 +83,9 @@ async function main() {
   if (!result) {
     throw new Error('Rollup creation failed')
   }
+
+  // deploy cache manager
+  const cacheManager = await deployAndSetCacheManager(deployerWallet, false)
 
   const { rollupCreationResult, chainInfo } = result
 
