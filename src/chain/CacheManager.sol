@@ -49,7 +49,11 @@ contract CacheManager is Initializable, DelegateCallAware {
         uint192 bid;
     }
 
-    function initialize(uint64 initCacheSize, uint64 initDecay) external initializer onlyDelegated {
+    function initialize(uint64 initCacheSize, uint64 initDecay)
+        external
+        initializer
+        onlyDelegated
+    {
         cacheSize = initCacheSize;
         decay = initDecay;
     }
@@ -159,9 +163,8 @@ contract CacheManager is Initializable, DelegateCallAware {
 
     /// @notice Sends all revenue to the network fee account.
     function sweepFunds() external {
-        (bool success, bytes memory data) = ARB_OWNER_PUBLIC.getNetworkFeeAccount().call{
-            value: address(this).balance
-        }("");
+        (bool success, bytes memory data) =
+            ARB_OWNER_PUBLIC.getNetworkFeeAccount().call{value: address(this).balance}("");
         if (!success) {
             assembly {
                 revert(add(data, 32), mload(data))
@@ -230,12 +233,7 @@ contract CacheManager is Initializable, DelegateCallAware {
     }
 
     /// @dev Adds a bid
-    function _addBid(
-        uint192 bid,
-        bytes32 code,
-        uint64 size,
-        uint64 index
-    ) internal {
+    function _addBid(uint192 bid, bytes32 code, uint64 size, uint64 index) internal {
         if (queueSize + size > cacheSize) {
             revert AsmTooLarge(size, queueSize, cacheSize);
         }
