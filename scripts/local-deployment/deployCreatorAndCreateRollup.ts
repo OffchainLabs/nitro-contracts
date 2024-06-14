@@ -29,18 +29,13 @@ async function main() {
     throw new Error('PARENT_CHAIN_ID not set')
   }
 
-  const chainOwnerKey = process.env.CHAIN_OWNER_PRIVKEY as string
-  if (!chainOwnerKey) {
-    throw new Error('CHAIN_OWNER_PRIVKEY not set')
-  }
-
   const childChainRpc = process.env.CHILD_CHAIN_RPC as string
   if (!childChainRpc) {
     throw new Error('CHILD_CHAIN_RPC not set')
   }
 
   const chainOwnerWallet = new ethers.Wallet(
-    chainOwnerKey,
+    deployerPrivKey,
     new ethers.providers.JsonRpcProvider(childChainRpc)
   )
 
