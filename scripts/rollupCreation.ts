@@ -4,7 +4,7 @@ import { run } from 'hardhat'
 import { abi as rollupCreatorAbi } from '../build/contracts/src/rollup/RollupCreator.sol/RollupCreator.json'
 import { config, maxDataSize } from './config'
 import { BigNumber, Signer } from 'ethers'
-import { IERC20__factory } from '../build/types'
+import { ERC20, ERC20__factory, IERC20__factory } from '../build/types'
 import { sleep } from './testSetup'
 import { promises as fs } from 'fs'
 import { _isRunningOnArbitrum } from './deploymentUtils'
@@ -82,9 +82,14 @@ export async function createRollup(
   try {
     //// funds for deploying L2 factories
     // 0.13 ETH is enough to deploy L2 factories via retryables. Excess is refunded
-    let feeCost = ethers.utils.parseEther('0.13')
+    let feeCostNominal = ethers.utils.parseEther('0.13')
+    let feeCost = await _getPrescaledAmount(
+      ERC20__factory.connect(feeToken, signer),
+      feeCostNominal
+    )
     if (feeToken != ethers.constants.AddressZero) {
       // in case fees are paid via fee token, then approve rollup cretor to spend required amount
+      // xxx
       await (
         await IERC20__factory.connect(feeToken, signer).approve(
           rollupCreator.address,
@@ -337,4 +342,26 @@ async function _getDevRollupConfig(
       nonce: nonceHex,
     })
   }
+}
+
+async function _getPrescaledAmount(
+  nativeToken: ERC20,
+  amount: BigNumber
+): Promise<BigNumber> {
+  const decimals = BigNumber.from(await nativeToken.decimals())
+  if (decimals.lt(BigNumber.from(18))) {
+    const scalingFactor = BigNumber.from(10).pow(
+      BigNumber.from(18).sub(decimals)
+    )
+    let prescaledAmount = amount.div(scalingFactor)
+    // round up if needed
+    if (prescaledAmount.mul(scalingFactor).lt(amount)) {
+      prescaledAmount = prescaledAmount.add(BigNumber.from(1))
+    }
+    return prescaledAmount
+  } else if (decimals.gt(BigNumber.from(18))) {
+    return amount.mul(BigNumber.from(10).pow(decimals.sub(BigNumber.from(18))))
+  }
+
+  return amount
 }
