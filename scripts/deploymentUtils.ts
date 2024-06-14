@@ -241,17 +241,20 @@ export async function deployAllContracts(
 }
 
 export async function deployAndSetCacheManager(
-  signer: any,
+  chainOwnerWallet: any,
   verify: boolean = true
 ) {
   const cacheManager = await deployContract(
     'CacheManager',
-    signer,
+    chainOwnerWallet,
     [INIT_CACHE_SIZE, INIT_DECAY],
     verify
   )
 
-  const arbOwner = ArbOwner__factory.connect(ARB_OWNER_ADDRESS, signer)
+  const arbOwner = ArbOwner__factory.connect(
+    ARB_OWNER_ADDRESS,
+    chainOwnerWallet
+  )
   await (await arbOwner.addWasmCacheManager(cacheManager.address)).wait()
 
   return cacheManager

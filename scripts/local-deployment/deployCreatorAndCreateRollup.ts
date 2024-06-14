@@ -29,6 +29,21 @@ async function main() {
     throw new Error('PARENT_CHAIN_ID not set')
   }
 
+  const chainOwnerKey = process.env.CHAIN_OWNER_PRIVKEY as string
+  if (!chainOwnerKey) {
+    throw new Error('CHAIN_OWNER_PRIVKEY not set')
+  }
+
+  const childChainRpc = process.env.CHILD_CHAIN_RPC as string
+  if (!childChainRpc) {
+    throw new Error('CHILD_CHAIN_RPC not set')
+  }
+
+  const chainOwnerWallet = new ethers.Wallet(
+    chainOwnerKey,
+    new ethers.providers.JsonRpcProvider(childChainRpc)
+  )
+
   const deployerWallet = new ethers.Wallet(
     deployerPrivKey,
     new ethers.providers.JsonRpcProvider(parentChainRpc)
@@ -85,7 +100,7 @@ async function main() {
   }
 
   // deploy cache manager
-  const cacheManager = await deployAndSetCacheManager(deployerWallet, false)
+  const cacheManager = await deployAndSetCacheManager(chainOwnerWallet, false)
 
   const { rollupCreationResult, chainInfo } = result
 
