@@ -1,9 +1,6 @@
 import { ethers } from 'hardhat'
 import '@nomiclabs/hardhat-ethers'
-import {
-  deployAllContracts,
-  deployAndSetCacheManager,
-} from '../deploymentUtils'
+import { deployAllContracts } from '../deploymentUtils'
 import { createRollup } from '../rollupCreation'
 import { promises as fs } from 'fs'
 import { BigNumber } from 'ethers'
@@ -28,16 +25,6 @@ async function main() {
   if (!process.env.PARENT_CHAIN_ID) {
     throw new Error('PARENT_CHAIN_ID not set')
   }
-
-  const childChainRpc = process.env.CHILD_CHAIN_RPC as string
-  if (!childChainRpc) {
-    throw new Error('CHILD_CHAIN_RPC not set')
-  }
-
-  const chainOwnerWallet = new ethers.Wallet(
-    deployerPrivKey,
-    new ethers.providers.JsonRpcProvider(childChainRpc)
-  )
 
   const deployerWallet = new ethers.Wallet(
     deployerPrivKey,
@@ -93,9 +80,6 @@ async function main() {
   if (!result) {
     throw new Error('Rollup creation failed')
   }
-
-  // deploy cache manager
-  const cacheManager = await deployAndSetCacheManager(chainOwnerWallet, false)
 
   const { rollupCreationResult, chainInfo } = result
 
