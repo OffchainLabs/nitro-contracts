@@ -7,10 +7,7 @@ export enum MachineStatus {
   ERRORED = 2,
 }
 
-export function machineHash(
-  machineStatus: BigNumber,
-  globalStateHash: string
-) {
+export function machineHash(machineStatus: BigNumber, globalStateHash: string) {
   const machineStatusNum = machineStatus.toNumber()
   if (machineStatusNum === MachineStatus.FINISHED) {
     return solidityKeccak256(
