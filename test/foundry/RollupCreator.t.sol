@@ -8,7 +8,7 @@ import "../../src/rollup/RollupAdminLogic.sol";
 import "../../src/rollup/RollupUserLogic.sol";
 import "../../src/rollup/ValidatorUtils.sol";
 import "../../src/rollup/ValidatorWalletCreator.sol";
-import "../../src/challenge/ChallengeManager.sol";
+import "../../src/challengeV2/EdgeChallengeManager.sol";
 import "../../src/osp/OneStepProver0.sol";
 import "../../src/osp/OneStepProverMemory.sol";
 import "../../src/osp/OneStepProverMath.sol";
@@ -16,6 +16,7 @@ import "../../src/osp/OneStepProverHostIo.sol";
 import "../../src/osp/OneStepProofEntry.sol";
 import "../../src/mocks/UpgradeExecutorMock.sol";
 import "../../src/rollup/DeployHelper.sol";
+import "../../src/mocks/TestWETH9.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
@@ -28,27 +29,28 @@ contract RollupCreatorTest is Test {
     IRollupUser public rollupUser;
     DeployHelper public deployHelper;
     IReader4844 dummyReader4844 = IReader4844(address(137));
+    IERC20 token;
 
     // 1 gwei
     uint256 public constant MAX_FEE_PER_GAS = 1_000_000_000;
     uint256 public constant MAX_DATA_SIZE = 117_964;
 
-    BridgeCreator.BridgeContracts public ethBasedTemplates =
-        BridgeCreator.BridgeContracts({
-            bridge: new Bridge(),
-            sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false),
-            inbox: new Inbox(MAX_DATA_SIZE),
-            rollupEventInbox: new RollupEventInbox(),
-            outbox: new Outbox()
-        });
-    BridgeCreator.BridgeContracts public erc20BasedTemplates =
-        BridgeCreator.BridgeContracts({
-            bridge: new ERC20Bridge(),
-            sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true),
-            inbox: new ERC20Inbox(MAX_DATA_SIZE),
-            rollupEventInbox: new ERC20RollupEventInbox(),
-            outbox: new ERC20Outbox()
-        });
+    BridgeCreator.BridgeTemplates public ethBasedTemplates = BridgeCreator.BridgeTemplates({
+        bridge: new Bridge(),
+        sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false),
+        delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, true),
+        inbox: new Inbox(MAX_DATA_SIZE),
+        rollupEventInbox: new RollupEventInbox(),
+        outbox: new Outbox()
+    });
+    BridgeCreator.BridgeTemplates public erc20BasedTemplates = BridgeCreator.BridgeTemplates({
+        bridge: new ERC20Bridge(),
+        sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
+        delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, true),
+        inbox: new ERC20Inbox(MAX_DATA_SIZE),
+        rollupEventInbox: new ERC20RollupEventInbox(),
+        outbox: new ERC20Outbox()
+    });
 
     /* solhint-disable func-name-mixedcase */
     function setUp() public {
@@ -64,7 +66,7 @@ contract RollupCreatorTest is Test {
 
         (
             IOneStepProofEntry ospEntry,
-            IChallengeManager challengeManager,
+            IEdgeChallengeManager challengeManager,
             IRollupAdmin _rollupAdmin,
             IRollupUser _rollupUser
         ) = _prepareRollupDeployment();
@@ -80,10 +82,13 @@ contract RollupCreatorTest is Test {
             _rollupAdmin,
             _rollupUser,
             upgradeExecutorLogic,
-            address(new ValidatorUtils()),
             address(new ValidatorWalletCreator()),
             deployHelper
         );
+
+        token = new TestWETH9("Test", "TEST");
+        vm.deal(deployer, 10 ether);
+        IWETH9(address(token)).deposit{value: 10 ether}();
 
         vm.stopPrank();
     }
@@ -98,18 +103,33 @@ contract RollupCreatorTest is Test {
             60 * 60 * 24,
             60 * 60
         );
+        uint256[] memory miniStakeValues = new uint256[](3);
+        miniStakeValues[0] = 1 ether;
+        miniStakeValues[1] = 2 ether;
+        miniStakeValues[2] = 3 ether;
+        AssertionState memory emptyState = AssertionState(
+            GlobalState([bytes32(0), bytes32(0)], [uint64(0), uint64(0)]), MachineStatus.FINISHED, bytes32(0)
+        );
         Config memory config = Config({
-            confirmPeriodBlocks: 20,
-            extraChallengeTimeBlocks: 200,
-            stakeToken: address(0),
             baseStake: 1000,
-            wasmModuleRoot: keccak256("wasm"),
-            owner: rollupOwner,
-            loserStakeEscrow: address(200),
             chainId: 1337,
             chainConfig: "abc",
-            genesisBlockNum: 15_000_000,
-            sequencerInboxMaxTimeVariation: timeVars
+            confirmPeriodBlocks: 20,
+            owner: rollupOwner,
+            sequencerInboxMaxTimeVariation: timeVars,
+            stakeToken: address(token),
+            wasmModuleRoot: keccak256("wasm"),
+            loserStakeEscrow: address(200),
+            genesisAssertionState: emptyState,
+            genesisInboxCount: 0,
+            miniStakeValues: miniStakeValues,
+            layerZeroBlockEdgeHeight: 2 ** 5,
+            layerZeroBigStepEdgeHeight: 2 ** 5,
+            layerZeroSmallStepEdgeHeight: 2 ** 5,
+            anyTrustFastConfirmer: address(0),
+            numBigStepLevel: 1,
+            challengeGracePeriodBlocks: 10,
+            bufferConfig: BufferConfig({threshold: 600, max: 14400, replenishRateInBasis: 500})
         });
 
         // prepare funds
@@ -253,18 +273,33 @@ contract RollupCreatorTest is Test {
             60 * 60 * 24,
             60 * 60
         );
+        uint256[] memory miniStakeValues = new uint256[](3);
+        miniStakeValues[0] = 1 ether;
+        miniStakeValues[1] = 2 ether;
+        miniStakeValues[2] = 3 ether;
+        AssertionState memory emptyState = AssertionState(
+            GlobalState([bytes32(0), bytes32(0)], [uint64(0), uint64(0)]), MachineStatus.FINISHED, bytes32(0)
+        );
         Config memory config = Config({
-            confirmPeriodBlocks: 20,
-            extraChallengeTimeBlocks: 200,
-            stakeToken: address(0),
             baseStake: 1000,
-            wasmModuleRoot: keccak256("wasm"),
-            owner: rollupOwner,
-            loserStakeEscrow: address(200),
             chainId: 1337,
             chainConfig: "abc",
-            genesisBlockNum: 15_000_000,
-            sequencerInboxMaxTimeVariation: timeVars
+            confirmPeriodBlocks: 20,
+            owner: rollupOwner,
+            sequencerInboxMaxTimeVariation: timeVars,
+            stakeToken: address(token),
+            wasmModuleRoot: keccak256("wasm"),
+            loserStakeEscrow: address(200),
+            genesisAssertionState: emptyState,
+            genesisInboxCount: 0,
+            miniStakeValues: miniStakeValues,
+            layerZeroBlockEdgeHeight: 2 ** 5,
+            layerZeroBigStepEdgeHeight: 2 ** 5,
+            layerZeroSmallStepEdgeHeight: 2 ** 5,
+            anyTrustFastConfirmer: address(0),
+            numBigStepLevel: 1,
+            challengeGracePeriodBlocks: 10,
+            bufferConfig: BufferConfig({threshold: 600, max: 14400, replenishRateInBasis: 500})
         });
 
         // approve fee token to pay for deployment of L2 factories
@@ -408,18 +443,33 @@ contract RollupCreatorTest is Test {
             60 * 60 * 24,
             60 * 60
         );
+        uint256[] memory miniStakeValues = new uint256[](3);
+        miniStakeValues[0] = 1 ether;
+        miniStakeValues[1] = 2 ether;
+        miniStakeValues[2] = 3 ether;
+        AssertionState memory emptyState = AssertionState(
+            GlobalState([bytes32(0), bytes32(0)], [uint64(0), uint64(0)]), MachineStatus.FINISHED, bytes32(0)
+        );
         Config memory config = Config({
-            confirmPeriodBlocks: 20,
-            extraChallengeTimeBlocks: 200,
-            stakeToken: address(0),
             baseStake: 1000,
-            wasmModuleRoot: keccak256("wasm"),
-            owner: rollupOwner,
-            loserStakeEscrow: address(200),
             chainId: 1337,
             chainConfig: "abc",
-            genesisBlockNum: 15_000_000,
-            sequencerInboxMaxTimeVariation: timeVars
+            confirmPeriodBlocks: 20,
+            owner: rollupOwner,
+            sequencerInboxMaxTimeVariation: timeVars,
+            stakeToken: address(token),
+            wasmModuleRoot: keccak256("wasm"),
+            loserStakeEscrow: address(200),
+            genesisAssertionState: emptyState,
+            genesisInboxCount: 0,
+            miniStakeValues: miniStakeValues,
+            layerZeroBlockEdgeHeight: 2 ** 5,
+            layerZeroBigStepEdgeHeight: 2 ** 5,
+            layerZeroSmallStepEdgeHeight: 2 ** 5,
+            anyTrustFastConfirmer: address(0),
+            numBigStepLevel: 1,
+            challengeGracePeriodBlocks: 10,
+            bufferConfig: BufferConfig({threshold: 600, max: 14400, replenishRateInBasis: 500})
         });
 
         // prepare funds
@@ -479,7 +529,7 @@ contract RollupCreatorTest is Test {
         internal
         returns (
             IOneStepProofEntry ospEntry,
-            IChallengeManager challengeManager,
+            IEdgeChallengeManager challengeManager,
             IRollupAdmin rollupAdminLogic,
             IRollupUser rollupUserLogic
         )
@@ -491,7 +541,7 @@ contract RollupCreatorTest is Test {
             new OneStepProverMath(),
             new OneStepProverHostIo()
         );
-        challengeManager = new ChallengeManager();
+        challengeManager = new EdgeChallengeManager();
 
         //// deploy rollup logic
         rollupAdminLogic = IRollupAdmin(new RollupAdminLogic());

@@ -42,6 +42,7 @@ contract EdgeStakingPoolTest is Test {
     }
 
     function testProperInitialization(bytes32 edgeId) public {
+        vm.assume(edgeId != bytes32(0));
         IEdgeStakingPool stakingPool = stakingPoolCreator.createPool(address(challengeManager), edgeId);
 
         assertEq(address(stakingPoolCreator.getPool(address(challengeManager), edgeId)), address(stakingPool));
@@ -49,6 +50,11 @@ contract EdgeStakingPoolTest is Test {
         assertEq(address(stakingPool.challengeManager()), address(challengeManager));
         assertEq(stakingPool.edgeId(), edgeId);
         assertEq(address(stakingPool.stakeToken()), address(token));
+    }
+
+    function testEmptyEdgeId() public {
+        vm.expectRevert(abi.encodeWithSelector(IEdgeStakingPool.EmptyEdgeId.selector));
+        stakingPoolCreator.createPool(address(challengeManager), bytes32(0));
     }
 
     function testCreateEdge(CreateEdgeArgs memory args) public {

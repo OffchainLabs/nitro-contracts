@@ -242,8 +242,10 @@ contract AssertionPoolTest is Test {
             afterState: afterState
         });
         aspcreator = new AssertionStakingPoolCreator();
-        pool =
-            aspcreator.createPool(address(rollupAddr), assertionHash);
+
+        vm.expectRevert(abi.encodeWithSelector(IAssertionStakingPool.EmptyAssertionId.selector));
+        pool = aspcreator.createPool(address(rollupAddr), bytes32(0));
+        pool = aspcreator.createPool(address(rollupAddr), assertionHash);
 
         token.transfer(staker1, staker1Bal);
         token.transfer(staker2, staker2Bal);
