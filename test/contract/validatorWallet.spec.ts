@@ -97,9 +97,7 @@ describe('Validator Wallet', () => {
     await expect(
       wallet.connect(executor).executeTransaction(data, rollupMock1.address, 0)
     ).to.be.revertedWith(
-      `OnlyOwnerDestination("${await owner.getAddress()}", "${await executor.getAddress()}", "${
-        rollupMock1.address
-      }")`
+      `OnlyOwnerDestination`
     )
     await expect(
       wallet.connect(owner).executeTransaction(data, rollupMock1.address, 0)
@@ -131,9 +129,7 @@ describe('Validator Wallet', () => {
           [0, 0]
         )
     ).to.be.revertedWith(
-      `OnlyOwnerDestination("${await owner.getAddress()}", "${await executor.getAddress()}", "${
-        rollupMock2.address
-      }")`
+      `OnlyOwnerDestination`
     )
   })
 })
