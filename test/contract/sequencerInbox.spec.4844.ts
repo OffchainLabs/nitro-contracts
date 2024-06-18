@@ -232,6 +232,7 @@ describe('SequencerInbox', async () => {
     const seqInboxTemplate = await sequencerInboxFac.deploy(
       117964,
       reader4844.address,
+      false,
       false
     )
     const inboxFac = new Inbox__factory(deployer)
@@ -280,6 +281,11 @@ describe('SequencerInbox', async () => {
         delaySeconds: maxDelayTime,
         futureBlocks: 10,
         futureSeconds: 3000,
+      },
+      {
+        threshold: 0,
+        max: 0,
+        replenishRateInBasis: 0,
       })
     ).wait()
 
