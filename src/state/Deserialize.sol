@@ -287,8 +287,6 @@ library Deserialize {
                     status = MachineStatus.FINISHED;
                 } else if (statusU8 == 2) {
                     status = MachineStatus.ERRORED;
-                } else if (statusU8 == 3) {
-                    status = MachineStatus.TOO_FAR;
                 } else {
                     revert("UNKNOWN_MACH_STATUS");
                 }

@@ -132,7 +132,7 @@ contract Simple {
         // so we ignore the result of this call.
         // solhint-disable-next-line avoid-low-level-calls
         // solc-ignore-next-line unused-call-retval
-        to.staticcall{gas: before - 10000}(input);
+        to.staticcall{gas: before - 10000}(input); // forgefmt: disable-line
         return before - gasleft();
     }
 

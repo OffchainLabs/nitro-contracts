@@ -5,7 +5,6 @@ import {
   ValidatorWalletCreator__factory,
   ValidatorWallet,
   RollupMock,
-  RollupMock__factory,
 } from '../../build/types'
 import { initializeAccounts } from './utils'
 
@@ -15,7 +14,6 @@ describe('Validator Wallet', () => {
   let accounts: Awaited<ReturnType<typeof initializeAccounts>>
   let owner: ArrayElement<typeof accounts>
   let executor: ArrayElement<typeof accounts>
-  let rollupOwner: ArrayElement<typeof accounts>
   let walletCreator: ValidatorWalletCreator
   let wallet: ValidatorWallet
   let rollupMock1: RollupMock
@@ -28,9 +26,8 @@ describe('Validator Wallet', () => {
     walletCreator = await WalletCreator.deploy()
     await walletCreator.deployed()
 
-    owner = accounts[0]
-    executor = accounts[1]
-    rollupOwner = accounts[2]
+    owner = await accounts[0]
+    executor = await accounts[1]
     const walletCreationTx = await (await walletCreator.createWallet([])).wait()
 
     const events = walletCreationTx.logs
@@ -48,15 +45,9 @@ describe('Validator Wallet', () => {
     await wallet.setExecutor([await executor.getAddress()], [true])
     await wallet.transferOwnership(await owner.getAddress())
 
-    const RollupMock = (await ethers.getContractFactory(
-      'RollupMock'
-    )) as RollupMock__factory
-    rollupMock1 = (await RollupMock.deploy(
-      await rollupOwner.getAddress()
-    )) as RollupMock
-    rollupMock2 = (await RollupMock.deploy(
-      await rollupOwner.getAddress()
-    )) as RollupMock
+    const RollupMock = await ethers.getContractFactory('RollupMock')
+    rollupMock1 = (await RollupMock.deploy(ethers.constants.AddressZero)) as RollupMock
+    rollupMock2 = (await RollupMock.deploy(ethers.constants.AddressZero)) as RollupMock
 
     await accounts[0].sendTransaction({
       to: wallet.address,
@@ -101,13 +92,11 @@ describe('Validator Wallet', () => {
 
     await expect(
       wallet.connect(executor).executeTransaction(data, rollupMock1.address, 0)
+    ).to.be.revertedWith(
+      `OnlyOwnerDestination("${await owner.getAddress()}", "${await executor.getAddress()}", "${
+        rollupMock1.address
+      }")`
     )
-      .to.be.revertedWith('OnlyOwnerDestination')
-      .withArgs(
-        `${await owner.getAddress()}`,
-        `${await executor.getAddress()}`,
-        `${rollupMock1.address}`
-      )
     await expect(
       wallet.connect(owner).executeTransaction(data, rollupMock1.address, 0)
     ).to.emit(rollupMock1, 'WithdrawTriggered')
@@ -120,7 +109,7 @@ describe('Validator Wallet', () => {
 
   it('should reject batch if single tx is not allowed by executor', async function () {
     const data = [
-      rollupMock1.interface.encodeFunctionData('removeOldZombies', [0]),
+      rollupMock1.interface.encodeFunctionData('withdrawStakerFunds'),
       rollupMock2.interface.encodeFunctionData('withdrawStakerFunds'),
     ]
 
@@ -137,12 +126,10 @@ describe('Validator Wallet', () => {
           [rollupMock1.address, rollupMock2.address],
           [0, 0]
         )
+    ).to.be.revertedWith(
+      `OnlyOwnerDestination("${await owner.getAddress()}", "${await executor.getAddress()}", "${
+        rollupMock2.address
+      }")`
     )
-      .to.be.revertedWith('OnlyOwnerDestination')
-      .withArgs(
-        `${await owner.getAddress()}`,
-        `${await executor.getAddress()}`,
-        `${rollupMock2.address}`
-      )
   })
 })

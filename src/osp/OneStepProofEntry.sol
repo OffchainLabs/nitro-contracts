@@ -1,4 +1,4 @@
-// Copyright 2021-2023, Offchain Labs, Inc.
+// Copyright 2021-2022, Offchain Labs, Inc.
 // For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
@@ -14,6 +14,7 @@ import "./IOneStepProofEntry.sol";
 contract OneStepProofEntry is IOneStepProofEntry {
     using MerkleProofLib for MerkleProof;
     using MachineLib for Machine;
+    using GlobalStateLib for GlobalState;
     using MultiStackLib for MultiStack;
 
     using ValueStackLib for ValueStack;
@@ -36,9 +37,9 @@ contract OneStepProofEntry is IOneStepProofEntry {
         proverHostIo = proverHostIo_;
     }
 
-    // Copied from ChallengeLib.sol
+    // Copied from OldChallengeLib.sol
     function getStartMachineHash(bytes32 globalStateHash, bytes32 wasmModuleRoot)
-        external
+        public
         pure
         returns (bytes32)
     {
@@ -71,20 +72,13 @@ contract OneStepProofEntry is IOneStepProofEntry {
         return mach.hash();
     }
 
-    // Copied from ChallengeLib.sol
-    function getEndMachineHash(MachineStatus status, bytes32 globalStateHash)
-        external
-        pure
-        returns (bytes32)
-    {
-        if (status == MachineStatus.FINISHED) {
-            return keccak256(abi.encodePacked("Machine finished:", globalStateHash));
-        } else if (status == MachineStatus.ERRORED) {
-            return keccak256(abi.encodePacked("Machine errored:"));
-        } else if (status == MachineStatus.TOO_FAR) {
-            return keccak256(abi.encodePacked("Machine too far:"));
+    function getMachineHash(ExecutionState calldata execState) external pure override returns (bytes32) {
+        if (execState.machineStatus == MachineStatus.FINISHED) {
+            return keccak256(abi.encodePacked("Machine finished:", execState.globalState.hash()));
+        } else if (execState.machineStatus == MachineStatus.ERRORED) {
+            return keccak256(abi.encodePacked("Machine errored:", execState.globalState.hash()));
         } else {
-            revert("BAD_BLOCK_STATUS");
+            revert("BAD_MACHINE_STATUS");
         }
     }
 
@@ -106,6 +100,13 @@ contract OneStepProofEntry is IOneStepProofEntry {
             if (mach.status != MachineStatus.RUNNING) {
                 // Machine is halted.
                 // WARNING: at this point, most machine fields are unconstrained.
+                GlobalState memory globalState;
+                (globalState, offset) = Deserialize.globalState(proof, offset);
+                require(globalState.hash() == mach.globalStateHash, "BAD_GLOBAL_STATE");
+                if (mach.status == MachineStatus.FINISHED && machineStep == 0 && globalState.getInboxPosition() < execCtx.maxInboxMessagesRead) {
+                    // Kickstart the machine
+                    return getStartMachineHash(mach.globalStateHash, execCtx.initialWasmModuleRoot);
+                }
                 return mach.hash();
             }
 
