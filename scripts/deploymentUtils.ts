@@ -8,8 +8,12 @@ import {
 } from '@offchainlabs/upgrade-executor/build/contracts/src/UpgradeExecutor.sol/UpgradeExecutor.json'
 import { maxDataSize } from './config'
 import { Toolkit4844 } from '../test/contract/toolkit4844'
-import { ArbSys__factory } from '../build/types'
-import { ARB_SYS_ADDRESS } from '@arbitrum/sdk/dist/lib/dataEntities/constants'
+import { ArbOwner__factory, ArbSys__factory } from '../build/types'
+
+const INIT_CACHE_SIZE = 536870912
+const INIT_DECAY = 10322197911
+const ARB_OWNER_ADDRESS = '0x0000000000000000000000000000000000000070'
+const ARB_SYS_ADDRESS = '0x0000000000000000000000000000000000000064'
 
 // Define a verification function
 export async function verifyContract(
@@ -197,6 +201,26 @@ export async function deployAllContracts(
     rollupCreator,
     deployHelper,
   }
+}
+
+export async function deployAndSetCacheManager(
+  chainOwnerWallet: any,
+  verify: boolean = true
+) {
+  const cacheManager = await deployContract(
+    'CacheManager',
+    chainOwnerWallet,
+    [INIT_CACHE_SIZE, INIT_DECAY],
+    verify
+  )
+
+  const arbOwner = ArbOwner__factory.connect(
+    ARB_OWNER_ADDRESS,
+    chainOwnerWallet
+  )
+  await (await arbOwner.addWasmCacheManager(cacheManager.address)).wait()
+
+  return cacheManager
 }
 
 // Check if we're deploying to an Arbitrum chain

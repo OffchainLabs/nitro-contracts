@@ -47,7 +47,8 @@
     "create-rollup-testnode": "hardhat run scripts/local-deployment/deployCreatorAndCreateRollup.ts",
     "script:bold-prepare": "hardhat run ./scripts/prepareBoldUpgrade.ts",
     "script:bold-populate-lookup": "hardhat run ./scripts/populateLookup.ts",
-    "script:bold-local-execute": "hardhat run ./scripts/testLocalExecuteBoldUpgrade.ts"
+    "script:bold-local-execute": "hardhat run ./scripts/testLocalExecuteBoldUpgrade.ts",
+    "deploy-cachemanager-testnode": "hardhat run scripts/local-deployment/deployCacheManager.ts"
   },
   "dependencies": {
     "@offchainlabs/upgrade-executor": "1.1.0-beta.0",
