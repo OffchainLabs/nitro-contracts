@@ -94,8 +94,8 @@ contract AssertionPoolTest is Test {
     );
 
     IReader4844 dummyReader4844 = IReader4844(address(137));
-    BridgeCreator.BridgeTemplates ethBasedTemplates =
-        BridgeCreator.BridgeTemplates({
+    BridgeCreator.BridgeContracts ethBasedTemplates =
+        BridgeCreator.BridgeContracts({
             bridge: new Bridge(),
             sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false),
             delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, true),
@@ -103,8 +103,8 @@ contract AssertionPoolTest is Test {
             rollupEventInbox: new RollupEventInbox(),
             outbox: new Outbox()
         });
-    BridgeCreator.BridgeTemplates erc20BasedTemplates =
-        BridgeCreator.BridgeTemplates({
+    BridgeCreator.BridgeContracts erc20BasedTemplates =
+        BridgeCreator.BridgeContracts({
             bridge: new ERC20Bridge(),
             sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
             delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),

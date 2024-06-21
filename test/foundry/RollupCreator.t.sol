@@ -35,7 +35,7 @@ contract RollupCreatorTest is Test {
     uint256 public constant MAX_FEE_PER_GAS = 1_000_000_000;
     uint256 public constant MAX_DATA_SIZE = 117_964;
 
-    BridgeCreator.BridgeTemplates public ethBasedTemplates = BridgeCreator.BridgeTemplates({
+    BridgeCreator.BridgeContracts public ethBasedTemplates = BridgeCreator.BridgeContracts({
         bridge: new Bridge(),
         sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false),
         delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, true),
@@ -43,7 +43,7 @@ contract RollupCreatorTest is Test {
         rollupEventInbox: new RollupEventInbox(),
         outbox: new Outbox()
     });
-    BridgeCreator.BridgeTemplates public erc20BasedTemplates = BridgeCreator.BridgeTemplates({
+    BridgeCreator.BridgeContracts public erc20BasedTemplates = BridgeCreator.BridgeContracts({
         bridge: new ERC20Bridge(),
         sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
         delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, true),
