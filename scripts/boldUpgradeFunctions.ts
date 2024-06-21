@@ -46,8 +46,8 @@ export const deployDependencies = async (
     console.log(`Bridge implementation deployed at: ${bridge.address}`)
   }
   if (verify) {
-    await bridge.deployTransaction.wait()
-    await verifyContract('Bridge', bridge.address, [])
+    await bridge.deployTransaction.wait(5)
+    await verifyContract('Bridge', bridge.address, [], "src/bridge/Bridge.sol:Bridge")
   }
 
   const contractFactory = new ContractFactory(
@@ -67,7 +67,7 @@ export const deployDependencies = async (
     )
   }
   if (verify) {
-    await seqInbox.deployTransaction.wait()
+    await seqInbox.deployTransaction.wait(5)
     await verifyContract('SequencerInbox', seqInbox.address, [maxDataSize, reader4844.address, isUsingFeeToken, isDelayBufferable])
   }
 
@@ -77,7 +77,7 @@ export const deployDependencies = async (
     console.log(`Rollup event inbox implementation deployed at: ${rei.address}`)
   }
   if (verify) {
-    await rei.deployTransaction.wait()
+    await rei.deployTransaction.wait(5)
     await verifyContract('RollupEventInbox', rei.address, [])
   }
 
@@ -87,7 +87,7 @@ export const deployDependencies = async (
     console.log(`Outbox implementation deployed at: ${outbox.address}`)
   }
   if (verify) {
-    await outbox.deployTransaction.wait()
+    await outbox.deployTransaction.wait(5)
     await verifyContract('Outbox', outbox.address, [])
   }
 
@@ -97,7 +97,7 @@ export const deployDependencies = async (
     console.log(`Inbox implementation deployed at: ${inbox.address}`)
   }
   if (verify) {
-    await inbox.deployTransaction.wait()
+    await inbox.deployTransaction.wait(5)
     await verifyContract('Inbox', inbox.address, [maxDataSize])
   }
 
@@ -111,7 +111,7 @@ export const deployDependencies = async (
     console.log(`Old rollup user logic deployed at: ${oldRollupUser.address}`)
   }
   if (verify) {
-    await oldRollupUser.deployTransaction.wait()
+    await oldRollupUser.deployTransaction.wait(5)
     await verifyContract('OldRollupUserLogic', oldRollupUser.address, [])
   }
 
@@ -121,7 +121,7 @@ export const deployDependencies = async (
     console.log(`New rollup user logic deployed at: ${newRollupUser.address}`)
   }
   if (verify) {
-    await newRollupUser.deployTransaction.wait()
+    await newRollupUser.deployTransaction.wait(5)
     await verifyContract('RollupUserLogic', newRollupUser.address, [])
   }
 
@@ -131,7 +131,7 @@ export const deployDependencies = async (
     console.log(`New rollup admin logic deployed at: ${newRollupAdmin.address}`)
   }
   if (verify) {
-    await newRollupAdmin.deployTransaction.wait()
+    await newRollupAdmin.deployTransaction.wait(5)
     await verifyContract('RollupAdminLogic', newRollupAdmin.address, [])
   }
 
@@ -141,7 +141,7 @@ export const deployDependencies = async (
     console.log(`Challenge manager deployed at: ${challengeManager.address}`)
   }
   if (verify) {
-    await challengeManager.deployTransaction.wait()
+    await challengeManager.deployTransaction.wait(5)
     await verifyContract('EdgeChallengeManager', challengeManager.address, [])
   }
 
@@ -152,7 +152,7 @@ export const deployDependencies = async (
     console.log(`Prover0 deployed at: ${prover0.address}`)
   }
   if (verify) {
-    await prover0.deployTransaction.wait()
+    await prover0.deployTransaction.wait(5)
     await verifyContract('OneStepProver0', prover0.address, [])
   }
 
@@ -163,7 +163,7 @@ export const deployDependencies = async (
     console.log(`Prover mem deployed at: ${proverMem.address}`)
   }
   if (verify) {
-    await proverMem.deployTransaction.wait()
+    await proverMem.deployTransaction.wait(5)
     await verifyContract('OneStepProverMemory', proverMem.address, [])
   }
 
@@ -174,7 +174,7 @@ export const deployDependencies = async (
     console.log(`Prover math deployed at: ${proverMath.address}`)
   }
   if (verify) {
-    await proverMath.deployTransaction.wait()
+    await proverMath.deployTransaction.wait(5)
     await verifyContract('OneStepProverMath', proverMath.address, [])
   }
 
@@ -185,7 +185,7 @@ export const deployDependencies = async (
     console.log(`Prover host io deployed at: ${proverHostIo.address}`)
   }
   if (verify) {
-    await proverHostIo.deployTransaction.wait()
+    await proverHostIo.deployTransaction.wait(5)
     await verifyContract('OneStepProverHostIo', proverHostIo.address, [])
   }
 
@@ -201,7 +201,7 @@ export const deployDependencies = async (
     console.log(`Proof entry deployed at: ${proofEntry.address}`)
   }
   if (verify) {
-    await proofEntry.deployTransaction.wait()
+    await proofEntry.deployTransaction.wait(5)
     await verifyContract('OneStepProofEntry', proofEntry.address, [
       prover0.address,
       proverMem.address,
@@ -254,7 +254,7 @@ export const deployBoldUpgrade = async (
     console.log(`BOLD upgrade action deployed at: ${boldUpgradeAction.address}`)
   }
   if (verify) {
-    await boldUpgradeAction.deployTransaction.wait()
+    await boldUpgradeAction.deployTransaction.wait(5)
     await verifyContract('BOLDUpgradeAction', boldUpgradeAction.address, [
       { ...config.contracts, osp: deployed.osp },
       config.proxyAdmins,
