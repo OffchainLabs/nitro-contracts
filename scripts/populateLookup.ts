@@ -1,5 +1,5 @@
 import { ethers, Wallet } from 'ethers'
-import { DeployedContracts, getConfig, getJsonFile } from './common'
+import { DeployedContracts, getConfig, getJsonFile } from './boldUpgradeCommon'
 import { populateLookup } from './boldUpgradeFunctions'
 import dotenv from 'dotenv'
 

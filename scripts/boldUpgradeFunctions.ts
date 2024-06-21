@@ -19,7 +19,7 @@ import {
   IReader4844__factory,
 } from '../build/types'
 import { bytecode as Reader4844Bytecode } from '../out/yul/Reader4844.yul/Reader4844.json'
-import { DeployedContracts, Config } from './common'
+import { DeployedContracts, Config } from './boldUpgradeCommon'
 import { AssertionStateStruct } from '../build/types/src/challengeV2/IAssertionChain'
 // taken from https://github.com/OffchainLabs/nitro-contracts/blob/210e5b3bc96a513d276deaba90399130a60131d5/src/rollup/RollupUserLogic.sol
 import {

@@ -4,7 +4,7 @@ import {
   DeployedContracts,
   getConfig,
   getJsonFile,
-} from './common'
+} from './boldUpgradeCommon'
 import { deployBoldUpgrade } from './boldUpgradeFunctions'
 import dotenv from 'dotenv'
 
