@@ -16,6 +16,9 @@ interface ArbWasmCache {
     /// @return managers the list of managers.
     function allCacheManagers() external view returns (address[] memory managers);
 
+    /// @dev Deprecated, replaced with cacheProgram
+    function cacheCodehash(bytes32 codehash) external;
+
     /// @notice Caches all programs with a codehash equal to the given address.
     /// @notice Reverts if the programs have expired.
     /// @notice Caller must be a cache manager or chain owner.
