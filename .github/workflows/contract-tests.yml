@@ -228,4 +228,4 @@ jobs:
           cp ./.env-sample ./.env
 
       - name: Test upgrade
-        run: L1_RPC=${{ secrets.L1_RPC }} yarn test:upgrade
+        run: L1_RPC=${{ secrets.L1_RPC || 'https://rpc.ankr.com/eth' }} yarn test:upgrade
