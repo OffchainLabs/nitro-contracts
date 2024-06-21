@@ -128,11 +128,28 @@ module.exports = {
     apiKey: {
       mainnet: process.env['ETHERSCAN_API_KEY'],
       sepolia: process.env['ETHERSCAN_API_KEY'],
-      arb1: process.env['ARBISCAN_API_KEY'],
+      arbitrumOne: process.env['ARBISCAN_API_KEY'],
       nova: process.env['NOVA_ARBISCAN_API_KEY'],
       arbSepolia: process.env['ARBISCAN_API_KEY'],
     },
-    customChains: [],
+    customChains: [
+      {
+        network: 'nova',
+        chainId: 42170,
+        urls: {
+          apiURL: 'https://api-nova.arbiscan.io/api',
+          browserURL: 'https://nova.arbiscan.io/',
+        },
+      },
+      {
+        network: 'arbSepolia',
+        chainId: 421614,
+        urls: {
+          apiURL: 'https://api-sepolia.arbiscan.io/api',
+          browserURL: 'https://sepolia.arbiscan.io/',
+        },
+      },
+    ],
   },
   mocha: {
     timeout: 0,

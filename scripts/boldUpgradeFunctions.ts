@@ -26,6 +26,9 @@ import {
   abi as OldRollupAbi,
   bytecode as OldRollupBytecode,
 } from './files/OldRollupUserLogic.json'
+import {
+  verifyContract
+} from './deploymentUtils'
 
 export const deployDependencies = async (
   signer: Signer,
@@ -33,6 +36,7 @@ export const deployDependencies = async (
   isUsingFeeToken: boolean,
   isDelayBufferable: boolean,
   log: boolean = false,
+  verify: boolean = true,
 ): Promise<
   Omit<DeployedContracts, 'boldAction' | 'preImageHashLookup' | 'rollupReader'>
 > => {
@@ -40,6 +44,10 @@ export const deployDependencies = async (
   const bridge = await bridgeFac.deploy()
   if (log) {
     console.log(`Bridge implementation deployed at: ${bridge.address}`)
+  }
+  if (verify) {
+    await bridge.deployTransaction.wait()
+    await verifyContract('Bridge', bridge.address, [])
   }
 
   const contractFactory = new ContractFactory(
@@ -58,11 +66,19 @@ export const deployDependencies = async (
       `Sequencer inbox implementation deployed at: ${seqInbox.address}`
     )
   }
+  if (verify) {
+    await seqInbox.deployTransaction.wait()
+    await verifyContract('SequencerInbox', seqInbox.address, [maxDataSize, reader4844.address, isUsingFeeToken, isDelayBufferable])
+  }
 
   const reiFac = new RollupEventInbox__factory(signer)
   const rei = await reiFac.deploy()
   if (log) {
     console.log(`Rollup event inbox implementation deployed at: ${rei.address}`)
+  }
+  if (verify) {
+    await rei.deployTransaction.wait()
+    await verifyContract('RollupEventInbox', rei.address, [])
   }
 
   const outboxFac = new Outbox__factory(signer)
@@ -70,11 +86,19 @@ export const deployDependencies = async (
   if (log) {
     console.log(`Outbox implementation deployed at: ${outbox.address}`)
   }
+  if (verify) {
+    await outbox.deployTransaction.wait()
+    await verifyContract('Outbox', outbox.address, [])
+  }
 
   const inboxFac = new Inbox__factory(signer)
   const inbox = await inboxFac.deploy(maxDataSize)
   if (log) {
     console.log(`Inbox implementation deployed at: ${inbox.address}`)
+  }
+  if (verify) {
+    await inbox.deployTransaction.wait()
+    await verifyContract('Inbox', inbox.address, [maxDataSize])
   }
 
   const oldRollupUserFac = new ContractFactory(
@@ -86,11 +110,19 @@ export const deployDependencies = async (
   if (log) {
     console.log(`Old rollup user logic deployed at: ${oldRollupUser.address}`)
   }
+  if (verify) {
+    await oldRollupUser.deployTransaction.wait()
+    await verifyContract('OldRollupUserLogic', oldRollupUser.address, [])
+  }
 
   const newRollupUserFac = new RollupUserLogic__factory(signer)
   const newRollupUser = await newRollupUserFac.deploy()
   if (log) {
     console.log(`New rollup user logic deployed at: ${newRollupUser.address}`)
+  }
+  if (verify) {
+    await newRollupUser.deployTransaction.wait()
+    await verifyContract('RollupUserLogic', newRollupUser.address, [])
   }
 
   const newRollupAdminFac = new RollupAdminLogic__factory(signer)
@@ -98,11 +130,19 @@ export const deployDependencies = async (
   if (log) {
     console.log(`New rollup admin logic deployed at: ${newRollupAdmin.address}`)
   }
+  if (verify) {
+    await newRollupAdmin.deployTransaction.wait()
+    await verifyContract('RollupAdminLogic', newRollupAdmin.address, [])
+  }
 
   const challengeManagerFac = new EdgeChallengeManager__factory(signer)
   const challengeManager = await challengeManagerFac.deploy()
   if (log) {
     console.log(`Challenge manager deployed at: ${challengeManager.address}`)
+  }
+  if (verify) {
+    await challengeManager.deployTransaction.wait()
+    await verifyContract('EdgeChallengeManager', challengeManager.address, [])
   }
 
   const prover0Fac = new OneStepProver0__factory(signer)
@@ -111,12 +151,20 @@ export const deployDependencies = async (
   if (log) {
     console.log(`Prover0 deployed at: ${prover0.address}`)
   }
+  if (verify) {
+    await prover0.deployTransaction.wait()
+    await verifyContract('OneStepProver0', prover0.address, [])
+  }
 
   const proverMemFac = new OneStepProverMemory__factory(signer)
   const proverMem = await proverMemFac.deploy()
   await proverMem.deployed()
   if (log) {
     console.log(`Prover mem deployed at: ${proverMem.address}`)
+  }
+  if (verify) {
+    await proverMem.deployTransaction.wait()
+    await verifyContract('OneStepProverMemory', proverMem.address, [])
   }
 
   const proverMathFac = new OneStepProverMath__factory(signer)
@@ -125,12 +173,20 @@ export const deployDependencies = async (
   if (log) {
     console.log(`Prover math deployed at: ${proverMath.address}`)
   }
+  if (verify) {
+    await proverMath.deployTransaction.wait()
+    await verifyContract('OneStepProverMath', proverMath.address, [])
+  }
 
   const proverHostIoFac = new OneStepProverHostIo__factory(signer)
   const proverHostIo = await proverHostIoFac.deploy()
   await proverHostIo.deployed()
   if (log) {
     console.log(`Prover host io deployed at: ${proverHostIo.address}`)
+  }
+  if (verify) {
+    await proverHostIo.deployTransaction.wait()
+    await verifyContract('OneStepProverHostIo', proverHostIo.address, [])
   }
 
   const proofEntryFac = new OneStepProofEntry__factory(signer)
@@ -143,6 +199,15 @@ export const deployDependencies = async (
   await proofEntry.deployed()
   if (log) {
     console.log(`Proof entry deployed at: ${proofEntry.address}`)
+  }
+  if (verify) {
+    await proofEntry.deployTransaction.wait()
+    await verifyContract('OneStepProofEntry', proofEntry.address, [
+      prover0.address,
+      proverMem.address,
+      proverMath.address,
+      proverHostIo.address,
+    ])
   }
 
   return {
@@ -166,7 +231,8 @@ export const deployDependencies = async (
 export const deployBoldUpgrade = async (
   wallet: Signer,
   config: Config,
-  log: boolean = false
+  log: boolean = false,
+  verify: boolean = true,
 ): Promise<DeployedContracts> => {
   const sequencerInbox = SequencerInbox__factory.connect(config.contracts.sequencerInbox, wallet)
   const isUsingFeeToken = await sequencerInbox.isUsingFeeToken()
@@ -186,6 +252,15 @@ export const deployBoldUpgrade = async (
   )
   if (log) {
     console.log(`BOLD upgrade action deployed at: ${boldUpgradeAction.address}`)
+  }
+  if (verify) {
+    await boldUpgradeAction.deployTransaction.wait()
+    await verifyContract('BOLDUpgradeAction', boldUpgradeAction.address, [
+      { ...config.contracts, osp: deployed.osp },
+      config.proxyAdmins,
+      deployed,
+      config.settings
+    ])
   }
   const deployedAndBold = {
     ...deployed,
