@@ -96,26 +96,14 @@ module.exports = {
         ? [process.env['MAINNET_PRIVKEY']]
         : [],
     },
-    goerli: {
-      url: 'https://goerli.infura.io/v3/' + process.env['INFURA_KEY'],
+    sepolia: {
+      url: 'https://sepolia.infura.io/v3/' + process.env['INFURA_KEY'],
       accounts: process.env['DEVNET_PRIVKEY']
         ? [process.env['DEVNET_PRIVKEY']]
         : [],
     },
-    rinkeby: {
-      url: 'https://rinkeby.infura.io/v3/' + process.env['INFURA_KEY'],
-      accounts: process.env['DEVNET_PRIVKEY']
-        ? [process.env['DEVNET_PRIVKEY']]
-        : [],
-    },
-    arbRinkeby: {
-      url: 'https://rinkeby.arbitrum.io/rpc',
-      accounts: process.env['DEVNET_PRIVKEY']
-        ? [process.env['DEVNET_PRIVKEY']]
-        : [],
-    },
-    arbGoerliRollup: {
-      url: 'https://goerli-rollup.arbitrum.io/rpc',
+    arbSepolia: {
+      url: 'https://sepolia-rollup.arbitrum.io/rpc',
       accounts: process.env['DEVNET_PRIVKEY']
         ? [process.env['DEVNET_PRIVKEY']]
         : [],
@@ -139,31 +127,12 @@ module.exports = {
   etherscan: {
     apiKey: {
       mainnet: process.env['ETHERSCAN_API_KEY'],
-      goerli: process.env['ETHERSCAN_API_KEY'],
-      rinkeby: process.env['ETHERSCAN_API_KEY'],
-      arbitrumOne: process.env['ARBISCAN_API_KEY'],
-      arbitrumTestnet: process.env['ARBISCAN_API_KEY'],
+      sepolia: process.env['ETHERSCAN_API_KEY'],
+      arb1: process.env['ARBISCAN_API_KEY'],
       nova: process.env['NOVA_ARBISCAN_API_KEY'],
-      arbGoerliRollup: process.env['ARBISCAN_API_KEY'],
+      arbSepolia: process.env['ARBISCAN_API_KEY'],
     },
-    customChains: [
-      {
-        network: 'nova',
-        chainId: 42170,
-        urls: {
-          apiURL: 'https://api-nova.arbiscan.io/api',
-          browserURL: 'https://nova.arbiscan.io/',
-        },
-      },
-      {
-        network: 'arbGoerliRollup',
-        chainId: 421613,
-        urls: {
-          apiURL: 'https://api-goerli.arbiscan.io/api',
-          browserURL: 'https://goerli.arbiscan.io/',
-        },
-      },
-    ],
+    customChains: [],
   },
   mocha: {
     timeout: 0,
