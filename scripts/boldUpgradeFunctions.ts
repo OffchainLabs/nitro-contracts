@@ -25,7 +25,7 @@ import { AssertionStateStruct } from '../build/types/src/challengeV2/IAssertionC
 import {
   abi as OldRollupAbi,
   bytecode as OldRollupBytecode,
-} from './files/OldRollupUserLogic.json'
+} from '@arbitrum/nitro-contracts-2.0.0/build/contracts/src/rollup/RollupUserLogic.sol/RollupUserLogic.json'
 import {
   verifyContract
 } from './deploymentUtils'
