@@ -397,7 +397,7 @@ async function checkNewRollup(
   // loserStakeEscrow
   if (
     getAddress(await newRollup.loserStakeEscrow()) !==
-    getAddress(config.contracts.l1Timelock)
+    getAddress(config.contracts.excessStakeReceiver)
   ) {
     throw new Error('Loser stake escrow address does not match')
   }
@@ -532,7 +532,7 @@ async function checkNewChallengeManager(
   // check excess stake receiver
   if (
     (await edgeChallengeManager.excessStakeReceiver()) !==
-    config.contracts.l1Timelock
+    config.contracts.excessStakeReceiver
   ) {
     throw new Error('Excess stake receiver does not match')
   }

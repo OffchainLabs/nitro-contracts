@@ -3,10 +3,9 @@ import { Config } from '../../common'
 
 export const arb1: Config = {
   contracts: {
-    // the l1Timelock does not actually need to be the timelock
-    // it is only used to set the excess stake receiver / loser stake escrow
+    // it both the excess stake receiver and loser stake escrow
     // TODO: change this to a fee router before real deployment
-    l1Timelock: '0xE6841D92B0C345144506576eC13ECf5103aC7f49',
+    excessStakeReceiver: '0xE6841D92B0C345144506576eC13ECf5103aC7f49',
     rollup: '0x5eF0D09d1E6204141B4d37530808eD19f60FBa35',
     bridge: '0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a',
     sequencerInbox: '0x1c479675ad559DC151F6Ec7ed3FbF8ceE79582B6',

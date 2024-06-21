@@ -3,7 +3,7 @@ import { Config } from '../../common'
 
 export const sepolia: Config = {
   contracts: {
-    l1Timelock: '0x6EC62D826aDc24AeA360be9cF2647c42b9Cdb19b',
+    excessStakeReceiver: '0x6EC62D826aDc24AeA360be9cF2647c42b9Cdb19b',
     rollup: '0xd80810638dbDF9081b72C1B33c65375e807281C8',
     bridge: '0x38f918D0E9F1b721EDaA41302E399fa1B79333a9',
     sequencerInbox: '0x6c97864CE4bEf387dE0b3310A44230f7E3F1be0D',

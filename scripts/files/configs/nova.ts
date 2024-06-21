@@ -3,7 +3,7 @@ import { Config } from '../../common'
 
 export const nova: Config = {
   contracts: {
-    l1Timelock: '0xE6841D92B0C345144506576eC13ECf5103aC7f49',
+    excessStakeReceiver: '0xE6841D92B0C345144506576eC13ECf5103aC7f49',
     rollup: '0xFb209827c58283535b744575e11953DCC4bEAD88',
     bridge: '0xC1Ebd02f738644983b6C4B2d440b8e77DdE276Bd',
     sequencerInbox: '0x211E1c4c7f1bF5351Ac850Ed10FD68CFfCF6c21b',
