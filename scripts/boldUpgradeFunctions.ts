@@ -205,17 +205,24 @@ export const populateLookup = async (
 ) => {
   const oldRollup = new Contract(rollupAddr, OldRollupAbi, wallet.provider)
   const latestConfirmed: number = await oldRollup.latestConfirmed()
-  const latestConfirmedLog = await wallet.provider!.getLogs({
-    address: rollupAddr,
-    fromBlock: 0,
-    toBlock: 'latest',
-    topics: [
-      oldRollup.interface.getEventTopic('NodeCreated'),
-      ethers.utils.hexZeroPad(ethers.utils.hexlify(latestConfirmed), 32),
-    ],
-  })
 
-  if (latestConfirmedLog.length != 1) {
+  let latestConfirmedLog
+  let toBlock = await wallet.provider!.getBlockNumber()
+  for (let i = 0; i < 100; i++) {
+    latestConfirmedLog = await wallet.provider!.getLogs({
+      address: rollupAddr,
+      fromBlock: toBlock - 1000,
+      toBlock: toBlock,
+      topics: [
+        oldRollup.interface.getEventTopic('NodeCreated'),
+        ethers.utils.hexZeroPad(ethers.utils.hexlify(latestConfirmed), 32),
+      ],
+    })
+    if (latestConfirmedLog.length == 1) break
+    toBlock -= 1000
+  }
+
+  if (!latestConfirmedLog || latestConfirmedLog.length != 1) {
     throw new Error('Could not find latest confirmed node')
   }
   const latestConfirmedEvent = oldRollup.interface.parseLog(
