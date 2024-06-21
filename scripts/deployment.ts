@@ -1,13 +1,18 @@
 import { ethers } from 'hardhat'
 import '@nomiclabs/hardhat-ethers'
 import { deployAllContracts } from './deploymentUtils'
+import { maxDataSize } from './config'
 
 async function main() {
   const [signer] = await ethers.getSigners()
 
   try {
     // Deploying all contracts
-    const contracts = await deployAllContracts(signer)
+    const contracts = await deployAllContracts(
+      signer,
+      ethers.BigNumber.from(maxDataSize),
+      true
+    )
 
     // Call setTemplates with the deployed contract addresses
     console.log('Waiting for the Template to be set on the Rollup Creator')
@@ -18,7 +23,6 @@ async function main() {
       contracts.rollupAdmin.address,
       contracts.rollupUser.address,
       contracts.upgradeExecutor.address,
-      contracts.validatorUtils.address,
       contracts.validatorWalletCreator.address,
       contracts.deployHelper.address
     )
