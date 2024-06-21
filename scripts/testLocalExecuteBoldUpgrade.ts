@@ -2,7 +2,9 @@ import { Contract, ContractReceipt } from 'ethers'
 import { ethers } from 'hardhat'
 import { Config, DeployedContracts, getConfig, getJsonFile } from './boldUpgradeCommon'
 import { BOLDUpgradeAction__factory, EdgeChallengeManager__factory, RollupUserLogic__factory } from '../build/types'
-import { abi as UpgradeExecutorAbi } from './files/UpgradeExecutor.json'
+import {
+  abi as UpgradeExecutorAbi,
+} from '@offchainlabs/upgrade-executor/build/contracts/src/UpgradeExecutor.sol/UpgradeExecutor.json'
 import dotenv from 'dotenv'
 import { BOLDUpgradeAction, RollupMigratedEvent } from '../build/types/src/rollup/BOLDUpgradeAction.sol/BOLDUpgradeAction'
 import { JsonRpcProvider } from '@ethersproject/providers'
