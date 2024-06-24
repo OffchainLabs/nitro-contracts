@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -e
 anvil --fork-url $L1_RPC > /dev/null &
 
 anvil_pid=$!
