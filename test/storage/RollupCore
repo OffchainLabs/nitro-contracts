@@ -35,4 +35,5 @@
 | totalWithdrawableFunds     | uint256                                       | 124  | 0      | 32    | src/rollup/RollupCore.sol:RollupCore |
 | rollupDeploymentBlock      | uint256                                       | 125  | 0      | 32    | src/rollup/RollupCore.sol:RollupCore |
 | validatorWhitelistDisabled | bool                                          | 126  | 0      | 1     | src/rollup/RollupCore.sol:RollupCore |
+| anyTrustFastConfirmer      | address                                       | 126  | 1      | 20    | src/rollup/RollupCore.sol:RollupCore |
 | _nodeCreatedAtArbSysBlock  | mapping(uint64 => uint256)                    | 127  | 0      | 32    | src/rollup/RollupCore.sol:RollupCore |
