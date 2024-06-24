@@ -13,11 +13,7 @@ import "../state/ModuleMemory.sol";
 import "./IOneStepProver.sol";
 import "../bridge/Messages.sol";
 import "../bridge/IBridge.sol";
-
-interface IHotShot {
-    function commitments(uint256) external view returns (uint256);
-    function availabilities(uint256) external view returns (bool);
-}
+import "../bridge/IHotShot.sol";
 
 contract OneStepProverHostIo is IOneStepProver {
     using GlobalStateLib for GlobalState;
@@ -40,6 +36,10 @@ contract OneStepProverHostIo is IOneStepProver {
     uint64 private constant INBOX_HEADER_LEN = 40;
     uint64 private constant DELAYED_HEADER_LEN = 112 + 1;
 
+    // Hard coded for now. Find out a way to access the arb config
+    // in this contract and move this constant into the configuration.
+    uint256 private constant ESPRESSO_ESCAPE_HATCH_DELAY_THRESHOLD = 3;
+
     function setLeafByte(
         bytes32 oldLeaf,
         uint256 idx,
@@ -55,7 +55,7 @@ contract OneStepProverHostIo is IOneStepProver {
     }
 
     function _getHotShotCommitment(uint256 h) external view returns (uint256) {
-        return hotshot.commitments(h);
+        return hotshot.getHotShotCommitment(h).blockCommRoot;
     }
 
     function executeGetOrSetBytes32(
@@ -323,17 +323,19 @@ contract OneStepProverHostIo is IOneStepProver {
         bytes calldata proof
     ) internal view {
         uint256 height = mach.valueStack.pop().assumeI64();
+        uint256 threshold = ESPRESSO_ESCAPE_HATCH_DELAY_THRESHOLD;
         uint8 liveness = uint8(proof[0]);
-        require(validateHotShotLiveness(execCtx, height, liveness > 0), "WRONG_HOTSHOT_LIVENESS");
+        require(validateHotShotLiveness(execCtx, height, threshold, liveness > 0), "WRONG_HOTSHOT_LIVENESS");
 
     }
 
     function validateHotShotLiveness(
         ExecutionContext calldata,
         uint256 height,
+        uint256 threshold,
         bool result
     ) internal view returns (bool) {
-        bool expected = hotshot.availabilities(height);
+        bool expected = hotshot.lagOverEscapeHatchThreshold(height, threshold);
         return result == expected;
     }
 
@@ -378,7 +380,7 @@ contract OneStepProverHostIo is IOneStepProver {
         uint256 height,
         bytes calldata commitment
     ) internal view returns (bool) {
-        uint256 expected = hotshot.commitments(height);
+        uint256 expected = hotshot.getHotShotCommitment(height).blockCommRoot;
         require(expected != 0, "EMPTY HOTSHOT COMMITMENT");
         bytes memory b = new bytes(32);
         assembly {
