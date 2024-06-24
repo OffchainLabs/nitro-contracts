@@ -18,7 +18,7 @@ export async function verifyContract(
   contractPathAndName?: string // optional
 ): Promise<void> {
   try {
-    if (process.env.DISABLE_VERIFICATION) return
+    if (process.env.DISABLE_VERIFICATION === 'true') return
     // Define the verification options with possible 'contract' property
     const verificationOptions: {
       contract?: string

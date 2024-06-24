@@ -241,7 +241,8 @@ export const deployBoldUpgrade = async (
     config.settings.maxDataSize, 
     isUsingFeeToken,
     config.settings.isDelayBufferable,
-    log
+    log,
+    verify
   )
   const fac = new BOLDUpgradeAction__factory(wallet)
   const boldUpgradeAction = await fac.deploy(

@@ -48,7 +48,8 @@ async function main() {
     ) as DeployedContracts
   } catch (err) {}
 
-  const deployedAndBold = await deployBoldUpgrade(wallet, config, true)
+  const disableVerification = process.env.DISABLE_VERIFICATION === 'true'
+  const deployedAndBold = await deployBoldUpgrade(wallet, config, true, !disableVerification)
 
   console.log(`Deployed contracts written to: ${deployedContractsLocation}`)
   fs.writeFileSync(
