@@ -69,7 +69,7 @@ contract CacheManagerTest is Test {
                     mustCache = true;
                     if (pay > 0) {
                         vm.expectRevert();
-                        cacheManager.placeBid{value: pay - 1}(codehash);
+                        cacheManager.placeBid{value: pay}(program);
                     }
                 }
                 uint256 bid = pay + block.timestamp * uint256(cacheManager.decay());
