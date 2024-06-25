@@ -151,8 +151,14 @@ contract CacheManager {
 
     /// @notice Returns the minimum bid required to cache the program with given codehash.
     ///         Value returned here is the minimum bid that you can send with msg.value
-    function getMinBid(bytes32 codehash) external view returns (uint192 min) {
+    function getMinBid(bytes32 codehash) public view returns (uint192 min) {
         return getMinBid(_asmSize(codehash));
+    }
+
+    /// @notice Returns the minimum bid required to cache the program at given address.
+    ///         Value returned here is the minimum bid that you can send with msg.value
+    function getMinBid(address program) external view returns (uint192 min) {
+        return getMinBid(program.codehash);
     }
 
     /// @notice Sends all revenue to the network fee account.

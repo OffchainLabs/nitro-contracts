@@ -65,7 +65,7 @@ contract CacheManagerTest is Test {
                     pay = uint256(keccak256(abi.encodePacked("value", epoch, round))) % MAX_PAY;
                 } else {
                     // for the second half of the round, we use the minimum bid
-                    pay = cacheManager.getMinBid(codehash);
+                    pay = cacheManager.getMinBid(program);
                     mustCache = true;
                     if (pay > 0) {
                         vm.expectRevert();
