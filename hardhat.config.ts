@@ -24,7 +24,17 @@ const solidity = {
       },
     },
   ],
-  overrides: {},
+  overrides: {
+    'src/rollup/RollupUserLogic.sol': {
+      version: '0.8.9',
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 20,
+        },
+      },
+    },
+  },
 }
 
 if (process.env['INTERFACE_TESTER_SOLC_VERSION']) {
