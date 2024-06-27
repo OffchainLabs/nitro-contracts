@@ -18,7 +18,7 @@ const solidity = {
       settings: {
         optimizer: {
           enabled: true,
-          runs: 100,
+          runs: 1,
         },
       },
     },
@@ -32,7 +32,7 @@ if (process.env['INTERFACE_TESTER_SOLC_VERSION']) {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 100,
+        runs: 1,
       },
     },
   })
@@ -42,7 +42,7 @@ if (process.env['INTERFACE_TESTER_SOLC_VERSION']) {
       settings: {
         optimizer: {
           enabled: true,
-          runs: 100,
+          runs: 1,
         },
       },
     },
