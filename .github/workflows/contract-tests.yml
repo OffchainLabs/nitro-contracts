@@ -85,6 +85,9 @@ jobs:
       - name: Forge build
         run: forge build
 
+      - name: Test size
+        run: yarn contract:size
+
       - name: Test Storage Layouts
         run: yarn run test:storage
 
