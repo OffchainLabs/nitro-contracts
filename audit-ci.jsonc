@@ -47,6 +47,14 @@
     // Exposure of sensitive information in follow-redirects
     "GHSA-74fj-2j2h-c42q",
     // Open Zeppelin: Base64 encoding may read from potentially dirty memory
-    "GHSA-9vx6-7xxf-x967"
+    "GHSA-9vx6-7xxf-x967",
+    // semver vulnerable to Regular Expression Denial of Service
+    "GHSA-c2qf-rxjj-qqgw",
+    // follow-redirects' Proxy-Authorization header kept across hosts
+    "GHSA-cxjh-pqwp-8mfp",
+    // Prototype Pollution in async
+    "GHSA-fwr7-v2mv-hh25",
+    // ws affected by a DoS when handling a request with many HTTP headers
+    "GHSA-3h5v-q93c-6h6q"
   ]
 }
