@@ -1571,6 +1571,11 @@ describe.only('ArbRollupFastConfirm', () => {
     )
     updatePrevNode(node)
   })
+  it('should fail to confirm before deadline', async function () {
+    await expect(rollup.confirmNextNode(prevNodes[0])).to.be.revertedWith(
+      'BEFORE_DEADLINE'
+    )
+  })
   it('should fail to fast confirm if not fast confirmer', async function () {
     await expect(rollup.fastConfirmNextNode(prevNodes[0])).to.be.revertedWith(
       'NOT_FAST_CONFIRMER'
