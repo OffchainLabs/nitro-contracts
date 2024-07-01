@@ -383,6 +383,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
     /**
      * @notice set the anyTrustFastConfirmer address
      *         must also call `setValidator` to set the same address as a validator to work
+     *         old fast confirmer need to be removed from the validator list manually
      * @param _anyTrustFastConfirmer new value of anyTrustFastConfirmer
      */
     function setAnyTrustFastConfirmer(address _anyTrustFastConfirmer) external {
