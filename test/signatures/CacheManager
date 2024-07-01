@@ -1,0 +1,22 @@
+{
+  "cacheSize()": "674a64e0",
+  "decay()": "54fac919",
+  "entries(uint256)": "b30906d4",
+  "evictAll()": "5c32e943",
+  "evictPrograms(uint256)": "cadb43e2",
+  "getEntries()": "17be85c3",
+  "getMinBid(address)": "32052a9b",
+  "getMinBid(bytes32)": "c565a208",
+  "getMinBid(uint64)": "d29b303e",
+  "getSmallestEntries(uint256)": "e9c1bc0f",
+  "initialize(uint64,uint64)": "20f2f345",
+  "isPaused()": "b187bd26",
+  "makeSpace(uint64)": "c1c013c4",
+  "paused()": "5c975abb",
+  "placeBid(address)": "e4940157",
+  "queueSize()": "bae6c2ad",
+  "setCacheSize(uint64)": "2dd4f566",
+  "setDecayRate(uint64)": "c77ed13e",
+  "sweepFunds()": "a8d6fe04",
+  "unpause()": "3f4ba83a"
+}
