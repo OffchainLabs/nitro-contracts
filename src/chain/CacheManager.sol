@@ -246,7 +246,7 @@ contract CacheManager {
             revert AsmTooLarge(size, queueSize, cacheSize);
         }
 
-        Entry memory entry = Entry({size: size, code: code, bid:bid});
+        Entry memory entry = Entry({size: size, code: code, bid: bid});
         ARB_WASM_CACHE.cacheProgram(program);
         bids.push(_packBid(bid, index));
         queueSize += size;
