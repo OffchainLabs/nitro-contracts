@@ -77,6 +77,7 @@ export async function createRollup(
     rollupCreatorAbi,
     signer
   )
+  const validatorWalletCreator = await rollupCreator.validatorWalletCreator()
 
   try {
     //// funds for deploying L2 factories
@@ -96,7 +97,7 @@ export async function createRollup(
     // Call the createRollup function
     console.log('Calling createRollup to generate a new rollup ...')
     const deployParams = isDevDeployment
-      ? await _getDevRollupConfig(feeToken)
+      ? await _getDevRollupConfig(feeToken, validatorWalletCreator)
       : {
           config: config.rollupConfig,
           validators: config.validators,
@@ -223,7 +224,10 @@ export async function createRollup(
   return null
 }
 
-async function _getDevRollupConfig(feeToken: string) {
+async function _getDevRollupConfig(
+  feeToken: string,
+  validatorWalletCreator: string
+) {
   // set up owner address
   const ownerAddress =
     process.env.OWNER_ADDRESS !== undefined ? process.env.OWNER_ADDRESS : ''
@@ -239,7 +243,7 @@ async function _getDevRollupConfig(feeToken: string) {
     parseInt(process.env.AUTHORIZE_VALIDATORS as string, 0) || 0
   const validators: string[] = []
   for (let i = 1; i <= authorizeValidators; i++) {
-    validators.push(ethers.Wallet.createRandom().address)
+    validators.push(_createValidatorAddress(validatorWalletCreator, i))
   }
 
   // get chain config
@@ -321,5 +325,16 @@ async function _getDevRollupConfig(feeToken: string) {
     maxFeePerGasForRetryables: MAX_FER_PER_GAS,
     batchPosters: batchPosters,
     batchPosterManager: batchPosterManager,
+  }
+
+  function _createValidatorAddress(
+    deployerAddress: string,
+    nonce: number
+  ): string {
+    const nonceHex = BigNumber.from(nonce).toHexString()
+    return ethers.utils.getContractAddress({
+      from: deployerAddress,
+      nonce: nonceHex,
+    })
   }
 }

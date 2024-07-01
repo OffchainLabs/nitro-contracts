@@ -35,6 +35,7 @@ contract ChallengeManager is DelegateCallAware, IChallengeManager {
     ISequencerInbox public sequencerInbox;
     IBridge public bridge;
     IOneStepProofEntry public osp;
+    mapping(bytes32 => IOneStepProofEntry) public ospCond;
 
     function challengeInfo(uint64 challengeIndex)
         external
@@ -110,10 +111,26 @@ contract ChallengeManager is DelegateCallAware, IChallengeManager {
         osp = osp_;
     }
 
-    function postUpgradeInit(IOneStepProofEntry osp_) external onlyDelegated onlyProxyOwner {
-        // when updating to 4844 we need to create new osp contracts and set them here
-        // on the challenge manager
+    /// @dev A osp breaking change is introduced as part of Stylus upgrade, where the new osp would not support
+    ///      pre-Stylus legacy wasmModuleRoot. To ensure that the new osp is not used for legacy wasmModuleRoot,
+    ///      we introduce a conditional OSP where condRoot should be set to the pre-Stylus root and condOsp should
+    ///      be set to the pre-Stylus osp. The correct value should be handled by the upgrade action contract.
+    function postUpgradeInit(
+        IOneStepProofEntry osp_,
+        bytes32 condRoot,
+        IOneStepProofEntry condOsp
+    ) external onlyDelegated onlyProxyOwner {
+        ospCond[condRoot] = condOsp;
         osp = osp_;
+    }
+
+    function getOsp(bytes32 wasmModuleRoot) public view returns (IOneStepProofEntry) {
+        IOneStepProofEntry t = ospCond[wasmModuleRoot];
+        if (address(t) == address(0)) {
+            return osp;
+        } else {
+            return t;
+        }
     }
 
     function createChallenge(
@@ -233,11 +250,9 @@ contract ChallengeManager is DelegateCallAware, IChallengeManager {
         }
 
         bytes32[] memory segments = new bytes32[](2);
-        segments[0] = ChallengeLib.getStartMachineHash(
-            globalStateHashes[0],
-            challenge.wasmModuleRoot
-        );
-        segments[1] = ChallengeLib.getEndMachineHash(machineStatuses[1], globalStateHashes[1]);
+        IOneStepProofEntry _osp = getOsp(challenge.wasmModuleRoot);
+        segments[0] = _osp.getStartMachineHash(globalStateHashes[0], challenge.wasmModuleRoot);
+        segments[1] = _osp.getEndMachineHash(machineStatuses[1], globalStateHashes[1]);
 
         challenge.mode = ChallengeLib.ChallengeMode.EXECUTION;
 
@@ -259,7 +274,7 @@ contract ChallengeManager is DelegateCallAware, IChallengeManager {
             require(challengeLength == 1, "TOO_LONG");
         }
 
-        bytes32 afterHash = osp.proveOneStep(
+        bytes32 afterHash = getOsp(challenge.wasmModuleRoot).proveOneStep(
             ExecutionContext({maxInboxMessagesRead: challenge.maxInboxMessages, bridge: bridge}),
             challengeStart,
             selection.oldSegments[selection.challengePosition],

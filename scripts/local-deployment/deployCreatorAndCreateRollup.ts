@@ -41,7 +41,6 @@ async function main() {
   if (!feeToken) {
     feeToken = ethers.constants.AddressZero
   }
-  console.log('Fee token address:', feeToken)
 
   /// deploy templates and rollup creator
   console.log('Deploy RollupCreator')
