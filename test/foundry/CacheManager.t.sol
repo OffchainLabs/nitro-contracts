@@ -45,11 +45,30 @@ contract CacheManagerTest is Test {
     }
 
     function test_randomBids() external {
+        address[] memory programs = new address[](256);
+        for (uint256 i = 0; i < programs.length; i++) {
+            // Deploy bytes(bytes32(i)) as code to a sample program
+            // PUSH32 i PUSH1 0 MSTORE PUSH1 32 PUSH1 0 RETURN
+            // at the time of writing this our forge version or config doesn't have PUSH0 support
+            bytes memory bytecode = bytes.concat(hex"7F", abi.encodePacked(i), hex"60005260206000F3");
+            address program;
+            assembly {
+                program := create(0, add(bytecode, 32), mload(bytecode))
+            }
+            if (program == address(0)) {
+                revert("zero");
+            }
+            if (program.codehash != keccak256(abi.encodePacked(i))) {
+                revert("failed to deploy sample code");
+            }
+            programs[i] = program;
+        }
+
         for (uint256 epoch = 0; epoch < 4; epoch++) {
-            for (uint256 round = 0; round < 1024; round++) {
-                // roll one of 256 random codehashes
-                bytes32 codehash = keccak256(abi.encodePacked("code", epoch, round));
-                codehash = keccak256(abi.encodePacked(uint256(codehash) % 256));
+            for (uint256 round = 0; round < 512; round++) {
+                // roll one of 256 random programs
+                address program = programs[uint256(keccak256(abi.encodePacked("code", epoch, round))) % programs.length];
+                bytes32 codehash = program.codehash;
 
                 vm.warp(block.timestamp + 1); // move time forward to test decay and make bid unique
                 uint256 pay;
@@ -59,11 +78,11 @@ contract CacheManagerTest is Test {
                     pay = uint256(keccak256(abi.encodePacked("value", epoch, round))) % MAX_PAY;
                 } else {
                     // for the second half of the round, we use the minimum bid
-                    pay = cacheManager.getMinBid(codehash);
+                    pay = cacheManager.getMinBid(program);
                     mustCache = true;
                     if (pay > 0) {
                         vm.expectRevert();
-                        cacheManager.placeBid{value: pay - 1}(codehash);
+                        cacheManager.placeBid{value: pay}(program);
                     }
                 }
                 uint256 bid = pay + block.timestamp * uint256(cacheManager.decay());
@@ -115,7 +134,7 @@ contract CacheManagerTest is Test {
                     }
                 }
 
-                cacheManager.placeBid{value: pay}(codehash);
+                cacheManager.placeBid{value: pay}(program);
 
                 if(mustCache) {
                     require(
@@ -183,7 +202,8 @@ contract ArbWasmCacheMock {
     uint256 public numCached;
     uint256 public uselessCalls;
 
-    function cacheCodehash(bytes32 codehash) external {
+    function cacheProgram(address addr) external {
+        bytes32 codehash = addr.codehash;
         if (codehashIsCached[codehash]) {
             uselessCalls++;
             return;
