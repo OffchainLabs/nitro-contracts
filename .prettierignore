@@ -7,3 +7,4 @@ src/lib/abi/**
 .nyc_output
 out/**
 lib/**
+src/mocks/MultiCallTest.sol
