@@ -16,7 +16,12 @@ async function main() {
   if (!l1RpcVal) {
     throw new Error('L1_RPC_URL env variable not set')
   }
+
+  console.log('L1_RPC_URL:', l1RpcVal)
   const l1Rpc = new ethers.providers.JsonRpcProvider(l1RpcVal)
+  console.log('oqwiefjoiqwejf')
+  console.log(await l1Rpc.getBlockNumber())
+  console.log('111')
 
   const l1PrivKey = process.env.L1_PRIV_KEY
   if (!l1PrivKey) {
