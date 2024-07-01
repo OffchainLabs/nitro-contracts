@@ -167,14 +167,35 @@ error BadSequencerNumber(uint256 stored, uint256 received);
 /// @dev The sequence message number provided to this message was inconsistent with the previous one
 error BadSequencerMessageNumber(uint256 stored, uint256 received);
 
-/// @dev The batch data has the inbox authenticated bit set, but the batch data was not authenticated by the inbox
-error DataNotAuthenticated();
-
 /// @dev Tried to create an already valid Data Availability Service keyset
 error AlreadyValidDASKeyset(bytes32);
 
 /// @dev Tried to use or invalidate an already invalid Data Availability Service keyset
 error NoSuchKeyset(bytes32);
 
+/// @dev Thrown when the provided address is not the designated batch poster manager
+error NotBatchPosterManager(address);
+
+/// @dev Thrown when a data blob feature is attempted to be used on a chain that doesnt support it
+error DataBlobsNotSupported();
+
+/// @dev Thrown when an init param was supplied as empty
+error InitParamZero(string name);
+
+/// @dev Thrown when data hashes where expected but not where present on the tx
+error MissingDataHashes();
+
 /// @dev Thrown when rollup is not updated with updateRollupAddress
 error RollupNotChanged();
+
+/// @dev Unsupported header flag was provided
+error InvalidHeaderFlag(bytes1);
+
+/// @dev SequencerInbox and Bridge are not in the same feeToken/ETH mode
+error NativeTokenMismatch();
+
+/// @dev Thrown when a deprecated function is called
+error Deprecated();
+
+/// @dev Thrown when any component of maxTimeVariation is over uint64
+error BadMaxTimeVariation();
