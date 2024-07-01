@@ -1397,11 +1397,9 @@ describe('ArbRollup', () => {
   it('can set is sequencer', async function () {
     const testAddress = await accounts[9].getAddress()
     expect(await sequencerInbox.isSequencer(testAddress)).to.be.false
-    await expect(
-      sequencerInbox.setIsSequencer(testAddress, true)
-    ).to.revertedWith(
-      `NotBatchPosterManager("${await sequencerInbox.signer.getAddress()}")`
-    )
+    await expect(sequencerInbox.setIsSequencer(testAddress, true))
+      .to.revertedWith(`NotBatchPosterManager`)
+      .withArgs(await sequencerInbox.signer.getAddress())
     expect(await sequencerInbox.isSequencer(testAddress)).to.be.false
 
     await (
@@ -1424,11 +1422,9 @@ describe('ArbRollup', () => {
   it('can set a batch poster', async function () {
     const testAddress = await accounts[9].getAddress()
     expect(await sequencerInbox.isBatchPoster(testAddress)).to.be.false
-    await expect(
-      sequencerInbox.setIsBatchPoster(testAddress, true)
-    ).to.revertedWith(
-      `NotBatchPosterManager("${await sequencerInbox.signer.getAddress()}")`
-    )
+    await expect(sequencerInbox.setIsBatchPoster(testAddress, true))
+      .to.revertedWith(`NotBatchPosterManager`)
+      .withArgs(await sequencerInbox.signer.getAddress())
     expect(await sequencerInbox.isBatchPoster(testAddress)).to.be.false
 
     await (
@@ -1455,7 +1451,9 @@ describe('ArbRollup', () => {
     )
     await expect(
       sequencerInbox.connect(accounts[8]).setBatchPosterManager(testManager)
-    ).to.revertedWith(`NotOwner("${testManager}", "${upgradeExecutor}")`)
+    )
+      .to.revertedWith('NotOwner')
+      .withArgs(testManager, upgradeExecutor)
     expect(await sequencerInbox.batchPosterManager()).to.eq(
       await batchPosterManager.getAddress()
     )
@@ -1471,7 +1469,7 @@ describe('ArbRollup', () => {
 
   it('should fail the chainid fork check', async function () {
     await expect(sequencerInbox.removeDelayAfterFork()).to.revertedWith(
-      'NotForked()'
+      'NotForked'
     )
   })
 
@@ -1485,7 +1483,7 @@ describe('ArbRollup', () => {
         0,
         0
       )
-    ).to.revertedWith('NotBatchPoster()')
+    ).to.revertedWith('NotBatchPoster')
   })
 
   it('should fail the onlyValidator check', async function () {
