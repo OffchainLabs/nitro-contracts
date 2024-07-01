@@ -38,7 +38,7 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
 
         // inbox holds native token in transit used to pay for retryable tickets, approve bridge to use it
         address nativeToken = IERC20Bridge(address(bridge)).nativeToken();
-        IERC20(nativeToken).approve(address(bridge), type(uint256).max);
+        IERC20(nativeToken).safeApprove(address(bridge), type(uint256).max);
     }
 
     /// @inheritdoc IERC20Inbox
