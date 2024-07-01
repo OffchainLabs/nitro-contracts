@@ -3,6 +3,8 @@ pragma solidity ^0.8.4;
 
 import "forge-std/Test.sol";
 import "../../src/chain/CacheManager.sol";
+import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract CacheManagerTest is Test {
     CacheManager public cacheManager;
@@ -14,9 +16,20 @@ contract CacheManagerTest is Test {
     ArbWasmCacheMock internal constant ARB_WASM_CACHE = ArbWasmCacheMock(address(0x72));
 
     constructor() {
+        ProxyAdmin proxyAdmin = new ProxyAdmin();
+        CacheManager cacheManagerImpl = new CacheManager();
+        cacheManager = CacheManager(
+            address(
+                new TransparentUpgradeableProxy(
+                    address(cacheManagerImpl),
+                    address(proxyAdmin),
+                    ""
+                )
+            )
+        );
         uint64 cacheSize = 1_000_000;
         uint64 decay = 100;
-        cacheManager = new CacheManager(cacheSize, decay);
+        cacheManager.initialize(cacheSize, decay);
         require(cacheManager.cacheSize() == cacheSize, "wrong cache size");
         require(cacheManager.decay() == decay, "wrong decay rate");
 

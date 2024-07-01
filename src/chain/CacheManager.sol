@@ -7,9 +7,11 @@ pragma solidity ^0.8.0;
 import "../precompiles/ArbOwnerPublic.sol";
 import "../precompiles/ArbWasm.sol";
 import "../precompiles/ArbWasmCache.sol";
+import "../libraries/DelegateCallAware.sol";
 import "solady/src/utils/MinHeapLib.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract CacheManager {
+contract CacheManager is Initializable, DelegateCallAware {
     using MinHeapLib for MinHeapLib.Heap;
 
     ArbOwnerPublic internal constant ARB_OWNER_PUBLIC = ArbOwnerPublic(address(0x6b));
@@ -47,7 +49,7 @@ contract CacheManager {
         uint192 bid;
     }
 
-    constructor(uint64 initCacheSize, uint64 initDecay) {
+    function initialize(uint64 initCacheSize, uint64 initDecay) external initializer onlyDelegated {
         cacheSize = initCacheSize;
         decay = initDecay;
     }
