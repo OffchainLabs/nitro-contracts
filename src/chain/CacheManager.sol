@@ -34,7 +34,7 @@ contract CacheManager {
     error BidsArePaused();
     error MakeSpaceTooLarge(uint64 size, uint64 limit);
 
-    event InsertBid(bytes32 indexed codehash, uint192 bid, uint64 size);
+    event InsertBid(bytes32 indexed codehash, address program, uint192 bid, uint64 size);
     event DeleteBid(bytes32 indexed codehash, uint192 bid, uint64 size);
     event SetCacheSize(uint64 size);
     event SetDecayRate(uint64 decay);
@@ -151,8 +151,14 @@ contract CacheManager {
 
     /// @notice Returns the minimum bid required to cache the program with given codehash.
     ///         Value returned here is the minimum bid that you can send with msg.value
-    function getMinBid(bytes32 codehash) external view returns (uint192 min) {
+    function getMinBid(bytes32 codehash) public view returns (uint192 min) {
         return getMinBid(_asmSize(codehash));
+    }
+
+    /// @notice Returns the minimum bid required to cache the program at given address.
+    ///         Value returned here is the minimum bid that you can send with msg.value
+    function getMinBid(address program) external view returns (uint192 min) {
+        return getMinBid(program.codehash);
     }
 
     /// @notice Sends all revenue to the network fee account.
@@ -167,18 +173,19 @@ contract CacheManager {
         }
     }
 
-    /// @notice Places a bid, reverting if payment is insufficient.
-    function placeBid(bytes32 codehash) external payable {
+    /// Places a bid, reverting if payment is insufficient.
+    function placeBid(address program) external payable {
         if (isPaused) {
             revert BidsArePaused();
         }
+        bytes32 codehash = program.codehash;
         if (_isCached(codehash)) {
             revert AlreadyCached(codehash);
         }
 
         uint64 asm = _asmSize(codehash);
         (uint192 bid, uint64 index) = _makeSpace(asm);
-        return _addBid(bid, codehash, asm, index);
+        return _addBid(bid, program, codehash, asm, index);
     }
 
     /// @notice Evicts entries until enough space exists in the cache, reverting if payment is insufficient.
@@ -230,6 +237,7 @@ contract CacheManager {
     /// @dev Adds a bid
     function _addBid(
         uint192 bid,
+        address program,
         bytes32 code,
         uint64 size,
         uint64 index
@@ -239,7 +247,7 @@ contract CacheManager {
         }
 
         Entry memory entry = Entry({size: size, code: code, bid: bid});
-        ARB_WASM_CACHE.cacheCodehash(code);
+        ARB_WASM_CACHE.cacheProgram(program);
         bids.push(_packBid(bid, index));
         queueSize += size;
         if (index == entries.length) {
@@ -247,7 +255,7 @@ contract CacheManager {
         } else {
             entries[index] = entry;
         }
-        emit InsertBid(code, bid, size);
+        emit InsertBid(code, program, bid, size);
     }
 
     /// @dev Clears the entry at the given index
