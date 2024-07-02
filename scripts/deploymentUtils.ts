@@ -10,6 +10,7 @@ import { Toolkit4844 } from '../test/contract/toolkit4844'
 import {
   ArbOwner__factory,
   ArbSys__factory,
+  CacheManager__factory,
   ProxyAdmin__factory,
   TransparentUpgradeableProxy__factory,
 } from '../build/types'
@@ -270,7 +271,12 @@ export async function deployAndSetCacheManager(
     verify
   )
 
-  await (await cacheManagerProxy.initialize(INIT_CACHE_SIZE, INIT_DECAY)).wait()
+  const cacheManager = CacheManager__factory.connect(
+    cacheManagerProxy.address,
+    chainOwnerWallet
+  )
+
+  await (await cacheManager.initialize(INIT_CACHE_SIZE, INIT_DECAY)).wait()
 
   const arbOwner = ArbOwner__factory.connect(
     ARB_OWNER_ADDRESS,
