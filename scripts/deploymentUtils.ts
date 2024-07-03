@@ -11,8 +11,6 @@ import {
   ArbOwner__factory,
   ArbSys__factory,
   CacheManager__factory,
-  ProxyAdmin__factory,
-  TransparentUpgradeableProxy__factory,
 } from '../build/types'
 
 const INIT_CACHE_SIZE = 536870912
