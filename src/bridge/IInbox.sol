@@ -77,8 +77,8 @@ interface IInbox is IInboxBase {
      * @param to destination L2 contract address
      * @param l2CallValue call value for retryable L2 message
      * @param maxSubmissionCost Max gas deducted from user's L2 balance to cover base submission fee
-     * @param excessFeeRefundAddress gasLimit x maxFeePerGas - execution cost gets credited here on L2 balance
-     * @param callValueRefundAddress l2Callvalue gets credited here on L2 if retryable txn times out or gets cancelled
+     * @param excessFeeRefundAddress the address which receives the difference between execution fee paid and the actual execution cost. In case this address is a contract, funds will be received in its alias on L2.
+     * @param callValueRefundAddress l2Callvalue gets credited here on L2 if retryable txn times out or gets cancelled. In case this address is a contract, funds will be received in its alias on L2.
      * @param gasLimit Max gas deducted from user's L2 balance to cover L2 execution. Should not be set to 1 (magic value used to trigger the RetryableData error)
      * @param maxFeePerGas price bid for L2 execution. Should not be set to 1 (magic value used to trigger the RetryableData error)
      * @param data ABI encoded data of L2 message
@@ -105,7 +105,7 @@ interface IInbox is IInboxBase {
      * @param to destination L2 contract address
      * @param l2CallValue call value for retryable L2 message
      * @param maxSubmissionCost Max gas deducted from user's L2 balance to cover base submission fee
-     * @param excessFeeRefundAddress gasLimit x maxFeePerGas - execution cost gets credited here on L2 balance
+     * @param excessFeeRefundAddress the address which receives the difference between execution fee paid and the actual execution cost
      * @param callValueRefundAddress l2Callvalue gets credited here on L2 if retryable txn times out or gets cancelled
      * @param gasLimit Max gas deducted from user's L2 balance to cover L2 execution. Should not be set to 1 (magic value used to trigger the RetryableData error)
      * @param maxFeePerGas price bid for L2 execution. Should not be set to 1 (magic value used to trigger the RetryableData error)

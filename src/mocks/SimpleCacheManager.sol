@@ -7,7 +7,7 @@ import "../precompiles/ArbWasmCache.sol";
 
 contract SimpleCacheManager {
     function cacheProgram(address program) external {
-        ArbWasmCache(address(0x72)).cacheCodehash(codehash(program));
+        ArbWasmCache(address(0x72)).cacheProgram(program);
     }
 
     function evictProgram(address program) external {

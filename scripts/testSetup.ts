@@ -1,8 +1,7 @@
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { L1Network, L2Network } from '@arbitrum/sdk'
 import { execSync } from 'child_process'
-import { Bridge__factory } from '@arbitrum/sdk/dist/lib/abi/factories/Bridge__factory'
-import { RollupAdminLogic__factory } from '@arbitrum/sdk/dist/lib/abi/factories/RollupAdminLogic__factory'
+import { Bridge__factory, RollupAdminLogic__factory } from '../build/types'
 
 export function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -77,6 +76,8 @@ export const getLocalNetworks = async (
     isCustom: true,
     name: 'ArbLocal',
     partnerChainID: l1NetworkInfo.chainId,
+    partnerChainIDs: [],
+    blockTime: 1,
     retryableLifetimeSeconds: 7 * 24 * 60 * 60,
     nitroGenesisBlock: 0,
     nitroGenesisL1Block: 0,
