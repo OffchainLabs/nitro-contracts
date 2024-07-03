@@ -22,7 +22,7 @@ import {
   RollupCore__factory,
   RollupCreator__factory,
 } from '../../build/types'
-import { getLocalNetworks, sleep } from '../../scripts/testSetup'
+import { getLocalNetworks } from '../../scripts/testSetup'
 import { applyAlias } from '../contract/utils'
 import { BigNumber, ContractTransaction, Wallet, ethers } from 'ethers'
 
