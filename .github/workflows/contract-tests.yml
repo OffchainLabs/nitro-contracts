@@ -152,6 +152,7 @@ jobs:
           no-token-bridge: true
           no-l3-token-bridge: true
           nitro-contracts-branch: '${{ github.head_ref }}'
+          nitro-testnode-ref: node-18
 
       - name: Setup node/yarn
         uses: actions/setup-node@v3
@@ -183,6 +184,7 @@ jobs:
           no-token-bridge: true
           no-l3-token-bridge: true
           nitro-contracts-branch: '${{ github.head_ref }}'
+          nitro-testnode-ref: node-18
 
       - name: Setup node/yarn
         uses: actions/setup-node@v3
@@ -214,7 +216,7 @@ jobs:
           no-token-bridge: true
           no-l3-token-bridge: true
           nitro-contracts-branch: '${{ github.head_ref }}'
-          nitro-testnode-ref: 'non18-decimal-token'
+          nitro-testnode-ref: 'non18-decimal-token-node-18'
 
       - name: Setup node/yarn
         uses: actions/setup-node@v3
