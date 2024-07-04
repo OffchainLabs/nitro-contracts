@@ -26,8 +26,8 @@ import { getLocalNetworks } from '../../scripts/testSetup'
 import { applyAlias } from '../contract/utils'
 import { BigNumber, ContractTransaction, Wallet, ethers } from 'ethers'
 
-const LOCALHOST_L2_RPC = 'http://localhost:8547'
-const LOCALHOST_L3_RPC = 'http://localhost:3347'
+const LOCALHOST_L2_RPC = 'http://127.0.0.1:8547'
+const LOCALHOST_L3_RPC = 'http://127.0.0.1:3347'
 
 // when code at address is empty, ethers.js returns '0x'
 const EMPTY_CODE_LENGTH = 2
