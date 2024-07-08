@@ -325,4 +325,9 @@ contract Inbox is AbsInbox, IInbox {
             kind, AddressAliasHelper.applyL1ToL2Alias(sender), messageDataHash
         );
     }
+
+    /// @inheritdoc AbsInbox
+    function _fromNativeTo18Decimals(uint256 value) internal pure override returns (uint256) {
+        return value;
+    }
 }

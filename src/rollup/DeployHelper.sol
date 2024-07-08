@@ -6,8 +6,8 @@ pragma solidity ^0.8.0;
 
 import {IInbox} from "../bridge/IInbox.sol";
 import {IInboxBase} from "../bridge/IInboxBase.sol";
-import {IERC20Bridge} from "../bridge/IERC20Bridge.sol";
 import {IERC20Inbox} from "../bridge/ERC20Inbox.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /// @notice Helper contract for deploying some keyless deployment to Arbitrum using delayed inbox
 contract DeployHelper {
@@ -48,14 +48,27 @@ contract DeployHelper {
         uint256 _value,
         address _l2Address,
         bytes memory payload,
-        bool _isUsingFeeToken,
+        address _nativeToken,
         uint256 maxFeePerGas
     ) internal {
         uint256 submissionCost = IInboxBase(inbox).calculateRetryableSubmissionFee(0, block.basefee);
         uint256 feeAmount = _value + submissionCost + GASLIMIT * maxFeePerGas;
 
         // fund the target L2 address
-        if (_isUsingFeeToken) {
+        if (_nativeToken != address(0)) {
+            // calculate the fee amount in the native token's decimals
+            uint256 feeAmountNativeDenominated = feeAmount;
+            uint8 decimals = ERC20(_nativeToken).decimals();
+            if (decimals < 18) {
+                feeAmountNativeDenominated = feeAmount / (10 ** (18 - decimals));
+                // round up if necessary
+                if (feeAmountNativeDenominated * (10 ** (18 - decimals)) < feeAmount) {
+                    feeAmountNativeDenominated++;
+                }
+            } else if (decimals > 18) {
+                feeAmountNativeDenominated = feeAmount * (10 ** (decimals - 18));
+            }
+
             IERC20Inbox(inbox).createRetryableTicket({
                 to: _l2Address,
                 l2CallValue: _value,
@@ -64,7 +77,7 @@ contract DeployHelper {
                 callValueRefundAddress: msg.sender,
                 gasLimit: GASLIMIT,
                 maxFeePerGas: maxFeePerGas,
-                tokenTotalFeeAmount: feeAmount,
+                tokenTotalFeeAmount: feeAmountNativeDenominated,
                 data: ""
             });
         } else {
@@ -88,33 +101,31 @@ contract DeployHelper {
         address _nativeToken,
         uint256 _maxFeePerGas
     ) external payable {
-        bool isUsingFeeToken = _nativeToken != address(0);
-
         _fundAndDeploy(
             _inbox,
             NICK_CREATE2_VALUE,
             NICK_CREATE2_DEPLOYER,
             NICK_CREATE2_PAYLOAD,
-            isUsingFeeToken,
+            _nativeToken,
             _maxFeePerGas
         );
         _fundAndDeploy(
-            _inbox, ERC2470_VALUE, ERC2470_DEPLOYER, ERC2470_PAYLOAD, isUsingFeeToken, _maxFeePerGas
+            _inbox, ERC2470_VALUE, ERC2470_DEPLOYER, ERC2470_PAYLOAD, _nativeToken, _maxFeePerGas
         );
         _fundAndDeploy(
             _inbox,
             ZOLTU_VALUE,
             ZOLTU_CREATE2_DEPLOYER,
             ZOLTU_CREATE2_PAYLOAD,
-            isUsingFeeToken,
+            _nativeToken,
             _maxFeePerGas
         );
         _fundAndDeploy(
-            _inbox, ERC1820_VALUE, ERC1820_DEPLOYER, ERC1820_PAYLOAD, isUsingFeeToken, _maxFeePerGas
+            _inbox, ERC1820_VALUE, ERC1820_DEPLOYER, ERC1820_PAYLOAD, _nativeToken, _maxFeePerGas
         );
 
         // if paying with ETH refund the caller
-        if (!isUsingFeeToken) {
+        if (_nativeToken == address(0)) {
             payable(msg.sender).transfer(address(this).balance);
         }
     }

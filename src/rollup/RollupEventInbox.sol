@@ -18,4 +18,12 @@ contract RollupEventInbox is AbsRollupEventInbox {
             INITIALIZATION_MSG_TYPE, address(0), keccak256(initMsg)
         );
     }
+
+    function _currentDataCostToReport() internal view override returns (uint256) {
+        uint256 currentDataCost = block.basefee;
+        if (ArbitrumChecker.runningOnArbitrum()) {
+            currentDataCost += ArbGasInfo(address(0x6c)).getL1BaseFeeEstimate();
+        }
+        return currentDataCost;
+    }
 }

@@ -32,6 +32,9 @@ contract BridgeStub is IBridge, IEthBridge {
     address public sequencerInbox;
     uint256 public override sequencerReportedSubMessageCount;
 
+    address public nativeToken;
+    uint8 public nativeTokenDecimals;
+
     function setSequencerInbox(address _sequencerInbox) external override {
         sequencerInbox = _sequencerInbox;
         emit SequencerInboxUpdated(_sequencerInbox);

@@ -25,6 +25,11 @@ contract OutboxTest is AbsOutboxTest {
     }
 
     /* solhint-disable func-name-mixedcase */
+    function test_initialize_revert_AlreadyInit() public {
+        vm.expectRevert(abi.encodeWithSelector(AlreadyInit.selector));
+        ethOutbox.initialize(IBridge(bridge));
+    }
+
     function test_executeTransaction() public {
         // fund bridge with some ether
         vm.deal(address(bridge), 100 ether);

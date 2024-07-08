@@ -12,6 +12,7 @@
   "executeCall(address,uint256,bytes)": "9e5d4c49",
   "initialize(address,address)": "485cc955",
   "nativeToken()": "e1758bd8",
+  "nativeTokenDecimals()": "ad48cb5e",
   "rollup()": "cb23bcb5",
   "sequencerInbox()": "ee35f327",
   "sequencerInboxAccs(uint256)": "16bf5579",
