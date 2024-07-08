@@ -16,9 +16,11 @@ contract FakeStakingPool is AbsBoldStakingPool {
     FundsHolder public immutable fundsHolder;
     uint256 immutable reqStake;
 
-    constructor(address _stakeToken, FundsHolder _fundsHolder, uint256 _reqStake)
-        AbsBoldStakingPool(_stakeToken)
-    {
+    constructor(
+        address _stakeToken,
+        FundsHolder _fundsHolder,
+        uint256 _reqStake
+    ) AbsBoldStakingPool(_stakeToken) {
         fundsHolder = _fundsHolder;
         reqStake = _reqStake;
     }

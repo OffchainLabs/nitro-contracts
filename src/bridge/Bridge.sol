@@ -27,11 +27,11 @@ contract Bridge is AbsBridge, IEthBridge {
     }
 
     /// @inheritdoc IEthBridge
-    function enqueueDelayedMessage(uint8 kind, address sender, bytes32 messageDataHash)
-        external
-        payable
-        returns (uint256)
-    {
+    function enqueueDelayedMessage(
+        uint8 kind,
+        address sender,
+        bytes32 messageDataHash
+    ) external payable returns (uint256) {
         return _enqueueDelayedMessage(kind, sender, messageDataHash, msg.value);
     }
 
@@ -39,11 +39,11 @@ contract Bridge is AbsBridge, IEthBridge {
         // do nothing as Eth transfer is part of TX execution
     }
 
-    function _executeLowLevelCall(address to, uint256 value, bytes memory data)
-        internal
-        override
-        returns (bool success, bytes memory returnData)
-    {
+    function _executeLowLevelCall(
+        address to,
+        uint256 value,
+        bytes memory data
+    ) internal override returns (bool success, bytes memory returnData) {
         // solhint-disable-next-line avoid-low-level-calls
         (success, returnData) = to.call{value: value}(data);
     }

@@ -13,15 +13,16 @@ interface IEdgeStakingPoolCreator {
     /// @notice Create an edge staking pool contract
     /// @param challengeManager EdgeChallengeManager contract
     /// @param edgeId The ID of the edge to be created (see ChallengeEdgeLib.id)
-    function createPool(address challengeManager, bytes32 edgeId)
-        external
-        returns (IEdgeStakingPool);
+    function createPool(
+        address challengeManager,
+        bytes32 edgeId
+    ) external returns (IEdgeStakingPool);
 
     /// @notice get staking pool deployed with provided inputs; reverts if pool contract doesn't exist.
     /// @param challengeManager EdgeChallengeManager contract
     /// @param edgeId The ID of the edge to be created (see ChallengeEdgeLib.id)
-    function getPool(address challengeManager, bytes32 edgeId)
-        external
-        view
-        returns (IEdgeStakingPool);
+    function getPool(
+        address challengeManager,
+        bytes32 edgeId
+    ) external view returns (IEdgeStakingPool);
 }

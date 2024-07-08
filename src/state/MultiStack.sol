@@ -12,11 +12,11 @@ struct MultiStack {
 library MultiStackLib {
     bytes32 internal constant NO_STACK_HASH = ~bytes32(0);
 
-    function hash(MultiStack memory multi, bytes32 activeStackHash, bool cothread)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function hash(
+        MultiStack memory multi,
+        bytes32 activeStackHash,
+        bool cothread
+    ) internal pure returns (bytes32) {
         require(activeStackHash != NO_STACK_HASH, "MULTISTACK_NOSTACK_ACTIVE");
         if (cothread) {
             require(multi.inactiveStackHash != NO_STACK_HASH, "MULTISTACK_NOSTACK_MAIN");

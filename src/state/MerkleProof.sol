@@ -16,11 +16,11 @@ library MerkleProofLib {
     using ModuleLib for Module;
     using ValueLib for Value;
 
-    function computeRootFromValue(MerkleProof memory proof, uint256 index, Value memory leaf)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function computeRootFromValue(
+        MerkleProof memory proof,
+        uint256 index,
+        Value memory leaf
+    ) internal pure returns (bytes32) {
         return computeRootUnsafe(proof, index, leaf.hash(), "Value merkle tree:");
     }
 
@@ -32,20 +32,20 @@ library MerkleProofLib {
         return computeRootUnsafe(proof, index, Instructions.hash(code), "Instruction merkle tree:");
     }
 
-    function computeRootFromFunction(MerkleProof memory proof, uint256 index, bytes32 codeRoot)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function computeRootFromFunction(
+        MerkleProof memory proof,
+        uint256 index,
+        bytes32 codeRoot
+    ) internal pure returns (bytes32) {
         bytes32 h = keccak256(abi.encodePacked("Function:", codeRoot));
         return computeRootUnsafe(proof, index, h, "Function merkle tree:");
     }
 
-    function computeRootFromMemory(MerkleProof memory proof, uint256 index, bytes32 contents)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function computeRootFromMemory(
+        MerkleProof memory proof,
+        uint256 index,
+        bytes32 contents
+    ) internal pure returns (bytes32) {
         bytes32 h = keccak256(abi.encodePacked("Memory leaf:", contents));
         return computeRootUnsafe(proof, index, h, "Memory merkle tree:");
     }
@@ -71,11 +71,11 @@ library MerkleProofLib {
         return computeRootUnsafe(proof, index, h, "Table merkle tree:");
     }
 
-    function computeRootFromModule(MerkleProof memory proof, uint256 index, Module memory mod)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function computeRootFromModule(
+        MerkleProof memory proof,
+        uint256 index,
+        Module memory mod
+    ) internal pure returns (bytes32) {
         return computeRootUnsafe(proof, index, mod.hash(), "Module merkle tree:");
     }
 

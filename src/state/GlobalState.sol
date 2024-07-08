@@ -50,11 +50,10 @@ library GlobalStateLib {
         );
     }
 
-    function comparePositions(GlobalState calldata a, GlobalState calldata b)
-        internal
-        pure
-        returns (int256)
-    {
+    function comparePositions(
+        GlobalState calldata a,
+        GlobalState calldata b
+    ) internal pure returns (int256) {
         uint64 aPos = a.getInboxPosition();
         uint64 bPos = b.getInboxPosition();
         if (aPos < bPos) {
@@ -74,11 +73,10 @@ library GlobalStateLib {
         }
     }
 
-    function comparePositionsAgainstStartOfBatch(GlobalState calldata a, uint256 bPos)
-        internal
-        pure
-        returns (int256)
-    {
+    function comparePositionsAgainstStartOfBatch(
+        GlobalState calldata a,
+        uint256 bPos
+    ) internal pure returns (int256) {
         uint64 aPos = a.getInboxPosition();
         if (aPos < bPos) {
             return -1;

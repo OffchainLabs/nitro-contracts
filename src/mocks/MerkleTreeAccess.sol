@@ -20,27 +20,25 @@ contract MerkleTreeAccess {
         return MerkleTreeLib.root(me);
     }
 
-    function appendCompleteSubTree(bytes32[] memory me, uint256 level, bytes32 subtreeRoot)
-        external
-        pure
-        returns (bytes32[] memory)
-    {
+    function appendCompleteSubTree(
+        bytes32[] memory me,
+        uint256 level,
+        bytes32 subtreeRoot
+    ) external pure returns (bytes32[] memory) {
         return MerkleTreeLib.appendCompleteSubTree(me, level, subtreeRoot);
     }
 
-    function appendLeaf(bytes32[] memory me, bytes32 leaf)
-        external
-        pure
-        returns (bytes32[] memory)
-    {
+    function appendLeaf(
+        bytes32[] memory me,
+        bytes32 leaf
+    ) external pure returns (bytes32[] memory) {
         return MerkleTreeLib.appendLeaf(me, leaf);
     }
 
-    function maximumAppendBetween(uint256 startSize, uint256 endSize)
-        external
-        pure
-        returns (uint256)
-    {
+    function maximumAppendBetween(
+        uint256 startSize,
+        uint256 endSize
+    ) external pure returns (uint256) {
         return MerkleTreeLib.maximumAppendBetween(startSize, endSize);
     }
 

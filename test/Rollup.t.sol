@@ -1068,10 +1068,11 @@ contract RollupTest is Test {
         return (data.e1Id, e2Id);
     }
 
-    function fillStatesInBetween(bytes32 start, bytes32 end, uint256 totalCount)
-        internal
-        returns (bytes32[] memory)
-    {
+    function fillStatesInBetween(
+        bytes32 start,
+        bytes32 end,
+        uint256 totalCount
+    ) internal returns (bytes32[] memory) {
         bytes32[] memory innerStates = rand.hashes(totalCount - 2);
 
         bytes32[] memory states = new bytes32[](totalCount);
@@ -1368,10 +1369,11 @@ contract RollupTest is Test {
         userRollup.fastConfirmAssertion(assertionHash, genesisHash, firstState, inboxAccs);
     }
 
-    function _testFastConfirmNewAssertion(address by, string memory err, bool isCreated)
-        internal
-        returns (AssertionInputs memory, bytes32)
-    {
+    function _testFastConfirmNewAssertion(
+        address by,
+        string memory err,
+        bool isCreated
+    ) internal returns (AssertionInputs memory, bytes32) {
         uint64 inboxcount = uint64(_createNewBatch());
         AssertionState memory beforeState;
         beforeState.machineStatus = MachineStatus.FINISHED;

@@ -47,11 +47,10 @@ abstract contract AbsRollupEventInbox is
         rollup = newRollup;
     }
 
-    function rollupInitialized(uint256 chainId, string calldata chainConfig)
-        external
-        override
-        onlyRollup
-    {
+    function rollupInitialized(
+        uint256 chainId,
+        string calldata chainConfig
+    ) external override onlyRollup {
         require(bytes(chainConfig).length > 0, "EMPTY_CHAIN_CONFIG");
         uint8 initMsgVersion = 1;
         uint256 currentDataCost = block.basefee;

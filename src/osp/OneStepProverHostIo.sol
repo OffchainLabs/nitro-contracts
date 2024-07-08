@@ -367,7 +367,11 @@ contract OneStepProverHostIo is IOneStepProver {
         return value != 0 && (value & (value - 1) == 0);
     }
 
-    function proveLastLeaf(Machine memory mach, uint256 offset, bytes calldata proof)
+    function proveLastLeaf(
+        Machine memory mach,
+        uint256 offset,
+        bytes calldata proof
+    )
         internal
         pure
         returns (uint256 leaf, MerkleProof memory leafProof, MerkleProof memory zeroProof)

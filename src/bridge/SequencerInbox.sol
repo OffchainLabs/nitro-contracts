@@ -320,10 +320,12 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @inheritdoc ISequencerInbox
-    function addSequencerL2BatchFromOrigin(uint256, bytes calldata, uint256, IGasRefunder)
-        external
-        pure
-    {
+    function addSequencerL2BatchFromOrigin(
+        uint256,
+        bytes calldata,
+        uint256,
+        IGasRefunder
+    ) external pure {
         revert Deprecated();
     }
 
@@ -524,9 +526,10 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         );
     }
 
-    function delayProofImpl(uint256 afterDelayedMessagesRead, DelayProof memory delayProof)
-        internal
-    {
+    function delayProofImpl(
+        uint256 afterDelayedMessagesRead,
+        DelayProof memory delayProof
+    ) internal {
         // buffer update depends on new delayed messages. if none are read, no buffer update is proccessed
         if (afterDelayedMessagesRead > totalDelayedMessagesRead) {
             if (buffer.isUpdatable()) {
@@ -600,11 +603,10 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     /// @param  afterDelayedMessagesRead The delayed messages count read up to
     /// @return The data hash
     /// @return The timebounds within which the message should be processed
-    function formCallDataHash(bytes calldata data, uint256 afterDelayedMessagesRead)
-        internal
-        view
-        returns (bytes32, IBridge.TimeBounds memory)
-    {
+    function formCallDataHash(
+        bytes calldata data,
+        uint256 afterDelayedMessagesRead
+    ) internal view returns (bytes32, IBridge.TimeBounds memory) {
         uint256 fullDataLen = HEADER_LENGTH + data.length;
         if (fullDataLen > maxDataSize) revert DataTooLarge(fullDataLen, maxDataSize);
 
@@ -785,10 +787,10 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @inheritdoc ISequencerInbox
-    function setIsBatchPoster(address addr, bool isBatchPoster_)
-        external
-        onlyRollupOwnerOrBatchPosterManager
-    {
+    function setIsBatchPoster(
+        address addr,
+        bool isBatchPoster_
+    ) external onlyRollupOwnerOrBatchPosterManager {
         isBatchPoster[addr] = isBatchPoster_;
         emit BatchPosterSet(addr, isBatchPoster_);
         emit OwnerFunctionCalled(1);
@@ -823,10 +825,10 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @inheritdoc ISequencerInbox
-    function setIsSequencer(address addr, bool isSequencer_)
-        external
-        onlyRollupOwnerOrBatchPosterManager
-    {
+    function setIsSequencer(
+        address addr,
+        bool isSequencer_
+    ) external onlyRollupOwnerOrBatchPosterManager {
         isSequencer[addr] = isSequencer_;
         emit SequencerSet(addr, isSequencer_);
         emit OwnerFunctionCalled(4);

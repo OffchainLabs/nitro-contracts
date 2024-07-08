@@ -138,11 +138,10 @@ library EdgeChallengeManagerLib {
     /// @dev    Throws if the edge does not exist in the store
     /// @param store    The edge store to fetch an id from
     /// @param edgeId   The id of the edge to fetch
-    function get(EdgeStore storage store, bytes32 edgeId)
-        internal
-        view
-        returns (ChallengeEdge storage)
-    {
+    function get(
+        EdgeStore storage store,
+        bytes32 edgeId
+    ) internal view returns (ChallengeEdge storage) {
         if (!store.edges[edgeId].exists()) {
             revert EdgeNotExists(edgeId);
         }
@@ -153,11 +152,10 @@ library EdgeChallengeManagerLib {
     /// @dev    Useful where you already know the edge exists in the store - avoid a storage lookup
     /// @param store    The edge store to fetch an id from
     /// @param edgeId   The id of the edge to fetch
-    function getNoCheck(EdgeStore storage store, bytes32 edgeId)
-        internal
-        view
-        returns (ChallengeEdge storage)
-    {
+    function getNoCheck(
+        EdgeStore storage store,
+        bytes32 edgeId
+    ) internal view returns (ChallengeEdge storage) {
         return store.edges[edgeId];
     }
 
@@ -165,10 +163,10 @@ library EdgeChallengeManagerLib {
     /// @dev    Updates first rival info for later use in calculating time unrivaled
     /// @param store    The store to add the edge to
     /// @param edge     The edge to add
-    function add(EdgeStore storage store, ChallengeEdge memory edge)
-        internal
-        returns (EdgeAddedData memory)
-    {
+    function add(
+        EdgeStore storage store,
+        ChallengeEdge memory edge
+    ) internal returns (EdgeAddedData memory) {
         bytes32 eId = edge.idMem();
         // add the edge if it doesnt exist already
         if (store.edges[eId].exists()) {
@@ -463,11 +461,10 @@ library EdgeChallengeManagerLib {
 
     /// @notice From any given edge, get the id of the previous assertion
     /// @param edgeId           The edge to get the prev assertion hash
-    function getPrevAssertionHash(EdgeStore storage store, bytes32 edgeId)
-        internal
-        view
-        returns (bytes32)
-    {
+    function getPrevAssertionHash(
+        EdgeStore storage store,
+        bytes32 edgeId
+    ) internal view returns (bytes32) {
         ChallengeEdge storage edge = get(store, edgeId);
         while (edge.level > 0) {
             // the origin id gives us a link to the lower level
@@ -507,20 +504,18 @@ library EdgeChallengeManagerLib {
     /// @notice Is the edge a single step in length, and does it have at least one rival.
     /// @param store    The edge store containing the edge
     /// @param edgeId   The edge id to test for single step and rivaled
-    function hasLengthOneRival(EdgeStore storage store, bytes32 edgeId)
-        internal
-        view
-        returns (bool)
-    {
+    function hasLengthOneRival(
+        EdgeStore storage store,
+        bytes32 edgeId
+    ) internal view returns (bool) {
         // must be length 1 and have rivals - all rivals have the same length
         return (hasRival(store, edgeId) && store.edges[edgeId].length() == 1);
     }
 
-    function timeUnrivaledTotal(EdgeStore storage store, bytes32 edgeId)
-        internal
-        view
-        returns (uint256)
-    {
+    function timeUnrivaledTotal(
+        EdgeStore storage store,
+        bytes32 edgeId
+    ) internal view returns (uint256) {
         uint256 totalTimeUnrivaled = timeUnrivaled(store, edgeId);
         if (store.edges[edgeId].lowerChildId != bytes32(0)) {
             uint256 lowerTimer =
@@ -592,11 +587,10 @@ library EdgeChallengeManagerLib {
     ///         This value is increasing whilst an edge is unrivaled, once a rival is created
     ///         it is fixed. If an edge has rivals from the moment it is created then it will have
     ///         a zero time unrivaled
-    function timeUnrivaled(EdgeStore storage store, bytes32 edgeId)
-        internal
-        view
-        returns (uint256)
-    {
+    function timeUnrivaled(
+        EdgeStore storage store,
+        bytes32 edgeId
+    ) internal view returns (uint256) {
         if (!store.edges[edgeId].exists()) {
             revert EdgeNotExists(edgeId);
         }

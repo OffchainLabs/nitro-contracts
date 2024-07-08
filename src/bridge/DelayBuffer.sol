@@ -79,11 +79,10 @@ library DelayBuffer {
     /// @notice Calculates the buffer changes up to the requested block number
     /// @param self The delay buffer data
     /// @param blockNumber The block number to process the delay up to
-    function calcPendingBuffer(BufferData storage self, uint64 blockNumber)
-        internal
-        view
-        returns (uint64)
-    {
+    function calcPendingBuffer(
+        BufferData storage self,
+        uint64 blockNumber
+    ) internal view returns (uint64) {
         // bufferUpdate will not overflow since inputs are uint64
         return uint64(
             calcBuffer({

@@ -29,14 +29,16 @@ interface IERC20 {
 }
 
 interface IDeployHelper {
-    function getDeploymentTotalCost(address inbox, uint256 maxFeePerGas)
-        external
-        view
-        returns (uint256);
+    function getDeploymentTotalCost(
+        address inbox,
+        uint256 maxFeePerGas
+    ) external view returns (uint256);
 
-    function perform(address _inbox, address _nativeToken, uint256 _maxFeePerGas)
-        external
-        payable;
+    function perform(
+        address _inbox,
+        address _nativeToken,
+        uint256 _maxFeePerGas
+    ) external payable;
 }
 
 interface IInboxBase {

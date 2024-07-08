@@ -279,11 +279,11 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         return keccak256(abi.encodePacked(l2Sender, to, l2Block, l1Block, l2Timestamp, value, data));
     }
 
-    function calculateMerkleRoot(bytes32[] memory proof, uint256 path, bytes32 item)
-        public
-        pure
-        returns (bytes32)
-    {
+    function calculateMerkleRoot(
+        bytes32[] memory proof,
+        uint256 path,
+        bytes32 item
+    ) public pure returns (bytes32) {
         return MerkleLib.calculateRoot(proof, path, keccak256(abi.encodePacked(item)));
     }
 

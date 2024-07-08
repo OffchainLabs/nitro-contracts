@@ -62,11 +62,11 @@ library ValueLib {
         }
     }
 
-    function newPc(uint32 funcPc, uint32 func, uint32 module)
-        internal
-        pure
-        returns (Value memory)
-    {
+    function newPc(
+        uint32 funcPc,
+        uint32 func,
+        uint32 module
+    ) internal pure returns (Value memory) {
         uint256 data = 0;
         data |= funcPc;
         data |= uint256(func) << 32;

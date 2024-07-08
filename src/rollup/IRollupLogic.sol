@@ -27,8 +27,10 @@ interface IRollupUser is IRollupCore, IOwnable {
         bytes32 inboxAcc
     ) external;
 
-    function stakeOnNewAssertion(AssertionInputs calldata assertion, bytes32 expectedAssertionHash)
-        external;
+    function stakeOnNewAssertion(
+        AssertionInputs calldata assertion,
+        bytes32 expectedAssertionHash
+    ) external;
 
     function returnOldDeposit() external;
 

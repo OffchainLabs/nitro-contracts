@@ -41,10 +41,10 @@ contract ValidatorWallet is OwnableUpgradeable, DelegateCallAware, GasRefundEnab
     event ExecutorUpdated(address indexed executor, bool isExecutor);
 
     /// @dev updates the executor addresses
-    function setExecutor(address[] calldata newExecutors, bool[] calldata isExecutor)
-        external
-        onlyOwner
-    {
+    function setExecutor(
+        address[] calldata newExecutors,
+        bool[] calldata isExecutor
+    ) external onlyOwner {
         if (newExecutors.length != isExecutor.length) {
             revert BadArrayLength(newExecutors.length, isExecutor.length);
         }
@@ -78,10 +78,10 @@ contract ValidatorWallet is OwnableUpgradeable, DelegateCallAware, GasRefundEnab
     event AllowedExecutorDestinationsUpdated(address indexed destination, bool isSet);
 
     /// @notice updates the destination addresses which executors are allowed to call
-    function setAllowedExecutorDestinations(address[] calldata destinations, bool[] calldata isSet)
-        external
-        onlyOwner
-    {
+    function setAllowedExecutorDestinations(
+        address[] calldata destinations,
+        bool[] calldata isSet
+    ) external onlyOwner {
         if (destinations.length != isSet.length) {
             revert BadArrayLength(destinations.length, isSet.length);
         }
@@ -135,10 +135,11 @@ contract ValidatorWallet is OwnableUpgradeable, DelegateCallAware, GasRefundEnab
         }
     }
 
-    function executeTransaction(bytes calldata data, address destination, uint256 amount)
-        external
-        payable
-    {
+    function executeTransaction(
+        bytes calldata data,
+        address destination,
+        uint256 amount
+    ) external payable {
         executeTransactionWithGasRefunder(IGasRefunder(address(0)), data, destination, amount);
     }
 

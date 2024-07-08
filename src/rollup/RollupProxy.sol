@@ -9,9 +9,10 @@ import "./IRollupAdmin.sol";
 import "./Config.sol";
 
 contract RollupProxy is AdminFallbackProxy {
-    function initializeProxy(Config memory config, ContractDependencies memory connectedContracts)
-        external
-    {
+    function initializeProxy(
+        Config memory config,
+        ContractDependencies memory connectedContracts
+    ) external {
         if (
             _getAdmin() == address(0) && _getImplementation() == address(0)
                 && _getSecondaryImplementation() == address(0)

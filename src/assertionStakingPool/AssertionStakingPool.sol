@@ -27,9 +27,10 @@ contract AssertionStakingPool is AbsBoldStakingPool, IAssertionStakingPool {
 
     /// @param _rollup Rollup contract of target chain
     /// @param _assertionHash Assertion hash to be passed into Rollup.stakeOnNewAssertion
-    constructor(address _rollup, bytes32 _assertionHash)
-        AbsBoldStakingPool(IRollupCore(_rollup).stakeToken())
-    {
+    constructor(
+        address _rollup,
+        bytes32 _assertionHash
+    ) AbsBoldStakingPool(IRollupCore(_rollup).stakeToken()) {
         if (_assertionHash == bytes32(0)) {
             revert EmptyAssertionId();
         }

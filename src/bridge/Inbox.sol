@@ -40,11 +40,10 @@ contract Inbox is AbsInbox, IInbox {
     constructor(uint256 _maxDataSize) AbsInbox(_maxDataSize) {}
 
     /// @inheritdoc IInboxBase
-    function initialize(IBridge _bridge, ISequencerInbox _sequencerInbox)
-        external
-        initializer
-        onlyDelegated
-    {
+    function initialize(
+        IBridge _bridge,
+        ISequencerInbox _sequencerInbox
+    ) external initializer onlyDelegated {
         __AbsInbox_init(_bridge, _sequencerInbox);
     }
 
@@ -308,21 +307,20 @@ contract Inbox is AbsInbox, IInbox {
     }
 
     /// @inheritdoc IInboxBase
-    function calculateRetryableSubmissionFee(uint256 dataLength, uint256 baseFee)
-        public
-        view
-        override(AbsInbox, IInboxBase)
-        returns (uint256)
-    {
+    function calculateRetryableSubmissionFee(
+        uint256 dataLength,
+        uint256 baseFee
+    ) public view override(AbsInbox, IInboxBase) returns (uint256) {
         // Use current block basefee if baseFee parameter is 0
         return (1400 + 6 * dataLength) * (baseFee == 0 ? block.basefee : baseFee);
     }
 
-    function _deliverToBridge(uint8 kind, address sender, bytes32 messageDataHash, uint256 amount)
-        internal
-        override
-        returns (uint256)
-    {
+    function _deliverToBridge(
+        uint8 kind,
+        address sender,
+        bytes32 messageDataHash,
+        uint256 amount
+    ) internal override returns (uint256) {
         return IEthBridge(address(bridge)).enqueueDelayedMessage{value: amount}(
             kind, AddressAliasHelper.applyL1ToL2Alias(sender), messageDataHash
         );

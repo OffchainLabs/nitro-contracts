@@ -28,11 +28,10 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
     address public nativeToken;
 
     /// @inheritdoc IERC20Bridge
-    function initialize(IOwnable rollup_, address nativeToken_)
-        external
-        initializer
-        onlyDelegated
-    {
+    function initialize(
+        IOwnable rollup_,
+        address nativeToken_
+    ) external initializer onlyDelegated {
         if (nativeToken_ == address(0)) revert InvalidTokenSet(nativeToken_);
         nativeToken = nativeToken_;
         _activeOutbox = EMPTY_ACTIVEOUTBOX;
@@ -54,11 +53,11 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
         IERC20(nativeToken).safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function _executeLowLevelCall(address to, uint256 value, bytes memory data)
-        internal
-        override
-        returns (bool success, bytes memory returnData)
-    {
+    function _executeLowLevelCall(
+        address to,
+        uint256 value,
+        bytes memory data
+    ) internal override returns (bool success, bytes memory returnData) {
         address _nativeToken = nativeToken;
 
         // we don't allow outgoing calls to native token contract because it could

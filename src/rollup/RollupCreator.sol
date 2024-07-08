@@ -261,10 +261,10 @@ contract RollupCreator is Ownable {
         return address(rollup);
     }
 
-    function _deployUpgradeExecutor(address rollupOwner, ProxyAdmin proxyAdmin)
-        internal
-        returns (address)
-    {
+    function _deployUpgradeExecutor(
+        address rollupOwner,
+        ProxyAdmin proxyAdmin
+    ) internal returns (address) {
         IUpgradeExecutor upgradeExecutor = IUpgradeExecutor(
             address(
                 new TransparentUpgradeableProxy(
@@ -279,9 +279,11 @@ contract RollupCreator is Ownable {
         return address(upgradeExecutor);
     }
 
-    function _deployFactories(address _inbox, address _nativeToken, uint256 _maxFeePerGas)
-        internal
-    {
+    function _deployFactories(
+        address _inbox,
+        address _nativeToken,
+        uint256 _maxFeePerGas
+    ) internal {
         if (_nativeToken == address(0)) {
             // we need to fund 4 retryable tickets
             uint256 cost =

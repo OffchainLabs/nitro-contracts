@@ -71,11 +71,10 @@ library ProofUtils {
     ///         results in the tree at size preSize + newLeaves.length
     /// @dev    The proof is the minimum number of complete sub trees that must
     ///         be appended to the pre tree in order to produce the post tree.
-    function generatePrefixProof(uint256 preSize, bytes32[] memory newLeaves)
-        internal
-        pure
-        returns (bytes32[] memory)
-    {
+    function generatePrefixProof(
+        uint256 preSize,
+        bytes32[] memory newLeaves
+    ) internal pure returns (bytes32[] memory) {
         require(preSize > 0, "Pre-size cannot be 0");
         require(newLeaves.length > 0, "No new leaves added");
 
@@ -106,11 +105,10 @@ library ProofUtils {
         return proof;
     }
 
-    function generateInclusionProof(bytes32[] memory leaves, uint256 index)
-        internal
-        pure
-        returns (bytes32[] memory)
-    {
+    function generateInclusionProof(
+        bytes32[] memory leaves,
+        uint256 index
+    ) internal pure returns (bytes32[] memory) {
         require(leaves.length >= 1, "No leaves");
         require(index < leaves.length, "Index too high");
         bytes32[][] memory fullT = fullTree(leaves);

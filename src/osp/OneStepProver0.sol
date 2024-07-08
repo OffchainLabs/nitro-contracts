@@ -26,10 +26,12 @@ contract OneStepProver0 is IOneStepProver {
         mach.status = MachineStatus.ERRORED;
     }
 
-    function executeNop(Machine memory mach, Module memory, Instruction calldata, bytes calldata)
-        internal
-        pure
-    {
+    function executeNop(
+        Machine memory mach,
+        Module memory,
+        Instruction calldata,
+        bytes calldata
+    ) internal pure {
         // :)
     }
 
@@ -56,17 +58,21 @@ contract OneStepProver0 is IOneStepProver {
         mach.valueStack.push(Value({valueType: ty, contents: uint64(inst.argumentData)}));
     }
 
-    function executeDrop(Machine memory mach, Module memory, Instruction calldata, bytes calldata)
-        internal
-        pure
-    {
+    function executeDrop(
+        Machine memory mach,
+        Module memory,
+        Instruction calldata,
+        bytes calldata
+    ) internal pure {
         mach.valueStack.pop();
     }
 
-    function executeSelect(Machine memory mach, Module memory, Instruction calldata, bytes calldata)
-        internal
-        pure
-    {
+    function executeSelect(
+        Machine memory mach,
+        Module memory,
+        Instruction calldata,
+        bytes calldata
+    ) internal pure {
         uint32 selector = mach.valueStack.pop().assumeI32();
         Value memory b = mach.valueStack.pop();
         Value memory a = mach.valueStack.pop();
@@ -78,10 +84,12 @@ contract OneStepProver0 is IOneStepProver {
         }
     }
 
-    function executeReturn(Machine memory mach, Module memory, Instruction calldata, bytes calldata)
-        internal
-        pure
-    {
+    function executeReturn(
+        Machine memory mach,
+        Module memory,
+        Instruction calldata,
+        bytes calldata
+    ) internal pure {
         StackFrame memory frame = mach.frameStack.pop();
         mach.setPc(frame.returnPc);
     }
@@ -325,11 +333,11 @@ contract OneStepProver0 is IOneStepProver {
         }
     }
 
-    function merkleProveGetValue(bytes32 merkleRoot, uint256 index, bytes calldata proof)
-        internal
-        pure
-        returns (Value memory)
-    {
+    function merkleProveGetValue(
+        bytes32 merkleRoot,
+        uint256 index,
+        bytes calldata proof
+    ) internal pure returns (Value memory) {
         uint256 offset = 0;
         Value memory proposedVal;
         MerkleProof memory merkle;
@@ -436,10 +444,12 @@ contract OneStepProver0 is IOneStepProver {
         }
     }
 
-    function executeDup(Machine memory mach, Module memory, Instruction calldata, bytes calldata)
-        internal
-        pure
-    {
+    function executeDup(
+        Machine memory mach,
+        Module memory,
+        Instruction calldata,
+        bytes calldata
+    ) internal pure {
         Value memory val = mach.valueStack.peek();
         mach.valueStack.push(val);
     }

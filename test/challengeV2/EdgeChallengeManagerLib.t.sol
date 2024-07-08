@@ -18,11 +18,10 @@ contract MockOneStepProofEntry is IOneStepProofEntry {
 
     uint256 public testMachineStep;
 
-    function getStartMachineHash(bytes32 globalStateHash, bytes32 wasmModuleRoot)
-        external
-        pure
-        returns (bytes32)
-    {
+    function getStartMachineHash(
+        bytes32 globalStateHash,
+        bytes32 wasmModuleRoot
+    ) external pure returns (bytes32) {
         return keccak256(abi.encodePacked("Machine:", globalStateHash, wasmModuleRoot));
     }
 
@@ -118,10 +117,11 @@ contract EdgeChallengeManagerLibAccess {
         return EdgeChallengeManagerLib.mandatoryBisectionHeight(start, end);
     }
 
-    function bisectEdge(bytes32 edgeId, bytes32 bisectionHistoryRoot, bytes memory prefixProof)
-        public
-        returns (bytes32, EdgeAddedData memory, EdgeAddedData memory)
-    {
+    function bisectEdge(
+        bytes32 edgeId,
+        bytes32 bisectionHistoryRoot,
+        bytes memory prefixProof
+    ) public returns (bytes32, EdgeAddedData memory, EdgeAddedData memory) {
         return store.bisectEdge(edgeId, bisectionHistoryRoot, prefixProof);
     }
 
@@ -241,9 +241,11 @@ contract EdgeChallengeManagerLibTest is Test {
         return (edge1, edge2);
     }
 
-    function checkEdgeAddedData(ChallengeEdge memory edge, bool hasRival, EdgeAddedData memory d)
-        internal
-    {
+    function checkEdgeAddedData(
+        ChallengeEdge memory edge,
+        bool hasRival,
+        EdgeAddedData memory d
+    ) internal {
         bytes32 id = edge.idMem();
         bytes32 mutualId = ChallengeEdgeLib.mutualIdComponent(
             edge.level, edge.originId, edge.startHeight, edge.startHistoryRoot, edge.endHeight
@@ -626,10 +628,10 @@ contract EdgeChallengeManagerLibTest is Test {
         return expansion;
     }
 
-    function appendRandomStates(bytes32[] memory currentStates, uint256 numStates)
-        internal
-        returns (bytes32[] memory, bytes32[] memory)
-    {
+    function appendRandomStates(
+        bytes32[] memory currentStates,
+        uint256 numStates
+    ) internal returns (bytes32[] memory, bytes32[] memory) {
         bytes32[] memory newStates = rand.hashes(numStates);
         bytes32[] memory full = ArrayUtilsLib.concat(currentStates, newStates);
         bytes32[] memory exp = ProofUtils.expansionFromLeaves(full, 0, full.length);
@@ -655,10 +657,11 @@ contract EdgeChallengeManagerLibTest is Test {
         uint256 end;
     }
 
-    function rivalStates(uint256 start, uint256 agreePoint, uint256 end)
-        internal
-        returns (bytes32[] memory, bytes32[] memory)
-    {
+    function rivalStates(
+        uint256 start,
+        uint256 agreePoint,
+        uint256 end
+    ) internal returns (bytes32[] memory, bytes32[] memory) {
         bytes32[] memory preStates = rand.hashes(start + 1);
         (bytes32[] memory agreeStates,) = appendRandomStates(preStates, agreePoint - start);
         (bytes32[] memory states1,) = appendRandomStates(agreeStates, end - agreePoint);
@@ -668,27 +671,31 @@ contract EdgeChallengeManagerLibTest is Test {
         return (states1, states2);
     }
 
-    function edgeFromStates(bytes32 originId, uint256 start, uint256 end, bytes32[] memory states)
-        internal
-        view
-        returns (ChallengeEdge memory)
-    {
+    function edgeFromStates(
+        bytes32 originId,
+        uint256 start,
+        uint256 end,
+        bytes32[] memory states
+    ) internal view returns (ChallengeEdge memory) {
         bytes32 startRoot = MerkleTreeLib.root(ProofUtils.expansionFromLeaves(states, 0, start + 1));
         bytes32 endRoot = MerkleTreeLib.root(ProofUtils.expansionFromLeaves(states, 0, end + 1));
 
         return ChallengeEdgeLib.newChildEdge(originId, startRoot, start, endRoot, end, 0);
     }
 
-    function proofGen(uint256 start, bytes32[] memory states)
-        internal
-        pure
-        returns (bytes32[] memory)
-    {
+    function proofGen(
+        uint256 start,
+        bytes32[] memory states
+    ) internal pure returns (bytes32[] memory) {
         return
             ProofUtils.generatePrefixProof(start, ArrayUtilsLib.slice(states, start, states.length));
     }
 
-    function twoRivalsFromLeaves(uint256 start, uint256 agreePoint, uint256 end)
+    function twoRivalsFromLeaves(
+        uint256 start,
+        uint256 agreePoint,
+        uint256 end
+    )
         internal
         returns (ChallengeEdge memory, ChallengeEdge memory, bytes32[] memory, bytes32[] memory)
     {
@@ -1090,11 +1097,11 @@ contract EdgeChallengeManagerLibTest is Test {
         store.bisectEdge(edgeId, edge1.endHistoryRoot, "");
     }
 
-    function bisectArgs(bytes32[] memory states, uint256 start, uint256 end)
-        internal
-        view
-        returns (uint256, bytes32, bytes memory)
-    {
+    function bisectArgs(
+        bytes32[] memory states,
+        uint256 start,
+        uint256 end
+    ) internal view returns (uint256, bytes32, bytes memory) {
         uint256 bisectionPoint = store.mandatoryBisectionHeight(start, end);
         bytes32 bisectionRoot =
             MerkleTreeLib.root(ProofUtils.expansionFromLeaves(states, 0, bisectionPoint + 1));
@@ -1108,10 +1115,11 @@ contract EdgeChallengeManagerLibTest is Test {
         return (bisectionPoint, bisectionRoot, proof);
     }
 
-    function addParentAndChildren(uint256 start, uint256 agree, uint256 end)
-        internal
-        returns (bytes32, bytes32, bytes32)
-    {
+    function addParentAndChildren(
+        uint256 start,
+        uint256 agree,
+        uint256 end
+    ) internal returns (bytes32, bytes32, bytes32) {
         (ChallengeEdge memory edge1, ChallengeEdge memory edge2, bytes32[] memory states1,) =
             twoRivalsFromLeaves(start, agree, end);
         store.add(edge1);
@@ -1136,10 +1144,12 @@ contract EdgeChallengeManagerLibTest is Test {
         store.nextEdgeLevel(NUM_BIGSTEP_LEVEL + 1, NUM_BIGSTEP_LEVEL);
     }
 
-    function bisect(ChallengeEdge memory edge, bytes32[] memory states, uint256 start, uint256 end)
-        internal
-        returns (bytes32, bytes32)
-    {
+    function bisect(
+        ChallengeEdge memory edge,
+        bytes32[] memory states,
+        uint256 start,
+        uint256 end
+    ) internal returns (bytes32, bytes32) {
         (, bytes32 bisectionRoot, bytes memory bisectionProof) = bisectArgs(states, start, end);
         (bytes32 lowerChildId,, EdgeAddedData memory upperChildAdded) =
             store.bisectEdge(edge.idMem(), bisectionRoot, bisectionProof);
@@ -1157,10 +1167,11 @@ contract EdgeChallengeManagerLibTest is Test {
         bytes32[] states2;
     }
 
-    function addParentsAndChildren(uint256 start, uint256 agree, uint256 end)
-        internal
-        returns (BArgs memory)
-    {
+    function addParentsAndChildren(
+        uint256 start,
+        uint256 agree,
+        uint256 end
+    ) internal returns (BArgs memory) {
         (
             ChallengeEdge memory edge1,
             ChallengeEdge memory edge2,
@@ -1559,10 +1570,10 @@ contract EdgeChallengeManagerLibTest is Test {
         return createZeroBlockEdge(mode, "");
     }
 
-    function createZeroBlockEdge(uint256 mode, bytes memory extraData)
-        internal
-        returns (EdgeAddedData memory)
-    {
+    function createZeroBlockEdge(
+        uint256 mode,
+        bytes memory extraData
+    ) internal returns (EdgeAddedData memory) {
         bytes memory revertArg;
         MockOneStepProofEntry entry = new MockOneStepProofEntry(0);
         uint256 expectedEndHeight = 2 ** 2;
@@ -1981,10 +1992,12 @@ contract EdgeChallengeManagerLibTest is Test {
         bool skipLast;
     }
 
-    function bisect(bytes32 edgeId, bytes32[] memory states, uint256 bisectionSize, uint256 endSize)
-        internal
-        returns (BisectionChildren memory)
-    {
+    function bisect(
+        bytes32 edgeId,
+        bytes32[] memory states,
+        uint256 bisectionSize,
+        uint256 endSize
+    ) internal returns (BisectionChildren memory) {
         bytes32[] memory middleExp = ProofUtils.expansionFromLeaves(states, 0, bisectionSize + 1);
         bytes32[] memory upperStates = ArrayUtilsLib.slice(states, bisectionSize + 1, endSize + 1);
 

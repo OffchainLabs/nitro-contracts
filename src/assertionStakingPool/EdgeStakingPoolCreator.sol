@@ -11,21 +11,20 @@ import "./interfaces/IEdgeStakingPoolCreator.sol";
 /// @notice Creates EdgeStakingPool contracts.
 contract EdgeStakingPoolCreator is IEdgeStakingPoolCreator {
     /// @inheritdoc IEdgeStakingPoolCreator
-    function createPool(address challengeManager, bytes32 edgeId)
-        external
-        returns (IEdgeStakingPool)
-    {
+    function createPool(
+        address challengeManager,
+        bytes32 edgeId
+    ) external returns (IEdgeStakingPool) {
         EdgeStakingPool pool = new EdgeStakingPool{salt: 0}(challengeManager, edgeId);
         emit NewEdgeStakingPoolCreated(challengeManager, edgeId);
         return pool;
     }
 
     /// @inheritdoc IEdgeStakingPoolCreator
-    function getPool(address challengeManager, bytes32 edgeId)
-        public
-        view
-        returns (IEdgeStakingPool)
-    {
+    function getPool(
+        address challengeManager,
+        bytes32 edgeId
+    ) public view returns (IEdgeStakingPool) {
         return IEdgeStakingPool(
             StakingPoolCreatorUtils.getPool(
                 type(EdgeStakingPool).creationCode, abi.encode(challengeManager, edgeId)

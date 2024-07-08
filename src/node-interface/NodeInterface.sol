@@ -42,10 +42,10 @@ interface NodeInterface {
      * @return root the root of the outbox accumulator
      * @return proof level-by-level branch hashes constituting a proof of the send's membership at the given size
      */
-    function constructOutboxProof(uint64 size, uint64 leaf)
-        external
-        view
-        returns (bytes32 send, bytes32 root, bytes32[] memory proof);
+    function constructOutboxProof(
+        uint64 size,
+        uint64 leaf
+    ) external view returns (bytes32 send, bytes32 root, bytes32[] memory proof);
 
     /**
      * @notice Finds the L1 batch containing a requested L2 block, reverting if none does.
@@ -78,7 +78,11 @@ interface NodeInterface {
      * @return baseFee the l2 base fee
      * @return l1BaseFeeEstimate ArbOS's l1 estimate of the l1 base fee
      */
-    function gasEstimateComponents(address to, bool contractCreation, bytes calldata data)
+    function gasEstimateComponents(
+        address to,
+        bool contractCreation,
+        bytes calldata data
+    )
         external
         payable
         returns (
@@ -102,7 +106,11 @@ interface NodeInterface {
      * @return baseFee the l2 base fee
      * @return l1BaseFeeEstimate ArbOS's l1 estimate of the l1 base fee
      */
-    function gasEstimateL1Component(address to, bool contractCreation, bytes calldata data)
+    function gasEstimateL1Component(
+        address to,
+        bool contractCreation,
+        bytes calldata data
+    )
         external
         payable
         returns (uint64 gasEstimateForL1, uint256 baseFee, uint256 l1BaseFeeEstimate);
@@ -121,7 +129,10 @@ interface NodeInterface {
      * @return amount value in L1 message in wei
      * @return calldataForL1 abi-encoded L1 message data
      */
-    function legacyLookupMessageBatchProof(uint256 batchNum, uint64 index)
+    function legacyLookupMessageBatchProof(
+        uint256 batchNum,
+        uint64 index
+    )
         external
         view
         returns (

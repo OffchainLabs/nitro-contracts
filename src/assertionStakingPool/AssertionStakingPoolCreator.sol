@@ -11,10 +11,10 @@ import "./interfaces/IAssertionStakingPoolCreator.sol";
 /// @notice Creates staking pool contract for a target assertion. Can be used for any child Arbitrum chain running on top of the deployed AssertionStakingPoolCreator's chain.
 contract AssertionStakingPoolCreator is IAssertionStakingPoolCreator {
     /// @inheritdoc IAssertionStakingPoolCreator
-    function createPool(address _rollup, bytes32 _assertionHash)
-        external
-        returns (IAssertionStakingPool)
-    {
+    function createPool(
+        address _rollup,
+        bytes32 _assertionHash
+    ) external returns (IAssertionStakingPool) {
         AssertionStakingPool assertionPool =
             new AssertionStakingPool{salt: 0}(_rollup, _assertionHash);
         emit NewAssertionPoolCreated(_rollup, _assertionHash, address(assertionPool));
@@ -22,11 +22,10 @@ contract AssertionStakingPoolCreator is IAssertionStakingPoolCreator {
     }
 
     /// @inheritdoc IAssertionStakingPoolCreator
-    function getPool(address _rollup, bytes32 _assertionHash)
-        public
-        view
-        returns (IAssertionStakingPool)
-    {
+    function getPool(
+        address _rollup,
+        bytes32 _assertionHash
+    ) public view returns (IAssertionStakingPool) {
         return IAssertionStakingPool(
             StakingPoolCreatorUtils.getPool(
                 type(AssertionStakingPool).creationCode, abi.encode(_rollup, _assertionHash)

@@ -21,21 +21,20 @@ contract ProgramTest {
         require(hash == keccak256(data[1:]));
     }
 
-    function staticcallProgram(address program, bytes calldata data)
-        external
-        view
-        returns (bytes memory)
-    {
+    function staticcallProgram(
+        address program,
+        bytes calldata data
+    ) external view returns (bytes memory) {
         (bool success, bytes memory result) = address(program).staticcall(data);
         require(success, "call failed");
         return result;
     }
 
-    function assert256(bytes memory data, string memory text, uint256 expected)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function assert256(
+        bytes memory data,
+        string memory text,
+        uint256 expected
+    ) internal pure returns (bytes memory) {
         uint256 value = abi.decode(data, (uint256));
         require(value == expected, text);
 
@@ -88,11 +87,11 @@ contract ProgramTest {
         return result;
     }
 
-    function checkRevertData(address program, bytes calldata data, bytes calldata expected)
-        external
-        payable
-        returns (bytes memory)
-    {
+    function checkRevertData(
+        address program,
+        bytes calldata data,
+        bytes calldata expected
+    ) external payable returns (bytes memory) {
         (bool success, bytes memory result) = address(program).call{value: msg.value}(data);
         require(!success, "unexpected success");
         require(result.length == expected.length, "wrong revert data length");

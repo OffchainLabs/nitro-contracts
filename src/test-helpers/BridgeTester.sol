@@ -103,10 +103,10 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
         // TODO: implement stub logic
     }
 
-    function submitBatchSpendingReport(address batchPoster, bytes32 dataHash)
-        external
-        returns (uint256)
-    {
+    function submitBatchSpendingReport(
+        address batchPoster,
+        bytes32 dataHash
+    ) external returns (uint256) {
         // TODO: implement stub
     }
 
@@ -115,12 +115,11 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
      * These messages are later sequenced in the SequencerInbox, either by the sequencer as
      * part of a normal batch, or by force inclusion.
      */
-    function enqueueDelayedMessage(uint8 kind, address sender, bytes32 messageDataHash)
-        external
-        payable
-        override
-        returns (uint256)
-    {
+    function enqueueDelayedMessage(
+        uint8 kind,
+        address sender,
+        bytes32 messageDataHash
+    ) external payable override returns (uint256) {
         if (!allowedInboxesMap[msg.sender].allowed) revert NotDelayedInbox(msg.sender);
         return addMessageToDelayedAccumulator(
             kind,
@@ -155,11 +154,11 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
         return count;
     }
 
-    function executeCall(address to, uint256 value, bytes calldata data)
-        external
-        override
-        returns (bool success, bytes memory returnData)
-    {
+    function executeCall(
+        address to,
+        uint256 value,
+        bytes calldata data
+    ) external override returns (bool success, bytes memory returnData) {
         if (!allowedOutboxesMap[msg.sender].allowed) revert NotOutbox(msg.sender);
         if (data.length > 0 && !to.isContract()) revert NotContract(to);
         address prevOutbox = _activeOutbox;

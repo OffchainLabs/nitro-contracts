@@ -9,11 +9,10 @@ import "./Utils.sol";
 import "../../src/challengeV2/libraries/ChallengeEdgeLib.sol";
 
 contract TestChallengeEdge {
-    function levelToType(uint8 level, uint8 numBigStepLevels)
-        public
-        pure
-        returns (EdgeType eType)
-    {
+    function levelToType(
+        uint8 level,
+        uint8 numBigStepLevels
+    ) public pure returns (EdgeType eType) {
         return ChallengeEdgeLib.levelToType(level, numBigStepLevels);
     }
 }
@@ -145,11 +144,10 @@ contract ChallengeEdgeLibAccess {
         return ChallengeEdgeLib.setRefunded(storageEdge);
     }
 
-    function levelToType(uint8 level, uint8 numBigStepLevels)
-        public
-        pure
-        returns (EdgeType eType)
-    {
+    function levelToType(
+        uint8 level,
+        uint8 numBigStepLevels
+    ) public pure returns (EdgeType eType) {
         return ChallengeEdgeLib.levelToType(level, numBigStepLevels);
     }
 }

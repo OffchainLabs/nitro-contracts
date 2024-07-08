@@ -14,19 +14,19 @@ import "../ERC20Mock.sol";
 import "./StateTools.sol";
 
 contract MockOneStepProofEntry is IOneStepProofEntry {
-    function getStartMachineHash(bytes32 globalStateHash, bytes32 wasmModuleRoot)
-        external
-        pure
-        returns (bytes32)
-    {
+    function getStartMachineHash(
+        bytes32 globalStateHash,
+        bytes32 wasmModuleRoot
+    ) external pure returns (bytes32) {
         return keccak256(abi.encodePacked("Machine:", globalStateHash, wasmModuleRoot));
     }
 
-    function proveOneStep(ExecutionContext calldata, uint256, bytes32, bytes calldata proof)
-        external
-        pure
-        returns (bytes32 afterHash)
-    {
+    function proveOneStep(
+        ExecutionContext calldata,
+        uint256,
+        bytes32,
+        bytes calldata proof
+    ) external pure returns (bytes32 afterHash) {
         return bytes32(proof);
     }
 
@@ -93,10 +93,10 @@ contract EdgeChallengeManagerTest is Test {
         return amounts;
     }
 
-    function appendRandomStates(bytes32[] memory currentStates, uint256 numStates)
-        internal
-        returns (bytes32[] memory, bytes32[] memory)
-    {
+    function appendRandomStates(
+        bytes32[] memory currentStates,
+        uint256 numStates
+    ) internal returns (bytes32[] memory, bytes32[] memory) {
         bytes32[] memory newStates = rand.hashes(numStates);
         bytes32[] memory full = ArrayUtilsLib.concat(currentStates, newStates);
         bytes32[] memory exp = ProofUtils.expansionFromLeaves(full, 0, full.length);
@@ -871,11 +871,10 @@ contract EdgeChallengeManagerTest is Test {
         return d;
     }
 
-    function concat(BisectionChildren[] memory arr1, BisectionChildren[] memory arr2)
-        internal
-        pure
-        returns (BisectionChildren[] memory)
-    {
+    function concat(
+        BisectionChildren[] memory arr1,
+        BisectionChildren[] memory arr2
+    ) internal pure returns (BisectionChildren[] memory) {
         BisectionChildren[] memory full = new BisectionChildren[](arr1.length + arr2.length);
         for (uint256 i = 0; i < arr1.length; i++) {
             full[i] = arr1[i];
@@ -886,11 +885,10 @@ contract EdgeChallengeManagerTest is Test {
         return full;
     }
 
-    function generateEdgeProof(bytes32[] memory states1, bytes32[] memory bigStepStates)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function generateEdgeProof(
+        bytes32[] memory states1,
+        bytes32[] memory bigStepStates
+    ) internal pure returns (bytes memory) {
         bytes32[] memory claimStartInclusionProof = ProofUtils.generateInclusionProof(
             ProofUtils.rehashed(ArrayUtilsLib.slice(states1, 0, 1)), 0
         );
@@ -2139,9 +2137,10 @@ contract EdgeChallengeManagerTest is Test {
         challengeManager.updateTimerCacheByClaim(edgeId, claimingEdgeId, maximumCachedTime);
     }
 
-    function _updateTimers(EdgeInitData memory ei, BisectionChildren[] memory allWinners)
-        internal
-    {
+    function _updateTimers(
+        EdgeInitData memory ei,
+        BisectionChildren[] memory allWinners
+    ) internal {
         _updateTimerCacheByChildren(
             ei.challengeManager, allWinners[0].upperChildId, challengePeriodBlock
         );

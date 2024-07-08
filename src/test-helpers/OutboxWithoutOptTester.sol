@@ -154,10 +154,11 @@ contract OutboxWithoutOptTester is DelegateCallAware, IOutbox {
         revert("Not implemented");
     }
 
-    function recordOutputAsSpent(bytes32[] memory proof, uint256 index, bytes32 item)
-        internal
-        returns (bytes32)
-    {
+    function recordOutputAsSpent(
+        bytes32[] memory proof,
+        uint256 index,
+        bytes32 item
+    ) internal returns (bytes32) {
         if (proof.length >= 256) revert ProofTooLong(proof.length);
         if (index >= 2 ** proof.length) revert PathNotMinimal(index, 2 ** proof.length);
 
@@ -198,12 +199,11 @@ contract OutboxWithoutOptTester is DelegateCallAware, IOutbox {
         return keccak256(abi.encodePacked(l2Sender, to, l2Block, l1Block, l2Timestamp, value, data));
     }
 
-    function calculateMerkleRoot(bytes32[] memory proof, uint256 path, bytes32 item)
-        public
-        pure
-        override
-        returns (bytes32)
-    {
+    function calculateMerkleRoot(
+        bytes32[] memory proof,
+        uint256 path,
+        bytes32 item
+    ) public pure override returns (bytes32) {
         return MerkleLib.calculateRoot(proof, path, keccak256(abi.encodePacked(item)));
     }
 }

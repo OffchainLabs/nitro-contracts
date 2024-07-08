@@ -30,11 +30,11 @@ library RollupLib {
     }
 
     // Takes in a hash of the afterState instead of the afterState itself
-    function assertionHash(bytes32 parentAssertionHash, bytes32 afterStateHash, bytes32 inboxAcc)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function assertionHash(
+        bytes32 parentAssertionHash,
+        bytes32 afterStateHash,
+        bytes32 inboxAcc
+    ) internal pure returns (bytes32) {
         // we can no longer have `hasSibling` in the assertion hash as it would allow identical assertions
         return keccak256(abi.encodePacked(parentAssertionHash, afterStateHash, inboxAcc));
     }
@@ -58,10 +58,10 @@ library RollupLib {
         );
     }
 
-    function validateConfigHash(ConfigData calldata configData, bytes32 _configHash)
-        internal
-        pure
-    {
+    function validateConfigHash(
+        ConfigData calldata configData,
+        bytes32 _configHash
+    ) internal pure {
         require(
             _configHash
                 == configHash(

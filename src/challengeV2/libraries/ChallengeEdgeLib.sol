@@ -252,9 +252,11 @@ library ChallengeEdgeLib {
 
     /// @notice Set the children of an edge
     /// @dev    Children can only be set once
-    function setChildren(ChallengeEdge storage edge, bytes32 lowerChildId, bytes32 upperChildId)
-        internal
-    {
+    function setChildren(
+        ChallengeEdge storage edge,
+        bytes32 lowerChildId,
+        bytes32 upperChildId
+    ) internal {
         if (edge.lowerChildId != 0 || edge.upperChildId != 0) {
             revert ChildrenAlreadySet(
                 ChallengeEdgeLib.id(edge), edge.lowerChildId, edge.upperChildId
@@ -296,11 +298,10 @@ library ChallengeEdgeLib {
     }
 
     /// @notice Returns the edge type for a given level, given the total number of big step levels
-    function levelToType(uint8 level, uint8 numBigStepLevels)
-        internal
-        pure
-        returns (EdgeType eType)
-    {
+    function levelToType(
+        uint8 level,
+        uint8 numBigStepLevels
+    ) internal pure returns (EdgeType eType) {
         if (level == 0) {
             return EdgeType.Block;
         } else if (level <= numBigStepLevels) {

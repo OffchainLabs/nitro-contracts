@@ -67,11 +67,10 @@ library AssertionNodeLib {
     /**
      * @notice Initialize a Assertion
      */
-    function createAssertion(bool _isFirstChild, bytes32 _configHash)
-        internal
-        view
-        returns (AssertionNode memory)
-    {
+    function createAssertion(
+        bool _isFirstChild,
+        bytes32 _configHash
+    ) internal view returns (AssertionNode memory) {
         AssertionNode memory assertion;
         assertion.createdAtBlock = uint64(block.number);
         assertion.isFirstChild = _isFirstChild;

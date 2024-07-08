@@ -171,11 +171,11 @@ contract GasRefunder is IGasRefunder, Ownable {
         emit Withdrawn(msg.sender, destination, amount);
     }
 
-    function onGasSpent(address payable refundee, uint256 gasUsed, uint256 calldataSize)
-        external
-        override
-        returns (bool success)
-    {
+    function onGasSpent(
+        address payable refundee,
+        uint256 gasUsed,
+        uint256 calldataSize
+    ) external override returns (bool success) {
         uint256 startGasLeft = gasleft();
 
         uint256 ownBalance = address(this).balance;

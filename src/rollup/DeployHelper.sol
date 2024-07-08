@@ -83,10 +83,11 @@ contract DeployHelper {
         IInboxBase(inbox).sendL2Message(payload);
     }
 
-    function perform(address _inbox, address _nativeToken, uint256 _maxFeePerGas)
-        external
-        payable
-    {
+    function perform(
+        address _inbox,
+        address _nativeToken,
+        uint256 _maxFeePerGas
+    ) external payable {
         bool isUsingFeeToken = _nativeToken != address(0);
 
         _fundAndDeploy(
@@ -118,11 +119,10 @@ contract DeployHelper {
         }
     }
 
-    function getDeploymentTotalCost(IInboxBase inbox, uint256 maxFeePerGas)
-        public
-        view
-        returns (uint256)
-    {
+    function getDeploymentTotalCost(
+        IInboxBase inbox,
+        uint256 maxFeePerGas
+    ) public view returns (uint256) {
         uint256 submissionCost = inbox.calculateRetryableSubmissionFee(0, block.basefee);
         return NICK_CREATE2_VALUE + ERC2470_VALUE + ZOLTU_VALUE + ERC1820_VALUE
             + 4 * (submissionCost + GASLIMIT * maxFeePerGas);

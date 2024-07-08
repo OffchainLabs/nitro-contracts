@@ -98,11 +98,10 @@ contract StateHashPreImageLookup {
 
     mapping(bytes32 => bytes) internal preImages;
 
-    function stateHash(ExecutionState calldata executionState, uint256 inboxMaxCount)
-        public
-        pure
-        returns (bytes32)
-    {
+    function stateHash(
+        ExecutionState calldata executionState,
+        uint256 inboxMaxCount
+    ) public pure returns (bytes32) {
         return keccak256(
             abi.encodePacked(
                 executionState.globalState.hash(), inboxMaxCount, executionState.machineStatus

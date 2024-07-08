@@ -126,11 +126,10 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     }
 
     /// @inheritdoc IBridge
-    function submitBatchSpendingReport(address sender, bytes32 messageDataHash)
-        external
-        onlySequencerInbox
-        returns (uint256)
-    {
+    function submitBatchSpendingReport(
+        address sender,
+        bytes32 messageDataHash
+    ) external onlySequencerInbox returns (uint256) {
         return addMessageToDelayedAccumulator(
             L1MessageType_batchPostingReport,
             sender,
@@ -187,10 +186,11 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     }
 
     /// @inheritdoc IBridge
-    function executeCall(address to, uint256 value, bytes calldata data)
-        external
-        returns (bool success, bytes memory returnData)
-    {
+    function executeCall(
+        address to,
+        uint256 value,
+        bytes calldata data
+    ) external returns (bool success, bytes memory returnData) {
         if (!allowedOutboxes(msg.sender)) revert NotOutbox(msg.sender);
         if (data.length > 0 && !to.isContract()) revert NotContract(to);
         address prevOutbox = _activeOutbox;
@@ -267,10 +267,11 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     /// @dev transfer funds provided to pay for crosschain msg
     function _transferFunds(uint256 amount) internal virtual;
 
-    function _executeLowLevelCall(address to, uint256 value, bytes memory data)
-        internal
-        virtual
-        returns (bool success, bytes memory returnData);
+    function _executeLowLevelCall(
+        address to,
+        uint256 value,
+        bytes memory data
+    ) internal virtual returns (bool success, bytes memory returnData);
 
     /// @dev get base fee which is emitted in `MessageDelivered` event and then picked up and
     /// used in ArbOs to calculate the submission fee for retryable ticket

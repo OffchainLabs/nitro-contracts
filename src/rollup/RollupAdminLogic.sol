@@ -16,12 +16,10 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
     using AssertionStateLib for AssertionState;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
-    function initialize(Config calldata config, ContractDependencies calldata connectedContracts)
-        external
-        override
-        onlyProxy
-        initializer
-    {
+    function initialize(
+        Config calldata config,
+        ContractDependencies calldata connectedContracts
+    ) external override onlyProxy initializer {
         rollupDeploymentBlock = block.number;
         bridge = connectedContracts.bridge;
         connectedContracts.bridge.setDelayedInbox(address(connectedContracts.inbox), true);

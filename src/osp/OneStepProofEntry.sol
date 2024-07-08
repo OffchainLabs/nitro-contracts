@@ -38,11 +38,10 @@ contract OneStepProofEntry is IOneStepProofEntry {
     }
 
     // Copied from OldChallengeLib.sol
-    function getStartMachineHash(bytes32 globalStateHash, bytes32 wasmModuleRoot)
-        public
-        pure
-        returns (bytes32)
-    {
+    function getStartMachineHash(
+        bytes32 globalStateHash,
+        bytes32 wasmModuleRoot
+    ) public pure returns (bytes32) {
         // Start the value stack with the function call ABI for the entrypoint
         Value[] memory startingValues = new Value[](3);
         startingValues[0] = ValueLib.newRefNull();

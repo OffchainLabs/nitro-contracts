@@ -148,11 +148,11 @@ library MerkleTreeLib {
     /// @param me           The merkle expansion to append a complete sub tree to
     /// @param level        The level at which to append the complete subtree
     /// @param subtreeRoot  The root of the complete subtree to be appended
-    function appendCompleteSubTree(bytes32[] memory me, uint256 level, bytes32 subtreeRoot)
-        internal
-        pure
-        returns (bytes32[] memory)
-    {
+    function appendCompleteSubTree(
+        bytes32[] memory me,
+        uint256 level,
+        bytes32 subtreeRoot
+    ) internal pure returns (bytes32[] memory) {
         // we use number representations of the levels elsewhere, so we need to ensure we're appending a leve
         // that's too high to use in uint
         require(level < MAX_LEVEL, "Level too high");
@@ -236,11 +236,10 @@ library MerkleTreeLib {
     ///         into the tree to avoid root collisions.
     /// @param me   The merkle expansion to append a leaf to
     /// @param leaf The leaf to append - will be hashed in here before appending
-    function appendLeaf(bytes32[] memory me, bytes32 leaf)
-        internal
-        pure
-        returns (bytes32[] memory)
-    {
+    function appendLeaf(
+        bytes32[] memory me,
+        bytes32 leaf
+    ) internal pure returns (bytes32[] memory) {
         // it's important that we hash the leaf, this ensures that this leaf cannot be a collision with any other non leaf
         // or root node, since these are always the hash of 64 bytes of data, and we're hashing 32 bytes
         return appendCompleteSubTree(me, 0, keccak256(abi.encodePacked(leaf)));
@@ -253,11 +252,10 @@ library MerkleTreeLib {
     ///         subtree in the expansion
     /// @param startSize    The size of the start tree to find the maximum append to
     /// @param endSize      The size of the end tree to find a maximum append under
-    function maximumAppendBetween(uint256 startSize, uint256 endSize)
-        internal
-        pure
-        returns (uint256)
-    {
+    function maximumAppendBetween(
+        uint256 startSize,
+        uint256 endSize
+    ) internal pure returns (uint256) {
         // Since the tree is binary we can represent it using the binary representation of a number
         // As described above, subtrees can only be appended to a tree if they are at the same level, or below,
         // the current lowest subtree.

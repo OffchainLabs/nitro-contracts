@@ -196,11 +196,11 @@ contract OneStepProverMath is IOneStepProver {
         return (a >> b) | (a << (64 - b));
     }
 
-    function genericBinOp(uint64 a, uint64 b, uint16 opcodeOffset)
-        internal
-        pure
-        returns (uint64, bool)
-    {
+    function genericBinOp(
+        uint64 a,
+        uint64 b,
+        uint16 opcodeOffset
+    ) internal pure returns (uint64, bool) {
         unchecked {
             if (opcodeOffset == 0) {
                 // add

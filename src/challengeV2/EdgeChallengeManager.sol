@@ -65,9 +65,11 @@ interface IEdgeChallengeManager {
     /// @param prefixProof          A proof to show that the bisectionHistoryRoot commits to a prefix of the current endHistoryRoot
     /// @return lowerChildId        The id of the newly created lower child edge
     /// @return upperChildId        The id of the newly created upper child edge
-    function bisectEdge(bytes32 edgeId, bytes32 bisectionHistoryRoot, bytes calldata prefixProof)
-        external
-        returns (bytes32, bytes32);
+    function bisectEdge(
+        bytes32 edgeId,
+        bytes32 bisectionHistoryRoot,
+        bytes calldata prefixProof
+    ) external returns (bytes32, bytes32);
 
     /// @notice An edge can be confirmed if the total amount of time it and a single chain of its direct ancestors
     ///         has spent unrivaled is greater than the challenge period.
@@ -77,16 +79,20 @@ interface IEdgeChallengeManager {
     ///         of the same level, and claimId-edgeId links for zero layer edges that claim an edge in the level below.
     ///         This method also includes the amount of time the assertion being claimed spent without a sibling
     /// @param edgeId                   The id of the edge to confirm
-    function confirmEdgeByTime(bytes32 edgeId, AssertionStateData calldata claimStateData)
-        external;
+    function confirmEdgeByTime(
+        bytes32 edgeId,
+        AssertionStateData calldata claimStateData
+    ) external;
 
     /// @notice Update multiple edges' timer cache by their children. Equivalent to calling updateTimerCacheByChildren for each edge.
     ///         May update timer cache above maximum if the last edge's timer cache was below maximumCachedTime.
     ///         Revert when the last edge's timer cache is already equal to or above maximumCachedTime.
     /// @param edgeIds           The ids of the edges to update
     /// @param maximumCachedTime The maximum amount of cached time allowed on the last edge (β∗)
-    function multiUpdateTimeCacheByChildren(bytes32[] calldata edgeIds, uint256 maximumCachedTime)
-        external;
+    function multiUpdateTimeCacheByChildren(
+        bytes32[] calldata edgeIds,
+        uint256 maximumCachedTime
+    ) external;
 
     /// @notice Update an edge's timer cache by its children.
     ///         Sets the edge's timer cache to its timeUnrivaled + (minimum timer cache of its children).
@@ -202,10 +208,10 @@ interface IEdgeChallengeManager {
 
     /// @notice True if an account has made a layer zero edge with the given mutual id.
     ///         This is only tracked when the validator whitelist is enabled
-    function hasMadeLayerZeroRival(address account, bytes32 mutualId)
-        external
-        view
-        returns (bool);
+    function hasMadeLayerZeroRival(
+        address account,
+        bytes32 mutualId
+    ) external view returns (bool);
 }
 
 /// @title  A challenge manager that uses edge structures to decide between Assertions
@@ -476,10 +482,11 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
     }
 
     /// @inheritdoc IEdgeChallengeManager
-    function bisectEdge(bytes32 edgeId, bytes32 bisectionHistoryRoot, bytes calldata prefixProof)
-        external
-        returns (bytes32, bytes32)
-    {
+    function bisectEdge(
+        bytes32 edgeId,
+        bytes32 bisectionHistoryRoot,
+        bytes calldata prefixProof
+    ) external returns (bytes32, bytes32) {
         (
             bytes32 lowerChildId,
             EdgeAddedData memory lowerChildAdded,
@@ -519,9 +526,10 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
     }
 
     /// @inheritdoc IEdgeChallengeManager
-    function multiUpdateTimeCacheByChildren(bytes32[] calldata edgeIds, uint256 maximumCachedTime)
-        public
-    {
+    function multiUpdateTimeCacheByChildren(
+        bytes32[] calldata edgeIds,
+        uint256 maximumCachedTime
+    ) public {
         if (edgeIds.length == 0) revert EmptyArray();
         // revert early if the last edge already has sufficient time
         store.validateCurrentTimer(edgeIds[edgeIds.length - 1], maximumCachedTime);
@@ -718,11 +726,10 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
     }
 
     /// @inheritdoc IEdgeChallengeManager
-    function hasMadeLayerZeroRival(address account, bytes32 mutualId)
-        external
-        view
-        returns (bool)
-    {
+    function hasMadeLayerZeroRival(
+        address account,
+        bytes32 mutualId
+    ) external view returns (bool) {
         return store.hasMadeLayerZeroRival[account][mutualId];
     }
 }

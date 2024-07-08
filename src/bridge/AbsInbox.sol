@@ -121,10 +121,10 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
     }
 
     /* solhint-disable func-name-mixedcase */
-    function __AbsInbox_init(IBridge _bridge, ISequencerInbox _sequencerInbox)
-        internal
-        onlyInitializing
-    {
+    function __AbsInbox_init(
+        IBridge _bridge,
+        ISequencerInbox _sequencerInbox
+    ) internal onlyInitializing {
         bridge = _bridge;
         sequencerInbox = _sequencerInbox;
         allowListEnabled = false;
@@ -322,16 +322,17 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         return msgNum;
     }
 
-    function _deliverToBridge(uint8 kind, address sender, bytes32 messageDataHash, uint256 amount)
-        internal
-        virtual
-        returns (uint256);
+    function _deliverToBridge(
+        uint8 kind,
+        address sender,
+        bytes32 messageDataHash,
+        uint256 amount
+    ) internal virtual returns (uint256);
 
-    function calculateRetryableSubmissionFee(uint256 dataLength, uint256 baseFee)
-        public
-        view
-        virtual
-        returns (uint256);
+    function calculateRetryableSubmissionFee(
+        uint256 dataLength,
+        uint256 baseFee
+    ) public view virtual returns (uint256);
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new

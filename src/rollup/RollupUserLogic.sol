@@ -128,11 +128,10 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
      * @param depositAmount The amount of either eth or tokens staked
      * @param _withdrawalAddress The new staker's withdrawal address
      */
-    function _newStake(uint256 depositAmount, address _withdrawalAddress)
-        internal
-        onlyValidator(msg.sender)
-        whenNotPaused
-    {
+    function _newStake(
+        uint256 depositAmount,
+        address _withdrawalAddress
+    ) internal onlyValidator(msg.sender) whenNotPaused {
         // Verify that sender is not already a staker
         require(!isStaked(msg.sender), "ALREADY_STAKED");
         // amount will be checked when creating an assertion
@@ -158,11 +157,10 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
      * @param assertion The assertion data
      * @param expectedAssertionHash The hash of the assertion being created (protects against reorgs)
      */
-    function stakeOnNewAssertion(AssertionInputs calldata assertion, bytes32 expectedAssertionHash)
-        public
-        onlyValidator(msg.sender)
-        whenNotPaused
-    {
+    function stakeOnNewAssertion(
+        AssertionInputs calldata assertion,
+        bytes32 expectedAssertionHash
+    ) public onlyValidator(msg.sender) whenNotPaused {
         // Early revert on duplicated assertion if expectedAssertionHash is set
         require(
             expectedAssertionHash == bytes32(0)

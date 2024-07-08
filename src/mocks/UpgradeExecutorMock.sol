@@ -47,12 +47,10 @@ contract UpgradeExecutorMock is
     /// @dev    Only executor can call this. Since we're using a delegatecall here the Upgrade contract
     ///         will have access to the state of this contract - including the roles. Only upgrade contracts
     ///         that do not touch local state should be used.
-    function execute(address upgrade, bytes memory upgradeCallData)
-        public
-        payable
-        onlyRole(EXECUTOR_ROLE)
-        nonReentrant
-    {
+    function execute(
+        address upgrade,
+        bytes memory upgradeCallData
+    ) public payable onlyRole(EXECUTOR_ROLE) nonReentrant {
         // OZ Address library check if the address is a contract and bubble up inner revert reason
         address(upgrade).functionDelegateCall(
             upgradeCallData, "UpgradeExecutor: inner delegate call failed without reason"
@@ -63,12 +61,10 @@ contract UpgradeExecutorMock is
 
     /// @notice Execute an upgrade by directly calling target contract
     /// @dev    Only executor can call this.
-    function executeCall(address target, bytes memory targetCallData)
-        public
-        payable
-        onlyRole(EXECUTOR_ROLE)
-        nonReentrant
-    {
+    function executeCall(
+        address target,
+        bytes memory targetCallData
+    ) public payable onlyRole(EXECUTOR_ROLE) nonReentrant {
         // OZ Address library check if the address is a contract and bubble up inner revert reason
         address(target).functionCallWithValue(
             targetCallData, msg.value, "UpgradeExecutor: inner call failed without reason"

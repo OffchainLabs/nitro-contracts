@@ -86,11 +86,10 @@ contract MockAssertionChain is IAssertionChain {
         return assertions[assertionHash].isPending;
     }
 
-    function calculateAssertionHash(bytes32 predecessorId, AssertionState memory afterState)
-        public
-        pure
-        returns (bytes32)
-    {
+    function calculateAssertionHash(
+        bytes32 predecessorId,
+        AssertionState memory afterState
+    ) public pure returns (bytes32) {
         return RollupLib.assertionHash({
             parentAssertionHash: predecessorId,
             afterState: afterState,

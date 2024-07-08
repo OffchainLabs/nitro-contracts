@@ -24,11 +24,10 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
     constructor(uint256 _maxDataSize) AbsInbox(_maxDataSize) {}
 
     /// @inheritdoc IInboxBase
-    function initialize(IBridge _bridge, ISequencerInbox _sequencerInbox)
-        external
-        initializer
-        onlyDelegated
-    {
+    function initialize(
+        IBridge _bridge,
+        ISequencerInbox _sequencerInbox
+    ) external initializer onlyDelegated {
         __AbsInbox_init(_bridge, _sequencerInbox);
 
         // inbox holds native token in transit used to pay for retryable tickets, approve bridge to use it
@@ -102,12 +101,10 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
     }
 
     /// @inheritdoc IInboxBase
-    function calculateRetryableSubmissionFee(uint256, uint256)
-        public
-        pure
-        override(AbsInbox, IInboxBase)
-        returns (uint256)
-    {
+    function calculateRetryableSubmissionFee(
+        uint256,
+        uint256
+    ) public pure override(AbsInbox, IInboxBase) returns (uint256) {
         // retryable ticket's submission fee is not charged when ERC20 token is used to pay for fees
         return 0;
     }

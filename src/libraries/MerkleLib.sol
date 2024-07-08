@@ -24,11 +24,11 @@ library MerkleLib {
         return prevLayer[0];
     }
 
-    function calculateRoot(bytes32[] memory nodes, uint256 route, bytes32 item)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function calculateRoot(
+        bytes32[] memory nodes,
+        uint256 route,
+        bytes32 item
+    ) internal pure returns (bytes32) {
         uint256 proofItems = nodes.length;
         if (proofItems > 256) revert MerkleProofTooLong(proofItems, 256);
         bytes32 h = item;

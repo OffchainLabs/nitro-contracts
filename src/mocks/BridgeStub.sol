@@ -49,12 +49,11 @@ contract BridgeStub is IBridge, IEthBridge {
         revert("NOT_IMPLEMENTED");
     }
 
-    function enqueueDelayedMessage(uint8 kind, address sender, bytes32 messageDataHash)
-        external
-        payable
-        override
-        returns (uint256)
-    {
+    function enqueueDelayedMessage(
+        uint8 kind,
+        address sender,
+        bytes32 messageDataHash
+    ) external payable override returns (uint256) {
         require(allowedDelayedInboxesMap[msg.sender].allowed, "NOT_FROM_INBOX");
         return addMessageToDelayedAccumulator(
             kind,
@@ -93,10 +92,10 @@ contract BridgeStub is IBridge, IEthBridge {
         sequencerInboxAccs.push(acc);
     }
 
-    function submitBatchSpendingReport(address batchPoster, bytes32 dataHash)
-        external
-        returns (uint256)
-    {
+    function submitBatchSpendingReport(
+        address batchPoster,
+        bytes32 dataHash
+    ) external returns (uint256) {
         // TODO: implement stub
     }
 
@@ -119,19 +118,20 @@ contract BridgeStub is IBridge, IEthBridge {
         return count;
     }
 
-    function executeCall(address to, uint256 value, bytes calldata data)
-        external
-        override
-        returns (bool success, bytes memory returnData)
-    {
+    function executeCall(
+        address to,
+        uint256 value,
+        bytes calldata data
+    ) external override returns (bool success, bytes memory returnData) {
         (success, returnData) = _executeLowLevelCall(to, value, data);
         emit BridgeCallTriggered(msg.sender, to, value, data);
     }
 
-    function _executeLowLevelCall(address to, uint256 value, bytes memory data)
-        internal
-        returns (bool success, bytes memory returnData)
-    {
+    function _executeLowLevelCall(
+        address to,
+        uint256 value,
+        bytes memory data
+    ) internal returns (bool success, bytes memory returnData) {
         // solhint-disable-next-line avoid-low-level-calls
         (success, returnData) = to.call{value: value}(data);
     }
