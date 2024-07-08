@@ -25,17 +25,13 @@ export const sepolia: Config = {
     challengePeriodBlocks: 45818, // same as arb1
     stakeToken: '0xefb383126640fe4a760010c6e59c397d2b6c7141', // WETH
     stakeAmt: parseEther('36'), // 1/100th of arb1, same for mini stakes
-    miniStakeAmounts: [
-      parseEther('0'),
-      parseEther('5.5'),
-      parseEther('0.79'),
-    ],
+    miniStakeAmounts: [parseEther('0'), parseEther('5.5'), parseEther('0.79')],
     chainId: 421614,
     anyTrustFastConfirmer: '0x0000000000000000000000000000000000000000',
     disableValidatorWhitelist: false,
-    blockLeafSize: 2**26, // leaf sizes same as arb1
-    bigStepLeafSize: 2**19,
-    smallStepLeafSize: 2**23,
+    blockLeafSize: 2 ** 26, // leaf sizes same as arb1
+    bigStepLeafSize: 2 ** 19,
+    smallStepLeafSize: 2 ** 23,
     numBigStepLevel: 1,
     maxDataSize: 117964,
     isDelayBufferable: false, // batch poster not yet ready
@@ -44,8 +40,9 @@ export const sepolia: Config = {
       threshold: 300, // 1 hours
       replenishRateInBasis: 500,
     },
-},
-validators: [ // current validators
+  },
+  validators: [
+    // current validators
     '0x8a8f0a24d7e58a76FC8F77bb68C7c902b91e182e',
     '0x87630025E63A30eCf9Ca9d580d9D95922Fea6aF0',
     '0xC32B93e581db6EBc50C08ce381143A259B92f1ED',

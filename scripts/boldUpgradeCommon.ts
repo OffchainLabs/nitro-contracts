@@ -59,7 +59,7 @@ export interface Config {
     seqInbox: string
   }
   settings: {
-    challengeGracePeriodBlocks: number,
+    challengeGracePeriodBlocks: number
     confirmPeriodBlocks: number
     challengePeriodBlocks: number
     stakeToken: string

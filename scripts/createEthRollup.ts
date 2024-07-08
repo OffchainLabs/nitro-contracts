@@ -17,7 +17,13 @@ async function main() {
 
   const [signer] = await ethers.getSigners()
 
-  await createRollup(signer, false, rollupCreatorAddress, feeToken, stakeTokenAddress)
+  await createRollup(
+    signer,
+    false,
+    rollupCreatorAddress,
+    feeToken,
+    stakeTokenAddress
+  )
 }
 
 main()

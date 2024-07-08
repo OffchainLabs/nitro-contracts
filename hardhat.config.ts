@@ -162,6 +162,6 @@ module.exports = {
     target: 'ethers-v5',
   },
   contractSizer: {
-    strict: process.env.STRICT ? true : false
-  }
+    strict: process.env.STRICT ? true : false,
+  },
 }

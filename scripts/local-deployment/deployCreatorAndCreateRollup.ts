@@ -47,14 +47,14 @@ async function main() {
   if (!stakeToken) {
     console.log('Deploying WETH')
     const wethFactory = await ethers.getContractFactory('TestWETH9')
-    const weth = await wethFactory.deploy("Wrapped Ether", "WETH")
+    const weth = await wethFactory.deploy('Wrapped Ether', 'WETH')
     await weth.deployTransaction.wait()
     stakeToken = weth.address
   }
 
   /// deploy templates and rollup creator
   console.log('Deploy RollupCreator')
-  const contracts = await deployAllContracts(deployerWallet, maxDataSize, false,)
+  const contracts = await deployAllContracts(deployerWallet, maxDataSize, false)
 
   console.log('Set templates on the Rollup Creator')
   await (
