@@ -120,6 +120,29 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
     }
 
     /**
+     * @notice Confirm the next unresolved node
+     * @param blockHash The block hash at the end of the assertion
+     * @param sendRoot The send root at the end of the assertion
+     */
+    function confirmNextNode(bytes32 blockHash, bytes32 sendRoot)
+        external
+        onlyValidator
+        whenNotPaused
+    {
+        _confirmNextNode(blockHash, sendRoot, false);
+    }
+
+    /**
+     * @notice This allow anyTrustFastConfirmer to confirm next node regardless of deadline
+     *         the anyTrustFastConfirmer is supposed to be set only on an AnyTrust chain to
+     *         a contract that can call this function when received sufficient signatures
+     */
+    function fastConfirmNextNode(bytes32 blockHash, bytes32 sendRoot) external whenNotPaused {
+        require(msg.sender == anyTrustFastConfirmer, "NOT_FAST_CONFIRMER");
+        _confirmNextNode(blockHash, sendRoot, true);
+    }
+
+    /**
      * @notice Create a new stake
      * @param depositAmount The amount of either eth or tokens staked
      * @param _withdrawalAddress The new staker's withdrawal address

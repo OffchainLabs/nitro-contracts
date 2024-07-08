@@ -9,9 +9,14 @@ import "./IERC20Inbox.sol";
 import "./IERC20Bridge.sol";
 import "../libraries/AddressAliasHelper.sol";
 import {L1MessageType_ethDeposit} from "../libraries/MessageTypes.sol";
-import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import {AmountTooLarge} from "../libraries/Error.sol";
+import {MAX_UPSCALE_AMOUNT} from "../libraries/Constants.sol";
+
+import {DecimalsConverterHelper} from "../libraries/DecimalsConverterHelper.sol";
+
+import {AddressUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title Inbox for user and contract originated messages
@@ -33,7 +38,7 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
 
         // inbox holds native token in transit used to pay for retryable tickets, approve bridge to use it
         address nativeToken = IERC20Bridge(address(bridge)).nativeToken();
-        IERC20(nativeToken).approve(address(bridge), type(uint256).max);
+        IERC20(nativeToken).safeApprove(address(bridge), type(uint256).max);
     }
 
     /// @inheritdoc IERC20Inbox
@@ -46,11 +51,12 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
             dest = AddressAliasHelper.applyL1ToL2Alias(msg.sender);
         }
 
+        uint256 amountToMintOnL2 = _fromNativeTo18Decimals(amount);
         return
             _deliverMessage(
                 L1MessageType_ethDeposit,
                 msg.sender,
-                abi.encodePacked(dest, amount),
+                abi.encodePacked(dest, amountToMintOnL2),
                 amount
             );
     }
@@ -140,5 +146,23 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
                 messageDataHash,
                 tokenAmount
             );
+    }
+
+    /// @inheritdoc AbsInbox
+    function _fromNativeTo18Decimals(uint256 value) internal view override returns (uint256) {
+        // In order to keep compatibility of child chain's native currency with external 3rd party tooling we
+        // expect 18 decimals to be always used for native currency. If native token uses different number of
+        // decimals then here it will be normalized to 18. Keep in mind, when withdrawing from child chain back
+        // to parent chain then the amount has to match native token's granularity, otherwise it will be rounded
+        // down.
+        uint8 nativeTokenDecimals = IERC20Bridge(address(bridge)).nativeTokenDecimals();
+
+        // Also make sure that inflated amount does not overflow uint256
+        if (nativeTokenDecimals < 18) {
+            if (value > MAX_UPSCALE_AMOUNT) {
+                revert AmountTooLarge(value);
+            }
+        }
+        return DecimalsConverterHelper.adjustDecimals(value, nativeTokenDecimals, 18);
     }
 }
