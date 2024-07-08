@@ -34,7 +34,7 @@ jobs:
         run: yarn
 
       - name: Build
-        run: forge test
+        run: yarn test:foundry
   tests:
     name: Contract tests
     runs-on: ubuntu-8
