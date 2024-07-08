@@ -164,7 +164,7 @@ contract RollupReader is IOldRollup {
 ///         Since the BOLDUpgradeAction is not allowed to have storage,
 ///         we use this contract so it can keep an immutable pointer to an array.
 contract ConstantArrayStorage {
-    uint256[] _array;
+    uint256[] internal _array;
 
     constructor(uint256[] memory __array) {
         _array = __array;

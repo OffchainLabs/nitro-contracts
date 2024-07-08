@@ -97,7 +97,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     address public stakeToken;
     uint256 public minimumAssertionPeriod;
 
-    EnumerableSetUpgradeable.AddressSet validators;
+    EnumerableSetUpgradeable.AddressSet internal validators;
 
     bytes32 private _latestConfirmed;
     mapping(bytes32 => AssertionNode) private _assertions;
