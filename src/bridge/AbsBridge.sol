@@ -105,17 +105,11 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     )
         external
         onlySequencerInbox
-        returns (
-            uint256 seqMessageIndex,
-            bytes32 beforeAcc,
-            bytes32 delayedAcc,
-            bytes32 acc
-        )
+        returns (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc)
     {
         if (
-            sequencerReportedSubMessageCount != prevMessageCount &&
-            prevMessageCount != 0 &&
-            sequencerReportedSubMessageCount != 0
+            sequencerReportedSubMessageCount != prevMessageCount && prevMessageCount != 0
+                && sequencerReportedSubMessageCount != 0
         ) {
             revert BadSequencerMessageNumber(sequencerReportedSubMessageCount, prevMessageCount);
         }
@@ -137,23 +131,20 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
         onlySequencerInbox
         returns (uint256)
     {
-        return
-            addMessageToDelayedAccumulator(
-                L1MessageType_batchPostingReport,
-                sender,
-                uint64(block.number),
-                uint64(block.timestamp), // solhint-disable-line not-rely-on-time,
-                block.basefee,
-                messageDataHash
-            );
+        return addMessageToDelayedAccumulator(
+            L1MessageType_batchPostingReport,
+            sender,
+            uint64(block.number),
+            uint64(block.timestamp), // solhint-disable-line not-rely-on-time,
+            block.basefee,
+            messageDataHash
+        );
     }
 
-    function _enqueueDelayedMessage(
-        uint8 kind,
-        address sender,
-        bytes32 messageDataHash,
-        uint256 amount
-    ) internal returns (uint256) {
+    function _enqueueDelayedMessage(uint8 kind, address sender, bytes32 messageDataHash, uint256 amount)
+        internal
+        returns (uint256)
+    {
         if (!allowedDelayedInboxes(msg.sender)) revert NotDelayedInbox(msg.sender);
 
         uint256 messageCount = addMessageToDelayedAccumulator(
@@ -179,39 +170,22 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
         bytes32 messageDataHash
     ) internal returns (uint256) {
         uint256 count = delayedInboxAccs.length;
-        bytes32 messageHash = Messages.messageHash(
-            kind,
-            sender,
-            blockNumber,
-            blockTimestamp,
-            count,
-            baseFeeL1,
-            messageDataHash
-        );
+        bytes32 messageHash =
+            Messages.messageHash(kind, sender, blockNumber, blockTimestamp, count, baseFeeL1, messageDataHash);
         bytes32 prevAcc = 0;
         if (count > 0) {
             prevAcc = delayedInboxAccs[count - 1];
         }
         delayedInboxAccs.push(Messages.accumulateInboxMessage(prevAcc, messageHash));
-        emit MessageDelivered(
-            count,
-            prevAcc,
-            msg.sender,
-            kind,
-            sender,
-            messageDataHash,
-            baseFeeL1,
-            blockTimestamp
-        );
+        emit MessageDelivered(count, prevAcc, msg.sender, kind, sender, messageDataHash, baseFeeL1, blockTimestamp);
         return count;
     }
 
     /// @inheritdoc IBridge
-    function executeCall(
-        address to,
-        uint256 value,
-        bytes calldata data
-    ) external returns (bool success, bytes memory returnData) {
+    function executeCall(address to, uint256 value, bytes calldata data)
+        external
+        returns (bool success, bytes memory returnData)
+    {
         if (!allowedOutboxes(msg.sender)) revert NotOutbox(msg.sender);
         if (data.length > 0 && !to.isContract()) revert NotContract(to);
         address prevOutbox = _activeOutbox;
@@ -242,9 +216,7 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
             allowedDelayedInboxesMap[inbox] = InOutInfo(allowedDelayedInboxList.length, true);
             allowedDelayedInboxList.push(inbox);
         } else {
-            allowedDelayedInboxList[info.index] = allowedDelayedInboxList[
-                allowedDelayedInboxList.length - 1
-            ];
+            allowedDelayedInboxList[info.index] = allowedDelayedInboxList[allowedDelayedInboxList.length - 1];
             allowedDelayedInboxesMap[allowedDelayedInboxList[info.index]].index = info.index;
             allowedDelayedInboxList.pop();
             delete allowedDelayedInboxesMap[inbox];
@@ -289,11 +261,10 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     /// @dev transfer funds provided to pay for crosschain msg
     function _transferFunds(uint256 amount) internal virtual;
 
-    function _executeLowLevelCall(
-        address to,
-        uint256 value,
-        bytes memory data
-    ) internal virtual returns (bool success, bytes memory returnData);
+    function _executeLowLevelCall(address to, uint256 value, bytes memory data)
+        internal
+        virtual
+        returns (bool success, bytes memory returnData);
 
     /// @dev get base fee which is emitted in `MessageDelivered` event and then picked up and
     /// used in ArbOs to calculate the submission fee for retryable ticket

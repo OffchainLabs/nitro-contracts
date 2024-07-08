@@ -30,10 +30,7 @@ contract HashProofHelper {
     uint256 private constant MAX_PART_LENGTH = 32;
     uint256 private constant KECCAK_ROUND_INPUT = 136;
 
-    function proveWithFullPreimage(bytes calldata data, uint64 offset)
-        external
-        returns (bytes32 fullHash)
-    {
+    function proveWithFullPreimage(bytes calldata data, uint64 offset) external returns (bytes32 fullHash) {
         fullHash = keccak256(data);
         bytes memory part;
         if (data.length > offset) {
@@ -50,11 +47,10 @@ contract HashProofHelper {
     // Flags: a bitset signaling various things about the proof, ordered from least to most significant bits.
     //   0th bit: indicates that this data is the final chunk of preimage data.
     //   1st bit: indicates that the preimage part currently being built should be cleared before this.
-    function proveWithSplitPreimage(
-        bytes calldata data,
-        uint64 offset,
-        uint256 flags
-    ) external returns (bytes32 fullHash) {
+    function proveWithSplitPreimage(bytes calldata data, uint64 offset, uint256 flags)
+        external
+        returns (bytes32 fullHash)
+    {
         bool isFinal = (flags & (1 << 0)) != 0;
         if ((flags & (1 << 1)) != 0) {
             delete keccakStates[msg.sender];
@@ -96,11 +92,7 @@ contract HashProofHelper {
         delete keccakStates[msg.sender];
     }
 
-    function keccakUpdate(
-        KeccakState storage state,
-        bytes calldata data,
-        bool isFinal
-    ) internal {
+    function keccakUpdate(KeccakState storage state, bytes calldata data, bool isFinal) internal {
         state.length += data.length;
         while (true) {
             if (data.length == 0 && !isFinal) {

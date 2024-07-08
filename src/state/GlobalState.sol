@@ -16,16 +16,11 @@ library GlobalStateLib {
     uint16 internal constant U64_VALS_NUM = 2;
 
     function hash(GlobalState memory state) internal pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked(
-                    "Global state:",
-                    state.bytes32Vals[0],
-                    state.bytes32Vals[1],
-                    state.u64Vals[0],
-                    state.u64Vals[1]
-                )
-            );
+        return keccak256(
+            abi.encodePacked(
+                "Global state:", state.bytes32Vals[0], state.bytes32Vals[1], state.u64Vals[0], state.u64Vals[1]
+            )
+        );
     }
 
     function getBlockHash(GlobalState memory state) internal pure returns (bytes32) {
@@ -45,10 +40,10 @@ library GlobalStateLib {
     }
 
     function isEmpty(GlobalState calldata state) internal pure returns (bool) {
-        return (state.bytes32Vals[0] == bytes32(0) &&
-            state.bytes32Vals[1] == bytes32(0) &&
-            state.u64Vals[0] == 0 &&
-            state.u64Vals[1] == 0);
+        return (
+            state.bytes32Vals[0] == bytes32(0) && state.bytes32Vals[1] == bytes32(0) && state.u64Vals[0] == 0
+                && state.u64Vals[1] == 0
+        );
     }
 
     function comparePositions(GlobalState calldata a, GlobalState calldata b) internal pure returns (int256) {

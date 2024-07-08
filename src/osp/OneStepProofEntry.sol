@@ -38,11 +38,7 @@ contract OneStepProofEntry is IOneStepProofEntry {
     }
 
     // Copied from OldChallengeLib.sol
-    function getStartMachineHash(bytes32 globalStateHash, bytes32 wasmModuleRoot)
-        public
-        pure
-        returns (bytes32)
-    {
+    function getStartMachineHash(bytes32 globalStateHash, bytes32 wasmModuleRoot) public pure returns (bytes32) {
         // Start the value stack with the function call ABI for the entrypoint
         Value[] memory startingValues = new Value[](3);
         startingValues[0] = ValueLib.newRefNull();
@@ -103,7 +99,10 @@ contract OneStepProofEntry is IOneStepProofEntry {
                 GlobalState memory globalState;
                 (globalState, offset) = Deserialize.globalState(proof, offset);
                 require(globalState.hash() == mach.globalStateHash, "BAD_GLOBAL_STATE");
-                if (mach.status == MachineStatus.FINISHED && machineStep == 0 && globalState.getInboxPosition() < execCtx.maxInboxMessagesRead) {
+                if (
+                    mach.status == MachineStatus.FINISHED && machineStep == 0
+                        && globalState.getInboxPosition() < execCtx.maxInboxMessagesRead
+                ) {
                     // Kickstart the machine
                     return getStartMachineHash(mach.globalStateHash, execCtx.initialWasmModuleRoot);
                 }
@@ -117,10 +116,7 @@ contract OneStepProofEntry is IOneStepProofEntry {
 
             (mod, offset) = Deserialize.module(proof, offset);
             (modProof, offset) = Deserialize.merkleProof(proof, offset);
-            require(
-                modProof.computeRootFromModule(mach.moduleIdx, mod) == mach.modulesRoot,
-                "MODULES_ROOT"
-            );
+            require(modProof.computeRootFromModule(mach.moduleIdx, mod) == mach.modulesRoot, "MODULES_ROOT");
 
             {
                 Instruction[] memory codeChunk;
@@ -129,14 +125,8 @@ contract OneStepProofEntry is IOneStepProofEntry {
                 (codeChunk, offset) = Deserialize.instructions(proof, offset);
                 (codeProof, offset) = Deserialize.merkleProof(proof, offset);
                 (funcProof, offset) = Deserialize.merkleProof(proof, offset);
-                bytes32 codeHash = codeProof.computeRootFromInstructions(
-                    mach.functionPc / 64,
-                    codeChunk
-                );
-                bytes32 recomputedRoot = funcProof.computeRootFromFunction(
-                    mach.functionIdx,
-                    codeHash
-                );
+                bytes32 codeHash = codeProof.computeRootFromInstructions(mach.functionPc / 64, codeChunk);
+                bytes32 recomputedRoot = funcProof.computeRootFromFunction(mach.functionIdx, codeHash);
                 require(recomputedRoot == mod.functionsMerkleRoot, "BAD_FUNCTIONS_ROOT");
                 inst = codeChunk[mach.functionPc % 64];
             }
@@ -148,36 +138,35 @@ contract OneStepProofEntry is IOneStepProofEntry {
         uint16 opcode = inst.opcode;
         IOneStepProver prover;
         if (
-            (opcode >= Instructions.I32_LOAD && opcode <= Instructions.I64_LOAD32_U) ||
-            (opcode >= Instructions.I32_STORE && opcode <= Instructions.I64_STORE32) ||
-            opcode == Instructions.MEMORY_SIZE ||
-            opcode == Instructions.MEMORY_GROW
+            (opcode >= Instructions.I32_LOAD && opcode <= Instructions.I64_LOAD32_U)
+                || (opcode >= Instructions.I32_STORE && opcode <= Instructions.I64_STORE32)
+                || opcode == Instructions.MEMORY_SIZE || opcode == Instructions.MEMORY_GROW
         ) {
             prover = proverMem;
         } else if (
-            (opcode == Instructions.I32_EQZ || opcode == Instructions.I64_EQZ) ||
-            (opcode >= Instructions.I32_RELOP_BASE &&
-                opcode <= Instructions.I32_RELOP_BASE + Instructions.IRELOP_LAST) ||
-            (opcode >= Instructions.I32_UNOP_BASE &&
-                opcode <= Instructions.I32_UNOP_BASE + Instructions.IUNOP_LAST) ||
-            (opcode >= Instructions.I32_ADD && opcode <= Instructions.I32_ROTR) ||
-            (opcode >= Instructions.I64_RELOP_BASE &&
-                opcode <= Instructions.I64_RELOP_BASE + Instructions.IRELOP_LAST) ||
-            (opcode >= Instructions.I64_UNOP_BASE &&
-                opcode <= Instructions.I64_UNOP_BASE + Instructions.IUNOP_LAST) ||
-            (opcode >= Instructions.I64_ADD && opcode <= Instructions.I64_ROTR) ||
-            (opcode == Instructions.I32_WRAP_I64) ||
-            (opcode == Instructions.I64_EXTEND_I32_S || opcode == Instructions.I64_EXTEND_I32_U) ||
-            (opcode >= Instructions.I32_EXTEND_8S && opcode <= Instructions.I64_EXTEND_32S) ||
-            (opcode >= Instructions.I32_REINTERPRET_F32 &&
-                opcode <= Instructions.F64_REINTERPRET_I64)
+            (opcode == Instructions.I32_EQZ || opcode == Instructions.I64_EQZ)
+                || (
+                    opcode >= Instructions.I32_RELOP_BASE
+                        && opcode <= Instructions.I32_RELOP_BASE + Instructions.IRELOP_LAST
+                )
+                || (opcode >= Instructions.I32_UNOP_BASE && opcode <= Instructions.I32_UNOP_BASE + Instructions.IUNOP_LAST)
+                || (opcode >= Instructions.I32_ADD && opcode <= Instructions.I32_ROTR)
+                || (
+                    opcode >= Instructions.I64_RELOP_BASE
+                        && opcode <= Instructions.I64_RELOP_BASE + Instructions.IRELOP_LAST
+                )
+                || (opcode >= Instructions.I64_UNOP_BASE && opcode <= Instructions.I64_UNOP_BASE + Instructions.IUNOP_LAST)
+                || (opcode >= Instructions.I64_ADD && opcode <= Instructions.I64_ROTR)
+                || (opcode == Instructions.I32_WRAP_I64)
+                || (opcode == Instructions.I64_EXTEND_I32_S || opcode == Instructions.I64_EXTEND_I32_U)
+                || (opcode >= Instructions.I32_EXTEND_8S && opcode <= Instructions.I64_EXTEND_32S)
+                || (opcode >= Instructions.I32_REINTERPRET_F32 && opcode <= Instructions.F64_REINTERPRET_I64)
         ) {
             prover = proverMath;
         } else if (
-            (opcode >= Instructions.GET_GLOBAL_STATE_BYTES32 &&
-                opcode <= Instructions.SET_GLOBAL_STATE_U64) ||
-            (opcode >= Instructions.READ_PRE_IMAGE && opcode <= Instructions.UNLINK_MODULE) ||
-            (opcode >= Instructions.NEW_COTHREAD && opcode <= Instructions.SWITCH_COTHREAD)
+            (opcode >= Instructions.GET_GLOBAL_STATE_BYTES32 && opcode <= Instructions.SET_GLOBAL_STATE_U64)
+                || (opcode >= Instructions.READ_PRE_IMAGE && opcode <= Instructions.UNLINK_MODULE)
+                || (opcode >= Instructions.NEW_COTHREAD && opcode <= Instructions.SWITCH_COTHREAD)
         ) {
             prover = proverHostIo;
         } else {
@@ -186,8 +175,7 @@ contract OneStepProofEntry is IOneStepProofEntry {
 
         (mach, mod) = prover.executeOneStep(execCtx, mach, mod, inst, proof);
 
-        bool updateRoot = !(opcode == Instructions.LINK_MODULE ||
-            opcode == Instructions.UNLINK_MODULE);
+        bool updateRoot = !(opcode == Instructions.LINK_MODULE || opcode == Instructions.UNLINK_MODULE);
         if (updateRoot) {
             mach.modulesRoot = modProof.computeRootFromModule(oldModIdx, mod);
         }

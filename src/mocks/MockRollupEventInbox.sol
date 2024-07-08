@@ -37,28 +37,16 @@ contract MockRollupEventInbox is IRollupEventInbox, IDelayedMessageProvider, Del
         rollup = address(bridge.rollup());
     }
 
-    function rollupInitialized(uint256 chainId, string calldata chainConfig)
-        external
-        override
-        onlyRollup
-    {
+    function rollupInitialized(uint256 chainId, string calldata chainConfig) external override onlyRollup {
         require(bytes(chainConfig).length > 0, "EMPTY_CHAIN_CONFIG");
         uint8 initMsgVersion = 1;
         uint256 currentDataCost = 1; // Set to a base fee of 1.
         if (ArbitrumChecker.runningOnArbitrum()) {
             currentDataCost += ArbGasInfo(address(0x6c)).getL1BaseFeeEstimate();
         }
-        bytes memory initMsg = abi.encodePacked(
-            chainId,
-            initMsgVersion,
-            currentDataCost,
-            chainConfig
-        );
-        uint256 num = IEthBridge(address(bridge)).enqueueDelayedMessage(
-            INITIALIZATION_MSG_TYPE,
-            address(0),
-            keccak256(initMsg)
-        );
+        bytes memory initMsg = abi.encodePacked(chainId, initMsgVersion, currentDataCost, chainConfig);
+        uint256 num =
+            IEthBridge(address(bridge)).enqueueDelayedMessage(INITIALIZATION_MSG_TYPE, address(0), keccak256(initMsg));
         emit InboxMessageDelivered(num, initMsg);
     }
 }

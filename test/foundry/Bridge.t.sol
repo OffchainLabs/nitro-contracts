@@ -79,11 +79,7 @@ contract BridgeTest is AbsBridgeTest {
         //// checks
 
         uint256 bridgeEthBalanceAfter = address(bridge).balance;
-        assertEq(
-            bridgeEthBalanceAfter - bridgeEthBalanceBefore,
-            ethAmount,
-            "Invalid bridge eth balance"
-        );
+        assertEq(bridgeEthBalanceAfter - bridgeEthBalanceBefore, ethAmount, "Invalid bridge eth balance");
 
         uint256 inboxEthBalanceAfter = address(inbox).balance;
         assertEq(inboxEthBalanceBefore - inboxEthBalanceAfter, ethAmount, "Invalid inbox balance");
@@ -125,11 +121,7 @@ contract BridgeTest is AbsBridgeTest {
         //// checks
 
         uint256 bridgeEthBalanceAfter = address(bridge).balance;
-        assertEq(
-            bridgeEthBalanceAfter - bridgeEthBalanceBefore,
-            ethAmount,
-            "Invalid bridge eth balance"
-        );
+        assertEq(bridgeEthBalanceAfter - bridgeEthBalanceBefore, ethAmount, "Invalid bridge eth balance");
 
         uint256 inboxEthBalanceAfter = address(inbox).balance;
         assertEq(inboxEthBalanceBefore - inboxEthBalanceAfter, ethAmount, "Invalid inbox balance");
@@ -172,24 +164,16 @@ contract BridgeTest is AbsBridgeTest {
 
         //// execute call
         vm.prank(outbox);
-        (bool success, ) = bridge.executeCall({to: user, value: withdrawalAmount, data: ""});
+        (bool success,) = bridge.executeCall({to: user, value: withdrawalAmount, data: ""});
 
         //// checks
         assertTrue(success, "Execute call failed");
 
         uint256 bridgeEthBalanceAfter = address(bridge).balance;
-        assertEq(
-            bridgeEthBalanceBefore - bridgeEthBalanceAfter,
-            withdrawalAmount,
-            "Invalid bridge eth balance"
-        );
+        assertEq(bridgeEthBalanceBefore - bridgeEthBalanceAfter, withdrawalAmount, "Invalid bridge eth balance");
 
         uint256 userEthBalanceAfter = address(user).balance;
-        assertEq(
-            userEthBalanceAfter - userEthBalanceBefore,
-            withdrawalAmount,
-            "Invalid user eth balance"
-        );
+        assertEq(userEthBalanceAfter - userEthBalanceBefore, withdrawalAmount, "Invalid user eth balance");
     }
 
     function test_executeCall_WithCalldata() public {
@@ -217,29 +201,17 @@ contract BridgeTest is AbsBridgeTest {
 
         //// execute call
         vm.prank(outbox);
-        (bool success, ) = bridge.executeCall({
-            to: address(vault),
-            value: withdrawalAmount,
-            data: data
-        });
+        (bool success,) = bridge.executeCall({to: address(vault), value: withdrawalAmount, data: data});
 
         //// checks
         assertTrue(success, "Execute call failed");
         assertEq(vault.version(), newVaultVersion, "Invalid newVaultVersion");
 
         uint256 bridgeEthBalanceAfter = address(bridge).balance;
-        assertEq(
-            bridgeEthBalanceBefore - bridgeEthBalanceAfter,
-            withdrawalAmount,
-            "Invalid bridge eth balance"
-        );
+        assertEq(bridgeEthBalanceBefore - bridgeEthBalanceAfter, withdrawalAmount, "Invalid bridge eth balance");
 
         uint256 vaultEthBalanceAfter = address(vault).balance;
-        assertEq(
-            vaultEthBalanceAfter - vaultEthBalanceBefore,
-            withdrawalAmount,
-            "Invalid vault eth balance"
-        );
+        assertEq(vaultEthBalanceAfter - vaultEthBalanceBefore, withdrawalAmount, "Invalid vault eth balance");
     }
 
     function test_executeCall_UnsuccessfulCall() public {
@@ -266,11 +238,8 @@ contract BridgeTest is AbsBridgeTest {
 
         //// execute call - do call which reverts
         vm.prank(outbox);
-        (bool success, bytes memory returnData) = bridge.executeCall({
-            to: address(vault),
-            value: withdrawalAmount,
-            data: revertingData
-        });
+        (bool success, bytes memory returnData) =
+            bridge.executeCall({to: address(vault), value: withdrawalAmount, data: revertingData});
 
         //// checks
         assertEq(success, false, "Execute shall be unsuccessful");
@@ -284,18 +253,10 @@ contract BridgeTest is AbsBridgeTest {
         assertEq(revertReason, "bye", "Invalid revert reason");
 
         uint256 bridgeEthBalanceAfter = address(bridge).balance;
-        assertEq(
-            bridgeEthBalanceBefore,
-            bridgeEthBalanceAfter,
-            "Invalid bridge eth balance after unsuccessful call"
-        );
+        assertEq(bridgeEthBalanceBefore, bridgeEthBalanceAfter, "Invalid bridge eth balance after unsuccessful call");
 
         uint256 vaultEthBalanceAfter = address(vault).balance;
-        assertEq(
-            vaultEthBalanceAfter,
-            vaultEthBalanceBefore,
-            "Invalid vault eth balance after unsuccessful call"
-        );
+        assertEq(vaultEthBalanceAfter, vaultEthBalanceBefore, "Invalid vault eth balance after unsuccessful call");
     }
 
     function test_executeCall_revert_NotOutbox() public {

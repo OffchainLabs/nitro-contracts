@@ -12,33 +12,17 @@ struct MultiStack {
 library MultiStackLib {
     bytes32 internal constant NO_STACK_HASH = ~bytes32(0);
 
-    function hash(
-        MultiStack memory multi,
-        bytes32 activeStackHash,
-        bool cothread
-    ) internal pure returns (bytes32) {
+    function hash(MultiStack memory multi, bytes32 activeStackHash, bool cothread) internal pure returns (bytes32) {
         require(activeStackHash != NO_STACK_HASH, "MULTISTACK_NOSTACK_ACTIVE");
         if (cothread) {
             require(multi.inactiveStackHash != NO_STACK_HASH, "MULTISTACK_NOSTACK_MAIN");
-            return
-                keccak256(
-                    abi.encodePacked(
-                        "multistack:",
-                        multi.inactiveStackHash,
-                        activeStackHash,
-                        multi.remainingHash
-                    )
-                );
+            return keccak256(
+                abi.encodePacked("multistack:", multi.inactiveStackHash, activeStackHash, multi.remainingHash)
+            );
         } else {
-            return
-                keccak256(
-                    abi.encodePacked(
-                        "multistack:",
-                        activeStackHash,
-                        multi.inactiveStackHash,
-                        multi.remainingHash
-                    )
-                );
+            return keccak256(
+                abi.encodePacked("multistack:", activeStackHash, multi.inactiveStackHash, multi.remainingHash)
+            );
         }
     }
 
@@ -49,9 +33,7 @@ library MultiStackLib {
 
     function pushNew(MultiStack memory multi) internal pure {
         if (multi.inactiveStackHash != NO_STACK_HASH) {
-            multi.remainingHash = keccak256(
-                abi.encodePacked("cothread:", multi.inactiveStackHash, multi.remainingHash)
-            );
+            multi.remainingHash = keccak256(abi.encodePacked("cothread:", multi.inactiveStackHash, multi.remainingHash));
         }
         multi.inactiveStackHash = 0;
     }

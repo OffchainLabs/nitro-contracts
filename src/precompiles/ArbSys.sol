@@ -53,10 +53,7 @@ interface ArbSys {
      * @param unused argument no longer used
      * @return aliased sender address
      */
-    function mapL1SenderContractAddressToL2Alias(address sender, address unused)
-        external
-        pure
-        returns (address);
+    function mapL1SenderContractAddressToL2Alias(address sender, address unused) external pure returns (address);
 
     /**
      * @notice check if the caller (of this caller of this) is an aliased L1 contract address
@@ -86,10 +83,7 @@ interface ArbSys {
      * @param data (optional) calldata for L1 contract call
      * @return a unique identifier for this L2-to-L1 transaction.
      */
-    function sendTxToL1(address destination, bytes calldata data)
-        external
-        payable
-        returns (uint256);
+    function sendTxToL1(address destination, bytes calldata data) external payable returns (uint256);
 
     /**
      * @notice Get send Merkle tree state
@@ -97,14 +91,7 @@ interface ArbSys {
      * @return root root hash of the send history
      * @return partials hashes of partial subtrees in the send history tree
      */
-    function sendMerkleTreeState()
-        external
-        view
-        returns (
-            uint256 size,
-            bytes32 root,
-            bytes32[] memory partials
-        );
+    function sendMerkleTreeState() external view returns (uint256 size, bytes32 root, bytes32[] memory partials);
 
     /**
      * @notice creates a send txn from L2 to L1
@@ -142,11 +129,7 @@ interface ArbSys {
      * @param hash the merkle hash
      * @param position = (level << 192) + leaf
      */
-    event SendMerkleUpdate(
-        uint256 indexed reserved,
-        bytes32 indexed hash,
-        uint256 indexed position
-    );
+    event SendMerkleUpdate(uint256 indexed reserved, bytes32 indexed hash, uint256 indexed position);
 
     error InvalidBlockNumber(uint256 requested, uint256 current);
 }

@@ -41,12 +41,7 @@ interface IBridge {
         uint64 timestamp
     );
 
-    event BridgeCallTriggered(
-        address indexed outbox,
-        address indexed to,
-        uint256 value,
-        bytes data
-    );
+    event BridgeCallTriggered(address indexed outbox, address indexed to, uint256 value, bytes data);
 
     event InboxToggle(address indexed inbox, bool enabled);
 
@@ -78,11 +73,9 @@ interface IBridge {
 
     function sequencerReportedSubMessageCount() external view returns (uint256);
 
-    function executeCall(
-        address to,
-        uint256 value,
-        bytes calldata data
-    ) external returns (bool success, bytes memory returnData);
+    function executeCall(address to, uint256 value, bytes calldata data)
+        external
+        returns (bool success, bytes memory returnData);
 
     function delayedMessageCount() external view returns (uint256);
 
@@ -95,14 +88,7 @@ interface IBridge {
         uint256 afterDelayedMessagesRead,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    )
-        external
-        returns (
-            uint256 seqMessageIndex,
-            bytes32 beforeAcc,
-            bytes32 delayedAcc,
-            bytes32 acc
-        );
+    ) external returns (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc);
 
     /**
      * @dev Allows the sequencer inbox to submit a delayed message of the batchPostingReport type
@@ -110,9 +96,7 @@ interface IBridge {
      *      to call `enqueueDelayedMessage` to avoid the gas overhead of an extra SLOAD in either
      *      every delayed inbox or every sequencer inbox call.
      */
-    function submitBatchSpendingReport(address batchPoster, bytes32 dataHash)
-        external
-        returns (uint256 msgNum);
+    function submitBatchSpendingReport(address batchPoster, bytes32 dataHash) external returns (uint256 msgNum);
 
     // ---------- onlyRollupOrOwner functions ----------
 

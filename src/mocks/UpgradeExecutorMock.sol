@@ -7,12 +7,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 
 import "@offchainlabs/upgrade-executor/src/IUpgradeExecutor.sol";
 
-contract UpgradeExecutorMock is
-    Initializable,
-    AccessControlUpgradeable,
-    ReentrancyGuard,
-    IUpgradeExecutor
-{
+contract UpgradeExecutorMock is Initializable, AccessControlUpgradeable, ReentrancyGuard, IUpgradeExecutor {
     using Address for address;
 
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
@@ -55,8 +50,7 @@ contract UpgradeExecutorMock is
     {
         // OZ Address library check if the address is a contract and bubble up inner revert reason
         address(upgrade).functionDelegateCall(
-            upgradeCallData,
-            "UpgradeExecutor: inner delegate call failed without reason"
+            upgradeCallData, "UpgradeExecutor: inner delegate call failed without reason"
         );
 
         emit UpgradeExecuted(upgrade, msg.value, upgradeCallData);
@@ -72,9 +66,7 @@ contract UpgradeExecutorMock is
     {
         // OZ Address library check if the address is a contract and bubble up inner revert reason
         address(target).functionCallWithValue(
-            targetCallData,
-            msg.value,
-            "UpgradeExecutor: inner call failed without reason"
+            targetCallData, msg.value, "UpgradeExecutor: inner call failed without reason"
         );
 
         emit TargetCallExecuted(target, msg.value, targetCallData);

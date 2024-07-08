@@ -17,15 +17,7 @@ contract MessageTester {
         bytes32 messageDataHash
     ) public pure returns (bytes32) {
         return
-            Messages.messageHash(
-                messageType,
-                sender,
-                blockNumber,
-                timestamp,
-                inboxSeqNum,
-                gasPriceL1,
-                messageDataHash
-            );
+            Messages.messageHash(messageType, sender, blockNumber, timestamp, inboxSeqNum, gasPriceL1, messageDataHash);
     }
 
     function accumulateInboxMessage(bytes32 inbox, bytes32 message) public pure returns (bytes32) {

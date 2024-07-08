@@ -4,7 +4,8 @@
 
 pragma solidity >=0.4.21 <0.9.0;
 
-/** @title Interface for providing gas estimation for retryable auto-redeems and constructing outbox proofs
+/**
+ * @title Interface for providing gas estimation for retryable auto-redeems and constructing outbox proofs
  *  @notice This contract doesn't exist on-chain. Instead it is a virtual interface accessible at
  *  0x00000000000000000000000000000000000000C8
  *  This is a cute trick to allow an Arbitrum node to provide data without us having to implement additional RPCs
@@ -44,11 +45,7 @@ interface NodeInterface {
     function constructOutboxProof(uint64 size, uint64 leaf)
         external
         view
-        returns (
-            bytes32 send,
-            bytes32 root,
-            bytes32[] memory proof
-        );
+        returns (bytes32 send, bytes32 root, bytes32[] memory proof);
 
     /**
      * @notice Finds the L1 batch containing a requested L2 block, reverting if none does.
@@ -81,19 +78,10 @@ interface NodeInterface {
      * @return baseFee the l2 base fee
      * @return l1BaseFeeEstimate ArbOS's l1 estimate of the l1 base fee
      */
-    function gasEstimateComponents(
-        address to,
-        bool contractCreation,
-        bytes calldata data
-    )
+    function gasEstimateComponents(address to, bool contractCreation, bytes calldata data)
         external
         payable
-        returns (
-            uint64 gasEstimate,
-            uint64 gasEstimateForL1,
-            uint256 baseFee,
-            uint256 l1BaseFeeEstimate
-        );
+        returns (uint64 gasEstimate, uint64 gasEstimateForL1, uint256 baseFee, uint256 l1BaseFeeEstimate);
 
     /**
      * @notice Estimates a transaction's l1 costs.
@@ -109,18 +97,10 @@ interface NodeInterface {
      * @return baseFee the l2 base fee
      * @return l1BaseFeeEstimate ArbOS's l1 estimate of the l1 base fee
      */
-    function gasEstimateL1Component(
-        address to,
-        bool contractCreation,
-        bytes calldata data
-    )
+    function gasEstimateL1Component(address to, bool contractCreation, bytes calldata data)
         external
         payable
-        returns (
-            uint64 gasEstimateForL1,
-            uint256 baseFee,
-            uint256 l1BaseFeeEstimate
-        );
+        returns (uint64 gasEstimateForL1, uint256 baseFee, uint256 l1BaseFeeEstimate);
 
     /**
      * @notice Returns the proof necessary to redeem a message
@@ -167,8 +147,5 @@ interface NodeInterface {
      * @return firstBlock The first L2 block number with the given L1 block number
      * @return lastBlock The last L2 block number with the given L1 block number
      */
-    function l2BlockRangeForL1(uint64 blockNum)
-        external
-        view
-        returns (uint64 firstBlock, uint64 lastBlock);
+    function l2BlockRangeForL1(uint64 blockNum) external view returns (uint64 firstBlock, uint64 lastBlock);
 }

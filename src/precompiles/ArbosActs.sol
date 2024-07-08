@@ -29,12 +29,7 @@ interface ArbosActs {
      * @param l1BlockNumber the L1 block number
      * @param timePassed number of seconds since the last block
      */
-    function startBlock(
-        uint256 l1BaseFee,
-        uint64 l1BlockNumber,
-        uint64 l2BlockNumber,
-        uint64 timePassed
-    ) external;
+    function startBlock(uint256 l1BaseFee, uint64 l1BlockNumber, uint64 l2BlockNumber, uint64 timePassed) external;
 
     function batchPostingReport(
         uint256 batchTimestamp,

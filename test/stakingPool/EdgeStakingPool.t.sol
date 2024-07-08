@@ -71,7 +71,9 @@ contract EdgeStakingPoolTest is Test {
 
         // simulate an incorrect edge id
         args.claimId = ~args.claimId;
-        vm.expectRevert(abi.encodeWithSelector(IEdgeStakingPool.IncorrectEdgeId.selector, keccak256(abi.encode(args)), realEdgeId));
+        vm.expectRevert(
+            abi.encodeWithSelector(IEdgeStakingPool.IncorrectEdgeId.selector, keccak256(abi.encode(args)), realEdgeId)
+        );
         stakingPool.createEdge(args);
         args.claimId = ~args.claimId;
 

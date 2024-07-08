@@ -67,113 +67,81 @@ contract InboxStub is IInboxBase, IInbox {
         return msgNum;
     }
 
-    function deliverToBridge(
-        uint8 kind,
-        address sender,
-        bytes32 messageDataHash
-    ) internal returns (uint256) {
-        return
-            IEthBridge(address(bridge)).enqueueDelayedMessage{value: msg.value}(
-                kind,
-                sender,
-                messageDataHash
-            );
+    function deliverToBridge(uint8 kind, address sender, bytes32 messageDataHash) internal returns (uint256) {
+        return IEthBridge(address(bridge)).enqueueDelayedMessage{value: msg.value}(kind, sender, messageDataHash);
     }
 
-    function sendUnsignedTransaction(
-        uint256,
-        uint256,
-        uint256,
-        address,
-        uint256,
-        bytes calldata
-    ) external pure override returns (uint256) {
+    function sendUnsignedTransaction(uint256, uint256, uint256, address, uint256, bytes calldata)
+        external
+        pure
+        override
+        returns (uint256)
+    {
         revert("NOT_IMPLEMENTED");
     }
 
-    function sendContractTransaction(
-        uint256,
-        uint256,
-        address,
-        uint256,
-        bytes calldata
-    ) external pure override returns (uint256) {
+    function sendContractTransaction(uint256, uint256, address, uint256, bytes calldata)
+        external
+        pure
+        override
+        returns (uint256)
+    {
         revert("NOT_IMPLEMENTED");
     }
 
-    function sendL1FundedUnsignedTransaction(
-        uint256,
-        uint256,
-        uint256,
-        address,
-        bytes calldata
-    ) external payable override returns (uint256) {
+    function sendL1FundedUnsignedTransaction(uint256, uint256, uint256, address, bytes calldata)
+        external
+        payable
+        override
+        returns (uint256)
+    {
         revert("NOT_IMPLEMENTED");
     }
 
-    function sendL1FundedContractTransaction(
-        uint256,
-        uint256,
-        address,
-        bytes calldata
-    ) external payable override returns (uint256) {
+    function sendL1FundedContractTransaction(uint256, uint256, address, bytes calldata)
+        external
+        payable
+        override
+        returns (uint256)
+    {
         revert("NOT_IMPLEMENTED");
     }
 
-    function createRetryableTicket(
-        address,
-        uint256,
-        uint256,
-        address,
-        address,
-        uint256,
-        uint256,
-        bytes calldata
-    ) external payable override returns (uint256) {
+    function createRetryableTicket(address, uint256, uint256, address, address, uint256, uint256, bytes calldata)
+        external
+        payable
+        override
+        returns (uint256)
+    {
         revert("NOT_IMPLEMENTED");
     }
 
-    function unsafeCreateRetryableTicket(
-        address,
-        uint256,
-        uint256,
-        address,
-        address,
-        uint256,
-        uint256,
-        bytes calldata
-    ) external payable override returns (uint256) {
+    function unsafeCreateRetryableTicket(address, uint256, uint256, address, address, uint256, uint256, bytes calldata)
+        external
+        payable
+        override
+        returns (uint256)
+    {
         revert("NOT_IMPLEMENTED");
     }
 
-    function sendL1FundedUnsignedTransactionToFork(
-        uint256,
-        uint256,
-        uint256,
-        address,
-        bytes calldata
-    ) external payable returns (uint256) {
+    function sendL1FundedUnsignedTransactionToFork(uint256, uint256, uint256, address, bytes calldata)
+        external
+        payable
+        returns (uint256)
+    {
         revert("NOT_IMPLEMENTED");
     }
 
-    function sendUnsignedTransactionToFork(
-        uint256,
-        uint256,
-        uint256,
-        address,
-        uint256,
-        bytes calldata
-    ) external pure returns (uint256) {
+    function sendUnsignedTransactionToFork(uint256, uint256, uint256, address, uint256, bytes calldata)
+        external
+        pure
+        returns (uint256)
+    {
         revert("NOT_IMPLEMENTED");
     }
 
-    function sendWithdrawEthToFork(
-        uint256,
-        uint256,
-        uint256,
-        uint256,
-        address
-    ) external pure returns (uint256) {
+    function sendWithdrawEthToFork(uint256, uint256, uint256, uint256, address) external pure returns (uint256) {
         revert("NOT_IMPLEMENTED");
     }
 
@@ -183,12 +151,7 @@ contract InboxStub is IInboxBase, IInbox {
 
     function postUpgradeInit(IBridge _bridge) external {}
 
-    function calculateRetryableSubmissionFee(uint256, uint256)
-        external
-        pure
-        override
-        returns (uint256)
-    {
+    function calculateRetryableSubmissionFee(uint256, uint256) external pure override returns (uint256) {
         revert("NOT_IMPLEMENTED");
     }
 

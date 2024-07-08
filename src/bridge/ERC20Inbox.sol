@@ -24,11 +24,7 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
     constructor(uint256 _maxDataSize) AbsInbox(_maxDataSize) {}
 
     /// @inheritdoc IInboxBase
-    function initialize(IBridge _bridge, ISequencerInbox _sequencerInbox)
-        external
-        initializer
-        onlyDelegated
-    {
+    function initialize(IBridge _bridge, ISequencerInbox _sequencerInbox) external initializer onlyDelegated {
         __AbsInbox_init(_bridge, _sequencerInbox);
 
         // inbox holds native token in transit used to pay for retryable tickets, approve bridge to use it
@@ -46,13 +42,7 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
             dest = AddressAliasHelper.applyL1ToL2Alias(msg.sender);
         }
 
-        return
-            _deliverMessage(
-                L1MessageType_ethDeposit,
-                msg.sender,
-                abi.encodePacked(dest, amount),
-                amount
-            );
+        return _deliverMessage(L1MessageType_ethDeposit, msg.sender, abi.encodePacked(dest, amount), amount);
     }
 
     /// @inheritdoc IERC20Inbox
@@ -67,18 +57,17 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
         uint256 tokenTotalFeeAmount,
         bytes calldata data
     ) external whenNotPaused onlyAllowed returns (uint256) {
-        return
-            _createRetryableTicket(
-                to,
-                l2CallValue,
-                maxSubmissionCost,
-                excessFeeRefundAddress,
-                callValueRefundAddress,
-                gasLimit,
-                maxFeePerGas,
-                tokenTotalFeeAmount,
-                data
-            );
+        return _createRetryableTicket(
+            to,
+            l2CallValue,
+            maxSubmissionCost,
+            excessFeeRefundAddress,
+            callValueRefundAddress,
+            gasLimit,
+            maxFeePerGas,
+            tokenTotalFeeAmount,
+            data
+        );
     }
 
     /// @inheritdoc IERC20Inbox
@@ -93,18 +82,17 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
         uint256 tokenTotalFeeAmount,
         bytes calldata data
     ) public whenNotPaused onlyAllowed returns (uint256) {
-        return
-            _unsafeCreateRetryableTicket(
-                to,
-                l2CallValue,
-                maxSubmissionCost,
-                excessFeeRefundAddress,
-                callValueRefundAddress,
-                gasLimit,
-                maxFeePerGas,
-                tokenTotalFeeAmount,
-                data
-            );
+        return _unsafeCreateRetryableTicket(
+            to,
+            l2CallValue,
+            maxSubmissionCost,
+            excessFeeRefundAddress,
+            callValueRefundAddress,
+            gasLimit,
+            maxFeePerGas,
+            tokenTotalFeeAmount,
+            data
+        );
     }
 
     /// @inheritdoc IInboxBase
@@ -118,12 +106,11 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
         return 0;
     }
 
-    function _deliverToBridge(
-        uint8 kind,
-        address sender,
-        bytes32 messageDataHash,
-        uint256 tokenAmount
-    ) internal override returns (uint256) {
+    function _deliverToBridge(uint8 kind, address sender, bytes32 messageDataHash, uint256 tokenAmount)
+        internal
+        override
+        returns (uint256)
+    {
         // Fetch native token from sender if inbox doesn't already hold enough tokens to pay for fees.
         // Inbox might have been pre-funded in prior call, ie. as part of token bridging flow.
         address nativeToken = IERC20Bridge(address(bridge)).nativeToken();
@@ -133,12 +120,8 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
             IERC20(nativeToken).safeTransferFrom(msg.sender, address(this), diff);
         }
 
-        return
-            IERC20Bridge(address(bridge)).enqueueDelayedMessage(
-                kind,
-                AddressAliasHelper.applyL1ToL2Alias(sender),
-                messageDataHash,
-                tokenAmount
-            );
+        return IERC20Bridge(address(bridge)).enqueueDelayedMessage(
+            kind, AddressAliasHelper.applyL1ToL2Alias(sender), messageDataHash, tokenAmount
+        );
     }
 }

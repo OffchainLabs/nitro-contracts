@@ -441,13 +441,10 @@ contract BOLDUpgradeAction {
             PROXY_ADMIN_SEQUENCER_INBOX.upgradeAndCall(
                 sequencerInbox,
                 IMPL_SEQUENCER_INBOX,
-                abi.encodeCall(ISeqInboxPostUpgradeInit.postUpgradeInit,(
-                    BufferConfig({
-                        max: MAX, 
-                        threshold: THRESHOLD, 
-                        replenishRateInBasis: REPLENISH_RATE_IN_BASIS
-                    })
-                ))
+                abi.encodeCall(
+                    ISeqInboxPostUpgradeInit.postUpgradeInit,
+                    (BufferConfig({max: MAX, threshold: THRESHOLD, replenishRateInBasis: REPLENISH_RATE_IN_BASIS}))
+                )
             );
         } else {
             PROXY_ADMIN_SEQUENCER_INBOX.upgrade(sequencerInbox, IMPL_SEQUENCER_INBOX);
@@ -463,36 +460,29 @@ contract BOLDUpgradeAction {
             "DelayBuffer: isDelayBufferable not set"
         );
 
-        (
-            uint256 delayBlocks,
-            uint256 futureBlocks,
-            uint256 delaySeconds,
-            uint256 futureSeconds
-        ) = ISequencerInbox(SEQ_INBOX).maxTimeVariation();
+        (uint256 delayBlocks, uint256 futureBlocks, uint256 delaySeconds, uint256 futureSeconds) =
+            ISequencerInbox(SEQ_INBOX).maxTimeVariation();
 
         // Force inclusion now depends on block numbers and not timestamps.
-        // To ensure the force inclusion window is unchanged, we need to 
+        // To ensure the force inclusion window is unchanged, we need to
         // update the delayBlocks if delaySeconds implies a larger delay.
-        uint256 implDelayBlocks = delaySeconds % SECONDS_PER_SLOT == 0 ? 
-            delaySeconds / SECONDS_PER_SLOT: 
-            delaySeconds / SECONDS_PER_SLOT + 1;
+        uint256 implDelayBlocks =
+            delaySeconds % SECONDS_PER_SLOT == 0 ? delaySeconds / SECONDS_PER_SLOT : delaySeconds / SECONDS_PER_SLOT + 1;
 
         delayBlocks = implDelayBlocks > delayBlocks ? implDelayBlocks : delayBlocks;
 
-        ISequencerInbox(SEQ_INBOX).setMaxTimeVariation(ISequencerInbox.MaxTimeVariation({
-            delayBlocks: delayBlocks,
-            delaySeconds: delaySeconds,
-            futureBlocks: futureBlocks,
-            futureSeconds: futureSeconds
-        }));
+        ISequencerInbox(SEQ_INBOX).setMaxTimeVariation(
+            ISequencerInbox.MaxTimeVariation({
+                delayBlocks: delayBlocks,
+                delaySeconds: delaySeconds,
+                futureBlocks: futureBlocks,
+                futureSeconds: futureSeconds
+            })
+        );
 
         // verify
-        (
-            uint256 _delayBlocks,
-            uint256 _futureBlocks,
-            uint256 _delaySeconds,
-            uint256 _futureSeconds
-        ) = ISequencerInbox(SEQ_INBOX).maxTimeVariation();
+        (uint256 _delayBlocks, uint256 _futureBlocks, uint256 _delaySeconds, uint256 _futureSeconds) =
+            ISequencerInbox(SEQ_INBOX).maxTimeVariation();
         require(_delayBlocks == delayBlocks, "DelayBuffer: delayBlocks not set");
         require(_delaySeconds == delaySeconds, "DelayBuffer: delaySeconds not set");
         require(_futureBlocks == futureBlocks, "DelayBuffer: futureBlocks not set");

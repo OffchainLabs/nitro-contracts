@@ -14,16 +14,15 @@ contract SimpleOneStepProofEntry is IOneStepProofEntry {
     // This constant must be synchronized with the one in execution/engine.go
     uint64 public constant STEPS_PER_BATCH = 2000;
 
-    function getStartMachineHash(bytes32 globalStateHash, bytes32 wasmModuleRoot) external pure returns(bytes32) {
+    function getStartMachineHash(bytes32 globalStateHash, bytes32 wasmModuleRoot) external pure returns (bytes32) {
         return keccak256(abi.encodePacked("Machine:", globalStateHash, wasmModuleRoot));
     }
 
-    function proveOneStep(
-        ExecutionContext calldata execCtx,
-        uint256 step,
-        bytes32 beforeHash,
-        bytes calldata proof
-    ) external view returns (bytes32 afterHash) {
+    function proveOneStep(ExecutionContext calldata execCtx, uint256 step, bytes32 beforeHash, bytes calldata proof)
+        external
+        view
+        returns (bytes32 afterHash)
+    {
         if (proof.length == 0) {
             revert("EMPTY_PROOF");
         }

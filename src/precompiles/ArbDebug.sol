@@ -20,20 +20,8 @@ interface ArbDebug {
 
     // Events that exist for testing log creation and pricing
     event Basic(bool flag, bytes32 indexed value);
-    event Mixed(
-        bool indexed flag,
-        bool not,
-        bytes32 indexed value,
-        address conn,
-        address indexed caller
-    );
-    event Store(
-        bool indexed flag,
-        address indexed field,
-        uint24 number,
-        bytes32 value,
-        bytes store
-    );
+    event Mixed(bool indexed flag, bool not, bytes32 indexed value, address conn, address indexed caller);
+    event Store(bool indexed flag, address indexed field, uint24 number, bytes32 value, bytes store);
 
     function customRevert(uint64 number) external pure;
 

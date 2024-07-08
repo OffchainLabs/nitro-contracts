@@ -44,43 +44,32 @@ contract SequencerInboxTest is Test {
     address rollupOwner = address(137);
     uint256 maxDataSize = 10000;
     ISequencerInbox.MaxTimeVariation maxTimeVariation =
-        ISequencerInbox.MaxTimeVariation({
-            delayBlocks: 10,
-            futureBlocks: 10,
-            delaySeconds: 100,
-            futureSeconds: 100
-        });
-    BufferConfig bufferConfigDefault = BufferConfig({
-        threshold: type(uint64).max,
-        max: type(uint64).max,
-        replenishRateInBasis: 714
-    });
+        ISequencerInbox.MaxTimeVariation({delayBlocks: 10, futureBlocks: 10, delaySeconds: 100, futureSeconds: 100});
+    BufferConfig bufferConfigDefault =
+        BufferConfig({threshold: type(uint64).max, max: type(uint64).max, replenishRateInBasis: 714});
     address dummyInbox = address(139);
     address proxyAdmin = address(140);
     IReader4844 dummyReader4844 = IReader4844(address(137));
 
     uint256 public constant MAX_DATA_SIZE = 117964;
 
-    function deployRollup(bool isArbHosted, bool isDelayBufferable, BufferConfig memory bufferConfig) internal returns (SequencerInbox, Bridge) {
+    function deployRollup(bool isArbHosted, bool isDelayBufferable, BufferConfig memory bufferConfig)
+        internal
+        returns (SequencerInbox, Bridge)
+    {
         RollupMock rollupMock = new RollupMock(rollupOwner);
         Bridge bridgeImpl = new Bridge();
-        Bridge bridge = Bridge(
-            address(new TransparentUpgradeableProxy(address(bridgeImpl), proxyAdmin, ""))
-        );
+        Bridge bridge = Bridge(address(new TransparentUpgradeableProxy(address(bridgeImpl), proxyAdmin, "")));
 
         bridge.initialize(IOwnable(address(rollupMock)));
         vm.prank(rollupOwner);
         bridge.setDelayedInbox(dummyInbox, true);
 
         SequencerInbox seqInboxImpl = new SequencerInbox(
-            maxDataSize,
-            isArbHosted ? IReader4844(address(0)) : dummyReader4844,
-            false,
-            isDelayBufferable
+            maxDataSize, isArbHosted ? IReader4844(address(0)) : dummyReader4844, false, isDelayBufferable
         );
-        SequencerInbox seqInbox = SequencerInbox(
-            address(new TransparentUpgradeableProxy(address(seqInboxImpl), proxyAdmin, ""))
-        );
+        SequencerInbox seqInbox =
+            SequencerInbox(address(new TransparentUpgradeableProxy(address(seqInboxImpl), proxyAdmin, "")));
         seqInbox.initialize(bridge, maxTimeVariation, bufferConfig);
 
         vm.prank(rollupOwner);
@@ -95,9 +84,7 @@ contract SequencerInboxTest is Test {
     function deployFeeTokenBasedRollup() internal returns (SequencerInbox, ERC20Bridge) {
         RollupMock rollupMock = new RollupMock(rollupOwner);
         ERC20Bridge bridgeImpl = new ERC20Bridge();
-        ERC20Bridge bridge = ERC20Bridge(
-            address(new TransparentUpgradeableProxy(address(bridgeImpl), proxyAdmin, ""))
-        );
+        ERC20Bridge bridge = ERC20Bridge(address(new TransparentUpgradeableProxy(address(bridgeImpl), proxyAdmin, "")));
         address nativeToken = address(new ERC20PresetMinterPauser("Appchain Token", "App"));
 
         bridge.initialize(IOwnable(address(rollupMock)), nativeToken);
@@ -105,20 +92,10 @@ contract SequencerInboxTest is Test {
         bridge.setDelayedInbox(dummyInbox, true);
 
         /// this will result in 'hostChainIsArbitrum = true'
-        vm.mockCall(
-            address(100),
-            abi.encodeWithSelector(ArbSys.arbOSVersion.selector),
-            abi.encode(uint256(11))
-        );
-        SequencerInbox seqInboxImpl = new SequencerInbox(
-            maxDataSize,
-            IReader4844(address(0)),
-            true,
-            false
-        );
-        SequencerInbox seqInbox = SequencerInbox(
-            address(new TransparentUpgradeableProxy(address(seqInboxImpl), proxyAdmin, ""))
-        );
+        vm.mockCall(address(100), abi.encodeWithSelector(ArbSys.arbOSVersion.selector), abi.encode(uint256(11)));
+        SequencerInbox seqInboxImpl = new SequencerInbox(maxDataSize, IReader4844(address(0)), true, false);
+        SequencerInbox seqInbox =
+            SequencerInbox(address(new TransparentUpgradeableProxy(address(seqInboxImpl), proxyAdmin, "")));
         seqInbox.initialize(bridge, maxTimeVariation, bufferConfigDefault);
 
         vm.prank(rollupOwner);
@@ -173,21 +150,12 @@ contract SequencerInboxTest is Test {
                 vm.fee(basefee);
                 // 30 gwei TX L1 fees
                 uint256 l1Fees = 30000000000;
-                vm.mockCall(
-                    address(0x6c),
-                    abi.encodeWithSignature("getCurrentTxL1GasFees()"),
-                    abi.encode(l1Fees)
-                );
+                vm.mockCall(address(0x6c), abi.encodeWithSignature("getCurrentTxL1GasFees()"), abi.encode(l1Fees));
                 expectedReportedExtraGas = l1Fees / basefee;
             }
 
             bytes memory spendingReportMsg = abi.encodePacked(
-                block.timestamp,
-                msg.sender,
-                dataHash,
-                sequenceNumber,
-                block.basefee,
-                uint64(expectedReportedExtraGas)
+                block.timestamp, msg.sender, dataHash, sequenceNumber, block.basefee, uint64(expectedReportedExtraGas)
             );
 
             // spending report
@@ -245,12 +213,7 @@ contract SequencerInboxTest is Test {
 
         vm.prank(tx.origin);
         seqInbox.addSequencerL2BatchFromOrigin(
-            sequenceNumber,
-            data,
-            delayedMessagesRead,
-            IGasRefunder(address(0)),
-            subMessageCount,
-            subMessageCount + 1
+            sequenceNumber, data, delayedMessagesRead, IGasRefunder(address(0)), subMessageCount, subMessageCount + 1
         );
     }
 
@@ -264,26 +227,17 @@ contract SequencerInboxTest is Test {
         assertEq(seqInboxProxy.maxDataSize(), MAX_DATA_SIZE, "Invalid MAX_DATA_SIZE");
         assertEq(seqInboxProxy.isUsingFeeToken(), false, "Invalid isUsingFeeToken");
 
-        SequencerInbox seqInboxLogicFeeToken = new SequencerInbox(
-            MAX_DATA_SIZE,
-            dummyReader4844,
-            true,
-            false
-        );
+        SequencerInbox seqInboxLogicFeeToken = new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false);
         assertEq(seqInboxLogicFeeToken.maxDataSize(), MAX_DATA_SIZE, "Invalid MAX_DATA_SIZE");
         assertEq(seqInboxLogicFeeToken.isUsingFeeToken(), true, "Invalid isUsingFeeToken");
 
-        SequencerInbox seqInboxProxyFeeToken = SequencerInbox(
-            TestUtil.deployProxy(address(seqInboxLogicFeeToken))
-        );
+        SequencerInbox seqInboxProxyFeeToken = SequencerInbox(TestUtil.deployProxy(address(seqInboxLogicFeeToken)));
         assertEq(seqInboxProxyFeeToken.maxDataSize(), MAX_DATA_SIZE, "Invalid MAX_DATA_SIZE");
         assertEq(seqInboxProxyFeeToken.isUsingFeeToken(), true, "Invalid isUsingFeeToken");
     }
 
     function testInitialize(BufferConfig memory bufferConfig) public {
-        Bridge _bridge = Bridge(
-            address(new TransparentUpgradeableProxy(address(new Bridge()), proxyAdmin, ""))
-        );
+        Bridge _bridge = Bridge(address(new TransparentUpgradeableProxy(address(new Bridge()), proxyAdmin, "")));
         _bridge.initialize(IOwnable(address(new RollupMock(rollupOwner))));
 
         address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false));
@@ -296,9 +250,8 @@ contract SequencerInboxTest is Test {
     }
 
     function testInitialize_FeeTokenBased(BufferConfig memory bufferConfig) public {
-        ERC20Bridge _bridge = ERC20Bridge(
-            address(new TransparentUpgradeableProxy(address(new ERC20Bridge()), proxyAdmin, ""))
-        );
+        ERC20Bridge _bridge =
+            ERC20Bridge(address(new TransparentUpgradeableProxy(address(new ERC20Bridge()), proxyAdmin, "")));
         address nativeToken = address(new ERC20PresetMinterPauser("Appchain Token", "App"));
         _bridge.initialize(IOwnable(address(new RollupMock(rollupOwner))), nativeToken);
 
@@ -312,9 +265,7 @@ contract SequencerInboxTest is Test {
     }
 
     function testInitialize_revert_NativeTokenMismatch_EthFeeToken(BufferConfig memory bufferConfig) public {
-        Bridge _bridge = Bridge(
-            address(new TransparentUpgradeableProxy(address(new Bridge()), proxyAdmin, ""))
-        );
+        Bridge _bridge = Bridge(address(new TransparentUpgradeableProxy(address(new Bridge()), proxyAdmin, "")));
         _bridge.initialize(IOwnable(address(new RollupMock(rollupOwner))));
 
         address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false));
@@ -325,9 +276,8 @@ contract SequencerInboxTest is Test {
     }
 
     function testInitialize_revert_NativeTokenMismatch_FeeTokenEth(BufferConfig memory bufferConfig) public {
-        ERC20Bridge _bridge = ERC20Bridge(
-            address(new TransparentUpgradeableProxy(address(new ERC20Bridge()), proxyAdmin, ""))
-        );
+        ERC20Bridge _bridge =
+            ERC20Bridge(address(new TransparentUpgradeableProxy(address(new ERC20Bridge()), proxyAdmin, "")));
         address nativeToken = address(new ERC20PresetMinterPauser("Appchain Token", "App"));
         _bridge.initialize(IOwnable(address(new RollupMock(rollupOwner))), nativeToken);
 
@@ -340,11 +290,7 @@ contract SequencerInboxTest is Test {
 
     function testAddSequencerL2BatchFromOrigin_ArbitrumHosted(BufferConfig memory bufferConfig) public {
         // this will result in 'hostChainIsArbitrum = true'
-        vm.mockCall(
-            address(100),
-            abi.encodeWithSelector(ArbSys.arbOSVersion.selector),
-            abi.encode(uint256(11))
-        );
+        vm.mockCall(address(100), abi.encodeWithSelector(ArbSys.arbOSVersion.selector), abi.encode(uint256(11)));
         (SequencerInbox seqInbox, Bridge bridge) = deployRollup(true, false, bufferConfig);
 
         address delayedInboxSender = address(140);
@@ -363,12 +309,7 @@ contract SequencerInboxTest is Test {
 
         vm.prank(tx.origin);
         seqInbox.addSequencerL2BatchFromOrigin(
-            sequenceNumber,
-            data,
-            delayedMessagesRead,
-            IGasRefunder(address(0)),
-            subMessageCount,
-            subMessageCount + 1
+            sequenceNumber, data, delayedMessagesRead, IGasRefunder(address(0)), subMessageCount, subMessageCount + 1
         );
     }
 
@@ -394,12 +335,7 @@ contract SequencerInboxTest is Test {
 
         vm.prank(tx.origin);
         seqInbox.addSequencerL2BatchFromOrigin(
-            sequenceNumber,
-            data,
-            delayedMessagesRead,
-            IGasRefunder(address(0)),
-            subMessageCount,
-            subMessageCount + 1
+            sequenceNumber, data, delayedMessagesRead, IGasRefunder(address(0)), subMessageCount, subMessageCount + 1
         );
     }
 
@@ -419,12 +355,7 @@ contract SequencerInboxTest is Test {
 
         vm.expectRevert(abi.encodeWithSelector(NotOrigin.selector));
         seqInbox.addSequencerL2BatchFromOrigin(
-            sequenceNumber,
-            data,
-            delayedMessagesRead,
-            IGasRefunder(address(0)),
-            subMessageCount,
-            subMessageCount + 1
+            sequenceNumber, data, delayedMessagesRead, IGasRefunder(address(0)), subMessageCount, subMessageCount + 1
         );
 
         vm.prank(rollupOwner);
@@ -433,36 +364,20 @@ contract SequencerInboxTest is Test {
         vm.expectRevert(abi.encodeWithSelector(NotBatchPoster.selector));
         vm.prank(tx.origin);
         seqInbox.addSequencerL2BatchFromOrigin(
-            sequenceNumber,
-            data,
-            delayedMessagesRead,
-            IGasRefunder(address(0)),
-            subMessageCount,
-            subMessageCount + 1
+            sequenceNumber, data, delayedMessagesRead, IGasRefunder(address(0)), subMessageCount, subMessageCount + 1
         );
 
         vm.prank(rollupOwner);
         seqInbox.setIsBatchPoster(tx.origin, true);
 
-        bytes memory bigData = bytes.concat(
-            seqInbox.BROTLI_MESSAGE_HEADER_FLAG(),
-            RAND.Bytes(maxDataSize - seqInbox.HEADER_LENGTH())
-        );
+        bytes memory bigData =
+            bytes.concat(seqInbox.BROTLI_MESSAGE_HEADER_FLAG(), RAND.Bytes(maxDataSize - seqInbox.HEADER_LENGTH()));
         vm.expectRevert(
-            abi.encodeWithSelector(
-                DataTooLarge.selector,
-                bigData.length + seqInbox.HEADER_LENGTH(),
-                maxDataSize
-            )
+            abi.encodeWithSelector(DataTooLarge.selector, bigData.length + seqInbox.HEADER_LENGTH(), maxDataSize)
         );
         vm.prank(tx.origin);
         seqInbox.addSequencerL2BatchFromOrigin(
-            sequenceNumber,
-            bigData,
-            delayedMessagesRead,
-            IGasRefunder(address(0)),
-            subMessageCount,
-            subMessageCount + 1
+            sequenceNumber, bigData, delayedMessagesRead, IGasRefunder(address(0)), subMessageCount, subMessageCount + 1
         );
 
         bytes memory authenticatedData = bytes.concat(seqInbox.DATA_BLOB_HEADER_FLAG(), data);
@@ -477,9 +392,7 @@ contract SequencerInboxTest is Test {
             subMessageCount + 1
         );
 
-        vm.expectRevert(
-            abi.encodeWithSelector(BadSequencerNumber.selector, sequenceNumber, sequenceNumber + 5)
-        );
+        vm.expectRevert(abi.encodeWithSelector(BadSequencerNumber.selector, sequenceNumber, sequenceNumber + 5));
         vm.prank(tx.origin);
         seqInbox.addSequencerL2BatchFromOrigin(
             sequenceNumber + 5,
@@ -491,21 +404,22 @@ contract SequencerInboxTest is Test {
         );
     }
 
-    function testPostUpgradeInitAlreadyInitBuffer(BufferConfig memory bufferConfig) public returns (SequencerInbox, SequencerInbox) {
+    function testPostUpgradeInitAlreadyInitBuffer(BufferConfig memory bufferConfig)
+        public
+        returns (SequencerInbox, SequencerInbox)
+    {
         vm.assume(DelayBuffer.isValidBufferConfig(bufferConfig));
-        (SequencerInbox seqInbox, ) = deployRollup(false, false, bufferConfigDefault);
+        (SequencerInbox seqInbox,) = deployRollup(false, false, bufferConfigDefault);
         SequencerInbox seqInboxImpl = new SequencerInbox(maxDataSize, dummyReader4844, false, true);
         vm.prank(proxyAdmin);
         TransparentUpgradeableProxy(payable(address(seqInbox))).upgradeToAndCall(
-            address(seqInboxImpl),
-            abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector, bufferConfig)
+            address(seqInboxImpl), abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector, bufferConfig)
         );
-                
+
         vm.expectRevert(abi.encodeWithSelector(AlreadyInit.selector));
         vm.prank(proxyAdmin);
         TransparentUpgradeableProxy(payable(address(seqInbox))).upgradeToAndCall(
-            address(seqInboxImpl),
-            abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector, bufferConfig)
+            address(seqInboxImpl), abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector, bufferConfig)
         );
         return (seqInbox, seqInboxImpl);
     }
@@ -518,8 +432,7 @@ contract SequencerInboxTest is Test {
         vm.expectRevert(abi.encodeWithSelector(AlreadyInit.selector));
         vm.prank(proxyAdmin);
         TransparentUpgradeableProxy(payable(address(seqInbox))).upgradeToAndCall(
-            address(seqInboxImpl),
-            abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector, bufferConfig)
+            address(seqInboxImpl), abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector, bufferConfig)
         );
 
         // reset buffer and config
@@ -528,24 +441,22 @@ contract SequencerInboxTest is Test {
         vm.store(address(seqInbox), bytes32(uint256(14)), bytes32(0));
         vm.store(address(seqInbox), bytes32(uint256(15)), bytes32(0));
         vm.store(address(seqInbox), bytes32(uint256(16)), bytes32(0));
-        
+
         vm.prank(proxyAdmin);
         TransparentUpgradeableProxy(payable(address(seqInbox))).upgradeToAndCall(
-            address(seqInboxImpl),
-            abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector, bufferConfig)
+            address(seqInboxImpl), abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector, bufferConfig)
         );
         {
-        (uint64 bufferBlocks, uint64 max, uint64 threshold, ,uint64 replenishRateInBasis,) = seqInbox.buffer();
-        assertEq(max, bufferConfig.max);
-        assertEq(threshold, bufferConfig.threshold);
-        assertEq(replenishRateInBasis, bufferConfig.replenishRateInBasis);
-        assertEq(bufferBlocks, bufferConfig.max);
+            (uint64 bufferBlocks, uint64 max, uint64 threshold,, uint64 replenishRateInBasis,) = seqInbox.buffer();
+            assertEq(max, bufferConfig.max);
+            assertEq(threshold, bufferConfig.threshold);
+            assertEq(replenishRateInBasis, bufferConfig.replenishRateInBasis);
+            assertEq(bufferBlocks, bufferConfig.max);
         }
         vm.expectRevert(abi.encodeWithSelector(AlreadyInit.selector));
         vm.prank(proxyAdmin);
         TransparentUpgradeableProxy(payable(address(seqInbox))).upgradeToAndCall(
-            address(seqInboxImpl),
-            abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector, bufferConfig)
+            address(seqInboxImpl), abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector, bufferConfig)
         );
     }
 
@@ -561,25 +472,24 @@ contract SequencerInboxTest is Test {
         vm.store(address(seqInbox), bytes32(uint256(14)), bytes32(0));
         vm.store(address(seqInbox), bytes32(uint256(15)), bytes32(0));
         vm.store(address(seqInbox), bytes32(uint256(16)), bytes32(0));
-        
+
         vm.expectRevert(abi.encodeWithSelector(BadBufferConfig.selector));
         vm.prank(proxyAdmin);
         TransparentUpgradeableProxy(payable(address(seqInbox))).upgradeToAndCall(
-            address(seqInboxImpl),
-            abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector, configInvalid)
+            address(seqInboxImpl), abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector, configInvalid)
         );
     }
 
     function testSetBufferConfig(BufferConfig memory bufferConfig) public {
         vm.assume(DelayBuffer.isValidBufferConfig(bufferConfig));
-        (SequencerInbox seqInbox, ) = deployRollup(false, true, bufferConfig);
+        (SequencerInbox seqInbox,) = deployRollup(false, true, bufferConfig);
         vm.prank(rollupOwner);
         seqInbox.setBufferConfig(bufferConfig);
     }
 
     function testSetBufferConfigInvalid(BufferConfig memory bufferConfigInvalid) public {
         vm.assume(!DelayBuffer.isValidBufferConfig(bufferConfigInvalid));
-        (SequencerInbox seqInbox, ) = deployRollup(false, true, bufferConfigDefault);
+        (SequencerInbox seqInbox,) = deployRollup(false, true, bufferConfigDefault);
         vm.expectRevert(abi.encodeWithSelector(BadBufferConfig.selector));
         vm.prank(rollupOwner);
         seqInbox.setBufferConfig(bufferConfigInvalid);
@@ -595,7 +505,7 @@ contract SequencerInboxTest is Test {
         vm.assume(futureBlocks > uint256(type(uint64).max));
         vm.assume(delaySeconds > uint256(type(uint64).max));
         vm.assume(futureSeconds > uint256(type(uint64).max));
-        (SequencerInbox seqInbox, ) = deployRollup(false, false, bufferConfigDefault);
+        (SequencerInbox seqInbox,) = deployRollup(false, false, bufferConfigDefault);
         vm.expectRevert(abi.encodeWithSelector(BadMaxTimeVariation.selector));
         vm.prank(rollupOwner);
         seqInbox.setMaxTimeVariation(

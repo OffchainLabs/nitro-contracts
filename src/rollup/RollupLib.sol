@@ -20,34 +20,23 @@ library RollupLib {
 
     // The `assertionHash` contains all the information needed to determine an assertion's validity.
     // This helps protect validators against reorgs by letting them bind their assertion to the current chain state.
-    function assertionHash(
-        bytes32 parentAssertionHash,
-        AssertionState memory afterState,
-        bytes32 inboxAcc
-    ) internal pure returns (bytes32) {
+    function assertionHash(bytes32 parentAssertionHash, AssertionState memory afterState, bytes32 inboxAcc)
+        internal
+        pure
+        returns (bytes32)
+    {
         // we can no longer have `hasSibling` in the assertion hash as it would allow identical assertions
-        return assertionHash(
-            parentAssertionHash,
-            afterState.hash(),
-            inboxAcc
-        );
+        return assertionHash(parentAssertionHash, afterState.hash(), inboxAcc);
     }
 
     // Takes in a hash of the afterState instead of the afterState itself
-    function assertionHash(
-        bytes32 parentAssertionHash,
-        bytes32 afterStateHash,
-        bytes32 inboxAcc
-    ) internal pure returns (bytes32) {
+    function assertionHash(bytes32 parentAssertionHash, bytes32 afterStateHash, bytes32 inboxAcc)
+        internal
+        pure
+        returns (bytes32)
+    {
         // we can no longer have `hasSibling` in the assertion hash as it would allow identical assertions
-        return
-            keccak256(
-                abi.encodePacked(
-                    parentAssertionHash,
-                    afterStateHash,
-                    inboxAcc
-                )
-            );
+        return keccak256(abi.encodePacked(parentAssertionHash, afterStateHash, inboxAcc));
     }
 
     // All these should be emited in AssertionCreated event
@@ -58,22 +47,12 @@ library RollupLib {
         uint64 confirmPeriodBlocks,
         uint64 nextInboxPosition
     ) internal pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked(
-                    wasmModuleRoot,
-                    requiredStake,
-                    challengeManager,
-                    confirmPeriodBlocks,
-                    nextInboxPosition
-                )
-            );
+        return keccak256(
+            abi.encodePacked(wasmModuleRoot, requiredStake, challengeManager, confirmPeriodBlocks, nextInboxPosition)
+        );
     }
 
-    function validateConfigHash(
-        ConfigData calldata configData,
-        bytes32 _configHash
-    ) internal pure {
+    function validateConfigHash(ConfigData calldata configData, bytes32 _configHash) internal pure {
         require(
             _configHash
                 == configHash(

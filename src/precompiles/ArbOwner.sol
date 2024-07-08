@@ -12,7 +12,8 @@ pragma solidity >=0.4.21 <0.9.0;
  * - ArbOS upgrades happen with the rest of the system rather than being independent
  * - Exemptions to address aliasing are no longer offered. Exemptions were intended to support backward compatibility for contracts deployed before aliasing was introduced, but no exemptions were ever requested.
  * Precompiled contract that exists in every Arbitrum chain at 0x0000000000000000000000000000000000000070.
- **/
+ *
+ */
 interface ArbOwner {
     /// @notice Add account as a chain owner
     function addChainOwner(address newOwner) external;

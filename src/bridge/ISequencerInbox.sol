@@ -137,12 +137,7 @@ interface ISequencerInbox is IDelayedMessageProvider {
     function maxTimeVariation()
         external
         view
-        returns (
-            uint256 delayBlocks,
-            uint256 futureBlocks,
-            uint256 delaySeconds,
-            uint256 futureSeconds
-        );
+        returns (uint256 delayBlocks, uint256 futureBlocks, uint256 delaySeconds, uint256 futureSeconds);
 
     function dasKeySetInfo(bytes32) external view returns (bool, uint64);
 
@@ -183,10 +178,7 @@ interface ISequencerInbox is IDelayedMessageProvider {
     /// @notice Calculates the upper bounds of the delay buffer
     /// @param blockNumber The block number when a delayed message was created
     /// @return blockNumberDeadline The block number at when the message can be force included
-    function forceInclusionDeadline(uint64 blockNumber)
-        external
-        view
-        returns (uint64 blockNumberDeadline);
+    function forceInclusionDeadline(uint64 blockNumber) external view returns (uint64 blockNumberDeadline);
 
     // ---------- BatchPoster functions ----------
 

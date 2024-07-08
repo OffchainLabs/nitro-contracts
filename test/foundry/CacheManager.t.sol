@@ -18,15 +18,8 @@ contract CacheManagerTest is Test {
     constructor() {
         ProxyAdmin proxyAdmin = new ProxyAdmin();
         CacheManager cacheManagerImpl = new CacheManager();
-        cacheManager = CacheManager(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(cacheManagerImpl),
-                    address(proxyAdmin),
-                    ""
-                )
-            )
-        );
+        cacheManager =
+            CacheManager(address(new TransparentUpgradeableProxy(address(cacheManagerImpl), address(proxyAdmin), "")));
         uint64 cacheSize = 1_000_000;
         uint64 decay = 100;
         cacheManager.initialize(cacheSize, decay);
@@ -107,13 +100,9 @@ contract CacheManagerTest is Test {
                 }
 
                 if (ARB_WASM_CACHE.codehashIsCached(codehash)) {
-                    vm.expectRevert(
-                        abi.encodeWithSelector(CacheManager.AlreadyCached.selector, codehash)
-                    );
+                    vm.expectRevert(abi.encodeWithSelector(CacheManager.AlreadyCached.selector, codehash));
                 } else if (neededBid > 0) {
-                    vm.expectRevert(
-                        abi.encodeWithSelector(CacheManager.BidTooSmall.selector, bid, neededBid)
-                    );
+                    vm.expectRevert(abi.encodeWithSelector(CacheManager.BidTooSmall.selector, bid, neededBid));
                 } else {
                     // insert the item by moving over those to the right
                     expectedCache.push(CachedItem(bytes32(0), 0, 0));
@@ -136,22 +125,13 @@ contract CacheManagerTest is Test {
 
                 cacheManager.placeBid{value: pay}(program);
 
-                if(mustCache) {
-                    require(
-                        ARB_WASM_CACHE.codehashIsCached(codehash),
-                        "must cache codehash not cached"
-                    );
+                if (mustCache) {
+                    require(ARB_WASM_CACHE.codehashIsCached(codehash), "must cache codehash not cached");
                 }
 
-                require(
-                    ARB_WASM_CACHE.numCached() == expectedCache.length,
-                    "wrong number of cached items"
-                );
+                require(ARB_WASM_CACHE.numCached() == expectedCache.length, "wrong number of cached items");
                 for (uint256 j = 0; j < expectedCache.length; j++) {
-                    require(
-                        ARB_WASM_CACHE.codehashIsCached(expectedCache[j].codehash),
-                        "codehash not cached"
-                    );
+                    require(ARB_WASM_CACHE.codehashIsCached(expectedCache[j].codehash), "codehash not cached");
                 }
 
                 if (round == 700) {

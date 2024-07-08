@@ -13,9 +13,7 @@ library MerkleLib {
             bytes32[] memory nextLayer = new bytes32[]((prevLayer.length + 1) / 2);
             for (uint256 i = 0; i < nextLayer.length; i++) {
                 if (2 * i + 1 < prevLayer.length) {
-                    nextLayer[i] = keccak256(
-                        abi.encodePacked(prevLayer[2 * i], prevLayer[2 * i + 1])
-                    );
+                    nextLayer[i] = keccak256(abi.encodePacked(prevLayer[2 * i], prevLayer[2 * i + 1]));
                 } else {
                     nextLayer[i] = prevLayer[2 * i];
                 }
@@ -25,15 +23,11 @@ library MerkleLib {
         return prevLayer[0];
     }
 
-    function calculateRoot(
-        bytes32[] memory nodes,
-        uint256 route,
-        bytes32 item
-    ) internal pure returns (bytes32) {
+    function calculateRoot(bytes32[] memory nodes, uint256 route, bytes32 item) internal pure returns (bytes32) {
         uint256 proofItems = nodes.length;
         if (proofItems > 256) revert MerkleProofTooLong(proofItems, 256);
         bytes32 h = item;
-        for (uint256 i = 0; i < proofItems; ) {
+        for (uint256 i = 0; i < proofItems;) {
             bytes32 node = nodes[i];
             if ((route & (1 << i)) == 0) {
                 assembly {

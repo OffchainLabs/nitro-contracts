@@ -24,12 +24,9 @@ interface IERC20Bridge is IBridge {
      *      These messages are later sequenced in the SequencerInbox, either
      *      by the sequencer as part of a normal batch, or by force inclusion.
      */
-    function enqueueDelayedMessage(
-        uint8 kind,
-        address sender,
-        bytes32 messageDataHash,
-        uint256 tokenFeeAmount
-    ) external returns (uint256);
+    function enqueueDelayedMessage(uint8 kind, address sender, bytes32 messageDataHash, uint256 tokenFeeAmount)
+        external
+        returns (uint256);
 
     // ---------- initializer ----------
 

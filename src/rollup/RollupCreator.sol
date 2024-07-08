@@ -87,13 +87,7 @@ contract RollupCreator is Ownable {
         returns (IEdgeChallengeManager)
     {
         IEdgeChallengeManager challengeManager = IEdgeChallengeManager(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(challengeManagerTemplate),
-                    proxyAdminAddr,
-                    ""
-                )
-            )
+            address(new TransparentUpgradeableProxy(address(challengeManagerTemplate), proxyAdminAddr, ""))
         );
 
         challengeManager.initialize({
@@ -134,11 +128,7 @@ contract RollupCreator is Ownable {
      *          - dataHashReader The address of the data hash reader used to read blob hashes
      * @return The address of the newly created rollup
      */
-    function createRollup(RollupDeploymentParams memory deployParams)
-        public
-        payable
-        returns (address)
-    {
+    function createRollup(RollupDeploymentParams memory deployParams) public payable returns (address) {
         {
             // Make sure the immutable maxDataSize is as expected
             (
@@ -147,15 +137,10 @@ contract RollupCreator is Ownable {
                 ISequencerInbox ethDelayBufferableSequencerInbox,
                 IInboxBase ethInbox,
                 ,
-
             ) = bridgeCreator.ethBasedTemplates();
+            require(deployParams.maxDataSize == ethSequencerInbox.maxDataSize(), "SI_MAX_DATA_SIZE_MISMATCH");
             require(
-                deployParams.maxDataSize == ethSequencerInbox.maxDataSize(),
-                "SI_MAX_DATA_SIZE_MISMATCH"
-            );
-            require(
-                deployParams.maxDataSize == ethDelayBufferableSequencerInbox.maxDataSize(),
-                "SI_MAX_DATA_SIZE_MISMATCH"
+                deployParams.maxDataSize == ethDelayBufferableSequencerInbox.maxDataSize(), "SI_MAX_DATA_SIZE_MISMATCH"
             );
             require(deployParams.maxDataSize == ethInbox.maxDataSize(), "I_MAX_DATA_SIZE_MISMATCH");
 
@@ -165,20 +150,13 @@ contract RollupCreator is Ownable {
                 ISequencerInbox erc20DelayBufferableSequencerInbox,
                 IInboxBase erc20Inbox,
                 ,
-
             ) = bridgeCreator.erc20BasedTemplates();
-            require(
-                deployParams.maxDataSize == erc20SequencerInbox.maxDataSize(),
-                "SI_MAX_DATA_SIZE_MISMATCH"
-            );
+            require(deployParams.maxDataSize == erc20SequencerInbox.maxDataSize(), "SI_MAX_DATA_SIZE_MISMATCH");
             require(
                 deployParams.maxDataSize == erc20DelayBufferableSequencerInbox.maxDataSize(),
                 "SI_MAX_DATA_SIZE_MISMATCH"
             );
-            require(
-                deployParams.maxDataSize == erc20Inbox.maxDataSize(),
-                "I_MAX_DATA_SIZE_MISMATCH"
-            );
+            require(deployParams.maxDataSize == erc20Inbox.maxDataSize(), "I_MAX_DATA_SIZE_MISMATCH");
         }
 
         // create proxy admin which will manage bridge contracts
@@ -195,7 +173,8 @@ contract RollupCreator is Ownable {
             deployParams.config.bufferConfig
         );
 
-        IEdgeChallengeManager challengeManager = createChallengeManager(address(rollup), address(proxyAdmin), deployParams.config);
+        IEdgeChallengeManager challengeManager =
+            createChallengeManager(address(rollup), address(proxyAdmin), deployParams.config);
 
         // deploy and init upgrade executor
         address upgradeExecutor = _deployUpgradeExecutor(deployParams.config.owner, proxyAdmin);
@@ -242,9 +221,7 @@ contract RollupCreator is Ownable {
 
         if (deployParams.deployFactoriesToL2) {
             _deployFactories(
-                address(bridgeContracts.inbox),
-                deployParams.nativeToken,
-                deployParams.maxFeePerGasForRetryables
+                address(bridgeContracts.inbox), deployParams.nativeToken, deployParams.maxFeePerGasForRetryables
             );
         }
 
@@ -264,18 +241,9 @@ contract RollupCreator is Ownable {
         return address(rollup);
     }
 
-    function _deployUpgradeExecutor(address rollupOwner, ProxyAdmin proxyAdmin)
-        internal
-        returns (address)
-    {
+    function _deployUpgradeExecutor(address rollupOwner, ProxyAdmin proxyAdmin) internal returns (address) {
         IUpgradeExecutor upgradeExecutor = IUpgradeExecutor(
-            address(
-                new TransparentUpgradeableProxy(
-                    address(upgradeExecutorLogic),
-                    address(proxyAdmin),
-                    bytes("")
-                )
-            )
+            address(new TransparentUpgradeableProxy(address(upgradeExecutorLogic), address(proxyAdmin), bytes("")))
         );
         address[] memory executors = new address[](1);
         executors[0] = rollupOwner;
@@ -284,31 +252,21 @@ contract RollupCreator is Ownable {
         return address(upgradeExecutor);
     }
 
-    function _deployFactories(
-        address _inbox,
-        address _nativeToken,
-        uint256 _maxFeePerGas
-    ) internal {
+    function _deployFactories(address _inbox, address _nativeToken, uint256 _maxFeePerGas) internal {
         if (_nativeToken == address(0)) {
             // we need to fund 4 retryable tickets
-            uint256 cost = l2FactoriesDeployer.getDeploymentTotalCost(
-                IInboxBase(_inbox),
-                _maxFeePerGas
-            );
+            uint256 cost = l2FactoriesDeployer.getDeploymentTotalCost(IInboxBase(_inbox), _maxFeePerGas);
 
             // do it
             l2FactoriesDeployer.perform{value: cost}(_inbox, _nativeToken, _maxFeePerGas);
 
             // refund the caller
             // solhint-disable-next-line avoid-low-level-calls
-            (bool sent, ) = msg.sender.call{value: address(this).balance}("");
+            (bool sent,) = msg.sender.call{value: address(this).balance}("");
             require(sent, "Refund failed");
         } else {
             // Transfer fee token amount needed to pay for retryable fees to the inbox.
-            uint256 totalFee = l2FactoriesDeployer.getDeploymentTotalCost(
-                IInboxBase(_inbox),
-                _maxFeePerGas
-            );
+            uint256 totalFee = l2FactoriesDeployer.getDeploymentTotalCost(IInboxBase(_inbox), _maxFeePerGas);
             IERC20(_nativeToken).safeTransferFrom(msg.sender, _inbox, totalFee);
 
             // do it

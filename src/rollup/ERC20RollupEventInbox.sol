@@ -15,12 +15,8 @@ contract ERC20RollupEventInbox is AbsRollupEventInbox {
 
     function _enqueueInitializationMsg(bytes memory initMsg) internal override returns (uint256) {
         uint256 tokenAmount = 0;
-        return
-            IERC20Bridge(address(bridge)).enqueueDelayedMessage(
-                INITIALIZATION_MSG_TYPE,
-                address(0),
-                keccak256(initMsg),
-                tokenAmount
-            );
+        return IERC20Bridge(address(bridge)).enqueueDelayedMessage(
+            INITIALIZATION_MSG_TYPE, address(0), keccak256(initMsg), tokenAmount
+        );
     }
 }

@@ -36,12 +36,10 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
     }
 
     /// @inheritdoc IERC20Bridge
-    function enqueueDelayedMessage(
-        uint8 kind,
-        address sender,
-        bytes32 messageDataHash,
-        uint256 tokenFeeAmount
-    ) external returns (uint256) {
+    function enqueueDelayedMessage(uint8 kind, address sender, bytes32 messageDataHash, uint256 tokenFeeAmount)
+        external
+        returns (uint256)
+    {
         return _enqueueDelayedMessage(kind, sender, messageDataHash, tokenFeeAmount);
     }
 
@@ -50,11 +48,11 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
         IERC20(nativeToken).safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function _executeLowLevelCall(
-        address to,
-        uint256 value,
-        bytes memory data
-    ) internal override returns (bool success, bytes memory returnData) {
+    function _executeLowLevelCall(address to, uint256 value, bytes memory data)
+        internal
+        override
+        returns (bool success, bytes memory returnData)
+    {
         address _nativeToken = nativeToken;
 
         // we don't allow outgoing calls to native token contract because it could

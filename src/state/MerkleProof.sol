@@ -16,46 +16,45 @@ library MerkleProofLib {
     using ModuleLib for Module;
     using ValueLib for Value;
 
-    function computeRootFromValue(
-        MerkleProof memory proof,
-        uint256 index,
-        Value memory leaf
-    ) internal pure returns (bytes32) {
+    function computeRootFromValue(MerkleProof memory proof, uint256 index, Value memory leaf)
+        internal
+        pure
+        returns (bytes32)
+    {
         return computeRootUnsafe(proof, index, leaf.hash(), "Value merkle tree:");
     }
 
-    function computeRootFromInstructions(
-        MerkleProof memory proof,
-        uint256 index,
-        Instruction[] memory code
-    ) internal pure returns (bytes32) {
+    function computeRootFromInstructions(MerkleProof memory proof, uint256 index, Instruction[] memory code)
+        internal
+        pure
+        returns (bytes32)
+    {
         return computeRootUnsafe(proof, index, Instructions.hash(code), "Instruction merkle tree:");
     }
 
-    function computeRootFromFunction(
-        MerkleProof memory proof,
-        uint256 index,
-        bytes32 codeRoot
-    ) internal pure returns (bytes32) {
+    function computeRootFromFunction(MerkleProof memory proof, uint256 index, bytes32 codeRoot)
+        internal
+        pure
+        returns (bytes32)
+    {
         bytes32 h = keccak256(abi.encodePacked("Function:", codeRoot));
         return computeRootUnsafe(proof, index, h, "Function merkle tree:");
     }
 
-    function computeRootFromMemory(
-        MerkleProof memory proof,
-        uint256 index,
-        bytes32 contents
-    ) internal pure returns (bytes32) {
+    function computeRootFromMemory(MerkleProof memory proof, uint256 index, bytes32 contents)
+        internal
+        pure
+        returns (bytes32)
+    {
         bytes32 h = keccak256(abi.encodePacked("Memory leaf:", contents));
         return computeRootUnsafe(proof, index, h, "Memory merkle tree:");
     }
 
-    function computeRootFromElement(
-        MerkleProof memory proof,
-        uint256 index,
-        bytes32 funcTypeHash,
-        Value memory val
-    ) internal pure returns (bytes32) {
+    function computeRootFromElement(MerkleProof memory proof, uint256 index, bytes32 funcTypeHash, Value memory val)
+        internal
+        pure
+        returns (bytes32)
+    {
         bytes32 h = keccak256(abi.encodePacked("Table element:", funcTypeHash, val.hash()));
         return computeRootUnsafe(proof, index, h, "Table element merkle tree:");
     }
@@ -71,21 +70,20 @@ library MerkleProofLib {
         return computeRootUnsafe(proof, index, h, "Table merkle tree:");
     }
 
-    function computeRootFromModule(
-        MerkleProof memory proof,
-        uint256 index,
-        Module memory mod
-    ) internal pure returns (bytes32) {
+    function computeRootFromModule(MerkleProof memory proof, uint256 index, Module memory mod)
+        internal
+        pure
+        returns (bytes32)
+    {
         return computeRootUnsafe(proof, index, mod.hash(), "Module merkle tree:");
     }
 
     // WARNING: leafHash must be computed in such a way that it cannot be a non-leaf hash.
-    function computeRootUnsafe(
-        MerkleProof memory proof,
-        uint256 index,
-        bytes32 leafHash,
-        string memory prefix
-    ) internal pure returns (bytes32 h) {
+    function computeRootUnsafe(MerkleProof memory proof, uint256 index, bytes32 leafHash, string memory prefix)
+        internal
+        pure
+        returns (bytes32 h)
+    {
         h = leafHash;
         for (uint256 layer = 0; layer < proof.counterparts.length; layer++) {
             if (index & 1 == 0) {
@@ -98,13 +96,11 @@ library MerkleProofLib {
         require(index == 0, "PROOF_TOO_SHORT");
     }
 
-    function growToNewRoot(
-        bytes32 root,
-        uint256 leaf,
-        bytes32 hash,
-        bytes32 zero,
-        string memory prefix
-    ) internal pure returns (bytes32) {
+    function growToNewRoot(bytes32 root, uint256 leaf, bytes32 hash, bytes32 zero, string memory prefix)
+        internal
+        pure
+        returns (bytes32)
+    {
         bytes32 h = hash;
         uint256 node = leaf;
         while (node > 1) {

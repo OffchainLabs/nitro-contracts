@@ -35,10 +35,7 @@ abstract contract DoubleLogicERC1967Upgrade is ERC1967Upgrade {
      * @dev Stores a new address in the EIP1967 implementation slot.
      */
     function _setSecondaryImplementation(address newImplementation) private {
-        require(
-            Address.isContract(newImplementation),
-            "ERC1967: new secondary implementation is not a contract"
-        );
+        require(Address.isContract(newImplementation), "ERC1967: new secondary implementation is not a contract");
         StorageSlot.getAddressSlot(_IMPLEMENTATION_SECONDARY_SLOT).value = newImplementation;
     }
 
@@ -57,11 +54,7 @@ abstract contract DoubleLogicERC1967Upgrade is ERC1967Upgrade {
      *
      * Emits an {UpgradedSecondary} event.
      */
-    function _upgradeSecondaryToAndCall(
-        address newImplementation,
-        bytes memory data,
-        bool forceCall
-    ) internal {
+    function _upgradeSecondaryToAndCall(address newImplementation, bytes memory data, bool forceCall) internal {
         _upgradeSecondaryTo(newImplementation);
         if (data.length > 0 || forceCall) {
             Address.functionDelegateCall(newImplementation, data);
@@ -73,11 +66,7 @@ abstract contract DoubleLogicERC1967Upgrade is ERC1967Upgrade {
      *
      * Emits an {UpgradedSecondary} event.
      */
-    function _upgradeSecondaryToAndCallUUPS(
-        address newImplementation,
-        bytes memory data,
-        bool forceCall
-    ) internal {
+    function _upgradeSecondaryToAndCallUUPS(address newImplementation, bytes memory data, bool forceCall) internal {
         // Upgrades from old implementations will perform a rollback test. This test requires the new
         // implementation to upgrade back to the old, non-ERC1822 compliant, implementation. Removing
         // this special case will break upgrade paths from old UUPS implementation to new ones.
@@ -85,10 +74,7 @@ abstract contract DoubleLogicERC1967Upgrade is ERC1967Upgrade {
             _setSecondaryImplementation(newImplementation);
         } else {
             try IERC1822Proxiable(newImplementation).proxiableUUID() returns (bytes32 slot) {
-                require(
-                    slot == _IMPLEMENTATION_SECONDARY_SLOT,
-                    "ERC1967Upgrade: unsupported secondary proxiableUUID"
-                );
+                require(slot == _IMPLEMENTATION_SECONDARY_SLOT, "ERC1967Upgrade: unsupported secondary proxiableUUID");
             } catch {
                 revert("ERC1967Upgrade: new secondary implementation is not UUPS");
             }
@@ -115,12 +101,9 @@ contract AdminFallbackProxy is Proxy, DoubleLogicERC1967Upgrade {
         address adminAddr
     ) internal {
         assert(_ADMIN_SLOT == bytes32(uint256(keccak256("eip1967.proxy.admin")) - 1));
+        assert(_IMPLEMENTATION_SLOT == bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1));
         assert(
-            _IMPLEMENTATION_SLOT == bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1)
-        );
-        assert(
-            _IMPLEMENTATION_SECONDARY_SLOT ==
-                bytes32(uint256(keccak256("eip1967.proxy.implementation.secondary")) - 1)
+            _IMPLEMENTATION_SECONDARY_SLOT == bytes32(uint256(keccak256("eip1967.proxy.implementation.secondary")) - 1)
         );
         _changeAdmin(adminAddr);
         _upgradeToAndCall(adminLogic, adminData, false);

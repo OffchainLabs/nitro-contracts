@@ -70,10 +70,7 @@ contract ERC20OutboxTest is AbsOutboxTest {
         bytes32 root = outbox.calculateMerkleRoot(proof, index, itemHash);
         // store root
         vm.prank(rollup);
-        outbox.updateSendRoot(
-            root,
-            bytes32(uint256(1))
-        );
+        outbox.updateSendRoot(root, bytes32(uint256(1)));
 
         outbox.executeTransaction({
             proof: proof,
@@ -88,18 +85,10 @@ contract ERC20OutboxTest is AbsOutboxTest {
         });
 
         uint256 bridgeTokenBalanceAfter = nativeToken.balanceOf(address(bridge));
-        assertEq(
-            bridgeTokenBalanceBefore - bridgeTokenBalanceAfter,
-            withdrawalAmount,
-            "Invalid bridge token balance"
-        );
+        assertEq(bridgeTokenBalanceBefore - bridgeTokenBalanceAfter, withdrawalAmount, "Invalid bridge token balance");
 
         uint256 targetTokenBalanceAfter = nativeToken.balanceOf(address(target));
-        assertEq(
-            targetTokenBalanceAfter - targetTokenBalanceBefore,
-            withdrawalAmount,
-            "Invalid target token balance"
-        );
+        assertEq(targetTokenBalanceAfter - targetTokenBalanceBefore, withdrawalAmount, "Invalid target token balance");
 
         /// check context was properly set during execution
         assertEq(uint256(target.l2Block()), 300, "Invalid l2Block");
@@ -154,10 +143,7 @@ contract ERC20OutboxTest is AbsOutboxTest {
         bytes32 root = outbox.calculateMerkleRoot(proof, index, itemHash);
         // store root
         vm.prank(rollup);
-        outbox.updateSendRoot(
-            root,
-            bytes32(uint256(1))
-        );
+        outbox.updateSendRoot(root, bytes32(uint256(1)));
 
         vm.expectRevert(abi.encodeWithSelector(CallTargetNotAllowed.selector, invalidTarget));
         outbox.executeTransaction({

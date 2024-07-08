@@ -16,21 +16,13 @@ import "./Module.sol";
 import "./GlobalState.sol";
 
 library Deserialize {
-    function u8(bytes calldata proof, uint256 startOffset)
-        internal
-        pure
-        returns (uint8 ret, uint256 offset)
-    {
+    function u8(bytes calldata proof, uint256 startOffset) internal pure returns (uint8 ret, uint256 offset) {
         offset = startOffset;
         ret = uint8(proof[offset]);
         offset++;
     }
 
-    function u16(bytes calldata proof, uint256 startOffset)
-        internal
-        pure
-        returns (uint16 ret, uint256 offset)
-    {
+    function u16(bytes calldata proof, uint256 startOffset) internal pure returns (uint16 ret, uint256 offset) {
         offset = startOffset;
         for (uint256 i = 0; i < 16 / 8; i++) {
             ret <<= 8;
@@ -39,11 +31,7 @@ library Deserialize {
         }
     }
 
-    function u32(bytes calldata proof, uint256 startOffset)
-        internal
-        pure
-        returns (uint32 ret, uint256 offset)
-    {
+    function u32(bytes calldata proof, uint256 startOffset) internal pure returns (uint32 ret, uint256 offset) {
         offset = startOffset;
         for (uint256 i = 0; i < 32 / 8; i++) {
             ret <<= 8;
@@ -52,11 +40,7 @@ library Deserialize {
         }
     }
 
-    function u64(bytes calldata proof, uint256 startOffset)
-        internal
-        pure
-        returns (uint64 ret, uint256 offset)
-    {
+    function u64(bytes calldata proof, uint256 startOffset) internal pure returns (uint64 ret, uint256 offset) {
         offset = startOffset;
         for (uint256 i = 0; i < 64 / 8; i++) {
             ret <<= 8;
@@ -65,11 +49,7 @@ library Deserialize {
         }
     }
 
-    function u256(bytes calldata proof, uint256 startOffset)
-        internal
-        pure
-        returns (uint256 ret, uint256 offset)
-    {
+    function u256(bytes calldata proof, uint256 startOffset) internal pure returns (uint256 ret, uint256 offset) {
         offset = startOffset;
         for (uint256 i = 0; i < 256 / 8; i++) {
             ret <<= 8;
@@ -78,22 +58,14 @@ library Deserialize {
         }
     }
 
-    function b32(bytes calldata proof, uint256 startOffset)
-        internal
-        pure
-        returns (bytes32 ret, uint256 offset)
-    {
+    function b32(bytes calldata proof, uint256 startOffset) internal pure returns (bytes32 ret, uint256 offset) {
         offset = startOffset;
         uint256 retInt;
         (retInt, offset) = u256(proof, offset);
         ret = bytes32(retInt);
     }
 
-    function boolean(bytes calldata proof, uint256 startOffset)
-        internal
-        pure
-        returns (bool ret, uint256 offset)
-    {
+    function boolean(bytes calldata proof, uint256 startOffset) internal pure returns (bool ret, uint256 offset) {
         offset = startOffset;
         ret = uint8(proof[offset]) != 0;
         offset++;
@@ -140,10 +112,7 @@ library Deserialize {
         (inactiveStackHash, offset) = b32(proof, offset);
         bytes32 remainingHash;
         (remainingHash, offset) = b32(proof, offset);
-        multistack = MultiStack({
-            inactiveStackHash: inactiveStackHash,
-            remainingHash: remainingHash
-        });
+        multistack = MultiStack({inactiveStackHash: inactiveStackHash, remainingHash: remainingHash});
     }
 
     function instructions(bytes calldata proof, uint256 startOffset)

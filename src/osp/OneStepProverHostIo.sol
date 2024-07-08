@@ -29,11 +29,7 @@ contract OneStepProverHostIo is IOneStepProver {
     uint64 private constant INBOX_HEADER_LEN = 40;
     uint64 private constant DELAYED_HEADER_LEN = 112 + 1;
 
-    function setLeafByte(
-        bytes32 oldLeaf,
-        uint256 idx,
-        uint8 val
-    ) internal pure returns (bytes32) {
+    function setLeafByte(bytes32 oldLeaf, uint256 idx, uint8 val) internal pure returns (bytes32) {
         require(idx < LEAF_SIZE, "BAD_SET_LEAF_BYTE_IDX");
         // Take into account that we are casting the leaf to a big-endian integer
         uint256 leafShift = (LEAF_SIZE - 1 - idx) * 8;
@@ -66,17 +62,10 @@ contract OneStepProverHostIo is IOneStepProver {
         uint256 proofOffset = 0;
         bytes32 startLeafContents;
         MerkleProof memory merkleProof;
-        (startLeafContents, proofOffset, merkleProof) = mod.moduleMemory.proveLeaf(
-            leafIdx,
-            proof,
-            proofOffset
-        );
+        (startLeafContents, proofOffset, merkleProof) = mod.moduleMemory.proveLeaf(leafIdx, proof, proofOffset);
 
         if (inst.opcode == Instructions.GET_GLOBAL_STATE_BYTES32) {
-            mod.moduleMemory.merkleRoot = merkleProof.computeRootFromMemory(
-                leafIdx,
-                state.bytes32Vals[idx]
-            );
+            mod.moduleMemory.merkleRoot = merkleProof.computeRootFromMemory(leafIdx, state.bytes32Vals[idx]);
         } else if (inst.opcode == Instructions.SET_GLOBAL_STATE_BYTES32) {
             state.bytes32Vals[idx] = startLeafContents;
         } else {
@@ -113,11 +102,7 @@ contract OneStepProverHostIo is IOneStepProver {
 
     // Computes b**e % m
     // Really pure but the Solidity compiler sees the staticcall and requires view
-    function modExp256(
-        uint256 b,
-        uint256 e,
-        uint256 m
-    ) internal view returns (uint256) {
+    function modExp256(uint256 b, uint256 e, uint256 m) internal view returns (uint256) {
         bytes memory modExpInput = abi.encode(32, 32, 32, b, e, m);
         (bool modexpSuccess, bytes memory modExpOutput) = address(0x05).staticcall(modExpInput);
         require(modexpSuccess, "MODEXP_FAILED");
@@ -143,11 +128,7 @@ contract OneStepProverHostIo is IOneStepProver {
         uint256 proofOffset = 0;
         bytes32 leafContents;
         MerkleProof memory merkleProof;
-        (leafContents, proofOffset, merkleProof) = mod.moduleMemory.proveLeaf(
-            leafIdx,
-            proof,
-            proofOffset
-        );
+        (leafContents, proofOffset, merkleProof) = mod.moduleMemory.proveLeaf(leafIdx, proof, proofOffset);
 
         bytes memory extracted;
         uint8 proofType = uint8(proof[proofOffset]);
@@ -249,15 +230,15 @@ contract OneStepProverHostIo is IOneStepProver {
         mach.valueStack.push(ValueLib.newI32(uint32(extracted.length)));
     }
 
-    function validateSequencerInbox(
-        ExecutionContext calldata execCtx,
-        uint64 msgIndex,
-        bytes calldata message
-    ) internal view returns (bool) {
+    function validateSequencerInbox(ExecutionContext calldata execCtx, uint64 msgIndex, bytes calldata message)
+        internal
+        view
+        returns (bool)
+    {
         require(message.length >= INBOX_HEADER_LEN, "BAD_SEQINBOX_PROOF");
 
         uint64 afterDelayedMsg;
-        (afterDelayedMsg, ) = Deserialize.u64(message, 32);
+        (afterDelayedMsg,) = Deserialize.u64(message, 32);
         bytes32 messageHash = keccak256(message);
         bytes32 beforeAcc;
         bytes32 delayedAcc;
@@ -273,11 +254,11 @@ contract OneStepProverHostIo is IOneStepProver {
         return true;
     }
 
-    function validateDelayedInbox(
-        ExecutionContext calldata execCtx,
-        uint64 msgIndex,
-        bytes calldata message
-    ) internal view returns (bool) {
+    function validateDelayedInbox(ExecutionContext calldata execCtx, uint64 msgIndex, bytes calldata message)
+        internal
+        view
+        returns (bool)
+    {
         require(message.length >= DELAYED_HEADER_LEN, "BAD_DELAYED_PROOF");
 
         bytes32 beforeAcc;
@@ -289,11 +270,10 @@ contract OneStepProverHostIo is IOneStepProver {
         bytes32 messageDataHash = keccak256(message[DELAYED_HEADER_LEN:]);
         bytes1 kind = message[0];
         uint256 sender;
-        (sender, ) = Deserialize.u256(message, 1);
+        (sender,) = Deserialize.u256(message, 1);
 
-        bytes32 messageHash = keccak256(
-            abi.encodePacked(kind, uint160(sender), message[33:DELAYED_HEADER_LEN], messageDataHash)
-        );
+        bytes32 messageHash =
+            keccak256(abi.encodePacked(kind, uint160(sender), message[33:DELAYED_HEADER_LEN], messageDataHash));
         bytes32 acc = Messages.accumulateInboxMessage(beforeAcc, messageHash);
 
         require(acc == execCtx.bridge.delayedInboxAccs(msgIndex), "BAD_DELAYED_MESSAGE");
@@ -310,10 +290,7 @@ contract OneStepProverHostIo is IOneStepProver {
         uint256 messageOffset = mach.valueStack.pop().assumeI32();
         uint256 ptr = mach.valueStack.pop().assumeI32();
         uint256 msgIndex = mach.valueStack.pop().assumeI64();
-        if (
-            inst.argumentData == Instructions.INBOX_INDEX_SEQUENCER &&
-            msgIndex >= execCtx.maxInboxMessagesRead
-        ) {
+        if (inst.argumentData == Instructions.INBOX_INDEX_SEQUENCER && msgIndex >= execCtx.maxInboxMessagesRead) {
             mach.status = MachineStatus.ERRORED;
             return;
         }
@@ -327,11 +304,7 @@ contract OneStepProverHostIo is IOneStepProver {
         uint256 proofOffset = 0;
         bytes32 leafContents;
         MerkleProof memory merkleProof;
-        (leafContents, proofOffset, merkleProof) = mod.moduleMemory.proveLeaf(
-            leafIdx,
-            proof,
-            proofOffset
-        );
+        (leafContents, proofOffset, merkleProof) = mod.moduleMemory.proveLeaf(leafIdx, proof, proofOffset);
 
         {
             // TODO: support proving via an authenticated contract
@@ -364,11 +337,7 @@ contract OneStepProverHostIo is IOneStepProver {
 
         uint32 i = 0;
         for (; i < 32 && messageOffset + i < messageLength; i++) {
-            leafContents = setLeafByte(
-                leafContents,
-                i,
-                uint8(proof[proofOffset + messageOffset + i])
-            );
+            leafContents = setLeafByte(leafContents, i, uint8(proof[proofOffset + messageOffset + i]));
         }
 
         mod.moduleMemory.merkleRoot = merkleProof.computeRootFromMemory(leafIdx, leafContents);
@@ -389,18 +358,10 @@ contract OneStepProverHostIo is IOneStepProver {
         return value != 0 && (value & (value - 1) == 0);
     }
 
-    function proveLastLeaf(
-        Machine memory mach,
-        uint256 offset,
-        bytes calldata proof
-    )
+    function proveLastLeaf(Machine memory mach, uint256 offset, bytes calldata proof)
         internal
         pure
-        returns (
-            uint256 leaf,
-            MerkleProof memory leafProof,
-            MerkleProof memory zeroProof
-        )
+        returns (uint256 leaf, MerkleProof memory leafProof, MerkleProof memory zeroProof)
     {
         string memory prefix = "Module merkle tree:";
         bytes32 root = mach.modulesRoot;
@@ -445,13 +406,9 @@ contract OneStepProverHostIo is IOneStepProver {
             mach.status = MachineStatus.ERRORED;
             return;
         }
-        (bytes32 userMod, uint256 offset, ) = mod.moduleMemory.proveLeaf(
-            pointer / LEAF_SIZE,
-            proof,
-            0
-        );
+        (bytes32 userMod, uint256 offset,) = mod.moduleMemory.proveLeaf(pointer / LEAF_SIZE, proof, 0);
 
-        (uint256 leaf, , MerkleProof memory zeroProof) = proveLastLeaf(mach, offset, proof);
+        (uint256 leaf,, MerkleProof memory zeroProof) = proveLastLeaf(mach, offset, proof);
 
         bool balanced = isPowerOfTwo(leaf + 1);
         if (balanced) {
@@ -472,7 +429,7 @@ contract OneStepProverHostIo is IOneStepProver {
     ) internal pure {
         string memory prefix = "Module merkle tree:";
 
-        (uint256 leaf, MerkleProof memory leafProof, ) = proveLastLeaf(mach, 0, proof);
+        (uint256 leaf, MerkleProof memory leafProof,) = proveLastLeaf(mach, 0, proof);
 
         bool shrink = isPowerOfTwo(leaf);
         if (shrink) {
@@ -496,10 +453,7 @@ contract OneStepProverHostIo is IOneStepProver {
         (state, proofOffset) = Deserialize.globalState(proof, proofOffset);
         require(state.hash() == mach.globalStateHash, "BAD_GLOBAL_STATE");
 
-        if (
-            opcode == Instructions.GET_GLOBAL_STATE_BYTES32 ||
-            opcode == Instructions.SET_GLOBAL_STATE_BYTES32
-        ) {
+        if (opcode == Instructions.GET_GLOBAL_STATE_BYTES32 || opcode == Instructions.SET_GLOBAL_STATE_BYTES32) {
             executeGetOrSetBytes32(mach, mod, state, inst, proof[proofOffset:]);
         } else if (opcode == Instructions.GET_GLOBAL_STATE_U64) {
             executeGetU64(mach, state);
@@ -539,8 +493,7 @@ contract OneStepProverHostIo is IOneStepProver {
             require(multi.remainingHash == bytes32(0), "WRONG_COTHREAD_EMPTY");
         } else {
             require(
-                keccak256(abi.encodePacked("cothread:", newInactiveCoThread, newRemaining)) ==
-                    multi.remainingHash,
+                keccak256(abi.encodePacked("cothread:", newInactiveCoThread, newRemaining)) == multi.remainingHash,
                 "WRONG_COTHREAD_POP"
             );
         }
@@ -619,10 +572,7 @@ contract OneStepProverHostIo is IOneStepProver {
             bytes calldata
         ) internal view impl;
 
-        if (
-            opcode >= Instructions.GET_GLOBAL_STATE_BYTES32 &&
-            opcode <= Instructions.SET_GLOBAL_STATE_U64
-        ) {
+        if (opcode >= Instructions.GET_GLOBAL_STATE_BYTES32 && opcode <= Instructions.SET_GLOBAL_STATE_U64) {
             impl = executeGlobalStateAccess;
         } else if (opcode == Instructions.READ_PRE_IMAGE) {
             impl = executeReadPreImage;

@@ -32,10 +32,9 @@ contract EdgeStakingPool is AbsBoldStakingPool, IEdgeStakingPool {
 
     /// @param _challengeManager EdgeChallengeManager contract
     /// @param _edgeId The ID of the edge to be created (see ChallengeEdgeLib.id)
-    constructor(
-        address _challengeManager,
-        bytes32 _edgeId
-    ) AbsBoldStakingPool(address(EdgeChallengeManager(_challengeManager).stakeToken())) {
+    constructor(address _challengeManager, bytes32 _edgeId)
+        AbsBoldStakingPool(address(EdgeChallengeManager(_challengeManager).stakeToken()))
+    {
         if (_edgeId == bytes32(0)) {
             revert EmptyEdgeId();
         }

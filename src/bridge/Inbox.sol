@@ -40,11 +40,7 @@ contract Inbox is AbsInbox, IInbox {
     constructor(uint256 _maxDataSize) AbsInbox(_maxDataSize) {}
 
     /// @inheritdoc IInboxBase
-    function initialize(IBridge _bridge, ISequencerInbox _sequencerInbox)
-        external
-        initializer
-        onlyDelegated
-    {
+    function initialize(IBridge _bridge, ISequencerInbox _sequencerInbox) external initializer onlyDelegated {
         __AbsInbox_init(_bridge, _sequencerInbox);
     }
 
@@ -63,48 +59,36 @@ contract Inbox is AbsInbox, IInbox {
         if (gasLimit > type(uint64).max) {
             revert GasLimitTooLarge();
         }
-        return
-            _deliverMessage(
-                L1MessageType_L2FundedByL1,
-                msg.sender,
-                abi.encodePacked(
-                    L2MessageType_unsignedEOATx,
-                    gasLimit,
-                    maxFeePerGas,
-                    nonce,
-                    uint256(uint160(to)),
-                    msg.value,
-                    data
-                ),
-                msg.value
-            );
+        return _deliverMessage(
+            L1MessageType_L2FundedByL1,
+            msg.sender,
+            abi.encodePacked(
+                L2MessageType_unsignedEOATx, gasLimit, maxFeePerGas, nonce, uint256(uint160(to)), msg.value, data
+            ),
+            msg.value
+        );
     }
 
     /// @inheritdoc IInbox
-    function sendL1FundedContractTransaction(
-        uint256 gasLimit,
-        uint256 maxFeePerGas,
-        address to,
-        bytes calldata data
-    ) external payable whenNotPaused onlyAllowed returns (uint256) {
+    function sendL1FundedContractTransaction(uint256 gasLimit, uint256 maxFeePerGas, address to, bytes calldata data)
+        external
+        payable
+        whenNotPaused
+        onlyAllowed
+        returns (uint256)
+    {
         // arbos will discard unsigned tx with gas limit too large
         if (gasLimit > type(uint64).max) {
             revert GasLimitTooLarge();
         }
-        return
-            _deliverMessage(
-                L1MessageType_L2FundedByL1,
-                msg.sender,
-                abi.encodePacked(
-                    L2MessageType_unsignedContractTx,
-                    gasLimit,
-                    maxFeePerGas,
-                    uint256(uint160(to)),
-                    msg.value,
-                    data
-                ),
-                msg.value
-            );
+        return _deliverMessage(
+            L1MessageType_L2FundedByL1,
+            msg.sender,
+            abi.encodePacked(
+                L2MessageType_unsignedContractTx, gasLimit, maxFeePerGas, uint256(uint160(to)), msg.value, data
+            ),
+            msg.value
+        );
     }
 
     /// @inheritdoc IInbox
@@ -122,22 +106,15 @@ contract Inbox is AbsInbox, IInbox {
         if (gasLimit > type(uint64).max) {
             revert GasLimitTooLarge();
         }
-        return
-            _deliverMessage(
-                L1MessageType_L2FundedByL1,
-                // undoing sender alias here to cancel out the aliasing
-                AddressAliasHelper.undoL1ToL2Alias(msg.sender),
-                abi.encodePacked(
-                    L2MessageType_unsignedEOATx,
-                    gasLimit,
-                    maxFeePerGas,
-                    nonce,
-                    uint256(uint160(to)),
-                    msg.value,
-                    data
-                ),
-                msg.value
-            );
+        return _deliverMessage(
+            L1MessageType_L2FundedByL1,
+            // undoing sender alias here to cancel out the aliasing
+            AddressAliasHelper.undoL1ToL2Alias(msg.sender),
+            abi.encodePacked(
+                L2MessageType_unsignedEOATx, gasLimit, maxFeePerGas, nonce, uint256(uint160(to)), msg.value, data
+            ),
+            msg.value
+        );
     }
 
     /// @inheritdoc IInbox
@@ -156,22 +133,15 @@ contract Inbox is AbsInbox, IInbox {
         if (gasLimit > type(uint64).max) {
             revert GasLimitTooLarge();
         }
-        return
-            _deliverMessage(
-                L2_MSG,
-                // undoing sender alias here to cancel out the aliasing
-                AddressAliasHelper.undoL1ToL2Alias(msg.sender),
-                abi.encodePacked(
-                    L2MessageType_unsignedEOATx,
-                    gasLimit,
-                    maxFeePerGas,
-                    nonce,
-                    uint256(uint160(to)),
-                    value,
-                    data
-                ),
-                0
-            );
+        return _deliverMessage(
+            L2_MSG,
+            // undoing sender alias here to cancel out the aliasing
+            AddressAliasHelper.undoL1ToL2Alias(msg.sender),
+            abi.encodePacked(
+                L2MessageType_unsignedEOATx, gasLimit, maxFeePerGas, nonce, uint256(uint160(to)), value, data
+            ),
+            0
+        );
     }
 
     /// @inheritdoc IInbox
@@ -189,22 +159,21 @@ contract Inbox is AbsInbox, IInbox {
         if (gasLimit > type(uint64).max) {
             revert GasLimitTooLarge();
         }
-        return
-            _deliverMessage(
-                L2_MSG,
-                // undoing sender alias here to cancel out the aliasing
-                AddressAliasHelper.undoL1ToL2Alias(msg.sender),
-                abi.encodePacked(
-                    L2MessageType_unsignedEOATx,
-                    gasLimit,
-                    maxFeePerGas,
-                    nonce,
-                    uint256(uint160(address(100))), // ArbSys address
-                    value,
-                    abi.encodeWithSelector(ArbSys.withdrawEth.selector, withdrawTo)
-                ),
-                0
-            );
+        return _deliverMessage(
+            L2_MSG,
+            // undoing sender alias here to cancel out the aliasing
+            AddressAliasHelper.undoL1ToL2Alias(msg.sender),
+            abi.encodePacked(
+                L2MessageType_unsignedEOATx,
+                gasLimit,
+                maxFeePerGas,
+                nonce,
+                uint256(uint160(address(100))), // ArbSys address
+                value,
+                abi.encodeWithSelector(ArbSys.withdrawEth.selector, withdrawTo)
+            ),
+            0
+        );
     }
 
     /// @inheritdoc IInbox
@@ -217,13 +186,7 @@ contract Inbox is AbsInbox, IInbox {
             dest = AddressAliasHelper.applyL1ToL2Alias(msg.sender);
         }
 
-        return
-            _deliverMessage(
-                L1MessageType_ethDeposit,
-                msg.sender,
-                abi.encodePacked(dest, msg.value),
-                msg.value
-            );
+        return _deliverMessage(L1MessageType_ethDeposit, msg.sender, abi.encodePacked(dest, msg.value), msg.value);
     }
 
     /// @notice deprecated in favour of depositEth with no parameters
@@ -256,17 +219,16 @@ contract Inbox is AbsInbox, IInbox {
         bytes calldata data
     ) external payable whenNotPaused onlyAllowed returns (uint256) {
         // gas limit is validated to be within uint64 in unsafeCreateRetryableTicket
-        return
-            unsafeCreateRetryableTicket(
-                to,
-                l2CallValue,
-                maxSubmissionCost,
-                excessFeeRefundAddress,
-                callValueRefundAddress,
-                gasLimit,
-                maxFeePerGas,
-                data
-            );
+        return unsafeCreateRetryableTicket(
+            to,
+            l2CallValue,
+            maxSubmissionCost,
+            excessFeeRefundAddress,
+            callValueRefundAddress,
+            gasLimit,
+            maxFeePerGas,
+            data
+        );
     }
 
     /// @inheritdoc IInbox
@@ -280,18 +242,17 @@ contract Inbox is AbsInbox, IInbox {
         uint256 maxFeePerGas,
         bytes calldata data
     ) external payable whenNotPaused onlyAllowed returns (uint256) {
-        return
-            _createRetryableTicket(
-                to,
-                l2CallValue,
-                maxSubmissionCost,
-                excessFeeRefundAddress,
-                callValueRefundAddress,
-                gasLimit,
-                maxFeePerGas,
-                msg.value,
-                data
-            );
+        return _createRetryableTicket(
+            to,
+            l2CallValue,
+            maxSubmissionCost,
+            excessFeeRefundAddress,
+            callValueRefundAddress,
+            gasLimit,
+            maxFeePerGas,
+            msg.value,
+            data
+        );
     }
 
     /// @inheritdoc IInbox
@@ -305,18 +266,17 @@ contract Inbox is AbsInbox, IInbox {
         uint256 maxFeePerGas,
         bytes calldata data
     ) public payable whenNotPaused onlyAllowed returns (uint256) {
-        return
-            _unsafeCreateRetryableTicket(
-                to,
-                l2CallValue,
-                maxSubmissionCost,
-                excessFeeRefundAddress,
-                callValueRefundAddress,
-                gasLimit,
-                maxFeePerGas,
-                msg.value,
-                data
-            );
+        return _unsafeCreateRetryableTicket(
+            to,
+            l2CallValue,
+            maxSubmissionCost,
+            excessFeeRefundAddress,
+            callValueRefundAddress,
+            gasLimit,
+            maxFeePerGas,
+            msg.value,
+            data
+        );
     }
 
     /// @inheritdoc IInboxBase
@@ -330,17 +290,13 @@ contract Inbox is AbsInbox, IInbox {
         return (1400 + 6 * dataLength) * (baseFee == 0 ? block.basefee : baseFee);
     }
 
-    function _deliverToBridge(
-        uint8 kind,
-        address sender,
-        bytes32 messageDataHash,
-        uint256 amount
-    ) internal override returns (uint256) {
-        return
-            IEthBridge(address(bridge)).enqueueDelayedMessage{value: amount}(
-                kind,
-                AddressAliasHelper.applyL1ToL2Alias(sender),
-                messageDataHash
-            );
+    function _deliverToBridge(uint8 kind, address sender, bytes32 messageDataHash, uint256 amount)
+        internal
+        override
+        returns (uint256)
+    {
+        return IEthBridge(address(bridge)).enqueueDelayedMessage{value: amount}(
+            kind, AddressAliasHelper.applyL1ToL2Alias(sender), messageDataHash
+        );
     }
 }

@@ -124,7 +124,11 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
      * @param depositAmount The amount of either eth or tokens staked
      * @param _withdrawalAddress The new staker's withdrawal address
      */
-    function _newStake(uint256 depositAmount, address _withdrawalAddress) internal onlyValidator(msg.sender) whenNotPaused {
+    function _newStake(uint256 depositAmount, address _withdrawalAddress)
+        internal
+        onlyValidator(msg.sender)
+        whenNotPaused
+    {
         // Verify that sender is not already a staker
         require(!isStaked(msg.sender), "ALREADY_STAKED");
         // amount will be checked when creating an assertion
@@ -214,7 +218,7 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
     }
 
     /**
-     * @notice From the staker's withdrawal address, 
+     * @notice From the staker's withdrawal address,
      * refund a staker that is currently staked on an assertion that either has a chlid assertion or is the latest confirmed assertion.
      */
     function returnOldDepositFor(address stakerAddress) external override onlyValidator(stakerAddress) whenNotPaused {
@@ -235,7 +239,11 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
      * @param stakerAddress Address of the staker whose stake is increased
      * @param depositAmount The amount of either eth or tokens deposited
      */
-    function _addToDeposit(address stakerAddress, address expectedWithdrawalAddress, uint256 depositAmount) internal onlyValidator(stakerAddress) whenNotPaused {
+    function _addToDeposit(address stakerAddress, address expectedWithdrawalAddress, uint256 depositAmount)
+        internal
+        onlyValidator(stakerAddress)
+        whenNotPaused
+    {
         require(isStaked(stakerAddress), "NOT_STAKED");
         require(withdrawalAddress(stakerAddress) == expectedWithdrawalAddress, "WRONG_WITHDRAWAL_ADDRESS");
         increaseStakeBy(stakerAddress, depositAmount);
@@ -355,10 +363,7 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
      * @param tokenAmount Amount to stake (can be zero)
      * @param _withdrawalAddress The address the send the stake back upon withdrawal
      */
-    function newStake(
-        uint256 tokenAmount,
-        address _withdrawalAddress
-    ) external whenNotPaused {
+    function newStake(uint256 tokenAmount, address _withdrawalAddress) external whenNotPaused {
         require(_withdrawalAddress != address(0), "EMPTY_WITHDRAWAL_ADDRESS");
         // _newStake makes sure the validator is whitelisted if the whitelist is enabled
         _newStake(tokenAmount, _withdrawalAddress);
@@ -372,7 +377,10 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
      * @param expectedWithdrawalAddress The expected withdrawal address of the staker (protects depositor from a staker changing their withdrawal address)
      * @param tokenAmount the amount of tokens staked
      */
-    function addToDeposit(address stakerAddress, address expectedWithdrawalAddress, uint256 tokenAmount) external whenNotPaused {
+    function addToDeposit(address stakerAddress, address expectedWithdrawalAddress, uint256 tokenAmount)
+        external
+        whenNotPaused
+    {
         _addToDeposit(stakerAddress, expectedWithdrawalAddress, tokenAmount);
         /// @dev This is an external call, safe because it's at the end of the function
         receiveTokens(tokenAmount);

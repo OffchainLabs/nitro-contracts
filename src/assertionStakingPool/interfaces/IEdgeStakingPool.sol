@@ -19,7 +19,7 @@ interface IEdgeStakingPool is IAbsBoldStakingPool {
 
     /// @notice The targeted challenge manager contract
     function challengeManager() external view returns (address);
-    
+
     /// @notice The edge that this pool will create
     function edgeId() external view returns (bytes32);
 }

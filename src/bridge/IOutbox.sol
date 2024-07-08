@@ -10,10 +10,7 @@ import "./IBridge.sol";
 interface IOutbox {
     event SendRootUpdated(bytes32 indexed outputRoot, bytes32 indexed l2BlockHash);
     event OutBoxTransactionExecuted(
-        address indexed to,
-        address indexed l2Sender,
-        uint256 indexed zero,
-        uint256 transactionIndex
+        address indexed to, address indexed l2Sender, uint256 indexed zero, uint256 transactionIndex
     );
 
     function initialize(IBridge _bridge) external;
@@ -116,11 +113,7 @@ interface IOutbox {
         bytes calldata data
     ) external pure returns (bytes32);
 
-    function calculateMerkleRoot(
-        bytes32[] memory proof,
-        uint256 path,
-        bytes32 item
-    ) external pure returns (bytes32);
+    function calculateMerkleRoot(bytes32[] memory proof, uint256 path, bytes32 item) external pure returns (bytes32);
 
     /**
      * @dev function to be called one time during the outbox upgrade process
