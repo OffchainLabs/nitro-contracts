@@ -166,7 +166,8 @@ contract CacheManager is Initializable, DelegateCallAware {
     /// @notice Sends all revenue to the network fee account.
     function sweepFunds() external {
         (bool success, bytes memory data) =
-            ARB_OWNER_PUBLIC.getNetworkFeeAccount().call{value: address(this).balance}("");
+        // solhint-disable-next-line avoid-low-level-calls
+         ARB_OWNER_PUBLIC.getNetworkFeeAccount().call{value: address(this).balance}("");
         if (!success) {
             assembly {
                 revert(add(data, 32), mload(data))
