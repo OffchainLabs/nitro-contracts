@@ -50,7 +50,11 @@ contract BridgeCreatorTest is Test {
         return templates;
     }
 
-    function getErc20BasedTemplates() internal view returns (BridgeCreator.BridgeTemplates memory) {
+    function getErc20BasedTemplates()
+        internal
+        view
+        returns (BridgeCreator.BridgeTemplates memory)
+    {
         BridgeCreator.BridgeTemplates memory templates;
         (
             templates.bridge,
@@ -63,7 +67,10 @@ contract BridgeCreatorTest is Test {
         return templates;
     }
 
-    function assertEq(BridgeCreator.BridgeTemplates memory a, BridgeCreator.BridgeTemplates memory b) internal {
+    function assertEq(
+        BridgeCreator.BridgeTemplates memory a,
+        BridgeCreator.BridgeTemplates memory b
+    ) internal {
         assertEq(address(a.bridge), address(b.bridge), "Invalid bridge");
         assertEq(address(a.sequencerInbox), address(b.sequencerInbox), "Invalid seqInbox");
         assertEq(
@@ -72,7 +79,9 @@ contract BridgeCreatorTest is Test {
             "Invalid delayBuffSeqInbox"
         );
         assertEq(address(a.inbox), address(b.inbox), "Invalid inbox");
-        assertEq(address(a.rollupEventInbox), address(b.rollupEventInbox), "Invalid rollup event inbox");
+        assertEq(
+            address(a.rollupEventInbox), address(b.rollupEventInbox), "Invalid rollup event inbox"
+        );
         assertEq(address(a.outbox), address(b.outbox), "Invalid outbox");
     }
 
@@ -118,13 +127,28 @@ contract BridgeCreatorTest is Test {
         address proxyAdmin = address(300);
         address rollup = address(301);
         address nativeToken = address(0);
-        ISequencerInbox.MaxTimeVariation memory timeVars = ISequencerInbox.MaxTimeVariation(10, 20, 30, 40);
-        BufferConfig memory bufferConfig =
-            BufferConfig({threshold: type(uint64).max, max: type(uint64).max, replenishRateInBasis: 0});
+        ISequencerInbox.MaxTimeVariation memory timeVars =
+            ISequencerInbox.MaxTimeVariation(10, 20, 30, 40);
+        BufferConfig memory bufferConfig = BufferConfig({
+            threshold: type(uint64).max,
+            max: type(uint64).max,
+            replenishRateInBasis: 0
+        });
         BridgeCreator.BridgeContracts memory contracts =
             creator.createBridge(proxyAdmin, rollup, nativeToken, timeVars, bufferConfig);
-        (IBridge bridge, ISequencerInbox seqInbox, IInboxBase inbox, IRollupEventInbox eventInbox, IOutbox outbox) =
-            (contracts.bridge, contracts.sequencerInbox, contracts.inbox, contracts.rollupEventInbox, contracts.outbox);
+        (
+            IBridge bridge,
+            ISequencerInbox seqInbox,
+            IInboxBase inbox,
+            IRollupEventInbox eventInbox,
+            IOutbox outbox
+        ) = (
+            contracts.bridge,
+            contracts.sequencerInbox,
+            contracts.inbox,
+            contracts.rollupEventInbox,
+            contracts.outbox
+        );
 
         // bridge
         assertEq(address(bridge.rollup()), rollup, "Invalid rollup ref");
@@ -133,8 +157,8 @@ contract BridgeCreatorTest is Test {
         // seqInbox
         assertEq(address(seqInbox.bridge()), address(bridge), "Invalid bridge ref");
         assertEq(address(seqInbox.rollup()), rollup, "Invalid rollup ref");
-        (uint256 _delayBlocks, uint256 _futureBlocks, uint256 _delaySeconds, uint256 _futureSeconds) =
-            seqInbox.maxTimeVariation();
+        (uint256 _delayBlocks, uint256 _futureBlocks, uint256 _delaySeconds, uint256 _futureSeconds)
+        = seqInbox.maxTimeVariation();
         assertEq(_delayBlocks, timeVars.delayBlocks, "Invalid delayBlocks");
         assertEq(_futureBlocks, timeVars.futureBlocks, "Invalid futureBlocks");
         assertEq(_delaySeconds, timeVars.delaySeconds, "Invalid delaySeconds");
@@ -162,26 +186,46 @@ contract BridgeCreatorTest is Test {
     function test_createERC20Bridge() public {
         address proxyAdmin = address(300);
         address rollup = address(301);
-        address nativeToken = address(new ERC20PresetFixedSupply("Appchain Token", "App", 1_000_000, address(this)));
-        ISequencerInbox.MaxTimeVariation memory timeVars = ISequencerInbox.MaxTimeVariation(10, 20, 30, 40);
-        BufferConfig memory bufferConfig =
-            BufferConfig({threshold: type(uint64).max, max: type(uint64).max, replenishRateInBasis: 0});
+        address nativeToken =
+            address(new ERC20PresetFixedSupply("Appchain Token", "App", 1_000_000, address(this)));
+        ISequencerInbox.MaxTimeVariation memory timeVars =
+            ISequencerInbox.MaxTimeVariation(10, 20, 30, 40);
+        BufferConfig memory bufferConfig = BufferConfig({
+            threshold: type(uint64).max,
+            max: type(uint64).max,
+            replenishRateInBasis: 0
+        });
 
         BridgeCreator.BridgeContracts memory contracts =
             creator.createBridge(proxyAdmin, rollup, nativeToken, timeVars, bufferConfig);
-        (IBridge bridge, ISequencerInbox seqInbox, IInboxBase inbox, IRollupEventInbox eventInbox, IOutbox outbox) =
-            (contracts.bridge, contracts.sequencerInbox, contracts.inbox, contracts.rollupEventInbox, contracts.outbox);
+        (
+            IBridge bridge,
+            ISequencerInbox seqInbox,
+            IInboxBase inbox,
+            IRollupEventInbox eventInbox,
+            IOutbox outbox
+        ) = (
+            contracts.bridge,
+            contracts.sequencerInbox,
+            contracts.inbox,
+            contracts.rollupEventInbox,
+            contracts.outbox
+        );
 
         // bridge
         assertEq(address(bridge.rollup()), rollup, "Invalid rollup ref");
-        assertEq(address(IERC20Bridge(address(bridge)).nativeToken()), nativeToken, "Invalid nativeToken ref");
+        assertEq(
+            address(IERC20Bridge(address(bridge)).nativeToken()),
+            nativeToken,
+            "Invalid nativeToken ref"
+        );
         assertEq(bridge.activeOutbox(), address(0), "Invalid activeOutbox ref");
 
         // seqInbox
         assertEq(address(seqInbox.bridge()), address(bridge), "Invalid bridge ref");
         assertEq(address(seqInbox.rollup()), rollup, "Invalid rollup ref");
-        (uint256 _delayBlocks, uint256 _futureBlocks, uint256 _delaySeconds, uint256 _futureSeconds) =
-            seqInbox.maxTimeVariation();
+        (uint256 _delayBlocks, uint256 _futureBlocks, uint256 _delaySeconds, uint256 _futureSeconds)
+        = seqInbox.maxTimeVariation();
         assertEq(_delayBlocks, timeVars.delayBlocks, "Invalid delayBlocks");
         assertEq(_futureBlocks, timeVars.futureBlocks, "Invalid futureBlocks");
         assertEq(_delaySeconds, timeVars.delaySeconds, "Invalid delaySeconds");

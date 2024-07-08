@@ -38,11 +38,18 @@ library Messages {
         uint256 baseFeeL1,
         bytes32 messageDataHash
     ) internal pure returns (bytes32) {
-        return
-            keccak256(abi.encodePacked(kind, sender, blockNumber, timestamp, inboxSeqNum, baseFeeL1, messageDataHash));
+        return keccak256(
+            abi.encodePacked(
+                kind, sender, blockNumber, timestamp, inboxSeqNum, baseFeeL1, messageDataHash
+            )
+        );
     }
 
-    function accumulateInboxMessage(bytes32 prevAcc, bytes32 message) internal pure returns (bytes32) {
+    function accumulateInboxMessage(bytes32 prevAcc, bytes32 message)
+        internal
+        pure
+        returns (bytes32)
+    {
         return keccak256(abi.encodePacked(prevAcc, message));
     }
 
@@ -50,11 +57,11 @@ library Messages {
     /// @param delayedAcc The delayed accumulator to validate against
     /// @param beforeDelayedAcc The previous delayed accumulator
     /// @param message The message to validate
-    function isValidDelayedAccPreimage(bytes32 delayedAcc, bytes32 beforeDelayedAcc, Message memory message)
-        internal
-        pure
-        returns (bool)
-    {
+    function isValidDelayedAccPreimage(
+        bytes32 delayedAcc,
+        bytes32 beforeDelayedAcc,
+        Message memory message
+    ) internal pure returns (bool) {
         return delayedAcc == accumulateInboxMessage(beforeDelayedAcc, messageHash(message));
     }
 }

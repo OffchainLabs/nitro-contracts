@@ -180,7 +180,11 @@ library CryptographyPrimitives {
     // Note that the input must be padded by the caller
     // For the initial chunk, the initial values from the SHA256 spec should be passed in as hashState
     // For subsequent rounds, hashState is the output from the previous round
-    function sha256Block(uint256[2] memory inputChunk, uint256 hashState) internal pure returns (uint256) {
+    function sha256Block(uint256[2] memory inputChunk, uint256 hashState)
+        internal
+        pure
+        returns (uint256)
+    {
         unchecked {
             uint32[64] memory k = [
                 0x428a2f98,
@@ -276,9 +280,11 @@ library CryptographyPrimitives {
             uint32 maj;
 
             for (i = 0; i < 64; i++) {
-                s1 = rightRotate(state[4], 6) ^ rightRotate(state[4], 11) ^ rightRotate(state[4], 25);
+                s1 =
+                    rightRotate(state[4], 6) ^ rightRotate(state[4], 11) ^ rightRotate(state[4], 25);
                 temp1 = state[7] + s1 + ch(state[4], state[5], state[6]) + k[i] + w[i];
-                s0 = rightRotate(state[0], 2) ^ rightRotate(state[0], 13) ^ rightRotate(state[0], 22);
+                s0 =
+                    rightRotate(state[0], 2) ^ rightRotate(state[0], 13) ^ rightRotate(state[0], 22);
 
                 maj = (state[0] & (state[1] ^ state[2])) ^ (state[1] & state[2]);
                 temp2 = s0 + maj;

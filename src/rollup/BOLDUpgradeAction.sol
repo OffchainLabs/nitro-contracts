@@ -98,9 +98,16 @@ contract StateHashPreImageLookup {
 
     mapping(bytes32 => bytes) internal preImages;
 
-    function stateHash(ExecutionState calldata executionState, uint256 inboxMaxCount) public pure returns (bytes32) {
-        return
-            keccak256(abi.encodePacked(executionState.globalState.hash(), inboxMaxCount, executionState.machineStatus));
+    function stateHash(ExecutionState calldata executionState, uint256 inboxMaxCount)
+        public
+        pure
+        returns (bytes32)
+    {
+        return keccak256(
+            abi.encodePacked(
+                executionState.globalState.hash(), inboxMaxCount, executionState.machineStatus
+            )
+        );
     }
 
     function set(bytes32 h, ExecutionState calldata executionState, uint256 inboxMaxCount) public {
@@ -109,7 +116,11 @@ contract StateHashPreImageLookup {
         emit HashSet(h, executionState, inboxMaxCount);
     }
 
-    function get(bytes32 h) public view returns (ExecutionState memory executionState, uint256 inboxMaxCount) {
+    function get(bytes32 h)
+        public
+        view
+        returns (ExecutionState memory executionState, uint256 inboxMaxCount)
+    {
         (executionState, inboxMaxCount) = abi.decode(preImages[h], (ExecutionState, uint256));
         require(inboxMaxCount != 0, "Hash not yet set");
     }
@@ -363,15 +374,19 @@ contract BOLDUpgradeAction {
         }
 
         // upgrade the rollup to one that allows validators to withdraw even whilst paused
-        DoubleLogicUUPSUpgradeable(address(OLD_ROLLUP)).upgradeSecondaryTo(IMPL_PATCHED_OLD_ROLLUP_USER);
+        DoubleLogicUUPSUpgradeable(address(OLD_ROLLUP)).upgradeSecondaryTo(
+            IMPL_PATCHED_OLD_ROLLUP_USER
+        );
     }
 
     /// @dev    Create a config for the new rollup - fetches the latest confirmed
     ///         assertion from the old rollup and uses it as genesis
     function createConfig() private view returns (Config memory) {
         // fetch the assertion associated with the latest confirmed state
-        bytes32 latestConfirmedStateHash = ROLLUP_READER.getNode(ROLLUP_READER.latestConfirmed()).stateHash;
-        (ExecutionState memory genesisExecState, uint256 inboxMaxCount) = PREIMAGE_LOOKUP.get(latestConfirmedStateHash);
+        bytes32 latestConfirmedStateHash =
+            ROLLUP_READER.getNode(ROLLUP_READER.latestConfirmed()).stateHash;
+        (ExecutionState memory genesisExecState, uint256 inboxMaxCount) =
+            PREIMAGE_LOOKUP.get(latestConfirmedStateHash);
 
         // Convert ExecutionState into AssertionState with endHistoryRoot 0
         AssertionState memory genesisAssertionState;
@@ -443,7 +458,13 @@ contract BOLDUpgradeAction {
                 IMPL_SEQUENCER_INBOX,
                 abi.encodeCall(
                     ISeqInboxPostUpgradeInit.postUpgradeInit,
-                    (BufferConfig({max: MAX, threshold: THRESHOLD, replenishRateInBasis: REPLENISH_RATE_IN_BASIS}))
+                    (
+                        BufferConfig({
+                            max: MAX,
+                            threshold: THRESHOLD,
+                            replenishRateInBasis: REPLENISH_RATE_IN_BASIS
+                        })
+                    )
                 )
             );
         } else {
@@ -452,7 +473,8 @@ contract BOLDUpgradeAction {
 
         // verify
         require(
-            PROXY_ADMIN_SEQUENCER_INBOX.getProxyImplementation(sequencerInbox) == IMPL_SEQUENCER_INBOX,
+            PROXY_ADMIN_SEQUENCER_INBOX.getProxyImplementation(sequencerInbox)
+                == IMPL_SEQUENCER_INBOX,
             "DelayBuffer: new seq inbox implementation not set"
         );
         require(
@@ -466,8 +488,9 @@ contract BOLDUpgradeAction {
         // Force inclusion now depends on block numbers and not timestamps.
         // To ensure the force inclusion window is unchanged, we need to
         // update the delayBlocks if delaySeconds implies a larger delay.
-        uint256 implDelayBlocks =
-            delaySeconds % SECONDS_PER_SLOT == 0 ? delaySeconds / SECONDS_PER_SLOT : delaySeconds / SECONDS_PER_SLOT + 1;
+        uint256 implDelayBlocks = delaySeconds % SECONDS_PER_SLOT == 0
+            ? delaySeconds / SECONDS_PER_SLOT
+            : delaySeconds / SECONDS_PER_SLOT + 1;
 
         delayBlocks = implDelayBlocks > delayBlocks ? implDelayBlocks : delayBlocks;
 
@@ -481,8 +504,8 @@ contract BOLDUpgradeAction {
         );
 
         // verify
-        (uint256 _delayBlocks, uint256 _futureBlocks, uint256 _delaySeconds, uint256 _futureSeconds) =
-            ISequencerInbox(SEQ_INBOX).maxTimeVariation();
+        (uint256 _delayBlocks, uint256 _futureBlocks, uint256 _delaySeconds, uint256 _futureSeconds)
+        = ISequencerInbox(SEQ_INBOX).maxTimeVariation();
         require(_delayBlocks == delayBlocks, "DelayBuffer: delayBlocks not set");
         require(_delaySeconds == delaySeconds, "DelayBuffer: delaySeconds not set");
         require(_futureBlocks == futureBlocks, "DelayBuffer: futureBlocks not set");

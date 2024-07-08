@@ -116,7 +116,8 @@ contract OutboxWithoutOptTester is DelegateCallAware, IOutbox {
     ) external virtual override {
         bytes32 outputId;
         {
-            bytes32 userTx = calculateItemHash(l2Sender, to, l2Block, l1Block, l2Timestamp, value, data);
+            bytes32 userTx =
+                calculateItemHash(l2Sender, to, l2Block, l1Block, l2Timestamp, value, data);
 
             outputId = recordOutputAsSpent(proof, index, userTx);
             emit OutBoxTransactionExecuted(to, l2Sender, 0, index);
@@ -140,15 +141,23 @@ contract OutboxWithoutOptTester is DelegateCallAware, IOutbox {
         context = prevContext;
     }
 
-    function executeTransactionSimulation(uint256, address, address, uint256, uint256, uint256, uint256, bytes calldata)
-        external
-        pure
-        override
-    {
+    function executeTransactionSimulation(
+        uint256,
+        address,
+        address,
+        uint256,
+        uint256,
+        uint256,
+        uint256,
+        bytes calldata
+    ) external pure override {
         revert("Not implemented");
     }
 
-    function recordOutputAsSpent(bytes32[] memory proof, uint256 index, bytes32 item) internal returns (bytes32) {
+    function recordOutputAsSpent(bytes32[] memory proof, uint256 index, bytes32 item)
+        internal
+        returns (bytes32)
+    {
         if (proof.length >= 256) revert ProofTooLong(proof.length);
         if (index >= 2 ** proof.length) revert PathNotMinimal(index, 2 ** proof.length);
 

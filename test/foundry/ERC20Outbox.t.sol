@@ -85,10 +85,18 @@ contract ERC20OutboxTest is AbsOutboxTest {
         });
 
         uint256 bridgeTokenBalanceAfter = nativeToken.balanceOf(address(bridge));
-        assertEq(bridgeTokenBalanceBefore - bridgeTokenBalanceAfter, withdrawalAmount, "Invalid bridge token balance");
+        assertEq(
+            bridgeTokenBalanceBefore - bridgeTokenBalanceAfter,
+            withdrawalAmount,
+            "Invalid bridge token balance"
+        );
 
         uint256 targetTokenBalanceAfter = nativeToken.balanceOf(address(target));
-        assertEq(targetTokenBalanceAfter - targetTokenBalanceBefore, withdrawalAmount, "Invalid target token balance");
+        assertEq(
+            targetTokenBalanceAfter - targetTokenBalanceBefore,
+            withdrawalAmount,
+            "Invalid target token balance"
+        );
 
         /// check context was properly set during execution
         assertEq(uint256(target.l2Block()), 300, "Invalid l2Block");

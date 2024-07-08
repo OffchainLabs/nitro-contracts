@@ -32,7 +32,10 @@ interface ArbOwnerPublic {
     /// @notice Get the next scheduled ArbOS version upgrade and its activation timestamp.
     /// Returns (0, 0) if no ArbOS upgrade is scheduled.
     /// Available in ArbOS version 20.
-    function getScheduledUpgrade() external view returns (uint64 arbosVersion, uint64 scheduledForTimestamp);
+    function getScheduledUpgrade()
+        external
+        view
+        returns (uint64 arbosVersion, uint64 scheduledForTimestamp);
 
     event ChainOwnerRectified(address rectifiedOwner);
 }

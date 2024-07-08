@@ -17,10 +17,12 @@ interface IInbox is IInboxBase {
         bytes calldata data
     ) external payable returns (uint256);
 
-    function sendL1FundedContractTransaction(uint256 gasLimit, uint256 maxFeePerGas, address to, bytes calldata data)
-        external
-        payable
-        returns (uint256);
+    function sendL1FundedContractTransaction(
+        uint256 gasLimit,
+        uint256 maxFeePerGas,
+        address to,
+        bytes calldata data
+    ) external payable returns (uint256);
 
     /**
      * @dev This method can only be called upon L1 fork and will not alias the caller

@@ -69,7 +69,10 @@ library MachineLib {
     function switchCoThreadStacks(Machine memory mach) internal pure {
         bytes32 newActiveValue = mach.valueMultiStack.inactiveStackHash;
         bytes32 newActiveFrame = mach.frameMultiStack.inactiveStackHash;
-        if (newActiveFrame == MultiStackLib.NO_STACK_HASH || newActiveValue == MultiStackLib.NO_STACK_HASH) {
+        if (
+            newActiveFrame == MultiStackLib.NO_STACK_HASH
+                || newActiveValue == MultiStackLib.NO_STACK_HASH
+        ) {
             mach.status = MachineStatus.ERRORED;
             return;
         }

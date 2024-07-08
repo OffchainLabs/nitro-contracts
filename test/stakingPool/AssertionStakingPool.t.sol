@@ -48,7 +48,8 @@ contract AssertionPoolTest is Test {
     EdgeChallengeManager challengeManager;
 
     GlobalState emptyGlobalState;
-    AssertionState emptyAssertionState = AssertionState(emptyGlobalState, MachineStatus.FINISHED, bytes32(0));
+    AssertionState emptyAssertionState =
+        AssertionState(emptyGlobalState, MachineStatus.FINISHED, bytes32(0));
     bytes32 genesisHash = RollupLib.assertionHash({
         parentAssertionHash: bytes32(0),
         afterState: emptyAssertionState,
@@ -115,8 +116,9 @@ contract AssertionPoolTest is Test {
         OneStepProverMemory oneStepProverMemory = new OneStepProverMemory();
         OneStepProverMath oneStepProverMath = new OneStepProverMath();
         OneStepProverHostIo oneStepProverHostIo = new OneStepProverHostIo();
-        OneStepProofEntry oneStepProofEntry =
-            new OneStepProofEntry(oneStepProver, oneStepProverMemory, oneStepProverMath, oneStepProverHostIo);
+        OneStepProofEntry oneStepProofEntry = new OneStepProofEntry(
+            oneStepProver, oneStepProverMemory, oneStepProverMath, oneStepProverHostIo
+        );
         EdgeChallengeManager edgeChallengeManager = new EdgeChallengeManager();
         BridgeCreator bridgeCreator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
         RollupCreator rollupCreator = new RollupCreator();
@@ -136,7 +138,9 @@ contract AssertionPoolTest is Test {
             deployHelper
         );
         AssertionState memory emptyState = AssertionState(
-            GlobalState([bytes32(0), bytes32(0)], [uint64(0), uint64(0)]), MachineStatus.FINISHED, bytes32(0)
+            GlobalState([bytes32(0), bytes32(0)], [uint64(0), uint64(0)]),
+            MachineStatus.FINISHED,
+            bytes32(0)
         );
         token = new TestWETH9("Test", "TEST");
         IWETH9(address(token)).deposit{value: 21 ether}();

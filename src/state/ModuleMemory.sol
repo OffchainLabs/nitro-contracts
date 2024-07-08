@@ -17,11 +17,12 @@ library ModuleMemoryLib {
         return ModuleMemoryCompactLib.hash(mem);
     }
 
-    function proveLeaf(ModuleMemory memory mem, uint256 leafIdx, bytes calldata proof, uint256 startOffset)
-        internal
-        pure
-        returns (bytes32 contents, uint256 offset, MerkleProof memory merkle)
-    {
+    function proveLeaf(
+        ModuleMemory memory mem,
+        uint256 leafIdx,
+        bytes calldata proof,
+        uint256 startOffset
+    ) internal pure returns (bytes32 contents, uint256 offset, MerkleProof memory merkle) {
         offset = startOffset;
         (contents, offset) = Deserialize.b32(proof, offset);
         (merkle, offset) = Deserialize.merkleProof(proof, offset);
@@ -41,11 +42,13 @@ library ModuleMemoryLib {
     }
 
     // loads a big-endian value from memory
-    function load(ModuleMemory memory mem, uint256 start, uint256 width, bytes calldata proof, uint256 proofOffset)
-        internal
-        pure
-        returns (bool err, uint256 value, uint256 offset)
-    {
+    function load(
+        ModuleMemory memory mem,
+        uint256 start,
+        uint256 width,
+        bytes calldata proof,
+        uint256 proofOffset
+    ) internal pure returns (bool err, uint256 value, uint256 offset) {
         if (start + width > mem.size) {
             return (true, 0, proofOffset);
         }

@@ -28,7 +28,11 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
     address public nativeToken;
 
     /// @inheritdoc IERC20Bridge
-    function initialize(IOwnable rollup_, address nativeToken_) external initializer onlyDelegated {
+    function initialize(IOwnable rollup_, address nativeToken_)
+        external
+        initializer
+        onlyDelegated
+    {
         if (nativeToken_ == address(0)) revert InvalidTokenSet(nativeToken_);
         nativeToken = nativeToken_;
         _activeOutbox = EMPTY_ACTIVEOUTBOX;
@@ -36,10 +40,12 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
     }
 
     /// @inheritdoc IERC20Bridge
-    function enqueueDelayedMessage(uint8 kind, address sender, bytes32 messageDataHash, uint256 tokenFeeAmount)
-        external
-        returns (uint256)
-    {
+    function enqueueDelayedMessage(
+        uint8 kind,
+        address sender,
+        bytes32 messageDataHash,
+        uint256 tokenFeeAmount
+    ) external returns (uint256) {
         return _enqueueDelayedMessage(kind, sender, messageDataHash, tokenFeeAmount);
     }
 

@@ -19,8 +19,11 @@ contract DelayBufferableTest is Test {
         delaySeconds: 24 * 60 * 60,
         futureSeconds: 32 * 2 * 12
     });
-    BufferConfig configBufferable =
-        BufferConfig({threshold: 60 * 60 * 2 / 12, max: 24 * 60 * 60 / 12 * 2, replenishRateInBasis: 714});
+    BufferConfig configBufferable = BufferConfig({
+        threshold: 60 * 60 * 2 / 12,
+        max: 24 * 60 * 60 / 12 * 2,
+        replenishRateInBasis: 714
+    });
 
     using DelayBuffer for BufferData;
 
@@ -51,24 +54,41 @@ contract DelayBufferableTest is Test {
         uint64 unexpectedDelay = (sequenced - start - threshold);
 
         assertEq(
-            buffer, DelayBuffer.calcBuffer(start, start, buffer, sequenced, threshold, maxBuffer, replenishRateInBasis)
+            buffer,
+            DelayBuffer.calcBuffer(
+                start, start, buffer, sequenced, threshold, maxBuffer, replenishRateInBasis
+            )
         );
         assertEq(
             buffer - 1,
-            DelayBuffer.calcBuffer(start, start + 1, buffer, sequenced, threshold, maxBuffer, replenishRateInBasis)
+            DelayBuffer.calcBuffer(
+                start, start + 1, buffer, sequenced, threshold, maxBuffer, replenishRateInBasis
+            )
         );
         uint64 replenishAmount = unexpectedDelay * replenishRateInBasis / 10000;
         assertEq(
             buffer + replenishAmount - unexpectedDelay,
             DelayBuffer.calcBuffer(
-                start, start + unexpectedDelay, buffer, sequenced, threshold, maxBuffer, replenishRateInBasis
+                start,
+                start + unexpectedDelay,
+                buffer,
+                sequenced,
+                threshold,
+                maxBuffer,
+                replenishRateInBasis
             )
         );
         replenishAmount = buffer * replenishRateInBasis / 10000;
         assertEq(
             threshold,
             DelayBuffer.calcBuffer(
-                start, start + buffer, buffer, start + threshold + buffer, threshold, maxBuffer, replenishRateInBasis
+                start,
+                start + buffer,
+                buffer,
+                start + threshold + buffer,
+                threshold,
+                maxBuffer,
+                replenishRateInBasis
             )
         );
         replenishAmount = (buffer + 100) * replenishRateInBasis / 10000;
@@ -157,8 +177,8 @@ contract DelayBufferableTest is Test {
 
         vm.roll(elapse);
 
-        uint256 bufferCalc =
-            uint256(delayBuffer.bufferBlocks) + (uint256(elapse) * uint256(_config.replenishRateInBasis)) / 10000;
+        uint256 bufferCalc = uint256(delayBuffer.bufferBlocks)
+            + (uint256(elapse) * uint256(_config.replenishRateInBasis)) / 10000;
         uint256 decrement = elapse > _config.threshold ? elapse - _config.threshold : 0;
 
         // decrease the buffer

@@ -18,8 +18,11 @@ contract CacheManagerTest is Test {
     constructor() {
         ProxyAdmin proxyAdmin = new ProxyAdmin();
         CacheManager cacheManagerImpl = new CacheManager();
-        cacheManager =
-            CacheManager(address(new TransparentUpgradeableProxy(address(cacheManagerImpl), address(proxyAdmin), "")));
+        cacheManager = CacheManager(
+            address(
+                new TransparentUpgradeableProxy(address(cacheManagerImpl), address(proxyAdmin), "")
+            )
+        );
         uint64 cacheSize = 1_000_000;
         uint64 decay = 100;
         cacheManager.initialize(cacheSize, decay);
@@ -43,7 +46,8 @@ contract CacheManagerTest is Test {
             // Deploy bytes(bytes32(i)) as code to a sample program
             // PUSH32 i PUSH1 0 MSTORE PUSH1 32 PUSH1 0 RETURN
             // at the time of writing this our forge version or config doesn't have PUSH0 support
-            bytes memory bytecode = bytes.concat(hex"7F", abi.encodePacked(i), hex"60005260206000F3");
+            bytes memory bytecode =
+                bytes.concat(hex"7F", abi.encodePacked(i), hex"60005260206000F3");
             address program;
             assembly {
                 program := create(0, add(bytecode, 32), mload(bytecode))
@@ -60,7 +64,9 @@ contract CacheManagerTest is Test {
         for (uint256 epoch = 0; epoch < 4; epoch++) {
             for (uint256 round = 0; round < 512; round++) {
                 // roll one of 256 random programs
-                address program = programs[uint256(keccak256(abi.encodePacked("code", epoch, round))) % programs.length];
+                address program = programs[uint256(
+                    keccak256(abi.encodePacked("code", epoch, round))
+                ) % programs.length];
                 bytes32 codehash = program.codehash;
 
                 vm.warp(block.timestamp + 1); // move time forward to test decay and make bid unique
@@ -100,9 +106,13 @@ contract CacheManagerTest is Test {
                 }
 
                 if (ARB_WASM_CACHE.codehashIsCached(codehash)) {
-                    vm.expectRevert(abi.encodeWithSelector(CacheManager.AlreadyCached.selector, codehash));
+                    vm.expectRevert(
+                        abi.encodeWithSelector(CacheManager.AlreadyCached.selector, codehash)
+                    );
                 } else if (neededBid > 0) {
-                    vm.expectRevert(abi.encodeWithSelector(CacheManager.BidTooSmall.selector, bid, neededBid));
+                    vm.expectRevert(
+                        abi.encodeWithSelector(CacheManager.BidTooSmall.selector, bid, neededBid)
+                    );
                 } else {
                     // insert the item by moving over those to the right
                     expectedCache.push(CachedItem(bytes32(0), 0, 0));
@@ -126,12 +136,20 @@ contract CacheManagerTest is Test {
                 cacheManager.placeBid{value: pay}(program);
 
                 if (mustCache) {
-                    require(ARB_WASM_CACHE.codehashIsCached(codehash), "must cache codehash not cached");
+                    require(
+                        ARB_WASM_CACHE.codehashIsCached(codehash), "must cache codehash not cached"
+                    );
                 }
 
-                require(ARB_WASM_CACHE.numCached() == expectedCache.length, "wrong number of cached items");
+                require(
+                    ARB_WASM_CACHE.numCached() == expectedCache.length,
+                    "wrong number of cached items"
+                );
                 for (uint256 j = 0; j < expectedCache.length; j++) {
-                    require(ARB_WASM_CACHE.codehashIsCached(expectedCache[j].codehash), "codehash not cached");
+                    require(
+                        ARB_WASM_CACHE.codehashIsCached(expectedCache[j].codehash),
+                        "codehash not cached"
+                    );
                 }
 
                 if (round == 700) {

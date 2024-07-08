@@ -7,7 +7,12 @@ import "@openzeppelin/contracts/utils/Address.sol";
 
 import "@offchainlabs/upgrade-executor/src/IUpgradeExecutor.sol";
 
-contract UpgradeExecutorMock is Initializable, AccessControlUpgradeable, ReentrancyGuard, IUpgradeExecutor {
+contract UpgradeExecutorMock is
+    Initializable,
+    AccessControlUpgradeable,
+    ReentrancyGuard,
+    IUpgradeExecutor
+{
     using Address for address;
 
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");

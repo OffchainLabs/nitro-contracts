@@ -15,5 +15,8 @@ interface ArbStatistics {
     ///      Number of transaction receipt issued,
     ///      Number of contracts created,
     ///    )
-    function getStats() external view returns (uint256, uint256, uint256, uint256, uint256, uint256);
+    function getStats()
+        external
+        view
+        returns (uint256, uint256, uint256, uint256, uint256, uint256);
 }

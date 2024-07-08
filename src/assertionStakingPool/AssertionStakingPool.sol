@@ -27,7 +27,9 @@ contract AssertionStakingPool is AbsBoldStakingPool, IAssertionStakingPool {
 
     /// @param _rollup Rollup contract of target chain
     /// @param _assertionHash Assertion hash to be passed into Rollup.stakeOnNewAssertion
-    constructor(address _rollup, bytes32 _assertionHash) AbsBoldStakingPool(IRollupCore(_rollup).stakeToken()) {
+    constructor(address _rollup, bytes32 _assertionHash)
+        AbsBoldStakingPool(IRollupCore(_rollup).stakeToken())
+    {
         if (_assertionHash == bytes32(0)) {
             revert EmptyAssertionId();
         }
@@ -41,7 +43,9 @@ contract AssertionStakingPool is AbsBoldStakingPool, IAssertionStakingPool {
         // approve spending from rollup for newStakeOnNewAssertion call
         IERC20(stakeToken).safeIncreaseAllowance(rollup, requiredStake);
         // reverts if pool doesn't have enough stake and if assertion has already been asserted
-        IRollupUser(rollup).newStakeOnNewAssertion(requiredStake, assertionInputs, assertionHash, address(this));
+        IRollupUser(rollup).newStakeOnNewAssertion(
+            requiredStake, assertionInputs, assertionHash, address(this)
+        );
     }
 
     /// @inheritdoc IAssertionStakingPool

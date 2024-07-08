@@ -175,7 +175,8 @@ library MerkleTreeLib {
 
         // if by appending the sub tree we increase the numbe of most sig bits of the size, that means
         // we'll need more space in the expansion to describe the tree, so we enlarge by one
-        bytes32[] memory next = UintUtilsLib.mostSignificantBit(postSize) > UintUtilsLib.mostSignificantBit(meSize)
+        bytes32[] memory next = UintUtilsLib.mostSignificantBit(postSize)
+            > UintUtilsLib.mostSignificantBit(meSize)
             ? new bytes32[](me.length + 1)
             : new bytes32[](me.length);
 
@@ -235,7 +236,11 @@ library MerkleTreeLib {
     ///         into the tree to avoid root collisions.
     /// @param me   The merkle expansion to append a leaf to
     /// @param leaf The leaf to append - will be hashed in here before appending
-    function appendLeaf(bytes32[] memory me, bytes32 leaf) internal pure returns (bytes32[] memory) {
+    function appendLeaf(bytes32[] memory me, bytes32 leaf)
+        internal
+        pure
+        returns (bytes32[] memory)
+    {
         // it's important that we hash the leaf, this ensures that this leaf cannot be a collision with any other non leaf
         // or root node, since these are always the hash of 64 bytes of data, and we're hashing 32 bytes
         return appendCompleteSubTree(me, 0, keccak256(abi.encodePacked(leaf)));
@@ -248,7 +253,11 @@ library MerkleTreeLib {
     ///         subtree in the expansion
     /// @param startSize    The size of the start tree to find the maximum append to
     /// @param endSize      The size of the end tree to find a maximum append under
-    function maximumAppendBetween(uint256 startSize, uint256 endSize) internal pure returns (uint256) {
+    function maximumAppendBetween(uint256 startSize, uint256 endSize)
+        internal
+        pure
+        returns (uint256)
+    {
         // Since the tree is binary we can represent it using the binary representation of a number
         // As described above, subtrees can only be appended to a tree if they are at the same level, or below,
         // the current lowest subtree.
@@ -356,11 +365,14 @@ library MerkleTreeLib {
     /// @param leaf     The leaf preimage to prove inclusion - will be hashed in here before checking inclusion
     /// @param index    The index of the leaf in the tree
     /// @param proof    The path from the leaf to the root
-    function verifyInclusionProof(bytes32 rootHash, bytes32 leaf, uint256 index, bytes32[] memory proof)
-        internal
-        pure
-    {
-        bytes32 calculatedRoot = MerkleLib.calculateRoot(proof, index, keccak256(abi.encodePacked(leaf)));
+    function verifyInclusionProof(
+        bytes32 rootHash,
+        bytes32 leaf,
+        uint256 index,
+        bytes32[] memory proof
+    ) internal pure {
+        bytes32 calculatedRoot =
+            MerkleLib.calculateRoot(proof, index, keccak256(abi.encodePacked(leaf)));
         require(rootHash == calculatedRoot, "Invalid inclusion proof");
     }
 }

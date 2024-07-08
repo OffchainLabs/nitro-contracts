@@ -11,9 +11,15 @@ library CryptographyPrimitivesTester {
         return CryptographyPrimitives.keccakF(input);
     }
 
-    function sha256Block(bytes32[2] memory inputChunk, bytes32 hashState) public pure returns (bytes32) {
+    function sha256Block(bytes32[2] memory inputChunk, bytes32 hashState)
+        public
+        pure
+        returns (bytes32)
+    {
         return bytes32(
-            CryptographyPrimitives.sha256Block([uint256(inputChunk[0]), uint256(inputChunk[1])], uint256(hashState))
+            CryptographyPrimitives.sha256Block(
+                [uint256(inputChunk[0]), uint256(inputChunk[1])], uint256(hashState)
+            )
         );
     }
 }

@@ -29,8 +29,9 @@ contract SequencerInboxStub is SequencerInbox {
 
     function addInitMessage(uint256 chainId) external {
         bytes memory initMsg = abi.encodePacked(chainId);
-        uint256 num =
-            IEthBridge(address(bridge)).enqueueDelayedMessage(INITIALIZATION_MSG_TYPE, address(0), keccak256(initMsg));
+        uint256 num = IEthBridge(address(bridge)).enqueueDelayedMessage(
+            INITIALIZATION_MSG_TYPE, address(0), keccak256(initMsg)
+        );
         require(num == 0, "ALREADY_DELAYED_INIT");
         emit InboxMessageDelivered(num, initMsg);
         (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) = formEmptyDataHash(1);

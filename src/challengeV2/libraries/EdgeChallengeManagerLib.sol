@@ -138,7 +138,11 @@ library EdgeChallengeManagerLib {
     /// @dev    Throws if the edge does not exist in the store
     /// @param store    The edge store to fetch an id from
     /// @param edgeId   The id of the edge to fetch
-    function get(EdgeStore storage store, bytes32 edgeId) internal view returns (ChallengeEdge storage) {
+    function get(EdgeStore storage store, bytes32 edgeId)
+        internal
+        view
+        returns (ChallengeEdge storage)
+    {
         if (!store.edges[edgeId].exists()) {
             revert EdgeNotExists(edgeId);
         }
@@ -149,7 +153,11 @@ library EdgeChallengeManagerLib {
     /// @dev    Useful where you already know the edge exists in the store - avoid a storage lookup
     /// @param store    The edge store to fetch an id from
     /// @param edgeId   The id of the edge to fetch
-    function getNoCheck(EdgeStore storage store, bytes32 edgeId) internal view returns (ChallengeEdge storage) {
+    function getNoCheck(EdgeStore storage store, bytes32 edgeId)
+        internal
+        view
+        returns (ChallengeEdge storage)
+    {
         return store.edges[edgeId];
     }
 
@@ -157,7 +165,10 @@ library EdgeChallengeManagerLib {
     /// @dev    Updates first rival info for later use in calculating time unrivaled
     /// @param store    The store to add the edge to
     /// @param edge     The edge to add
-    function add(EdgeStore storage store, ChallengeEdge memory edge) internal returns (EdgeAddedData memory) {
+    function add(EdgeStore storage store, ChallengeEdge memory edge)
+        internal
+        returns (EdgeAddedData memory)
+    {
         bytes32 eId = edge.idMem();
         // add the edge if it doesnt exist already
         if (store.edges[eId].exists()) {
@@ -260,7 +271,8 @@ library EdgeChallengeManagerLib {
             }
 
             // Create machine hashes out of the proven state
-            bytes32 startStateHash = oneStepProofEntry.getMachineHash(ard.startState.toExecutionState());
+            bytes32 startStateHash =
+                oneStepProofEntry.getMachineHash(ard.startState.toExecutionState());
             bytes32 endStateHash = oneStepProofEntry.getMachineHash(ard.endState.toExecutionState());
 
             return (ProofData(startStateHash, endStateHash, inclusionProof), originId);
@@ -306,7 +318,10 @@ library EdgeChallengeManagerLib {
             // this guarantees that the edge we're creating is a 'continuation' of the claim edge, it is
             // a commitment to the states that between start and end states of the claim
             MerkleTreeLib.verifyInclusionProof(
-                claimEdge.startHistoryRoot, startState, claimEdge.startHeight, claimStartInclusionProof
+                claimEdge.startHistoryRoot,
+                startState,
+                claimEdge.startHeight,
+                claimStartInclusionProof
             );
 
             // it's doubly important to check the end state since if the end state since the claim id is
@@ -341,14 +356,15 @@ library EdgeChallengeManagerLib {
     /// @param proofData            Data extracted from supplied proof
     /// @param args                 The edge creation args
     /// @param expectedEndHeight    Edges have a deterministic end height dependent on their level
-    function layerZeroCommonChecks(ProofData memory proofData, CreateEdgeArgs calldata args, uint256 expectedEndHeight)
-        private
-        pure
-        returns (bytes32)
-    {
+    function layerZeroCommonChecks(
+        ProofData memory proofData,
+        CreateEdgeArgs calldata args,
+        uint256 expectedEndHeight
+    ) private pure returns (bytes32) {
         // since zero layer edges have a start height of zero, we know that they are a size
         // one tree containing only the start state. We can then compute the history root directly
-        bytes32 startHistoryRoot = MerkleTreeLib.root(MerkleTreeLib.appendLeaf(new bytes32[](0), proofData.startState));
+        bytes32 startHistoryRoot =
+            MerkleTreeLib.root(MerkleTreeLib.appendLeaf(new bytes32[](0), proofData.startState));
 
         // all end heights are expected to be a power of 2, the specific power is defined by the
         // edge challenge manager itself
@@ -388,13 +404,20 @@ library EdgeChallengeManagerLib {
     }
 
     /// @notice Creates a new layer zero edges from edge creation args
-    function toLayerZeroEdge(bytes32 originId, bytes32 startHistoryRoot, CreateEdgeArgs calldata args)
-        private
-        view
-        returns (ChallengeEdge memory)
-    {
+    function toLayerZeroEdge(
+        bytes32 originId,
+        bytes32 startHistoryRoot,
+        CreateEdgeArgs calldata args
+    ) private view returns (ChallengeEdge memory) {
         return ChallengeEdgeLib.newLayerZeroEdge(
-            originId, startHistoryRoot, 0, args.endHistoryRoot, args.endHeight, args.claimId, msg.sender, args.level
+            originId,
+            startHistoryRoot,
+            0,
+            args.endHistoryRoot,
+            args.endHeight,
+            args.claimId,
+            msg.sender,
+            args.level
         );
     }
 
@@ -440,7 +463,11 @@ library EdgeChallengeManagerLib {
 
     /// @notice From any given edge, get the id of the previous assertion
     /// @param edgeId           The edge to get the prev assertion hash
-    function getPrevAssertionHash(EdgeStore storage store, bytes32 edgeId) internal view returns (bytes32) {
+    function getPrevAssertionHash(EdgeStore storage store, bytes32 edgeId)
+        internal
+        view
+        returns (bytes32)
+    {
         ChallengeEdge storage edge = get(store, edgeId);
         while (edge.level > 0) {
             // the origin id gives us a link to the lower level
@@ -480,16 +507,26 @@ library EdgeChallengeManagerLib {
     /// @notice Is the edge a single step in length, and does it have at least one rival.
     /// @param store    The edge store containing the edge
     /// @param edgeId   The edge id to test for single step and rivaled
-    function hasLengthOneRival(EdgeStore storage store, bytes32 edgeId) internal view returns (bool) {
+    function hasLengthOneRival(EdgeStore storage store, bytes32 edgeId)
+        internal
+        view
+        returns (bool)
+    {
         // must be length 1 and have rivals - all rivals have the same length
         return (hasRival(store, edgeId) && store.edges[edgeId].length() == 1);
     }
 
-    function timeUnrivaledTotal(EdgeStore storage store, bytes32 edgeId) internal view returns (uint256) {
+    function timeUnrivaledTotal(EdgeStore storage store, bytes32 edgeId)
+        internal
+        view
+        returns (uint256)
+    {
         uint256 totalTimeUnrivaled = timeUnrivaled(store, edgeId);
         if (store.edges[edgeId].lowerChildId != bytes32(0)) {
-            uint256 lowerTimer = store.edges[store.edges[edgeId].lowerChildId].totalTimeUnrivaledCache;
-            uint256 upperTimer = store.edges[store.edges[edgeId].upperChildId].totalTimeUnrivaledCache;
+            uint256 lowerTimer =
+                store.edges[store.edges[edgeId].lowerChildId].totalTimeUnrivaledCache;
+            uint256 upperTimer =
+                store.edges[store.edges[edgeId].upperChildId].totalTimeUnrivaledCache;
             totalTimeUnrivaled += lowerTimer < upperTimer ? lowerTimer : upperTimer;
         }
         return totalTimeUnrivaled;
@@ -497,11 +534,11 @@ library EdgeChallengeManagerLib {
 
     /// @dev revert if the current totalTimeUnrivaledCache on the edge is greater than or equal to maximumCachedTime
     /// @return the current totalTimeUnrivaledCache on the edge
-    function validateCurrentTimer(EdgeStore storage store, bytes32 edgeId, uint256 maximumCachedTime)
-        internal
-        view
-        returns (uint256)
-    {
+    function validateCurrentTimer(
+        EdgeStore storage store,
+        bytes32 edgeId,
+        uint256 maximumCachedTime
+    ) internal view returns (uint256) {
         uint256 currentAccuTimer = store.edges[edgeId].totalTimeUnrivaledCache;
         if (currentAccuTimer >= maximumCachedTime) {
             revert CachedTimeSufficient(currentAccuTimer, maximumCachedTime);
@@ -513,10 +550,12 @@ library EdgeChallengeManagerLib {
     /// @dev    The cache is only updated if the new value is greater than the current value.
     ///         If the new value is greater than uint64 max then the cache is set to uint64 max
     /// @return (bool, uint256) A boolean indicating if the cache was updated, and the value of the cache
-    function updateTimerCache(EdgeStore storage store, bytes32 edgeId, uint256 newValue, uint256 maximumCachedTime)
-        internal
-        returns (bool, uint256)
-    {
+    function updateTimerCache(
+        EdgeStore storage store,
+        bytes32 edgeId,
+        uint256 newValue,
+        uint256 maximumCachedTime
+    ) internal returns (bool, uint256) {
         uint256 currentAccuTimer = validateCurrentTimer(store, edgeId, maximumCachedTime);
         newValue = newValue > type(uint64).max ? type(uint64).max : newValue;
         // only update when increased
@@ -527,10 +566,11 @@ library EdgeChallengeManagerLib {
         return (false, currentAccuTimer);
     }
 
-    function updateTimerCacheByChildren(EdgeStore storage store, bytes32 edgeId, uint256 maximumCachedTime)
-        internal
-        returns (bool, uint256)
-    {
+    function updateTimerCacheByChildren(
+        EdgeStore storage store,
+        bytes32 edgeId,
+        uint256 maximumCachedTime
+    ) internal returns (bool, uint256) {
         return updateTimerCache(store, edgeId, timeUnrivaledTotal(store, edgeId), maximumCachedTime);
     }
 
@@ -552,7 +592,11 @@ library EdgeChallengeManagerLib {
     ///         This value is increasing whilst an edge is unrivaled, once a rival is created
     ///         it is fixed. If an edge has rivals from the moment it is created then it will have
     ///         a zero time unrivaled
-    function timeUnrivaled(EdgeStore storage store, bytes32 edgeId) internal view returns (uint256) {
+    function timeUnrivaled(EdgeStore storage store, bytes32 edgeId)
+        internal
+        view
+        returns (uint256)
+    {
         if (!store.edges[edgeId].exists()) {
             revert EdgeNotExists(edgeId);
         }
@@ -619,10 +663,12 @@ library EdgeChallengeManagerLib {
     /// @return lowerChildId        The id of the newly created lower child edge
     /// @return lowerChildAdded     Data about the lower child edge, empty if the lower child already existed
     /// @return upperChildAdded     Data about the upper child edge, never empty
-    function bisectEdge(EdgeStore storage store, bytes32 edgeId, bytes32 bisectionHistoryRoot, bytes memory prefixProof)
-        internal
-        returns (bytes32, EdgeAddedData memory, EdgeAddedData memory)
-    {
+    function bisectEdge(
+        EdgeStore storage store,
+        bytes32 edgeId,
+        bytes32 bisectionHistoryRoot,
+        bytes memory prefixProof
+    ) internal returns (bytes32, EdgeAddedData memory, EdgeAddedData memory) {
         if (store.edges[edgeId].status != EdgeStatus.Pending) {
             revert EdgeNotPending(edgeId, store.edges[edgeId].status);
         }
@@ -638,9 +684,15 @@ library EdgeChallengeManagerLib {
         // rival edges bisect at the same height, and create the same child if they agree
         uint256 middleHeight = mandatoryBisectionHeight(ce.startHeight, ce.endHeight);
         {
-            (bytes32[] memory preExpansion, bytes32[] memory proof) = abi.decode(prefixProof, (bytes32[], bytes32[]));
+            (bytes32[] memory preExpansion, bytes32[] memory proof) =
+                abi.decode(prefixProof, (bytes32[], bytes32[]));
             MerkleTreeLib.verifyPrefixProof(
-                bisectionHistoryRoot, middleHeight + 1, ce.endHistoryRoot, ce.endHeight + 1, preExpansion, proof
+                bisectionHistoryRoot,
+                middleHeight + 1,
+                ce.endHistoryRoot,
+                ce.endHeight + 1,
+                preExpansion,
+                proof
             );
         }
 
@@ -649,7 +701,12 @@ library EdgeChallengeManagerLib {
         {
             // midpoint proof it valid, create and store the children
             ChallengeEdge memory lowerChild = ChallengeEdgeLib.newChildEdge(
-                ce.originId, ce.startHistoryRoot, ce.startHeight, bisectionHistoryRoot, middleHeight, ce.level
+                ce.originId,
+                ce.startHistoryRoot,
+                ce.startHeight,
+                bisectionHistoryRoot,
+                middleHeight,
+                ce.level
             );
             lowerChildId = lowerChild.idMem();
             // it's possible that the store already has the lower child if it was created by a rival
@@ -662,7 +719,12 @@ library EdgeChallengeManagerLib {
         EdgeAddedData memory upperChildAdded;
         {
             ChallengeEdge memory upperChild = ChallengeEdgeLib.newChildEdge(
-                ce.originId, bisectionHistoryRoot, middleHeight, ce.endHistoryRoot, ce.endHeight, ce.level
+                ce.originId,
+                bisectionHistoryRoot,
+                middleHeight,
+                ce.endHistoryRoot,
+                ce.endHeight,
+                ce.level
             );
 
             // add checks existence and throws if the id already exists
@@ -704,10 +766,12 @@ library EdgeChallengeManagerLib {
     /// @param edgeId           The edge being claimed
     /// @param claimingEdgeId   The edge with a claim id equal to edge id
     /// @param numBigStepLevel  The number of big step levels in this challenge
-    function checkClaimIdLink(EdgeStore storage store, bytes32 edgeId, bytes32 claimingEdgeId, uint8 numBigStepLevel)
-        private
-        view
-    {
+    function checkClaimIdLink(
+        EdgeStore storage store,
+        bytes32 edgeId,
+        bytes32 claimingEdgeId,
+        uint8 numBigStepLevel
+    ) private view {
         if (edgeId != store.edges[claimingEdgeId].claimId) {
             revert EdgeClaimMismatch(edgeId, store.edges[claimingEdgeId].claimId);
         }
@@ -717,10 +781,15 @@ library EdgeChallengeManagerLib {
 
         // the origin id of an edge should be the mutual id of the edge in the level below
         if (store.edges[edgeId].mutualId() != store.edges[claimingEdgeId].originId) {
-            revert OriginIdMutualIdMismatch(store.edges[edgeId].mutualId(), store.edges[claimingEdgeId].originId);
+            revert OriginIdMutualIdMismatch(
+                store.edges[edgeId].mutualId(), store.edges[claimingEdgeId].originId
+            );
         }
         // the claiming edge must be exactly one level below
-        if (nextEdgeLevel(store.edges[edgeId].level, numBigStepLevel) != store.edges[claimingEdgeId].level) {
+        if (
+            nextEdgeLevel(store.edges[edgeId].level, numBigStepLevel)
+                != store.edges[claimingEdgeId].level
+        ) {
             revert EdgeLevelInvalid(
                 edgeId,
                 claimingEdgeId,
@@ -801,7 +870,10 @@ library EdgeChallengeManagerLib {
         }
 
         // edge must of type SmallStep
-        if (ChallengeEdgeLib.levelToType(store.edges[edgeId].level, numBigStepLevel) != EdgeType.SmallStep) {
+        if (
+            ChallengeEdgeLib.levelToType(store.edges[edgeId].level, numBigStepLevel)
+                != EdgeType.SmallStep
+        ) {
             revert EdgeTypeNotSmallStep(store.edges[edgeId].level);
         }
 
@@ -831,16 +903,23 @@ library EdgeChallengeManagerLib {
 
         // the state in the onestep data must be committed to by the startHistoryRoot
         MerkleTreeLib.verifyInclusionProof(
-            store.edges[edgeId].startHistoryRoot, oneStepData.beforeHash, machineStep, beforeHistoryInclusionProof
+            store.edges[edgeId].startHistoryRoot,
+            oneStepData.beforeHash,
+            machineStep,
+            beforeHistoryInclusionProof
         );
 
         // execute the single step to produce the after state
-        bytes32 afterHash =
-            oneStepProofEntry.proveOneStep(execCtx, machineStep, oneStepData.beforeHash, oneStepData.proof);
+        bytes32 afterHash = oneStepProofEntry.proveOneStep(
+            execCtx, machineStep, oneStepData.beforeHash, oneStepData.proof
+        );
 
         // check that the after state was indeed committed to by the endHistoryRoot
         MerkleTreeLib.verifyInclusionProof(
-            store.edges[edgeId].endHistoryRoot, afterHash, machineStep + 1, afterHistoryInclusionProof
+            store.edges[edgeId].endHistoryRoot,
+            afterHash,
+            machineStep + 1,
+            afterHistoryInclusionProof
         );
 
         // we also check the edge is pending in setConfirmed()

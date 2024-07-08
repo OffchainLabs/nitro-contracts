@@ -16,7 +16,9 @@ contract FakeStakingPool is AbsBoldStakingPool {
     FundsHolder public immutable fundsHolder;
     uint256 immutable reqStake;
 
-    constructor(address _stakeToken, FundsHolder _fundsHolder, uint256 _reqStake) AbsBoldStakingPool(_stakeToken) {
+    constructor(address _stakeToken, FundsHolder _fundsHolder, uint256 _reqStake)
+        AbsBoldStakingPool(_stakeToken)
+    {
         fundsHolder = _fundsHolder;
         reqStake = _reqStake;
     }
@@ -92,7 +94,9 @@ contract AbsBoldStakingPoolTest is Test {
         vm.prank(staker2);
         pool.depositIntoPool(staker2Bal);
 
-        assertEq(token.balanceOf(address(pool)), staker1Bal + staker2Bal, "tokens depositted into pool");
+        assertEq(
+            token.balanceOf(address(pool)), staker1Bal + staker2Bal, "tokens depositted into pool"
+        );
         assertEq(token.balanceOf(address(staker1)), uint256(0), "tokens depositted into pool");
         assertEq(token.balanceOf(address(staker2)), uint256(0), "tokens depositted into pool");
 

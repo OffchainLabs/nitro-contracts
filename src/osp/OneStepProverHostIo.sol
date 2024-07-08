@@ -62,10 +62,12 @@ contract OneStepProverHostIo is IOneStepProver {
         uint256 proofOffset = 0;
         bytes32 startLeafContents;
         MerkleProof memory merkleProof;
-        (startLeafContents, proofOffset, merkleProof) = mod.moduleMemory.proveLeaf(leafIdx, proof, proofOffset);
+        (startLeafContents, proofOffset, merkleProof) =
+            mod.moduleMemory.proveLeaf(leafIdx, proof, proofOffset);
 
         if (inst.opcode == Instructions.GET_GLOBAL_STATE_BYTES32) {
-            mod.moduleMemory.merkleRoot = merkleProof.computeRootFromMemory(leafIdx, state.bytes32Vals[idx]);
+            mod.moduleMemory.merkleRoot =
+                merkleProof.computeRootFromMemory(leafIdx, state.bytes32Vals[idx]);
         } else if (inst.opcode == Instructions.SET_GLOBAL_STATE_BYTES32) {
             state.bytes32Vals[idx] = startLeafContents;
         } else {
@@ -128,7 +130,8 @@ contract OneStepProverHostIo is IOneStepProver {
         uint256 proofOffset = 0;
         bytes32 leafContents;
         MerkleProof memory merkleProof;
-        (leafContents, proofOffset, merkleProof) = mod.moduleMemory.proveLeaf(leafIdx, proof, proofOffset);
+        (leafContents, proofOffset, merkleProof) =
+            mod.moduleMemory.proveLeaf(leafIdx, proof, proofOffset);
 
         bytes memory extracted;
         uint8 proofType = uint8(proof[proofOffset]);
@@ -230,11 +233,11 @@ contract OneStepProverHostIo is IOneStepProver {
         mach.valueStack.push(ValueLib.newI32(uint32(extracted.length)));
     }
 
-    function validateSequencerInbox(ExecutionContext calldata execCtx, uint64 msgIndex, bytes calldata message)
-        internal
-        view
-        returns (bool)
-    {
+    function validateSequencerInbox(
+        ExecutionContext calldata execCtx,
+        uint64 msgIndex,
+        bytes calldata message
+    ) internal view returns (bool) {
         require(message.length >= INBOX_HEADER_LEN, "BAD_SEQINBOX_PROOF");
 
         uint64 afterDelayedMsg;
@@ -254,11 +257,11 @@ contract OneStepProverHostIo is IOneStepProver {
         return true;
     }
 
-    function validateDelayedInbox(ExecutionContext calldata execCtx, uint64 msgIndex, bytes calldata message)
-        internal
-        view
-        returns (bool)
-    {
+    function validateDelayedInbox(
+        ExecutionContext calldata execCtx,
+        uint64 msgIndex,
+        bytes calldata message
+    ) internal view returns (bool) {
         require(message.length >= DELAYED_HEADER_LEN, "BAD_DELAYED_PROOF");
 
         bytes32 beforeAcc;
@@ -272,8 +275,9 @@ contract OneStepProverHostIo is IOneStepProver {
         uint256 sender;
         (sender,) = Deserialize.u256(message, 1);
 
-        bytes32 messageHash =
-            keccak256(abi.encodePacked(kind, uint160(sender), message[33:DELAYED_HEADER_LEN], messageDataHash));
+        bytes32 messageHash = keccak256(
+            abi.encodePacked(kind, uint160(sender), message[33:DELAYED_HEADER_LEN], messageDataHash)
+        );
         bytes32 acc = Messages.accumulateInboxMessage(beforeAcc, messageHash);
 
         require(acc == execCtx.bridge.delayedInboxAccs(msgIndex), "BAD_DELAYED_MESSAGE");
@@ -290,7 +294,10 @@ contract OneStepProverHostIo is IOneStepProver {
         uint256 messageOffset = mach.valueStack.pop().assumeI32();
         uint256 ptr = mach.valueStack.pop().assumeI32();
         uint256 msgIndex = mach.valueStack.pop().assumeI64();
-        if (inst.argumentData == Instructions.INBOX_INDEX_SEQUENCER && msgIndex >= execCtx.maxInboxMessagesRead) {
+        if (
+            inst.argumentData == Instructions.INBOX_INDEX_SEQUENCER
+                && msgIndex >= execCtx.maxInboxMessagesRead
+        ) {
             mach.status = MachineStatus.ERRORED;
             return;
         }
@@ -304,7 +311,8 @@ contract OneStepProverHostIo is IOneStepProver {
         uint256 proofOffset = 0;
         bytes32 leafContents;
         MerkleProof memory merkleProof;
-        (leafContents, proofOffset, merkleProof) = mod.moduleMemory.proveLeaf(leafIdx, proof, proofOffset);
+        (leafContents, proofOffset, merkleProof) =
+            mod.moduleMemory.proveLeaf(leafIdx, proof, proofOffset);
 
         {
             // TODO: support proving via an authenticated contract
@@ -337,7 +345,8 @@ contract OneStepProverHostIo is IOneStepProver {
 
         uint32 i = 0;
         for (; i < 32 && messageOffset + i < messageLength; i++) {
-            leafContents = setLeafByte(leafContents, i, uint8(proof[proofOffset + messageOffset + i]));
+            leafContents =
+                setLeafByte(leafContents, i, uint8(proof[proofOffset + messageOffset + i]));
         }
 
         mod.moduleMemory.merkleRoot = merkleProof.computeRootFromMemory(leafIdx, leafContents);
@@ -406,7 +415,8 @@ contract OneStepProverHostIo is IOneStepProver {
             mach.status = MachineStatus.ERRORED;
             return;
         }
-        (bytes32 userMod, uint256 offset,) = mod.moduleMemory.proveLeaf(pointer / LEAF_SIZE, proof, 0);
+        (bytes32 userMod, uint256 offset,) =
+            mod.moduleMemory.proveLeaf(pointer / LEAF_SIZE, proof, 0);
 
         (uint256 leaf,, MerkleProof memory zeroProof) = proveLastLeaf(mach, offset, proof);
 
@@ -453,7 +463,10 @@ contract OneStepProverHostIo is IOneStepProver {
         (state, proofOffset) = Deserialize.globalState(proof, proofOffset);
         require(state.hash() == mach.globalStateHash, "BAD_GLOBAL_STATE");
 
-        if (opcode == Instructions.GET_GLOBAL_STATE_BYTES32 || opcode == Instructions.SET_GLOBAL_STATE_BYTES32) {
+        if (
+            opcode == Instructions.GET_GLOBAL_STATE_BYTES32
+                || opcode == Instructions.SET_GLOBAL_STATE_BYTES32
+        ) {
             executeGetOrSetBytes32(mach, mod, state, inst, proof[proofOffset:]);
         } else if (opcode == Instructions.GET_GLOBAL_STATE_U64) {
             executeGetU64(mach, state);
@@ -493,7 +506,8 @@ contract OneStepProverHostIo is IOneStepProver {
             require(multi.remainingHash == bytes32(0), "WRONG_COTHREAD_EMPTY");
         } else {
             require(
-                keccak256(abi.encodePacked("cothread:", newInactiveCoThread, newRemaining)) == multi.remainingHash,
+                keccak256(abi.encodePacked("cothread:", newInactiveCoThread, newRemaining))
+                    == multi.remainingHash,
                 "WRONG_COTHREAD_POP"
             );
         }
@@ -572,7 +586,10 @@ contract OneStepProverHostIo is IOneStepProver {
             bytes calldata
         ) internal view impl;
 
-        if (opcode >= Instructions.GET_GLOBAL_STATE_BYTES32 && opcode <= Instructions.SET_GLOBAL_STATE_U64) {
+        if (
+            opcode >= Instructions.GET_GLOBAL_STATE_BYTES32
+                && opcode <= Instructions.SET_GLOBAL_STATE_U64
+        ) {
             impl = executeGlobalStateAccess;
         } else if (opcode == Instructions.READ_PRE_IMAGE) {
             impl = executeReadPreImage;

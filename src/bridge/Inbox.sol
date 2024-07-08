@@ -40,7 +40,11 @@ contract Inbox is AbsInbox, IInbox {
     constructor(uint256 _maxDataSize) AbsInbox(_maxDataSize) {}
 
     /// @inheritdoc IInboxBase
-    function initialize(IBridge _bridge, ISequencerInbox _sequencerInbox) external initializer onlyDelegated {
+    function initialize(IBridge _bridge, ISequencerInbox _sequencerInbox)
+        external
+        initializer
+        onlyDelegated
+    {
         __AbsInbox_init(_bridge, _sequencerInbox);
     }
 
@@ -63,20 +67,25 @@ contract Inbox is AbsInbox, IInbox {
             L1MessageType_L2FundedByL1,
             msg.sender,
             abi.encodePacked(
-                L2MessageType_unsignedEOATx, gasLimit, maxFeePerGas, nonce, uint256(uint160(to)), msg.value, data
+                L2MessageType_unsignedEOATx,
+                gasLimit,
+                maxFeePerGas,
+                nonce,
+                uint256(uint160(to)),
+                msg.value,
+                data
             ),
             msg.value
         );
     }
 
     /// @inheritdoc IInbox
-    function sendL1FundedContractTransaction(uint256 gasLimit, uint256 maxFeePerGas, address to, bytes calldata data)
-        external
-        payable
-        whenNotPaused
-        onlyAllowed
-        returns (uint256)
-    {
+    function sendL1FundedContractTransaction(
+        uint256 gasLimit,
+        uint256 maxFeePerGas,
+        address to,
+        bytes calldata data
+    ) external payable whenNotPaused onlyAllowed returns (uint256) {
         // arbos will discard unsigned tx with gas limit too large
         if (gasLimit > type(uint64).max) {
             revert GasLimitTooLarge();
@@ -85,7 +94,12 @@ contract Inbox is AbsInbox, IInbox {
             L1MessageType_L2FundedByL1,
             msg.sender,
             abi.encodePacked(
-                L2MessageType_unsignedContractTx, gasLimit, maxFeePerGas, uint256(uint160(to)), msg.value, data
+                L2MessageType_unsignedContractTx,
+                gasLimit,
+                maxFeePerGas,
+                uint256(uint160(to)),
+                msg.value,
+                data
             ),
             msg.value
         );
@@ -111,7 +125,13 @@ contract Inbox is AbsInbox, IInbox {
             // undoing sender alias here to cancel out the aliasing
             AddressAliasHelper.undoL1ToL2Alias(msg.sender),
             abi.encodePacked(
-                L2MessageType_unsignedEOATx, gasLimit, maxFeePerGas, nonce, uint256(uint160(to)), msg.value, data
+                L2MessageType_unsignedEOATx,
+                gasLimit,
+                maxFeePerGas,
+                nonce,
+                uint256(uint160(to)),
+                msg.value,
+                data
             ),
             msg.value
         );
@@ -138,7 +158,13 @@ contract Inbox is AbsInbox, IInbox {
             // undoing sender alias here to cancel out the aliasing
             AddressAliasHelper.undoL1ToL2Alias(msg.sender),
             abi.encodePacked(
-                L2MessageType_unsignedEOATx, gasLimit, maxFeePerGas, nonce, uint256(uint160(to)), value, data
+                L2MessageType_unsignedEOATx,
+                gasLimit,
+                maxFeePerGas,
+                nonce,
+                uint256(uint160(to)),
+                value,
+                data
             ),
             0
         );
@@ -186,7 +212,9 @@ contract Inbox is AbsInbox, IInbox {
             dest = AddressAliasHelper.applyL1ToL2Alias(msg.sender);
         }
 
-        return _deliverMessage(L1MessageType_ethDeposit, msg.sender, abi.encodePacked(dest, msg.value), msg.value);
+        return _deliverMessage(
+            L1MessageType_ethDeposit, msg.sender, abi.encodePacked(dest, msg.value), msg.value
+        );
     }
 
     /// @notice deprecated in favour of depositEth with no parameters

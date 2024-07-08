@@ -63,10 +63,18 @@ contract ERC20InboxTest is AbsInboxTest {
         //// checks
 
         uint256 bridgeTokenBalanceAfter = nativeToken.balanceOf(address(bridge));
-        assertEq(bridgeTokenBalanceAfter - bridgeTokenBalanceBefore, depositAmount, "Invalid bridge token balance");
+        assertEq(
+            bridgeTokenBalanceAfter - bridgeTokenBalanceBefore,
+            depositAmount,
+            "Invalid bridge token balance"
+        );
 
         uint256 userTokenBalanceAfter = nativeToken.balanceOf(address(user));
-        assertEq(userTokenBalanceBefore - userTokenBalanceAfter, depositAmount, "Invalid user token balance");
+        assertEq(
+            userTokenBalanceBefore - userTokenBalanceAfter,
+            depositAmount,
+            "Invalid user token balance"
+        );
 
         uint256 delayedMsgCountAfter = bridge.delayedMessageCount();
         assertEq(delayedMsgCountAfter - delayedMsgCountBefore, 1, "Invalid delayed message count");
@@ -93,7 +101,11 @@ contract ERC20InboxTest is AbsInboxTest {
         //// checks
 
         uint256 bridgeTokenBalanceAfter = nativeToken.balanceOf(address(bridge));
-        assertEq(bridgeTokenBalanceAfter - bridgeTokenBalanceBefore, depositAmount, "Invalid bridge token balance");
+        assertEq(
+            bridgeTokenBalanceAfter - bridgeTokenBalanceBefore,
+            depositAmount,
+            "Invalid bridge token balance"
+        );
 
         uint256 userTokenBalanceAfter = nativeToken.balanceOf(address(user));
         assertEq(userTokenBalanceBefore, userTokenBalanceAfter, "Invalid user token balance");
@@ -115,7 +127,9 @@ contract ERC20InboxTest is AbsInboxTest {
 
         // expect event
         vm.expectEmit(true, true, true, true);
-        emit InboxMessageDelivered(0, abi.encodePacked(AddressAliasHelper.applyL1ToL2Alias(user), depositAmount));
+        emit InboxMessageDelivered(
+            0, abi.encodePacked(AddressAliasHelper.applyL1ToL2Alias(user), depositAmount)
+        );
 
         // deposit tokens -> tx.origin != msg.sender
         vm.prank(user);
@@ -124,10 +138,18 @@ contract ERC20InboxTest is AbsInboxTest {
         //// checks
 
         uint256 bridgeTokenBalanceAfter = nativeToken.balanceOf(address(bridge));
-        assertEq(bridgeTokenBalanceAfter - bridgeTokenBalanceBefore, depositAmount, "Invalid bridge token balance");
+        assertEq(
+            bridgeTokenBalanceAfter - bridgeTokenBalanceBefore,
+            depositAmount,
+            "Invalid bridge token balance"
+        );
 
         uint256 userTokenBalanceAfter = nativeToken.balanceOf(address(user));
-        assertEq(userTokenBalanceBefore - userTokenBalanceAfter, depositAmount, "Invalid user token balance");
+        assertEq(
+            userTokenBalanceBefore - userTokenBalanceAfter,
+            depositAmount,
+            "Invalid user token balance"
+        );
 
         uint256 delayedMsgCountAfter = bridge.delayedMessageCount();
         assertEq(delayedMsgCountAfter - delayedMsgCountBefore, 1, "Invalid delayed message count");
@@ -207,11 +229,17 @@ contract ERC20InboxTest is AbsInboxTest {
 
         uint256 bridgeTokenBalanceAfter = nativeToken.balanceOf(address(bridge));
         assertEq(
-            bridgeTokenBalanceAfter - bridgeTokenBalanceBefore, tokenTotalFeeAmount, "Invalid bridge token balance"
+            bridgeTokenBalanceAfter - bridgeTokenBalanceBefore,
+            tokenTotalFeeAmount,
+            "Invalid bridge token balance"
         );
 
         uint256 userTokenBalanceAfter = nativeToken.balanceOf(address(user));
-        assertEq(userTokenBalanceBefore - userTokenBalanceAfter, tokenTotalFeeAmount, "Invalid user token balance");
+        assertEq(
+            userTokenBalanceBefore - userTokenBalanceAfter,
+            tokenTotalFeeAmount,
+            "Invalid user token balance"
+        );
 
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
     }
@@ -273,12 +301,16 @@ contract ERC20InboxTest is AbsInboxTest {
 
         uint256 bridgeTokenBalanceAfter = nativeToken.balanceOf(address(bridge));
         assertEq(
-            bridgeTokenBalanceAfter - bridgeTokenBalanceBefore, tokenTotalFeeAmount, "Invalid bridge token balance"
+            bridgeTokenBalanceAfter - bridgeTokenBalanceBefore,
+            tokenTotalFeeAmount,
+            "Invalid bridge token balance"
         );
 
         uint256 senderTokenBalanceAfter = nativeToken.balanceOf(sender);
         assertEq(
-            senderTokenBalanceBefore - senderTokenBalanceAfter, tokenTotalFeeAmount, "Invalid sender token balance"
+            senderTokenBalanceBefore - senderTokenBalanceAfter,
+            tokenTotalFeeAmount,
+            "Invalid sender token balance"
         );
 
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
@@ -490,11 +522,17 @@ contract ERC20InboxTest is AbsInboxTest {
 
         uint256 bridgeTokenBalanceAfter = nativeToken.balanceOf(address(bridge));
         assertEq(
-            bridgeTokenBalanceAfter - bridgeTokenBalanceBefore, tokenTotalFeeAmount, "Invalid bridge token balance"
+            bridgeTokenBalanceAfter - bridgeTokenBalanceBefore,
+            tokenTotalFeeAmount,
+            "Invalid bridge token balance"
         );
 
         uint256 userTokenBalanceAfter = nativeToken.balanceOf(address(user));
-        assertEq(userTokenBalanceBefore - userTokenBalanceAfter, tokenTotalFeeAmount, "Invalid user token balance");
+        assertEq(
+            userTokenBalanceBefore - userTokenBalanceAfter,
+            tokenTotalFeeAmount,
+            "Invalid user token balance"
+        );
 
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
     }
@@ -555,12 +593,16 @@ contract ERC20InboxTest is AbsInboxTest {
 
         uint256 bridgeTokenBalanceAfter = nativeToken.balanceOf(address(bridge));
         assertEq(
-            bridgeTokenBalanceAfter - bridgeTokenBalanceBefore, tokenTotalFeeAmount, "Invalid bridge token balance"
+            bridgeTokenBalanceAfter - bridgeTokenBalanceBefore,
+            tokenTotalFeeAmount,
+            "Invalid bridge token balance"
         );
 
         uint256 senderTokenBalanceAfter = nativeToken.balanceOf(sender);
         assertEq(
-            senderTokenBalanceBefore - senderTokenBalanceAfter, tokenTotalFeeAmount, "Invalid sender token balance"
+            senderTokenBalanceBefore - senderTokenBalanceAfter,
+            tokenTotalFeeAmount,
+            "Invalid sender token balance"
         );
 
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
@@ -604,7 +646,9 @@ contract ERC20InboxTest is AbsInboxTest {
 
         uint256 userTokenBalanceAfter = nativeToken.balanceOf(address(user));
         assertEq(
-            userTokenBalanceBefore - userTokenBalanceAfter, tooSmallTokenTotalFeeAmount, "Invalid user token balance"
+            userTokenBalanceBefore - userTokenBalanceAfter,
+            tooSmallTokenTotalFeeAmount,
+            "Invalid user token balance"
         );
 
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");

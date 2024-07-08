@@ -51,11 +51,11 @@ library ProofUtils {
     /// @param leaves The leaves to form into an expansion
     /// @param leafStartIndex The subset of the leaves to start the expansion from - inclusive
     /// @param leafEndIndex The subset of the leaves to end the expansion from - exclusive
-    function expansionFromLeaves(bytes32[] memory leaves, uint256 leafStartIndex, uint256 leafEndIndex)
-        internal
-        pure
-        returns (bytes32[] memory)
-    {
+    function expansionFromLeaves(
+        bytes32[] memory leaves,
+        uint256 leafStartIndex,
+        uint256 leafEndIndex
+    ) internal pure returns (bytes32[] memory) {
         require(leafStartIndex < leafEndIndex, "Leaf start not less than leaf end");
         require(leafEndIndex <= leaves.length, "Leaf end not less than leaf length");
 
@@ -106,7 +106,11 @@ library ProofUtils {
         return proof;
     }
 
-    function generateInclusionProof(bytes32[] memory leaves, uint256 index) internal pure returns (bytes32[] memory) {
+    function generateInclusionProof(bytes32[] memory leaves, uint256 index)
+        internal
+        pure
+        returns (bytes32[] memory)
+    {
         require(leaves.length >= 1, "No leaves");
         require(index < leaves.length, "Index too high");
         bytes32[][] memory fullT = fullTree(leaves);
@@ -121,7 +125,8 @@ library ProofUtils {
 
             uint256 counterpartIndex = levelIndex ^ 1;
             bytes32[] memory layer = fullT[level];
-            bytes32 counterpart = counterpartIndex > layer.length - 1 ? bytes32(0) : layer[counterpartIndex];
+            bytes32 counterpart =
+                counterpartIndex > layer.length - 1 ? bytes32(0) : layer[counterpartIndex];
 
             proof[level] = counterpart;
         }
@@ -143,7 +148,8 @@ library ProofUtils {
             bytes32[] memory nextLayer = new bytes32[]((prevLayer.length + 1) / 2);
             for (uint256 i = 0; i < nextLayer.length; i++) {
                 if (2 * i + 1 < prevLayer.length) {
-                    nextLayer[i] = keccak256(abi.encodePacked(prevLayer[2 * i], prevLayer[2 * i + 1]));
+                    nextLayer[i] =
+                        keccak256(abi.encodePacked(prevLayer[2 * i], prevLayer[2 * i + 1]));
                 } else {
                     nextLayer[i] = keccak256(abi.encodePacked(prevLayer[2 * i], bytes32(0)));
                 }

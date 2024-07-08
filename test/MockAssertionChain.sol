@@ -47,7 +47,10 @@ contract MockAssertionChain is IAssertionChain {
     ) external view {
         require(assertionExists(assertionHash), "Assertion does not exist");
         // TODO: HN: This is not how the real assertion chain calculate assertion hash
-        require(assertionHash == calculateAssertionHash(prevAssertionHash, state), "INVALID_ASSERTION_HASH");
+        require(
+            assertionHash == calculateAssertionHash(prevAssertionHash, state),
+            "INVALID_ASSERTION_HASH"
+        );
     }
 
     function getFirstChildCreationBlock(bytes32 assertionHash) external view returns (uint64) {
@@ -150,7 +153,9 @@ contract MockAssertionChain is IAssertionChain {
             "Before state hash does not match predecessor"
         );
 
-        return addAssertionUnsafe(predecessorId, height, nextInboxPosition, afterState, successionChallenge);
+        return addAssertionUnsafe(
+            predecessorId, height, nextInboxPosition, afterState, successionChallenge
+        );
     }
 
     function setValidatorWhitelistDisabled(bool x) external {

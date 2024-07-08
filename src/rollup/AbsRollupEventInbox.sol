@@ -17,7 +17,11 @@ import {AlreadyInit, HadZeroInit, RollupNotChanged} from "../libraries/Error.sol
 /**
  * @title The inbox for rollup protocol events
  */
-abstract contract AbsRollupEventInbox is IRollupEventInbox, IDelayedMessageProvider, DelegateCallAware {
+abstract contract AbsRollupEventInbox is
+    IRollupEventInbox,
+    IDelayedMessageProvider,
+    DelegateCallAware
+{
     IBridge public override bridge;
     address public override rollup;
 
@@ -43,14 +47,19 @@ abstract contract AbsRollupEventInbox is IRollupEventInbox, IDelayedMessageProvi
         rollup = newRollup;
     }
 
-    function rollupInitialized(uint256 chainId, string calldata chainConfig) external override onlyRollup {
+    function rollupInitialized(uint256 chainId, string calldata chainConfig)
+        external
+        override
+        onlyRollup
+    {
         require(bytes(chainConfig).length > 0, "EMPTY_CHAIN_CONFIG");
         uint8 initMsgVersion = 1;
         uint256 currentDataCost = block.basefee;
         if (ArbitrumChecker.runningOnArbitrum()) {
             currentDataCost += ArbGasInfo(address(0x6c)).getL1BaseFeeEstimate();
         }
-        bytes memory initMsg = abi.encodePacked(chainId, initMsgVersion, currentDataCost, chainConfig);
+        bytes memory initMsg =
+            abi.encodePacked(chainId, initMsgVersion, currentDataCost, chainConfig);
         uint256 num = _enqueueInitializationMsg(initMsg);
         emit InboxMessageDelivered(num, initMsg);
     }

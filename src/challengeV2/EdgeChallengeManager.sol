@@ -77,14 +77,16 @@ interface IEdgeChallengeManager {
     ///         of the same level, and claimId-edgeId links for zero layer edges that claim an edge in the level below.
     ///         This method also includes the amount of time the assertion being claimed spent without a sibling
     /// @param edgeId                   The id of the edge to confirm
-    function confirmEdgeByTime(bytes32 edgeId, AssertionStateData calldata claimStateData) external;
+    function confirmEdgeByTime(bytes32 edgeId, AssertionStateData calldata claimStateData)
+        external;
 
     /// @notice Update multiple edges' timer cache by their children. Equivalent to calling updateTimerCacheByChildren for each edge.
     ///         May update timer cache above maximum if the last edge's timer cache was below maximumCachedTime.
     ///         Revert when the last edge's timer cache is already equal to or above maximumCachedTime.
     /// @param edgeIds           The ids of the edges to update
     /// @param maximumCachedTime The maximum amount of cached time allowed on the last edge (β∗)
-    function multiUpdateTimeCacheByChildren(bytes32[] calldata edgeIds, uint256 maximumCachedTime) external;
+    function multiUpdateTimeCacheByChildren(bytes32[] calldata edgeIds, uint256 maximumCachedTime)
+        external;
 
     /// @notice Update an edge's timer cache by its children.
     ///         Sets the edge's timer cache to its timeUnrivaled + (minimum timer cache of its children).
@@ -101,7 +103,11 @@ interface IEdgeChallengeManager {
     /// @param edgeId            The id of the edge to update
     /// @param claimingEdgeId    The id of the edge which has a claimId equal to edgeId
     /// @param maximumCachedTime The maximum amount of cached time allowed on the edge (β∗)
-    function updateTimerCacheByClaim(bytes32 edgeId, bytes32 claimingEdgeId, uint256 maximumCachedTime) external;
+    function updateTimerCacheByClaim(
+        bytes32 edgeId,
+        bytes32 claimingEdgeId,
+        uint256 maximumCachedTime
+    ) external;
 
     /// @notice Confirm an edge by executing a one step proof
     /// @dev    One step proofs can only be executed against edges that have length one and of type SmallStep
@@ -196,7 +202,10 @@ interface IEdgeChallengeManager {
 
     /// @notice True if an account has made a layer zero edge with the given mutual id.
     ///         This is only tracked when the validator whitelist is enabled
-    function hasMadeLayerZeroRival(address account, bytes32 mutualId) external view returns (bool);
+    function hasMadeLayerZeroRival(address account, bytes32 mutualId)
+        external
+        view
+        returns (bool);
 }
 
 /// @title  A challenge manager that uses edge structures to decide between Assertions
@@ -237,14 +246,19 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
     /// @param upperChildId             The id of the upper child created during bisection
     /// @param lowerChildAlreadyExists  When an edge is bisected the lower child may already exist - created by a rival.
     event EdgeBisected(
-        bytes32 indexed edgeId, bytes32 indexed lowerChildId, bytes32 indexed upperChildId, bool lowerChildAlreadyExists
+        bytes32 indexed edgeId,
+        bytes32 indexed lowerChildId,
+        bytes32 indexed upperChildId,
+        bool lowerChildAlreadyExists
     );
 
     /// @notice An edge can be confirmed if the cumulative time (in blocks) unrivaled of it and a direct chain of ancestors is greater than a threshold
     /// @param edgeId               The edge that was confirmed
     /// @param mutualId             The mutual id of the confirmed edge
     /// @param totalTimeUnrivaled   The cumulative amount of time (in blocks) this edge spent unrivaled
-    event EdgeConfirmedByTime(bytes32 indexed edgeId, bytes32 indexed mutualId, uint256 totalTimeUnrivaled);
+    event EdgeConfirmedByTime(
+        bytes32 indexed edgeId, bytes32 indexed mutualId, uint256 totalTimeUnrivaled
+    );
 
     /// @notice A SmallStep edge of length 1 can be confirmed via a one step proof
     /// @param edgeId   The edge that was confirmed
@@ -261,7 +275,9 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
     /// @param mutualId     The mutual id of the confirmed edge
     /// @param stakeToken   The ERC20 being refunded
     /// @param stakeAmount  The amount of tokens being refunded
-    event EdgeRefunded(bytes32 indexed edgeId, bytes32 indexed mutualId, address stakeToken, uint256 stakeAmount);
+    event EdgeRefunded(
+        bytes32 indexed edgeId, bytes32 indexed mutualId, address stakeToken, uint256 stakeAmount
+    );
 
     /// @dev Store for all edges and rival data
     ///      All edges, including edges from different challenges, are stored together in the same store
@@ -391,11 +407,17 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
             if (args.proof.length == 0) {
                 revert EmptyEdgeSpecificProof();
             }
-            (, AssertionStateData memory predecessorStateData, AssertionStateData memory claimStateData) =
-                abi.decode(args.proof, (bytes32[], AssertionStateData, AssertionStateData));
+            (
+                ,
+                AssertionStateData memory predecessorStateData,
+                AssertionStateData memory claimStateData
+            ) = abi.decode(args.proof, (bytes32[], AssertionStateData, AssertionStateData));
 
             assertionChain.validateAssertionHash(
-                args.claimId, claimStateData.assertionState, claimStateData.prevAssertionHash, claimStateData.inboxAcc
+                args.claimId,
+                claimStateData.assertionState,
+                claimStateData.prevAssertionHash,
+                claimStateData.inboxAcc
             );
 
             assertionChain.validateAssertionHash(
@@ -406,7 +428,9 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
             );
 
             if (args.endHistoryRoot != claimStateData.assertionState.endHistoryRoot) {
-                revert EndHistoryRootMismatch(args.endHistoryRoot, claimStateData.assertionState.endHistoryRoot);
+                revert EndHistoryRootMismatch(
+                    args.endHistoryRoot, claimStateData.assertionState.endHistoryRoot
+                );
             }
 
             ard = AssertionReferenceData(
@@ -456,8 +480,11 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
         external
         returns (bytes32, bytes32)
     {
-        (bytes32 lowerChildId, EdgeAddedData memory lowerChildAdded, EdgeAddedData memory upperChildAdded) =
-            store.bisectEdge(edgeId, bisectionHistoryRoot, prefixProof);
+        (
+            bytes32 lowerChildId,
+            EdgeAddedData memory lowerChildAdded,
+            EdgeAddedData memory upperChildAdded
+        ) = store.bisectEdge(edgeId, bisectionHistoryRoot, prefixProof);
 
         bool lowerChildAlreadyExists = lowerChildAdded.edgeId == 0;
         // the lower child might already exist, if it didnt then a new
@@ -492,7 +519,9 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
     }
 
     /// @inheritdoc IEdgeChallengeManager
-    function multiUpdateTimeCacheByChildren(bytes32[] calldata edgeIds, uint256 maximumCachedTime) public {
+    function multiUpdateTimeCacheByChildren(bytes32[] calldata edgeIds, uint256 maximumCachedTime)
+        public
+    {
         if (edgeIds.length == 0) revert EmptyArray();
         // revert early if the last edge already has sufficient time
         store.validateCurrentTimer(edgeIds[edgeIds.length - 1], maximumCachedTime);
@@ -503,14 +532,20 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
 
     /// @inheritdoc IEdgeChallengeManager
     function updateTimerCacheByChildren(bytes32 edgeId, uint256 maximumCachedTime) public {
-        (bool updated, uint256 newValue) = store.updateTimerCacheByChildren(edgeId, maximumCachedTime);
+        (bool updated, uint256 newValue) =
+            store.updateTimerCacheByChildren(edgeId, maximumCachedTime);
         if (updated) emit TimerCacheUpdated(edgeId, newValue);
     }
 
     /// @inheritdoc IEdgeChallengeManager
-    function updateTimerCacheByClaim(bytes32 edgeId, bytes32 claimingEdgeId, uint256 maximumCachedTime) public {
-        (bool updated, uint256 newValue) =
-            store.updateTimerCacheByClaim(edgeId, claimingEdgeId, NUM_BIGSTEP_LEVEL, maximumCachedTime);
+    function updateTimerCacheByClaim(
+        bytes32 edgeId,
+        bytes32 claimingEdgeId,
+        uint256 maximumCachedTime
+    ) public {
+        (bool updated, uint256 newValue) = store.updateTimerCacheByClaim(
+            edgeId, claimingEdgeId, NUM_BIGSTEP_LEVEL, maximumCachedTime
+        );
         if (updated) emit TimerCacheUpdated(edgeId, newValue);
     }
 
@@ -525,7 +560,8 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
         // if the edge is block level and the assertion being claimed against was the first child of its predecessor
         // then we are able to count the time between the first and second child as time towards
         // the this edge
-        bool isBlockLevel = ChallengeEdgeLib.levelToType(topEdge.level, NUM_BIGSTEP_LEVEL) == EdgeType.Block;
+        bool isBlockLevel =
+            ChallengeEdgeLib.levelToType(topEdge.level, NUM_BIGSTEP_LEVEL) == EdgeType.Block;
         if (isBlockLevel && assertionChain.isFirstChild(topEdge.claimId)) {
             assertionChain.validateAssertionHash(
                 topEdge.claimId,
@@ -533,11 +569,13 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
                 claimStateData.prevAssertionHash,
                 claimStateData.inboxAcc
             );
-            assertionBlocks = assertionChain.getSecondChildCreationBlock(claimStateData.prevAssertionHash)
-                - assertionChain.getFirstChildCreationBlock(claimStateData.prevAssertionHash);
+            assertionBlocks = assertionChain.getSecondChildCreationBlock(
+                claimStateData.prevAssertionHash
+            ) - assertionChain.getFirstChildCreationBlock(claimStateData.prevAssertionHash);
         }
 
-        uint256 totalTimeUnrivaled = store.confirmEdgeByTime(edgeId, assertionBlocks, challengePeriodBlocks);
+        uint256 totalTimeUnrivaled =
+            store.confirmEdgeByTime(edgeId, assertionBlocks, challengePeriodBlocks);
 
         emit EdgeConfirmedByTime(edgeId, store.edges[edgeId].mutualId(), totalTimeUnrivaled);
     }
@@ -616,7 +654,9 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
         uint256 endHeight,
         bytes32 endHistoryRoot
     ) public pure returns (bytes32) {
-        return ChallengeEdgeLib.idComponent(level, originId, startHeight, startHistoryRoot, endHeight, endHistoryRoot);
+        return ChallengeEdgeLib.idComponent(
+            level, originId, startHeight, startHistoryRoot, endHeight, endHistoryRoot
+        );
     }
 
     /// @inheritdoc IEdgeChallengeManager
@@ -627,7 +667,9 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
         bytes32 startHistoryRoot,
         uint256 endHeight
     ) public pure returns (bytes32) {
-        return ChallengeEdgeLib.mutualIdComponent(level, originId, startHeight, startHistoryRoot, endHeight);
+        return ChallengeEdgeLib.mutualIdComponent(
+            level, originId, startHeight, startHistoryRoot, endHeight
+        );
     }
 
     /// @inheritdoc IEdgeChallengeManager
@@ -676,7 +718,11 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
     }
 
     /// @inheritdoc IEdgeChallengeManager
-    function hasMadeLayerZeroRival(address account, bytes32 mutualId) external view returns (bool) {
+    function hasMadeLayerZeroRival(address account, bytes32 mutualId)
+        external
+        view
+        returns (bool)
+    {
         return store.hasMadeLayerZeroRival[account][mutualId];
     }
 }

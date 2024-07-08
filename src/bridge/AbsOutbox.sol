@@ -217,7 +217,11 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         context = prevContext;
     }
 
-    function _calcSpentIndexOffset(uint256 index) internal view returns (uint256, uint256, bytes32) {
+    function _calcSpentIndexOffset(uint256 index)
+        internal
+        view
+        returns (uint256, uint256, bytes32)
+    {
         uint256 spentIndex = index / 255; // Note: Reserves the MSB.
         uint256 bitOffset = index % 255;
         bytes32 replay = spent[spentIndex];
@@ -275,7 +279,11 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         return keccak256(abi.encodePacked(l2Sender, to, l2Block, l1Block, l2Timestamp, value, data));
     }
 
-    function calculateMerkleRoot(bytes32[] memory proof, uint256 path, bytes32 item) public pure returns (bytes32) {
+    function calculateMerkleRoot(bytes32[] memory proof, uint256 path, bytes32 item)
+        public
+        pure
+        returns (bytes32)
+    {
         return MerkleLib.calculateRoot(proof, path, keccak256(abi.encodePacked(item)));
     }
 

@@ -48,7 +48,11 @@ abstract contract DoubleLogicUUPSUpgradeable is UUPSUpgradeable, DoubleLogicERC1
      *
      * Emits an {UpgradedSecondary} event.
      */
-    function upgradeSecondaryToAndCall(address newImplementation, bytes memory data) external payable onlyProxy {
+    function upgradeSecondaryToAndCall(address newImplementation, bytes memory data)
+        external
+        payable
+        onlyProxy
+    {
         _authorizeSecondaryUpgrade(newImplementation);
         _upgradeSecondaryToAndCallUUPS(newImplementation, data, true);
     }

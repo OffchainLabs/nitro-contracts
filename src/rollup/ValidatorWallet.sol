@@ -41,7 +41,10 @@ contract ValidatorWallet is OwnableUpgradeable, DelegateCallAware, GasRefundEnab
     event ExecutorUpdated(address indexed executor, bool isExecutor);
 
     /// @dev updates the executor addresses
-    function setExecutor(address[] calldata newExecutors, bool[] calldata isExecutor) external onlyOwner {
+    function setExecutor(address[] calldata newExecutors, bool[] calldata isExecutor)
+        external
+        onlyOwner
+    {
         if (newExecutors.length != isExecutor.length) {
             revert BadArrayLength(newExecutors.length, isExecutor.length);
         }
@@ -53,11 +56,11 @@ contract ValidatorWallet is OwnableUpgradeable, DelegateCallAware, GasRefundEnab
         }
     }
 
-    function initialize(address _executor, address _owner, address[] calldata initialExecutorAllowedDests)
-        external
-        initializer
-        onlyDelegated
-    {
+    function initialize(
+        address _executor,
+        address _owner,
+        address[] calldata initialExecutorAllowedDests
+    ) external initializer onlyDelegated {
         __Ownable_init();
         transferOwnership(_owner);
 
@@ -97,10 +100,11 @@ contract ValidatorWallet is OwnableUpgradeable, DelegateCallAware, GasRefundEnab
         }
     }
 
-    function executeTransactions(bytes[] calldata data, address[] calldata destination, uint256[] calldata amount)
-        external
-        payable
-    {
+    function executeTransactions(
+        bytes[] calldata data,
+        address[] calldata destination,
+        uint256[] calldata amount
+    ) external payable {
         executeTransactionsWithGasRefunder(IGasRefunder(address(0)), data, destination, amount);
     }
 
@@ -131,7 +135,10 @@ contract ValidatorWallet is OwnableUpgradeable, DelegateCallAware, GasRefundEnab
         }
     }
 
-    function executeTransaction(bytes calldata data, address destination, uint256 amount) external payable {
+    function executeTransaction(bytes calldata data, address destination, uint256 amount)
+        external
+        payable
+    {
         executeTransactionWithGasRefunder(IGasRefunder(address(0)), data, destination, amount);
     }
 

@@ -62,10 +62,16 @@ abstract contract AbsInboxTest is Test {
     function test_setOutbox_revert_NonOwnerCall() public {
         // mock the owner() call on rollup
         address mockRollupOwner = address(10_000);
-        vm.mockCall(rollup, abi.encodeWithSelector(IOwnable.owner.selector), abi.encode(mockRollupOwner));
+        vm.mockCall(
+            rollup, abi.encodeWithSelector(IOwnable.owner.selector), abi.encode(mockRollupOwner)
+        );
 
         // setAllowList shall revert
-        vm.expectRevert(abi.encodeWithSelector(NotRollupOrOwner.selector, address(this), rollup, mockRollupOwner));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                NotRollupOrOwner.selector, address(this), rollup, mockRollupOwner
+            )
+        );
 
         address[] memory users = new address[](2);
         users[0] = address(300);
@@ -119,16 +125,24 @@ abstract contract AbsInboxTest is Test {
     function test_setAllowListEnabled_revert_NonOwnerCall() public {
         // mock the owner() call on rollup
         address mockRollupOwner = address(10_000);
-        vm.mockCall(rollup, abi.encodeWithSelector(IOwnable.owner.selector), abi.encode(mockRollupOwner));
+        vm.mockCall(
+            rollup, abi.encodeWithSelector(IOwnable.owner.selector), abi.encode(mockRollupOwner)
+        );
 
         // setAllowListEnabled shall revert
-        vm.expectRevert(abi.encodeWithSelector(NotRollupOrOwner.selector, address(this), rollup, mockRollupOwner));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                NotRollupOrOwner.selector, address(this), rollup, mockRollupOwner
+            )
+        );
 
         inbox.setAllowListEnabled(true);
     }
 
     function test_pause() public {
-        assertEq((PausableUpgradeable(address(inbox))).paused(), false, "Invalid initial paused state");
+        assertEq(
+            (PausableUpgradeable(address(inbox))).paused(), false, "Invalid initial paused state"
+        );
 
         vm.prank(rollup);
         inbox.pause();
@@ -139,7 +153,9 @@ abstract contract AbsInboxTest is Test {
     function test_unpause() public {
         vm.prank(rollup);
         inbox.pause();
-        assertEq((PausableUpgradeable(address(inbox))).paused(), true, "Invalid initial paused state");
+        assertEq(
+            (PausableUpgradeable(address(inbox))).paused(), true, "Invalid initial paused state"
+        );
         vm.prank(rollup);
         inbox.unpause();
 
@@ -218,13 +234,20 @@ abstract contract AbsInboxTest is Test {
         emit InboxMessageDelivered(
             0,
             abi.encodePacked(
-                L2MessageType_unsignedEOATx, gasLimit, maxFeePerGas, nonce, uint256(uint160(user)), value, data
+                L2MessageType_unsignedEOATx,
+                gasLimit,
+                maxFeePerGas,
+                nonce,
+                uint256(uint160(user)),
+                value,
+                data
             )
         );
 
         // send TX
         vm.prank(user, user);
-        uint256 msgNum = inbox.sendUnsignedTransaction(gasLimit, maxFeePerGas, nonce, user, value, data);
+        uint256 msgNum =
+            inbox.sendUnsignedTransaction(gasLimit, maxFeePerGas, nonce, user, value, data);
 
         //// checks
         assertEq(msgNum, 0, "Invalid msgNum");
@@ -269,7 +292,12 @@ abstract contract AbsInboxTest is Test {
         emit InboxMessageDelivered(
             0,
             abi.encodePacked(
-                L2MessageType_unsignedContractTx, gasLimit, maxFeePerGas, uint256(uint160(user)), value, data
+                L2MessageType_unsignedContractTx,
+                gasLimit,
+                maxFeePerGas,
+                uint256(uint160(user)),
+                value,
+                data
             )
         );
 

@@ -40,7 +40,9 @@ contract ERC20BridgeTest is AbsBridgeTest {
 
     /* solhint-disable func-name-mixedcase */
     function test_initialize() public {
-        assertEq(address(erc20Bridge.nativeToken()), address(nativeToken), "Invalid nativeToken ref");
+        assertEq(
+            address(erc20Bridge.nativeToken()), address(nativeToken), "Invalid nativeToken ref"
+        );
         assertEq(address(bridge.rollup()), rollup, "Invalid rollup ref");
         assertEq(bridge.activeOutbox(), address(0), "Invalid activeOutbox ref");
     }
@@ -102,7 +104,9 @@ contract ERC20BridgeTest is AbsBridgeTest {
 
         //// checks
         uint256 userNativeTokenBalanceAfter = nativeToken.balanceOf(address(user));
-        assertEq(userNativeTokenBalanceAfter, userNativeTokenBalanceBefore, "Invalid user token balance");
+        assertEq(
+            userNativeTokenBalanceAfter, userNativeTokenBalanceBefore, "Invalid user token balance"
+        );
 
         uint256 bridgeNativeTokenBalanceAfter = nativeToken.balanceOf(address(bridge));
         assertEq(
@@ -113,7 +117,9 @@ contract ERC20BridgeTest is AbsBridgeTest {
 
         uint256 inboxNativeTokenBalanceAfter = nativeToken.balanceOf(address(inbox));
         assertEq(
-            inboxNativeTokenBalanceBefore - inboxNativeTokenBalanceAfter, tokenFeeAmount, "Invalid inbox token balance"
+            inboxNativeTokenBalanceBefore - inboxNativeTokenBalanceAfter,
+            tokenFeeAmount,
+            "Invalid inbox token balance"
         );
 
         uint256 delayedMsgCountAfter = bridge.delayedMessageCount();
@@ -128,7 +134,9 @@ contract ERC20BridgeTest is AbsBridgeTest {
         // enqueue msg
         hoax(inbox);
         vm.expectRevert();
-        IEthBridge(address(bridge)).enqueueDelayedMessage{value: 0.1 ether}(kind, user, messageDataHash);
+        IEthBridge(address(bridge)).enqueueDelayedMessage{value: 0.1 ether}(
+            kind, user, messageDataHash
+        );
     }
 
     function test_enqueueDelayedMessage_revert_NotDelayedInbox() public {
@@ -171,7 +179,11 @@ contract ERC20BridgeTest is AbsBridgeTest {
         );
 
         uint256 userTokenBalanceAfter = nativeToken.balanceOf(address(user));
-        assertEq(userTokenBalanceAfter - userTokenBalanceBefore, withdrawalAmount, "Invalid user token balance");
+        assertEq(
+            userTokenBalanceAfter - userTokenBalanceBefore,
+            withdrawalAmount,
+            "Invalid user token balance"
+        );
     }
 
     function test_executeCall_ExtraCall() public {
@@ -200,7 +212,8 @@ contract ERC20BridgeTest is AbsBridgeTest {
 
         //// execute call
         vm.prank(outbox);
-        (bool success,) = bridge.executeCall({to: address(vault), value: withdrawalAmount, data: data});
+        (bool success,) =
+            bridge.executeCall({to: address(vault), value: withdrawalAmount, data: data});
 
         //// checks
         assertTrue(success, "Execute call failed");
@@ -347,8 +360,9 @@ contract ERC20BridgeTest is AbsBridgeTest {
         // executeCall shall revert when call changes balance of the bridge
         address to = _gateway;
         uint256 withdrawAmount = 25 ether;
-        bytes memory data =
-            abi.encodeWithSelector(MockGateway.withdraw.selector, MockBridgedToken(_nativeToken), withdrawAmount);
+        bytes memory data = abi.encodeWithSelector(
+            MockGateway.withdraw.selector, MockBridgedToken(_nativeToken), withdrawAmount
+        );
         vm.expectRevert(abi.encodeWithSelector(CallNotAllowed.selector));
         vm.prank(_outbox);
         _bridge.executeCall({to: to, value: 10, data: data});

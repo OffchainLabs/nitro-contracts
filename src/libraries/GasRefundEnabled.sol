@@ -38,7 +38,8 @@ abstract contract GasRefundEnabled {
                     try reader4844.getDataHashes() returns (bytes32[] memory dataHashes) {
                         if (dataHashes.length != 0) {
                             uint256 blobBasefee = reader4844.getBlobBaseFee();
-                            startGasLeft += (dataHashes.length * gasPerBlob * blobBasefee) / block.basefee;
+                            startGasLeft +=
+                                (dataHashes.length * gasPerBlob * blobBasefee) / block.basefee;
                         }
                     } catch {}
                 }

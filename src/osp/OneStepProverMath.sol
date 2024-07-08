@@ -14,7 +14,12 @@ contract OneStepProverMath is IOneStepProver {
     using ValueLib for Value;
     using ValueStackLib for ValueStack;
 
-    function executeEqz(Machine memory mach, Module memory, Instruction calldata inst, bytes calldata) internal pure {
+    function executeEqz(
+        Machine memory mach,
+        Module memory,
+        Instruction calldata inst,
+        bytes calldata
+    ) internal pure {
         Value memory v = mach.valueStack.pop();
         if (inst.opcode == Instructions.I32_EQZ) {
             require(v.valueType == ValueType.I32, "NOT_I32");
@@ -67,10 +72,12 @@ contract OneStepProverMath is IOneStepProver {
         }
     }
 
-    function executeI32RelOp(Machine memory mach, Module memory, Instruction calldata inst, bytes calldata)
-        internal
-        pure
-    {
+    function executeI32RelOp(
+        Machine memory mach,
+        Module memory,
+        Instruction calldata inst,
+        bytes calldata
+    ) internal pure {
         uint32 b = mach.valueStack.pop().assumeI32();
         uint32 a = mach.valueStack.pop().assumeI32();
 
@@ -79,8 +86,8 @@ contract OneStepProverMath is IOneStepProver {
         uint64 b64;
 
         if (
-            relop == Instructions.IRELOP_LT_S || relop == Instructions.IRELOP_GT_S || relop == Instructions.IRELOP_LE_S
-                || relop == Instructions.IRELOP_GE_S
+            relop == Instructions.IRELOP_LT_S || relop == Instructions.IRELOP_GT_S
+                || relop == Instructions.IRELOP_LE_S || relop == Instructions.IRELOP_GE_S
         ) {
             a64 = signExtend(a);
             b64 = signExtend(b);
@@ -94,10 +101,12 @@ contract OneStepProverMath is IOneStepProver {
         mach.valueStack.push(ValueLib.newBoolean(res));
     }
 
-    function executeI64RelOp(Machine memory mach, Module memory, Instruction calldata inst, bytes calldata)
-        internal
-        pure
-    {
+    function executeI64RelOp(
+        Machine memory mach,
+        Module memory,
+        Instruction calldata inst,
+        bytes calldata
+    ) internal pure {
         uint64 b = mach.valueStack.pop().assumeI64();
         uint64 a = mach.valueStack.pop().assumeI64();
 
@@ -137,10 +146,12 @@ contract OneStepProverMath is IOneStepProver {
         revert("BAD IUnOp");
     }
 
-    function executeI32UnOp(Machine memory mach, Module memory, Instruction calldata inst, bytes calldata)
-        internal
-        pure
-    {
+    function executeI32UnOp(
+        Machine memory mach,
+        Module memory,
+        Instruction calldata inst,
+        bytes calldata
+    ) internal pure {
         uint32 a = mach.valueStack.pop().assumeI32();
 
         uint16 unop = inst.opcode - Instructions.I32_UNOP_BASE;
@@ -150,10 +161,12 @@ contract OneStepProverMath is IOneStepProver {
         mach.valueStack.push(ValueLib.newI32(res));
     }
 
-    function executeI64UnOp(Machine memory mach, Module memory, Instruction calldata inst, bytes calldata)
-        internal
-        pure
-    {
+    function executeI64UnOp(
+        Machine memory mach,
+        Module memory,
+        Instruction calldata inst,
+        bytes calldata
+    ) internal pure {
         uint64 a = mach.valueStack.pop().assumeI64();
 
         uint16 unop = inst.opcode - Instructions.I64_UNOP_BASE;
@@ -183,7 +196,11 @@ contract OneStepProverMath is IOneStepProver {
         return (a >> b) | (a << (64 - b));
     }
 
-    function genericBinOp(uint64 a, uint64 b, uint16 opcodeOffset) internal pure returns (uint64, bool) {
+    function genericBinOp(uint64 a, uint64 b, uint16 opcodeOffset)
+        internal
+        pure
+        returns (uint64, bool)
+    {
         unchecked {
             if (opcodeOffset == 0) {
                 // add
@@ -221,10 +238,12 @@ contract OneStepProverMath is IOneStepProver {
         }
     }
 
-    function executeI32BinOp(Machine memory mach, Module memory, Instruction calldata inst, bytes calldata)
-        internal
-        pure
-    {
+    function executeI32BinOp(
+        Machine memory mach,
+        Module memory,
+        Instruction calldata inst,
+        bytes calldata
+    ) internal pure {
         uint32 b = mach.valueStack.pop().assumeI32();
         uint32 a = mach.valueStack.pop().assumeI32();
         uint32 res;
@@ -274,10 +293,12 @@ contract OneStepProverMath is IOneStepProver {
         mach.valueStack.push(ValueLib.newI32(res));
     }
 
-    function executeI64BinOp(Machine memory mach, Module memory, Instruction calldata inst, bytes calldata)
-        internal
-        pure
-    {
+    function executeI64BinOp(
+        Machine memory mach,
+        Module memory,
+        Instruction calldata inst,
+        bytes calldata
+    ) internal pure {
         uint64 b = mach.valueStack.pop().assumeI64();
         uint64 a = mach.valueStack.pop().assumeI64();
         uint64 res;
@@ -327,10 +348,12 @@ contract OneStepProverMath is IOneStepProver {
         mach.valueStack.push(ValueLib.newI64(res));
     }
 
-    function executeI32WrapI64(Machine memory mach, Module memory, Instruction calldata, bytes calldata)
-        internal
-        pure
-    {
+    function executeI32WrapI64(
+        Machine memory mach,
+        Module memory,
+        Instruction calldata,
+        bytes calldata
+    ) internal pure {
         uint64 a = mach.valueStack.pop().assumeI64();
 
         uint32 a32 = uint32(a);
@@ -338,10 +361,12 @@ contract OneStepProverMath is IOneStepProver {
         mach.valueStack.push(ValueLib.newI32(a32));
     }
 
-    function executeI64ExtendI32(Machine memory mach, Module memory, Instruction calldata inst, bytes calldata)
-        internal
-        pure
-    {
+    function executeI64ExtendI32(
+        Machine memory mach,
+        Module memory,
+        Instruction calldata inst,
+        bytes calldata
+    ) internal pure {
         uint32 a = mach.valueStack.pop().assumeI32();
 
         uint64 a64;
@@ -355,10 +380,12 @@ contract OneStepProverMath is IOneStepProver {
         mach.valueStack.push(ValueLib.newI64(a64));
     }
 
-    function executeExtendSameType(Machine memory mach, Module memory, Instruction calldata inst, bytes calldata)
-        internal
-        pure
-    {
+    function executeExtendSameType(
+        Machine memory mach,
+        Module memory,
+        Instruction calldata inst,
+        bytes calldata
+    ) internal pure {
         ValueType ty;
         uint8 sourceBits;
         if (inst.opcode == Instructions.I32_EXTEND_8S) {
@@ -396,10 +423,12 @@ contract OneStepProverMath is IOneStepProver {
         mach.valueStack.push(val);
     }
 
-    function executeReinterpret(Machine memory mach, Module memory, Instruction calldata inst, bytes calldata)
-        internal
-        pure
-    {
+    function executeReinterpret(
+        Machine memory mach,
+        Module memory,
+        Instruction calldata inst,
+        bytes calldata
+    ) internal pure {
         ValueType destTy;
         ValueType sourceTy;
         if (inst.opcode == Instructions.I32_REINTERPRET_F32) {
@@ -441,32 +470,40 @@ contract OneStepProverMath is IOneStepProver {
         if (opcode == Instructions.I32_EQZ || opcode == Instructions.I64_EQZ) {
             impl = executeEqz;
         } else if (
-            opcode >= Instructions.I32_RELOP_BASE && opcode <= Instructions.I32_RELOP_BASE + Instructions.IRELOP_LAST
+            opcode >= Instructions.I32_RELOP_BASE
+                && opcode <= Instructions.I32_RELOP_BASE + Instructions.IRELOP_LAST
         ) {
             impl = executeI32RelOp;
         } else if (
-            opcode >= Instructions.I32_UNOP_BASE && opcode <= Instructions.I32_UNOP_BASE + Instructions.IUNOP_LAST
+            opcode >= Instructions.I32_UNOP_BASE
+                && opcode <= Instructions.I32_UNOP_BASE + Instructions.IUNOP_LAST
         ) {
             impl = executeI32UnOp;
         } else if (opcode >= Instructions.I32_ADD && opcode <= Instructions.I32_ROTR) {
             impl = executeI32BinOp;
         } else if (
-            opcode >= Instructions.I64_RELOP_BASE && opcode <= Instructions.I64_RELOP_BASE + Instructions.IRELOP_LAST
+            opcode >= Instructions.I64_RELOP_BASE
+                && opcode <= Instructions.I64_RELOP_BASE + Instructions.IRELOP_LAST
         ) {
             impl = executeI64RelOp;
         } else if (
-            opcode >= Instructions.I64_UNOP_BASE && opcode <= Instructions.I64_UNOP_BASE + Instructions.IUNOP_LAST
+            opcode >= Instructions.I64_UNOP_BASE
+                && opcode <= Instructions.I64_UNOP_BASE + Instructions.IUNOP_LAST
         ) {
             impl = executeI64UnOp;
         } else if (opcode >= Instructions.I64_ADD && opcode <= Instructions.I64_ROTR) {
             impl = executeI64BinOp;
         } else if (opcode == Instructions.I32_WRAP_I64) {
             impl = executeI32WrapI64;
-        } else if (opcode == Instructions.I64_EXTEND_I32_S || opcode == Instructions.I64_EXTEND_I32_U) {
+        } else if (
+            opcode == Instructions.I64_EXTEND_I32_S || opcode == Instructions.I64_EXTEND_I32_U
+        ) {
             impl = executeI64ExtendI32;
         } else if (opcode >= Instructions.I32_EXTEND_8S && opcode <= Instructions.I64_EXTEND_32S) {
             impl = executeExtendSameType;
-        } else if (opcode >= Instructions.I32_REINTERPRET_F32 && opcode <= Instructions.F64_REINTERPRET_I64) {
+        } else if (
+            opcode >= Instructions.I32_REINTERPRET_F32 && opcode <= Instructions.F64_REINTERPRET_I64
+        ) {
             impl = executeReinterpret;
         } else {
             revert("INVALID_OPCODE");

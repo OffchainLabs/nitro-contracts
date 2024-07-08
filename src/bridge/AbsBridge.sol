@@ -141,10 +141,12 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
         );
     }
 
-    function _enqueueDelayedMessage(uint8 kind, address sender, bytes32 messageDataHash, uint256 amount)
-        internal
-        returns (uint256)
-    {
+    function _enqueueDelayedMessage(
+        uint8 kind,
+        address sender,
+        bytes32 messageDataHash,
+        uint256 amount
+    ) internal returns (uint256) {
         if (!allowedDelayedInboxes(msg.sender)) revert NotDelayedInbox(msg.sender);
 
         uint256 messageCount = addMessageToDelayedAccumulator(
@@ -170,14 +172,17 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
         bytes32 messageDataHash
     ) internal returns (uint256) {
         uint256 count = delayedInboxAccs.length;
-        bytes32 messageHash =
-            Messages.messageHash(kind, sender, blockNumber, blockTimestamp, count, baseFeeL1, messageDataHash);
+        bytes32 messageHash = Messages.messageHash(
+            kind, sender, blockNumber, blockTimestamp, count, baseFeeL1, messageDataHash
+        );
         bytes32 prevAcc = 0;
         if (count > 0) {
             prevAcc = delayedInboxAccs[count - 1];
         }
         delayedInboxAccs.push(Messages.accumulateInboxMessage(prevAcc, messageHash));
-        emit MessageDelivered(count, prevAcc, msg.sender, kind, sender, messageDataHash, baseFeeL1, blockTimestamp);
+        emit MessageDelivered(
+            count, prevAcc, msg.sender, kind, sender, messageDataHash, baseFeeL1, blockTimestamp
+        );
         return count;
     }
 
@@ -216,7 +221,8 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
             allowedDelayedInboxesMap[inbox] = InOutInfo(allowedDelayedInboxList.length, true);
             allowedDelayedInboxList.push(inbox);
         } else {
-            allowedDelayedInboxList[info.index] = allowedDelayedInboxList[allowedDelayedInboxList.length - 1];
+            allowedDelayedInboxList[info.index] =
+                allowedDelayedInboxList[allowedDelayedInboxList.length - 1];
             allowedDelayedInboxesMap[allowedDelayedInboxList[info.index]].index = info.index;
             allowedDelayedInboxList.pop();
             delete allowedDelayedInboxesMap[inbox];

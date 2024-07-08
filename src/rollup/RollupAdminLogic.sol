@@ -34,12 +34,18 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
 
         // dont need to connect and initialize the event inbox if it's already been initialized
         if (!bridge.allowedDelayedInboxes(address(connectedContracts.rollupEventInbox))) {
-            connectedContracts.bridge.setDelayedInbox(address(connectedContracts.rollupEventInbox), true);
-            connectedContracts.rollupEventInbox.rollupInitialized(config.chainId, config.chainConfig);
+            connectedContracts.bridge.setDelayedInbox(
+                address(connectedContracts.rollupEventInbox), true
+            );
+            connectedContracts.rollupEventInbox.rollupInitialized(
+                config.chainId, config.chainConfig
+            );
         }
 
         if (connectedContracts.sequencerInbox.totalDelayedMessagesRead() == 0) {
-            connectedContracts.sequencerInbox.addSequencerL2Batch(0, "", 1, IGasRefunder(address(0)), 0, 1);
+            connectedContracts.sequencerInbox.addSequencerL2Batch(
+                0, "", 1, IGasRefunder(address(0)), 0, 1
+            );
         }
 
         validatorWalletCreator = connectedContracts.validatorWalletCreator;

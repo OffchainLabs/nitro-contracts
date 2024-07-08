@@ -18,7 +18,11 @@ library GlobalStateLib {
     function hash(GlobalState memory state) internal pure returns (bytes32) {
         return keccak256(
             abi.encodePacked(
-                "Global state:", state.bytes32Vals[0], state.bytes32Vals[1], state.u64Vals[0], state.u64Vals[1]
+                "Global state:",
+                state.bytes32Vals[0],
+                state.bytes32Vals[1],
+                state.u64Vals[0],
+                state.u64Vals[1]
             )
         );
     }
@@ -41,12 +45,16 @@ library GlobalStateLib {
 
     function isEmpty(GlobalState calldata state) internal pure returns (bool) {
         return (
-            state.bytes32Vals[0] == bytes32(0) && state.bytes32Vals[1] == bytes32(0) && state.u64Vals[0] == 0
-                && state.u64Vals[1] == 0
+            state.bytes32Vals[0] == bytes32(0) && state.bytes32Vals[1] == bytes32(0)
+                && state.u64Vals[0] == 0 && state.u64Vals[1] == 0
         );
     }
 
-    function comparePositions(GlobalState calldata a, GlobalState calldata b) internal pure returns (int256) {
+    function comparePositions(GlobalState calldata a, GlobalState calldata b)
+        internal
+        pure
+        returns (int256)
+    {
         uint64 aPos = a.getInboxPosition();
         uint64 bPos = b.getInboxPosition();
         if (aPos < bPos) {
@@ -66,7 +74,11 @@ library GlobalStateLib {
         }
     }
 
-    function comparePositionsAgainstStartOfBatch(GlobalState calldata a, uint256 bPos) internal pure returns (int256) {
+    function comparePositionsAgainstStartOfBatch(GlobalState calldata a, uint256 bPos)
+        internal
+        pure
+        returns (int256)
+    {
         uint64 aPos = a.getInboxPosition();
         if (aPos < bPos) {
             return -1;

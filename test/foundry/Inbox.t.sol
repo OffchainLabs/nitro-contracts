@@ -53,10 +53,16 @@ contract InboxTest is AbsInboxTest {
         //// checks
 
         uint256 bridgeEthBalanceAfter = address(bridge).balance;
-        assertEq(bridgeEthBalanceAfter - bridgeEthBalanceBefore, depositAmount, "Invalid bridge eth balance");
+        assertEq(
+            bridgeEthBalanceAfter - bridgeEthBalanceBefore,
+            depositAmount,
+            "Invalid bridge eth balance"
+        );
 
         uint256 userEthBalanceAfter = address(user).balance;
-        assertEq(userEthBalanceBefore - userEthBalanceAfter, depositAmount, "Invalid user eth balance");
+        assertEq(
+            userEthBalanceBefore - userEthBalanceAfter, depositAmount, "Invalid user eth balance"
+        );
 
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
     }
@@ -69,7 +75,9 @@ contract InboxTest is AbsInboxTest {
 
         // expect event
         vm.expectEmit(true, true, true, true);
-        emit InboxMessageDelivered(0, abi.encodePacked(AddressAliasHelper.applyL1ToL2Alias(user), depositAmount));
+        emit InboxMessageDelivered(
+            0, abi.encodePacked(AddressAliasHelper.applyL1ToL2Alias(user), depositAmount)
+        );
 
         // deposit tokens -> tx.origin != msg.sender
         vm.prank(user);
@@ -78,10 +86,16 @@ contract InboxTest is AbsInboxTest {
         //// checks
 
         uint256 bridgeEthBalanceAfter = address(bridge).balance;
-        assertEq(bridgeEthBalanceAfter - bridgeEthBalanceBefore, depositAmount, "Invalid bridge eth balance");
+        assertEq(
+            bridgeEthBalanceAfter - bridgeEthBalanceBefore,
+            depositAmount,
+            "Invalid bridge eth balance"
+        );
 
         uint256 userEthBalanceAfter = address(user).balance;
-        assertEq(userEthBalanceBefore - userEthBalanceAfter, depositAmount, "Invalid eth token balance");
+        assertEq(
+            userEthBalanceBefore - userEthBalanceAfter, depositAmount, "Invalid eth token balance"
+        );
 
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
     }
@@ -154,10 +168,16 @@ contract InboxTest is AbsInboxTest {
         //// checks
 
         uint256 bridgeEthBalanceAfter = address(bridge).balance;
-        assertEq(bridgeEthBalanceAfter - bridgeEthBalanceBefore, ethToSend, "Invalid bridge token balance");
+        assertEq(
+            bridgeEthBalanceAfter - bridgeEthBalanceBefore,
+            ethToSend,
+            "Invalid bridge token balance"
+        );
 
         uint256 userEthBalanceAfter = address(user).balance;
-        assertEq(userEthBalanceBefore - userEthBalanceAfter, ethToSend, "Invalid user token balance");
+        assertEq(
+            userEthBalanceBefore - userEthBalanceAfter, ethToSend, "Invalid user token balance"
+        );
 
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
     }
@@ -212,10 +232,18 @@ contract InboxTest is AbsInboxTest {
         //// checks
 
         uint256 bridgeEthBalanceAfter = address(bridge).balance;
-        assertEq(bridgeEthBalanceAfter - bridgeEthBalanceBefore, ethToSend, "Invalid bridge token balance");
+        assertEq(
+            bridgeEthBalanceAfter - bridgeEthBalanceBefore,
+            ethToSend,
+            "Invalid bridge token balance"
+        );
 
         uint256 senderEthBalanceAfter = address(sender).balance;
-        assertEq(senderEthBalanceBefore - senderEthBalanceAfter, ethToSend, "Invalid sender token balance");
+        assertEq(
+            senderEthBalanceBefore - senderEthBalanceAfter,
+            ethToSend,
+            "Invalid sender token balance"
+        );
 
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
     }
@@ -265,7 +293,9 @@ contract InboxTest is AbsInboxTest {
         vm.prank(user, user);
         vm.expectRevert(
             abi.encodeWithSelector(
-                InsufficientValue.selector, maxSubmissionCost + l2CallValue + gasLimit * maxFeePerGas, tooSmallEthAmount
+                InsufficientValue.selector,
+                maxSubmissionCost + l2CallValue + gasLimit * maxFeePerGas,
+                tooSmallEthAmount
             )
         );
         ethInbox.createRetryableTicket{value: tooSmallEthAmount}({
@@ -376,7 +406,11 @@ contract InboxTest is AbsInboxTest {
 
         // call shall revert
         vm.prank(user, user);
-        vm.expectRevert(abi.encodePacked(InsufficientSubmissionCost.selector, submissionFee, tooSmallMaxSubmissionCost));
+        vm.expectRevert(
+            abi.encodePacked(
+                InsufficientSubmissionCost.selector, submissionFee, tooSmallMaxSubmissionCost
+            )
+        );
         ethInbox.createRetryableTicket{value: 1 ether}({
             to: user,
             l2CallValue: 100,
@@ -436,10 +470,16 @@ contract InboxTest is AbsInboxTest {
         //// checks
 
         uint256 bridgeEthBalanceAfter = address(bridge).balance;
-        assertEq(bridgeEthBalanceAfter - bridgeEthBalanceBefore, ethToSend, "Invalid bridge token balance");
+        assertEq(
+            bridgeEthBalanceAfter - bridgeEthBalanceBefore,
+            ethToSend,
+            "Invalid bridge token balance"
+        );
 
         uint256 userEthBalanceAfter = address(user).balance;
-        assertEq(userEthBalanceBefore - userEthBalanceAfter, ethToSend, "Invalid user token balance");
+        assertEq(
+            userEthBalanceBefore - userEthBalanceAfter, ethToSend, "Invalid user token balance"
+        );
 
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
     }
@@ -493,10 +533,18 @@ contract InboxTest is AbsInboxTest {
         //// checks
 
         uint256 bridgeEthBalanceAfter = address(bridge).balance;
-        assertEq(bridgeEthBalanceAfter - bridgeEthBalanceBefore, ethToSend, "Invalid bridge token balance");
+        assertEq(
+            bridgeEthBalanceAfter - bridgeEthBalanceBefore,
+            ethToSend,
+            "Invalid bridge token balance"
+        );
 
         uint256 senderEthBalanceAfter = address(sender).balance;
-        assertEq(senderEthBalanceBefore - senderEthBalanceAfter, ethToSend, "Invalid sender token balance");
+        assertEq(
+            senderEthBalanceBefore - senderEthBalanceAfter,
+            ethToSend,
+            "Invalid sender token balance"
+        );
 
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
     }
@@ -544,10 +592,18 @@ contract InboxTest is AbsInboxTest {
         //// checks
 
         uint256 bridgeEthBalanceAfter = address(bridge).balance;
-        assertEq(bridgeEthBalanceAfter - bridgeEthBalanceBefore, tooSmallEthAmount, "Invalid bridge token balance");
+        assertEq(
+            bridgeEthBalanceAfter - bridgeEthBalanceBefore,
+            tooSmallEthAmount,
+            "Invalid bridge token balance"
+        );
 
         uint256 userEthBalanceAfter = address(user).balance;
-        assertEq(userEthBalanceBefore - userEthBalanceAfter, tooSmallEthAmount, "Invalid user token balance");
+        assertEq(
+            userEthBalanceBefore - userEthBalanceAfter,
+            tooSmallEthAmount,
+            "Invalid user token balance"
+        );
 
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
     }

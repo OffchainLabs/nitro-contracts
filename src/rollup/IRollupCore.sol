@@ -38,14 +38,22 @@ interface IRollupCore is IAssertionChain {
     event AssertionConfirmed(bytes32 indexed assertionHash, bytes32 blockHash, bytes32 sendRoot);
 
     event RollupChallengeStarted(
-        uint64 indexed challengeIndex, address asserter, address challenger, uint64 challengedAssertion
+        uint64 indexed challengeIndex,
+        address asserter,
+        address challenger,
+        uint64 challengedAssertion
     );
 
     event UserStakeUpdated(
-        address indexed user, address indexed withdrawalAddress, uint256 initialBalance, uint256 finalBalance
+        address indexed user,
+        address indexed withdrawalAddress,
+        uint256 initialBalance,
+        uint256 finalBalance
     );
 
-    event UserWithdrawableFundsUpdated(address indexed user, uint256 initialBalance, uint256 finalBalance);
+    event UserWithdrawableFundsUpdated(
+        address indexed user, uint256 initialBalance, uint256 finalBalance
+    );
 
     function confirmPeriodBlocks() external view returns (uint64);
 
@@ -87,7 +95,10 @@ interface IRollupCore is IAssertionChain {
      * This function will revert if the given assertion hash does not exist.
      * @dev This function is meant for internal use only and has no stability guarantees.
      */
-    function getAssertionCreationBlockForLogLookup(bytes32 assertionHash) external view returns (uint256);
+    function getAssertionCreationBlockForLogLookup(bytes32 assertionHash)
+        external
+        view
+        returns (uint256);
 
     /**
      * @notice Get the address of the staker at the given index

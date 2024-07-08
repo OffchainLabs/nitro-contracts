@@ -66,7 +66,9 @@ contract Simple {
         if (useTopLevel) {
             require(ArbSys(address(100)).isTopLevelCall() == expected, "UNEXPECTED_RESULT");
         } else {
-            require(ArbSys(address(100)).wasMyCallersAddressAliased() == expected, "UNEXPECTED_RESULT");
+            require(
+                ArbSys(address(100)).wasMyCallersAddressAliased() == expected, "UNEXPECTED_RESULT"
+            );
         }
     }
 
@@ -82,27 +84,34 @@ contract Simple {
         if (useTopLevel) {
             require(ArbSys(address(100)).isTopLevelCall() == directCase, "UNEXPECTED_RESULT");
         } else {
-            require(ArbSys(address(100)).wasMyCallersAddressAliased() == directCase, "UNEXPECTED_RESULT");
+            require(
+                ArbSys(address(100)).wasMyCallersAddressAliased() == directCase, "UNEXPECTED_RESULT"
+            );
         }
 
         // STATIC CALL
         this.checkIsTopLevelOrWasAliased(useTopLevel, staticCase);
 
         // DELEGATE CALL
-        bytes memory data = abi.encodeWithSelector(this.checkIsTopLevelOrWasAliased.selector, useTopLevel, delegateCase);
+        bytes memory data = abi.encodeWithSelector(
+            this.checkIsTopLevelOrWasAliased.selector, useTopLevel, delegateCase
+        );
         // solhint-disable-next-line avoid-low-level-calls
         (bool success,) = address(this).delegatecall(data);
         require(success, "DELEGATE_CALL_FAILED");
 
         // CALLCODE
-        data = abi.encodeWithSelector(this.checkIsTopLevelOrWasAliased.selector, useTopLevel, callcodeCase);
+        data = abi.encodeWithSelector(
+            this.checkIsTopLevelOrWasAliased.selector, useTopLevel, callcodeCase
+        );
         assembly {
             success := callcode(gas(), address(), 0, add(data, 32), mload(data), 0, 0)
         }
         require(success, "CALLCODE_FAILED");
 
         // CALL
-        data = abi.encodeWithSelector(this.checkIsTopLevelOrWasAliased.selector, useTopLevel, callCase);
+        data =
+            abi.encodeWithSelector(this.checkIsTopLevelOrWasAliased.selector, useTopLevel, callCase);
         // solhint-disable-next-line avoid-low-level-calls
         (success,) = address(this).call(data);
         require(success, "CALL_FAILED");
@@ -118,7 +127,11 @@ contract Simple {
         return before - gasleft();
     }
 
-    function postManyBatches(ISequencerInbox sequencerInbox, bytes memory batchData, uint256 numberToPost) external {
+    function postManyBatches(
+        ISequencerInbox sequencerInbox,
+        bytes memory batchData,
+        uint256 numberToPost
+    ) external {
         uint256 sequenceNumber = sequencerInbox.batchCount();
         uint256 delayedMessagesRead = sequencerInbox.totalDelayedMessagesRead();
         for (uint256 i = 0; i < numberToPost; i++) {

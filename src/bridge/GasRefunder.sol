@@ -67,7 +67,10 @@ contract GasRefunder is IGasRefunder, Ownable {
         uint256 amountPaid
     );
     event RefundGasCostsDenied(
-        address indexed refundee, address indexed contractAddress, RefundDenyReason indexed reason, uint256 gas
+        address indexed refundee,
+        address indexed contractAddress,
+        RefundDenyReason indexed reason,
+        uint256 gas
     );
     event Deposited(address sender, uint256 amount);
     event Withdrawn(address initiator, address destination, uint256 amount);
@@ -183,11 +186,15 @@ contract GasRefunder is IGasRefunder, Ownable {
         }
 
         if (!allowedContracts[msg.sender]) {
-            emit RefundGasCostsDenied(refundee, msg.sender, RefundDenyReason.CONTRACT_NOT_ALLOWED, gasUsed);
+            emit RefundGasCostsDenied(
+                refundee, msg.sender, RefundDenyReason.CONTRACT_NOT_ALLOWED, gasUsed
+            );
             return false;
         }
         if (!allowedRefundees[refundee]) {
-            emit RefundGasCostsDenied(refundee, msg.sender, RefundDenyReason.REFUNDEE_NOT_ALLOWED, gasUsed);
+            emit RefundGasCostsDenied(
+                refundee, msg.sender, RefundDenyReason.REFUNDEE_NOT_ALLOWED, gasUsed
+            );
             return false;
         }
 
@@ -205,7 +212,8 @@ contract GasRefunder is IGasRefunder, Ownable {
         uint256 maxSingleGasUsage = commonParams.maxSingleGasUsage;
 
         // Add in a bit of a buffer for the tx costs not measured with gasleft
-        gasUsed += startGasLeft + commonParams.extraGasMargin + (calldataSize * commonParams.calldataCost);
+        gasUsed +=
+            startGasLeft + commonParams.extraGasMargin + (calldataSize * commonParams.calldataCost);
         // Split this up into two statements so that gasleft() comes after the storage loads
         gasUsed -= gasleft();
 

@@ -81,7 +81,12 @@ interface NodeInterface {
     function gasEstimateComponents(address to, bool contractCreation, bytes calldata data)
         external
         payable
-        returns (uint64 gasEstimate, uint64 gasEstimateForL1, uint256 baseFee, uint256 l1BaseFeeEstimate);
+        returns (
+            uint64 gasEstimate,
+            uint64 gasEstimateForL1,
+            uint256 baseFee,
+            uint256 l1BaseFeeEstimate
+        );
 
     /**
      * @notice Estimates a transaction's l1 costs.
@@ -147,5 +152,8 @@ interface NodeInterface {
      * @return firstBlock The first L2 block number with the given L1 block number
      * @return lastBlock The last L2 block number with the given L1 block number
      */
-    function l2BlockRangeForL1(uint64 blockNum) external view returns (uint64 firstBlock, uint64 lastBlock);
+    function l2BlockRangeForL1(uint64 blockNum)
+        external
+        view
+        returns (uint64 firstBlock, uint64 lastBlock);
 }

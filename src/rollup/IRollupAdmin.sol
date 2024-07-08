@@ -65,7 +65,8 @@ interface IRollupAdmin {
     /// @dev Challenge manager was set
     event ChallengeManagerSet(address challengeManager);
 
-    function initialize(Config calldata config, ContractDependencies calldata connectedContracts) external;
+    function initialize(Config calldata config, ContractDependencies calldata connectedContracts)
+        external;
 
     /**
      * @notice Add a contract authorized to put messages into this rollup's inbox

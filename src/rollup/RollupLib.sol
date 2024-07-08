@@ -20,11 +20,11 @@ library RollupLib {
 
     // The `assertionHash` contains all the information needed to determine an assertion's validity.
     // This helps protect validators against reorgs by letting them bind their assertion to the current chain state.
-    function assertionHash(bytes32 parentAssertionHash, AssertionState memory afterState, bytes32 inboxAcc)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function assertionHash(
+        bytes32 parentAssertionHash,
+        AssertionState memory afterState,
+        bytes32 inboxAcc
+    ) internal pure returns (bytes32) {
         // we can no longer have `hasSibling` in the assertion hash as it would allow identical assertions
         return assertionHash(parentAssertionHash, afterState.hash(), inboxAcc);
     }
@@ -48,11 +48,20 @@ library RollupLib {
         uint64 nextInboxPosition
     ) internal pure returns (bytes32) {
         return keccak256(
-            abi.encodePacked(wasmModuleRoot, requiredStake, challengeManager, confirmPeriodBlocks, nextInboxPosition)
+            abi.encodePacked(
+                wasmModuleRoot,
+                requiredStake,
+                challengeManager,
+                confirmPeriodBlocks,
+                nextInboxPosition
+            )
         );
     }
 
-    function validateConfigHash(ConfigData calldata configData, bytes32 _configHash) internal pure {
+    function validateConfigHash(ConfigData calldata configData, bytes32 _configHash)
+        internal
+        pure
+    {
         require(
             _configHash
                 == configHash(

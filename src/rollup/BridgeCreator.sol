@@ -42,7 +42,10 @@ contract BridgeCreator is Ownable {
         IOutbox outbox;
     }
 
-    constructor(BridgeTemplates memory _ethBasedTemplates, BridgeTemplates memory _erc20BasedTemplates) Ownable() {
+    constructor(
+        BridgeTemplates memory _ethBasedTemplates,
+        BridgeTemplates memory _erc20BasedTemplates
+    ) Ownable() {
         ethBasedTemplates = _ethBasedTemplates;
         erc20BasedTemplates = _erc20BasedTemplates;
     }
@@ -57,26 +60,39 @@ contract BridgeCreator is Ownable {
         emit ERC20TemplatesUpdated();
     }
 
-    function _createBridge(address adminProxy, BridgeTemplates memory templates, bool isDelayBufferable)
-        internal
-        returns (BridgeContracts memory)
-    {
+    function _createBridge(
+        address adminProxy,
+        BridgeTemplates memory templates,
+        bool isDelayBufferable
+    ) internal returns (BridgeContracts memory) {
         BridgeContracts memory frame;
-        frame.bridge = IBridge(address(new TransparentUpgradeableProxy(address(templates.bridge), adminProxy, "")));
+        frame.bridge = IBridge(
+            address(new TransparentUpgradeableProxy(address(templates.bridge), adminProxy, ""))
+        );
         frame.sequencerInbox = ISequencerInbox(
             address(
                 new TransparentUpgradeableProxy(
-                    address(isDelayBufferable ? templates.delayBufferableSequencerInbox : templates.sequencerInbox),
+                    address(
+                        isDelayBufferable
+                            ? templates.delayBufferableSequencerInbox
+                            : templates.sequencerInbox
+                    ),
                     adminProxy,
                     ""
                 )
             )
         );
-        frame.inbox = IInboxBase(address(new TransparentUpgradeableProxy(address(templates.inbox), adminProxy, "")));
-        frame.rollupEventInbox = IRollupEventInbox(
-            address(new TransparentUpgradeableProxy(address(templates.rollupEventInbox), adminProxy, ""))
+        frame.inbox = IInboxBase(
+            address(new TransparentUpgradeableProxy(address(templates.inbox), adminProxy, ""))
         );
-        frame.outbox = IOutbox(address(new TransparentUpgradeableProxy(address(templates.outbox), adminProxy, "")));
+        frame.rollupEventInbox = IRollupEventInbox(
+            address(
+                new TransparentUpgradeableProxy(address(templates.rollupEventInbox), adminProxy, "")
+            )
+        );
+        frame.outbox = IOutbox(
+            address(new TransparentUpgradeableProxy(address(templates.outbox), adminProxy, ""))
+        );
         return frame;
     }
 
@@ -92,7 +108,9 @@ contract BridgeCreator is Ownable {
 
         // create ETH-based bridge if address zero is provided for native token, otherwise create ERC20-based bridge
         BridgeContracts memory frame = _createBridge(
-            adminProxy, nativeToken == address(0) ? ethBasedTemplates : erc20BasedTemplates, isDelayBufferable
+            adminProxy,
+            nativeToken == address(0) ? ethBasedTemplates : erc20BasedTemplates,
+            isDelayBufferable
         );
 
         // init contracts
