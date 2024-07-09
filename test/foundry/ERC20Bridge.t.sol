@@ -46,9 +46,7 @@ contract ERC20BridgeTest is AbsBridgeTest {
         assertEq(address(bridge.rollup()), rollup, "Invalid rollup ref");
         assertEq(bridge.activeOutbox(), address(0), "Invalid activeOutbox ref");
         assertEq(
-            IERC20Bridge(address(bridge)).nativeTokenDecimals(),
-            18,
-            "Invalid native token decimals"
+            IERC20Bridge(address(bridge)).nativeTokenDecimals(), 18, "Invalid native token decimals"
         );
     }
 
@@ -57,7 +55,6 @@ contract ERC20BridgeTest is AbsBridgeTest {
         vm.expectRevert(abi.encodeWithSelector(InvalidTokenSet.selector, address(0)));
         noTokenBridge.initialize(IOwnable(rollup), address(0));
     }
-
 
     function test_initialize_ERC20_LessThan18Decimals() public {
         ERC20 _nativeToken = new ERC20_6Decimals();
@@ -79,7 +76,7 @@ contract ERC20BridgeTest is AbsBridgeTest {
         ERC20_37Decimals _nativeToken = new ERC20_37Decimals();
         ERC20Bridge _bridge = ERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
 
-        vm.expectRevert(abi.encodeWithSelector(NativeTokenDecimalsTooLarge.selector,37));
+        vm.expectRevert(abi.encodeWithSelector(NativeTokenDecimalsTooLarge.selector, 37));
         _bridge.initialize(IOwnable(makeAddr("_rollup")), address(_nativeToken));
     }
 
