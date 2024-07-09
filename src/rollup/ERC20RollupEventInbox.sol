@@ -23,4 +23,9 @@ contract ERC20RollupEventInbox is AbsRollupEventInbox {
                 tokenAmount
             );
     }
+
+    function _currentDataCostToReport() internal pure override returns (uint256) {
+        // at the moment chains using fee token in Anytrust mode do not charge for the data posting fees
+        return 0;
+    }
 }

@@ -205,6 +205,10 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
     ) internal {
         emit OutBoxTransactionExecuted(to, l2Sender, 0, outputId);
 
+        // get amount to unlock based on provided value. It might differ in case
+        // of native token which uses number of decimals different than 18
+        uint256 amountToUnlock = _getAmountToUnlock(value);
+
         // we temporarily store the previous values so the outbox can naturally
         // unwind itself when there are nested calls to `executeTransaction`
         L2ToL1Context memory prevContext = context;
@@ -215,11 +219,11 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
             l1Block: uint96(l1Block),
             timestamp: uint128(l2Timestamp),
             outputId: bytes32(outputId),
-            withdrawalAmount: _amountToSetInContext(value)
+            withdrawalAmount: _amountToSetInContext(amountToUnlock)
         });
 
         // set and reset vars around execution so they remain valid during call
-        executeBridgeCall(to, value, data);
+        executeBridgeCall(to, amountToUnlock, data);
 
         context = prevContext;
     }
@@ -310,6 +314,11 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
     /// @notice default value to be used for 'amount' field in L2ToL1Context outside of transaction execution.
     /// @return default 'amount' in case of ERC20-based rollup is type(uint256).max, or 0 in case of ETH-based rollup
     function _defaultContextAmount() internal pure virtual returns (uint256);
+
+    /// @notice based on provided value, get amount of ETH/token to unlock. In case of ETH-based rollup this amount
+    ///         will always equal the provided value. In case of ERC20-based rollup, amount will be re-adjusted to
+    ///         reflect the number of decimals used by native token, in case it is different than 18.
+    function _getAmountToUnlock(uint256 value) internal view virtual returns (uint256);
 
     /// @notice value to be set for 'amount' field in L2ToL1Context during L2 to L1 transaction execution.
     ///         In case of ERC20-based rollup this is the amount of native token being withdrawn. In case of standard ETH-based
