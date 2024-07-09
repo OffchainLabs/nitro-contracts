@@ -7,8 +7,16 @@ import {
   bytecode as UpgradeExecutorBytecode,
 } from '@offchainlabs/upgrade-executor/build/contracts/src/UpgradeExecutor.sol/UpgradeExecutor.json'
 import { Toolkit4844 } from '../test/contract/toolkit4844'
-import { ArbSys__factory } from '../build/types'
-import { ARB_SYS_ADDRESS } from '@arbitrum/sdk/dist/lib/dataEntities/constants'
+import {
+  ArbOwner__factory,
+  ArbSys__factory,
+  CacheManager__factory,
+} from '../build/types'
+
+const INIT_CACHE_SIZE = 536870912
+const INIT_DECAY = 10322197911
+const ARB_OWNER_ADDRESS = '0x0000000000000000000000000000000000000070'
+const ARB_SYS_ADDRESS = '0x0000000000000000000000000000000000000064'
 
 // Define a verification function
 export async function verifyContract(
@@ -236,6 +244,47 @@ export async function deployAllContracts(
     rollupCreator,
     deployHelper,
   }
+}
+
+export async function deployAndSetCacheManager(
+  chainOwnerWallet: any,
+  verify: boolean = true
+) {
+  const cacheManagerLogic = await deployContract(
+    'CacheManager',
+    chainOwnerWallet,
+    [],
+    verify
+  )
+
+  const proxyAdmin = await deployContract(
+    'ProxyAdmin',
+    chainOwnerWallet,
+    [],
+    verify
+  )
+
+  const cacheManagerProxy = await deployContract(
+    'TransparentUpgradeableProxy',
+    chainOwnerWallet,
+    [cacheManagerLogic.address, proxyAdmin.address, '0x'],
+    verify
+  )
+
+  const cacheManager = CacheManager__factory.connect(
+    cacheManagerProxy.address,
+    chainOwnerWallet
+  )
+
+  await (await cacheManager.initialize(INIT_CACHE_SIZE, INIT_DECAY)).wait()
+
+  const arbOwner = ArbOwner__factory.connect(
+    ARB_OWNER_ADDRESS,
+    chainOwnerWallet
+  )
+  await (await arbOwner.addWasmCacheManager(cacheManagerProxy.address)).wait()
+
+  return cacheManagerProxy
 }
 
 // Check if we're deploying to an Arbitrum chain

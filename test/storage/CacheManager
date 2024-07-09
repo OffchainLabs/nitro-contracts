@@ -1,0 +1,10 @@
+| Name          | Type                        | Slot | Offset | Bytes | Contract                                |
+|---------------|-----------------------------|------|--------|-------|-----------------------------------------|
+| _initialized  | bool                        | 0    | 0      | 1     | src/chain/CacheManager.sol:CacheManager |
+| _initializing | bool                        | 0    | 1      | 1     | src/chain/CacheManager.sol:CacheManager |
+| bids          | struct MinHeapLib.Heap      | 1    | 0      | 32    | src/chain/CacheManager.sol:CacheManager |
+| entries       | struct CacheManager.Entry[] | 2    | 0      | 32    | src/chain/CacheManager.sol:CacheManager |
+| cacheSize     | uint64                      | 3    | 0      | 8     | src/chain/CacheManager.sol:CacheManager |
+| queueSize     | uint64                      | 3    | 8      | 8     | src/chain/CacheManager.sol:CacheManager |
+| decay         | uint64                      | 3    | 16     | 8     | src/chain/CacheManager.sol:CacheManager |
+| isPaused      | bool                        | 3    | 24     | 1     | src/chain/CacheManager.sol:CacheManager |
