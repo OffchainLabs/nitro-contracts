@@ -30,6 +30,16 @@ contract ProgramTest {
         return result;
     }
 
+    function delegatecallProgram(address program, bytes calldata data)
+        external
+        returns (bytes memory)
+    {
+        // solhint-disable-next-line avoid-low-level-calls
+        (bool success, bytes memory result) = address(program).delegatecall(data);
+        require(success, "call failed");
+        return result;
+    }
+
     function assert256(
         bytes memory data,
         string memory text,
