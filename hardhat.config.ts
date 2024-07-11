@@ -26,7 +26,7 @@ const solidity = {
   ],
   overrides: {
     'src/rollup/RollupUserLogic.sol': {
-      version: '0.8.9',
+      version: '0.8.26',
       settings: {
         optimizer: {
           enabled: true,
