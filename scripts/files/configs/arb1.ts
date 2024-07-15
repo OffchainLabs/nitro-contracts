@@ -1,5 +1,5 @@
 import { parseEther } from 'ethers/lib/utils'
-import { Config } from '../../common'
+import { Config } from '../../boldUpgradeCommon'
 
 export const arb1: Config = {
   contracts: {
