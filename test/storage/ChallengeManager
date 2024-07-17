@@ -6,3 +6,4 @@
 | sequencerInbox         | contract ISequencerInbox                          | 3    | 0      | 20    | src/challenge/ChallengeManager.sol:ChallengeManager |
 | bridge                 | contract IBridge                                  | 4    | 0      | 20    | src/challenge/ChallengeManager.sol:ChallengeManager |
 | osp                    | contract IOneStepProofEntry                       | 5    | 0      | 20    | src/challenge/ChallengeManager.sol:ChallengeManager |
+| ospCond                | mapping(bytes32 => contract IOneStepProofEntry)   | 6    | 0      | 32    | src/challenge/ChallengeManager.sol:ChallengeManager |
