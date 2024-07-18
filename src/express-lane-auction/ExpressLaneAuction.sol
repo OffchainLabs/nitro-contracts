@@ -15,6 +15,9 @@ import "../libraries/DelegateCallAware.sol";
 import "./IExpressLaneAuction.sol";
 import "./ELCRound.sol";
 
+
+// CHRIS: TODO: look through all the comments and see if we want to add any of them to the spec as clarification
+
 // CHRIS: TODO: do we wamt to include the ability to update the round time?
 // 3. update the round time
 //    * do this via 2 reads each time
@@ -95,8 +98,8 @@ import "./ELCRound.sol";
 
 /// @title  ExpressLaneAuction
 /// @notice The express lane allows a controller to submit undelayed transactions to the sequencer
-///         The right to be the express lane controller are auctioned off in rounds, by an offchain auctioneer.
-///         The auctioneer then submits the winning bids to this control to deduct funds from the bidders and register the winner
+///         The right to be the express lane controller are auctioned off in rounds, by an offchain auction clerk.
+///         The auction clerk then submits the winning bids to this control to deduct funds from the bidders and register the winner
 contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, DelegateCallAware {
     using SafeERC20 for IERC20;
     using RoundTimingInfoLib for RoundTimingInfo;
@@ -105,7 +108,7 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, De
     using LatestELCRoundsLib for ELCRound[2];
 
     /// @inheritdoc IExpressLaneAuction
-    bytes32 public constant AUCTIONEER_ROLE = keccak256("AUCTIONEER");
+    bytes32 public constant AUCTION_CLERK_ROLE = keccak256("AUCTION_CLERK");
     /// @inheritdoc IExpressLaneAuction
     bytes32 public constant MIN_RESERVE_SETTER_ROLE = keccak256("MIN_RESERVE_SETTER");
     /// @inheritdoc IExpressLaneAuction
@@ -136,7 +139,7 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, De
 
     /// @inheritdoc IExpressLaneAuction
     function initialize(
-        address _auctioneer,
+        address _auctionClerk,
         address _beneficiary,
         address _biddingToken,
         RoundTimingInfo memory _roundTimingInfo,
@@ -166,7 +169,7 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, De
         roundTimingInfo = _roundTimingInfo;
 
         _grantRole(DEFAULT_ADMIN_ROLE, _roleAdmin);
-        _grantRole(AUCTIONEER_ROLE, _auctioneer);
+        _grantRole(AUCTION_CLERK_ROLE, _auctionClerk);
         _grantRole(MIN_RESERVE_SETTER_ROLE, _minReservePriceSetter);
         _grantRole(RESERVE_SETTER_ROLE, _reservePriceSetter);
         _grantRole(BENEFICIARY_SETTER_ROLE, _beneficiarySetter);
@@ -368,7 +371,7 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, De
     /// @inheritdoc IExpressLaneAuction
     function resolveSingleBidAuction(Bid calldata firstPriceBid)
         external
-        onlyRole(AUCTIONEER_ROLE)
+        onlyRole(AUCTION_CLERK_ROLE)
     {
         if (!roundTimingInfo.isResolvingStage()) {
             revert NotResolvingStage();
@@ -388,14 +391,14 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, De
     /// @inheritdoc IExpressLaneAuction
     function resolveMultiBidAuction(Bid calldata firstPriceBid, Bid calldata secondPriceBid)
         external
-        onlyRole(AUCTIONEER_ROLE)
+        onlyRole(AUCTION_CLERK_ROLE)
     {
         if (!roundTimingInfo.isResolvingStage()) {
             revert NotResolvingStage();
         }
 
         // if the bids are the same amount and offchain mechanism will be used to choose the order and
-        // therefore the winner. The auctioneer is trusted to make this choice correctly
+        // therefore the winner. The auction clerk is trusted to make this choice correctly
         if (firstPriceBid.amount < secondPriceBid.amount) {
             revert BidsWrongOrder();
         }

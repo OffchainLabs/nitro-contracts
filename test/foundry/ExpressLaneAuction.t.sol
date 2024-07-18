@@ -72,7 +72,7 @@ contract ExpressLaneAuctionTest is Test {
     address beneficiary = vm.addr(145);
     uint256 initialTimestamp = block.timestamp;
 
-    address auctioneer = vm.addr(146);
+    address auctionClerk = vm.addr(146);
 
     address roleAdmin = vm.addr(147);
     uint256 minReservePrice = roundDuration / 10;
@@ -103,7 +103,7 @@ contract ExpressLaneAuctionTest is Test {
     // 7. update minimum reserve - anytime
 
     // CHRIS: TODO: guarantees around when the auction will be resolved - none required, but advice should be to resolve promptly so as to give assurance of not waiting for longer bid, and to give time for reserve to be set
-    // CHRIS: TODO: how do we stop the auctioneer from keeping the bidding open? or even from manufacturing a bid? - we cant in this system
+    // CHRIS: TODO: how do we stop the auction clerk from keeping the bidding open? or even from manufacturing a bid? - we cant in this system
 
     // CHRIS: TODO: we should return an IIExpressLaneAuction from deploy
 
@@ -118,7 +118,7 @@ contract ExpressLaneAuctionTest is Test {
             ""
         )));
         auction.initialize(
-            auctioneer,
+            auctionClerk,
             beneficiary,
             address(token),
             RoundTimingInfo({
@@ -147,7 +147,7 @@ contract ExpressLaneAuctionTest is Test {
         
         vm.expectRevert("Function must be called through delegatecall");
         impl.initialize(
-            auctioneer,
+            auctionClerk,
             beneficiary,
             address(token),
             RoundTimingInfo({
@@ -171,7 +171,7 @@ contract ExpressLaneAuctionTest is Test {
 
         vm.expectRevert(abi.encodeWithSelector(ZeroBiddingToken.selector));
         auction.initialize(
-            auctioneer,
+            auctionClerk,
             beneficiary,
             address(0),
             RoundTimingInfo({
@@ -189,7 +189,7 @@ contract ExpressLaneAuctionTest is Test {
 
         vm.expectRevert(abi.encodeWithSelector(ReserveBlackoutStartTooLong.selector));
         auction.initialize(
-            auctioneer,
+            auctionClerk,
             beneficiary,
             address(token),
             RoundTimingInfo({
@@ -212,7 +212,7 @@ contract ExpressLaneAuctionTest is Test {
         vm.expectEmit(true, true, true, true);
         emit SetReservePrice(uint256(0), minReservePrice);
         auction.initialize(
-            auctioneer,
+            auctionClerk,
             beneficiary,
             address(token),
             RoundTimingInfo({
@@ -243,7 +243,7 @@ contract ExpressLaneAuctionTest is Test {
 
         vm.expectRevert("Initializable: contract is already initialized");
         auction.initialize(
-            auctioneer,
+            auctionClerk,
             beneficiary,
             address(token),
             RoundTimingInfo({
@@ -629,7 +629,7 @@ contract ExpressLaneAuctionTest is Test {
 
         vm.warp(block.timestamp + auction.roundDuration() - auction.resolvingStageDuration());
 
-        vm.startPrank(auctioneer);
+        vm.startPrank(auctionClerk);
 
         return ResolveSetup({
             erc20: erc20,
@@ -642,7 +642,7 @@ contract ExpressLaneAuctionTest is Test {
         });
     }
 
-    function testCannotResolveNotAuctioneer() public {
+    function testCannotResolveNotAuctionClerk() public {
         ResolveSetup memory rs = deployDepositAndBids();
         vm.stopPrank();
 
@@ -650,7 +650,7 @@ contract ExpressLaneAuctionTest is Test {
             "AccessControl: account ",
             Strings.toHexString(uint160(bidder4), 20),
             " is missing role ",
-            Strings.toHexString(uint256(rs.auction.AUCTIONEER_ROLE()), 32)
+            Strings.toHexString(uint256(rs.auction.AUCTION_CLERK_ROLE()), 32)
         );
 
         vm.startPrank(bidder4);
@@ -944,7 +944,7 @@ contract ExpressLaneAuctionTest is Test {
         vm.warp(block.timestamp + auction.roundDuration() - auction.resolvingStageDuration());
 
         uint256 auctionBalanceBefore = erc20.balanceOf(address(auction));
-        vm.startPrank(auctioneer);
+        vm.startPrank(auctionClerk);
 
         vm.expectEmit(true, true, true, true);
         emit SetExpressLaneController(
@@ -1087,7 +1087,7 @@ contract ExpressLaneAuctionTest is Test {
 
         vm.warp(block.timestamp + 1);
 
-        vm.prank(auctioneer);
+        vm.prank(auctionClerk);
         rs.auction.resolveMultiBidAuction(rs.bid2, rs.bid1);
     }
 
@@ -1106,7 +1106,7 @@ contract ExpressLaneAuctionTest is Test {
 
         vm.warp(block.timestamp + 1 + rs.auction.roundDuration());
 
-        vm.prank(auctioneer);
+        vm.prank(auctionClerk);
         rs.auction.resolveMultiBidAuction(rs.bid2, rs.bid1);
     }
 
@@ -1122,7 +1122,7 @@ contract ExpressLaneAuctionTest is Test {
 
         vm.warp(block.timestamp + 1 + rs.auction.roundDuration() * 2);
 
-        vm.prank(auctioneer);
+        vm.prank(auctionClerk);
         vm.expectRevert(abi.encodeWithSelector(InsufficientBalanceAcc.selector, bidder1, rs.bid1.amount, 0));
         rs.auction.resolveMultiBidAuction(rs.bid2, rs.bid1);
     }
@@ -1139,7 +1139,7 @@ contract ExpressLaneAuctionTest is Test {
 
         vm.warp(block.timestamp + 1 + rs.auction.roundDuration() * 2);
 
-        vm.prank(auctioneer);
+        vm.prank(auctionClerk);
         // CHRIS: TODO: we really should have the address in this error
         vm.expectRevert(abi.encodeWithSelector(InsufficientBalanceAcc.selector, bidder2, rs.bid2.amount, 0));
         rs.auction.resolveMultiBidAuction(rs.bid2, rs.bid1);
@@ -1233,7 +1233,7 @@ contract ExpressLaneAuctionTest is Test {
         vm.expectRevert(abi.encodeWithSelector(ReserveBlackout.selector));
         rs.auction.setReservePrice(minReservePrice);
 
-        vm.prank(auctioneer);
+        vm.prank(auctionClerk);
         rs.auction.resolveMultiBidAuction(rs.bid2, rs.bid1);
 
         // after blackout, but in same round
@@ -1325,7 +1325,7 @@ contract ExpressLaneAuctionTest is Test {
         rs.auction.transferExpressLaneController(testRound + 1, elc1);
 
         // resolve a round
-        vm.prank(auctioneer);
+        vm.prank(auctionClerk);
         rs.auction.resolveMultiBidAuction(rs.bid2, rs.bid1);
 
         // current round still not resolved
@@ -1374,7 +1374,7 @@ contract ExpressLaneAuctionTest is Test {
             signature: sign(bidder4PrivKey, h4)
         });
 
-        vm.prank(auctioneer);
+        vm.prank(auctionClerk);
         rs.auction.resolveMultiBidAuction(bid4, bid3);
 
         // change current

@@ -79,7 +79,7 @@ interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
     event SetBeneficiary(address oldBeneficiary, address newBeneficiary);
 
     /// @notice The role given to the address that can resolve auctions
-    function AUCTIONEER_ROLE() external returns (bytes32);
+    function AUCTION_CLERK_ROLE() external returns (bytes32);
     /// @notice The role given to the address that can set the minimum reserve
     function MIN_RESERVE_SETTER_ROLE() external returns (bytes32);
     /// @notice The role given to the address that can set the reserve
@@ -103,7 +103,7 @@ interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
     function minReservePrice() external returns (uint256);
 
     /// @notice Initialize the auction
-    /// @param _auctioneer The address who can resolve auctions
+    /// @param _auctionClerk The address who can resolve auctions
     /// @param _beneficiary The address to which auction winners will pay the bid
     /// @param _biddingToken The token used for payment
     /// @param _roundTimingInfo The durations of the round stages
@@ -113,7 +113,7 @@ interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
     /// @param _reservePriceSetter The address given the rights to change the reserve price
     /// @param _beneficiarySetter The address given the rights to change the beneficiary address
     function initialize(
-        address _auctioneer,
+        address _auctionClerk,
         address _beneficiary,
         address _biddingToken,
         RoundTimingInfo memory _roundTimingInfo,
@@ -142,12 +142,12 @@ interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
 
     /// @notice Is the current round in the bidding stage.
     ///         Each round is split into bidding and then resolving.
-    ///         Bids are submitted offchain to the auctioneer during the bidding stage
+    ///         Bids are submitted offchain to the auction clerk during the bidding stage
     function isBiddingStage() external view returns (bool);
 
     /// @notice Is the current round in the resolving stage.
     ///         Each round is split into bidding and then resolving
-    ///         During the resolving stage the auctioneer submits the two highest bid to this contract to resolve the current round
+    ///         During the resolving stage the auction clerk submits the two highest bid to this contract to resolve the current round
     function isResolvingStage() external view returns (bool);
 
     /// @notice The auction reserve cannot be updated between the point when the blackout starts and the auction is resolved
@@ -202,17 +202,17 @@ interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
 
     /// @notice Deposit an amount of ERC20 token to the auction to make bids with
     ///         Deposits must be submitted prior to bidding.
-    /// @dev    Deposits are submitted first so that the auctioneer can be sure that the accepted bids can actually be paid
+    /// @dev    Deposits are submitted first so that the auction clerk can be sure that the accepted bids can actually be paid
     /// @param amount   The amount to deposit.
     function deposit(uint256 amount) external;
 
     /// @notice Initiate a withdrawal of funds
     ///         Once funds have been deposited they can only be retrieved by initiating + finalizing a withdrawal
-    ///         There is a delay between initializing and finalizing a withdrawal so that the auctioneer can be sure
+    ///         There is a delay between initializing and finalizing a withdrawal so that the auction clerk can be sure
     ///         that value cannot be removed before a bid is resolved. The timeline is as follows:
     ///         1. Initiate a withdrawal at some time in round r
     ///         2. During round r the balance is still available and can be used in an auction
-    ///         3. During round r+1 the auctioneer should consider any funds that have been initiated for withdrawal as unavailable to the bidder.
+    ///         3. During round r+1 the auction clerk should consider any funds that have been initiated for withdrawal as unavailable to the bidder.
     ///            However if a bid is submitted the balance will be available for use
     ///         4. During round r+2 the bidder can finalize a withdrawal and remove their funds
     ///         A bidder may have only one withdrawal being processed at any one time.
@@ -232,7 +232,7 @@ interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
         view
         returns (bytes32);
 
-    /// @notice Resolve the auction with just a single bid. The auctioneer is trusted to call this only when there are
+    /// @notice Resolve the auction with just a single bid. The auction clerk is trusted to call this only when there are
     ///         less than two bids higher than the reserve price for an auction round.
     ///         In this case the highest bidder will pay the reserve price for the round
     /// @param firstPriceBid The highest price bid. Must have a price higher than the reserve. Price paid is the reserve

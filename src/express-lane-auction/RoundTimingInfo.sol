@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 
 /// @notice Information about the timings of auction round. All timings measured in seconds
 ///         Each round is split into a bidding stage where bids are submitted offchain to a
-///         an auctioneer service, and a resolving stage where the two highest bids for that round
+///         an auction clerk service, and a resolving stage where the two highest bids for that round
 ///         are submitted to the auction contract. 
 ///         Each round has total duration of bidding duration + resolving duration
 struct RoundTimingInfo {
