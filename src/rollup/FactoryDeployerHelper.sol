@@ -25,18 +25,14 @@ contract FactoryDeployerHelper {
 }
 
 interface IERC20 {
-    function transferFrom(
-        address from,
-        address to,
-        uint256 value
-    ) external returns (bool);
+    function transferFrom(address from, address to, uint256 value) external returns (bool);
 }
 
 interface IDeployHelper {
-    function getDeploymentTotalCost(address inbox, uint256 maxFeePerGas)
-        external
-        view
-        returns (uint256);
+    function getDeploymentTotalCost(
+        address inbox,
+        uint256 maxFeePerGas
+    ) external view returns (uint256);
 
     function perform(
         address _inbox,

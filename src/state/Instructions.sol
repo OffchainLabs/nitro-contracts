@@ -161,8 +161,7 @@ library Instructions {
         assembly {
             // Represents the string "Instructions:", which we place after the length word.
             mstore(
-                add(data, 32),
-                0x496e737472756374696f6e733a00000000000000000000000000000000000000
+                add(data, 32), 0x496e737472756374696f6e733a00000000000000000000000000000000000000
             )
         }
 

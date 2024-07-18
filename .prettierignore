@@ -8,3 +8,5 @@ src/lib/abi/**
 out/**
 lib/**
 src/mocks/MultiCallTest.sol
+slither.db.json
+LICENSE.md

@@ -10,9 +10,7 @@ import "./IAssertionStakingPool.sol";
 interface IAssertionStakingPoolCreator {
     /// @notice Event emitted when a new staking pool is created
     event NewAssertionPoolCreated(
-        address indexed rollup,
-        bytes32 indexed _assertionHash,
-        address assertionPool
+        address indexed rollup, bytes32 indexed _assertionHash, address assertionPool
     );
 
     /// @notice Create a staking pool contract

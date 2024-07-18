@@ -10,10 +10,7 @@ import "./IBridge.sol";
 interface IOutbox {
     event SendRootUpdated(bytes32 indexed outputRoot, bytes32 indexed l2BlockHash);
     event OutBoxTransactionExecuted(
-        address indexed to,
-        address indexed l2Sender,
-        uint256 indexed zero,
-        uint256 transactionIndex
+        address indexed to, address indexed l2Sender, uint256 indexed zero, uint256 transactionIndex
     );
 
     function initialize(IBridge _bridge) external;

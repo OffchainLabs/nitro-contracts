@@ -23,7 +23,6 @@ import "../../src/libraries/Error.sol";
 import "../../src/mocks/TestWETH9.sol";
 import "../../src/mocks/UpgradeExecutorMock.sol";
 
-
 import "../../src/assertionStakingPool/AssertionStakingPool.sol";
 import "../../src/assertionStakingPool/AssertionStakingPoolCreator.sol";
 
@@ -49,7 +48,8 @@ contract AssertionPoolTest is Test {
     EdgeChallengeManager challengeManager;
 
     GlobalState emptyGlobalState;
-    AssertionState emptyAssertionState = AssertionState(emptyGlobalState, MachineStatus.FINISHED, bytes32(0));
+    AssertionState emptyAssertionState =
+        AssertionState(emptyGlobalState, MachineStatus.FINISHED, bytes32(0));
     bytes32 genesisHash = RollupLib.assertionHash({
         parentAssertionHash: bytes32(0),
         afterState: emptyAssertionState,
@@ -94,24 +94,22 @@ contract AssertionPoolTest is Test {
     );
 
     IReader4844 dummyReader4844 = IReader4844(address(137));
-    BridgeCreator.BridgeTemplates ethBasedTemplates =
-        BridgeCreator.BridgeTemplates({
-            bridge: new Bridge(),
-            sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false),
-            delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, true),
-            inbox: new Inbox(MAX_DATA_SIZE),
-            rollupEventInbox: new RollupEventInbox(),
-            outbox: new Outbox()
-        });
-    BridgeCreator.BridgeTemplates erc20BasedTemplates =
-        BridgeCreator.BridgeTemplates({
-            bridge: new ERC20Bridge(),
-            sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
-            delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
-            inbox: new ERC20Inbox(MAX_DATA_SIZE),
-            rollupEventInbox: new ERC20RollupEventInbox(),
-            outbox: new ERC20Outbox()
-        });
+    BridgeCreator.BridgeTemplates ethBasedTemplates = BridgeCreator.BridgeTemplates({
+        bridge: new Bridge(),
+        sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false),
+        delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, true),
+        inbox: new Inbox(MAX_DATA_SIZE),
+        rollupEventInbox: new RollupEventInbox(),
+        outbox: new Outbox()
+    });
+    BridgeCreator.BridgeTemplates erc20BasedTemplates = BridgeCreator.BridgeTemplates({
+        bridge: new ERC20Bridge(),
+        sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
+        delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
+        inbox: new ERC20Inbox(MAX_DATA_SIZE),
+        rollupEventInbox: new ERC20RollupEventInbox(),
+        outbox: new ERC20Outbox()
+    });
 
     function setUp() public {
         OneStepProver0 oneStepProver = new OneStepProver0();
@@ -119,10 +117,7 @@ contract AssertionPoolTest is Test {
         OneStepProverMath oneStepProverMath = new OneStepProverMath();
         OneStepProverHostIo oneStepProverHostIo = new OneStepProverHostIo();
         OneStepProofEntry oneStepProofEntry = new OneStepProofEntry(
-            oneStepProver,
-            oneStepProverMemory,
-            oneStepProverMath,
-            oneStepProverHostIo
+            oneStepProver, oneStepProverMemory, oneStepProverMath, oneStepProverHostIo
         );
         EdgeChallengeManager edgeChallengeManager = new EdgeChallengeManager();
         BridgeCreator bridgeCreator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
@@ -142,8 +137,11 @@ contract AssertionPoolTest is Test {
             address(0),
             deployHelper
         );
-        AssertionState memory emptyState =
-            AssertionState(GlobalState([bytes32(0), bytes32(0)], [uint64(0), uint64(0)]), MachineStatus.FINISHED, bytes32(0));
+        AssertionState memory emptyState = AssertionState(
+            GlobalState([bytes32(0), bytes32(0)], [uint64(0), uint64(0)]),
+            MachineStatus.FINISHED,
+            bytes32(0)
+        );
         token = new TestWETH9("Test", "TEST");
         IWETH9(address(token)).deposit{value: 21 ether}();
 
@@ -180,8 +178,19 @@ contract AssertionPoolTest is Test {
         });
 
         vm.expectEmit(false, false, false, false);
-        emit RollupCreated(address(0), address(0), address(0), address(0), address(0), 
-                            address(0), address(0), address(0), address(0), address(0), address(0));
+        emit RollupCreated(
+            address(0),
+            address(0),
+            address(0),
+            address(0),
+            address(0),
+            address(0),
+            address(0),
+            address(0),
+            address(0),
+            address(0),
+            address(0)
+        );
         RollupCreator.RollupDeploymentParams memory param = RollupCreator.RollupDeploymentParams({
             config: config,
             validators: new address[](0),

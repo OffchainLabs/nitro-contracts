@@ -43,9 +43,13 @@ contract EdgeStakingPoolTest is Test {
 
     function testProperInitialization(bytes32 edgeId) public {
         vm.assume(edgeId != bytes32(0));
-        IEdgeStakingPool stakingPool = stakingPoolCreator.createPool(address(challengeManager), edgeId);
+        IEdgeStakingPool stakingPool =
+            stakingPoolCreator.createPool(address(challengeManager), edgeId);
 
-        assertEq(address(stakingPoolCreator.getPool(address(challengeManager), edgeId)), address(stakingPool));
+        assertEq(
+            address(stakingPoolCreator.getPool(address(challengeManager), edgeId)),
+            address(stakingPool)
+        );
 
         assertEq(address(stakingPool.challengeManager()), address(challengeManager));
         assertEq(stakingPool.edgeId(), edgeId);
@@ -60,7 +64,8 @@ contract EdgeStakingPoolTest is Test {
     function testCreateEdge(CreateEdgeArgs memory args) public {
         uint256 requiredStake = challengeManager.stakeAmounts(args.level);
         bytes32 realEdgeId = keccak256(abi.encode(args));
-        IEdgeStakingPool stakingPool = stakingPoolCreator.createPool(address(challengeManager), realEdgeId);
+        IEdgeStakingPool stakingPool =
+            stakingPoolCreator.createPool(address(challengeManager), realEdgeId);
 
         // simulate deposits
         // we don't need to deposit using the staking pool's deposit function because we're not testing that here
@@ -71,7 +76,11 @@ contract EdgeStakingPoolTest is Test {
 
         // simulate an incorrect edge id
         args.claimId = ~args.claimId;
-        vm.expectRevert(abi.encodeWithSelector(IEdgeStakingPool.IncorrectEdgeId.selector, keccak256(abi.encode(args)), realEdgeId));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IEdgeStakingPool.IncorrectEdgeId.selector, keccak256(abi.encode(args)), realEdgeId
+            )
+        );
         stakingPool.createEdge(args);
         args.claimId = ~args.claimId;
 

@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity ^0.8.0;
+
 import "../precompiles/ArbSys.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -20,11 +21,10 @@ contract ProgramTest {
         require(hash == keccak256(data[1:]));
     }
 
-    function staticcallProgram(address program, bytes calldata data)
-        external
-        view
-        returns (bytes memory)
-    {
+    function staticcallProgram(
+        address program,
+        bytes calldata data
+    ) external view returns (bytes memory) {
         (bool success, bytes memory result) = address(program).staticcall(data);
         require(success, "call failed");
         return result;
@@ -115,7 +115,7 @@ contract ProgramTest {
         );
         unchecked {
             value /= 0xeddecf107b5740ce;
-            value = value**0xfffffffefffffc2f;
+            value = value ** 0xfffffffefffffc2f;
             value = value % 0xc6178c2de1078cd3;
         }
 

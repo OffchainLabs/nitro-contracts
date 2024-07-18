@@ -26,11 +26,7 @@ library RollupLib {
         bytes32 inboxAcc
     ) internal pure returns (bytes32) {
         // we can no longer have `hasSibling` in the assertion hash as it would allow identical assertions
-        return assertionHash(
-            parentAssertionHash,
-            afterState.hash(),
-            inboxAcc
-        );
+        return assertionHash(parentAssertionHash, afterState.hash(), inboxAcc);
     }
 
     // Takes in a hash of the afterState instead of the afterState itself
@@ -40,14 +36,7 @@ library RollupLib {
         bytes32 inboxAcc
     ) internal pure returns (bytes32) {
         // we can no longer have `hasSibling` in the assertion hash as it would allow identical assertions
-        return
-            keccak256(
-                abi.encodePacked(
-                    parentAssertionHash,
-                    afterStateHash,
-                    inboxAcc
-                )
-            );
+        return keccak256(abi.encodePacked(parentAssertionHash, afterStateHash, inboxAcc));
     }
 
     // All these should be emited in AssertionCreated event
@@ -58,16 +47,15 @@ library RollupLib {
         uint64 confirmPeriodBlocks,
         uint64 nextInboxPosition
     ) internal pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked(
-                    wasmModuleRoot,
-                    requiredStake,
-                    challengeManager,
-                    confirmPeriodBlocks,
-                    nextInboxPosition
-                )
-            );
+        return keccak256(
+            abi.encodePacked(
+                wasmModuleRoot,
+                requiredStake,
+                challengeManager,
+                confirmPeriodBlocks,
+                nextInboxPosition
+            )
+        );
     }
 
     function validateConfigHash(

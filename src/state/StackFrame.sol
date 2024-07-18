@@ -22,16 +22,15 @@ library StackFrameLib {
     using ValueLib for Value;
 
     function hash(StackFrame memory frame) internal pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked(
-                    "Stack frame:",
-                    frame.returnPc.hash(),
-                    frame.localsMerkleRoot,
-                    frame.callerModule,
-                    frame.callerModuleInternals
-                )
-            );
+        return keccak256(
+            abi.encodePacked(
+                "Stack frame:",
+                frame.returnPc.hash(),
+                frame.localsMerkleRoot,
+                frame.callerModule,
+                frame.callerModuleInternals
+            )
+        );
     }
 
     function hash(StackFrameWindow memory window) internal pure returns (bytes32 h) {

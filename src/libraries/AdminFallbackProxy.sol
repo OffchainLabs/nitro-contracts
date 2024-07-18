@@ -119,8 +119,8 @@ contract AdminFallbackProxy is Proxy, DoubleLogicERC1967Upgrade {
             _IMPLEMENTATION_SLOT == bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1)
         );
         assert(
-            _IMPLEMENTATION_SECONDARY_SLOT ==
-                bytes32(uint256(keccak256("eip1967.proxy.implementation.secondary")) - 1)
+            _IMPLEMENTATION_SECONDARY_SLOT
+                == bytes32(uint256(keccak256("eip1967.proxy.implementation.secondary")) - 1)
         );
         _changeAdmin(adminAddr);
         _upgradeToAndCall(adminLogic, adminData, false);

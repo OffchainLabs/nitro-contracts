@@ -72,12 +72,9 @@ contract InboxStub is IInboxBase, IInbox {
         address sender,
         bytes32 messageDataHash
     ) internal returns (uint256) {
-        return
-            IEthBridge(address(bridge)).enqueueDelayedMessage{value: msg.value}(
-                kind,
-                sender,
-                messageDataHash
-            );
+        return IEthBridge(address(bridge)).enqueueDelayedMessage{value: msg.value}(
+            kind, sender, messageDataHash
+        );
     }
 
     function sendUnsignedTransaction(
@@ -183,12 +180,10 @@ contract InboxStub is IInboxBase, IInbox {
 
     function postUpgradeInit(IBridge _bridge) external {}
 
-    function calculateRetryableSubmissionFee(uint256, uint256)
-        external
-        pure
-        override
-        returns (uint256)
-    {
+    function calculateRetryableSubmissionFee(
+        uint256,
+        uint256
+    ) external pure override returns (uint256) {
         revert("NOT_IMPLEMENTED");
     }
 

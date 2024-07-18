@@ -15,11 +15,7 @@ library ValueArrayLib {
         return arr.inner[index];
     }
 
-    function set(
-        ValueArray memory arr,
-        uint256 index,
-        Value memory val
-    ) internal pure {
+    function set(ValueArray memory arr, uint256 index, Value memory val) internal pure {
         arr.inner[index] = val;
     }
 

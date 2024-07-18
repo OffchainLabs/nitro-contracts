@@ -6,7 +6,6 @@ import "forge-std/Test.sol";
 import "../../src/assertionStakingPool/AbsBoldStakingPool.sol";
 import "../../src/mocks/TestWETH9.sol";
 
-
 contract FundsHolder {
     function withdraw(IERC20 stakeToken, uint256 amount) external {
         stakeToken.transfer(msg.sender, amount);
@@ -17,7 +16,11 @@ contract FakeStakingPool is AbsBoldStakingPool {
     FundsHolder public immutable fundsHolder;
     uint256 immutable reqStake;
 
-    constructor(address _stakeToken, FundsHolder _fundsHolder, uint256 _reqStake) AbsBoldStakingPool(_stakeToken) {
+    constructor(
+        address _stakeToken,
+        FundsHolder _fundsHolder,
+        uint256 _reqStake
+    ) AbsBoldStakingPool(_stakeToken) {
         fundsHolder = _fundsHolder;
         reqStake = _reqStake;
     }
@@ -53,7 +56,6 @@ contract AbsBoldStakingPoolTest is Test {
         token = new TestWETH9("Test", "TEST");
         pool = new FakeStakingPool(address(token), new FundsHolder(), BASE_STAKE);
 
-        
         IWETH9(address(token)).deposit{value: 21 ether}();
 
         token.transfer(staker1, staker1Bal);
@@ -94,7 +96,9 @@ contract AbsBoldStakingPoolTest is Test {
         vm.prank(staker2);
         pool.depositIntoPool(staker2Bal);
 
-        assertEq(token.balanceOf(address(pool)), staker1Bal + staker2Bal, "tokens depositted into pool");
+        assertEq(
+            token.balanceOf(address(pool)), staker1Bal + staker2Bal, "tokens depositted into pool"
+        );
         assertEq(token.balanceOf(address(staker1)), uint256(0), "tokens depositted into pool");
         assertEq(token.balanceOf(address(staker2)), uint256(0), "tokens depositted into pool");
 

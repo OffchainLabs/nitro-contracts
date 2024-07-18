@@ -7,16 +7,11 @@ import "../../src/bridge/ISequencerInbox.sol";
 import {L2_MSG} from "../../src/libraries/MessageTypes.sol";
 
 contract DelayBufferableTest is Test {
-
     uint64 constant maxBuffer = 1000;
     uint64 constant replenishRateInBasis = 333;
     uint64 constant threshold = 5;
 
-    BufferConfig config = BufferConfig({
-        threshold: 5,
-        max: 1000,
-        replenishRateInBasis: 333
-    });
+    BufferConfig config = BufferConfig({threshold: 5, max: 1000, replenishRateInBasis: 333});
 
     ISequencerInbox.MaxTimeVariation maxTimeVariation = ISequencerInbox.MaxTimeVariation({
         delayBlocks: 24 * 60 * 60 / 12,
@@ -29,16 +24,18 @@ contract DelayBufferableTest is Test {
         max: 24 * 60 * 60 / 12 * 2,
         replenishRateInBasis: 714
     });
+
     using DelayBuffer for BufferData;
+
     BufferData delayBuffer;
     BufferData delayBufferDefault = BufferData({
-            bufferBlocks: configBufferable.max,
-            max: configBufferable.max,
-            threshold: configBufferable.threshold,
-            prevBlockNumber: 0,
-            replenishRateInBasis: configBufferable.replenishRateInBasis,
-            prevSequencedBlockNumber: 0
-        });
+        bufferBlocks: configBufferable.max,
+        max: configBufferable.max,
+        threshold: configBufferable.threshold,
+        prevBlockNumber: 0,
+        replenishRateInBasis: configBufferable.replenishRateInBasis,
+        prevSequencedBlockNumber: 0
+    });
 
     Messages.Message message = Messages.Message({
         kind: L2_MSG,
@@ -56,15 +53,57 @@ contract DelayBufferableTest is Test {
         uint64 buffer = 100;
         uint64 unexpectedDelay = (sequenced - start - threshold);
 
-        assertEq(buffer, DelayBuffer.calcBuffer(start, start, buffer, sequenced, threshold, maxBuffer, replenishRateInBasis));
-        assertEq(buffer - 1, DelayBuffer.calcBuffer(start, start + 1, buffer, sequenced, threshold, maxBuffer, replenishRateInBasis));
+        assertEq(
+            buffer,
+            DelayBuffer.calcBuffer(
+                start, start, buffer, sequenced, threshold, maxBuffer, replenishRateInBasis
+            )
+        );
+        assertEq(
+            buffer - 1,
+            DelayBuffer.calcBuffer(
+                start, start + 1, buffer, sequenced, threshold, maxBuffer, replenishRateInBasis
+            )
+        );
         uint64 replenishAmount = unexpectedDelay * replenishRateInBasis / 10000;
-        assertEq(buffer + replenishAmount - unexpectedDelay, DelayBuffer.calcBuffer(start, start + unexpectedDelay, buffer, sequenced, threshold, maxBuffer, replenishRateInBasis));
+        assertEq(
+            buffer + replenishAmount - unexpectedDelay,
+            DelayBuffer.calcBuffer(
+                start,
+                start + unexpectedDelay,
+                buffer,
+                sequenced,
+                threshold,
+                maxBuffer,
+                replenishRateInBasis
+            )
+        );
         replenishAmount = buffer * replenishRateInBasis / 10000;
-        assertEq(threshold, DelayBuffer.calcBuffer(start, start + buffer, buffer, start + threshold + buffer, threshold, maxBuffer, replenishRateInBasis));
+        assertEq(
+            threshold,
+            DelayBuffer.calcBuffer(
+                start,
+                start + buffer,
+                buffer,
+                start + threshold + buffer,
+                threshold,
+                maxBuffer,
+                replenishRateInBasis
+            )
+        );
         replenishAmount = (buffer + 100) * replenishRateInBasis / 10000;
-        assertEq(threshold, DelayBuffer.calcBuffer(start, start + buffer + 100, buffer, start + threshold + buffer + 100, threshold, maxBuffer, replenishRateInBasis));
-
+        assertEq(
+            threshold,
+            DelayBuffer.calcBuffer(
+                start,
+                start + buffer + 100,
+                buffer,
+                start + threshold + buffer + 100,
+                threshold,
+                maxBuffer,
+                replenishRateInBasis
+            )
+        );
     }
 
     function testUpdate() public {
@@ -130,13 +169,16 @@ contract DelayBufferableTest is Test {
         delayBuffer.prevBlockNumber = 0;
         delayBuffer.prevSequencedBlockNumber = 0;
         // only advance a plausible amount of blocks (< 2**32 blocks)
-        uint64 elapse = uint256(_config.max) + _config.threshold > type(uint32).max ? type(uint32).max : _config.max + _config.threshold;
+        uint64 elapse = uint256(_config.max) + _config.threshold > type(uint32).max
+            ? type(uint32).max
+            : _config.max + _config.threshold;
         delayBuffer.prevSequencedBlockNumber = elapse;
         delayBuffer.prevBlockNumber = 0;
 
-        vm.roll(elapse);        
+        vm.roll(elapse);
 
-        uint256 bufferCalc = uint256(delayBuffer.bufferBlocks) + (uint256(elapse) * uint256(_config.replenishRateInBasis)) / 10000;
+        uint256 bufferCalc = uint256(delayBuffer.bufferBlocks)
+            + (uint256(elapse) * uint256(_config.replenishRateInBasis)) / 10000;
         uint256 decrement = elapse > _config.threshold ? elapse - _config.threshold : 0;
 
         // decrease the buffer
@@ -156,9 +198,8 @@ contract DelayBufferableTest is Test {
         // replenish after 10000 blocks
         vm.roll(elapse + 10000);
         bufferCalc += _config.replenishRateInBasis;
-        if (bufferCalc > _config.max){
+        if (bufferCalc > _config.max) {
             bufferCalc = _config.max;
-        
         }
         delayBuffer.update(elapse + 10000);
         assertEq(delayBuffer.bufferBlocks, bufferCalc);

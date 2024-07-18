@@ -19,17 +19,16 @@ library ModuleLib {
     using ModuleMemoryCompactLib for ModuleMemory;
 
     function hash(Module memory mod) internal pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked(
-                    "Module:",
-                    mod.globalsMerkleRoot,
-                    mod.moduleMemory.hash(),
-                    mod.tablesMerkleRoot,
-                    mod.functionsMerkleRoot,
-                    mod.extraHash,
-                    mod.internalsOffset
-                )
-            );
+        return keccak256(
+            abi.encodePacked(
+                "Module:",
+                mod.globalsMerkleRoot,
+                mod.moduleMemory.hash(),
+                mod.tablesMerkleRoot,
+                mod.functionsMerkleRoot,
+                mod.extraHash,
+                mod.internalsOffset
+            )
+        );
     }
 }

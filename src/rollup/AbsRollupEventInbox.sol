@@ -39,27 +39,23 @@ abstract contract AbsRollupEventInbox is
 
     /// @notice Allows the rollup owner to sync the rollup address
     function updateRollupAddress() external {
-        if (msg.sender != IOwnable(rollup).owner())
+        if (msg.sender != IOwnable(rollup).owner()) {
             revert NotOwner(msg.sender, IOwnable(rollup).owner());
+        }
         address newRollup = address(bridge.rollup());
         if (rollup == newRollup) revert RollupNotChanged();
         rollup = newRollup;
     }
 
-    function rollupInitialized(uint256 chainId, string calldata chainConfig)
-        external
-        override
-        onlyRollup
-    {
+    function rollupInitialized(
+        uint256 chainId,
+        string calldata chainConfig
+    ) external override onlyRollup {
         require(bytes(chainConfig).length > 0, "EMPTY_CHAIN_CONFIG");
         uint8 initMsgVersion = 1;
         uint256 currentDataCost = _currentDataCostToReport();
-        bytes memory initMsg = abi.encodePacked(
-            chainId,
-            initMsgVersion,
-            currentDataCost,
-            chainConfig
-        );
+        bytes memory initMsg =
+            abi.encodePacked(chainId, initMsgVersion, currentDataCost, chainConfig);
         uint256 num = _enqueueInitializationMsg(initMsg);
         emit InboxMessageDelivered(num, initMsg);
     }

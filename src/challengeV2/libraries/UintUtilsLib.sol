@@ -16,7 +16,7 @@ library UintUtilsLib {
 
         // isolate the least sig bit
         uint256 isolated = ((x - 1) & x) ^ x;
-        
+
         // since we removed all higher bits, least sig == most sig
         return mostSignificantBit(isolated);
     }
