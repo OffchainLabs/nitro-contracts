@@ -88,7 +88,11 @@ library Balance2Lib {
         }
     }
 
-    function withdrawableBalanceAtRound(Balance2 storage bal, uint64 round) internal view returns (uint256) {
+    function withdrawableBalanceAtRound(Balance2 storage bal, uint64 round)
+        internal
+        view
+        returns (uint256)
+    {
         if (bal.withdrawalRound != type(uint64).max && round > bal.withdrawalRound) {
             return bal.balance;
         } else {
@@ -231,7 +235,11 @@ library BalanceLib {
         }
     }
 
-    function withdrawableBalanceAtRound(Balance storage bal, uint64 round) internal view returns (uint256) {
+    function withdrawableBalanceAtRound(Balance storage bal, uint64 round)
+        internal
+        view
+        returns (uint256)
+    {
         if (bal.round != type(uint64).max && round >= bal.round) {
             return bal.balanceBeforeRound - bal.balanceAfterRound;
         } else {

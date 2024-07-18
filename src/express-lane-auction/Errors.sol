@@ -3,19 +3,22 @@
 // CHRIS: TODO: choose sol version
 pragma solidity ^0.8.9;
 
-import {RoundStage} from "./Structs.sol";
-
 // CHRIS: TODO: docs and see if al these are actually used
 error InsufficientBalance(uint256 amountRequested, uint256 balance);
+error InsufficientBalanceAcc(address acount, uint256 amountRequested, uint256 balance);
+error ReserveBlackoutStartTooLong();
 error NothingToWithdraw();
 error ZeroAmount();
+error ZeroBiddingToken();
 error WithdrawalInProgress(uint256 amountInWithdrawal);
 error RoundAlreadyResolved(uint64 round);
 error SameBidder();
 error BidsWrongOrder();
-// CHRIS: TODO: should be the RoundStage enums
-error InvalidStage(RoundStage currentStage, RoundStage requiredStage);
+error TieBidsWrongOrder();
+error NotResolvingStage();
 error ReservePriceTooLow(uint256 reservePrice, uint256 minReservePrice);
 error ReservePriceNotMet(uint256 bidAmount, uint256 reservePrice);
-error ReserveBlackoutPeriod();
-error RoundTooOld();
+error ReserveBlackout();
+error RoundTooOld(uint256 round, uint256 currentRound);
+error RoundNotResolved(uint256 round);
+error NotExpressLaneController(uint64 round, address controller, address sender);
