@@ -553,7 +553,7 @@ contract ExpressLaneAuctionTest is Test {
 
         // CHRIS: TODO:
         // * reducing the round time does have an effect - add this later
-        // * cannot finalize too soon - comments about how this will work during an upgrade/change of time
+        // * cannot finalize withdrawal too soon - comments about how this will work during an upgrade/change of time
     }
 
     function testFinalizeLateWithdrawal() public {

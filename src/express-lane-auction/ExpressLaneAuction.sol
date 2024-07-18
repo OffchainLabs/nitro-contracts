@@ -13,67 +13,13 @@ import {AccessControlUpgradeable} from
 import {Bid} from "./Structs.sol";
 import "../libraries/DelegateCallAware.sol";
 import "./IExpressLaneAuction.sol";
+import "./ELCRound.sol";
 
 // CHRIS: TODO: do we wamt to include the ability to update the round time?
 // 3. update the round time
 //    * do this via 2 reads each time
 //    * check if an update is there, if so use that if it's in the past
 //    * needs to contain round number as well as other things
-
-struct ELCRound {
-    address expressLaneController;
-    uint64 round;
-}
-
-// CHRIS: TODO: consider all usages of the these during initialization
-// CHRIS: TODO: Invariant: not possible for the rounds in latest rounds to have the same value
-library LatestELCRoundsLib {
-    // CHRIS: TODO: this isnt efficient to do on storage - we may need to return the index or something
-    function latestELCRound(ELCRound[2] memory rounds)
-        public
-        pure
-        returns (ELCRound memory, uint8)
-    {
-        ELCRound memory latestRound = rounds[0];
-        uint8 index = 0;
-        // CHRIS: TODO: what values do these have during init?
-        if (latestRound.round < rounds[1].round) {
-            latestRound = rounds[1];
-            index = 1;
-        }
-        return (latestRound, index);
-    }
-
-    function resolvedRound(ELCRound[2] storage latestResolvedRounds, uint64 round)
-        internal
-        view
-        returns (ELCRound storage)
-    {
-        if (latestResolvedRounds[0].round == round) {
-            return latestResolvedRounds[0];
-        } else if (latestResolvedRounds[1].round == round) {
-            return latestResolvedRounds[1];
-        } else {
-            revert RoundNotResolved(round);
-        }
-    }
-
-    function setResolvedRound(
-        ELCRound[2] storage latestResolvedRounds,
-        uint64 round,
-        address expressLaneController
-    ) internal {
-        (ELCRound memory lastRoundResolved, uint8 index) = latestELCRound(latestResolvedRounds);
-        // Invariant: lastAuctionRound.round should never be > round if called during resolve auction except during initialization
-        if (lastRoundResolved.round >= round) {
-            revert RoundAlreadyResolved(round);
-        }
-
-        // dont replace the newest round, use the oldest slot
-        uint8 oldestRoundIndex = index ^ 1;
-        latestResolvedRounds[oldestRoundIndex] = ELCRound(expressLaneController, round);
-    }
-}
 
 // CHRIS: TODO: go through all the functions and look for duplicate storage access
 
@@ -137,7 +83,17 @@ library LatestELCRoundsLib {
 
 // CHRIS: TODO: update docs there and decide if we want to add an lower address check in case of ties
 
-/// @title ExpressLaneAuction
+// CHRIS: TODO: test boundary conditions in round timing info lib: 0, biddingStageDuration, biddingStageDuration + resolvingStageDuration
+
+// CHRIS: TODO: when we include updates we need to point out that roundTimestamps() are not
+//              accurate for timestamps after the update timestamp - that will be a bit tricky wont it?
+//              all round timing stuff needs reviewing if we include updates
+
+// CHRIS: TODO: line up natspec comments
+
+// CHRIS: TODO: round timing info tests
+
+/// @title  ExpressLaneAuction
 /// @notice The express lane allows a controller to submit undelayed transactions to the sequencer
 ///         The right to be the express lane controller are auctioned off in rounds, by an offchain auctioneer.
 ///         The auctioneer then submits the winning bids to this control to deduct funds from the bidders and register the winner
@@ -260,7 +216,8 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, De
     /// @inheritdoc IExpressLaneAuction
     function isReserveBlackout() public view returns (bool) {
         (ELCRound memory lastRoundResolved,) = latestResolvedRounds.latestELCRound();
-        return roundTimingInfo.isReserveBlackout(lastRoundResolved.round, currentRound() + 1);
+        // CHRIS: TODO: why do we put round + 1?
+        return roundTimingInfo.isReserveBlackout(lastRoundResolved.round);
     }
 
     /// @inheritdoc IExpressLaneAuction
