@@ -15,22 +15,31 @@ dotenv.config()
 const solidity = {
   compilers: [
     {
-      version: '0.8.9',
+      version: '0.8.17',
       settings: {
         optimizer: {
           enabled: true,
-          runs: 100,
+          runs: 2000,
         },
       },
     },
   ],
   overrides: {
     'src/rollup/RollupUserLogic.sol': {
-      version: '0.8.9',
+      version: '0.8.17',
       settings: {
         optimizer: {
           enabled: true,
           runs: 20,
+        },
+      },
+    },
+    'src/challengeV2/EdgeChallengeManager.sol': {
+      version: '0.8.17',
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 200,
         },
       },
     },
@@ -48,12 +57,15 @@ if (process.env['INTERFACE_TESTER_SOLC_VERSION']) {
     },
   })
   solidity.overrides = {
-    'src/test-helpers/InterfaceCompatibilityTester.sol': {
-      version: process.env['INTERFACE_TESTER_SOLC_VERSION'],
-      settings: {
-        optimizer: {
-          enabled: true,
-          runs: 100,
+    ...(solidity.overrides || {}),
+    ...{
+      'src/test-helpers/InterfaceCompatibilityTester.sol': {
+        version: process.env['INTERFACE_TESTER_SOLC_VERSION'],
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 100,
+          },
         },
       },
     },
@@ -98,32 +110,8 @@ module.exports = {
         ? [process.env['MAINNET_PRIVKEY']]
         : [],
     },
-    goerli: {
-      url: 'https://goerli.infura.io/v3/' + process.env['INFURA_KEY'],
-      accounts: process.env['DEVNET_PRIVKEY']
-        ? [process.env['DEVNET_PRIVKEY']]
-        : [],
-    },
     sepolia: {
       url: 'https://sepolia.infura.io/v3/' + process.env['INFURA_KEY'],
-      accounts: process.env['DEVNET_PRIVKEY']
-        ? [process.env['DEVNET_PRIVKEY']]
-        : [],
-    },
-    rinkeby: {
-      url: 'https://rinkeby.infura.io/v3/' + process.env['INFURA_KEY'],
-      accounts: process.env['DEVNET_PRIVKEY']
-        ? [process.env['DEVNET_PRIVKEY']]
-        : [],
-    },
-    arbRinkeby: {
-      url: 'https://rinkeby.arbitrum.io/rpc',
-      accounts: process.env['DEVNET_PRIVKEY']
-        ? [process.env['DEVNET_PRIVKEY']]
-        : [],
-    },
-    arbGoerliRollup: {
-      url: 'https://goerli-rollup.arbitrum.io/rpc',
       accounts: process.env['DEVNET_PRIVKEY']
         ? [process.env['DEVNET_PRIVKEY']]
         : [],
@@ -153,13 +141,9 @@ module.exports = {
   etherscan: {
     apiKey: {
       mainnet: process.env['ETHERSCAN_API_KEY'],
-      goerli: process.env['ETHERSCAN_API_KEY'],
       sepolia: process.env['ETHERSCAN_API_KEY'],
-      rinkeby: process.env['ETHERSCAN_API_KEY'],
       arbitrumOne: process.env['ARBISCAN_API_KEY'],
-      arbitrumTestnet: process.env['ARBISCAN_API_KEY'],
       nova: process.env['NOVA_ARBISCAN_API_KEY'],
-      arbGoerliRollup: process.env['ARBISCAN_API_KEY'],
       arbSepolia: process.env['ARBISCAN_API_KEY'],
     },
     customChains: [
@@ -172,19 +156,11 @@ module.exports = {
         },
       },
       {
-        network: 'arbGoerliRollup',
-        chainId: 421613,
-        urls: {
-          apiURL: 'https://api-goerli.arbiscan.io/api',
-          browserURL: 'https://goerli.arbiscan.io/',
-        },
-      },
-      {
         network: 'arbSepolia',
         chainId: 421614,
         urls: {
-          apiURL: 'https://sepolia-explorer.arbitrum.io/api',
-          browserURL: 'https://sepolia-explorer.arbitrum.io/',
+          apiURL: 'https://api-sepolia.arbiscan.io/api',
+          browserURL: 'https://sepolia.arbiscan.io/',
         },
       },
     ],
@@ -199,4 +175,7 @@ module.exports = {
     outDir: 'build/types',
     target: 'ethers-v5',
   },
+  contractSizer: {
+    strict: process.env.STRICT ? true : false
+  }
 }

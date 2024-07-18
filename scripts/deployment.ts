@@ -23,7 +23,6 @@ async function main() {
       contracts.rollupAdmin.address,
       contracts.rollupUser.address,
       contracts.upgradeExecutor.address,
-      contracts.validatorUtils.address,
       contracts.validatorWalletCreator.address,
       contracts.deployHelper.address
     )

@@ -11,10 +11,62 @@ import "../bridge/IOwnable.sol";
 import "./Config.sol";
 
 interface IRollupAdmin {
-    event OwnerFunctionCalled(uint256 indexed id);
+    /// @dev Outbox address was set
+    event OutboxSet(address outbox);
 
-    function initialize(Config calldata config, ContractDependencies calldata connectedContracts)
-        external;
+    /// @dev Old outbox was removed
+    event OldOutboxRemoved(address outbox);
+
+    /// @dev Inbox was enabled or disabled
+    event DelayedInboxSet(address inbox, bool enabled);
+
+    /// @dev A list of validators was set
+    event ValidatorsSet(address[] validators, bool[] enabled);
+
+    /// @dev A new minimum assertion period was set
+    event MinimumAssertionPeriodSet(uint256 newPeriod);
+
+    /// @dev A new validator afk blocks was set
+    event ValidatorAfkBlocksSet(uint256 newPeriod);
+
+    /// @dev New confirm period blocks was set
+    event ConfirmPeriodBlocksSet(uint64 newConfirmPeriod);
+
+    /// @dev Base stake was set
+    event BaseStakeSet(uint256 newBaseStake);
+
+    /// @dev Stakers were force refunded
+    event StakersForceRefunded(address[] staker);
+
+    /// @dev An assertion was force created
+    event AssertionForceCreated(bytes32 indexed assertionHash);
+
+    /// @dev An assertion was force confirmed
+    event AssertionForceConfirmed(bytes32 indexed assertionHash);
+
+    /// @dev New loser stake escrow set
+    event LoserStakeEscrowSet(address newLoserStakerEscrow);
+
+    /// @dev New wasm module root was set
+    event WasmModuleRootSet(bytes32 newWasmModuleRoot);
+
+    /// @dev New sequencer inbox was set
+    event SequencerInboxSet(address newSequencerInbox);
+
+    /// @dev New inbox set
+    event InboxSet(address inbox);
+
+    /// @dev Validator whitelist was disabled or enabled
+    event ValidatorWhitelistDisabledSet(bool _validatorWhitelistDisabled);
+
+    /// @dev AnyTrust fast confirmer was set
+    event AnyTrustFastConfirmerSet(address anyTrustFastConfirmer);
+
+    /// @dev Challenge manager was set
+    event ChallengeManagerSet(address challengeManager);
+
+
+    function initialize(Config calldata config, ContractDependencies calldata connectedContracts) external;
 
     /**
      * @notice Add a contract authorized to put messages into this rollup's inbox
@@ -67,16 +119,21 @@ interface IRollupAdmin {
     function setMinimumAssertionPeriod(uint256 newPeriod) external;
 
     /**
-     * @notice Set number of blocks until a node is considered confirmed
-     * @param newConfirmPeriod new number of blocks until a node is confirmed
+     * @notice Set validator afk blocks for the rollup
+     * @param  newAfkBlocks new number of blocks before a validator is considered afk (0 to disable)
+     * @dev    ValidatorAfkBlocks is the number of blocks since the last confirmed 
+     *         assertion (or its first child) before the validator whitelist is removed.
+     *         It's important that this time is greater than the max amount of time it can take to
+     *         to confirm an assertion via the normal method. Therefore we need it to be greater
+     *         than max(2* confirmPeriod, 2 * challengePeriod) with some additional margin.
      */
-    function setConfirmPeriodBlocks(uint64 newConfirmPeriod) external;
+    function setValidatorAfkBlocks(uint64 newAfkBlocks) external;
 
     /**
-     * @notice Set number of extra blocks after a challenge
-     * @param newExtraTimeBlocks new number of blocks
+     * @notice Set number of blocks until a assertion is considered confirmed
+     * @param newConfirmPeriod new number of blocks until a assertion is confirmed
      */
-    function setExtraChallengeTimeBlocks(uint64 newExtraTimeBlocks) external;
+    function setConfirmPeriodBlocks(uint64 newConfirmPeriod) external;
 
     /**
      * @notice Set base stake required for an assertion
@@ -84,36 +141,19 @@ interface IRollupAdmin {
      */
     function setBaseStake(uint256 newBaseStake) external;
 
-    /**
-     * @notice Set the token used for stake, where address(0) == eth
-     * @dev Before changing the base stake token, you might need to change the
-     * implementation of the Rollup User logic!
-     * @param newStakeToken address of token used for staking
-     */
-    function setStakeToken(address newStakeToken) external;
-
-    /**
-     * @notice Upgrades the implementation of a beacon controlled by the rollup
-     * @param beacon address of beacon to be upgraded
-     * @param newImplementation new address of implementation
-     */
-    function upgradeBeacon(address beacon, address newImplementation) external;
-
-    function forceResolveChallenge(address[] memory stackerA, address[] memory stackerB) external;
-
     function forceRefundStaker(address[] memory stacker) external;
 
-    function forceCreateNode(
-        uint64 prevNode,
-        uint256 prevNodeInboxMaxCount,
-        Assertion memory assertion,
-        bytes32 expectedNodeHash
+    function forceCreateAssertion(
+        bytes32 prevAssertionHash,
+        AssertionInputs calldata assertion,
+        bytes32 expectedAssertionHash
     ) external;
 
-    function forceConfirmNode(
-        uint64 nodeNum,
-        bytes32 blockHash,
-        bytes32 sendRoot
+    function forceConfirmAssertion(
+        bytes32 assertionHash,
+        bytes32 parentAssertionHash,
+        AssertionState calldata confirmState,
+        bytes32 inboxAcc
     ) external;
 
     function setLoserStakeEscrow(address newLoserStakerEscrow) external;
@@ -135,4 +175,10 @@ interface IRollupAdmin {
      * @param _validatorWhitelistDisabled new value of validatorWhitelistDisabled, i.e. true = disabled
      */
     function setValidatorWhitelistDisabled(bool _validatorWhitelistDisabled) external;
+
+    /**
+     * @notice set a new challengeManager contract
+     * @param _challengeManager new value of challengeManager
+     */
+    function setChallengeManager(address _challengeManager) external;
 }
