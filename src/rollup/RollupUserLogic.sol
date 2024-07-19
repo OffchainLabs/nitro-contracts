@@ -171,9 +171,11 @@ abstract contract AbsRollupUserLogic is
      * @notice This allow anyTrustFastConfirmer to confirm next node regardless of deadline
      *         the anyTrustFastConfirmer is supposed to be set only on an AnyTrust chain to
      *         a contract that can call this function when received sufficient signatures
+     *         node hash must be match the node to be confirmed to protect against reorgs
      */
-    function fastConfirmNextNode(bytes32 blockHash, bytes32 sendRoot) external whenNotPaused {
+    function fastConfirmNextNode(bytes32 blockHash, bytes32 sendRoot, bytes32 nodeHash) external whenNotPaused {
         require(msg.sender == anyTrustFastConfirmer, "NOT_FAST_CONFIRMER");
+        require(nodeHash == getNodeStorage(firstUnresolvedNode()).nodeHash, "WRONG_HASH");
         _confirmNextNode(blockHash, sendRoot, true);
     }
 
