@@ -26,6 +26,11 @@ async function main() {
     throw new Error('PARENT_CHAIN_ID not set')
   }
 
+  let espressoLightClientAddr = process.env.LIGHT_CLIENT_ADDR as string
+  if (!espressoLightClientAddr) {
+    throw new Error("LIGHT_CLIENT_ADDR not set")
+  }
+
   const deployerWallet = new ethers.Wallet(
     deployerPrivKey,
     new ethers.providers.JsonRpcProvider(parentChainRpc)
@@ -44,7 +49,7 @@ async function main() {
 
   /// deploy templates and rollup creator
   console.log('Deploy RollupCreator')
-  const contracts = await deployAllContracts(deployerWallet, maxDataSize, false)
+  const contracts = await deployAllContracts(deployerWallet, maxDataSize, false, espressoLightClientAddr)
 
   console.log('Set templates on the Rollup Creator')
   await (

@@ -97,7 +97,7 @@ export async function deployAllContracts(
   signer: any,
   maxDataSize: BigNumber,
   verify: boolean = true,
-  hotshotAddr?: string
+  espressoLightClientAddr?: string
 ): Promise<Record<string, Contract>> {
   const isOnArb = await _isRunningOnArbitrum(signer)
 
@@ -177,7 +177,7 @@ export async function deployAllContracts(
     [],
     verify
   )
-  const hostIoArg = hotshotAddr ? [hotshotAddr] : []
+  const hostIoArg = espressoLightClientAddr ? [espressoLightClientAddr] : []
   const proverHostIo = await deployContract(
     'OneStepProverHostIo',
     signer,
