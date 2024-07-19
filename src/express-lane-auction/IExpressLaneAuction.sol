@@ -79,7 +79,7 @@ interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
     event SetBeneficiary(address oldBeneficiary, address newBeneficiary);
 
     /// @notice The role given to the address that can resolve auctions
-    function AUCTION_CLERK_ROLE() external returns (bytes32);
+    function AUCTIONEER_ROLE() external returns (bytes32);
     /// @notice The role given to the address that can set the minimum reserve
     function MIN_RESERVE_SETTER_ROLE() external returns (bytes32);
     /// @notice The role given to the address that can set the reserve
@@ -103,17 +103,17 @@ interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
     function minReservePrice() external returns (uint256);
 
     /// @notice Initialize the auction
-    /// @param _auctionClerk The address who can resolve auctions
+    /// @param _auctioneer The address who can resolve auctions
     /// @param _beneficiary The address to which auction winners will pay the bid
     /// @param _biddingToken The token used for payment
-    /// @param _roundTimingInfo The durations of the round stages
+    /// @param _roundTimingInfo Round timing components: offset, auction closing, round duration, reserve submission
     /// @param _minReservePrice The minimum reserve price, also used to set the initial reserve price
     /// @param _roleAdmin The admin that can manage roles in the contract
     /// @param _minReservePriceSetter The address given the rights to change the min reserve price
     /// @param _reservePriceSetter The address given the rights to change the reserve price
     /// @param _beneficiarySetter The address given the rights to change the beneficiary address
     function initialize(
-        address _auctionClerk,
+        address _auctioneer,
         address _beneficiary,
         address _biddingToken,
         RoundTimingInfo memory _roundTimingInfo,
@@ -124,33 +124,20 @@ interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
         address _beneficiarySetter
     ) external;
 
+    /// @notice Round timing components: offset, auction closing, round duration and reserve submission
+    // CHRIS: TODO: can i return a struct here? 
+    function roundTimingInfo() external view returns(uint64 offsetTimestamp, uint64 roundDurationSeconds, uint64 auctionClosingSeconds, uint64 reserveSubmissionSeconds);
+
     /// @notice The current auction round that we're in
     ///         Bidding for control of the next round occurs in the current round
     function currentRound() external view returns (uint64);
 
-    // CHRIS: TODO: move these back to being roundtiminginfo()
-    function roundOffsetTimestamp() external view returns (uint64);
+    /// @notice Is the current auction round closed for bidding
+    ///         After the round has closed the auctioneer can resolve it with the highest bids
+    function isAuctionRoundClosed() external view returns (bool);
 
-    function resolvingStageDuration() external view returns (uint64);
-
-    function biddingStageDuration() external view returns (uint64);
-
-    function roundReserveBlackoutStart() external view returns (uint64);
-
-    /// @notice How many seconds there are in each round
-    function roundDuration() external view returns (uint64);
-
-    /// @notice Is the current round in the bidding stage.
-    ///         Each round is split into bidding and then resolving.
-    ///         Bids are submitted offchain to the auction clerk during the bidding stage
-    function isBiddingStage() external view returns (bool);
-
-    /// @notice Is the current round in the resolving stage.
-    ///         Each round is split into bidding and then resolving
-    ///         During the resolving stage the auction clerk submits the two highest bid to this contract to resolve the current round
-    function isResolvingStage() external view returns (bool);
-
-    /// @notice The auction reserve cannot be updated between the point when the blackout starts and the auction is resolved
+    /// @notice The auction reserve cannot be updated during the blackout period
+    ///         This starts ReserveSubmissionSeconds before the round closes and ends when the round is resolved, or the round ends
     function isReserveBlackout() external view returns (bool);
 
     /// @notice Gets the start and end timestamps for a given round
@@ -158,7 +145,7 @@ interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
     /// @param round The round to find the timestamps for
     /// @return start The start of the round in seconds, inclusive
     /// @return end The end of the round in seconds, inclusive
-    function roundTimestamps(uint64 round) external view returns (uint64, uint64);
+    function roundTimestamps(uint64 round) external view returns (uint64 start, uint64 end);
 
     /// @notice Update the beneficiary to a new address
     /// @param newBeneficiary The new beneficiary
@@ -180,8 +167,8 @@ interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
     /// @notice Set the auction reserve price. Must be greater than or equal the minimum reserve.
     ///         A reserve price setter is given the ability to change the reserve price to ensure that express lane control rights
     ///         are not sold off too cheaply. They are trusted to set realistic values for this.
-    ///         However they can only change this value when not in the blackout period, which occurs towards the end of the bidding stage.
-    ///         This ensures that bidders will have plenty of time to observe the reserve before the end of the bidding stage, and that
+    ///         However they can only change this value when not in the blackout period, which occurs before at the auction close
+    ///         This ensures that bidders will have plenty of time to observe the reserve before the auction closes, and that
     ///         the reserve cannot be changed at the last second. One exception to this is if the minimum reserve changes, see the setMinReservePrice
     ///         documentation for more details.
     ///         If the new reserve is set to a very high value eg max(uint) then the auction will never be able to resolve
@@ -202,17 +189,17 @@ interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
 
     /// @notice Deposit an amount of ERC20 token to the auction to make bids with
     ///         Deposits must be submitted prior to bidding.
-    /// @dev    Deposits are submitted first so that the auction clerk can be sure that the accepted bids can actually be paid
+    /// @dev    Deposits are submitted first so that the auctioneer can be sure that the accepted bids can actually be paid
     /// @param amount   The amount to deposit.
     function deposit(uint256 amount) external;
 
     /// @notice Initiate a withdrawal of funds
     ///         Once funds have been deposited they can only be retrieved by initiating + finalizing a withdrawal
-    ///         There is a delay between initializing and finalizing a withdrawal so that the auction clerk can be sure
-    ///         that value cannot be removed before a bid is resolved. The timeline is as follows:
+    ///         There is a delay between initializing and finalizing a withdrawal so that the auctioneer can be sure
+    ///         that value cannot be removed before an auction is resolved. The timeline is as follows:
     ///         1. Initiate a withdrawal at some time in round r
     ///         2. During round r the balance is still available and can be used in an auction
-    ///         3. During round r+1 the auction clerk should consider any funds that have been initiated for withdrawal as unavailable to the bidder.
+    ///         3. During round r+1 the auctioneer should consider any funds that have been initiated for withdrawal as unavailable to the bidder.
     ///            However if a bid is submitted the balance will be available for use
     ///         4. During round r+2 the bidder can finalize a withdrawal and remove their funds
     ///         A bidder may have only one withdrawal being processed at any one time.
@@ -223,16 +210,16 @@ interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
     ///         Withdrawals can only be finalized 2 rounds after being initiated
     function finalizeWithdrawal() external;
 
-    /// @notice Calculates the hash of bid data for signing
+    /// @notice Calculates the data to be hashed for signing
     /// @param _round The round the bid is for the control of
     /// @param _amount The amount being bid
     /// @param _expressLaneController The address that will be the express lane controller if the bid wins
-    function getBidHash(uint64 _round, uint256 _amount, address _expressLaneController)
+    function getBidBytes(uint64 _round, uint256 _amount, address _expressLaneController)
         external
         view
-        returns (bytes32);
+        returns (bytes memory);
 
-    /// @notice Resolve the auction with just a single bid. The auction clerk is trusted to call this only when there are
+    /// @notice Resolve the auction with just a single bid. The auctioneer is trusted to call this only when there are
     ///         less than two bids higher than the reserve price for an auction round.
     ///         In this case the highest bidder will pay the reserve price for the round
     /// @param firstPriceBid The highest price bid. Must have a price higher than the reserve. Price paid is the reserve

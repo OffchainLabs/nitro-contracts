@@ -10,9 +10,8 @@ struct Bid {
     ///         The auction is a second price auction, so the winner may end up paying less than this amount
     ///         however this is the maximum amount up to which they may have to pay
     uint256 amount;
-    // CHRIS: TODO: update the specs for this
     /// @notice Authentication of this bid by the bidder.
     ///         The bidder signs over a hash of the following
-    ///         keccak256("\x19Ethereum Signed Message:\n32" ++ keccak(chainId ++ auctionContractAddress ++ auctionRound ++ bidAmount ++ expressLaneController))
+    ///         keccak256("\x19Ethereum Signed Message:\n112" ++ chainId ++ auctionContractAddress ++ auctionRound ++ bidAmount ++ expressLaneController)
     bytes signature;
 }

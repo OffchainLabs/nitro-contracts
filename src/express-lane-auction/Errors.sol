@@ -6,7 +6,7 @@ pragma solidity ^0.8.9;
 // CHRIS: TODO: docs and see if al these are actually used
 error InsufficientBalance(uint256 amountRequested, uint256 balance);
 error InsufficientBalanceAcc(address acount, uint256 amountRequested, uint256 balance);
-error ReserveBlackoutStartTooLong();
+error RoundDurationTooShort();
 error NothingToWithdraw();
 error ZeroAmount();
 error ZeroBiddingToken();
@@ -15,7 +15,7 @@ error RoundAlreadyResolved(uint64 round);
 error SameBidder();
 error BidsWrongOrder();
 error TieBidsWrongOrder();
-error NotResolvingStage();
+error AuctionNotClosed();
 error ReservePriceTooLow(uint256 reservePrice, uint256 minReservePrice);
 error ReservePriceNotMet(uint256 bidAmount, uint256 reservePrice);
 error ReserveBlackout();

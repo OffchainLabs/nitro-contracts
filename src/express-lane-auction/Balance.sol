@@ -111,7 +111,7 @@ struct Balance {
 }
 
 // Do we forsee a world where the bidding round and the controlling round have different lengths?
-// bidding round < controlling round - this is fine and can be enforced by the auction clerk offchain
+// bidding round < controlling round - this is fine and can be enforced by the auctioneer offchain
 // controlling round < bidding round - this is more awkward.
 // CHRIS: TODO: raise this in the tx-ordering channel. Will we ever want controlling round < bidding round. Where the bidding rounds would now be overlapping.
 
