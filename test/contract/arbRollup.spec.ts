@@ -1577,9 +1577,9 @@ describe.only('ArbRollupFastConfirm', () => {
     )
   })
   it('should fail to fast confirm if not fast confirmer', async function () {
-    await expect(rollup.fastConfirmNextNode(prevNodes[0], ethers.constants.HashZero)).to.be.revertedWith(
-      'NOT_FAST_CONFIRMER'
-    )
+    await expect(
+      rollup.fastConfirmNextNode(prevNodes[0], ethers.constants.HashZero)
+    ).to.be.revertedWith('NOT_FAST_CONFIRMER')
   })
   it('should fail to fast confirm if not validator', async function () {
     await expect(
