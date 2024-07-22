@@ -98,7 +98,11 @@ library BalanceLib {
     /// @param round The round to check withdrawals against. A withdrawal after this round will be ignored
     ///              and the balance reduced anyway, withdrawals before or on this round will be respected
     ///              and the reduce will revert
-    function reduce(Balance storage bal, uint256 amount, uint64 round) internal {
+    function reduce(
+        Balance storage bal,
+        uint256 amount,
+        uint64 round
+    ) internal {
         if (balanceAtRound(bal, round) < amount) {
             revert InsufficientBalance(amount, balanceAtRound(bal, round));
         }

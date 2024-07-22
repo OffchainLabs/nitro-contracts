@@ -3,10 +3,12 @@ pragma solidity ^0.8.0;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {RoundTimingInfo} from "./RoundTimingInfo.sol";
-import {IAccessControlUpgradeable} from
-    "@openzeppelin/contracts-upgradeable/access/IAccessControlUpgradeable.sol";
-import {IERC165Upgradeable} from
-    "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
+import {
+    IAccessControlUpgradeable
+} from "@openzeppelin/contracts-upgradeable/access/IAccessControlUpgradeable.sol";
+import {
+    IERC165Upgradeable
+} from "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
 
 /// @notice A bid to control the express lane for a specific round
 struct Bid {
@@ -33,7 +35,9 @@ interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
     /// @param withdrawalAmount The amount beind withdrawn
     /// @param roundWithdrawable The round the funds will become withdrawable in
     event WithdrawalInitiated(
-        address indexed account, uint256 withdrawalAmount, uint256 roundWithdrawable
+        address indexed account,
+        uint256 withdrawalAmount,
+        uint256 roundWithdrawable
     );
 
     /// @notice An account has finalized a withdrawal
@@ -92,10 +96,13 @@ interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
 
     /// @notice The role given to the address that can resolve auctions
     function AUCTIONEER_ROLE() external returns (bytes32);
+
     /// @notice The role given to the address that can set the minimum reserve
     function MIN_RESERVE_SETTER_ROLE() external returns (bytes32);
+
     /// @notice The role given to the address that can set the reserve
     function RESERVE_SETTER_ROLE() external returns (bytes32);
+
     /// @notice The role given to the address that can set the beneficiary
     function BENEFICIARY_SETTER_ROLE() external returns (bytes32);
 
@@ -230,10 +237,11 @@ interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
     /// @param _round The round the bid is for the control of
     /// @param _amount The amount being bid
     /// @param _expressLaneController The address that will be the express lane controller if the bid wins
-    function getBidBytes(uint64 _round, uint256 _amount, address _expressLaneController)
-        external
-        view
-        returns (bytes memory);
+    function getBidBytes(
+        uint64 _round,
+        uint256 _amount,
+        address _expressLaneController
+    ) external view returns (bytes memory);
 
     /// @notice Resolve the auction with just a single bid. The auctioneer is trusted to call this only when there are
     ///         less than two bids higher than the reserve price for an auction round.
@@ -253,6 +261,5 @@ interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
     ///         round to another address. They may use this for reselling their rights after purchasing them
     /// @param round The round to transfer rights for
     /// @param newExpressLaneController The new express lane controller to transfer the rights to
-    function transferExpressLaneController(uint64 round, address newExpressLaneController)
-        external;
+    function transferExpressLaneController(uint64 round, address newExpressLaneController) external;
 }

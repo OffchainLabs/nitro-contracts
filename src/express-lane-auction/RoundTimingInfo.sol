@@ -71,8 +71,11 @@ library RoundTimingInfoLib {
         // therefore if we're within ReserveSubmissionSeconds of the auction close then we're in blackout
         // otherwise we're not
         uint64 timeInRound = timeIntoRound(info);
-        return timeInRound
-            >= (info.roundDurationSeconds - info.auctionClosingSeconds - info.reserveSubmissionSeconds);
+        return
+            timeInRound >=
+            (info.roundDurationSeconds -
+                info.auctionClosingSeconds -
+                info.reserveSubmissionSeconds);
     }
 
     /// @notice Gets the start and end timestamps (seconds) of a specified round

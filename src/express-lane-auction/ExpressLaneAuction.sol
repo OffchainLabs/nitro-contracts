@@ -5,8 +5,9 @@ import "./Errors.sol";
 import {Balance, BalanceLib} from "./Balance.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {AccessControlUpgradeable} from
-    "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {
+    AccessControlUpgradeable
+} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {DelegateCallAware} from "../libraries/DelegateCallAware.sol";
 import {IExpressLaneAuction, Bid} from "./IExpressLaneAuction.sol";
 import {ELCRound, LatestELCRoundsLib} from "./ELCRound.sol";
@@ -181,8 +182,8 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, De
         emit SetReservePrice(uint256(0), _minReservePrice);
 
         if (
-            _roundTimingInfo.reserveSubmissionSeconds + _roundTimingInfo.auctionClosingSeconds
-                > _roundTimingInfo.roundDurationSeconds
+            _roundTimingInfo.reserveSubmissionSeconds + _roundTimingInfo.auctionClosingSeconds >
+            _roundTimingInfo.roundDurationSeconds
         ) {
             revert RoundDurationTooShort();
         }
@@ -208,7 +209,7 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, De
 
     /// @inheritdoc IExpressLaneAuction
     function isReserveBlackout() public view returns (bool) {
-        (ELCRound memory lastRoundResolved,) = latestResolvedRounds.latestELCRound();
+        (ELCRound memory lastRoundResolved, ) = latestResolvedRounds.latestELCRound();
         return roundTimingInfo.isReserveBlackout(lastRoundResolved.round);
     }
 
@@ -315,7 +316,11 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, De
         // emit events so that the offchain sequencer knows a new express lane controller has been selected
         (uint64 roundStart, uint64 roundEnd) = roundTimingInfo.roundTimestamps(biddingForRound);
         emit SetExpressLaneController(
-            biddingForRound, address(0), firstPriceBid.expressLaneController, roundStart, roundEnd
+            biddingForRound,
+            address(0),
+            firstPriceBid.expressLaneController,
+            roundStart,
+            roundEnd
         );
         emit AuctionResolved(
             isMultiBid,
@@ -330,11 +335,11 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, De
     }
 
     /// @inheritdoc IExpressLaneAuction
-    function getBidBytes(uint64 _round, uint256 _amount, address _expressLaneController)
-        public
-        view
-        returns (bytes memory)
-    {
+    function getBidBytes(
+        uint64 _round,
+        uint256 _amount,
+        address _expressLaneController
+    ) public view returns (bytes memory) {
         // CHRIS: TODO: test the length of this is 112
         return
             abi.encodePacked(block.chainid, address(this), _round, _amount, _expressLaneController);
@@ -374,7 +379,7 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, De
 
         uint64 biddingInRound = currentRound();
         uint64 biddingForRound = biddingInRound + 1;
-        (address firstPriceBidder,) = recoverAndCheckBalance(firstPriceBid, biddingForRound);
+        (address firstPriceBidder, ) = recoverAndCheckBalance(firstPriceBid, biddingForRound);
 
         resolveAuction(false, firstPriceBid, firstPriceBidder, reservePrice, biddingInRound);
     }
@@ -403,11 +408,15 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, De
         uint64 biddingForRound = biddingInRound + 1;
         // check the signatures and balances of both bids
         // even the second price bid must have the balance it's claiming
-        (address firstPriceBidder, bytes memory firstBidBytes) =
-            recoverAndCheckBalance(firstPriceBid, biddingForRound);
+        (address firstPriceBidder, bytes memory firstBidBytes) = recoverAndCheckBalance(
+            firstPriceBid,
+            biddingForRound
+        );
         // CHRIS: TODO: maybe we dont want to return this value
-        (address secondPriceBidder, bytes memory secondBidBytes) =
-            recoverAndCheckBalance(secondPriceBid, biddingForRound);
+        (address secondPriceBidder, bytes memory secondBidBytes) = recoverAndCheckBalance(
+            secondPriceBid,
+            biddingForRound
+        );
 
         // The bidders must be different so that our balance check isnt fooled into thinking
         // that the same balance is valid for both the first and second bid
@@ -420,14 +429,20 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, De
         // to the check above that ensures the first price bidder and second price bidder are different
         // CHRIS: TODO: update the spec to this hash
         if (
-            firstPriceBid.amount == secondPriceBid.amount
-                && uint256(keccak256(abi.encodePacked(firstPriceBidder, firstBidBytes)))
-                    <= uint256(keccak256(abi.encodePacked(secondPriceBidder, secondBidBytes)))
+            firstPriceBid.amount == secondPriceBid.amount &&
+            uint256(keccak256(abi.encodePacked(firstPriceBidder, firstBidBytes))) <=
+            uint256(keccak256(abi.encodePacked(secondPriceBidder, secondBidBytes)))
         ) {
             revert TieBidsWrongOrder();
         }
 
-        resolveAuction(true, firstPriceBid, firstPriceBidder, secondPriceBid.amount, biddingInRound);
+        resolveAuction(
+            true,
+            firstPriceBid,
+            firstPriceBidder,
+            secondPriceBid.amount,
+            biddingInRound
+        );
     }
 
     /// @inheritdoc IExpressLaneAuction
