@@ -109,6 +109,9 @@ import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 
 // CHRIS: TODO: in isReserveBlackout we should never have `latestResolvedRound > curRound + 1`. latest should never be greater than when called from the express lane auction
 
+// CHRIS: TODO: check that auction.roundTimestamps is used in tests
+// CHRIS: TODO: check that auction.isReserveBlackout is used in tests
+
 /// @title  ExpressLaneAuction
 /// @notice The express lane allows a controller to submit undelayed transactions to the sequencer
 ///         The right to be the express lane controller are auctioned off in rounds, by an offchain auctioneer.
