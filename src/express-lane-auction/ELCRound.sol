@@ -1,9 +1,10 @@
-// SPDX-License-Identifier: UNLICENSED
-// CHRIS: TODO: choose sol version and license
-pragma solidity ^0.8.9;
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity ^0.8.0;
 
 import "./Errors.sol";
 
+/// @notice When an auction round is resolved a new express lane controller is chosen for that round
+///         An elc round stores that selected express lane controller against the round number
 struct ELCRound {
     address expressLaneController;
     uint64 round;
@@ -11,17 +12,22 @@ struct ELCRound {
 
 // CHRIS: TODO: consider all usages of the these during initialization
 // CHRIS: TODO: Invariant: not possible for the rounds in latest rounds to have the same value
+// CHRIS: TODO: what values do these functions have during init?
+// CHRIS: TODO: Invariant: lastAuctionRound.round should never be > round if called during resolve auction except during initialization
+
+/// @notice Latest resolved express lane controller auction rounds
+//          Only the two latest resolved rounds are stored
 library LatestELCRoundsLib {
-    // CHRIS: TODO: what values do these functions have during init?
-
-
-    // CHRIS: TODO: this isnt efficient to do on storage - we may need to return the index or something
-    function latestELCRound(ELCRound[2] memory rounds)
+    /// @notice The last resolved express lane controller round, and its index in the array
+    /// @param rounds The stored resolved rounds
+    /// @return The last resolved elc round
+    /// @return The index of that last resolved round within the supplied array
+    function latestELCRound(ELCRound[2] storage rounds)
         public
-        pure
-        returns (ELCRound memory, uint8)
+        view
+        returns (ELCRound storage, uint8)
     {
-        ELCRound memory latestRound = rounds[0];
+        ELCRound storage latestRound = rounds[0];
         uint8 index = 0;
         if (latestRound.round < rounds[1].round) {
             latestRound = rounds[1];
@@ -30,6 +36,9 @@ library LatestELCRoundsLib {
         return (latestRound, index);
     }
 
+    /// @notice Finds the elc round that matches the supplied round. Reverts if no matching round found.
+    /// @param latestResolvedRounds The resolved elc rounds
+    /// @param round The round number to find a resolved round for
     function resolvedRound(ELCRound[2] storage latestResolvedRounds, uint64 round)
         internal
         view
@@ -44,13 +53,17 @@ library LatestELCRoundsLib {
         }
     }
 
+    /// @notice Set a resolved round into the array, overwriting the oldest resolved round
+    ///         in the array.
+    /// @param latestResolvedRounds The resolved rounds aray
+    /// @param round The round to resolve
+    /// @param expressLaneController The new express lane controller for that round
     function setResolvedRound(
         ELCRound[2] storage latestResolvedRounds,
         uint64 round,
         address expressLaneController
     ) internal {
-        (ELCRound memory lastRoundResolved, uint8 index) = latestELCRound(latestResolvedRounds);
-        // Invariant: lastAuctionRound.round should never be > round if called during resolve auction except during initialization
+        (ELCRound storage lastRoundResolved, uint8 index) = latestELCRound(latestResolvedRounds);
         if (lastRoundResolved.round >= round) {
             revert RoundAlreadyResolved(round);
         }

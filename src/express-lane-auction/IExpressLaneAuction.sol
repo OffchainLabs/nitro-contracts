@@ -1,14 +1,26 @@
-// SPDX-License-Identifier: UNLICENSED
-// CHRIS: TODO: choose sol version and license
-pragma solidity ^0.8.9;
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity ^0.8.0;
 
-import {Bid} from "./Structs.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./RoundTimingInfo.sol";
+import {RoundTimingInfo} from "./RoundTimingInfo.sol";
 import {IAccessControlUpgradeable} from
     "@openzeppelin/contracts-upgradeable/access/IAccessControlUpgradeable.sol";
 import {IERC165Upgradeable} from
     "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
+
+/// @notice A bid to control the express lane for a specific round
+struct Bid {
+    /// @notice The address to be set as the express lane controller if this bid wins the auction round
+    address expressLaneController;
+    /// @notice The maximum amount the bidder is willing to pay if they win the round
+    ///         The auction is a second price auction, so the winner may end up paying less than this amount
+    ///         however this is the maximum amount up to which they may have to pay
+    uint256 amount;
+    /// @notice Authentication of this bid by the bidder.
+    ///         The bidder signs over a hash of the following
+    ///         keccak256("\x19Ethereum Signed Message:\n112" ++ chainId ++ auctionContractAddress ++ auctionRound ++ bidAmount ++ expressLaneController)
+    bytes signature;
+}
 
 interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
     /// @notice An account has deposited funds to be used for bidding in the auction
@@ -91,7 +103,6 @@ interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
     function beneficiary() external returns (address);
 
     /// @notice The ERC20 token that can be used for bidding
-    /// @dev    CHRIS: TODO: specify the things we expect of this token - what restrictions it can or cannot have
     function biddingToken() external returns (IERC20);
 
     /// @notice The reserve price for the auctions. The reserve price setter can update this value
@@ -125,8 +136,15 @@ interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
     ) external;
 
     /// @notice Round timing components: offset, auction closing, round duration and reserve submission
-    // CHRIS: TODO: can i return a struct here? 
-    function roundTimingInfo() external view returns(uint64 offsetTimestamp, uint64 roundDurationSeconds, uint64 auctionClosingSeconds, uint64 reserveSubmissionSeconds);
+    function roundTimingInfo()
+        external
+        view
+        returns (
+            uint64 offsetTimestamp,
+            uint64 roundDurationSeconds,
+            uint64 auctionClosingSeconds,
+            uint64 reserveSubmissionSeconds
+        );
 
     /// @notice The current auction round that we're in
     ///         Bidding for control of the next round occurs in the current round
@@ -141,7 +159,6 @@ interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
     function isReserveBlackout() external view returns (bool);
 
     /// @notice Gets the start and end timestamps for a given round
-    /// CHRIS: TODO: update this for what happens if the roundtiminginfo is updated
     /// @param round The round to find the timestamps for
     /// @return start The start of the round in seconds, inclusive
     /// @return end The end of the round in seconds, inclusive
@@ -193,18 +210,17 @@ interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
     /// @param amount   The amount to deposit.
     function deposit(uint256 amount) external;
 
-    /// @notice Initiate a withdrawal of funds
+    /// @notice Initiate a withdrawal of the full account balance of the message sender
     ///         Once funds have been deposited they can only be retrieved by initiating + finalizing a withdrawal
     ///         There is a delay between initializing and finalizing a withdrawal so that the auctioneer can be sure
     ///         that value cannot be removed before an auction is resolved. The timeline is as follows:
     ///         1. Initiate a withdrawal at some time in round r
     ///         2. During round r the balance is still available and can be used in an auction
-    ///         3. During round r+1 the auctioneer should consider any funds that have been initiated for withdrawal as unavailable to the bidder.
+    ///         3. During round r+1 the auctioneer should consider any accounts that have been initiated for withdrawal as having zero balance
     ///            However if a bid is submitted the balance will be available for use
     ///         4. During round r+2 the bidder can finalize a withdrawal and remove their funds
-    ///         A bidder may have only one withdrawal being processed at any one time.
-    /// @param amount The amount to iniate a withdrawal for
-    function initiateWithdrawal(uint256 amount) external;
+    ///         A bidder may have only one withdrawal being processed at any one time, and that withdrawal will be for the full balance
+    function initiateWithdrawal() external;
 
     /// @notice Finalizes a withdrawal and transfers the funds to the msg.sender
     ///         Withdrawals can only be finalized 2 rounds after being initiated
@@ -233,8 +249,6 @@ interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
     function resolveMultiBidAuction(Bid calldata firstPriceBid, Bid calldata secondPriceBid)
         external;
 
-    // CHRIS: TODO: should this be signature based so that selling these rights can be done atomically?
-    //              using msg.sender is the real problem here
     /// @notice Express lane controllers are allowed to transfer their express lane rights for the current or future
     ///         round to another address. They may use this for reselling their rights after purchasing them
     /// @param round The round to transfer rights for

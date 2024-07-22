@@ -380,23 +380,23 @@ contract ExpressLaneAuctionTest is Test {
         }
     }
 
+    // CHRIS: TODO: rework all the expected balance tests
     function testInitiateWithdrawal() public {
-        (, IExpressLaneAuction auction) = deployAndDeposit();
+        (MockERC20 erc20, IExpressLaneAuction auction) = deployAndDeposit();
         uint256 curRound = auction.currentRound();
 
-        vm.startPrank(bidder1);
+        vm.startPrank(beneficiary);
+        // dont expect the beneficiary to have anything to withdraw
         vm.expectRevert(ZeroAmount.selector);
-        auction.initiateWithdrawal(0);
+        auction.initiateWithdrawal();
+        vm.stopPrank();
 
-        vm.expectRevert(
-            abi.encodeWithSelector(InsufficientBalance.selector, bidder1Amount + 1, bidder1Amount)
-        );
-        auction.initiateWithdrawal(bidder1Amount + 1);
+        vm.startPrank(bidder1);
 
         // 1. Withdraw once, then test it's not possible to withdraw in any future rounds
         vm.expectEmit(true, true, true, true);
-        emit WithdrawalInitiated(bidder1, bidder1Amount / 2, curRound + 2);
-        auction.initiateWithdrawal(bidder1Amount / 2);
+        emit WithdrawalInitiated(bidder1, bidder1Amount, curRound + 2);
+        auction.initiateWithdrawal();
         assertEq(auction.currentRound(), curRound);
         assertEq(auction.balanceOf(bidder1), bidder1Amount);
         assertEq(auction.withdrawableBalance(bidder1), 0);
@@ -409,8 +409,8 @@ contract ExpressLaneAuctionTest is Test {
         assertEq(auction.balanceOf(bidder1), bidder1Amount);
         assertEq(auction.withdrawableBalance(bidder1), 0);
 
-        vm.expectRevert(abi.encodeWithSelector(WithdrawalInProgress.selector, bidder1Amount / 2));
-        auction.initiateWithdrawal(bidder1Amount / 4);
+        vm.expectRevert(abi.encodeWithSelector(WithdrawalInProgress.selector));
+        auction.initiateWithdrawal();
 
         // round 2
         vm.warp(block.timestamp + roundDurationSeconds / 2);
@@ -419,8 +419,8 @@ contract ExpressLaneAuctionTest is Test {
         assertEq(auction.balanceOf(bidder1), bidder1Amount);
         assertEq(auction.withdrawableBalance(bidder1), 0);
 
-        vm.expectRevert(abi.encodeWithSelector(WithdrawalInProgress.selector, bidder1Amount / 2));
-        auction.initiateWithdrawal(bidder1Amount / 4);
+        vm.expectRevert(abi.encodeWithSelector(WithdrawalInProgress.selector));
+        auction.initiateWithdrawal();
 
         // round 2.5
         vm.warp(block.timestamp + roundDurationSeconds / 2);
@@ -431,36 +431,42 @@ contract ExpressLaneAuctionTest is Test {
         // round 3
         vm.warp(block.timestamp + roundDurationSeconds / 2);
         assertEq(auction.currentRound(), curRound + 2);
-        assertEq(auction.balanceOf(bidder1), bidder1Amount / 2);
-        assertEq(auction.withdrawableBalance(bidder1), bidder1Amount / 2, "withdrawal 3");
+        assertEq(auction.balanceOf(bidder1), 0);
+        assertEq(auction.withdrawableBalance(bidder1), bidder1Amount, "withdrawal 3");
 
-        vm.expectRevert(abi.encodeWithSelector(WithdrawalInProgress.selector, bidder1Amount / 2));
-        auction.initiateWithdrawal(bidder1Amount / 4);
+        vm.expectRevert(abi.encodeWithSelector(WithdrawalInProgress.selector));
+        auction.initiateWithdrawal();
 
         // round 3.5
         vm.warp(block.timestamp + roundDurationSeconds / 2);
         assertEq(auction.currentRound(), curRound + 2);
-        assertEq(auction.balanceOf(bidder1), bidder1Amount / 2);
-        assertEq(auction.withdrawableBalance(bidder1), bidder1Amount / 2);
+        assertEq(auction.balanceOf(bidder1), 0);
+        assertEq(auction.withdrawableBalance(bidder1), bidder1Amount);
 
         // round 4
         vm.warp(block.timestamp + roundDurationSeconds / 2);
         assertEq(auction.currentRound(), curRound + 3);
-        assertEq(auction.balanceOf(bidder1), bidder1Amount / 2);
-        assertEq(auction.withdrawableBalance(bidder1), bidder1Amount / 2);
+        assertEq(auction.balanceOf(bidder1), 0);
+        assertEq(auction.withdrawableBalance(bidder1), bidder1Amount);
 
-        vm.expectRevert(abi.encodeWithSelector(WithdrawalInProgress.selector, bidder1Amount / 2));
-        auction.initiateWithdrawal(bidder1Amount / 4);
+        vm.expectRevert(abi.encodeWithSelector(WithdrawalInProgress.selector));
+        auction.initiateWithdrawal();
 
         // finalize and initiate a new withdrawal
         auction.finalizeWithdrawal();
         // round 4.5
         vm.warp(block.timestamp + roundDurationSeconds / 2);
         assertEq(auction.currentRound(), curRound + 3);
-        assertEq(auction.balanceOf(bidder1), bidder1Amount / 2);
+        assertEq(auction.balanceOf(bidder1), 0);
         assertEq(auction.withdrawableBalance(bidder1), 0);
 
-        auction.initiateWithdrawal(bidder1Amount / 10);
+        vm.expectRevert(ZeroAmount.selector);
+        auction.initiateWithdrawal();
+
+
+        erc20.approve(address(auction), bidder1Amount / 2);
+        auction.deposit(bidder1Amount / 2);
+        auction.initiateWithdrawal();
         assertEq(auction.currentRound(), curRound + 3);
         assertEq(auction.balanceOf(bidder1), bidder1Amount / 2);
         assertEq(auction.withdrawableBalance(bidder1), 0);
@@ -474,23 +480,14 @@ contract ExpressLaneAuctionTest is Test {
         // round 6
         vm.warp(block.timestamp + roundDurationSeconds);
         assertEq(auction.currentRound(), curRound + 5);
-        assertEq(auction.balanceOf(bidder1), bidder1Amount / 2 - bidder1Amount / 10);
-        assertEq(auction.withdrawableBalance(bidder1), bidder1Amount / 10);
+        assertEq(auction.balanceOf(bidder1), 0);
+        assertEq(auction.withdrawableBalance(bidder1), bidder1Amount / 2);
         auction.finalizeWithdrawal();
         assertEq(auction.currentRound(), curRound + 5);
-        assertEq(auction.balanceOf(bidder1), bidder1Amount / 2 - bidder1Amount / 10);
-        assertEq(auction.withdrawableBalance(bidder1), 0);
-
-        // round 7
-        vm.warp(block.timestamp + roundDurationSeconds);
-        auction.initiateWithdrawal(bidder1Amount / 2 - bidder1Amount / 10);
-        // round 9
-        vm.warp(block.timestamp + roundDurationSeconds * 2);
-        auction.finalizeWithdrawal();
-        assertEq(auction.currentRound(), curRound + 8);
         assertEq(auction.balanceOf(bidder1), 0);
         assertEq(auction.withdrawableBalance(bidder1), 0);
 
+        // round 7
         vm.stopPrank();
 
         // CHRIS: TODO: remainig tests initiate withdrawal tests
@@ -511,7 +508,7 @@ contract ExpressLaneAuctionTest is Test {
         vm.expectRevert(abi.encodeWithSelector(NothingToWithdraw.selector));
         auction.finalizeWithdrawal();
 
-        auction.initiateWithdrawal(bidder1Amount / 4);
+        auction.initiateWithdrawal();
 
         assertEq(auction.currentRound(), curRound);
         assertEq(auction.balanceOf(bidder1), bidder1Amount);
@@ -535,23 +532,23 @@ contract ExpressLaneAuctionTest is Test {
         vm.warp(block.timestamp + roundDurationSeconds);
 
         assertEq(auction.currentRound(), curRound + 2);
-        assertEq(auction.balanceOf(bidder1), bidder1Amount * 3 / 4);
-        assertEq(auction.withdrawableBalance(bidder1), bidder1Amount / 4);
+        assertEq(auction.balanceOf(bidder1), 0);
+        assertEq(auction.withdrawableBalance(bidder1), bidder1Amount);
 
         // expect emit
         uint256 bidderErc20BalBefore = erc20.balanceOf(bidder1);
         uint256 auctionErc20BalBefore = erc20.balanceOf(address(auction));
         vm.expectEmit(true, true, true, true);
-        emit WithdrawalFinalized(bidder1, bidder1Amount / 4);
+        emit WithdrawalFinalized(bidder1, bidder1Amount);
         auction.finalizeWithdrawal();
 
-        assertEq(auction.currentRound(), curRound + 2);
-        assertEq(auction.balanceOf(bidder1), bidder1Amount * 3 / 4);
-        assertEq(auction.withdrawableBalance(bidder1), 0);
+        assertEq(auction.currentRound(), curRound + 2, "round end");
+        assertEq(auction.balanceOf(bidder1), 0, "balance end");
+        assertEq(auction.withdrawableBalance(bidder1), 0, "withdrawable balance end");
         uint256 bidderErc20BalAfter = erc20.balanceOf(bidder1);
         uint256 auctionErc20BalAfter = erc20.balanceOf(address(auction));
-        assertEq(bidderErc20BalAfter, bidderErc20BalBefore + bidder1Amount / 4);
-        assertEq(auctionErc20BalAfter, auctionErc20BalBefore - bidder1Amount / 4);
+        assertEq(bidderErc20BalAfter, bidderErc20BalBefore + bidder1Amount, "balance after");
+        assertEq(auctionErc20BalAfter, auctionErc20BalBefore - bidder1Amount, "auction balance after");
 
         // expect revert
         vm.expectRevert(abi.encodeWithSelector(NothingToWithdraw.selector));
@@ -575,29 +572,29 @@ contract ExpressLaneAuctionTest is Test {
         // finalize withdrawal tests
         vm.startPrank(bidder1);
 
-        auction.initiateWithdrawal(bidder1Amount / 4);
+        auction.initiateWithdrawal();
 
         (,uint64 roundDurationSeconds,,) = auction.roundTimingInfo();
         vm.warp(block.timestamp + roundDurationSeconds * 5);
 
         assertEq(auction.currentRound(), curRound + 5);
-        assertEq(auction.balanceOf(bidder1), bidder1Amount * 3 / 4);
-        assertEq(auction.withdrawableBalance(bidder1), bidder1Amount / 4);
+        assertEq(auction.balanceOf(bidder1), 0);
+        assertEq(auction.withdrawableBalance(bidder1), bidder1Amount);
 
         // expect emit
         uint256 bidderErc20BalBefore = erc20.balanceOf(bidder1);
         uint256 auctionErc20BalBefore = erc20.balanceOf(address(auction));
         vm.expectEmit(true, true, true, true);
-        emit WithdrawalFinalized(bidder1, bidder1Amount / 4);
+        emit WithdrawalFinalized(bidder1, bidder1Amount);
         auction.finalizeWithdrawal();
 
         assertEq(auction.currentRound(), curRound + 5);
-        assertEq(auction.balanceOf(bidder1), bidder1Amount * 3 / 4);
+        assertEq(auction.balanceOf(bidder1), 0);
         assertEq(auction.withdrawableBalance(bidder1), 0);
         uint256 bidderErc20BalAfter = erc20.balanceOf(bidder1);
         uint256 auctionErc20BalAfter = erc20.balanceOf(address(auction));
-        assertEq(bidderErc20BalAfter, bidderErc20BalBefore + bidder1Amount / 4);
-        assertEq(auctionErc20BalAfter, auctionErc20BalBefore - bidder1Amount / 4);
+        assertEq(bidderErc20BalAfter, bidderErc20BalBefore + bidder1Amount);
+        assertEq(auctionErc20BalAfter, auctionErc20BalBefore - bidder1Amount);
 
         vm.stopPrank();
     }
@@ -1061,10 +1058,10 @@ contract ExpressLaneAuctionTest is Test {
         vm.warp(block.timestamp - 1);
 
         vm.prank(bidder1);
-        rs.auction.initiateWithdrawal(bidder1Amount);
+        rs.auction.initiateWithdrawal();
 
         vm.prank(bidder2);
-        rs.auction.initiateWithdrawal(bidder2Amount);
+        rs.auction.initiateWithdrawal();
 
         vm.warp(block.timestamp + 1);
 
@@ -1081,10 +1078,10 @@ contract ExpressLaneAuctionTest is Test {
         vm.warp(block.timestamp - 1 - roundDurationSeconds);
 
         vm.prank(bidder1);
-        rs.auction.initiateWithdrawal(bidder1Amount);
+        rs.auction.initiateWithdrawal();
 
         vm.prank(bidder2);
-        rs.auction.initiateWithdrawal(bidder2Amount);
+        rs.auction.initiateWithdrawal();
 
         vm.warp(block.timestamp + 1 + roundDurationSeconds);
 
@@ -1101,7 +1098,7 @@ contract ExpressLaneAuctionTest is Test {
         vm.warp(block.timestamp - 1 - roundDurationSeconds * 2);
 
         vm.prank(bidder1);
-        rs.auction.initiateWithdrawal(bidder1Amount);
+        rs.auction.initiateWithdrawal();
 
         vm.warp(block.timestamp + 1 + roundDurationSeconds * 2);
 
@@ -1119,7 +1116,7 @@ contract ExpressLaneAuctionTest is Test {
         vm.warp(block.timestamp - 1 - roundDurationSeconds * 2);
 
         vm.prank(bidder2);
-        rs.auction.initiateWithdrawal(bidder2Amount);
+        rs.auction.initiateWithdrawal();
 
         vm.warp(block.timestamp + 1 + roundDurationSeconds * 2);
 

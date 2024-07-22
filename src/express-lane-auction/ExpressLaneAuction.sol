@@ -1,20 +1,16 @@
-// SPDX-License-Identifier: UNLICENSED
-// CHRIS: TODO: choose sol version
-pragma solidity ^0.8.9;
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity ^0.8.0;
 
 import "./Errors.sol";
-import "./Events.sol";
-import "./Balance.sol";
-// CHRIS: TODO: why named imports?
+import {Balance, BalanceLib} from "./Balance.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {AccessControlUpgradeable} from
     "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import {Bid} from "./Structs.sol";
-import "../libraries/DelegateCallAware.sol";
-import "./IExpressLaneAuction.sol";
-import "./ELCRound.sol";
-
+import {DelegateCallAware} from "../libraries/DelegateCallAware.sol";
+import {IExpressLaneAuction, Bid} from "./IExpressLaneAuction.sol";
+import {ELCRound, LatestELCRoundsLib} from "./ELCRound.sol";
+import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 
 // CHRIS: TODO: look through all the comments and see if we want to add any of them to the spec as clarification
 
@@ -73,7 +69,7 @@ import "./ELCRound.sol";
 
 // CHRIS: TODO: list all the things that are not set in the following cases:
 //              1. before we start
-//              2. during a gap
+//              2. during a gap of latest resolved rounds
 //              3. normal before resolve of current round and after
 
 // CHRIS: TODO: surface this info somehow?
@@ -83,8 +79,6 @@ import "./ELCRound.sol";
 // }
 
 // CHRIS: TODO: check every place where we set in a struct and ensure it's storage, or we do properly set later
-
-// CHRIS: TODO: update docs there and decide if we want to add an lower address check in case of ties
 
 // CHRIS: TODO: test boundary conditions in round timing info lib: roundDuration, auctionClosingStage, reserveSubmission, offset
 
@@ -101,6 +95,17 @@ import "./ELCRound.sol";
 // CHRIS: TODO: the elc can be delayed in sending transaction by a resolve at the very last moment - should only be a very small delay
 // CHRIS: TODO: if an address sends a transaction via slow path and then via fast, what happens (rejection or promotion)? what if the nonce increases? wait
 //              what does that do to the order of transactions? we cannot guarantee the sequence number is the order transactions are mined in
+
+// CHRIS: TODO: specify the things we expect of the bidding token - what restrictions it can or cannot have
+
+// CHRIS: TODO: update the roundTimestamps on interface for what happens if the roundtiminginfo is updated
+//              also consider other places effected by round timing - hopefully only in that lib
+
+// CHRIS: TODO: a nice e2e test: deposit, bid, win, resolve, withdraw. dont we have this already?
+
+// CHRIS: TODO: what's the process for transferring express lane controller rights? presumably for a sale to be atomic
+//              the owner would need to be a contract? Which would then meant they werent able to do any actual controlling at the same time
+//              Perhaps we should have a separate address - maybe the bidder - who can do the reselling. Then that could be a contract
 
 /// @title  ExpressLaneAuction
 /// @notice The express lane allows a controller to submit undelayed transactions to the sequencer
@@ -170,7 +175,10 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, De
         reservePrice = _minReservePrice;
         emit SetReservePrice(uint256(0), _minReservePrice);
 
-        if (_roundTimingInfo.reserveSubmissionSeconds + _roundTimingInfo.auctionClosingSeconds > _roundTimingInfo.roundDurationSeconds) {
+        if (
+            _roundTimingInfo.reserveSubmissionSeconds + _roundTimingInfo.auctionClosingSeconds
+                > _roundTimingInfo.roundDurationSeconds
+        ) {
             revert RoundDurationTooShort();
         }
 
@@ -261,15 +269,17 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, De
     }
 
     /// @inheritdoc IExpressLaneAuction
-    function initiateWithdrawal(uint256 amount) external {
+    function initiateWithdrawal() external {
         uint64 curRnd = currentRound();
-        _balanceOf[msg.sender].initiateReduce(amount, curRnd);
+        uint256 amount = _balanceOf[msg.sender].balance;
+        _balanceOf[msg.sender].initiateWithdrawal(curRnd);
+        // CHRIS: TODO: we have + 2 here, that's leaking an implementation detail
         emit WithdrawalInitiated(msg.sender, amount, curRnd + 2);
     }
 
     /// @inheritdoc IExpressLaneAuction
     function finalizeWithdrawal() external {
-        uint256 amountReduced = _balanceOf[msg.sender].finalizeReduce(currentRound());
+        uint256 amountReduced = _balanceOf[msg.sender].finalizeWithdrawal(currentRound());
         biddingToken.safeTransfer(msg.sender, amountReduced);
         // CHRIS: TODO: consider adding the following assertion - it's an invariant
         // CHRIS: TODO: Invariant: assert(withdrawableBalance(msg.sender) == 0);
@@ -321,7 +331,8 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, De
         returns (bytes memory)
     {
         // CHRIS: TODO: test the length of this is 112
-        return abi.encodePacked(block.chainid, address(this), _round, _amount, _expressLaneController);
+        return
+            abi.encodePacked(block.chainid, address(this), _round, _amount, _expressLaneController);
     }
 
     /// @notice Recover the signing address of the provided bid, and check that that address has enough funds to fulfil that bid

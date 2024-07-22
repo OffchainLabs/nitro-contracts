@@ -1,16 +1,15 @@
-// CHRIS: TODO: update license
-// SPDX-License-Identifier: UNLICENSED
-// CHRIS: TODO: choose sol version
-pragma solidity ^0.8.9;
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity ^0.8.0;
 
-// CHRIS: TODO: docs and see if al these are actually used
+// CHRIS: TODO: docs and see if all of these are actually used
+
 error InsufficientBalance(uint256 amountRequested, uint256 balance);
 error InsufficientBalanceAcc(address acount, uint256 amountRequested, uint256 balance);
 error RoundDurationTooShort();
 error NothingToWithdraw();
 error ZeroAmount();
 error ZeroBiddingToken();
-error WithdrawalInProgress(uint256 amountInWithdrawal);
+error WithdrawalInProgress();
 error RoundAlreadyResolved(uint64 round);
 error SameBidder();
 error BidsWrongOrder();

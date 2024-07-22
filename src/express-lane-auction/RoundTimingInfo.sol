@@ -1,20 +1,17 @@
-// SPDX-License-Identifier: UNLICENSED
-// CHRIS: TODO: choose sol version and license
-pragma solidity ^0.8.9;
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity ^0.8.0;
 
 /// @notice Information about the timings of auction round. All timings measured in seconds
 ///         Bids can be submitted to the offchain autonomous auctioneer until the auction round closes
 ///         after which the auctioneer can submit the two highest bids to the auction contract to resolve the auction
 struct RoundTimingInfo {
     /// @notice The timestamp when round 0 starts
-    uint64 offsetTimestamp; 
+    uint64 offsetTimestamp;
     /// @notice The total duration (in seconds) of the round
     uint64 roundDurationSeconds;
     /// @notice The number of seconds before the end of the round that the auction round closes
-    // CHRIS: TODO: auction closing seconds must now be less than round duration
     uint64 auctionClosingSeconds;
-    // CHRIS: TODO: check all docs about reserve submission and mention that it's round duration - reserve submission
-    /// @notice A reserve setter account has the rights to set a reserve for a round, 
+    /// @notice A reserve setter account has the rights to set a reserve for a round,
     ///         however they cannot do this within a reserve blackout period.
     ///         The blackout period starts at RoundDuration - AuctionClosingSeconds - ReserveSubmissionSeconds,
     ///         and ends when the auction round is resolved, or the round ends.
@@ -43,7 +40,7 @@ library RoundTimingInfoLib {
     }
 
     /// @notice How far (in seconds) are we throught the current round. Can be 0 at the start of the current round
-    function timeIntoRound(RoundTimingInfo memory info) internal view returns(uint64) {
+    function timeIntoRound(RoundTimingInfo memory info) internal view returns (uint64) {
         uint64 timeSinceOffset = (uint64(block.timestamp) - info.offsetTimestamp);
         return timeSinceOffset % info.roundDurationSeconds;
     }
@@ -52,10 +49,11 @@ library RoundTimingInfoLib {
     ///         This period runs from ReserveSubmissionSeconds before the auction closes and ends when the round resolves, or when the round ends.
     /// @param info Round timing info
     /// @param latestResolvedRound The last auction round number that was resolved
-    function isReserveBlackout(
-        RoundTimingInfo memory info,
-        uint64 latestResolvedRound
-    ) internal view returns (bool) {
+    function isReserveBlackout(RoundTimingInfo memory info, uint64 latestResolvedRound)
+        internal
+        view
+        returns (bool)
+    {
         if (block.timestamp < info.offsetTimestamp) {
             // no rounds have started, can't be in blackout
             return false;
@@ -68,12 +66,13 @@ library RoundTimingInfoLib {
         if (latestResolvedRound == curRound + 1) {
             return false;
         }
-        
+
         // the round in question hasnt been resolved
         // therefore if we're within ReserveSubmissionSeconds of the auction close then we're in blackout
         // otherwise we're not
         uint64 timeInRound = timeIntoRound(info);
-        return timeInRound >= (info.roundDurationSeconds - info.auctionClosingSeconds - info.reserveSubmissionSeconds);
+        return timeInRound
+            >= (info.roundDurationSeconds - info.auctionClosingSeconds - info.reserveSubmissionSeconds);
     }
 
     /// @notice Gets the start and end timestamps (seconds) of a specified round
