@@ -63,7 +63,7 @@ library RoundTimingInfoLib {
         // if the latest round is r+1 that means we've already resolved the auction in r
         // so we are no longer in the blackout period
         uint64 curRound = currentRound(info);
-        if (latestResolvedRound == curRound + 1) {
+        if (latestResolvedRound >= curRound + 1) {
             return false;
         }
 

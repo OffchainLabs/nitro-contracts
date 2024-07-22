@@ -107,6 +107,8 @@ import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 //              the owner would need to be a contract? Which would then meant they werent able to do any actual controlling at the same time
 //              Perhaps we should have a separate address - maybe the bidder - who can do the reselling. Then that could be a contract
 
+// CHRIS: TODO: in isReserveBlackout we should never have `latestResolvedRound > curRound + 1`. latest should never be greater than when called from the express lane auction
+
 /// @title  ExpressLaneAuction
 /// @notice The express lane allows a controller to submit undelayed transactions to the sequencer
 ///         The right to be the express lane controller are auctioned off in rounds, by an offchain auctioneer.
