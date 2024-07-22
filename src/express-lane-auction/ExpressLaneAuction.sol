@@ -305,7 +305,7 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, De
 
         // first price bidder pays the beneficiary
         _balanceOf[firstPriceBidder].reduce(priceToPay, biddingInRound);
-        biddingToken.transfer(beneficiary, priceToPay);
+        biddingToken.safeTransfer(beneficiary, priceToPay);
 
         // emit events so that the offchain sequencer knows a new express lane controller has been selected
         (uint64 roundStart, uint64 roundEnd) = roundTimingInfo.roundTimestamps(biddingForRound);
