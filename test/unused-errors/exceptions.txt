@@ -1,6 +1,3 @@
-AlreadyPaused
-AlreadyUnpaused
-Paused
 Custom
 Unused
 NoTicketWithID
@@ -13,3 +10,4 @@ ProgramNeedsUpgrade
 ProgramNotActivated
 ProgramNotWasm
 ProgramUpToDate
+CallerNotArbOS
