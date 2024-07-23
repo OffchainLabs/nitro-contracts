@@ -94,6 +94,9 @@ jobs:
       - name: Test function signatures
         run: yarn run test:signatures
 
+      - name: Test unused erros
+        run: yarn run test:unused:errors
+
       - name: Run coverage
         run: yarn hardhat coverage --testfiles "test/contract/*.spec.ts"
 
