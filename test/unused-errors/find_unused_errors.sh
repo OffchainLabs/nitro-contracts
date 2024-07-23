@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Directory containing the Solidity files
-DIR="../../src"
-EXCEPTIONS_FILE="exceptions.txt"
+DIR="./src"
+EXCEPTIONS_FILE="./test/unused-errors/exceptions.txt"
 
 # Temporary file to store errors and their corresponding files
 ERRORS_FILE=$(mktemp)
@@ -54,7 +54,7 @@ done < $ERRORS_FILE
 
 # Print the list of unused errors
 if [ -s $UNUSED_ERRORS_FILE ]; then
-    echo "\nThese errors are defined, but never used:"
+    echo "These errors are defined, but never used:"
     cat $UNUSED_ERRORS_FILE
 else
     echo "All defined errors are used."
