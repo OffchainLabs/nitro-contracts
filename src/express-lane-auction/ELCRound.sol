@@ -23,7 +23,7 @@ library LatestELCRoundsLib {
     /// @return The last resolved elc round
     /// @return The index of that last resolved round within the supplied array
     function latestELCRound(ELCRound[2] storage rounds)
-        public
+        internal
         view
         returns (ELCRound storage, uint8)
     {
