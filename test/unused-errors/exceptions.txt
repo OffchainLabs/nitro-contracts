@@ -10,3 +10,4 @@ ProgramNeedsUpgrade
 ProgramNotActivated
 ProgramNotWasm
 ProgramUpToDate
+CallerNotArbOS
