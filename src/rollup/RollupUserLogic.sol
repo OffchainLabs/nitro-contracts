@@ -120,7 +120,7 @@ abstract contract AbsRollupUserLogic is
         bytes32 blockHash,
         bytes32 sendRoot,
         bool isFastConfirm
-    ) internal {
+    ) internal whenNotPaused {
         requireUnresolvedExists();
 
         uint64 nodeNum = firstUnresolvedNode();
@@ -162,7 +162,6 @@ abstract contract AbsRollupUserLogic is
     function confirmNextNode(bytes32 blockHash, bytes32 sendRoot)
         external
         onlyValidator
-        whenNotPaused
     {
         _confirmNextNode(blockHash, sendRoot, false);
     }
@@ -177,7 +176,7 @@ abstract contract AbsRollupUserLogic is
         bytes32 blockHash,
         bytes32 sendRoot,
         bytes32 nodeHash
-    ) external whenNotPaused {
+    ) external {
         require(msg.sender == anyTrustFastConfirmer, "NOT_FAST_CONFIRMER");
         require(nodeHash == getNodeStorage(firstUnresolvedNode()).nodeHash, "WRONG_HASH");
         _confirmNextNode(blockHash, sendRoot, true);
