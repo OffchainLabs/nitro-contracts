@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {RoundTimingInfo} from "./RoundTimingInfo.sol";
+import {ELCRound} from "./ELCRound.sol";
 import {
     IAccessControlUpgradeable
 } from "@openzeppelin/contracts-upgradeable/access/IAccessControlUpgradeable.sol";
@@ -262,4 +263,7 @@ interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
     /// @param round The round to transfer rights for
     /// @param newExpressLaneController The new express lane controller to transfer the rights to
     function transferExpressLaneController(uint64 round, address newExpressLaneController) external;
+
+    // CHRIS: TODO: docs and tests
+    function resolvedRounds() external returns(ELCRound memory, ELCRound memory);
 }

@@ -137,6 +137,9 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, De
     /// @notice The balances of each address
     mapping(address => Balance) internal _balanceOf;
 
+    /// @dev    Recently resolved round information. Contains the two most recently resolved rounds
+    ELCRound[2] internal latestResolvedRounds;
+
     /// @inheritdoc IExpressLaneAuction
     address public beneficiary;
 
@@ -149,10 +152,7 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, De
     /// @inheritdoc IExpressLaneAuction
     uint256 public minReservePrice;
 
-    /// @dev    Recently resolved round information. Contains the two most recently resolved rounds
-    ELCRound[2] private latestResolvedRounds;
-
-    /// @notice Round timing settings
+    /// @inheritdoc IExpressLaneAuction
     RoundTimingInfo public roundTimingInfo;
 
     /// @inheritdoc IExpressLaneAuction
@@ -263,7 +263,6 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, De
 
     /// @inheritdoc IExpressLaneAuction
     function withdrawableBalance(address account) public view returns (uint256) {
-        // CHRIS: TODO: consider whether the whole balance of mapping and the round number should be in a lib together
         return _balanceOf[account].withdrawableBalanceAtRound(currentRound());
     }
 
@@ -473,5 +472,10 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, De
             start < uint64(block.timestamp) ? uint64(block.timestamp) : start,
             end
         );
+    }
+
+    // CHRIS: TODO: docs and tests
+    function resolvedRounds() public returns(ELCRound memory, ELCRound memory) {
+        return latestResolvedRounds[0].round > latestResolvedRounds[1].round ? (latestResolvedRounds[0], latestResolvedRounds[1]) : (latestResolvedRounds[1], latestResolvedRounds[0]);
     }
 }
