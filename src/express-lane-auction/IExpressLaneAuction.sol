@@ -5,8 +5,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {RoundTimingInfo} from "./RoundTimingInfo.sol";
 import {ELCRound} from "./ELCRound.sol";
 import {
-    IAccessControlUpgradeable
-} from "@openzeppelin/contracts-upgradeable/access/IAccessControlUpgradeable.sol";
+    IAccessControlEnumerableUpgradeable
+} from "@openzeppelin/contracts-upgradeable/access/IAccessControlEnumerableUpgradeable.sol";
 import {
     IERC165Upgradeable
 } from "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
@@ -25,7 +25,7 @@ struct Bid {
     bytes signature;
 }
 
-interface IExpressLaneAuction is IAccessControlUpgradeable, IERC165Upgradeable {
+interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upgradeable {
     /// @notice An account has deposited funds to be used for bidding in the auction
     /// @param account The account that deposited funds
     /// @param amount The amount deposited by that account

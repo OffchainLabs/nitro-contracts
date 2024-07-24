@@ -6,8 +6,8 @@ import {Balance, BalanceLib} from "./Balance.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {
-    AccessControlUpgradeable
-} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+    AccessControlEnumerableUpgradeable
+} from "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 import {DelegateCallAware} from "../libraries/DelegateCallAware.sol";
 import {IExpressLaneAuction, Bid} from "./IExpressLaneAuction.sol";
 import {ELCRound, LatestELCRoundsLib} from "./ELCRound.sol";
@@ -117,7 +117,7 @@ import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 /// @notice The express lane allows a controller to submit undelayed transactions to the sequencer
 ///         The right to be the express lane controller are auctioned off in rounds, by an offchain auctioneer.
 ///         The auctioneer then submits the winning bids to this control to deduct funds from the bidders and register the winner
-contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, DelegateCallAware {
+contract ExpressLaneAuction is IExpressLaneAuction, AccessControlEnumerableUpgradeable, DelegateCallAware {
     using SafeERC20 for IERC20;
     using RoundTimingInfoLib for RoundTimingInfo;
     using BalanceLib for Balance;
