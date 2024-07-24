@@ -94,8 +94,11 @@ jobs:
       - name: Test function signatures
         run: yarn run test:signatures
 
-      - name: Test unused erros
-        run: yarn run test:unused:errors
+      - name: Run unused Solidity errors checker
+        uses: OffchainLabs/actions/check-unused-errors@unused-errors
+        with:
+          directory: './src'
+          exceptions_file: './test/unused-errors/exceptions.txt'
 
       - name: Run coverage
         run: yarn hardhat coverage --testfiles "test/contract/*.spec.ts"
