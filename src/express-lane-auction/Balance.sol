@@ -8,7 +8,7 @@ import "./Errors.sol";
 ///         This is so that a bidder can't withdraw their balance after making a bid
 ///         Instead, if they initiate their withdrawal in round r, they must wait until the beginning of
 ///         round r+2 before they can withdraw the balance. In the mean time their balance can be used to
-///         resolve an auction if it is within a valid bid, however the auctioneer may choose to
+///         resolve an auction if it is part of a valid bid, however the auctioneer may choose to
 ///         reject bids from accounts with an initiated balance withdrawal
 ///         Once a withdrawal has been initiated no more balance can be deposited until
 ///         after the withdrawal has been finalized
@@ -23,21 +23,6 @@ struct Balance {
 /// @notice Balance mutation and view functionality. This is in it's own library so that we can
 //          reason about and test how the different ways balance mutations interact with each other
 library BalanceLib {
-    /// @notice Has this balance initiated a withdrawal that has yet to be finalized
-    function hasInitiatedWithdrawal(Balance storage bal) internal view returns (bool) {
-        // since rounds are multiples of seconds they cannot reach uint64.max
-        return bal.withdrawalRound != type(uint64).max;
-    }
-
-    /// @notice Reset an initiated withdrawal. If a balance has been initiated for withdrawal
-    ///         this function cancels it.
-    ///         Should be called the first time a balance struct is created
-    function resetInitiatedWithdrawal(Balance storage bal) internal {
-        if (bal.withdrawalRound != type(uint64).max) {
-            bal.withdrawalRound = type(uint64).max;
-        }
-    }
-
     /// @notice Check whether the full balance is withdrawable at a specified round
     /// @param bal The balance to check
     /// @param round The round to check withdrawal in
@@ -45,7 +30,7 @@ library BalanceLib {
         return round >= bal.withdrawalRound;
     }
 
-    /// @notice The available balance at the supplied round. 0 if a withdrawal has been initiated and has
+    /// @notice The available balance at the supplied round. Returns 0 if a withdrawal has been initiated and has
     ///         past the withdrawal round.
     /// @param bal The balance to query
     /// @param round The round to check the balance in
@@ -67,7 +52,7 @@ library BalanceLib {
     }
 
     /// @notice Increase a balance by a specified amount
-    ///         Cannot be called if a withdrawal has been initiated
+    ///         Will cancel a withdrawal if called after a withdrawal has been initiated
     /// @param bal The balance info
     /// @param amount The amount to increase the balance by
     function increase(Balance storage bal, uint256 amount) internal {
@@ -76,23 +61,21 @@ library BalanceLib {
             revert ZeroAmount();
         }
 
-        // withdrawal round can only be zero if a balance has never been used
-        // since nowhere can a withdrawal round be set to zero
-        // we need to initialize a new balance by setting the withdrawal round to max
-        if (bal.withdrawalRound == 0) {
-            resetInitiatedWithdrawal(bal);
-        }
-
-        if (hasInitiatedWithdrawal(bal)) {
-            revert WithdrawalInProgress();
+        // if the balance have never been used before then balance and withdrawal round will be 0
+        // in this case we initialize the balance by setting the withdrawal round into the future
+        // if a withdrawal for the balance has been initialized (withdrawal round != 0 and != max)
+        // then we cancel that initiated withdrawal. We do this since if a increase is being made that
+        // means a user wishes to increase their balance, not withdraw it.
+        if (bal.withdrawalRound != type(uint64).max) {
+            bal.withdrawalRound = type(uint64).max;
         }
 
         bal.balance += amount;
     }
 
     /// @notice Reduce a balance immediately. The balance must already be greater than the amount
-    ///         and if there a withdrawal has been initiated for this balance it must be occuring in
-    ///         a round after the supplied round
+    ///         and a withdrawal has been initiated for this balance it must be occuring in
+    ///         a round after the supplied round. Withdrawals earlier than that will block this reduce.
     /// @param bal The balance to reduce
     /// @param amount The amount to reduce by
     /// @param round The round to check withdrawals against. A withdrawal after this round will be ignored
@@ -103,18 +86,16 @@ library BalanceLib {
         uint256 amount,
         uint64 round
     ) internal {
+        if (amount == 0) {
+            revert ZeroAmount();
+        }
+
         if (balanceAtRound(bal, round) < amount) {
             revert InsufficientBalance(amount, balanceAtRound(bal, round));
         }
 
         // is there a withdrawal in progress
         bal.balance -= amount;
-
-        // if there is currently a pending withdrawal but the balance has been reduce to 0
-        // then we should cancel the pending withdrawal as there's no longer anything to withdraw
-        if (bal.balance == 0) {
-            resetInitiatedWithdrawal(bal);
-        }
     }
 
     /// @notice Initiate a withdrawal. A withdrawal is a reduction of the full amount.
@@ -133,12 +114,12 @@ library BalanceLib {
             revert ZeroAmount();
         }
 
-        if (hasInitiatedWithdrawal(bal)) {
+        if (bal.withdrawalRound != type(uint64).max) {
             revert WithdrawalInProgress();
         }
 
         // We dont make it round + 1 in case the iniation were to occur right at the
-        // end of a round. Doing round + 2 ensure observer always have at least one full round
+        // end of a round. Doing round + 2 ensures observers always have at least one full round
         // to become aware of the future balance change.
         bal.withdrawalRound = round + 2;
     }
@@ -153,8 +134,6 @@ library BalanceLib {
             revert NothingToWithdraw();
         }
 
-        // CHRIS: TODO: double storage pull again
-        resetInitiatedWithdrawal(bal);
         bal.balance = 0;
         return withdrawableBalance;
     }
@@ -164,7 +143,6 @@ library BalanceLib {
 // CHRIS: TODO: add a doc about the difference between bidding for round and bidding in round
 // CHRIS: TODO: list gurantee of the balance lib
 //              1. withdrawal round is 0 only if the balance has never been initialized, otherwise it is 2 or more
-//              2. both withdrawable balance and available balance cannot be 0
 // CHRIS: TODO: one thing to test is what these functions do before round 0, also what about unitialised balances - should we test that?
 // CHRIS: TODO: it should be possible to call any of these in any order - particularly the updating functions. How can we test for this
 //              we would need to first define an inconsistent state and then go from there
