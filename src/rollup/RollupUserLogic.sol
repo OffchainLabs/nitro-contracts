@@ -177,8 +177,8 @@ abstract contract AbsRollupUserLogic is
         bytes32 sendRoot,
         bytes32 nodeHash
     ) external {
-        require(msg.sender == anyTrustFastConfirmer, "NOT_FAST_CONFIRMER");
-        require(nodeHash == getNodeStorage(firstUnresolvedNode()).nodeHash, "WRONG_HASH");
+        require(msg.sender == anyTrustFastConfirmer, "NFC");
+        require(nodeHash == getNodeStorage(firstUnresolvedNode()).nodeHash, "WH");
         _confirmNextNode(blockHash, sendRoot, true);
     }
 

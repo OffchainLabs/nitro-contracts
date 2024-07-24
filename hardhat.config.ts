@@ -30,7 +30,7 @@ const solidity = {
       settings: {
         optimizer: {
           enabled: true,
-          runs: 20,
+          runs: 0,
         },
       },
     },

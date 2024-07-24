@@ -1579,7 +1579,7 @@ describe.only('ArbRollupFastConfirm', () => {
   it('should fail to fast confirm if not fast confirmer', async function () {
     await expect(
       rollup.fastConfirmNextNode(prevNodes[0], ethers.constants.HashZero)
-    ).to.be.revertedWith('NOT_FAST_CONFIRMER')
+    ).to.be.revertedWith('NFC')
   })
   it('should fail to fast confirm if not validator', async function () {
     await expect(
@@ -1600,7 +1600,7 @@ describe.only('ArbRollupFastConfirm', () => {
       rollup
         .connect(await impersonateAccount(fastConfirmerAddr))
         .fastConfirmNextNode(prevNodes[0], ethers.constants.HashZero)
-    ).to.be.revertedWith('WRONG_HASH')
+    ).to.be.revertedWith('WH')
   })
   it('should fast confirm', async function () {
     await rollup
