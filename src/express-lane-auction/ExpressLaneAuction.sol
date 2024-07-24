@@ -14,6 +14,7 @@ import {ELCRound, LatestELCRoundsLib} from "./ELCRound.sol";
 import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 
 // CHRIS: TODO: look through all the comments and see if we want to add any of them to the spec as clarification
+// CHRIS: TODO: include a domain in the sig on top of the auction contract address
 
 // CHRIS: TODO: do we wamt to include the ability to update the round time?
 // 3. update the round time
