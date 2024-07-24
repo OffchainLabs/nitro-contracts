@@ -113,11 +113,17 @@ import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 // CHRIS: TODO: check that auction.roundTimestamps is used in tests
 // CHRIS: TODO: check that auction.isReserveBlackout is used in tests
 
+// CHRIS: TODO: should we check that beneficiary/auctioneer cannot be the bidder anywhere? if not we should document that they're trusted not to bid
+
 /// @title  ExpressLaneAuction
 /// @notice The express lane allows a controller to submit undelayed transactions to the sequencer
 ///         The right to be the express lane controller are auctioned off in rounds, by an offchain auctioneer.
 ///         The auctioneer then submits the winning bids to this control to deduct funds from the bidders and register the winner
-contract ExpressLaneAuction is IExpressLaneAuction, AccessControlEnumerableUpgradeable, DelegateCallAware {
+contract ExpressLaneAuction is
+    IExpressLaneAuction,
+    AccessControlEnumerableUpgradeable,
+    DelegateCallAware
+{
     using SafeERC20 for IERC20;
     using RoundTimingInfoLib for RoundTimingInfo;
     using BalanceLib for Balance;
@@ -475,7 +481,10 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlEnumerableUpgra
     }
 
     // CHRIS: TODO: docs and tests
-    function resolvedRounds() public returns(ELCRound memory, ELCRound memory) {
-        return latestResolvedRounds[0].round > latestResolvedRounds[1].round ? (latestResolvedRounds[0], latestResolvedRounds[1]) : (latestResolvedRounds[1], latestResolvedRounds[0]);
+    function resolvedRounds() public returns (ELCRound memory, ELCRound memory) {
+        return
+            latestResolvedRounds[0].round > latestResolvedRounds[1].round
+                ? (latestResolvedRounds[0], latestResolvedRounds[1])
+                : (latestResolvedRounds[1], latestResolvedRounds[0]);
     }
 }
