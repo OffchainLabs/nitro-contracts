@@ -262,7 +262,7 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlEnumerableUpgra
     }
 
     /// @inheritdoc IExpressLaneAuction
-    function withdrawableBalance(address account) public view returns (uint256) {
+    function withdrawableBalance(address account) external view returns (uint256) {
         return _balanceOf[account].withdrawableBalanceAtRound(currentRound());
     }
 
@@ -313,7 +313,7 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlEnumerableUpgra
         biddingToken.safeTransfer(beneficiary, priceToPay);
 
         // emit events so that the offchain sequencer knows a new express lane controller has been selected
-        (uint64 roundStart, uint64 roundEnd) = roundTimingInfo.roundTimestamps(biddingForRound);
+        (uint64 roundStart, uint64 roundEnd) = roundTimestamps(biddingForRound);
         emit SetExpressLaneController(
             biddingForRound,
             address(0),
@@ -368,7 +368,7 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlEnumerableUpgra
         external
         onlyRole(AUCTIONEER_ROLE)
     {
-        if (!roundTimingInfo.isAuctionRoundClosed()) {
+        if (!isAuctionRoundClosed()) {
             revert AuctionNotClosed();
         }
 
@@ -388,7 +388,7 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlEnumerableUpgra
         external
         onlyRole(AUCTIONEER_ROLE)
     {
-        if (!roundTimingInfo.isAuctionRoundClosed()) {
+        if (!isAuctionRoundClosed()) {
             revert AuctionNotClosed();
         }
 
@@ -464,7 +464,7 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlEnumerableUpgra
 
         resolvedRound.expressLaneController = newExpressLaneController;
 
-        (uint64 start, uint64 end) = roundTimingInfo.roundTimestamps(round);
+        (uint64 start, uint64 end) = roundTimestamps(round);
         emit SetExpressLaneController(
             round,
             resolvedELC,
