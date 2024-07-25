@@ -13,6 +13,9 @@ import {IExpressLaneAuction, Bid} from "./IExpressLaneAuction.sol";
 import {ELCRound, LatestELCRoundsLib} from "./ELCRound.sol";
 import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 
+// CHRIS: TODO: switch signing to 712
+// CHRIS: TODO: dont sent to beneficiary every time. Provide another function that anyone can call to flush the beneficiary balance.
+
 // CHRIS: TODO: look through all the comments and see if we want to add any of them to the spec as clarification
 // CHRIS: TODO: include a domain in the sig on top of the auction contract address
 
