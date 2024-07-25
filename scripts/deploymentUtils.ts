@@ -229,6 +229,16 @@ export async function deployAllContracts(
   )
   const deployHelper = await deployContract('DeployHelper', signer, [], verify)
   return {
+    ethBridge,
+    ethSequencerInbox,
+    ethInbox,
+    ethRollupEventInbox,
+    ethOutbox,
+    erc20Bridge,
+    erc20SequencerInbox,
+    erc20Inbox,
+    erc20RollupEventInbox,
+    erc20Outbox,
     bridgeCreator,
     prover0,
     proverMem,
