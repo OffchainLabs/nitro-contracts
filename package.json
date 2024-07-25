@@ -38,7 +38,6 @@
     "test:compatibility": "yarn run build:0.6 && yarn run build:0.7",
     "test:storage": "./test/storage/test.bash",
     "test:signatures": "./test/signatures/test-sigs.bash",
-    "test:unused:errors": "./test/unused-errors/find_unused_errors.sh",
     "test:e2e": "hardhat test test/e2e/*.ts",
     "postinstall": "patch-package",
     "deploy-factory": "hardhat run scripts/deployment.ts",
