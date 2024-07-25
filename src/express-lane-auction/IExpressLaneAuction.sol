@@ -21,7 +21,7 @@ struct Bid {
     uint256 amount;
     /// @notice Authentication of this bid by the bidder.
     ///         The bidder signs over a hash of the following
-    ///         keccak256("\x19Ethereum Signed Message:\n112" ++ chainId ++ auctionContractAddress ++ auctionRound ++ bidAmount ++ expressLaneController)
+    ///         keccak256("\x19Ethereum Signed Message:\n144" ++ keccak256("TIMEBOOST_BID") ++ chainId ++ auctionContractAddress ++ auctionRound ++ bidAmount ++ expressLaneController)
     bytes signature;
 }
 
@@ -106,6 +106,9 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
 
     /// @notice The role given to the address that can set the beneficiary
     function BENEFICIARY_SETTER_ROLE() external returns (bytes32);
+
+    /// @notice Domain constant to be concatenated with data before signing
+    function BID_DOMAIN() external returns (bytes32);
 
     /// @notice The beneficiary who receives the funds that are paid by the auction winners
     function beneficiary() external returns (address);

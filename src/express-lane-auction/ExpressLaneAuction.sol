@@ -140,6 +140,8 @@ contract ExpressLaneAuction is
     bytes32 public constant RESERVE_SETTER_ROLE = keccak256("RESERVE_SETTER");
     /// @inheritdoc IExpressLaneAuction
     bytes32 public constant BENEFICIARY_SETTER_ROLE = keccak256("BENEFICIARY_SETTER");
+    /// @inheritdoc IExpressLaneAuction
+    bytes32 public constant BID_DOMAIN = keccak256("TIMEBOOST_BID");
 
     /// @notice The balances of each address
     mapping(address => Balance) internal _balanceOf;
@@ -346,9 +348,16 @@ contract ExpressLaneAuction is
         uint256 _amount,
         address _expressLaneController
     ) public view returns (bytes memory) {
-        // CHRIS: TODO: test the length of this is 112
+        // CHRIS: TODO: test the length of this is 144
         return
-            abi.encodePacked(block.chainid, address(this), _round, _amount, _expressLaneController);
+            abi.encodePacked(
+                BID_DOMAIN,
+                block.chainid,
+                address(this),
+                _round,
+                _amount,
+                _expressLaneController
+            );
     }
 
     /// @notice Recover the signing address of the provided bid, and check that that address has enough funds to fulfil that bid
