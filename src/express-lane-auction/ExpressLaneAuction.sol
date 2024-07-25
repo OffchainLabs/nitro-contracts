@@ -24,18 +24,35 @@ import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 //    * do this via 2 reads each time
 //    * check if an update is there, if so use that if it's in the past
 //    * needs to contain round number as well as other things
+// CHRIS: TODO:
+// also look at every function that uses the offset? yes
+// also everything that is set during the resolve - and find all usages of those
+// wrap all those functions in good getters that have predicatable and easy to reason about return values
+// consider what would happen if the offset is set to the future after some rounds have been resolved. Should be easy to reason about if we've done our job correctly
+// ok, so we will allow an update in the following way
+// 1. direct update of the round timing info
+// 2. when doing this ensure that the current round number stays the same
+// 3. will update the timings of this round and the next
+//    which could have negative consequences - but these need to be pointed out in docs
+//    I think this is better than the complexity of scheduling a future update
+// CHRIS: TODO: when we include updates we need to point out that roundTimestamps() are not
+//              accurate for timestamps after the update timestamp - that will be a bit tricky wont it?
+//              all round timing stuff needs reviewing if we include updates
+// CHRIS: TODO: update the roundTimestamps on interface for what happens if the roundtiminginfo is updated
+//              also consider other places effected by round timing - hopefully only in that lib
 
 // CHRIS: TODO: go through all the functions and look for duplicate storage access
 
-// CHRIS: TODO: switch to a more modern version of openzeppelin so that we can use disableInitializers in the constructor. Or put onlyDelegated on the initializer and set up proxies in the test
-// CHRIS: TODO: decide if we will allow the round timing info to be updated, and all the stuff that comes with that
+// CHRIS: TODO: switch to a more modern version of openzeppelin so that we can use disableInitializers in the constructor.
 // CHRIS: TODO: list of problems due to having a future offset:
 //              1. cant withdraw balance until rounds begin
 //              2. test other functions to see how they behave before offset has been reached, is it correct to revert or do nothing or what?
-// CHRIS: TODO: review what would happen if blackout start == bidding stage length
+
+// CHRIS: TODO: review what would happen if reserve submission seconds == auction closing seconds
+// CHRIS: TODO: test boundary conditions in round timing info lib: roundDuration, auctionClosingStage, reserveSubmission, offset
 
 // CHRIS: TODO:
-// do the following to e2e test whether the everyting works before the offset
+// do the following to e2e test whether everything works before the offset
 // 1. before the offset
 //    * do deposit
 //    * initiate withdrawal
@@ -52,44 +69,10 @@ import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 // 4. during round 2
 //    * same as above, but can finalize the withdrawal
 
-// CHRIS: TODO:
-// also look at every function that uses the offset? yes
-// also everything that is set during the resolve - and find all usages of those
-// wrap all those functions in good getters that have predicatable and easy to reason about return values
-// consider what would happen if the offset is set to the future after some rounds have been resolved. Should be easy to reason about if we've done our job correctly
-// ok, so we will allow an update in the following way
-// 1. direct update of the round timing info
-// 2. when doing this ensure that the current round number stays the same
-// 3. will update the timings of this round and the next
-//    which could have negative consequences - but these need to be pointed out in docs
-//    I think this is better than the complexity of scheduling a future update
-
-// CHRIS: TODO: balance notes:
-// CHRIS: TODO: invariant: balance after <= balance before
-// CHRIS: TODO: invariant: if balance after == 0 and balance before == 0, then round must be set to max
-// CHRIS: TODO: tests for balanceOf, freeBalance and withdrawable balance
-// CHRIS: TODO: test each of the getter functions and withdrawal functions for an uninitialized deposit, and for one that has been zerod out
-
-// CHRIS: TODO: could we do the transfer just via an event? do we really need to be able to query this from the contract?
-
 // CHRIS: TODO: list all the things that are not set in the following cases:
 //              1. before we start
 //              2. during a gap of latest resolved rounds
 //              3. normal before resolve of current round and after
-
-// CHRIS: TODO: surface this info somehow?
-// DEPRECATED: will be replaced by a more ergonomic interface
-// function expressLaneControllerRounds() public view returns (ELCRound memory, ELCRound memory) {
-//     return (latestResolvedRounds[0], latestResolvedRounds[1]);
-// }
-
-// CHRIS: TODO: check every place where we set in a struct and ensure it's storage, or we do properly set later
-
-// CHRIS: TODO: test boundary conditions in round timing info lib: roundDuration, auctionClosingStage, reserveSubmission, offset
-
-// CHRIS: TODO: when we include updates we need to point out that roundTimestamps() are not
-//              accurate for timestamps after the update timestamp - that will be a bit tricky wont it?
-//              all round timing stuff needs reviewing if we include updates
 
 // CHRIS: TODO: line up natspec comments
 
@@ -98,19 +81,14 @@ import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 // CHRIS: TODO: ensure each public function is tested separately - some are tested as part of other tests
 
 // CHRIS: TODO: the elc can be delayed in sending transaction by a resolve at the very last moment - should only be a very small delay
+
 // CHRIS: TODO: if an address sends a transaction via slow path and then via fast, what happens (rejection or promotion)? what if the nonce increases? wait
 //              what does that do to the order of transactions? we cannot guarantee the sequence number is the order transactions are mined in
+//              add notes on this behaviour to the spec
 
 // CHRIS: TODO: specify the things we expect of the bidding token - what restrictions it can or cannot have
 
-// CHRIS: TODO: update the roundTimestamps on interface for what happens if the roundtiminginfo is updated
-//              also consider other places effected by round timing - hopefully only in that lib
-
-// CHRIS: TODO: a nice e2e test: deposit, bid, win, resolve, withdraw. dont we have this already?
-
-// CHRIS: TODO: what's the process for transferring express lane controller rights? presumably for a sale to be atomic
-//              the owner would need to be a contract? Which would then meant they werent able to do any actual controlling at the same time
-//              Perhaps we should have a separate address - maybe the bidder - who can do the reselling. Then that could be a contract
+// CHRIS: TODO: add native support for selling express lane controller rights
 
 // CHRIS: TODO: in isReserveBlackout we should never have `latestResolvedRound > curRound + 1`. latest should never be greater than when called from the express lane auction
 

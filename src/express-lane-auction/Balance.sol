@@ -148,3 +148,9 @@ library BalanceLib {
 //              we would need to first define an inconsistent state and then go from there
 // CHRIS: TODO: we wanna make sure we're not in a state where we can get trapped, either with funds in there, or with a zero balance or something - those are inconsistent states
 //              another inconsistent state is when the balance in there doesnt match what we expect from external reduces etc
+
+// CHRIS: TODO: balance notes:
+// CHRIS: TODO: invariant: balance after <= balance before
+// CHRIS: TODO: invariant: if balance after == 0 and balance before == 0, then round must be set to max
+// CHRIS: TODO: tests for balanceOf, freeBalance and withdrawable balance
+// CHRIS: TODO: test each of the getter functions and withdrawal functions for an uninitialized deposit, and for one that has been zerod out
