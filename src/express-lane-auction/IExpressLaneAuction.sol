@@ -250,12 +250,16 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     /// @notice Resolve the auction with just a single bid. The auctioneer is trusted to call this only when there are
     ///         less than two bids higher than the reserve price for an auction round.
     ///         In this case the highest bidder will pay the reserve price for the round
+    /// @dev    We do not enforce it, but the following accounts or their sybils, are trusted not to send bids to the auctioneer
+    ///         Auctioneer, beneficiary, beneficiary setter, reserve price setter, min reserve price setter, role admin
     /// @param firstPriceBid The highest price bid. Must have a price higher than the reserve. Price paid is the reserve
     function resolveSingleBidAuction(Bid calldata firstPriceBid) external;
 
     /// @notice Resolves the auction round with the two highest bids for that round
     ///         The highest price bidder pays the price of the second highest bid
     ///         Both bids must be higher than the reserve
+    /// @dev    We do not enforce it, but the following accounts or their sybils, are trusted not to send bids to the auctioneer
+    ///         Auctioneer, beneficiary, beneficiary setter, reserve price setter, min reserve price setter, role admin
     /// @param firstPriceBid The highest price bid
     /// @param secondPriceBid The second highest price bid
     function resolveMultiBidAuction(Bid calldata firstPriceBid, Bid calldata secondPriceBid)

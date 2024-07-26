@@ -6,7 +6,9 @@ import "./Errors.sol";
 /// @notice When an auction round is resolved a new express lane controller is chosen for that round
 ///         An elc round stores that selected express lane controller against the round number
 struct ELCRound {
+    /// @notice The express lane controller for this round
     address expressLaneController;
+    /// @notice The round number
     uint64 round;
 }
 

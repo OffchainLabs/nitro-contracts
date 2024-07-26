@@ -17,7 +17,6 @@ import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 // CHRIS: TODO: dont sent to beneficiary every time. Provide another function that anyone can call to flush the beneficiary balance.
 
 // CHRIS: TODO: look through all the comments and see if we want to add any of them to the spec as clarification
-// CHRIS: TODO: include a domain in the sig on top of the auction contract address
 
 // CHRIS: TODO: do we wamt to include the ability to update the round time?
 // 3. update the round time
@@ -40,6 +39,7 @@ import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 //              all round timing stuff needs reviewing if we include updates
 // CHRIS: TODO: update the roundTimestamps on interface for what happens if the roundtiminginfo is updated
 //              also consider other places effected by round timing - hopefully only in that lib
+// CHRIS: TODO: if we update round timing we need to add the address to the trusted list in the resolve documentation of the interface
 
 // CHRIS: TODO: go through all the functions and look for duplicate storage access
 
@@ -88,14 +88,12 @@ import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 
 // CHRIS: TODO: specify the things we expect of the bidding token - what restrictions it can or cannot have
 
-// CHRIS: TODO: add native support for selling express lane controller rights
+// CHRIS: TODO: add ability to set the transferrer of controller rights
 
 // CHRIS: TODO: in isReserveBlackout we should never have `latestResolvedRound > curRound + 1`. latest should never be greater than when called from the express lane auction
 
 // CHRIS: TODO: check that auction.roundTimestamps is used in tests
 // CHRIS: TODO: check that auction.isReserveBlackout is used in tests
-
-// CHRIS: TODO: should we check that beneficiary/auctioneer cannot be the bidder anywhere? if not we should document that they're trusted not to bid
 
 /// @title  ExpressLaneAuction
 /// @notice The express lane allows a controller to submit undelayed transactions to the sequencer
@@ -265,11 +263,13 @@ contract ExpressLaneAuction is
 
     /// @inheritdoc IExpressLaneAuction
     function initiateWithdrawal() external {
-        uint64 curRnd = currentRound();
+        // The withdrawal can be finalized 2 rounds for now. We dont make it round + 1 in 
+        // case the initiation were to occur right at the end of a round. Doing round + 2 ensures
+        // observers always have at least one full round to become aware of the future balance change.
+        uint64 withdrawalRound = currentRound() + 2;
         uint256 amount = _balanceOf[msg.sender].balance;
-        _balanceOf[msg.sender].initiateWithdrawal(curRnd);
-        // CHRIS: TODO: we have + 2 here, that's leaking an implementation detail
-        emit WithdrawalInitiated(msg.sender, amount, curRnd + 2);
+        _balanceOf[msg.sender].initiateWithdrawal(withdrawalRound);
+        emit WithdrawalInitiated(msg.sender, amount, withdrawalRound);
     }
 
     /// @inheritdoc IExpressLaneAuction
@@ -423,7 +423,6 @@ contract ExpressLaneAuction is
         // when bids have the same amount we break ties based on the bid hash
         // although we include equality in the check we know this isnt possible due
         // to the check above that ensures the first price bidder and second price bidder are different
-        // CHRIS: TODO: update the spec to this hash
         if (
             firstPriceBid.amount == secondPriceBid.amount &&
             uint256(keccak256(abi.encodePacked(firstPriceBidder, firstBidBytes))) <=
