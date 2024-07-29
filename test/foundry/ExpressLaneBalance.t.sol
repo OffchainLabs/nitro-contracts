@@ -10,123 +10,179 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 contract BalanceImp {
     using BalanceLib for Balance;
 
-    Balance tmp;
-    Balance empty;
-
-    modifier setTmp(Balance memory bal) {
-
-        _;
-
+    constructor(Balance memory _bal) {
+        bal = _bal;
     }
 
-    function balanceAtRound(Balance memory bal, uint64 round) public returns (uint256) {
-        tmp = bal;
-        uint256 balance = tmp.balanceAtRound(round);
-        tmp = empty;
-        return balance;
+    Balance public bal;
+
+    function balanceAtRound(uint64 round) external view returns (uint256) {
+        return bal.balanceAtRound(round);
     }
 
-    // function withdrawableBalanceAtRound(Balance , uint64 round)
-    //     internal
-    //     view
-    //     returns (uint256)
-    // {
-    //     return _balanceOf[accoutn].withdrawableBalanceAtRound(account, round);
-    // }
+    function withdrawableBalanceAtRound(uint64 round) external view returns (uint256) {
+        return bal.withdrawableBalanceAtRound(round);
+    }
 
-    // /// @notice Increase a balance by a specified amount
-    // ///         Will cancel a withdrawal if called after a withdrawal has been initiated
-    // /// @param bal The balance info
-    // /// @param amount The amount to increase the balance by
-    // function increase(Balance storage bal, uint256 amount) internal {
-    //     // no point increasing if no amount is being supplied
-    //     if (amount == 0) {
-    //         revert ZeroAmount();
-    //     }
+    function increase(uint256 amount) external {
+        return bal.increase(amount);
+    }
 
-    //     // if the balance have never been used before then balance and withdrawal round will be 0
-    //     // in this case we initialize the balance by setting the withdrawal round into the future
-    //     // if a withdrawal for the balance has been initialized (withdrawal round != 0 and != max)
-    //     // then we cancel that initiated withdrawal. We do this since if a increase is being made that
-    //     // means a user wishes to increase their balance, not withdraw it.
-    //     if (bal.withdrawalRound != type(uint64).max) {
-    //         bal.withdrawalRound = type(uint64).max;
-    //     }
+    function reduce(uint256 amount, uint64 round) external {
+        return bal.reduce(amount, round);
+    }
 
-    //     bal.balance += amount;
-    // }
+    function initiateWithdrawal(uint64 round) external {
+        return bal.initiateWithdrawal(round);
+    }
 
-    // /// @notice Reduce a balance immediately. The balance must already be greater than the amount
-    // ///         and a withdrawal has been initiated for this balance it must be occuring in
-    // ///         a round after the supplied round. Withdrawals earlier than that will block this reduce.
-    // /// @param bal The balance to reduce
-    // /// @param amount The amount to reduce by
-    // /// @param round The round to check withdrawals against. A withdrawal after this round will be ignored
-    // ///              and the balance reduced anyway, withdrawals before or on this round will be respected
-    // ///              and the reduce will revert
-    // function reduce(
-    //     Balance storage bal,
-    //     uint256 amount,
-    //     uint64 round
-    // ) internal {
-    //     if (amount == 0) {
-    //         revert ZeroAmount();
-    //     }
-
-    //     if (balanceAtRound(bal, round) < amount) {
-    //         revert InsufficientBalance(amount, balanceAtRound(bal, round));
-    //     }
-
-    //     // is there a withdrawal in progress
-    //     bal.balance -= amount;
-    // }
-
-    // /// @notice Initiate a withdrawal. A withdrawal is a reduction of the full amount.
-    // ///         Withdrawal is a two step process initialization and finalization. Finalization is only
-    // ///         possible two rounds after the supplied round parameter. This is
-    // ///         so that balance cannot be reduced unexpectedly without notice. An external
-    // ///         observer can see that a withdrawal has been initiated, and will therefore
-    // ///         be able to take it into account and not rely on the balance being there.
-    // ///         In the case of the auction contract this allows the bidders to withdraw their
-    // ///         balance, but an auctioneer will know not to accept there bids in the mean time
-    // /// @param bal The balance to iniate a reduction on
-    // /// @param round The round that the withdrawal will be available in
-    // function initiateWithdrawal(Balance storage bal, uint64 round) internal {
-    //     if (bal.balance == 0) {
-    //         revert ZeroAmount();
-    //     }
-
-    //     if (bal.withdrawalRound != type(uint64).max) {
-    //         revert WithdrawalInProgress();
-    //     }
-
-    //     bal.withdrawalRound = round + 2;
-    // }
-
-    // /// @notice Finalize an already initialized withdrawal. Reduces the balance to 0.
-    // ///         Can only be called two round after the withdrawal was initiated.
-    // /// @param bal The balance to finalize
-    // /// @param round The round to check whether withdrawal is valid in. Usually the current round.
-    // function finalizeWithdrawal(Balance storage bal, uint64 round) internal returns (uint256) {
-    //     uint256 withdrawableBalance = withdrawableBalanceAtRound(bal, round);
-    //     if (withdrawableBalance == 0) {
-    //         revert NothingToWithdraw();
-    //     }
-
-    //     bal.balance = 0;
-    //     return withdrawableBalance;
-    // }
-
-
-
-
-
-
+    function finalizeWithdrawal(uint64 round) external returns (uint256) {
+        return bal.finalizeWithdrawal(round);
+    }
 }
-
 
 contract ExpressLaneBalanceTest is Test {
+    function checkBal(BalanceImp b, Balance memory expectedBalance) internal {
+        (uint256 balance, uint64 withdrawalRound) = b.bal();
+        assertEq(balance, expectedBalance.balance);
+        assertEq(withdrawalRound, expectedBalance.withdrawalRound);
+    }
 
+    function testBalanceAtRound(
+        uint256 initialBalance,
+        uint64 initialRound,
+        uint64 withdrawalRound
+    ) public {
+        Balance memory bal = Balance(initialBalance, initialRound);
+        BalanceImp b = new BalanceImp(bal);
+        if (withdrawalRound >= initialRound) {
+            assertEq(b.balanceAtRound(withdrawalRound), 0);
+        } else {
+            assertEq(b.balanceAtRound(withdrawalRound), initialBalance);
+        }
+    }
 
+    function testWithdrawableBalanceAtRound(
+        uint256 initialBalance,
+        uint64 initialRound,
+        uint64 withdrawalRound
+    ) public {
+        Balance memory bal = Balance(initialBalance, initialRound);
+        BalanceImp b = new BalanceImp(bal);
+        if (withdrawalRound >= initialRound) {
+            assertEq(b.withdrawableBalanceAtRound(withdrawalRound), initialBalance);
+        } else {
+            assertEq(b.withdrawableBalanceAtRound(withdrawalRound), 0);
+        }
+    }
+
+    function testIncrease(
+        uint256 initialBalance,
+        uint64 initialRound,
+        uint256 increaseAmount
+    ) public {
+        Balance memory bal = Balance(initialBalance, initialRound);
+        BalanceImp b = new BalanceImp(bal);
+        if (increaseAmount == 0) {
+            vm.expectRevert(ZeroAmount.selector);
+            b.increase(increaseAmount);
+        } else if (type(uint256).max - increaseAmount < initialBalance) {
+            vm.expectRevert();
+            b.increase(increaseAmount);
+        } else {
+            b.increase(increaseAmount);
+            checkBal(b, Balance(initialBalance + increaseAmount, type(uint64).max));
+        }
+    }
+
+    function testReduce(
+        uint256 initialBalance,
+        uint64 initialRound,
+        uint256 reduceAmount,
+        uint64 reduceRound
+    ) public {
+        Balance memory bal = Balance(initialBalance, initialRound);
+        BalanceImp b = new BalanceImp(bal);
+        if (reduceAmount == 0) {
+            vm.expectRevert(ZeroAmount.selector);
+            b.reduce(reduceAmount, reduceRound);
+        } else if (initialRound <= reduceRound) {
+            vm.expectRevert(abi.encodeWithSelector(InsufficientBalance.selector, reduceAmount, 0));
+            b.reduce(reduceAmount, reduceRound);
+        } else if (reduceAmount > initialBalance) {
+            vm.expectRevert(
+                abi.encodeWithSelector(InsufficientBalance.selector, reduceAmount, initialBalance)
+            );
+            b.reduce(reduceAmount, reduceRound);
+        } else if (reduceAmount <= initialBalance) {
+            b.reduce(reduceAmount, reduceRound);
+            checkBal(b, Balance(initialBalance - reduceAmount, initialRound));
+        } else {
+            revert("Unreachable");
+        }
+    }
+
+    function testInitiateWithdrawal(
+        uint256 initialBalance,
+        uint64 initialRound,
+        uint64 withdrawalRound
+    ) public {
+        Balance memory bal = Balance(initialBalance, initialRound);
+        BalanceImp b = new BalanceImp(bal);
+        if (initialBalance == 0) {
+            vm.expectRevert(ZeroAmount.selector);
+            b.initiateWithdrawal(withdrawalRound);
+        } else if (withdrawalRound == type(uint64).max) {
+            vm.expectRevert(WithdrawalMaxRound.selector);
+            b.initiateWithdrawal(withdrawalRound);
+        } else if (initialRound != type(uint64).max) {
+            vm.expectRevert(WithdrawalInProgress.selector);
+            b.initiateWithdrawal(withdrawalRound);
+        } else {
+            b.initiateWithdrawal(withdrawalRound);
+            checkBal(b, Balance(initialBalance, withdrawalRound));
+        }
+    }
+
+    function testFinalizeWithdrawal(
+        uint256 initialBalance,
+        uint64 initialRound,
+        uint64 withdrawalRound
+    ) public {
+        Balance memory bal = Balance(initialBalance, initialRound);
+        BalanceImp b = new BalanceImp(bal);
+        if (withdrawalRound == type(uint64).max) {
+            vm.expectRevert(WithdrawalMaxRound.selector);
+            b.finalizeWithdrawal(withdrawalRound);
+        } else if (initialBalance == 0) {
+            vm.expectRevert(NothingToWithdraw.selector);
+            b.finalizeWithdrawal(withdrawalRound);
+        } else if (withdrawalRound < initialRound) {
+            vm.expectRevert(NothingToWithdraw.selector);
+            b.finalizeWithdrawal(withdrawalRound);
+        } else {
+            b.finalizeWithdrawal(withdrawalRound);
+            checkBal(b, Balance(0, initialRound));
+        }
+    }
 }
 
+contract InvariantBalance is Test {
+    BalanceImp balanceImp;
+
+    function setUp() public {
+        balanceImp = new BalanceImp(Balance(0, 0));
+    }
+
+    function invariantBalanceWithdrawableSum() public {
+        uint64 randRound = uint64(
+            uint256(keccak256(abi.encode(msg.sender, block.timestamp, "round")))
+        );
+        (uint256 bal, ) = balanceImp.bal();
+        // withdrawable balance + available balance should always equal internal balance
+        assertEq(
+            balanceImp.balanceAtRound(randRound) + balanceImp.withdrawableBalanceAtRound(randRound),
+            bal
+        );
+    }
+}

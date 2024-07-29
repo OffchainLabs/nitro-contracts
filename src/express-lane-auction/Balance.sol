@@ -93,69 +93,54 @@ library BalanceLib {
 
     /// @notice Initiate a withdrawal. A withdrawal is a reduction of the full amount.
     ///         Withdrawal is a two step process initialization and finalization. Finalization is only
-    ///         possible two rounds after the supplied round parameter. This is
-    ///         so that balance cannot be reduced unexpectedly without notice. An external
-    ///         observer can see that a withdrawal has been initiated, and will therefore
+    ///         after the supplied round parameter. The expected usage is to specify a round that is 2
+    ///         in the future to ensure that the balance cannot be reduced unexpectedly without notice. 
+    //          An external observer can see that a withdrawal has been initiated, and will therefore
     ///         be able to take it into account and not rely on the balance being there.
     ///         In the case of the auction contract this allows the bidders to withdraw their
     ///         balance, but an auctioneer will know not to accept there bids in the mean time
     /// @param bal The balance to iniate a reduction on
-    /// @param round The round that the withdrawal will be available in
+    /// @param round The round that the withdrawal will be available in. Cannot be specified as the max round
     function initiateWithdrawal(Balance storage bal, uint64 round) internal {
         if (bal.balance == 0) {
             revert ZeroAmount();
+        }
+
+        if(round == type(uint64).max) {
+            // we use max round to specify that a withdrawal is not taking place
+            // so we dont allow it as a withdrawal round. In practice max round should never
+            // be reached so this isnt an issue, we just put this here as an additional
+            // safety check
+            revert WithdrawalMaxRound();
         }
 
         if (bal.withdrawalRound != type(uint64).max) {
             revert WithdrawalInProgress();
         }
 
-        bal.withdrawalRound = round + 2;
+        bal.withdrawalRound = round;
     }
 
     /// @notice Finalize an already initialized withdrawal. Reduces the balance to 0.
     ///         Can only be called two round after the withdrawal was initiated.
     /// @param bal The balance to finalize
-    /// @param round The round to check whether withdrawal is valid in. Usually the current round.
+    /// @param round The round to check whether withdrawal is valid in. Usually the current round. Cannot be max round.
     function finalizeWithdrawal(Balance storage bal, uint64 round) internal returns (uint256) {
+        if(round == type(uint64).max) {
+            // we use max round to specify that a withdrawal is not taking place
+            // so we dont allow it as a withdrawal round. In practice max round should never
+            // be reached so this isnt an issue, we just put this here as an additional
+            // safety check
+            revert WithdrawalMaxRound();
+        }
+
         uint256 withdrawableBalance = withdrawableBalanceAtRound(bal, round);
         if (withdrawableBalance == 0) {
             revert NothingToWithdraw();
         }
 
+
         bal.balance = 0;
         return withdrawableBalance;
     }
 }
-
-// balance invariants
-// 1. withdrawal round is only 0 if balance was never initiated, otherwise > 2
-// 3. deposit, reduce can be called at any time
-// 4. initialize withdrawal can only be called if not initialized already or if finalized, finalize can only be called if initialized and round + 2
-// invalid states - should never be possible to reach these
-// balance val, round 0
-// balance 0, round max
-// 4. bal == bal at round + withdrawable bal at round
-// 5. balance is only 0 after reduce or finalize
-
-// balance can be in the following states
-// * uninitialized - bal 0, round 0
-//   ** deposit - ok
-//   ** reduce fail
-//   ** init fail
-//   ** finalize fail
-// * after deposit - bal val, round max
-//   ** deposit - ok
-//   ** reduce ok
-//   ** init ok
-//   ** finalize fail
-// * after init withdraw - bal val, round val
-//   ** deposit ok
-//   ** reduce fail on or after round
-//   ** init fail
-//   ** finalize fail before round
-// * after finalized withdraw - bal = 0, round val
-//   ** deposit ok
-//   ** reduce fail
-//   ** init fail
-//   ** finalize fail

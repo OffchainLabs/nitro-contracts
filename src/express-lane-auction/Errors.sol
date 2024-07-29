@@ -10,6 +10,7 @@ error NothingToWithdraw();
 error ZeroAmount();
 error ZeroBiddingToken();
 error WithdrawalInProgress();
+error WithdrawalMaxRound();
 error RoundAlreadyResolved(uint64 round);
 error SameBidder();
 error BidsWrongOrder();
