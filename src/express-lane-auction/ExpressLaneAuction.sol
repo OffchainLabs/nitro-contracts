@@ -342,7 +342,7 @@ contract ExpressLaneAuction is IExpressLaneAuction, AccessControlUpgradeable, De
     ) public view returns (bytes memory) {
         // CHRIS: TODO: test the length of this is 112
         return
-            abi.encodePacked(block.chainid, address(this), _round, _amount, _expressLaneController);
+            abi.encodePacked(keccak256(abi.encodePacked("TIMEBOOST_BID")), block.chainid, address(this), _round, _amount, _expressLaneController);
     }
 
     /// @notice Recover the signing address of the provided bid, and check that that address has enough funds to fulfil that bid
