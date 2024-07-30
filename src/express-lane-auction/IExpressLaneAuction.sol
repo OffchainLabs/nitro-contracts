@@ -272,5 +272,5 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     function transferExpressLaneController(uint64 round, address newExpressLaneController) external;
 
     // CHRIS: TODO: docs and tests
-    function resolvedRounds() external returns (ELCRound memory, ELCRound memory);
+    function resolvedRounds() external view returns (ELCRound memory, ELCRound memory);
 }

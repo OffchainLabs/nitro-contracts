@@ -12,11 +12,6 @@ struct ELCRound {
     uint64 round;
 }
 
-// CHRIS: TODO: consider all usages of the these during initialization
-// CHRIS: TODO: Invariant: not possible for the rounds in latest rounds to have the same value
-// CHRIS: TODO: what values do these functions have during init?
-// CHRIS: TODO: Invariant: lastAuctionRound.round should never be > round if called during resolve auction except during initialization
-
 /// @notice Latest resolved express lane controller auction rounds
 //          Only the two latest resolved rounds are stored
 library LatestELCRoundsLib {
