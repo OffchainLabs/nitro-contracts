@@ -473,7 +473,7 @@ contract ExpressLaneAuction is
         );
     }
 
-    // CHRIS: TODO: docs and tests
+    /// @inheritdoc IExpressLaneAuction
     function resolvedRounds() public view returns (ELCRound memory, ELCRound memory) {
         return
             latestResolvedRounds[0].round > latestResolvedRounds[1].round

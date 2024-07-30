@@ -271,6 +271,8 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     /// @param newExpressLaneController The new express lane controller to transfer the rights to
     function transferExpressLaneController(uint64 round, address newExpressLaneController) external;
 
-    // CHRIS: TODO: docs and tests
+    /// @notice The last two auction rounds that were resolved
+    /// @return The most recent resolved auction round
+    /// @return The second most recent resolved auction round
     function resolvedRounds() external view returns (ELCRound memory, ELCRound memory);
 }

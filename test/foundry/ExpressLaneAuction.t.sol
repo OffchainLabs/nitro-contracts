@@ -1112,6 +1112,14 @@ contract ExpressLaneAuctionTest is Test {
         rs.auction.resolveMultiBidAuction(rs.bid1, rs.bid0);
     }
 
+    function checkResolvedRounds(IExpressLaneAuction auction, ELCRound memory expected0, ELCRound memory expected1) internal {
+        (ELCRound memory actual0, ELCRound memory actual1) = auction.resolvedRounds();
+        assertEq(actual0.expressLaneController, expected0.expressLaneController, "0 elc");
+        assertEq(actual0.round, expected0.round, "0 round");
+        assertEq(actual1.expressLaneController, expected1.expressLaneController, "1 elc");
+        assertEq(actual1.round, expected1.round, "1 round");
+    }
+
     function testResolveMultiBidAuction() public {
         ResolveSetup memory rs = deployDepositAndBids();
         uint64 biddingForRound = rs.auction.currentRound() + 1;
@@ -1142,8 +1150,6 @@ contract ExpressLaneAuctionTest is Test {
         rs.auction.resolveMultiBidAuction(rs.bid1, rs.bid0);
 
         // firstPriceBidder (bidders[1].addr) pays the price of the second price bidder (bidders[0].addr)
-        // CHRIS: TODO: test that the express lane controllers were set correctly
-        // CHRIS: TODO: check that the latest round was set correctly
         assertEq(rs.auction.balanceOf(bidders[1].addr), bidders[1].amount - bidders[0].amount / 2);
         assertEq(rs.auction.balanceOf(bidders[0].addr), bidders[0].amount);
         assertEq(rs.erc20.balanceOf(beneficiary), bidders[0].amount / 2);
@@ -1151,13 +1157,16 @@ contract ExpressLaneAuctionTest is Test {
             rs.erc20.balanceOf(address(rs.auction)),
             auctionBalanceBefore - bidders[0].amount / 2
         );
+        ELCRound memory expected0 = ELCRound(rs.bid1.expressLaneController, biddingForRound);
+        checkResolvedRounds(rs.auction, expected0, ELCRound(address(0), 0));
 
         // cannot resolve same bid
         vm.expectRevert(abi.encodeWithSelector(RoundAlreadyResolved.selector, biddingForRound));
         rs.auction.resolveMultiBidAuction(rs.bid1, rs.bid0);
 
         // cannot resolve other bids for the same round
-        Bid memory bida3 = Bid({
+        Bid[2] memory bid34;
+        bid34[0] = Bid({
             amount: bidders[2].amount / 4,
             expressLaneController: bidders[2].elc,
             signature: sign(
@@ -1168,7 +1177,7 @@ contract ExpressLaneAuctionTest is Test {
                     .toEthSignedMessageHash()
             )
         });
-        Bid memory bida4 = Bid({
+        bid34[1] = Bid({
             amount: bidders[3].amount / 4,
             expressLaneController: bidders[3].elc,
             signature: sign(
@@ -1181,7 +1190,7 @@ contract ExpressLaneAuctionTest is Test {
         });
 
         vm.expectRevert(abi.encodeWithSelector(RoundAlreadyResolved.selector, biddingForRound));
-        rs.auction.resolveMultiBidAuction(bida4, bida3);
+        rs.auction.resolveMultiBidAuction(bid34[1], bid34[0]);
 
         vm.warp(block.timestamp + roundDurationSeconds);
 
@@ -1199,16 +1208,16 @@ contract ExpressLaneAuctionTest is Test {
                         bidders[3].elc
                     )
                     .toEthSignedMessageHash()
-                    .recover(bida4.signature),
+                    .recover(bid34[1].signature),
                 bidders[3].amount / 4,
                 0
             )
         );
-        rs.auction.resolveMultiBidAuction(bida4, bida3);
+        rs.auction.resolveMultiBidAuction(bid34[1], bid34[0]);
 
         // successful resolution with correct round
         biddingForRound = rs.auction.currentRound() + 1;
-        bida3 = Bid({
+        bid34[0] = Bid({
             amount: bidders[2].amount / 4,
             expressLaneController: bidders[2].elc,
             signature: sign(
@@ -1219,7 +1228,7 @@ contract ExpressLaneAuctionTest is Test {
                     .toEthSignedMessageHash()
             )
         });
-        bida4 = Bid({
+        bid34[1] = Bid({
             amount: bidders[3].amount / 4,
             expressLaneController: bidders[3].elc,
             signature: sign(
@@ -1233,9 +1242,6 @@ contract ExpressLaneAuctionTest is Test {
 
         auctionBalanceBefore = rs.erc20.balanceOf(address(rs.auction));
         uint256 beneficiaryBalanceBefore = rs.erc20.balanceOf(beneficiary);
-        uint64 roundEnd = uint64(
-            block.timestamp + auctionClosingSeconds + roundDurationSeconds - 1
-        );
 
         vm.expectEmit(true, true, true, true);
         emit SetExpressLaneController(
@@ -1243,7 +1249,9 @@ contract ExpressLaneAuctionTest is Test {
             address(0),
             bidders[3].elc,
             uint64(block.timestamp + auctionClosingSeconds),
-            roundEnd
+            uint64(
+            block.timestamp + auctionClosingSeconds + roundDurationSeconds - 1
+        )
         );
         vm.expectEmit(true, true, true, true);
         emit AuctionResolved(
@@ -1254,11 +1262,12 @@ contract ExpressLaneAuctionTest is Test {
             bidders[3].amount / 4,
             bidders[2].amount / 4,
             uint64(block.timestamp + auctionClosingSeconds),
-            roundEnd
+            uint64(
+            block.timestamp + auctionClosingSeconds + roundDurationSeconds - 1
+        )
         );
-        rs.auction.resolveMultiBidAuction(bida4, bida3);
+        rs.auction.resolveMultiBidAuction(bid34[1], bid34[0]);
 
-        // CHRIS: TODO: test that the express controllers were set correctly
         assertEq(
             rs.auction.balanceOf(bidders[3].addr),
             bidders[3].amount - bidders[2].amount / 4,
@@ -1279,11 +1288,10 @@ contract ExpressLaneAuctionTest is Test {
             auctionBalanceBefore - bidders[2].amount / 4,
             "auction balance"
         );
+        checkResolvedRounds(rs.auction, ELCRound(bid34[1].expressLaneController, biddingForRound), expected0);
 
         vm.stopPrank();
     }
-
-    // CHRIS: TODO: if we decide to have partial withdrawals then we need tests for partial withdrawal amounts
 
     function testResolveMultiBidAuctionWithdrawalInitiated() public {
         ResolveSetup memory rs = deployDepositAndBids();
@@ -1406,12 +1414,12 @@ contract ExpressLaneAuctionTest is Test {
         rs.auction.resolveSingleBidAuction(rs.bid1);
 
         // firstPriceBidder (bidders[1].addr) pays the reserve price
-        // CHRIS: TODO: test that the express lane controllers were set correctly
-        // CHRIS: TODO: check that the latest round was set correctly
         assertEq(rs.auction.balanceOf(bidders[1].addr), bidders[1].amount - minReservePrice);
         assertEq(rs.auction.balanceOf(bidders[0].addr), bidders[0].amount);
         assertEq(rs.erc20.balanceOf(beneficiary), minReservePrice);
         assertEq(rs.erc20.balanceOf(address(rs.auction)), auctionBalanceBefore - minReservePrice);
+        ELCRound memory expected0 = ELCRound(rs.bid1.expressLaneController, biddingForRound);
+        checkResolvedRounds(rs.auction, expected0, ELCRound(address(0), 0));
     }
 
     function testCanSetReservePrice() public {
