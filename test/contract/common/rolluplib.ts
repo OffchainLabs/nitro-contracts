@@ -224,10 +224,11 @@ export class RollupContract {
     )
   }
 
-  fastConfirmNextNode(node: Node): Promise<ContractTransaction> {
+  fastConfirmNextNode(node: Node, nodeHash): Promise<ContractTransaction> {
     return this.rollup.fastConfirmNextNode(
       node.assertion.afterState.globalState.bytes32Vals[0],
-      node.assertion.afterState.globalState.bytes32Vals[1]
+      node.assertion.afterState.globalState.bytes32Vals[1],
+      nodeHash
     )
   }
 

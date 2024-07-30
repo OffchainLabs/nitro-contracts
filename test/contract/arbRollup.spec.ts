@@ -1577,25 +1577,34 @@ describe.only('ArbRollupFastConfirm', () => {
     )
   })
   it('should fail to fast confirm if not fast confirmer', async function () {
-    await expect(rollup.fastConfirmNextNode(prevNodes[0])).to.be.revertedWith(
-      'NOT_FAST_CONFIRMER'
-    )
+    await expect(
+      rollup.fastConfirmNextNode(prevNodes[0], ethers.constants.HashZero)
+    ).to.be.revertedWith('NFC')
   })
   it('should fail to fast confirm if not validator', async function () {
     await expect(
       rollup
         .connect(await impersonateAccount(fastConfirmerAddr))
-        .fastConfirmNextNode(prevNodes[0])
+        .fastConfirmNextNode(prevNodes[0], prevNodes[0].nodeHash)
     ).to.be.revertedWith('NOT_VALIDATOR')
   })
-  it('should fast confirm', async function () {
+  it('should be able to set fast confirmer as validator', async function () {
     await (
       await rollupAdmin
         .connect(await impersonateAccount(upgradeExecutor))
         .setValidator([fastConfirmerAddr], [true])
     ).wait()
+  })
+  it('should fail to fast confirm if wrong nodehash', async function () {
+    await expect(
+      rollup
+        .connect(await impersonateAccount(fastConfirmerAddr))
+        .fastConfirmNextNode(prevNodes[0], ethers.constants.HashZero)
+    ).to.be.revertedWith('WH')
+  })
+  it('should fast confirm', async function () {
     await rollup
       .connect(await impersonateAccount(fastConfirmerAddr))
-      .fastConfirmNextNode(prevNodes[0])
+      .fastConfirmNextNode(prevNodes[0], prevNodes[0].nodeHash)
   })
 })
