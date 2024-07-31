@@ -13,7 +13,7 @@ import {IExpressLaneAuction, Bid} from "./IExpressLaneAuction.sol";
 import {ELCRound, LatestELCRoundsLib} from "./ELCRound.sol";
 import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 
-// CHRIS: TODO: switch signing to 712
+// CHRIS: TODO: switch signing to 712?
 // CHRIS: TODO: dont sent to beneficiary every time. Provide another function that anyone can call to flush the beneficiary balance.
 
 // CHRIS: TODO: look through all the comments and see if we want to add any of them to the spec as clarification
@@ -40,6 +40,11 @@ import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 // CHRIS: TODO: update the roundTimestamps on interface for what happens if the roundtiminginfo is updated
 //              also consider other places effected by round timing - hopefully only in that lib
 // CHRIS: TODO: if we update round timing we need to add the address to the trusted list in the resolve documentation of the interface
+// CHRIS: TODO: test initiate/finalize withdrawal with round time updates
+// * guarantees are not effected by round time updates
+// * cant set an offset in the future - should be in the past
+// * reducing the round time does have an effect on finalize - add this later
+// * check finalization times with round time update
 
 // CHRIS: TODO: go through all the functions and look for duplicate storage access
 
@@ -97,6 +102,15 @@ import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 
 // CHRIS: TODO: should the auctioneer be able to change their key?
 //              key rotation might be useful. what about the reserve price setter?
+
+// CHRIS: TODO: rewrite the spec to have offchain and onchain components
+// CHRIS: TODO: describe the different actors in the system
+// CHRIS: TODO: examine all the different actors in the system, how can they affect other parties
+// CHRIS: TODO: draw diagrams for it
+// CHRIS: TODO: gotcha: always ensure you are synced up to past the boundary before opening the auction. Otherwise you may have out of date info.
+// CHRIS: TODO: guarantee: funds cannot be locked indefinately or stolen, unless the contract is upgraded
+// CHRIS: TODO: how do we stop the auctioneer from keeping the bidding open? or even from manufacturing a bid? - we cant in this system - should document this trust assumption
+
 
 /// @title  ExpressLaneAuction
 /// @notice The express lane allows a controller to submit undelayed transactions to the sequencer
