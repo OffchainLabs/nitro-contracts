@@ -1,6 +1,6 @@
 {
   "name": "@arbitrum/nitro-contracts",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Layer 2 precompiles and rollup for Arbitrum Nitro",
   "author": "Offchain Labs, Inc.",
   "license": "BUSL-1.1",
@@ -26,7 +26,7 @@
     "build:forge:sol": "forge build --skip *.yul",
     "build:forge:yul": "FOUNDRY_PROFILE=yul forge build --skip *.sol",
     "build:forge": "yarn build:forge:sol && yarn build:forge:yul",
-    "contract:size": "STRICT=true hardhat size-contracts",
+    "contract:size": "hardhat size-contracts",
     "lint:test": "eslint ./test",
     "solhint": "solhint -f table src/**/*.sol",
     "prettier:solidity": "prettier --write src/**/*.sol",

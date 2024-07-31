@@ -17,7 +17,7 @@
   "currentChallenge(address)": "69fd251c",
   "currentRequiredStake()": "4d26732d",
   "extraChallengeTimeBlocks()": "771b2f97",
-  "fastConfirmNextNode(bytes32,bytes32)": "4a7a8010",
+  "fastConfirmNextNode(bytes32,bytes32,bytes32)": "3ed57598",
   "firstUnresolvedNode()": "d735e21d",
   "getNode(uint64)": "92c8134c",
   "getNodeCreationBlockForLogLookup(uint64)": "f63a434a",
