@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
-// CHRIS: TODO: docs and see if all of these are actually used
-
 error InsufficientBalance(uint256 amountRequested, uint256 balance);
 error InsufficientBalanceAcc(address acount, uint256 amountRequested, uint256 balance);
 error RoundDurationTooShort();

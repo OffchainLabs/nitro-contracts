@@ -94,7 +94,7 @@ library BalanceLib {
     /// @notice Initiate a withdrawal. A withdrawal is a reduction of the full amount.
     ///         Withdrawal is a two step process initialization and finalization. Finalization is only
     ///         after the supplied round parameter. The expected usage is to specify a round that is 2
-    ///         in the future to ensure that the balance cannot be reduced unexpectedly without notice. 
+    ///         in the future to ensure that the balance cannot be reduced unexpectedly without notice.
     //          An external observer can see that a withdrawal has been initiated, and will therefore
     ///         be able to take it into account and not rely on the balance being there.
     ///         In the case of the auction contract this allows the bidders to withdraw their
@@ -106,7 +106,7 @@ library BalanceLib {
             revert ZeroAmount();
         }
 
-        if(round == type(uint64).max) {
+        if (round == type(uint64).max) {
             // we use max round to specify that a withdrawal is not taking place
             // so we dont allow it as a withdrawal round. In practice max round should never
             // be reached so this isnt an issue, we just put this here as an additional
@@ -126,7 +126,7 @@ library BalanceLib {
     /// @param bal The balance to finalize
     /// @param round The round to check whether withdrawal is valid in. Usually the current round. Cannot be max round.
     function finalizeWithdrawal(Balance storage bal, uint64 round) internal returns (uint256) {
-        if(round == type(uint64).max) {
+        if (round == type(uint64).max) {
             // we use max round to specify that a withdrawal is not taking place
             // so we dont allow it as a withdrawal round. In practice max round should never
             // be reached so this isnt an issue, we just put this here as an additional
@@ -138,7 +138,6 @@ library BalanceLib {
         if (withdrawableBalance == 0) {
             revert NothingToWithdraw();
         }
-
 
         bal.balance = 0;
         return withdrawableBalance;

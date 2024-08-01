@@ -25,6 +25,38 @@ struct Bid {
     bytes signature;
 }
 
+/// @notice The arguments used to initialize an express lane auction
+struct InitArgs {
+    /// @param _auctioneer The address who can resolve auctions
+    address _auctioneer;
+    /// @param _biddingToken The erc20 token that bids will be made in
+    ///                      It is assumed that the this token does NOT have fee-on-transfer, rebasing,
+    ///                      transfer hooks or otherwise non-standard ERC20 logic.
+    address _biddingToken;
+    /// @param _beneficiary The address to which auction winners will pay the bid
+    address _beneficiary;
+    /// @param _roundTimingInfo Round timing components: offset, auction closing, round duration, reserve submission
+    RoundTimingInfo _roundTimingInfo;
+    /// @param _minReservePrice The minimum reserve price, also used to set the initial reserve price
+    uint256 _minReservePrice;
+    /// @param _auctioneerAdmin Can update the auctioneer address
+    address _auctioneerAdmin;
+    /// @param _minReservePriceSetter The address given the rights to change the min reserve price
+    address _minReservePriceSetter;
+    /// @param _minReservePriceSetterAdmin Can update the min reserve price setter address
+    address _minReservePriceSetterAdmin;
+    /// @param _reservePriceSetter The address given the rights to change the reserve price
+    address _reservePriceSetter;
+    /// @param _reservePriceSetterAdmin Can update the reserve price setter address
+    address _reservePriceSetterAdmin;
+    /// @param _beneficiarySetter The address given the rights to change the beneficiary address
+    address _beneficiarySetter;
+    /// @param _beneficiarySetterAdmin Can update the beneficiary setter address
+    address _beneficiarySetterAdmin;
+    /// @param _masterAdmin The admin that can manage all the admin roles in the contract
+    address _masterAdmin;
+}
+
 interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upgradeable {
     /// @notice An account has deposited funds to be used for bidding in the auction
     /// @param account The account that deposited funds
@@ -98,14 +130,26 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     /// @notice The role given to the address that can resolve auctions
     function AUCTIONEER_ROLE() external returns (bytes32);
 
+    /// @notice The role that administers AUCTIONEER_ROLE
+    function AUCTIONEER_ADMIN_ROLE() external returns (bytes32);
+
     /// @notice The role given to the address that can set the minimum reserve
     function MIN_RESERVE_SETTER_ROLE() external returns (bytes32);
+
+    /// @notice The role that administers the MIN_RESERVE_SETTER_ROLE
+    function MIN_RESERVE_SETTER_ADMIN_ROLE() external returns (bytes32);
 
     /// @notice The role given to the address that can set the reserve
     function RESERVE_SETTER_ROLE() external returns (bytes32);
 
+    /// @notice The role that administers the RESERVE_SETTER_ROLE
+    function RESERVE_SETTER_ADMIN_ROLE() external returns (bytes32);
+
     /// @notice The role given to the address that can set the beneficiary
     function BENEFICIARY_SETTER_ROLE() external returns (bytes32);
+
+    /// @notice The role that administers the BENEFICIARY_SETTER_ROLE
+    function BENEFICIARY_SETTER_ADMIN_ROLE() external returns (bytes32);
 
     /// @notice Domain constant to be concatenated with data before signing
     function BID_DOMAIN() external returns (bytes32);
@@ -114,6 +158,8 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     function beneficiary() external returns (address);
 
     /// @notice The ERC20 token that can be used for bidding
+    ///         It is assumed that the this token does NOT have fee-on-transfer, rebasing,
+    ///         transfer hooks or otherwise non-standard ERC20 logic.
     function biddingToken() external returns (IERC20);
 
     /// @notice The reserve price for the auctions. The reserve price setter can update this value
@@ -124,27 +170,14 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     ///         set too low
     function minReservePrice() external returns (uint256);
 
+    /// @notice Returns the currently unflushed balance of the beneficiary
+    ///         Anyone can call flushBalance to transfer this balance from the auction to the beneficiary
+    ///         This is a gas optimisation to avoid making a transfer every time an auction is resolved
+    function beneficiaryBalance() external returns (uint256);
+
     /// @notice Initialize the auction
-    /// @param _auctioneer The address who can resolve auctions
-    /// @param _beneficiary The address to which auction winners will pay the bid
-    /// @param _biddingToken The token used for payment
-    /// @param _roundTimingInfo Round timing components: offset, auction closing, round duration, reserve submission
-    /// @param _minReservePrice The minimum reserve price, also used to set the initial reserve price
-    /// @param _roleAdmin The admin that can manage roles in the contract
-    /// @param _minReservePriceSetter The address given the rights to change the min reserve price
-    /// @param _reservePriceSetter The address given the rights to change the reserve price
-    /// @param _beneficiarySetter The address given the rights to change the beneficiary address
-    function initialize(
-        address _auctioneer,
-        address _beneficiary,
-        address _biddingToken,
-        RoundTimingInfo memory _roundTimingInfo,
-        uint256 _minReservePrice,
-        address _roleAdmin,
-        address _minReservePriceSetter,
-        address _reservePriceSetter,
-        address _beneficiarySetter
-    ) external;
+    /// @param args Initialization parameters
+    function initialize(InitArgs memory args) external;
 
     /// @notice Round timing components: offset, auction closing, round duration and reserve submission
     function roundTimingInfo()
@@ -217,6 +250,10 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
 
     /// @notice Deposit an amount of ERC20 token to the auction to make bids with
     ///         Deposits must be submitted prior to bidding.
+    ///         When withdrawing the full balance must be withdrawn. This is done via a two step process
+    ///         of initialization and finalization, which takes at least 2 rounds to complete.
+    ///         The round timing info offset timestamp is the start of the zeroth round, so if deposits
+    ///         are made before that time they will need to wait until 2 rounds after that offset has occurred
     /// @dev    Deposits are submitted first so that the auctioneer can be sure that the accepted bids can actually be paid
     /// @param amount   The amount to deposit.
     function deposit(uint256 amount) external;
@@ -236,6 +273,10 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     /// @notice Finalizes a withdrawal and transfers the funds to the msg.sender
     ///         Withdrawals can only be finalized 2 rounds after being initiated
     function finalizeWithdrawal() external;
+
+    /// @notice Can be called by anyone to transfer any beneficiary balance from the auction contract to the beneficiary
+    ///         This is not done separately so that it does not need to be done during auction resolution, thus saving some gas costs there
+    function flushBeneficiaryBalance() external;
 
     /// @notice Calculates the data to be hashed for signing
     /// @param _round The round the bid is for the control of

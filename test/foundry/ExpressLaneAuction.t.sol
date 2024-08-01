@@ -90,11 +90,16 @@ contract ExpressLaneAuctionTest is Test {
 
     address auctioneer = vm.addr(146);
 
-    address roleAdmin = vm.addr(147);
+    address masterAdmin = vm.addr(147);
     uint256 minReservePrice = roundDuration / 10;
     address minReservePriceSetter = vm.addr(148);
     address reservePriceSetter = vm.addr(149);
     address beneficiarySetter = vm.addr(150);
+    address auctioneerAdmin = vm.addr(151);
+    address minReservePriceSetterAdmin = vm.addr(152);
+    address reservePriceSetterAdmin = vm.addr(153);
+    address beneficiarySetterAdmin = vm.addr(154);
+
     uint64 testRound = 13;
 
     function deploy() internal returns (MockERC20, IExpressLaneAuction) {
@@ -105,22 +110,8 @@ contract ExpressLaneAuctionTest is Test {
         ExpressLaneAuction auction = ExpressLaneAuction(
             address(new TransparentUpgradeableProxy(address(impl), address(proxyAdmin), ""))
         );
-        auction.initialize(
-            auctioneer,
-            beneficiary,
-            address(token),
-            RoundTimingInfo({
-                offsetTimestamp: uint64(block.timestamp) + 10,
-                roundDurationSeconds: roundDuration,
-                auctionClosingSeconds: roundDuration / 4,
-                reserveSubmissionSeconds: roundDuration / 4
-            }),
-            minReservePrice,
-            roleAdmin,
-            minReservePriceSetter,
-            reservePriceSetter,
-            beneficiarySetter
-        );
+        InitArgs memory args = createArgs(address(token));
+        auction.initialize(args);
 
         // move to round test round
         (uint64 offsetTimestamp, uint64 roundDurationSeconds, , ) = auction.roundTimingInfo();
@@ -129,68 +120,53 @@ contract ExpressLaneAuctionTest is Test {
         return (token, IExpressLaneAuction(auction));
     }
 
+    function createArgs(address token) internal view returns (InitArgs memory) {
+        return
+            InitArgs({
+                _auctioneer: auctioneer,
+                _beneficiary: beneficiary,
+                _biddingToken: token,
+                _roundTimingInfo: RoundTimingInfo({
+                    offsetTimestamp: uint64(block.timestamp) + 10,
+                    roundDurationSeconds: roundDuration,
+                    auctionClosingSeconds: roundDuration / 4,
+                    reserveSubmissionSeconds: roundDuration / 4
+                }),
+                _minReservePrice: minReservePrice,
+                _auctioneerAdmin: auctioneerAdmin,
+                _minReservePriceSetter: minReservePriceSetter,
+                _minReservePriceSetterAdmin: minReservePriceSetterAdmin,
+                _reservePriceSetter: reservePriceSetter,
+                _reservePriceSetterAdmin: reservePriceSetterAdmin,
+                _beneficiarySetter: beneficiarySetter,
+                _beneficiarySetterAdmin: beneficiarySetterAdmin,
+                _masterAdmin: masterAdmin
+            });
+    }
+
     function testInit() public {
         MockERC20 token = new MockERC20();
         ProxyAdmin proxyAdmin = new ProxyAdmin();
         ExpressLaneAuction impl = new ExpressLaneAuction();
+        InitArgs memory args = createArgs(address(token));
 
         vm.expectRevert("Function must be called through delegatecall");
-        impl.initialize(
-            auctioneer,
-            beneficiary,
-            address(token),
-            RoundTimingInfo({
-                offsetTimestamp: uint64(block.timestamp) + 10,
-                roundDurationSeconds: roundDuration,
-                auctionClosingSeconds: roundDuration / 4,
-                reserveSubmissionSeconds: roundDuration / 4
-            }),
-            minReservePrice,
-            roleAdmin,
-            minReservePriceSetter,
-            reservePriceSetter,
-            beneficiarySetter
-        );
+        impl.initialize(args);
 
         ExpressLaneAuction auction = ExpressLaneAuction(
             address(new TransparentUpgradeableProxy(address(impl), address(proxyAdmin), ""))
         );
 
+        InitArgs memory zbArgs = createArgs(address(token));
+        zbArgs._biddingToken = address(0);
         vm.expectRevert(abi.encodeWithSelector(ZeroBiddingToken.selector));
-        auction.initialize(
-            auctioneer,
-            beneficiary,
-            address(0),
-            RoundTimingInfo({
-                offsetTimestamp: uint64(block.timestamp) + 10,
-                roundDurationSeconds: roundDuration,
-                auctionClosingSeconds: roundDuration / 4,
-                reserveSubmissionSeconds: roundDuration / 4
-            }),
-            minReservePrice,
-            roleAdmin,
-            minReservePriceSetter,
-            reservePriceSetter,
-            beneficiarySetter
-        );
+        auction.initialize(zbArgs);
 
+        InitArgs memory rdArgs = createArgs(address(token));
+        rdArgs._roundTimingInfo.auctionClosingSeconds = roundDuration / 2;
+        rdArgs._roundTimingInfo.reserveSubmissionSeconds = roundDuration * 2 + 1;
         vm.expectRevert(abi.encodeWithSelector(RoundDurationTooShort.selector));
-        auction.initialize(
-            auctioneer,
-            beneficiary,
-            address(token),
-            RoundTimingInfo({
-                offsetTimestamp: uint64(block.timestamp) + 10,
-                roundDurationSeconds: roundDuration,
-                auctionClosingSeconds: roundDuration / 2,
-                reserveSubmissionSeconds: roundDuration * 2 + 1
-            }),
-            minReservePrice,
-            roleAdmin,
-            minReservePriceSetter,
-            reservePriceSetter,
-            beneficiarySetter
-        );
+        auction.initialize(rdArgs);
 
         vm.expectEmit(true, true, true, true);
         emit SetBeneficiary(address(0), beneficiary);
@@ -198,22 +174,7 @@ contract ExpressLaneAuctionTest is Test {
         emit SetMinReservePrice(uint256(0), minReservePrice);
         vm.expectEmit(true, true, true, true);
         emit SetReservePrice(uint256(0), minReservePrice);
-        auction.initialize(
-            auctioneer,
-            beneficiary,
-            address(token),
-            RoundTimingInfo({
-                offsetTimestamp: uint64(block.timestamp) + 10,
-                roundDurationSeconds: roundDuration,
-                auctionClosingSeconds: roundDuration / 4,
-                reserveSubmissionSeconds: roundDuration / 4
-            }),
-            minReservePrice,
-            roleAdmin,
-            minReservePriceSetter,
-            reservePriceSetter,
-            beneficiarySetter
-        );
+        auction.initialize(args);
         (
             uint64 offsetTimestamp,
             uint64 roundDurationSeconds,
@@ -229,37 +190,68 @@ contract ExpressLaneAuctionTest is Test {
         assertEq(roundDurationSeconds, roundDuration, "auction round duration");
         assertEq(reserveSubmissionSeconds, roundDuration / 4, "reserve submission seconds");
 
-        assertTrue(auction.hasRole(auction.DEFAULT_ADMIN_ROLE(), roleAdmin), "admin role");
+        assertTrue(auction.hasRole(auction.DEFAULT_ADMIN_ROLE(), masterAdmin), "admin role");
+        assertTrue(auction.hasRole(auction.AUCTIONEER_ROLE(), auctioneer), "auctioneer role");
+        assertTrue(
+            auction.hasRole(auction.AUCTIONEER_ADMIN_ROLE(), auctioneerAdmin),
+            "auctioneer admin role"
+        );
         assertTrue(
             auction.hasRole(auction.MIN_RESERVE_SETTER_ROLE(), minReservePriceSetter),
             "min reserve price setter role"
+        );
+        assertTrue(
+            auction.hasRole(auction.MIN_RESERVE_SETTER_ADMIN_ROLE(), minReservePriceSetterAdmin),
+            "min reserve price setter admin role"
         );
         assertTrue(
             auction.hasRole(auction.RESERVE_SETTER_ROLE(), reservePriceSetter),
             "reserve price setter role"
         );
         assertTrue(
+            auction.hasRole(auction.RESERVE_SETTER_ADMIN_ROLE(), reservePriceSetterAdmin),
+            "reserve price setter admin role"
+        );
+        assertTrue(
             auction.hasRole(auction.BENEFICIARY_SETTER_ROLE(), beneficiarySetter),
             "beneficiary setter role"
         );
+        assertTrue(
+            auction.hasRole(auction.BENEFICIARY_SETTER_ADMIN_ROLE(), beneficiarySetterAdmin),
+            "beneficiary setter admin role"
+        );
+        assertEq(auction.getRoleAdmin(auction.AUCTIONEER_ROLE()), auction.AUCTIONEER_ADMIN_ROLE());
+        assertEq(
+            auction.getRoleAdmin(auction.MIN_RESERVE_SETTER_ROLE()),
+            auction.MIN_RESERVE_SETTER_ADMIN_ROLE()
+        );
+        assertEq(
+            auction.getRoleAdmin(auction.RESERVE_SETTER_ROLE()),
+            auction.RESERVE_SETTER_ADMIN_ROLE()
+        );
+        assertEq(
+            auction.getRoleAdmin(auction.BENEFICIARY_SETTER_ROLE()),
+            auction.BENEFICIARY_SETTER_ADMIN_ROLE()
+        );
+        assertEq(
+            auction.getRoleAdmin(auction.AUCTIONEER_ADMIN_ROLE()),
+            auction.DEFAULT_ADMIN_ROLE()
+        );
+        assertEq(
+            auction.getRoleAdmin(auction.MIN_RESERVE_SETTER_ADMIN_ROLE()),
+            auction.DEFAULT_ADMIN_ROLE()
+        );
+        assertEq(
+            auction.getRoleAdmin(auction.RESERVE_SETTER_ADMIN_ROLE()),
+            auction.DEFAULT_ADMIN_ROLE()
+        );
+        assertEq(
+            auction.getRoleAdmin(auction.BENEFICIARY_SETTER_ADMIN_ROLE()),
+            auction.DEFAULT_ADMIN_ROLE()
+        );
 
         vm.expectRevert("Initializable: contract is already initialized");
-        auction.initialize(
-            auctioneer,
-            beneficiary,
-            address(token),
-            RoundTimingInfo({
-                offsetTimestamp: uint64(block.timestamp) + 10,
-                roundDurationSeconds: roundDuration,
-                auctionClosingSeconds: roundDuration / 4,
-                reserveSubmissionSeconds: roundDuration / 4
-            }),
-            minReservePrice,
-            roleAdmin,
-            minReservePriceSetter,
-            reservePriceSetter,
-            beneficiarySetter
-        );
+        auction.initialize(args);
 
         // cannot send funds to the contract
         (bool success, ) = address(auction).call{value: 10}(hex"");
@@ -650,6 +642,46 @@ contract ExpressLaneAuctionTest is Test {
                 h1: h1,
                 biddingForRound: biddingForRound
             });
+    }
+
+    function testGetBidBytes() public {
+        (MockERC20 erc20, IExpressLaneAuction auction) = deployAndDeposit();
+        uint64 biddingForRound = auction.currentRound() + 1;
+        bytes memory b0 = auction.getBidBytes(
+            biddingForRound,
+            bidders[0].amount / 2,
+            bidders[0].elc
+        );
+        assertEq(b0.length, 144);
+    }
+
+    function testFlushBeneficiaryBalance() public {
+        ResolveSetup memory rs = deployDepositAndBids();
+        vm.stopPrank();
+
+        vm.expectRevert(ZeroAmount.selector);
+        rs.auction.flushBeneficiaryBalance();
+
+        vm.prank(auctioneer);
+        rs.auction.resolveMultiBidAuction(rs.bid1, rs.bid0);
+
+        assertFalse(rs.auction.beneficiaryBalance() == 0, "bal before");
+        uint256 auctionBalanceBefore = rs.erc20.balanceOf(address(rs.auction));
+        uint256 beneficiaryBalanceBefore = rs.erc20.balanceOf(rs.auction.beneficiary());
+
+        // any random address should be able to call this
+        vm.prank(vm.addr(34567890));
+        rs.auction.flushBeneficiaryBalance();
+
+        uint256 auctionBalanceAfter = rs.erc20.balanceOf(address(rs.auction));
+        uint256 beneficiaryBalanceAfter = rs.erc20.balanceOf(rs.auction.beneficiary());
+        assertTrue(rs.auction.beneficiaryBalance() == 0, "bal after");
+        assertEq(beneficiaryBalanceAfter - beneficiaryBalanceBefore, rs.bid0.amount);
+        assertEq(auctionBalanceBefore - auctionBalanceAfter, rs.bid0.amount);
+
+        // cannot flush twice
+        vm.expectRevert(ZeroAmount.selector);
+        rs.auction.flushBeneficiaryBalance();
     }
 
     function testCannotResolveNotAuctioneer() public {
@@ -1138,7 +1170,11 @@ contract ExpressLaneAuctionTest is Test {
         rs.auction.resolveMultiBidAuction(rs.bid1, rs.bid0);
     }
 
-    function checkResolvedRounds(IExpressLaneAuction auction, ELCRound memory expected0, ELCRound memory expected1) internal {
+    function checkResolvedRounds(
+        IExpressLaneAuction auction,
+        ELCRound memory expected0,
+        ELCRound memory expected1
+    ) internal {
         (ELCRound memory actual0, ELCRound memory actual1) = auction.resolvedRounds();
         assertEq(actual0.expressLaneController, expected0.expressLaneController, "0 elc");
         assertEq(actual0.round, expected0.round, "0 round");
@@ -1178,11 +1214,8 @@ contract ExpressLaneAuctionTest is Test {
         // firstPriceBidder (bidders[1].addr) pays the price of the second price bidder (bidders[0].addr)
         assertEq(rs.auction.balanceOf(bidders[1].addr), bidders[1].amount - bidders[0].amount / 2);
         assertEq(rs.auction.balanceOf(bidders[0].addr), bidders[0].amount);
-        assertEq(rs.erc20.balanceOf(beneficiary), bidders[0].amount / 2);
-        assertEq(
-            rs.erc20.balanceOf(address(rs.auction)),
-            auctionBalanceBefore - bidders[0].amount / 2
-        );
+        assertEq(rs.auction.beneficiaryBalance(), bidders[0].amount / 2);
+        assertEq(rs.erc20.balanceOf(address(rs.auction)), auctionBalanceBefore);
         ELCRound memory expected0 = ELCRound(rs.bid1.expressLaneController, biddingForRound);
         checkResolvedRounds(rs.auction, expected0, ELCRound(address(0), 0));
 
@@ -1266,7 +1299,7 @@ contract ExpressLaneAuctionTest is Test {
         });
 
         auctionBalanceBefore = rs.erc20.balanceOf(address(rs.auction));
-        uint256 beneficiaryBalanceBefore = rs.erc20.balanceOf(beneficiary);
+        uint256 beneficiaryBalanceBefore = rs.auction.beneficiaryBalance();
 
         vm.expectEmit(true, true, true, true);
         emit SetExpressLaneController(
@@ -1274,9 +1307,7 @@ contract ExpressLaneAuctionTest is Test {
             address(0),
             bidders[3].elc,
             uint64(block.timestamp + auctionClosingSeconds),
-            uint64(
-            block.timestamp + auctionClosingSeconds + roundDurationSeconds - 1
-        )
+            uint64(block.timestamp + auctionClosingSeconds + roundDurationSeconds - 1)
         );
         vm.expectEmit(true, true, true, true);
         emit AuctionResolved(
@@ -1287,9 +1318,7 @@ contract ExpressLaneAuctionTest is Test {
             bidders[3].amount / 4,
             bidders[2].amount / 4,
             uint64(block.timestamp + auctionClosingSeconds),
-            uint64(
-            block.timestamp + auctionClosingSeconds + roundDurationSeconds - 1
-        )
+            uint64(block.timestamp + auctionClosingSeconds + roundDurationSeconds - 1)
         );
         rs.auction.resolveMultiBidAuction(bid34[1], bid34[0]);
 
@@ -1304,16 +1333,16 @@ contract ExpressLaneAuctionTest is Test {
             "bidders[2].addr balance"
         );
         assertEq(
-            rs.erc20.balanceOf(beneficiary) - beneficiaryBalanceBefore,
+            rs.auction.beneficiaryBalance() - beneficiaryBalanceBefore,
             bidders[2].amount / 4,
             "beneficiary balance"
         );
-        assertEq(
-            rs.erc20.balanceOf(address(rs.auction)),
-            auctionBalanceBefore - bidders[2].amount / 4,
-            "auction balance"
+        assertEq(rs.erc20.balanceOf(address(rs.auction)), auctionBalanceBefore, "auction balance");
+        checkResolvedRounds(
+            rs.auction,
+            ELCRound(bid34[1].expressLaneController, biddingForRound),
+            expected0
         );
-        checkResolvedRounds(rs.auction, ELCRound(bid34[1].expressLaneController, biddingForRound), expected0);
 
         vm.stopPrank();
     }
@@ -1440,8 +1469,8 @@ contract ExpressLaneAuctionTest is Test {
         // firstPriceBidder (bidders[1].addr) pays the reserve price
         assertEq(rs.auction.balanceOf(bidders[1].addr), bidders[1].amount - minReservePrice);
         assertEq(rs.auction.balanceOf(bidders[0].addr), bidders[0].amount);
-        assertEq(rs.erc20.balanceOf(beneficiary), minReservePrice);
-        assertEq(rs.erc20.balanceOf(address(rs.auction)), auctionBalanceBefore - minReservePrice);
+        assertEq(rs.auction.beneficiaryBalance(), minReservePrice);
+        assertEq(rs.erc20.balanceOf(address(rs.auction)), auctionBalanceBefore);
         ELCRound memory expected0 = ELCRound(rs.bid1.expressLaneController, biddingForRound);
         checkResolvedRounds(rs.auction, expected0, ELCRound(address(0), 0));
     }

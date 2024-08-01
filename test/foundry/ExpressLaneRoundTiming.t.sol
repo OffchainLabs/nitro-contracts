@@ -43,6 +43,14 @@ contract ExpressLaneRoundTimingTest is Test {
             reserveSubmissionSeconds: 20
         });
 
+    RoundTimingInfo matchInfo =
+        RoundTimingInfo({
+            offsetTimestamp: 1000,
+            roundDurationSeconds: 100,
+            auctionClosingSeconds: 25,
+            reserveSubmissionSeconds: 75
+        });
+
     function testCurrentRound() public {
         RoundTimingInfoImp ri = new RoundTimingInfoImp(info);
 
@@ -62,6 +70,10 @@ contract ExpressLaneRoundTimingTest is Test {
         assertEq(ri.currentRound(), 1, "At round 1");
         vm.warp(info.offsetTimestamp + 5 * info.roundDurationSeconds);
         assertEq(ri.currentRound(), 5, "At round 5");
+
+        RoundTimingInfoImp mri = new RoundTimingInfoImp(matchInfo);
+        vm.warp(matchInfo.offsetTimestamp + matchInfo.roundDurationSeconds);
+        assertEq(mri.currentRound(), 1, "mri at round 1");
     }
 
     function testIsAuctionClosed() public {
@@ -89,6 +101,10 @@ contract ExpressLaneRoundTimingTest is Test {
         assertTrue(ri.isAuctionRoundClosed(), "At round start");
         vm.warp(info.offsetTimestamp + 2 * info.roundDurationSeconds);
         assertFalse(ri.isAuctionRoundClosed(), "At next round");
+
+        RoundTimingInfoImp mri = new RoundTimingInfoImp(matchInfo);
+        vm.warp(info.offsetTimestamp + info.roundDurationSeconds - info.auctionClosingSeconds);
+        assertTrue(mri.isAuctionRoundClosed(), "mri close");
     }
 
     function testTimeIntoRound() public {
@@ -109,6 +125,10 @@ contract ExpressLaneRoundTimingTest is Test {
         assertEq(ri.timeIntoRound(), 14, "After next round");
         vm.warp(info.offsetTimestamp + 5 * info.roundDurationSeconds + 17);
         assertEq(ri.timeIntoRound(), 17, "After next round");
+
+        RoundTimingInfoImp mri = new RoundTimingInfoImp(matchInfo);
+        vm.warp(matchInfo.offsetTimestamp + matchInfo.roundDurationSeconds + 14);
+        assertEq(mri.timeIntoRound(), 14, "mri after next round");
     }
 
     function testIsReserveBlackout() public {
@@ -169,6 +189,12 @@ contract ExpressLaneRoundTimingTest is Test {
         assertTrue(ri.isReserveBlackout(0), "At next reserve submission deadline");
         assertTrue(ri.isReserveBlackout(1), "At next reserve submission deadline");
         assertFalse(ri.isReserveBlackout(2), "At next reserve submission deadline");
+
+        RoundTimingInfoImp mri = new RoundTimingInfoImp(matchInfo);
+        vm.warp(matchInfo.offsetTimestamp + matchInfo.roundDurationSeconds);
+        assertTrue(mri.isReserveBlackout(0), "mri at next round");
+        assertTrue(mri.isReserveBlackout(1), "mri at next round");
+        assertFalse(mri.isReserveBlackout(2), "mri at next round");
     }
 
     function testRoundTimestamps() public {
