@@ -26,6 +26,7 @@ export const nova: Config = {
     confirmPeriodBlocks: 45818, // same as old rollup, ~6.4 days
     challengePeriodBlocks: 45818, // same as confirm period
     stakeToken: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
+    // todo: confirm stakes
     stakeAmt: parseEther('1'),
     miniStakeAmounts: [
       parseEther('0'),
