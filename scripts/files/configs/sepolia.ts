@@ -1,9 +1,10 @@
 import { parseEther } from 'ethers/lib/utils'
 import { Config } from '../../boldUpgradeCommon'
+import { hoursToBlocks } from '.'
 
 export const sepolia: Config = {
   contracts: {
-    excessStakeReceiver: '0x391611E7bba966000AC6c78aFc673C4AE46f8BCa',
+    excessStakeReceiver: '0x391611E7bba966000AC6c78aFc673C4AE46f8BCa', // chain owner multisig
     rollup: '0xd80810638dbDF9081b72C1B33c65375e807281C8',
     bridge: '0x38f918D0E9F1b721EDaA41302E399fa1B79333a9',
     sequencerInbox: '0x6c97864CE4bEf387dE0b3310A44230f7E3F1be0D',
@@ -38,14 +39,15 @@ export const sepolia: Config = {
     smallStepLeafSize: 2**23,
     numBigStepLevel: 1,
     maxDataSize: 117964,
-    isDelayBufferable: false, // batch poster not yet ready
+    // TODO: set delay bufferable to true and set a very high buffer threshold?
+    isDelayBufferable: false,
     bufferConfig: {
-      max: 14400, // 48 hours
-      threshold: 300, // 1 hours
+      max: hoursToBlocks(48),
+      threshold: hoursToBlocks(1),
       replenishRateInBasis: 500,
     },
-},
-validators: [ // current validators
+  },
+  validators: [ // current validators
     '0x8a8f0a24d7e58a76FC8F77bb68C7c902b91e182e',
     '0x87630025E63A30eCf9Ca9d580d9D95922Fea6aF0',
     '0xC32B93e581db6EBc50C08ce381143A259B92f1ED',

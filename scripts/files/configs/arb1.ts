@@ -1,11 +1,11 @@
 import { parseEther } from 'ethers/lib/utils'
 import { Config } from '../../boldUpgradeCommon'
+import { hoursToBlocks } from '.'
 
 export const arb1: Config = {
   contracts: {
     // it both the excess stake receiver and loser stake escrow
-    // TODO: change this to a fee router before real deployment
-    excessStakeReceiver: '0xE6841D92B0C345144506576eC13ECf5103aC7f49',
+    excessStakeReceiver: '0x40Cd7D713D7ae463f95cE5d342Ea6E7F5cF7C999', // parent to child router
     rollup: '0x5eF0D09d1E6204141B4d37530808eD19f60FBa35',
     bridge: '0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a',
     sequencerInbox: '0x1c479675ad559DC151F6Ec7ed3FbF8ceE79582B6',
@@ -22,7 +22,7 @@ export const arb1: Config = {
     seqInbox: '0x554723262467f125ac9e1cdfa9ce15cc53822dbd',
   },
   settings: {
-    challengeGracePeriodBlocks: 14400, // 2 days
+    challengeGracePeriodBlocks: hoursToBlocks(48),
     confirmPeriodBlocks: 45818, // same as old rollup, ~6.4 days
     challengePeriodBlocks: 45818, // same as confirm period
     stakeToken: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
@@ -31,31 +31,34 @@ export const arb1: Config = {
     chainId: 42161,
     anyTrustFastConfirmer: '0x0000000000000000000000000000000000000000',
     disableValidatorWhitelist: true,
-    blockLeafSize: 1048576, // todo below
-    bigStepLeafSize: 512,
-    smallStepLeafSize: 128,
+    blockLeafSize: 2**26,
+    bigStepLeafSize: 2**19,
+    smallStepLeafSize: 2**23,
     numBigStepLevel: 1,
     maxDataSize: 117964,
     isDelayBufferable: true,
+    // TODO: align
     bufferConfig: {
-      max: 14400,
-      threshold: 300,
+      max: hoursToBlocks(48),
+      threshold: hoursToBlocks(1),
       replenishRateInBasis: 500,
     },
   },
+  // current validators
+  // TODO: we should probably leave this empty
   validators: [
-    '0x0ff813f6bd577c3d1cdbe435bac0621be6ae34b4',
-    '0x54c0d3d6c101580db3be8763a2ae2c6bb9dc840c',
-    '0x56d83349c2b8dcf74d7e92d5b6b33d0badd52d78',
-    '0x610aa279989f440820e14248bd3879b148717974',
-    '0x6fb914de4653ec5592b7c15f4d9466cbd03f2104',
-    '0x758c6bb08b3ea5889b5cddbdef9a45b3a983c398',
-    '0x7cf3d537733f6ba4183a833c9b021265716ce9d0',
-    '0x83215480db2c6a7e56f9e99ef93ab9b36f8a3dd5',
-    '0xab1a39332e934300ebcc57b5f95ca90631a347ff',
-    '0xb0cb1384e3f4a9a9b2447e39b05e10631e1d34b0',
-    '0xddf2f71ab206c0138a8eceeb54386567d5abf01e',
-    '0xf59caf75e8a4bfba4e6e07ad86c7e498e4d2519b',
-    '0xf8d3e1cf58386c92b27710c6a0d8a54c76bc6ab5',
-  ],
+    '0x83215480dB2C6A7E56f9E99EF93AB9B36F8A3DD5',
+    '0x7CF3d537733F6Ba4183A833c9B021265716cE9d0',
+    '0x56D83349c2B8DCF74d7E92D5b6B33d0BADD52D78',
+    '0x758C6bB08B3ea5889B5cddbdeF9A45b3a983c398',
+    '0x6Fb914de4653eC5592B7c15F4d9466Cbd03F2104',
+    '0xf59caf75e8A4bFBA4e6e07aD86C7E498E4d2519b',
+    '0xB0CB1384e3f4a9a9b2447e39b05e10631E1D34B0',
+    '0x54c0D3d6C101580dB3be8763A2aE2c6bb9dc840c',
+    '0x0fF813f6BD577c3D1cDbE435baC0621BE6aE34B4',
+    '0xAB1A39332e934300eBCc57B5f95cA90631a347FF',
+    '0xdDf2F71Ab206C0138A8eceEb54386567D5abF01E',
+    '0x610Aa279989F440820e14248BD3879B148717974',
+    '0xF8D3E1cF58386c92B27710C6a0D8A54c76BC6ab5'
+  ]
 }
