@@ -480,6 +480,28 @@ contract ExpressLaneAuction is
         );
     }
 
+    // struct Trasferrer {
+    //     address addr;
+    //     uint64 fixedUntilRound;
+    //     // add a bool for auto reset?
+    //     bool resetAfterTransfer;
+    // }
+    // mapping(address => Trasferrer) transferrers;
+    // // CHRIS: TODO: docs and tests
+    // function setTransferrer(Transferrer transferrer) public {
+    //     // if a transferrer has been set
+    //     Transferrer currentTransferrer = transferrers[msg.sender];
+    //     if(currentTransferrer.addr != addr(0) && currentTransferrer.fixedUntilRound > roundTimingInfo.currentRound()){
+    //         // CHRIS: TODO:
+    //         // revert
+    //     }
+
+    //     transferrers[msg.sender] = transferrer;
+
+    //     // CHRIS: TODO: events
+    // }
+
+
     /// @inheritdoc IExpressLaneAuction
     function transferExpressLaneController(uint64 round, address newExpressLaneController)
         external
@@ -495,13 +517,22 @@ contract ExpressLaneAuction is
         ELCRound storage resolvedRound = latestResolvedRounds.resolvedRound(round);
 
         address resolvedELC = resolvedRound.expressLaneController;
+        // CHRIS: TODO:
+        // address transferrer = transferrers[resolvedELC].addr;
+        // if(transferrer != address(0)) {
+        //     if(transferrer != msg.sender) {
+        //         revert("hi");
+        //     }
+        // } else 
         if (resolvedELC != msg.sender) {
             revert NotExpressLaneController(round, resolvedELC, msg.sender);
         }
-
+        
         resolvedRound.expressLaneController = newExpressLaneController;
 
         (uint64 start, uint64 end) = info.roundTimestamps(round);
+        // CHRIS: TODO: add the transferrer here?
+        // CHRIS: TODO: if reset after transfer then 0 out the transferrer
         emit SetExpressLaneController(
             round,
             resolvedELC,
