@@ -21,6 +21,7 @@ export const sepolia: Config = {
     seqInbox: '0xdd63bcaa89d7c3199ef220c1dd59c49f821078b8',
   },
   settings: {
+    // TODO: confirm that we want 20/20
     challengeGracePeriodBlocks: 20,
     confirmPeriodBlocks: 20, // current is 20 blocks, 45818 is arb1 config
     challengePeriodBlocks: 45818, // same as arb1
