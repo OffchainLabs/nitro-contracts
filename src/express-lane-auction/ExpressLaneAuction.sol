@@ -43,24 +43,6 @@ import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 // * reducing the round time does have an effect on finalize - add this later
 // * check finalization times with round time update
 
-// CHRIS: TODO:
-// do the following to e2e test whether everything works before the offset
-// 1. before the offset
-//    * do deposit
-//    * initiate withdrawal
-//    * fail finalize withdrawal ofc
-//    * set reserve
-//    * fail resolve
-//    * check all of the getters return the expected amounts
-// 2. during round 0
-//    * same as above, except resolve is allowed during the correct period
-//    * and setting reserve fails during correct period
-//    * check all of the getters
-// 3. during round 1
-//    * same as above
-// 4. during round 2
-//    * same as above, but can finalize the withdrawal
-
 // CHRIS: TODO: add ability to set the transferrer of controller rights
 
 // CHRIS: TODO: rewrite the spec to have offchain and onchain components
