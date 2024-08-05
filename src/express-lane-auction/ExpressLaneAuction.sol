@@ -144,10 +144,10 @@ contract ExpressLaneAuction is
         emit SetBeneficiary(address(0), args._beneficiary);
 
         minReservePrice = args._minReservePrice;
-        emit SetMinReservePrice(uint256(0), args._minReservePrice);
+        emit SetMinReservePrice(0, args._minReservePrice);
 
         reservePrice = args._minReservePrice;
-        emit SetReservePrice(uint256(0), args._minReservePrice);
+        emit SetReservePrice(0, args._minReservePrice);
 
         if (
             args._roundTimingInfo.reserveSubmissionSeconds +
@@ -218,7 +218,7 @@ contract ExpressLaneAuction is
 
     /// @inheritdoc IExpressLaneAuction
     function isReserveBlackout() external view returns (bool) {
-        (ELCRound memory lastRoundResolved, ) = latestResolvedRounds.latestELCRound();
+        (ELCRound storage lastRoundResolved, ) = latestResolvedRounds.latestELCRound();
         return roundTimingInfo.isReserveBlackout(lastRoundResolved.round);
     }
 
@@ -258,7 +258,7 @@ contract ExpressLaneAuction is
 
     /// @inheritdoc IExpressLaneAuction
     function setReservePrice(uint256 newReservePrice) external onlyRole(RESERVE_SETTER_ROLE) {
-        (ELCRound memory lastRoundResolved, ) = latestResolvedRounds.latestELCRound();
+        (ELCRound storage lastRoundResolved, ) = latestResolvedRounds.latestELCRound();
         if (roundTimingInfo.isReserveBlackout(lastRoundResolved.round)) {
             revert ReserveBlackout();
         }
@@ -464,7 +464,7 @@ contract ExpressLaneAuction is
         // to the check above that ensures the first price bidder and second price bidder are different
         if (
             firstPriceBid.amount == secondPriceBid.amount &&
-            uint256(keccak256(abi.encodePacked(firstPriceBidder, firstBidBytes))) <=
+            uint256(keccak256(abi.encodePacked(firstPriceBidder, firstBidBytes))) <
             uint256(keccak256(abi.encodePacked(secondPriceBidder, secondBidBytes)))
         ) {
             revert TieBidsWrongOrder();
