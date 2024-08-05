@@ -20,3 +20,4 @@ error ReserveBlackout();
 error RoundTooOld(uint256 round, uint256 currentRound);
 error RoundNotResolved(uint256 round);
 error NotExpressLaneController(uint64 round, address controller, address sender);
+error FixedTransferrer(uint64 fixedUntilRound);

@@ -9,7 +9,7 @@ import {
     AccessControlEnumerableUpgradeable
 } from "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 import {DelegateCallAware} from "../libraries/DelegateCallAware.sol";
-import {IExpressLaneAuction, Bid, InitArgs} from "./IExpressLaneAuction.sol";
+import {IExpressLaneAuction, Bid, InitArgs, Transferrer} from "./IExpressLaneAuction.sol";
 import {ELCRound, LatestELCRoundsLib} from "./ELCRound.sol";
 import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 
@@ -132,6 +132,9 @@ contract ExpressLaneAuction is
 
     /// @inheritdoc IExpressLaneAuction
     uint256 public beneficiaryBalance;
+
+    /// @inheritdoc IExpressLaneAuction
+    mapping(address => Transferrer) public transferrerOf;
 
     /// @inheritdoc IExpressLaneAuction
     function initialize(InitArgs memory args) public initializer onlyDelegated {
@@ -480,27 +483,21 @@ contract ExpressLaneAuction is
         );
     }
 
-    // struct Trasferrer {
-    //     address addr;
-    //     uint64 fixedUntilRound;
-    //     // add a bool for auto reset?
-    //     bool resetAfterTransfer;
-    // }
-    // mapping(address => Trasferrer) transferrers;
-    // // CHRIS: TODO: docs and tests
-    // function setTransferrer(Transferrer transferrer) public {
-    //     // if a transferrer has been set
-    //     Transferrer currentTransferrer = transferrers[msg.sender];
-    //     if(currentTransferrer.addr != addr(0) && currentTransferrer.fixedUntilRound > roundTimingInfo.currentRound()){
-    //         // CHRIS: TODO:
-    //         // revert
-    //     }
+    /// @notice Sets a transferrer for an express lane controller
+    ///         The transferrer is an address that will have the right to transfer express lane controller rights
+    ///         on behalf an express lane controller.
+    /// @param transferrer The transferrer to set
+    function setTransferrer(Transferrer calldata transferrer) external {
+        // if a transferrer has already been set, it may be fixed until a future round
+        Transferrer storage currentTransferrer = transferrerOf[msg.sender];
+        if(currentTransferrer.addr != address(0) && currentTransferrer.fixedUntilRound > roundTimingInfo.currentRound()){
+            revert FixedTransferrer(currentTransferrer.fixedUntilRound);
+        }
 
-    //     transferrers[msg.sender] = transferrer;
+        transferrerOf[msg.sender] = transferrer;
 
-    //     // CHRIS: TODO: events
-    // }
-
+        emit SetTransferrer(msg.sender, transferrer.addr, transferrer.fixedUntilRound);
+    }
 
     /// @inheritdoc IExpressLaneAuction
     function transferExpressLaneController(uint64 round, address newExpressLaneController)

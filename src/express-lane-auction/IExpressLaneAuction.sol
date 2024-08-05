@@ -25,6 +25,18 @@ struct Bid {
     bytes signature;
 }
 
+/// @notice Sets a transferrer for an express lane controller
+///         The transferrer is an address that will have the right to transfer express lane controller rights
+///         on behalf an express lane controller.
+struct Transferrer {
+    /// @notice The address of the transferrer
+    address addr;
+    /// @notice The express lane controller can choose to fix the transferrer until a future round number
+    ///         This gives them ability to guarantee to other parties that they will not change transferrer during an ongoing round
+    ///         The express lane controller can ignore this feature by setting this value to 0.
+    uint64 fixedUntilRound;
+}
+
 /// @notice The arguments used to initialize an express lane auction
 struct InitArgs {
     /// @param _auctioneer The address who can resolve auctions
@@ -112,6 +124,12 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
         uint64 endTimestamp
     );
 
+    /// @notice A new transferrer has been set for 
+    /// @param expressLaneController The express lane controller that has a transferrer
+    /// @param transferrer The transferrer chosen
+    /// @param fixedUntilRound The round until which this transferrer is fixed for this controller
+    event SetTransferrer(address indexed expressLaneController, address indexed transferrer, uint64 fixedUntilRound);
+
     /// @notice The minimum reserve price was set
     /// @param oldPrice The previous minimum reserve price
     /// @param newPrice The new minimum reserve price
@@ -174,6 +192,12 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     ///         Anyone can call flushBalance to transfer this balance from the auction to the beneficiary
     ///         This is a gas optimisation to avoid making a transfer every time an auction is resolved
     function beneficiaryBalance() external returns (uint256);
+
+    /// @notice Express lane controllers can optionally set a transferrer address that has the rights
+    ///         to transfer their controller rights. This function returns the transferrer if one has been set
+    ///         Returns the transferrer for the supplied controller, and the round until which this
+    ///         transferrer is fixed if set.
+    function transferrerOf(address expressLaneController) external returns (address addr, uint64 fixedUntil);
 
     /// @notice Initialize the auction
     /// @param args Initialization parameters

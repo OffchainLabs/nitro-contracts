@@ -645,7 +645,7 @@ contract ExpressLaneAuctionTest is Test {
     }
 
     function testGetBidBytes() public {
-        (MockERC20 erc20, IExpressLaneAuction auction) = deployAndDeposit();
+        (, IExpressLaneAuction auction) = deployAndDeposit();
         uint64 biddingForRound = auction.currentRound() + 1;
         bytes memory b0 = auction.getBidBytes(
             biddingForRound,
