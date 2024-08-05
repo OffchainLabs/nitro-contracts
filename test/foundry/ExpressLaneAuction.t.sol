@@ -40,12 +40,18 @@ contract ExpressLaneAuctionTest is Test {
     event SetMinReservePrice(uint256 oldPrice, uint256 newPrice);
     event SetExpressLaneController(
         uint64 round,
-        address from,
-        address to,
+        address indexed from,
+        address indexed to,
+        address indexed transferor,
         uint64 startTimestamp,
         uint64 endTimestamp
     );
     event SetBeneficiary(address oldBeneficiary, address newBeneficiary);
+    event SetTransferor(
+        address indexed expressLaneController,
+        address indexed transferor,
+        uint64 fixedUntilRound
+    );
 
     uint64 roundDuration = 60; // 1 min
 
@@ -1195,6 +1201,7 @@ contract ExpressLaneAuctionTest is Test {
             biddingForRound,
             address(0),
             bidders[1].elc,
+            address(0),
             uint64(block.timestamp + auctionClosingSeconds),
             uint64(block.timestamp + auctionClosingSeconds + roundDurationSeconds - 1)
         );
@@ -1306,6 +1313,7 @@ contract ExpressLaneAuctionTest is Test {
             biddingForRound,
             address(0),
             bidders[3].elc,
+            address(0),
             uint64(block.timestamp + auctionClosingSeconds),
             uint64(block.timestamp + auctionClosingSeconds + roundDurationSeconds - 1)
         );
@@ -1450,6 +1458,7 @@ contract ExpressLaneAuctionTest is Test {
             biddingForRound,
             address(0),
             bidders[1].elc,
+            address(0),
             uint64(block.timestamp + auctionClosingSeconds),
             uint64(block.timestamp + auctionClosingSeconds + roundDurationSeconds - 1)
         );
@@ -1661,7 +1670,14 @@ contract ExpressLaneAuctionTest is Test {
         (uint64 start, uint64 end) = rs.auction.roundTimestamps(testRound + 1);
         vm.prank(bidders[1].elc);
         vm.expectEmit(true, true, true, true);
-        emit SetExpressLaneController(testRound + 1, bidders[1].elc, bidders[0].elc, start, end);
+        emit SetExpressLaneController(
+            testRound + 1,
+            bidders[1].elc,
+            bidders[0].elc,
+            bidders[1].elc,
+            start,
+            end
+        );
         rs.auction.transferExpressLaneController(testRound + 1, bidders[0].elc);
 
         (, uint64 roundDurationSeconds, , ) = rs.auction.roundTimingInfo();
@@ -1680,6 +1696,7 @@ contract ExpressLaneAuctionTest is Test {
             testRound + 1,
             bidders[0].elc,
             bidders[1].elc,
+            bidders[0].elc,
             uint64(block.timestamp),
             end
         );
@@ -1715,6 +1732,7 @@ contract ExpressLaneAuctionTest is Test {
             testRound + 1,
             bidders[1].elc,
             bidders[0].elc,
+            bidders[1].elc,
             uint64(block.timestamp),
             end
         );
@@ -1736,8 +1754,85 @@ contract ExpressLaneAuctionTest is Test {
         end = end + roundDuration;
         vm.prank(bidders[3].elc);
         vm.expectEmit(true, true, true, true);
-        emit SetExpressLaneController(testRound + 2, bidders[3].elc, bidders[2].elc, start, end);
+        emit SetExpressLaneController(
+            testRound + 2,
+            bidders[3].elc,
+            bidders[2].elc,
+            bidders[3].elc,
+            start,
+            end
+        );
         rs.auction.transferExpressLaneController(testRound + 2, bidders[2].elc);
+
+        // set a transferor and have them transfer
+        vm.prank(bidders[2].elc);
+        rs.auction.setTransferor(Transferor(bidders[2].addr, 1000));
+
+        vm.prank(bidders[3].elc);
+        vm.expectRevert(
+            abi.encodeWithSelector(NotTransferor.selector, bidders[2].addr, bidders[3].elc)
+        );
+        rs.auction.transferExpressLaneController(testRound + 2, bidders[2].elc);
+
+        // change next now
+        vm.prank(bidders[2].addr);
+        vm.expectEmit(true, true, true, true);
+        emit SetExpressLaneController(
+            testRound + 2,
+            bidders[2].elc,
+            bidders[3].elc,
+            bidders[2].addr,
+            start,
+            end
+        );
+        rs.auction.transferExpressLaneController(testRound + 2, bidders[3].elc);
+    }
+
+    function testSetTransferor() public {
+        (, IExpressLaneAuction auction) = deploy();
+
+        address elc = vm.addr(1559);
+        address transferor = vm.addr(1560);
+        address transferor2 = vm.addr(1561);
+        uint64 fixedUntilRound = 137;
+        address actualTransferor;
+        uint64 actualFixedUntil;
+        (actualTransferor, actualFixedUntil) = auction.transferorOf(elc);
+        assertEq(actualTransferor, address(0));
+        assertEq(actualFixedUntil, 0);
+
+        vm.prank(elc);
+        vm.expectEmit(true, true, true, true);
+        emit SetTransferor(elc, transferor, 0);
+        auction.setTransferor(Transferor({addr: transferor, fixedUntilRound: 0}));
+        (actualTransferor, actualFixedUntil) = auction.transferorOf(elc);
+        assertEq(actualTransferor, transferor);
+        assertEq(actualFixedUntil, 0);
+
+        vm.prank(elc);
+        vm.expectEmit(true, true, true, true);
+        emit SetTransferor(elc, transferor2, fixedUntilRound);
+        auction.setTransferor(Transferor({addr: transferor2, fixedUntilRound: fixedUntilRound}));
+        (actualTransferor, actualFixedUntil) = auction.transferorOf(elc);
+        assertEq(actualTransferor, transferor2);
+        assertEq(actualFixedUntil, fixedUntilRound);
+
+        vm.prank(elc);
+        vm.expectRevert(abi.encodeWithSelector(FixedTransferor.selector, fixedUntilRound));
+        auction.setTransferor(Transferor({addr: transferor, fixedUntilRound: fixedUntilRound + 1}));
+
+        while (auction.currentRound() < fixedUntilRound) {
+            vm.warp(block.timestamp + roundDuration);
+        }
+
+        assertEq(auction.currentRound(), fixedUntilRound);
+        vm.prank(elc);
+        vm.expectEmit(true, true, true, true);
+        emit SetTransferor(elc, transferor, fixedUntilRound + 1);
+        auction.setTransferor(Transferor({addr: transferor, fixedUntilRound: fixedUntilRound + 1}));
+        (actualTransferor, actualFixedUntil) = auction.transferorOf(elc);
+        assertEq(actualTransferor, transferor);
+        assertEq(actualFixedUntil, fixedUntilRound + 1);
     }
 
     function testSetBeneficiary() public {

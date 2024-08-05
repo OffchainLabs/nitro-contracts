@@ -9,7 +9,7 @@ import {
     AccessControlEnumerableUpgradeable
 } from "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 import {DelegateCallAware} from "../libraries/DelegateCallAware.sol";
-import {IExpressLaneAuction, Bid, InitArgs, Transferrer} from "./IExpressLaneAuction.sol";
+import {IExpressLaneAuction, Bid, InitArgs, Transferor} from "./IExpressLaneAuction.sol";
 import {ELCRound, LatestELCRoundsLib} from "./ELCRound.sol";
 import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 
@@ -61,7 +61,7 @@ import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 // 4. during round 2
 //    * same as above, but can finalize the withdrawal
 
-// CHRIS: TODO: add ability to set the transferrer of controller rights
+// CHRIS: TODO: add ability to set the transferor of controller rights
 
 // CHRIS: TODO: rewrite the spec to have offchain and onchain components
 // CHRIS: TODO: describe the different actors in the system
@@ -134,7 +134,7 @@ contract ExpressLaneAuction is
     uint256 public beneficiaryBalance;
 
     /// @inheritdoc IExpressLaneAuction
-    mapping(address => Transferrer) public transferrerOf;
+    mapping(address => Transferor) public transferorOf;
 
     /// @inheritdoc IExpressLaneAuction
     function initialize(InitArgs memory args) public initializer onlyDelegated {
@@ -344,6 +344,7 @@ contract ExpressLaneAuction is
             biddingForRound,
             address(0),
             firstPriceBid.expressLaneController,
+            address(0),
             roundStart,
             roundEnd
         );
@@ -483,20 +484,20 @@ contract ExpressLaneAuction is
         );
     }
 
-    /// @notice Sets a transferrer for an express lane controller
-    ///         The transferrer is an address that will have the right to transfer express lane controller rights
-    ///         on behalf an express lane controller.
-    /// @param transferrer The transferrer to set
-    function setTransferrer(Transferrer calldata transferrer) external {
-        // if a transferrer has already been set, it may be fixed until a future round
-        Transferrer storage currentTransferrer = transferrerOf[msg.sender];
-        if(currentTransferrer.addr != address(0) && currentTransferrer.fixedUntilRound > roundTimingInfo.currentRound()){
-            revert FixedTransferrer(currentTransferrer.fixedUntilRound);
+    /// @inheritdoc IExpressLaneAuction
+    function setTransferor(Transferor calldata transferor) external {
+        // if a transferor has already been set, it may be fixed until a future round
+        Transferor storage currentTransferor = transferorOf[msg.sender];
+        if (
+            currentTransferor.addr != address(0) &&
+            currentTransferor.fixedUntilRound > roundTimingInfo.currentRound()
+        ) {
+            revert FixedTransferor(currentTransferor.fixedUntilRound);
         }
 
-        transferrerOf[msg.sender] = transferrer;
+        transferorOf[msg.sender] = transferor;
 
-        emit SetTransferrer(msg.sender, transferrer.addr, transferrer.fixedUntilRound);
+        emit SetTransferor(msg.sender, transferor.addr, transferor.fixedUntilRound);
     }
 
     /// @inheritdoc IExpressLaneAuction
@@ -514,26 +515,25 @@ contract ExpressLaneAuction is
         ELCRound storage resolvedRound = latestResolvedRounds.resolvedRound(round);
 
         address resolvedELC = resolvedRound.expressLaneController;
-        // CHRIS: TODO:
-        // address transferrer = transferrers[resolvedELC].addr;
-        // if(transferrer != address(0)) {
-        //     if(transferrer != msg.sender) {
-        //         revert("hi");
-        //     }
-        // } else 
-        if (resolvedELC != msg.sender) {
+        address transferor = transferorOf[resolvedELC].addr;
+        // can only be the transferor if one has been set
+        // otherwise we default to the express lane controller to do the transfer
+        if (transferor != address(0)) {
+            if (transferor != msg.sender) {
+                revert NotTransferor(transferor, msg.sender);
+            }
+        } else if (resolvedELC != msg.sender) {
             revert NotExpressLaneController(round, resolvedELC, msg.sender);
         }
-        
+
         resolvedRound.expressLaneController = newExpressLaneController;
 
         (uint64 start, uint64 end) = info.roundTimestamps(round);
-        // CHRIS: TODO: add the transferrer here?
-        // CHRIS: TODO: if reset after transfer then 0 out the transferrer
         emit SetExpressLaneController(
             round,
             resolvedELC,
             newExpressLaneController,
+            transferor != address(0) ? transferor : resolvedELC,
             start < uint64(block.timestamp) ? uint64(block.timestamp) : start,
             end
         );
