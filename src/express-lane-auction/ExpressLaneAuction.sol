@@ -61,8 +61,6 @@ import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 // 4. during round 2
 //    * same as above, but can finalize the withdrawal
 
-// CHRIS: TODO: add ability to set the transferor of controller rights
-
 // CHRIS: TODO: rewrite the spec to have offchain and onchain components
 // CHRIS: TODO: describe the different actors in the system
 // CHRIS: TODO: examine all the different actors in the system, how can they affect other parties
