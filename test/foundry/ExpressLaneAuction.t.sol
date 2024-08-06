@@ -46,8 +46,16 @@ contract ExpressLaneAuctionTest is Test {
         uint64 endTimestamp
     );
     event SetBeneficiary(address oldBeneficiary, address newBeneficiary);
+    event SetRoundTimingInfo(
+        uint64 currentRound,
+        uint64 offsetTimestamp,
+        uint64 roundDurationSeconds,
+        uint64 auctionClosingSeconds,
+        uint64 reserveSubmissionSeconds
+    );
 
     uint64 roundDuration = 60; // 1 min
+    uint64 offsetTimestamp = 3234000;
 
     struct TestBidder {
         uint256 privKey;
@@ -99,6 +107,7 @@ contract ExpressLaneAuctionTest is Test {
     address minReservePriceSetterAdmin = vm.addr(152);
     address reservePriceSetterAdmin = vm.addr(153);
     address beneficiarySetterAdmin = vm.addr(154);
+    address roundTimingSetter = vm.addr(155);
 
     uint64 testRound = 13;
 
@@ -114,7 +123,7 @@ contract ExpressLaneAuctionTest is Test {
         auction.initialize(args);
 
         // move to round test round
-        (uint64 offsetTimestamp, uint64 roundDurationSeconds, , ) = auction.roundTimingInfo();
+        (, uint64 roundDurationSeconds, , ) = auction.roundTimingInfo();
         vm.warp(offsetTimestamp + roundDurationSeconds * testRound);
 
         return (token, IExpressLaneAuction(auction));
@@ -127,7 +136,7 @@ contract ExpressLaneAuctionTest is Test {
                 _beneficiary: beneficiary,
                 _biddingToken: token,
                 _roundTimingInfo: RoundTimingInfo({
-                    offsetTimestamp: uint64(block.timestamp) + 10,
+                    offsetTimestamp: offsetTimestamp,
                     roundDurationSeconds: roundDuration,
                     auctionClosingSeconds: roundDuration / 4,
                     reserveSubmissionSeconds: roundDuration / 4
@@ -140,6 +149,7 @@ contract ExpressLaneAuctionTest is Test {
                 _reservePriceSetterAdmin: reservePriceSetterAdmin,
                 _beneficiarySetter: beneficiarySetter,
                 _beneficiarySetterAdmin: beneficiarySetterAdmin,
+                _roundTimingSetter: roundTimingSetter,
                 _masterAdmin: masterAdmin
             });
     }
@@ -174,9 +184,17 @@ contract ExpressLaneAuctionTest is Test {
         emit SetMinReservePrice(uint256(0), minReservePrice);
         vm.expectEmit(true, true, true, true);
         emit SetReservePrice(uint256(0), minReservePrice);
+        vm.expectEmit(true, true, true, true);
+        emit SetRoundTimingInfo(
+            0,
+            args._roundTimingInfo.offsetTimestamp,
+            args._roundTimingInfo.roundDurationSeconds,
+            args._roundTimingInfo.auctionClosingSeconds,
+            args._roundTimingInfo.reserveSubmissionSeconds
+        );
         auction.initialize(args);
         (
-            uint64 offsetTimestamp,
+            uint64 offsetTimestampA,
             uint64 roundDurationSeconds,
             uint64 auctionClosingSeconds,
             uint64 reserveSubmissionSeconds
@@ -185,7 +203,7 @@ contract ExpressLaneAuctionTest is Test {
         assertEq(auction.beneficiary(), beneficiary, "beneficiary");
         assertEq(auction.minReservePrice(), minReservePrice, "min reserve price");
         assertEq(auction.reservePrice(), minReservePrice, "reserve price");
-        assertEq(offsetTimestamp, uint64(block.timestamp) + 10);
+        assertEq(offsetTimestampA, offsetTimestamp);
         assertEq(auctionClosingSeconds, roundDuration / 4, "auction closing duration");
         assertEq(roundDurationSeconds, roundDuration, "auction round duration");
         assertEq(reserveSubmissionSeconds, roundDuration / 4, "reserve submission seconds");
@@ -219,6 +237,10 @@ contract ExpressLaneAuctionTest is Test {
         assertTrue(
             auction.hasRole(auction.BENEFICIARY_SETTER_ADMIN_ROLE(), beneficiarySetterAdmin),
             "beneficiary setter admin role"
+        );
+        assertTrue(
+            auction.hasRole(auction.ROUND_TIMING_SETTER_ROLE(), roundTimingSetter),
+            "round timing setter role"
         );
         assertEq(auction.getRoleAdmin(auction.AUCTIONEER_ROLE()), auction.AUCTIONEER_ADMIN_ROLE());
         assertEq(
@@ -364,9 +386,9 @@ contract ExpressLaneAuctionTest is Test {
         vm.warp(1);
         assertEq(auction.currentRound(), 0);
 
-        (uint64 offsetTimestamp, uint64 roundDurationSeconds, , ) = auction.roundTimingInfo();
+        (uint64 offsetTimestampA, uint64 roundDurationSeconds, , ) = auction.roundTimingInfo();
 
-        vm.warp(offsetTimestamp - 1);
+        vm.warp(offsetTimestampA - 1);
         assertEq(auction.currentRound(), 0);
 
         for (uint256 i = 0; i < testRound; i++) {
@@ -645,7 +667,7 @@ contract ExpressLaneAuctionTest is Test {
     }
 
     function testGetBidBytes() public {
-        (MockERC20 erc20, IExpressLaneAuction auction) = deployAndDeposit();
+        (, IExpressLaneAuction auction) = deployAndDeposit();
         uint64 biddingForRound = auction.currentRound() + 1;
         bytes memory b0 = auction.getBidBytes(
             biddingForRound,
@@ -1479,12 +1501,12 @@ contract ExpressLaneAuctionTest is Test {
         ResolveSetup memory rs = deployDepositAndBids();
         // start of the test round
         (
-            uint64 offsetTimestamp,
+            uint64 offsetTimestampA,
             uint64 roundDurationSeconds,
             uint64 auctionClosingSeconds,
             uint64 reserveSubmissionSeconds
         ) = rs.auction.roundTimingInfo();
-        vm.warp(offsetTimestamp + roundDurationSeconds * testRound);
+        vm.warp(offsetTimestampA + roundDurationSeconds * testRound);
         vm.stopPrank();
 
         assertEq(rs.auction.reservePrice(), minReservePrice, "before reserve price");
@@ -1759,5 +1781,105 @@ contract ExpressLaneAuctionTest is Test {
         emit SetBeneficiary(beneficiary, newBeneficiary);
         auction.setBeneficiary(newBeneficiary);
         assertEq(auction.beneficiary(), newBeneficiary, "new beneficiary");
+    }
+
+    function testSetRoundTimingInfo() public {
+        (, IExpressLaneAuction auction) = deploy();
+
+        RoundTimingInfo memory newInfo = RoundTimingInfo({
+            offsetTimestamp: 10,
+            roundDurationSeconds: 70,
+            auctionClosingSeconds: 10,
+            reserveSubmissionSeconds: 20
+        });
+
+        bytes memory revertString = abi.encodePacked(
+            "AccessControl: account ",
+            Strings.toHexString(uint160(address(this)), 20),
+            " is missing role ",
+            Strings.toHexString(uint256(auction.ROUND_TIMING_SETTER_ROLE()), 32)
+        );
+        vm.expectRevert(revertString);
+        auction.setRoundTimingInfo(newInfo);
+
+        // set to round 23
+        vm.warp(offsetTimestamp + roundDuration * 23);
+        // now use an offset that would put us on round 24
+        vm.prank(roundTimingSetter);
+        vm.expectRevert(abi.encodeWithSelector(InvalidNewRound.selector, 23, 24));
+        auction.setRoundTimingInfo(
+            RoundTimingInfo({
+                offsetTimestamp: offsetTimestamp - roundDuration,
+                roundDurationSeconds: roundDuration,
+                auctionClosingSeconds: 10,
+                reserveSubmissionSeconds: 20
+            })
+        );
+
+        // round 23 but offset incorrect offset
+        vm.prank(roundTimingSetter);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                InvalidNewStart.selector,
+                offsetTimestamp + roundDuration * 24,
+                offsetTimestamp + (roundDuration - 1) * 24
+            )
+        );
+        auction.setRoundTimingInfo(
+            RoundTimingInfo({
+                offsetTimestamp: offsetTimestamp,
+                roundDurationSeconds: roundDuration - 1,
+                auctionClosingSeconds: 10,
+                reserveSubmissionSeconds: 20
+            })
+        );
+
+        uint64 longDuration = 86401;
+        (uint64 start, ) = auction.roundTimestamps(auction.currentRound() + 1);
+        uint64 newOffset = start - longDuration * 24;
+
+        vm.prank(roundTimingSetter);
+        vm.expectRevert(abi.encodeWithSelector(RoundTooLong.selector, longDuration));
+        auction.setRoundTimingInfo(
+            RoundTimingInfo({
+                offsetTimestamp: newOffset,
+                roundDurationSeconds: longDuration,
+                auctionClosingSeconds: 10,
+                reserveSubmissionSeconds: 20
+            })
+        );
+
+        vm.prank(roundTimingSetter);
+        vm.expectRevert(abi.encodeWithSelector(RoundDurationTooShort.selector));
+        auction.setRoundTimingInfo(
+            RoundTimingInfo({
+                offsetTimestamp: offsetTimestamp,
+                roundDurationSeconds: roundDuration,
+                auctionClosingSeconds: roundDuration / 2,
+                reserveSubmissionSeconds: roundDuration / 2 + 1
+            })
+        );
+
+        uint64 cNewDuration = (roundDuration * 7) / 3;
+        (uint64 cStart, ) = auction.roundTimestamps(auction.currentRound() + 1);
+        uint64 cNewOffset = cStart - cNewDuration * (auction.currentRound() + 1);
+
+        vm.expectEmit(true, true, true, true);
+        emit SetRoundTimingInfo(auction.currentRound(), cNewOffset, cNewDuration, 13, 12);
+        vm.prank(roundTimingSetter);
+        auction.setRoundTimingInfo(
+            RoundTimingInfo({
+                offsetTimestamp: cNewOffset,
+                roundDurationSeconds: cNewDuration,
+                auctionClosingSeconds: 13,
+                reserveSubmissionSeconds: 12
+            })
+        );
+        (uint64 offsetAfter, uint64 durationAfter, uint64 acAfter, uint64 rsAfter) = auction
+            .roundTimingInfo();
+        assertEq(offsetAfter, cNewOffset);
+        assertEq(durationAfter, cNewDuration);
+        assertEq(acAfter, 13);
+        assertEq(rsAfter, 12);
     }
 }
