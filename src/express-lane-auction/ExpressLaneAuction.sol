@@ -13,8 +13,6 @@ import {IExpressLaneAuction, Bid, InitArgs, Transferor} from "./IExpressLaneAuct
 import {ELCRound, LatestELCRoundsLib} from "./ELCRound.sol";
 import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 
-// CHRIS: TODO: switch signing to 712?
-
 // CHRIS: TODO: do we wamt to include the ability to update the round time?
 // 3. update the round time
 //    * do this via 2 reads each time
@@ -42,17 +40,6 @@ import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 // * cant set an offset in the future - should be in the past
 // * reducing the round time does have an effect on finalize - add this later
 // * check finalization times with round time update
-
-// CHRIS: TODO: rewrite the spec to have offchain and onchain components
-// CHRIS: TODO: describe the different actors in the system
-// CHRIS: TODO: examine all the different actors in the system, how can they affect other parties
-// CHRIS: TODO: draw diagrams for it
-// CHRIS: TODO: gotcha: always ensure you are synced up to past the boundary before opening the auction. Otherwise you may have out of date info.
-// CHRIS: TODO: how do we stop the auctioneer from keeping the bidding open? or even from manufacturing a bid? - we cant in this system - should document this trust assumption
-// CHRIS: TODO: KNOWN ISSUE: the elc can be delayed in sending transaction by a resolve at the very last moment - should only be a very small delay.
-///             likewise it's possible to block the elc in that way
-// CHRIS: TODO: KNOWN ISSUE: we cannot guarantee that the order the elc sends wrapper transactions is the order they are sequenced, as some may be delayed by slow lane nonces
-// CHRIS: TODO: look through all the comments and see if we want to add any of them to the spec as clarification
 
 /// @title ExpressLaneAuction
 /// @notice The express lane allows a controller to submit undelayed transactions to the sequencer
