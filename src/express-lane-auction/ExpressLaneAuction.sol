@@ -13,20 +13,7 @@ import {IExpressLaneAuction, Bid, InitArgs} from "./IExpressLaneAuction.sol";
 import {ELCRound, LatestELCRoundsLib} from "./ELCRound.sol";
 import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 
-// CHRIS: TODO: switch signing to 712?
-
 // CHRIS: TODO: add ability to set the transferrer of controller rights
-
-// CHRIS: TODO: rewrite the spec to have offchain and onchain components
-// CHRIS: TODO: describe the different actors in the system
-// CHRIS: TODO: examine all the different actors in the system, how can they affect other parties
-// CHRIS: TODO: draw diagrams for it
-// CHRIS: TODO: gotcha: always ensure you are synced up to past the boundary before opening the auction. Otherwise you may have out of date info.
-// CHRIS: TODO: how do we stop the auctioneer from keeping the bidding open? or even from manufacturing a bid? - we cant in this system - should document this trust assumption
-// CHRIS: TODO: KNOWN ISSUE: the elc can be delayed in sending transaction by a resolve at the very last moment - should only be a very small delay.
-///             likewise it's possible to block the elc in that way
-// CHRIS: TODO: KNOWN ISSUE: we cannot guarantee that the order the elc sends wrapper transactions is the order they are sequenced, as some may be delayed by slow lane nonces
-// CHRIS: TODO: look through all the comments and see if we want to add any of them to the spec as clarification
 
 /// @title ExpressLaneAuction
 /// @notice The express lane allows a controller to submit undelayed transactions to the sequencer
