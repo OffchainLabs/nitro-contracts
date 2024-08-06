@@ -1,7 +1,7 @@
 import '@nomiclabs/hardhat-waffle'
 import 'hardhat-deploy'
 import '@nomiclabs/hardhat-ethers'
-import '@nomiclabs/hardhat-etherscan'
+import '@nomicfoundation/hardhat-verify'
 import '@typechain/hardhat'
 import 'solidity-coverage'
 import 'hardhat-gas-reporter'
@@ -183,8 +183,8 @@ module.exports = {
         network: 'arbSepolia',
         chainId: 421614,
         urls: {
-          apiURL: 'https://sepolia-explorer.arbitrum.io/api',
-          browserURL: 'https://sepolia-explorer.arbitrum.io/',
+          apiURL: 'https://api-sepolia.arbiscan.io/api',
+          browserURL: 'https://sepolia.arbiscan.io/',
         },
       },
     ],
@@ -200,6 +200,6 @@ module.exports = {
     target: 'ethers-v5',
   },
   contractSizer: {
-    strict: true
-  }
+    strict: true,
+  },
 }
