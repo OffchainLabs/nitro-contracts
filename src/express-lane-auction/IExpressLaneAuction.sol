@@ -43,16 +43,12 @@ struct InitArgs {
     address _auctioneerAdmin;
     /// @param _minReservePriceSetter The address given the rights to change the min reserve price
     address _minReservePriceSetter;
-    /// @param _minReservePriceSetterAdmin Can update the min reserve price setter address
-    address _minReservePriceSetterAdmin;
     /// @param _reservePriceSetter The address given the rights to change the reserve price
     address _reservePriceSetter;
     /// @param _reservePriceSetterAdmin Can update the reserve price setter address
     address _reservePriceSetterAdmin;
     /// @param _beneficiarySetter The address given the rights to change the beneficiary address
     address _beneficiarySetter;
-    /// @param _beneficiarySetterAdmin Can update the beneficiary setter address
-    address _beneficiarySetterAdmin;
     /// @param _masterAdmin The admin that can manage all the admin roles in the contract
     address _masterAdmin;
 }
@@ -136,9 +132,6 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     /// @notice The role given to the address that can set the minimum reserve
     function MIN_RESERVE_SETTER_ROLE() external returns (bytes32);
 
-    /// @notice The role that administers the MIN_RESERVE_SETTER_ROLE
-    function MIN_RESERVE_SETTER_ADMIN_ROLE() external returns (bytes32);
-
     /// @notice The role given to the address that can set the reserve
     function RESERVE_SETTER_ROLE() external returns (bytes32);
 
@@ -147,9 +140,6 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
 
     /// @notice The role given to the address that can set the beneficiary
     function BENEFICIARY_SETTER_ROLE() external returns (bytes32);
-
-    /// @notice The role that administers the BENEFICIARY_SETTER_ROLE
-    function BENEFICIARY_SETTER_ADMIN_ROLE() external returns (bytes32);
 
     /// @notice Domain constant to be concatenated with data before signing
     function BID_DOMAIN() external returns (bytes32);
