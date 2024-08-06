@@ -43,24 +43,6 @@ import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 // * reducing the round time does have an effect on finalize - add this later
 // * check finalization times with round time update
 
-// CHRIS: TODO:
-// do the following to e2e test whether everything works before the offset
-// 1. before the offset
-//    * do deposit
-//    * initiate withdrawal
-//    * fail finalize withdrawal ofc
-//    * set reserve
-//    * fail resolve
-//    * check all of the getters return the expected amounts
-// 2. during round 0
-//    * same as above, except resolve is allowed during the correct period
-//    * and setting reserve fails during correct period
-//    * check all of the getters
-// 3. during round 1
-//    * same as above
-// 4. during round 2
-//    * same as above, but can finalize the withdrawal
-
 // CHRIS: TODO: rewrite the spec to have offchain and onchain components
 // CHRIS: TODO: describe the different actors in the system
 // CHRIS: TODO: examine all the different actors in the system, how can they affect other parties
@@ -95,15 +77,11 @@ contract ExpressLaneAuction is
     /// @inheritdoc IExpressLaneAuction
     bytes32 public constant MIN_RESERVE_SETTER_ROLE = keccak256("MIN_RESERVE_SETTER");
     /// @inheritdoc IExpressLaneAuction
-    bytes32 public constant MIN_RESERVE_SETTER_ADMIN_ROLE = keccak256("MIN_RESERVE_SETTER_ADMIN");
-    /// @inheritdoc IExpressLaneAuction
     bytes32 public constant RESERVE_SETTER_ROLE = keccak256("RESERVE_SETTER");
     /// @inheritdoc IExpressLaneAuction
     bytes32 public constant RESERVE_SETTER_ADMIN_ROLE = keccak256("RESERVE_SETTER_ADMIN");
     /// @inheritdoc IExpressLaneAuction
     bytes32 public constant BENEFICIARY_SETTER_ROLE = keccak256("BENEFICIARY_SETTER");
-    /// @inheritdoc IExpressLaneAuction
-    bytes32 public constant BENEFICIARY_SETTER_ADMIN_ROLE = keccak256("BENEFICIARY_SETTER_ADMIN");
     /// @inheritdoc IExpressLaneAuction
     bytes32 public constant BID_DOMAIN = keccak256("TIMEBOOST_BID");
 
@@ -162,13 +140,11 @@ contract ExpressLaneAuction is
 
         // roles without a custom role admin set will have this as the admin
         _grantRole(DEFAULT_ADMIN_ROLE, args._masterAdmin);
+        _grantRole(MIN_RESERVE_SETTER_ROLE, args._minReservePriceSetter);
+        _grantRole(BENEFICIARY_SETTER_ROLE, args._beneficiarySetter);
 
-        // for each role we have an admin role who can make updates
-        // the expected use here is key rotation. The auctioneer can have a hot
-        // key they use regularly but for security purposes they may wish to rotate it
-        // occassionally. To that end they can use the admin, which is presumably
-        // a cold key. The master admin ultimately has the right to change the auctioneer admin
-        // and therefore the auctioner. We repeat this pattern for each of the roles
+        // the following roles are expected to be controlled by hot wallets, so we add
+        // additional custom admin role for each of them to allow for key rotation management
         setRoleAndAdmin(
             AUCTIONEER_ROLE,
             args._auctioneer,
@@ -176,22 +152,10 @@ contract ExpressLaneAuction is
             args._auctioneerAdmin
         );
         setRoleAndAdmin(
-            MIN_RESERVE_SETTER_ROLE,
-            args._minReservePriceSetter,
-            MIN_RESERVE_SETTER_ADMIN_ROLE,
-            args._minReservePriceSetterAdmin
-        );
-        setRoleAndAdmin(
             RESERVE_SETTER_ROLE,
             args._reservePriceSetter,
             RESERVE_SETTER_ADMIN_ROLE,
             args._reservePriceSetterAdmin
-        );
-        setRoleAndAdmin(
-            BENEFICIARY_SETTER_ROLE,
-            args._beneficiarySetter,
-            BENEFICIARY_SETTER_ADMIN_ROLE,
-            args._beneficiarySetterAdmin
         );
     }
 

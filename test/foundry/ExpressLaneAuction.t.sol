@@ -102,9 +102,7 @@ contract ExpressLaneAuctionTest is Test {
     address reservePriceSetter = vm.addr(149);
     address beneficiarySetter = vm.addr(150);
     address auctioneerAdmin = vm.addr(151);
-    address minReservePriceSetterAdmin = vm.addr(152);
     address reservePriceSetterAdmin = vm.addr(153);
-    address beneficiarySetterAdmin = vm.addr(154);
 
     uint64 testRound = 13;
 
@@ -141,11 +139,9 @@ contract ExpressLaneAuctionTest is Test {
                 _minReservePrice: minReservePrice,
                 _auctioneerAdmin: auctioneerAdmin,
                 _minReservePriceSetter: minReservePriceSetter,
-                _minReservePriceSetterAdmin: minReservePriceSetterAdmin,
                 _reservePriceSetter: reservePriceSetter,
                 _reservePriceSetterAdmin: reservePriceSetterAdmin,
                 _beneficiarySetter: beneficiarySetter,
-                _beneficiarySetterAdmin: beneficiarySetterAdmin,
                 _masterAdmin: masterAdmin
             });
     }
@@ -207,10 +203,6 @@ contract ExpressLaneAuctionTest is Test {
             "min reserve price setter role"
         );
         assertTrue(
-            auction.hasRole(auction.MIN_RESERVE_SETTER_ADMIN_ROLE(), minReservePriceSetterAdmin),
-            "min reserve price setter admin role"
-        );
-        assertTrue(
             auction.hasRole(auction.RESERVE_SETTER_ROLE(), reservePriceSetter),
             "reserve price setter role"
         );
@@ -222,14 +214,10 @@ contract ExpressLaneAuctionTest is Test {
             auction.hasRole(auction.BENEFICIARY_SETTER_ROLE(), beneficiarySetter),
             "beneficiary setter role"
         );
-        assertTrue(
-            auction.hasRole(auction.BENEFICIARY_SETTER_ADMIN_ROLE(), beneficiarySetterAdmin),
-            "beneficiary setter admin role"
-        );
         assertEq(auction.getRoleAdmin(auction.AUCTIONEER_ROLE()), auction.AUCTIONEER_ADMIN_ROLE());
         assertEq(
             auction.getRoleAdmin(auction.MIN_RESERVE_SETTER_ROLE()),
-            auction.MIN_RESERVE_SETTER_ADMIN_ROLE()
+            auction.DEFAULT_ADMIN_ROLE()
         );
         assertEq(
             auction.getRoleAdmin(auction.RESERVE_SETTER_ROLE()),
@@ -237,22 +225,14 @@ contract ExpressLaneAuctionTest is Test {
         );
         assertEq(
             auction.getRoleAdmin(auction.BENEFICIARY_SETTER_ROLE()),
-            auction.BENEFICIARY_SETTER_ADMIN_ROLE()
+            auction.DEFAULT_ADMIN_ROLE()
         );
         assertEq(
             auction.getRoleAdmin(auction.AUCTIONEER_ADMIN_ROLE()),
             auction.DEFAULT_ADMIN_ROLE()
         );
         assertEq(
-            auction.getRoleAdmin(auction.MIN_RESERVE_SETTER_ADMIN_ROLE()),
-            auction.DEFAULT_ADMIN_ROLE()
-        );
-        assertEq(
             auction.getRoleAdmin(auction.RESERVE_SETTER_ADMIN_ROLE()),
-            auction.DEFAULT_ADMIN_ROLE()
-        );
-        assertEq(
-            auction.getRoleAdmin(auction.BENEFICIARY_SETTER_ADMIN_ROLE()),
             auction.DEFAULT_ADMIN_ROLE()
         );
 
