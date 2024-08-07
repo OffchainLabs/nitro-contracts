@@ -78,6 +78,12 @@ export async function deployContract(
   let deploymentArgs = [...constructorArgs]
   if (overrides) {
     deploymentArgs.push(overrides)
+  } else {
+    // overrides = {
+    //   maxFeePerGas: ethers.utils.parseUnits('5.0', 'gwei'),
+    //   maxPriorityFeePerGas: ethers.utils.parseUnits('0.01', 'gwei')
+    // }
+    // deploymentArgs.push(overrides)
   }
 
   const contract: Contract = await connectedFactory.deploy(...deploymentArgs)

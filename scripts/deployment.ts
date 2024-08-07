@@ -3,8 +3,28 @@ import '@nomiclabs/hardhat-ethers'
 import { deployAllContracts } from './deploymentUtils'
 import { maxDataSize } from './config'
 
+import {
+  ArbSys__factory
+} from '../build/types'
+
 async function main() {
   const [signer] = await ethers.getSigners()
+  
+  if (process.env['IGNORE_MAX_DATA_SIZE_WARNING'] !== 'true') {
+    let isArbitrum = false
+    try {
+      await ArbSys__factory.connect('0x0000000000000000000000000000000000000064', signer).arbOSVersion()
+      // on arbitrum chain
+      isArbitrum = true
+    } catch (error) {
+      isArbitrum = false
+    }
+    if (isArbitrum && maxDataSize as any !== 104857) {
+      throw new Error('maxDataSize should be 104857 when the parent chain is Arbitrum (set IGNORE_MAX_DATA_SIZE_WARNING to ignore)')
+    } else if (!isArbitrum && maxDataSize as any !== 117964) {
+      throw new Error('maxDataSize should be 117964 when the parent chain is not Arbitrum (set IGNORE_MAX_DATA_SIZE_WARNING to ignore)')
+    }
+  }
 
   try {
     // Deploying all contracts
