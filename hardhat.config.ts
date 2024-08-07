@@ -110,8 +110,8 @@ module.exports = {
         ? [process.env['DEVNET_PRIVKEY']]
         : [],
     },
-    rinkeby: {
-      url: 'https://rinkeby.infura.io/v3/' + process.env['INFURA_KEY'],
+    holesky: {
+      url: 'https://holesky.infura.io/v3/' + process.env['INFURA_KEY'],
       accounts: process.env['DEVNET_PRIVKEY']
         ? [process.env['DEVNET_PRIVKEY']]
         : [],
@@ -146,6 +146,18 @@ module.exports = {
         ? [process.env['MAINNET_PRIVKEY']]
         : [],
     },
+    base: {
+      url: 'https://mainnet.base.org',
+      accounts: process.env['MAINNET_PRIVKEY']
+        ? [process.env['MAINNET_PRIVKEY']]
+        : [],
+    },
+    baseSepolia: {
+      url: 'https://sepolia.base.org',
+      accounts: process.env['DEVNET_PRIVKEY']
+        ? [process.env['DEVNET_PRIVKEY']]
+        : [],
+    },
     geth: {
       url: 'http://localhost:8545',
     },
@@ -155,12 +167,14 @@ module.exports = {
       mainnet: process.env['ETHERSCAN_API_KEY'],
       goerli: process.env['ETHERSCAN_API_KEY'],
       sepolia: process.env['ETHERSCAN_API_KEY'],
-      rinkeby: process.env['ETHERSCAN_API_KEY'],
+      holesky: process.env['ETHERSCAN_API_KEY'],
       arbitrumOne: process.env['ARBISCAN_API_KEY'],
       arbitrumTestnet: process.env['ARBISCAN_API_KEY'],
       nova: process.env['NOVA_ARBISCAN_API_KEY'],
       arbGoerliRollup: process.env['ARBISCAN_API_KEY'],
       arbSepolia: process.env['ARBISCAN_API_KEY'],
+      base: process.env['BASESCAN_API_KEY'],
+      baseSepolia: process.env['BASESCAN_API_KEY'],
     },
     customChains: [
       {
