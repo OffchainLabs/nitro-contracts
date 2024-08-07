@@ -32,9 +32,11 @@ export async function verifyContract(
       contract?: string
       address: string
       constructorArguments: any[]
+      force: boolean
     } = {
       address: contractAddress,
       constructorArguments: constructorArguments,
+      force: true,
     }
 
     // if contractPathAndName is provided, add it to the verification options
@@ -45,8 +47,15 @@ export async function verifyContract(
     await run('verify:verify', verificationOptions)
     console.log(`Verified contract ${contractName} successfully.`)
   } catch (error: any) {
-    if (error.message.includes('Already Verified')) {
+    if (error.message.toLowerCase().includes('already verified')) {
       console.log(`Contract ${contractName} is already verified.`)
+    } else if (error.message.includes('does not have bytecode')) {
+      await verifyContract(
+        contractName,
+        contractAddress,
+        constructorArguments,
+        contractPathAndName
+      )
     } else {
       console.error(
         `Verification for ${contractName} failed with the following error: ${error.message}`
@@ -69,11 +78,21 @@ export async function deployContract(
   let deploymentArgs = [...constructorArgs]
   if (overrides) {
     deploymentArgs.push(overrides)
+  } else {
+    // overrides = {
+    //   maxFeePerGas: ethers.utils.parseUnits('5.0', 'gwei'),
+    //   maxPriorityFeePerGas: ethers.utils.parseUnits('0.01', 'gwei')
+    // }
+    // deploymentArgs.push(overrides)
   }
 
   const contract: Contract = await connectedFactory.deploy(...deploymentArgs)
   await contract.deployTransaction.wait()
-  console.log(`New ${contractName} created at address:`, contract.address)
+  console.log(
+    `* New ${contractName} created at address: ${
+      contract.address
+    } ${constructorArgs.join(' ')}`
+  )
 
   if (verify)
     await verifyContract(contractName, contract.address, constructorArgs)
@@ -226,6 +245,15 @@ export async function deployAllContracts(
     verify
   )
   const deployHelper = await deployContract('DeployHelper', signer, [], verify)
+  if (verify && !process.env.DISABLE_VERIFICATION) {
+    // Deploy RollupProxy contract only for verification, should not be used anywhere else
+    await deployContract(
+      'RollupProxy',
+      signer,
+      [],
+      verify
+    )
+  }
   return {
     bridgeCreator,
     prover0,

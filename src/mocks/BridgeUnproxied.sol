@@ -10,6 +10,8 @@ import {BadSequencerMessageNumber} from "../libraries/Error.sol";
 import "../bridge/Bridge.sol";
 
 contract BridgeUnproxied is Bridge {
+    uint256 public DUMMYVAR = 0; // This is a dummy variable to disambiguous with the Bridge contract
+
     constructor() {
         _activeOutbox = EMPTY_ACTIVEOUTBOX;
         rollup = IOwnable(msg.sender);
