@@ -141,9 +141,6 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     /// @notice The role given to the address that can set the beneficiary
     function BENEFICIARY_SETTER_ROLE() external returns (bytes32);
 
-    /// @notice Domain constant to be concatenated with data before signing
-    function BID_DOMAIN() external returns (bytes32);
-
     /// @notice The beneficiary who receives the funds that are paid by the auction winners
     function beneficiary() external returns (address);
 
@@ -269,14 +266,18 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     function flushBeneficiaryBalance() external;
 
     /// @notice The domain separator used in the 712 signing hash
-    function domainSeparator() external view returns(bytes32);
+    function domainSeparator() external view returns (bytes32);
 
     /// @notice Get the 712 hash of a bid used for signing
     /// @param round The round the bid is for the control of
     /// @param expressLaneController The address that will be the express lane controller if the bid wins
     /// @param amount The amount being bid
-    function getBidHash(uint64 round, address expressLaneController, uint256 amount) external view returns(bytes32);
-    
+    function getBidHash(
+        uint64 round,
+        address expressLaneController,
+        uint256 amount
+    ) external view returns (bytes32);
+
     /// @notice Resolve the auction with just a single bid. The auctioneer is trusted to call this only when there are
     ///         less than two bids higher than the reserve price for an auction round.
     ///         In this case the highest bidder will pay the reserve price for the round

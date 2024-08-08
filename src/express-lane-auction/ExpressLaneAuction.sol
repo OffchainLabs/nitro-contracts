@@ -12,7 +12,9 @@ import {DelegateCallAware} from "../libraries/DelegateCallAware.sol";
 import {IExpressLaneAuction, Bid, InitArgs} from "./IExpressLaneAuction.sol";
 import {ELCRound, LatestELCRoundsLib} from "./ELCRound.sol";
 import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
-import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
+import {
+    EIP712Upgradeable
+} from "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
 
 // CHRIS: TODO: do we wamt to include the ability to update the round time?
 // 3. update the round time
@@ -73,8 +75,6 @@ contract ExpressLaneAuction is
     bytes32 public constant RESERVE_SETTER_ADMIN_ROLE = keccak256("RESERVE_SETTER_ADMIN");
     /// @inheritdoc IExpressLaneAuction
     bytes32 public constant BENEFICIARY_SETTER_ROLE = keccak256("BENEFICIARY_SETTER");
-    /// @inheritdoc IExpressLaneAuction
-    bytes32 public constant BID_DOMAIN = keccak256("TIMEBOOST_BID");
 
     /// @notice The balances of each address
     mapping(address => Balance) internal _balanceOf;
@@ -313,18 +313,27 @@ contract ExpressLaneAuction is
     }
 
     /// @inheritdoc IExpressLaneAuction
-    function domainSeparator() external view returns(bytes32) {
+    function domainSeparator() external view returns (bytes32) {
         return _domainSeparatorV4();
     }
 
     /// @inheritdoc IExpressLaneAuction
-    function getBidHash(uint64 round, address expressLaneController, uint256 amount) public view returns(bytes32) {
-        return _hashTypedDataV4(keccak256(abi.encode(
-            keccak256("Bid(uint64 round,address expressLaneController,uint256 amount)"),
-            round,
-            expressLaneController,
-            amount
-        )));
+    function getBidHash(
+        uint64 round,
+        address expressLaneController,
+        uint256 amount
+    ) public view returns (bytes32) {
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        keccak256("Bid(uint64 round,address expressLaneController,uint256 amount)"),
+                        round,
+                        expressLaneController,
+                        amount
+                    )
+                )
+            );
     }
 
     /// @notice Recover the signing address of the provided bid, and check that that address has enough funds to fulfil that bid
