@@ -268,16 +268,15 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     ///         This is not done separately so that it does not need to be done during auction resolution, thus saving some gas costs there
     function flushBeneficiaryBalance() external;
 
-    /// @notice Calculates the data to be hashed for signing
-    /// @param _round The round the bid is for the control of
-    /// @param _amount The amount being bid
-    /// @param _expressLaneController The address that will be the express lane controller if the bid wins
-    function getBidBytes(
-        uint64 _round,
-        uint256 _amount,
-        address _expressLaneController
-    ) external view returns (bytes memory);
+    /// @notice The domain separator used in the 712 signing hash
+    function domainSeparator() external view returns(bytes32);
 
+    /// @notice Get the 712 hash of a bid used for signing
+    /// @param round The round the bid is for the control of
+    /// @param expressLaneController The address that will be the express lane controller if the bid wins
+    /// @param amount The amount being bid
+    function getBidHash(uint64 round, address expressLaneController, uint256 amount) external view returns(bytes32);
+    
     /// @notice Resolve the auction with just a single bid. The auctioneer is trusted to call this only when there are
     ///         less than two bids higher than the reserve price for an auction round.
     ///         In this case the highest bidder will pay the reserve price for the round
