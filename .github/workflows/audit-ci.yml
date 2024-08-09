@@ -43,9 +43,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+      - name: Restore
+        uses: actions/cache/restore@v4
+        with:
+          path: "**/node_modules"
+          key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
 
-      - name: Restore node_modules
-        uses: OffchainLabs/actions/node-modules/restore@main
+      # - name: Restore node_modules
+      #   uses: OffchainLabs/actions/node-modules/restore@main
 
       - name: Run audit
         run: yarn audit:ci
