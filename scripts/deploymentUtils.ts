@@ -9,6 +9,7 @@ import {
 import { Toolkit4844 } from '../test/contract/toolkit4844'
 import {
   ArbOwner__factory,
+  ArbOwnerPublic__factory,
   ArbSys__factory,
   CacheManager__factory,
 } from '../build/types'
@@ -16,6 +17,7 @@ import {
 const INIT_CACHE_SIZE = 536870912
 const INIT_DECAY = 10322197911
 const ARB_OWNER_ADDRESS = '0x0000000000000000000000000000000000000070'
+const ARB_OWNER_PUBLIC_ADDRESS = '0x000000000000000000000000000000000000006b'
 const ARB_SYS_ADDRESS = '0x0000000000000000000000000000000000000064'
 
 // Define a verification function
@@ -248,20 +250,19 @@ export async function deployAndSetCacheManager(
   chainOwnerWallet: Wallet,
   verify: boolean = true
 ) {
+  // deploy CacheManager
   const cacheManagerLogic = await deployContract(
     'CacheManager',
     chainOwnerWallet,
     [],
     verify
   )
-
   const proxyAdmin = await deployContract(
     'ProxyAdmin',
     chainOwnerWallet,
     [],
     verify
   )
-
   const cacheManagerProxy = await deployContract(
     'TransparentUpgradeableProxy',
     chainOwnerWallet,
@@ -269,22 +270,30 @@ export async function deployAndSetCacheManager(
     verify
   )
 
+  // initialize CacheManager
   const cacheManager = CacheManager__factory.connect(
     cacheManagerProxy.address,
     chainOwnerWallet
   )
-
   await (await cacheManager.initialize(INIT_CACHE_SIZE, INIT_DECAY)).wait()
 
-  const arbOwner = ArbOwner__factory.connect(
+  /// add CacheManager to ArbOwner
+  const arbOwnerAccount = (
+    await ArbOwnerPublic__factory.connect(
+      ARB_OWNER_PUBLIC_ADDRESS,
+      chainOwnerWallet
+    ).getAllChainOwners()
+  )[0]
+
+  const arbOwnerPrecompile = ArbOwner__factory.connect(
     ARB_OWNER_ADDRESS,
     chainOwnerWallet
   )
-
-  const arbOwnerAccount = (await arbOwner.getAllChainOwners())[0]
   if ((await chainOwnerWallet.provider.getCode(arbOwnerAccount)) === '0x') {
     // arb owner is EOA, add cache manager directly
-    await (await arbOwner.addWasmCacheManager(cacheManagerProxy.address)).wait()
+    await (
+      await arbOwnerPrecompile.addWasmCacheManager(cacheManagerProxy.address)
+    ).wait()
   } else {
     // assume upgrade executor is arb owner
     const upgradeExecutor = new ethers.Contract(
@@ -292,9 +301,10 @@ export async function deployAndSetCacheManager(
       UpgradeExecutorABI,
       chainOwnerWallet
     )
-    const data = arbOwner.interface.encodeFunctionData('addWasmCacheManager', [
-      cacheManagerProxy.address,
-    ])
+    const data = arbOwnerPrecompile.interface.encodeFunctionData(
+      'addWasmCacheManager',
+      [cacheManagerProxy.address]
+    )
     await (await upgradeExecutor.executeCall(ARB_OWNER_ADDRESS, data)).wait()
   }
 
