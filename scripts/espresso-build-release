@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+yarn install
+yarn build
+
+# remove conflicting IERC20 implementation
+rm -rv build/contracts/src/rollup/FactoryDeployerHelper.sol/IERC20.*
+
+yarn pack

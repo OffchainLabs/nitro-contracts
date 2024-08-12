@@ -1,12 +1,12 @@
 {
-  "name": "@arbitrum/nitro-contracts",
-  "version": "1.2.1",
+  "name": "@espressosystems/nitro-contracts",
+  "version": "1.4.0",
   "description": "Layer 2 precompiles and rollup for Arbitrum Nitro",
   "author": "Offchain Labs, Inc.",
   "license": "BUSL-1.1",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/offchainlabs/nitro-contracts.git"
+    "url": "git+https://github.com/espressosystems/nitro-contracts.git"
   },
   "files": [
     "src/",
