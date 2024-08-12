@@ -1,5 +1,5 @@
 import { ethers } from 'hardhat'
-import { ContractFactory, Contract, Overrides, BigNumber } from 'ethers'
+import { ContractFactory, Contract, Overrides, BigNumber, Wallet } from 'ethers'
 import '@nomiclabs/hardhat-ethers'
 import { run } from 'hardhat'
 import {
@@ -245,7 +245,7 @@ export async function deployAllContracts(
 }
 
 export async function deployAndSetCacheManager(
-  chainOwnerWallet: any,
+  chainOwnerWallet: Wallet,
   verify: boolean = true
 ) {
   const cacheManagerLogic = await deployContract(
@@ -280,7 +280,23 @@ export async function deployAndSetCacheManager(
     ARB_OWNER_ADDRESS,
     chainOwnerWallet
   )
-  await (await arbOwner.addWasmCacheManager(cacheManagerProxy.address)).wait()
+
+  const arbOwnerAccount = (await arbOwner.getAllChainOwners())[0]
+  if ((await chainOwnerWallet.provider.getCode(arbOwnerAccount)) === '0x') {
+    // arb owner is EOA, add cache manager directly
+    await (await arbOwner.addWasmCacheManager(cacheManagerProxy.address)).wait()
+  } else {
+    // assume upgrade executor is arb owner
+    const upgradeExecutor = new ethers.Contract(
+      arbOwnerAccount,
+      UpgradeExecutorABI,
+      chainOwnerWallet
+    )
+    const data = arbOwner.interface.encodeFunctionData('addWasmCacheManager', [
+      cacheManagerProxy.address,
+    ])
+    await (await upgradeExecutor.executeCall(ARB_OWNER_ADDRESS, data)).wait()
+  }
 
   return cacheManagerProxy
 }
