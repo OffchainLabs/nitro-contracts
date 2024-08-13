@@ -40,11 +40,10 @@ export const sepolia: Config = {
     smallStepLeafSize: 2**23,
     numBigStepLevel: 1,
     maxDataSize: 117964,
-    // TODO: set delay bufferable to true and set a very high buffer threshold?
-    isDelayBufferable: false,
+    isDelayBufferable: true,
     bufferConfig: {
       max: hoursToBlocks(48),
-      threshold: hoursToBlocks(1),
+      threshold: hoursToBlocks(48), // set very high so it never triggers
       replenishRateInBasis: 500,
     },
   },

@@ -42,10 +42,9 @@ export const nova: Config = {
     numBigStepLevel: 1,
     maxDataSize: 117964,
     isDelayBufferable: true,
-    // TODO: align
     bufferConfig: {
       max: hoursToBlocks(48),
-      threshold: hoursToBlocks(1),
+      threshold: hoursToBlocks(0.5),
       replenishRateInBasis: 500,
     },
   },
