@@ -42,7 +42,6 @@ export const nova: Config = {
     numBigStepLevel: 1,
     maxDataSize: 117964,
     isDelayBufferable: true,
-    // TODO: align
     bufferConfig: {
       max: hoursToBlocks(48), // 2 days
       threshold: hoursToBlocks(0.5), // 30 minutes, well above typical posting frequency
