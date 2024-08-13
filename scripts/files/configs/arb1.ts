@@ -27,7 +27,11 @@ export const arb1: Config = {
     challengePeriodBlocks: 45818, // same as confirm period
     stakeToken: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
     stakeAmt: parseEther('3600'),
-    miniStakeAmounts: [parseEther('0'), parseEther('555'), parseEther('79')],
+    miniStakeAmounts: [
+      parseEther('0'),
+      parseEther('555'),
+      parseEther('79'),
+    ],
     chainId: 42161,
     anyTrustFastConfirmer: '0x0000000000000000000000000000000000000000',
     disableValidatorWhitelist: true,
@@ -37,28 +41,12 @@ export const arb1: Config = {
     numBigStepLevel: 1,
     maxDataSize: 117964,
     isDelayBufferable: true,
-    // TODO: align
     bufferConfig: {
-      max: hoursToBlocks(48),
-      threshold: hoursToBlocks(1),
-      replenishRateInBasis: 500,
+      max: hoursToBlocks(48), // 2 days
+      threshold: hoursToBlocks(0.5), // 30 minutes, well above typical posting frequency
+      replenishRateInBasis: 500, // 5% replenishment rate
     },
   },
-  // current validators
-  // TODO: we should probably leave this empty
-  validators: [
-    '0x83215480dB2C6A7E56f9E99EF93AB9B36F8A3DD5',
-    '0x7CF3d537733F6Ba4183A833c9B021265716cE9d0',
-    '0x56D83349c2B8DCF74d7E92D5b6B33d0BADD52D78',
-    '0x758C6bB08B3ea5889B5cddbdeF9A45b3a983c398',
-    '0x6Fb914de4653eC5592B7c15F4d9466Cbd03F2104',
-    '0xf59caf75e8A4bFBA4e6e07aD86C7E498E4d2519b',
-    '0xB0CB1384e3f4a9a9b2447e39b05e10631E1D34B0',
-    '0x54c0D3d6C101580dB3be8763A2aE2c6bb9dc840c',
-    '0x0fF813f6BD577c3D1cDbE435baC0621BE6aE34B4',
-    '0xAB1A39332e934300eBCc57B5f95cA90631a347FF',
-    '0xdDf2F71Ab206C0138A8eceEb54386567D5abF01E',
-    '0x610Aa279989F440820e14248BD3879B148717974',
-    '0xF8D3E1cF58386c92B27710C6a0D8A54c76BC6ab5'
-  ]
+  // validator whitelist will be disabled
+  validators: [],
 }

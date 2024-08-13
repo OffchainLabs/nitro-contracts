@@ -24,7 +24,7 @@ export const sepolia: Config = {
     // TODO: confirm that we want 20/20
     challengeGracePeriodBlocks: 20,
     confirmPeriodBlocks: 20, // current is 20 blocks, 45818 is arb1 config
-    challengePeriodBlocks: 45818, // same as arb1
+    challengePeriodBlocks: 45818, // same as arb1 // TODO: do we want to shorten this given validators are whitelisted?
     stakeToken: '0xefb383126640fe4a760010c6e59c397d2b6c7141', // WETH
     stakeAmt: parseEther('36'), // 1/100th of arb1, same for mini stakes
     miniStakeAmounts: [
@@ -40,17 +40,13 @@ export const sepolia: Config = {
     smallStepLeafSize: 2**23,
     numBigStepLevel: 1,
     maxDataSize: 117964,
-    // TODO: set delay bufferable to true and set a very high buffer threshold?
-    isDelayBufferable: false,
+    isDelayBufferable: true,
     bufferConfig: {
-      max: hoursToBlocks(48),
-      threshold: hoursToBlocks(1),
-      replenishRateInBasis: 500,
+      max: hoursToBlocks(24*365), // 365 days, effectively disableing and will be enabled later
+      threshold: hoursToBlocks(24*365), // 365 days, effectively disableing and will be enabled later
+      replenishRateInBasis: 500, // 5% replenishment rate
     },
   },
-  validators: [ // current validators
-    '0x8a8f0a24d7e58a76FC8F77bb68C7c902b91e182e',
-    '0x87630025E63A30eCf9Ca9d580d9D95922Fea6aF0',
-    '0xC32B93e581db6EBc50C08ce381143A259B92f1ED',
-  ],
+  // validators will be set later by BOLDUpgradeAction.perform(address[])
+  validators: [],
 }

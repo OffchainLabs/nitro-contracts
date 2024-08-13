@@ -26,15 +26,15 @@ export const nova: Config = {
     confirmPeriodBlocks: 45818, // same as old rollup, ~6.4 days
     challengePeriodBlocks: 45818, // same as confirm period
     stakeToken: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
-    // todo: confirm stakes
+    // TODO: confirm stakes
     stakeAmt: parseEther('1'),
     miniStakeAmounts: [
       parseEther('0'),
       parseEther('1'),
       parseEther('1'),
     ],
-    chainId: 42161,
-    anyTrustFastConfirmer: '0x0000000000000000000000000000000000000000', // TODO
+    chainId: 42170,
+    anyTrustFastConfirmer: '0x0000000000000000000000000000000000000000', // TODO: contingent on if fast confirmation is enabled before BOLD
     disableValidatorWhitelist: false,
     blockLeafSize: 2**26, // leaf sizes same as arb1
     bigStepLeafSize: 2**19,
@@ -44,15 +44,11 @@ export const nova: Config = {
     isDelayBufferable: true,
     // TODO: align
     bufferConfig: {
-      max: hoursToBlocks(48),
-      threshold: hoursToBlocks(1),
-      replenishRateInBasis: 500,
+      max: hoursToBlocks(48), // 2 days
+      threshold: hoursToBlocks(0.5), // 30 minutes, well above typical posting frequency
+      replenishRateInBasis: 500, // 5% replenishment rate
     },
   },
-  validators: [ // current validators
-    '0xB51EDdfc9A945e2B909905e4F242C4796Ac0C61d',
-    '0x54c0D3d6C101580dB3be8763A2aE2c6bb9dc840c',
-    '0x658e8123722462F888b6fa01a7dbcEFe1D6DD709',
-    '0xDfB23DFE9De7dcC974467195C8B7D5cd21C9d7cB'
-  ],
+  // validators will be set later by BOLDUpgradeAction.perform(address[])
+  validators: [],
 }
