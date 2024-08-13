@@ -131,7 +131,13 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     /// @param roundDurationSeconds The new round duration seconds
     /// @param auctionClosingSeconds The new auction closing seconds
     /// @param reserveSubmissionSeconds The new reserve submission seconds
-    event SetRoundTimingInfo(uint64 currentRound, uint64 offsetTimestamp, uint64 roundDurationSeconds, uint64 auctionClosingSeconds, uint64 reserveSubmissionSeconds);
+    event SetRoundTimingInfo(
+        uint64 currentRound,
+        uint64 offsetTimestamp,
+        uint64 roundDurationSeconds,
+        uint64 auctionClosingSeconds,
+        uint64 reserveSubmissionSeconds
+    );
 
     /// @notice The role given to the address that can resolve auctions
     function AUCTIONEER_ROLE() external returns (bytes32);
@@ -252,8 +258,8 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     ///         the correct offset which will produce this for the specified round duration seconds in the new timing info.
     ///         Changing timing info affects the current ongoing auction, given that the round may already have been resolved
     ///         this could result in bidders paying for a round that is longer or shorter than they expected. To that end
-    ///         the round timing setter is trusted not to set this function too often, and any observers who depend upon this timing info 
-    ///         (eg bidders, auctioneer, reserve price setter etc) should be able to see when this is going to happen. 
+    ///         the round timing setter is trusted not to set this function too often, and any observers who depend upon this timing info
+    ///         (eg bidders, auctioneer, reserve price setter etc) should be able to see when this is going to happen.
     ///         On arbitrum one the expected round timing setter is the arbitrum dao, that can only
     ///         make changes by passing proposals through timelocks, therefore providing the notice to bidders.
     /// @param newRoundTimingInfo The new timing info to set
