@@ -72,6 +72,7 @@ interface IOldRollup {
     function getStaker(address staker) external view returns (OldStaker memory);
     function isValidator(address validator) external view returns (bool);
     function validatorWalletCreator() external view returns (address);
+    function anyTrustFastConfirmer() external view returns (address);
 }
 
 interface IOldRollupAdmin {
@@ -157,6 +158,10 @@ contract RollupReader is IOldRollup {
 
     function validatorWalletCreator() external view returns (address) {
         return rollup.validatorWalletCreator();
+    }
+
+    function anyTrustFastConfirmer() external view returns (address) {
+        return rollup.anyTrustFastConfirmer();
     }
 }
 
@@ -573,6 +578,14 @@ contract BOLDUpgradeAction {
         }
         if (DISABLE_VALIDATOR_WHITELIST) {
             IRollupAdmin(address(rollup)).setValidatorWhitelistDisabled(DISABLE_VALIDATOR_WHITELIST);
+        }
+
+        try ROLLUP_READER.anyTrustFastConfirmer() returns (address anyTrustFastConfirmer) {
+            if(anyTrustFastConfirmer != address(0)) {
+                rollup.setAnyTrustFastConfirmer(anyTrustFastConfirmer);
+            }
+        } catch {
+            // do nothing if anyTrustFastConfirmer doesnt exist
         }
 
         IRollupAdmin(address(rollup)).setOwner(actualOwner);
