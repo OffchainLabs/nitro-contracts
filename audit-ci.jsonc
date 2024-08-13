@@ -55,6 +55,14 @@
     // Prototype Pollution in async
     "GHSA-fwr7-v2mv-hh25",
     // ws affected by a DoS when handling a request with many HTTP headers
-    "GHSA-3h5v-q93c-6h6q"
+    "GHSA-3h5v-q93c-6h6q",
+    // Elliptic allows BER-encoded signatures
+    "GHSA-49q7-c7j4-3p7m",
+    // Elliptic's ECDSA missing check for whether leading bit of r and s is zero
+    "GHSA-977x-g7h5-7qgw",
+    // Elliptic's EDDSA missing signature length check
+    "GHSA-f7q4-pwc6-w24p",
+    // Server-Side Request Forgery in axios
+    "GHSA-8hc4-vh64-cxmj"
   ]
 }
