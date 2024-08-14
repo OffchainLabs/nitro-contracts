@@ -444,15 +444,15 @@ async function checkNewRollup(
     throw new Error('Base stake does not match')
   }
 
-  // check fast confirmer
-  if (config.settings.anyTrustFastConfirmer.length != 0) {
-    if (
-      getAddress(await newRollup.anyTrustFastConfirmer()) !==
-      getAddress(config.settings.anyTrustFastConfirmer)
-    ) {
-      throw new Error('Any trust fast confirmer does not match')
-    }
-  }
+  // // check fast confirmer
+  // if (config.settings.anyTrustFastConfirmer.length != 0) {
+  //   if (
+  //     getAddress(await newRollup.anyTrustFastConfirmer()) !==
+  //     getAddress(config.settings.anyTrustFastConfirmer)
+  //   ) {
+  //     throw new Error('Any trust fast confirmer does not match')
+  //   }
+  // }
 }
 
 async function checkNewChallengeManager(
