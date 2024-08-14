@@ -582,7 +582,7 @@ contract BOLDUpgradeAction {
 
         try ROLLUP_READER.anyTrustFastConfirmer() returns (address anyTrustFastConfirmer) {
             if(anyTrustFastConfirmer != address(0)) {
-                rollup.setAnyTrustFastConfirmer(anyTrustFastConfirmer);
+                IRollupAdmin(address(rollup)).setAnyTrustFastConfirmer(anyTrustFastConfirmer);
             }
         } catch {
             // do nothing if anyTrustFastConfirmer doesnt exist
