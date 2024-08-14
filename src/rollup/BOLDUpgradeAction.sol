@@ -580,6 +580,7 @@ contract BOLDUpgradeAction {
             IRollupAdmin(address(rollup)).setValidatorWhitelistDisabled(DISABLE_VALIDATOR_WHITELIST);
         }
 
+        // anyTrustFastConfirmer only exists since v2.0.0, but the old rollup can be on an older version
         try ROLLUP_READER.anyTrustFastConfirmer() returns (address anyTrustFastConfirmer) {
             if(anyTrustFastConfirmer != address(0)) {
                 IRollupAdmin(address(rollup)).setAnyTrustFastConfirmer(anyTrustFastConfirmer);
