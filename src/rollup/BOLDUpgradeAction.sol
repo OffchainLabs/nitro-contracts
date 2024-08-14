@@ -246,7 +246,6 @@ contract BOLDUpgradeAction {
         uint256 stakeAmt;
         uint256[] miniStakeAmounts;
         uint256 chainId;
-        address anyTrustFastConfirmer;
         bool disableValidatorWhitelist;
         uint256 blockLeafSize;
         uint256 bigStepLeafSize;
