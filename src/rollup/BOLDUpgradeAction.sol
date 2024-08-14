@@ -205,7 +205,6 @@ contract BOLDUpgradeAction {
     address public immutable STAKE_TOKEN;
     uint256 public immutable STAKE_AMOUNT;
     uint256 public immutable CHAIN_ID;
-    address public immutable ANY_TRUST_FAST_CONFIRMER;
     bool public immutable DISABLE_VALIDATOR_WHITELIST;
     uint64 public immutable CHALLENGE_GRACE_PERIOD_BLOCKS;
     address public immutable MINI_STAKE_AMOUNTS_STORAGE;
@@ -329,7 +328,6 @@ contract BOLDUpgradeAction {
         STAKE_TOKEN = settings.stakeToken;
         STAKE_AMOUNT = settings.stakeAmt;
         MINI_STAKE_AMOUNTS_STORAGE = address(new ConstantArrayStorage(settings.miniStakeAmounts));
-        ANY_TRUST_FAST_CONFIRMER = settings.anyTrustFastConfirmer;
         DISABLE_VALIDATOR_WHITELIST = settings.disableValidatorWhitelist;
         BLOCK_LEAF_SIZE = settings.blockLeafSize;
         BIGSTEP_LEAF_SIZE = settings.bigStepLeafSize;
@@ -410,7 +408,7 @@ contract BOLDUpgradeAction {
             layerZeroSmallStepEdgeHeight: SMALLSTEP_LEAF_SIZE,
             genesisAssertionState: genesisAssertionState,
             genesisInboxCount: inboxMaxCount,
-            anyTrustFastConfirmer: ANY_TRUST_FAST_CONFIRMER,
+            anyTrustFastConfirmer: address(0), // fast confirmer would be migrated from the old rollup if existed
             numBigStepLevel: NUM_BIGSTEP_LEVEL,
             challengeGracePeriodBlocks: CHALLENGE_GRACE_PERIOD_BLOCKS,
             bufferConfig: bufferConfig

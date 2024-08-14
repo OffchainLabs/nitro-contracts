@@ -31,7 +31,6 @@ export const sepolia: Config = {
       parseEther('0.79'),
     ],
     chainId: 421614,
-    anyTrustFastConfirmer: '0x0000000000000000000000000000000000000000',
     disableValidatorWhitelist: false,
     blockLeafSize: 2**26, // leaf sizes same as arb1
     bigStepLeafSize: 2**19,
