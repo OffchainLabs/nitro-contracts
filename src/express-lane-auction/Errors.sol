@@ -21,4 +21,4 @@ error RoundTooOld(uint256 round, uint256 currentRound);
 error RoundNotResolved(uint256 round);
 error NotExpressLaneController(uint64 round, address controller, address sender);
 error FixedTransferor(uint64 fixedUntilRound);
-error NotTransferor(address expectedTransferor, address msgSender);
+error NotTransferor(uint64 round, address expectedTransferor, address msgSender);

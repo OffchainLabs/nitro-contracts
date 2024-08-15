@@ -469,7 +469,7 @@ contract ExpressLaneAuction is
         // otherwise we default to the express lane controller to do the transfer
         if (transferor != address(0)) {
             if (transferor != msg.sender) {
-                revert NotTransferor(transferor, msg.sender);
+                revert NotTransferor(round, transferor, msg.sender);
             }
         } else if (resolvedELC != msg.sender) {
             revert NotExpressLaneController(round, resolvedELC, msg.sender);
