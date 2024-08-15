@@ -72,6 +72,7 @@ interface IOldRollup {
     function getStaker(address staker) external view returns (OldStaker memory);
     function isValidator(address validator) external view returns (bool);
     function validatorWalletCreator() external view returns (address);
+    function anyTrustFastConfirmer() external view returns (address);
 }
 
 interface IOldRollupAdmin {
@@ -168,6 +169,10 @@ contract RollupReader is IOldRollup {
     function validatorWalletCreator() external view returns (address) {
         return rollup.validatorWalletCreator();
     }
+
+    function anyTrustFastConfirmer() external view returns (address) {
+        return rollup.anyTrustFastConfirmer();
+    }
 }
 
 /// @notice Stores an array specified during construction.
@@ -210,7 +215,6 @@ contract BOLDUpgradeAction {
     address public immutable STAKE_TOKEN;
     uint256 public immutable STAKE_AMOUNT;
     uint256 public immutable CHAIN_ID;
-    address public immutable ANY_TRUST_FAST_CONFIRMER;
     bool public immutable DISABLE_VALIDATOR_WHITELIST;
     uint64 public immutable CHALLENGE_GRACE_PERIOD_BLOCKS;
     address public immutable MINI_STAKE_AMOUNTS_STORAGE;
@@ -252,7 +256,6 @@ contract BOLDUpgradeAction {
         uint256 stakeAmt;
         uint256[] miniStakeAmounts;
         uint256 chainId;
-        address anyTrustFastConfirmer;
         bool disableValidatorWhitelist;
         uint256 blockLeafSize;
         uint256 bigStepLeafSize;
@@ -334,7 +337,6 @@ contract BOLDUpgradeAction {
         STAKE_TOKEN = settings.stakeToken;
         STAKE_AMOUNT = settings.stakeAmt;
         MINI_STAKE_AMOUNTS_STORAGE = address(new ConstantArrayStorage(settings.miniStakeAmounts));
-        ANY_TRUST_FAST_CONFIRMER = settings.anyTrustFastConfirmer;
         DISABLE_VALIDATOR_WHITELIST = settings.disableValidatorWhitelist;
         BLOCK_LEAF_SIZE = settings.blockLeafSize;
         BIGSTEP_LEAF_SIZE = settings.bigStepLeafSize;
@@ -419,7 +421,7 @@ contract BOLDUpgradeAction {
             layerZeroSmallStepEdgeHeight: SMALLSTEP_LEAF_SIZE,
             genesisAssertionState: genesisAssertionState,
             genesisInboxCount: inboxMaxCount,
-            anyTrustFastConfirmer: ANY_TRUST_FAST_CONFIRMER,
+            anyTrustFastConfirmer: address(0), // fast confirmer would be migrated from the old rollup if existed
             numBigStepLevel: NUM_BIGSTEP_LEVEL,
             challengeGracePeriodBlocks: CHALLENGE_GRACE_PERIOD_BLOCKS,
             bufferConfig: bufferConfig
@@ -585,6 +587,15 @@ contract BOLDUpgradeAction {
         }
         if (DISABLE_VALIDATOR_WHITELIST) {
             IRollupAdmin(address(rollup)).setValidatorWhitelistDisabled(DISABLE_VALIDATOR_WHITELIST);
+        }
+
+        // anyTrustFastConfirmer only exists since v2.0.0, but the old rollup can be on an older version
+        try ROLLUP_READER.anyTrustFastConfirmer() returns (address anyTrustFastConfirmer) {
+            if(anyTrustFastConfirmer != address(0)) {
+                IRollupAdmin(address(rollup)).setAnyTrustFastConfirmer(anyTrustFastConfirmer);
+            }
+        } catch {
+            // do nothing if anyTrustFastConfirmer doesnt exist
         }
 
         IRollupAdmin(address(rollup)).setOwner(actualOwner);

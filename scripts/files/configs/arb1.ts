@@ -1,5 +1,5 @@
 import { parseEther } from 'ethers/lib/utils'
-import { Config } from '../../common'
+import { Config } from '../../boldUpgradeCommon'
 
 export const arb1: Config = {
   contracts: {
@@ -29,7 +29,6 @@ export const arb1: Config = {
     stakeAmt: parseEther('3600'),
     miniStakeAmounts: [parseEther('0'), parseEther('555'), parseEther('79')],
     chainId: 42161,
-    anyTrustFastConfirmer: '0x0000000000000000000000000000000000000000',
     disableValidatorWhitelist: true,
     blockLeafSize: 1048576, // todo below
     bigStepLeafSize: 512,

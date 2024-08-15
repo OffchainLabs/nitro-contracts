@@ -1,5 +1,5 @@
 import { parseEther } from 'ethers/lib/utils'
-import { Config } from '../../common'
+import { Config } from '../../boldUpgradeCommon'
 
 export const sepolia: Config = {
   contracts: {
@@ -27,7 +27,6 @@ export const sepolia: Config = {
     stakeAmt: parseEther('36'), // 1/100th of arb1, same for mini stakes
     miniStakeAmounts: [parseEther('0'), parseEther('5.5'), parseEther('0.79')],
     chainId: 421614,
-    anyTrustFastConfirmer: '0x0000000000000000000000000000000000000000',
     disableValidatorWhitelist: false,
     blockLeafSize: 2 ** 26, // leaf sizes same as arb1
     bigStepLeafSize: 2 ** 19,

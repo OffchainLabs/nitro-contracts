@@ -1,5 +1,5 @@
 import { parseEther } from 'ethers/lib/utils'
-import { Config } from '../../common'
+import { Config } from '../../boldUpgradeCommon'
 
 export const nova: Config = {
   contracts: {
@@ -34,7 +34,6 @@ export const nova: Config = {
       parseEther('1'),
     ],
     chainId: 42161,
-    anyTrustFastConfirmer: '0x0000000000000000000000000000000000000000',
     disableValidatorWhitelist: false,
     blockLeafSize: 1048576,
     bigStepLeafSize: 512,

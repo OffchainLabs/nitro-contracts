@@ -66,7 +66,6 @@ export interface Config {
     stakeAmt: BigNumber
     miniStakeAmounts: BigNumber[]
     chainId: number
-    anyTrustFastConfirmer: string
     disableValidatorWhitelist: boolean
     maxDataSize: number
     blockLeafSize: number
