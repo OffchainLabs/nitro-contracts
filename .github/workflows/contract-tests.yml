@@ -112,7 +112,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload 4bytes
-        run: find ./out -type f -name "*.json" -exec cast upload-signature {} + | grep -v Duplicated:
+        run: yarn upload-4bytes
 
   test-4844:
     name: 4844 tests
