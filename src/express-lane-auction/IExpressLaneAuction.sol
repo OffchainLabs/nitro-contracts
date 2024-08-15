@@ -114,7 +114,8 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     /// @param newExpressLaneController The new express lane controller
     /// @param transferor The address that transferored the controller rights. The transferor if set, otherwise the express lane controller
     /// @param startTimestamp The timestamp at which the new express lane controller takes over
-    /// @param endTimestamp The timestamp at which the new express lane controller will cease to have control
+    /// @param endTimestamp The timestamp at which the new express lane controller's rights are expected to cease. They can cease earlier if
+    ///                     if they are transfered before the end of the round
     event SetExpressLaneController(
         uint64 round,
         address indexed previousExpressLaneController,

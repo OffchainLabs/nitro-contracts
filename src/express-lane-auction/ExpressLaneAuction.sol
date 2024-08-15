@@ -299,13 +299,16 @@ contract ExpressLaneAuction is
     /// @param firstPriceBidder The winning bidder
     /// @param priceToPay The price that needs to be paid by the winner
     /// @param biddingInRound The round bidding is taking place in. This is not the round the bidding is taking place for, which is biddingInRound + 1
+    /// @param roundStart The timestamp at which the bidding for round starts
+    /// @param roundEnd The timestamp at which the bidding for round ends
     function resolveAuction(
         bool isMultiBid,
         Bid calldata firstPriceBid,
         address firstPriceBidder,
         uint256 priceToPay,
         uint64 biddingInRound,
-        RoundTimingInfo memory info
+        uint64 roundStart,
+        uint64 roundEnd
     ) internal {
         // store that a round has been resolved
         uint64 biddingForRound = biddingInRound + 1;
@@ -316,7 +319,6 @@ contract ExpressLaneAuction is
         beneficiaryBalance += priceToPay;
 
         // emit events so that the offchain sequencer knows a new express lane controller has been selected
-        (uint64 roundStart, uint64 roundEnd) = info.roundTimestamps(biddingForRound);
         emit SetExpressLaneController(
             biddingForRound,
             address(0),
@@ -364,17 +366,18 @@ contract ExpressLaneAuction is
     /// @param biddingForRound The round the bid is for the control of
     function recoverAndCheckBalance(
         Bid memory bid,
-        uint64 biddingForRound,
-        RoundTimingInfo memory info
+        uint64 biddingForRound
     ) internal view returns (address, bytes32) {
         bytes32 bidHash = getBidHash(biddingForRound, bid.expressLaneController, bid.amount);
         address bidder = bidHash.recover(bid.signature);
+        // we are always bidding for in the current round for the next round
+        uint64 currentRound = biddingForRound - 1;
         // always check that the bidder has a much as they're claiming
-        if (_balanceOf[bidder].balanceAtRound(info.currentRound()) < bid.amount) {
+        if (_balanceOf[bidder].balanceAtRound(currentRound) < bid.amount) {
             revert InsufficientBalanceAcc(
                 bidder,
                 bid.amount,
-                _balanceOf[bidder].balanceAtRound(info.currentRound())
+                _balanceOf[bidder].balanceAtRound(currentRound)
             );
         }
 
@@ -397,9 +400,10 @@ contract ExpressLaneAuction is
 
         uint64 biddingInRound = info.currentRound();
         uint64 biddingForRound = biddingInRound + 1;
-        (address firstPriceBidder, ) = recoverAndCheckBalance(firstPriceBid, biddingForRound, info);
+        (address firstPriceBidder, ) = recoverAndCheckBalance(firstPriceBid, biddingForRound);
 
-        resolveAuction(false, firstPriceBid, firstPriceBidder, reservePrice, biddingInRound, info);
+        (uint64 roundStart, uint64 roundEnd) = info.roundTimestamps(biddingForRound);
+        resolveAuction(false, firstPriceBid, firstPriceBidder, reservePrice, biddingInRound, roundStart, roundEnd);
     }
 
     /// @inheritdoc IExpressLaneAuction
@@ -412,8 +416,6 @@ contract ExpressLaneAuction is
             revert AuctionNotClosed();
         }
 
-        // if the bids are the same amount and offchain mechanism will be used to choose the order and
-        // therefore the winner. The auctioneer is trusted to make this choice correctly
         if (firstPriceBid.amount < secondPriceBid.amount) {
             revert BidsWrongOrder();
         }
@@ -429,13 +431,11 @@ contract ExpressLaneAuction is
         // even the second price bid must have the balance it's claiming
         (address firstPriceBidder, bytes32 firstBidHash) = recoverAndCheckBalance(
             firstPriceBid,
-            biddingForRound,
-            info
+            biddingForRound
         );
         (address secondPriceBidder, bytes32 secondBidHash) = recoverAndCheckBalance(
             secondPriceBid,
-            biddingForRound,
-            info
+            biddingForRound
         );
 
         // The bidders must be different so that our balance check isnt fooled into thinking
@@ -455,13 +455,15 @@ contract ExpressLaneAuction is
             revert TieBidsWrongOrder();
         }
 
+        (uint64 roundStart, uint64 roundEnd) = info.roundTimestamps(biddingForRound);
         resolveAuction(
             true,
             firstPriceBid,
             firstPriceBidder,
             secondPriceBid.amount,
             biddingInRound,
-            info
+            roundStart,
+            roundEnd
         );
     }
 

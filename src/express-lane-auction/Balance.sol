@@ -83,11 +83,11 @@ library BalanceLib {
             revert ZeroAmount();
         }
 
-        if (balanceAtRound(bal, round) < amount) {
-            revert InsufficientBalance(amount, balanceAtRound(bal, round));
+        uint256 balRnd = balanceAtRound(bal, round);
+        if (balRnd < amount) {
+            revert InsufficientBalance(amount, balRnd);
         }
 
-        // is there a withdrawal in progress
         bal.balance -= amount;
     }
 
