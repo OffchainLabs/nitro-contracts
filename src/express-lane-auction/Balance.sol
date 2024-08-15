@@ -23,19 +23,12 @@ struct Balance {
 /// @notice Balance mutation and view functionality. This is in it's own library so that we can
 //          reason about and test how the different ways balance mutations interact with each other
 library BalanceLib {
-    /// @notice Check whether the full balance is withdrawable at a specified round
-    /// @param bal The balance to check
-    /// @param round The round to check withdrawal in
-    function isWithdrawnAtRound(Balance storage bal, uint64 round) internal view returns (bool) {
-        return round >= bal.withdrawalRound;
-    }
-
     /// @notice The available balance at the supplied round. Returns 0 if a withdrawal has been initiated and has
     ///         past the withdrawal round.
     /// @param bal The balance to query
     /// @param round The round to check the balance in
     function balanceAtRound(Balance storage bal, uint64 round) internal view returns (uint256) {
-        return isWithdrawnAtRound(bal, round) ? 0 : bal.balance;
+        return bal.balance - withdrawableBalanceAtRound(bal, round);
     }
 
     /// @notice The withdrawable balance at the supplied round. If a withdrawal has been initiated, the
@@ -48,7 +41,7 @@ library BalanceLib {
         view
         returns (uint256)
     {
-        return isWithdrawnAtRound(bal, round) ? bal.balance : 0;
+        return round >= bal.withdrawalRound ? bal.balance : 0;
     }
 
     /// @notice Increase a balance by a specified amount
@@ -100,35 +93,47 @@ library BalanceLib {
 
     /// @notice Initiate a withdrawal. A withdrawal is a reduction of the full amount.
     ///         Withdrawal is a two step process initialization and finalization. Finalization is only
-    ///         possible two rounds after the supplied round parameter. This is
-    ///         so that balance cannot be reduced unexpectedly without notice. An external
-    ///         observer can see that a withdrawal has been initiated, and will therefore
+    ///         after the supplied round parameter. The expected usage is to specify a round that is 2
+    ///         in the future to ensure that the balance cannot be reduced unexpectedly without notice.
+    //          An external observer can see that a withdrawal has been initiated, and will therefore
     ///         be able to take it into account and not rely on the balance being there.
     ///         In the case of the auction contract this allows the bidders to withdraw their
     ///         balance, but an auctioneer will know not to accept there bids in the mean time
     /// @param bal The balance to iniate a reduction on
-    /// @param round The round that the initiation is occuring within. Withdrawal can then be finalized
-    ///              two rounds after this supplied round.
+    /// @param round The round that the withdrawal will be available in. Cannot be specified as the max round
     function initiateWithdrawal(Balance storage bal, uint64 round) internal {
         if (bal.balance == 0) {
             revert ZeroAmount();
+        }
+
+        if (round == type(uint64).max) {
+            // we use max round to specify that a withdrawal is not taking place
+            // so we dont allow it as a withdrawal round. In practice max round should never
+            // be reached so this isnt an issue, we just put this here as an additional
+            // safety check
+            revert WithdrawalMaxRound();
         }
 
         if (bal.withdrawalRound != type(uint64).max) {
             revert WithdrawalInProgress();
         }
 
-        // We dont make it round + 1 in case the iniation were to occur right at the
-        // end of a round. Doing round + 2 ensures observers always have at least one full round
-        // to become aware of the future balance change.
-        bal.withdrawalRound = round + 2;
+        bal.withdrawalRound = round;
     }
 
     /// @notice Finalize an already initialized withdrawal. Reduces the balance to 0.
     ///         Can only be called two round after the withdrawal was initiated.
     /// @param bal The balance to finalize
-    /// @param round The round to check whether withdrawal is valid in. Usually the current round.
+    /// @param round The round to check whether withdrawal is valid in. Usually the current round. Cannot be max round.
     function finalizeWithdrawal(Balance storage bal, uint64 round) internal returns (uint256) {
+        if (round == type(uint64).max) {
+            // we use max round to specify that a withdrawal is not taking place
+            // so we dont allow it as a withdrawal round. In practice max round should never
+            // be reached so this isnt an issue, we just put this here as an additional
+            // safety check
+            revert WithdrawalMaxRound();
+        }
+
         uint256 withdrawableBalance = withdrawableBalanceAtRound(bal, round);
         if (withdrawableBalance == 0) {
             revert NothingToWithdraw();
@@ -138,19 +143,3 @@ library BalanceLib {
         return withdrawableBalance;
     }
 }
-
-// CHRIS: TODO: balance testing and todos:
-// CHRIS: TODO: add a doc about the difference between bidding for round and bidding in round
-// CHRIS: TODO: list gurantee of the balance lib
-//              1. withdrawal round is 0 only if the balance has never been initialized, otherwise it is 2 or more
-// CHRIS: TODO: one thing to test is what these functions do before round 0, also what about unitialised balances - should we test that?
-// CHRIS: TODO: it should be possible to call any of these in any order - particularly the updating functions. How can we test for this
-//              we would need to first define an inconsistent state and then go from there
-// CHRIS: TODO: we wanna make sure we're not in a state where we can get trapped, either with funds in there, or with a zero balance or something - those are inconsistent states
-//              another inconsistent state is when the balance in there doesnt match what we expect from external reduces etc
-
-// CHRIS: TODO: balance notes:
-// CHRIS: TODO: invariant: balance after <= balance before
-// CHRIS: TODO: invariant: if balance after == 0 and balance before == 0, then round must be set to max
-// CHRIS: TODO: tests for balanceOf, freeBalance and withdrawable balance
-// CHRIS: TODO: test each of the getter functions and withdrawal functions for an uninitialized deposit, and for one that has been zerod out

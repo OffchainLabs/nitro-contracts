@@ -6,14 +6,11 @@ import "./Errors.sol";
 /// @notice When an auction round is resolved a new express lane controller is chosen for that round
 ///         An elc round stores that selected express lane controller against the round number
 struct ELCRound {
+    /// @notice The express lane controller for this round
     address expressLaneController;
+    /// @notice The round number
     uint64 round;
 }
-
-// CHRIS: TODO: consider all usages of the these during initialization
-// CHRIS: TODO: Invariant: not possible for the rounds in latest rounds to have the same value
-// CHRIS: TODO: what values do these functions have during init?
-// CHRIS: TODO: Invariant: lastAuctionRound.round should never be > round if called during resolve auction except during initialization
 
 /// @notice Latest resolved express lane controller auction rounds
 //          Only the two latest resolved rounds are stored
