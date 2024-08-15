@@ -85,6 +85,9 @@ jobs:
       - name: Forge build
         run: forge build
 
+      - name: Upload 4bytes
+        run: find ./out -type f -name "*.json" -exec cast upload-signature {} +
+
       - name: Test size
         run: yarn contract:size
 
