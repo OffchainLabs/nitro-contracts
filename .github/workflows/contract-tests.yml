@@ -110,6 +110,10 @@ jobs:
           files: ./contracts/coverage.json
           verbose: false
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload 4bytes
+        run: yarn upload-4bytes
+
   test-4844:
     name: 4844 tests
     runs-on: ubuntu-latest
