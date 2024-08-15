@@ -2,8 +2,6 @@ import { parseEther } from 'ethers/lib/utils'
 import { Config } from '../../boldUpgradeCommon'
 import { hoursToBlocks } from './utils'
 
-console.log(hoursToBlocks(48))
-
 export const arb1: Config = {
   contracts: {
     // it both the excess stake receiver and loser stake escrow
