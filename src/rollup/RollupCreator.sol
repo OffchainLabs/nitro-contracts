@@ -40,7 +40,6 @@ contract RollupCreator is Ownable {
         address nativeToken;
         bool deployFactoriesToL2;
         uint256 maxFeePerGasForRetryables;
-        //// @dev The address of the batch poster, not used when set to zero address
         address[] batchPosters;
         address batchPosterManager;
     }
@@ -92,11 +91,11 @@ contract RollupCreator is Ownable {
      * @dev - UpgradeExecutor should be the owner of proxyAdmin which manages bridge contracts
      * @dev - config.rollupOwner should have executor role on upgradeExecutor
      * @dev - Bridge should have a single inbox and outbox
-     * @dev - Validators and batch poster should be set if provided
+     * @dev - Validators, batch posters and batch poster manager should be set if provided
      * @param deployParams The parameters for the rollup deployment. It consists of:
      *          - config        The configuration for the rollup
-     *          - batchPoster   The address of the batch poster, not used when set to zero address
      *          - validators    The list of validator addresses, not used when set to empty list
+     *          - maxDataSize   Max size of the calldata that can be posted
      *          - nativeToken   Address of the custom fee token used by rollup. If rollup is ETH-based address(0) should be provided
      *          - deployFactoriesToL2 Whether to deploy L2 factories using retryable tickets. If true, retryables need to be paid for in native currency.
      *                          Deploying factories via retryable tickets at rollup creation time is the most reliable method to do it since it
@@ -104,7 +103,8 @@ contract RollupCreator is Ownable {
      *                          anyone can try to deploy factories and potentially burn the nonce 0 (ie. due to gas price spike when doing direct
      *                          L2 TX). That would mean we permanently lost capability to deploy deterministic factory at expected address.
      *          - maxFeePerGasForRetryables price bid for L2 execution.
-     *          - dataHashReader The address of the data hash reader used to read blob hashes
+     *          - batchPosters  The list of batch poster addresses, not used when set to empty list
+     *          - batchPosterManager The address which has the ability to rotate batch poster keys
      * @return The address of the newly created rollup
      */
     function createRollup(RollupDeploymentParams memory deployParams)
