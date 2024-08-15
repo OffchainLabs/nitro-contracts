@@ -176,6 +176,6 @@ module.exports = {
     target: 'ethers-v5',
   },
   contractSizer: {
-    strict: true
-  }
+    strict: true,
+  },
 }
