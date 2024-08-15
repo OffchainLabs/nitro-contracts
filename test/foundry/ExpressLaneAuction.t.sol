@@ -841,9 +841,6 @@ contract ExpressLaneAuctionTest is Test {
 
     function testCannotResolveWrongChain() public {
         ResolveSetup memory rs = deployDepositAndBids();
-        console.log(block.chainid);
-        return;
-
         vm.chainId(31337);
         bytes32 h1 = rs.auction.getBidHash(
             rs.biddingForRound,

@@ -76,7 +76,7 @@ contract ExpressLaneAuction is
     mapping(address => Transferor) public transferorOf;
 
     /// @inheritdoc IExpressLaneAuction
-    function initialize(InitArgs memory args) public initializer onlyDelegated {
+    function initialize(InitArgs calldata args) public initializer onlyDelegated {
         __AccessControl_init();
         __EIP712_init("ExpressLaneAuction", "1");
 
@@ -94,23 +94,8 @@ contract ExpressLaneAuction is
         reservePrice = args._minReservePrice;
         emit SetReservePrice(0, args._minReservePrice);
 
-        if (
-            args._roundTimingInfo.reserveSubmissionSeconds +
-                args._roundTimingInfo.auctionClosingSeconds >
-            args._roundTimingInfo.roundDurationSeconds
-        ) {
-            revert RoundDurationTooShort();
-        }
-
-        roundTimingInfo = args._roundTimingInfo;
-        // CHRIS: TODO: tests for this
-        emit SetRoundTimingInfo(
-            args._roundTimingInfo.currentRound(),
-            args._roundTimingInfo.offsetTimestamp,
-            args._roundTimingInfo.roundDurationSeconds,
-            args._roundTimingInfo.auctionClosingSeconds,
-            args._roundTimingInfo.reserveSubmissionSeconds
-        );
+        // CHRIS: TODO: more tests now
+        setRoundTimingInfoInternal(args._roundTimingInfo);
 
         // roles without a custom role admin set will have this as the admin
         _grantRole(DEFAULT_ADMIN_ROLE, args._masterAdmin);
@@ -182,27 +167,10 @@ contract ExpressLaneAuction is
         reservePrice = newReservePrice;
     }
 
-    // CHRIS: TODO: tests
-    /// @inheritdoc IExpressLaneAuction
-    function setRoundTimingInfo(RoundTimingInfo calldata newRoundTimingInfo)
-        external
-        onlyRole(ROUND_TIMING_SETTER_ROLE)
-    {
-        RoundTimingInfo memory currentRoundTimingInfo = roundTimingInfo;
-
-        uint64 currentCurrentRound = currentRoundTimingInfo.currentRound();
-        uint64 newCurrentRound = newRoundTimingInfo.currentRound();
-        // updating round timing info needs to be synchronised
-        // so we ensure that the current round won't change
-        if (currentCurrentRound != newCurrentRound) {
-            revert InvalidNewRound(currentCurrentRound, newCurrentRound);
-        }
-
-        (uint64 currentStart, ) = currentRoundTimingInfo.roundTimestamps(currentCurrentRound + 1);
-        (uint64 newStart, ) = newRoundTimingInfo.roundTimestamps(newCurrentRound + 1);
-        // we also ensure that the current round end time/next round start time, will not change
-        if (currentStart != newStart) {
-            revert InvalidNewStart(currentStart, newStart);
+    function setRoundTimingInfoInternal(RoundTimingInfo calldata newRoundTimingInfo) internal {
+        if(newRoundTimingInfo.roundDurationSeconds == 0) {
+            // we divide by round duration, so it cant be 0
+            revert ZeroRoundDuration();
         }
 
         // ensure that round duration cannot be too high, other wise this could be used to lock balances
@@ -228,6 +196,31 @@ contract ExpressLaneAuction is
             newRoundTimingInfo.auctionClosingSeconds,
             newRoundTimingInfo.reserveSubmissionSeconds
         );
+    }
+
+    /// @inheritdoc IExpressLaneAuction
+    function setRoundTimingInfo(RoundTimingInfo calldata newRoundTimingInfo)
+        external
+        onlyRole(ROUND_TIMING_SETTER_ROLE)
+    {
+        RoundTimingInfo memory currentRoundTimingInfo = roundTimingInfo;
+
+        uint64 currentCurrentRound = currentRoundTimingInfo.currentRound();
+        uint64 newCurrentRound = newRoundTimingInfo.currentRound();
+        // updating round timing info needs to be synchronised
+        // so we ensure that the current round won't change
+        if (currentCurrentRound != newCurrentRound) {
+            revert InvalidNewRound(currentCurrentRound, newCurrentRound);
+        }
+
+        (uint64 currentStart, ) = currentRoundTimingInfo.roundTimestamps(currentCurrentRound + 1);
+        (uint64 newStart, ) = newRoundTimingInfo.roundTimestamps(newCurrentRound + 1);
+        // we also ensure that the current round end time/next round start time, will not change
+        if (currentStart != newStart) {
+            revert InvalidNewStart(currentStart, newStart);
+        }
+
+        setRoundTimingInfoInternal(newRoundTimingInfo);
     }
 
     /// @inheritdoc IExpressLaneAuction
