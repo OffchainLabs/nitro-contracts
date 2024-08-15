@@ -21,10 +21,6 @@ contract RoundTimingInfoImp {
         return timingInfo.isAuctionRoundClosed();
     }
 
-    function timeIntoRound() public view returns (uint64) {
-        return timingInfo.timeIntoRound();
-    }
-
     function isReserveBlackout(uint64 latestResolvedRound) public view returns (bool) {
         return timingInfo.isReserveBlackout(latestResolvedRound);
     }
@@ -53,97 +49,78 @@ contract ExpressLaneRoundTimingTest is Test {
 
     function testCurrentRound() public {
         RoundTimingInfoImp ri = new RoundTimingInfoImp(info);
+        uint64 offset = uint64(info.offsetTimestamp);
 
-        vm.warp(info.offsetTimestamp - 500);
+        vm.warp(offset - 500);
         assertEq(ri.currentRound(), 0, "Long before offset");
-        vm.warp(info.offsetTimestamp - 1);
+        vm.warp(offset - 1);
         assertEq(ri.currentRound(), 0, "Before offset");
-        vm.warp(info.offsetTimestamp);
+        vm.warp(offset);
         assertEq(ri.currentRound(), 0, "At offset");
-        vm.warp(info.offsetTimestamp + 1);
+        vm.warp(offset + 1);
         assertEq(ri.currentRound(), 0, "After offset");
-        vm.warp(info.offsetTimestamp + info.roundDurationSeconds - 1);
+        vm.warp(offset + info.roundDurationSeconds - 1);
         assertEq(ri.currentRound(), 0, "Before round 1");
-        vm.warp(info.offsetTimestamp + info.roundDurationSeconds);
+        vm.warp(offset + info.roundDurationSeconds);
         assertEq(ri.currentRound(), 1, "At round 1");
-        vm.warp(info.offsetTimestamp + info.roundDurationSeconds + 1);
+        vm.warp(offset + info.roundDurationSeconds + 1);
         assertEq(ri.currentRound(), 1, "At round 1");
-        vm.warp(info.offsetTimestamp + 5 * info.roundDurationSeconds);
+        vm.warp(offset + 5 * info.roundDurationSeconds);
         assertEq(ri.currentRound(), 5, "At round 5");
 
         RoundTimingInfoImp mri = new RoundTimingInfoImp(matchInfo);
-        vm.warp(matchInfo.offsetTimestamp + matchInfo.roundDurationSeconds);
+        uint64 matchOffset = uint64(matchInfo.offsetTimestamp);
+        vm.warp(matchOffset + matchInfo.roundDurationSeconds);
         assertEq(mri.currentRound(), 1, "mri at round 1");
     }
 
     function testIsAuctionClosed() public {
         RoundTimingInfoImp ri = new RoundTimingInfoImp(info);
+        uint64 offset = uint64(info.offsetTimestamp);
 
-        vm.warp(info.offsetTimestamp - 1);
+        vm.warp(offset - 1);
         assertFalse(ri.isAuctionRoundClosed(), "Before offset");
-        vm.warp(info.offsetTimestamp);
+        vm.warp(offset);
         assertFalse(ri.isAuctionRoundClosed(), "At offset");
-        vm.warp(info.offsetTimestamp + info.roundDurationSeconds - info.auctionClosingSeconds - 1);
+        vm.warp(offset + info.roundDurationSeconds - info.auctionClosingSeconds - 1);
         assertFalse(ri.isAuctionRoundClosed(), "Before close");
-        vm.warp(info.offsetTimestamp + info.roundDurationSeconds - info.auctionClosingSeconds);
+        vm.warp(offset + info.roundDurationSeconds - info.auctionClosingSeconds);
         assertTrue(ri.isAuctionRoundClosed(), "At close");
-        vm.warp(info.offsetTimestamp + info.roundDurationSeconds - info.auctionClosingSeconds + 1);
+        vm.warp(offset + info.roundDurationSeconds - info.auctionClosingSeconds + 1);
         assertTrue(ri.isAuctionRoundClosed(), "After close");
-        vm.warp(info.offsetTimestamp + info.roundDurationSeconds - 1);
+        vm.warp(offset + info.roundDurationSeconds - 1);
         assertTrue(ri.isAuctionRoundClosed(), "Before round start");
-        vm.warp(info.offsetTimestamp + info.roundDurationSeconds);
+        vm.warp(offset + info.roundDurationSeconds);
         assertFalse(ri.isAuctionRoundClosed(), "At round start");
         vm.warp(
-            info.offsetTimestamp + 2 * info.roundDurationSeconds - info.auctionClosingSeconds - 1
+            offset + 2 * info.roundDurationSeconds - info.auctionClosingSeconds - 1
         );
         assertFalse(ri.isAuctionRoundClosed(), "Before next round start");
-        vm.warp(info.offsetTimestamp + 2 * info.roundDurationSeconds - info.auctionClosingSeconds);
+        vm.warp(offset + 2 * info.roundDurationSeconds - info.auctionClosingSeconds);
         assertTrue(ri.isAuctionRoundClosed(), "At round start");
-        vm.warp(info.offsetTimestamp + 2 * info.roundDurationSeconds);
+        vm.warp(offset + 2 * info.roundDurationSeconds);
         assertFalse(ri.isAuctionRoundClosed(), "At next round");
 
         RoundTimingInfoImp mri = new RoundTimingInfoImp(matchInfo);
-        vm.warp(info.offsetTimestamp + info.roundDurationSeconds - info.auctionClosingSeconds);
+        uint64 matchOffset = uint64(matchInfo.offsetTimestamp);
+        vm.warp(matchOffset + info.roundDurationSeconds - info.auctionClosingSeconds);
         assertTrue(mri.isAuctionRoundClosed(), "mri close");
-    }
-
-    function testTimeIntoRound() public {
-        RoundTimingInfoImp ri = new RoundTimingInfoImp(info);
-
-        vm.warp(info.offsetTimestamp - 1);
-        vm.expectRevert();
-        ri.timeIntoRound();
-        vm.warp(info.offsetTimestamp);
-        assertEq(ri.timeIntoRound(), 0, "At offset");
-        vm.warp(info.offsetTimestamp + 1);
-        assertEq(ri.timeIntoRound(), 1, "At offset");
-        vm.warp(info.offsetTimestamp + 13);
-        assertEq(ri.timeIntoRound(), 13, "After offset");
-        vm.warp(info.offsetTimestamp + info.roundDurationSeconds);
-        assertEq(ri.timeIntoRound(), 0, "Next round");
-        vm.warp(info.offsetTimestamp + info.roundDurationSeconds + 14);
-        assertEq(ri.timeIntoRound(), 14, "After next round");
-        vm.warp(info.offsetTimestamp + 5 * info.roundDurationSeconds + 17);
-        assertEq(ri.timeIntoRound(), 17, "After next round");
-
-        RoundTimingInfoImp mri = new RoundTimingInfoImp(matchInfo);
-        vm.warp(matchInfo.offsetTimestamp + matchInfo.roundDurationSeconds + 14);
-        assertEq(mri.timeIntoRound(), 14, "mri after next round");
     }
 
     function testIsReserveBlackout() public {
         RoundTimingInfoImp ri = new RoundTimingInfoImp(info);
+        uint64 offset = uint64(info.offsetTimestamp);
 
-        vm.warp(info.offsetTimestamp - 1);
+        vm.warp(offset - 1);
         assertFalse(ri.isReserveBlackout(0), "Before offset");
         assertFalse(ri.isReserveBlackout(1), "Before offset");
         assertFalse(ri.isReserveBlackout(2), "Before offset");
-        vm.warp(info.offsetTimestamp - 1);
+        vm.warp(offset - 1);
         assertFalse(ri.isReserveBlackout(0), "At offset");
         assertFalse(ri.isReserveBlackout(1), "At offset");
         assertFalse(ri.isReserveBlackout(2), "At offset");
         vm.warp(
-            info.offsetTimestamp +
+            offset +
                 info.roundDurationSeconds -
                 info.auctionClosingSeconds -
                 info.reserveSubmissionSeconds -
@@ -153,7 +130,7 @@ contract ExpressLaneRoundTimingTest is Test {
         assertFalse(ri.isReserveBlackout(1), "Before blackout");
         assertFalse(ri.isReserveBlackout(2), "Before blackout");
         vm.warp(
-            info.offsetTimestamp +
+            offset +
                 info.roundDurationSeconds -
                 info.auctionClosingSeconds -
                 info.reserveSubmissionSeconds
@@ -162,7 +139,7 @@ contract ExpressLaneRoundTimingTest is Test {
         assertFalse(ri.isReserveBlackout(1), "At blackout 1");
         assertFalse(ri.isReserveBlackout(2), "At blackout 2");
         vm.warp(
-            info.offsetTimestamp +
+            offset +
                 info.roundDurationSeconds -
                 info.auctionClosingSeconds -
                 info.reserveSubmissionSeconds +
@@ -171,16 +148,16 @@ contract ExpressLaneRoundTimingTest is Test {
         assertTrue(ri.isReserveBlackout(0), "After blackout");
         assertFalse(ri.isReserveBlackout(1), "After blackout");
         assertFalse(ri.isReserveBlackout(2), "After blackout");
-        vm.warp(info.offsetTimestamp + info.roundDurationSeconds - 1);
+        vm.warp(offset + info.roundDurationSeconds - 1);
         assertTrue(ri.isReserveBlackout(0), "Before next round");
         assertFalse(ri.isReserveBlackout(1), "Before next round");
         assertFalse(ri.isReserveBlackout(2), "Before next round");
-        vm.warp(info.offsetTimestamp + info.roundDurationSeconds);
+        vm.warp(offset + info.roundDurationSeconds);
         assertFalse(ri.isReserveBlackout(0), "At next round");
         assertFalse(ri.isReserveBlackout(1), "At next round");
         assertFalse(ri.isReserveBlackout(2), "At next round");
         vm.warp(
-            info.offsetTimestamp +
+            offset +
                 2 *
                 info.roundDurationSeconds -
                 info.auctionClosingSeconds -
@@ -191,7 +168,8 @@ contract ExpressLaneRoundTimingTest is Test {
         assertFalse(ri.isReserveBlackout(2), "At next reserve submission deadline");
 
         RoundTimingInfoImp mri = new RoundTimingInfoImp(matchInfo);
-        vm.warp(matchInfo.offsetTimestamp + matchInfo.roundDurationSeconds);
+        uint64 matchOffset = uint64(matchInfo.offsetTimestamp);
+        vm.warp(matchOffset + matchInfo.roundDurationSeconds);
         assertTrue(mri.isReserveBlackout(0), "mri at next round");
         assertTrue(mri.isReserveBlackout(1), "mri at next round");
         assertFalse(mri.isReserveBlackout(2), "mri at next round");
@@ -199,18 +177,19 @@ contract ExpressLaneRoundTimingTest is Test {
 
     function testRoundTimestamps() public {
         RoundTimingInfoImp ri = new RoundTimingInfoImp(info);
+        uint64 offset = uint64(info.offsetTimestamp);
 
         (uint64 start, uint64 end) = ri.roundTimestamps(0);
-        assertEq(start, info.offsetTimestamp);
-        assertEq(end, info.offsetTimestamp + 1 * info.roundDurationSeconds - 1);
+        assertEq(start, offset);
+        assertEq(end, offset + 1 * info.roundDurationSeconds - 1);
         (start, end) = ri.roundTimestamps(1);
-        assertEq(start, info.offsetTimestamp + 1 * info.roundDurationSeconds);
-        assertEq(end, info.offsetTimestamp + 2 * info.roundDurationSeconds - 1);
+        assertEq(start, offset + 1 * info.roundDurationSeconds);
+        assertEq(end, offset + 2 * info.roundDurationSeconds - 1);
         (start, end) = ri.roundTimestamps(2);
-        assertEq(start, info.offsetTimestamp + 2 * info.roundDurationSeconds);
-        assertEq(end, info.offsetTimestamp + 3 * info.roundDurationSeconds - 1);
+        assertEq(start, offset + 2 * info.roundDurationSeconds);
+        assertEq(end, offset + 3 * info.roundDurationSeconds - 1);
         (start, end) = ri.roundTimestamps(11057);
-        assertEq(start, info.offsetTimestamp + 11057 * info.roundDurationSeconds);
-        assertEq(end, info.offsetTimestamp + 11058 * info.roundDurationSeconds - 1);
+        assertEq(start, offset + 11057 * info.roundDurationSeconds);
+        assertEq(end, offset + 11058 * info.roundDurationSeconds - 1);
     }
 }

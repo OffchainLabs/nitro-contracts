@@ -6,10 +6,13 @@ pragma solidity ^0.8.0;
 ///         after which the auctioneer can submit the two highest bids to the auction contract to resolve the auction
 struct RoundTimingInfo {
     /// @notice The timestamp when round 0 starts
-    uint64 offsetTimestamp;
-    /// @notice The total duration (in seconds) of the round
+    ///         We allow this to be negative so that later when setting new round timing info
+    ///         we can use offsets very far in the past. This combined with the maxium that we allow
+    ///         on round duration ensures that we can always set a new round duration within the possible range
+    int64 offsetTimestamp;
+    /// @notice The total duration (in seconds) of the round. Always less than 86400 and greater than 0
     uint64 roundDurationSeconds;
-    /// @notice The number of seconds before the end of the round that the auction round closes
+    /// @notice The number of seconds before the end of the round that the auction round closes. Cannot be 0
     uint64 auctionClosingSeconds;
     /// @notice A reserve setter account has the rights to set a reserve for a round,
     ///         however they cannot do this within a reserve blackout period.
@@ -19,30 +22,38 @@ struct RoundTimingInfo {
 }
 
 library RoundTimingInfoLib {
+    /// @dev Using signed offset involves a lot of casting when comparing the to the block timestamp
+    ///      so we provide a helper method here
+    function blockTimestampBeforeOffset(int64 offsetTimestamp) private view returns(bool) {
+        return int64(uint64(block.timestamp)) < offsetTimestamp;
+    }
+
+    /// @dev Using signed offset involves a lot of casting when comparing the to the block timestamp
+    ///      so we provide a helper method here
+    ///      Notice! this helper method should not be used before checking that the offset is less than the timestamp
+    function unsignedSinceTimestamp(int64 offsetTimestamp) private view returns (uint64) {
+        return uint64(int64(uint64(block.timestamp)) - offsetTimestamp);
+    }
+
     /// @notice The current round, given the current timestamp, the offset and the round duration
     function currentRound(RoundTimingInfo memory info) internal view returns (uint64) {
-        if (block.timestamp < info.offsetTimestamp) {
+        if (blockTimestampBeforeOffset(info.offsetTimestamp)) {
             return 0;
         }
         
-        return (uint64(block.timestamp) - info.offsetTimestamp) / info.roundDurationSeconds;
+        return (unsignedSinceTimestamp(info.offsetTimestamp)) / info.roundDurationSeconds;
     }
 
     /// @notice Has the current auction round closed
     function isAuctionRoundClosed(RoundTimingInfo memory info) internal view returns (bool) {
-        if (block.timestamp < info.offsetTimestamp) {
+        if (blockTimestampBeforeOffset(info.offsetTimestamp)) {
             return false;
         }
 
-        uint64 timeInRound = timeIntoRound(info);
+        uint64 timeSinceOffset = unsignedSinceTimestamp(info.offsetTimestamp);
+        uint64 timeInRound = timeSinceOffset % info.roundDurationSeconds;
         // round closes at AuctionClosedSeconds before the end of the round
         return timeInRound >= info.roundDurationSeconds - info.auctionClosingSeconds;
-    }
-
-    /// @notice How far (in seconds) are we throught the current round. Can be 0 at the start of the current round
-    function timeIntoRound(RoundTimingInfo memory info) internal view returns (uint64) {
-        uint64 timeSinceOffset = (uint64(block.timestamp) - info.offsetTimestamp);
-        return timeSinceOffset % info.roundDurationSeconds;
     }
 
     /// @notice The reserve cannot be set during the blackout period
@@ -54,7 +65,7 @@ library RoundTimingInfoLib {
         view
         returns (bool)
     {
-        if (block.timestamp < info.offsetTimestamp) {
+        if (blockTimestampBeforeOffset(info.offsetTimestamp)) {
             // no rounds have started, can't be in blackout
             return false;
         }
@@ -70,7 +81,8 @@ library RoundTimingInfoLib {
         // the round in question hasnt been resolved
         // therefore if we're within ReserveSubmissionSeconds of the auction close then we're in blackout
         // otherwise we're not
-        uint64 timeInRound = timeIntoRound(info);
+        uint64 timeSinceOffset = unsignedSinceTimestamp(info.offsetTimestamp);
+        uint64 timeInRound = timeSinceOffset % info.roundDurationSeconds;
         return
             timeInRound >=
             (info.roundDurationSeconds -
@@ -88,7 +100,7 @@ library RoundTimingInfoLib {
         pure
         returns (uint64, uint64)
     {
-        uint64 roundStart = info.offsetTimestamp + info.roundDurationSeconds * round;
+        uint64 roundStart = uint64(info.offsetTimestamp + int64(info.roundDurationSeconds * round));
         uint64 roundEnd = roundStart + info.roundDurationSeconds - 1;
         return (roundStart, roundEnd);
     }

@@ -158,7 +158,7 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     /// @param reserveSubmissionSeconds The new reserve submission seconds
     event SetRoundTimingInfo(
         uint64 currentRound,
-        uint64 offsetTimestamp,
+        int64 offsetTimestamp,
         uint64 roundDurationSeconds,
         uint64 auctionClosingSeconds,
         uint64 reserveSubmissionSeconds
@@ -223,7 +223,7 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
         external
         view
         returns (
-            uint64 offsetTimestamp,
+            int64 offsetTimestamp,
             uint64 roundDurationSeconds,
             uint64 auctionClosingSeconds,
             uint64 reserveSubmissionSeconds
