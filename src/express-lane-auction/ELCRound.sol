@@ -46,6 +46,7 @@ library LatestELCRoundsLib {
         } else if (latestResolvedRounds[1].round == round) {
             return latestResolvedRounds[1];
         } else {
+            // not resolved or too old
             revert RoundNotResolved(round);
         }
     }

@@ -167,6 +167,8 @@ contract ExpressLaneAuction is
     }
 
     function setRoundTimingInfoInternal(RoundTimingInfo calldata newRoundTimingInfo) internal {
+        // auction closing seconds of 0 wouldnt make sense as it would then be impossible to close the round
+        // due to the check below this also causes round duration > 0
         if(newRoundTimingInfo.auctionClosingSeconds == 0) {
             revert ZeroAuctionClosingSeconds();
         }

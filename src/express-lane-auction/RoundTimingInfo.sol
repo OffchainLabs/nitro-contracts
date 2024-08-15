@@ -21,10 +21,10 @@ struct RoundTimingInfo {
 library RoundTimingInfoLib {
     /// @notice The current round, given the current timestamp, the offset and the round duration
     function currentRound(RoundTimingInfo memory info) internal view returns (uint64) {
-        if (info.offsetTimestamp > block.timestamp) {
+        if (block.timestamp < info.offsetTimestamp) {
             return 0;
         }
-
+        
         return (uint64(block.timestamp) - info.offsetTimestamp) / info.roundDurationSeconds;
     }
 

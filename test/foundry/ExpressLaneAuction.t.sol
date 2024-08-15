@@ -173,6 +173,12 @@ contract ExpressLaneAuctionTest is Test {
         rdArgs1._roundTimingInfo.roundDurationSeconds = longDuration;
         vm.expectRevert(abi.encodeWithSelector(RoundTooLong.selector, longDuration));
         auction.initialize(rdArgs1);
+
+        InitArgs memory rdArgs2 = createArgs(address(token));
+        rdArgs2._roundTimingInfo.roundDurationSeconds = 0;
+        // expect div by 0 or not less than auction closing - either way revert
+        vm.expectRevert();
+        auction.initialize(rdArgs2);
     }
 
     function testInit() public {
