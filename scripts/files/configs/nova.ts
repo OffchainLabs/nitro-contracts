@@ -1,6 +1,6 @@
 import { parseEther } from 'ethers/lib/utils'
 import { Config } from '../../boldUpgradeCommon'
-import { hoursToBlocks } from '.'
+import { hoursToBlocks } from './utils'
 
 export const nova: Config = {
   contracts: {
