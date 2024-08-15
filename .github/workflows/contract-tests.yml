@@ -127,7 +127,7 @@ jobs:
         with:
           version: nightly
 
-      - uses: OffchainLabs/actions/run-nitro-test-node@test-node-args
+      - uses: OffchainLabs/actions/run-nitro-test-node@main
         with:
           nitro-testnode-ref: deneb-integration
           args: --pos
