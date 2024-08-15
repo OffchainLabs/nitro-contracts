@@ -42,6 +42,8 @@
     "test:e2e": "hardhat test test/e2e/*.ts",
     "test:upgrade": "./scripts/testUpgrade.bash",
     "test:foundry": "forge test --gas-limit 10000000000",
+    "test:update": "yarn run test:signatures || yarn run test:storage",
+    "upload-4bytes": "forge build && find ./out -type f -name \"*.json\" -exec cast upload-signature {} + | grep -v Duplicated:",
     "postinstall": "patch-package",
     "deploy-factory": "hardhat run scripts/deployment.ts",
     "deploy-eth-rollup": "hardhat run scripts/createEthRollup.ts",

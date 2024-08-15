@@ -61,6 +61,8 @@
     // Elliptic's EDDSA missing signature length check - only used in dev
     "GHSA-f7q4-pwc6-w24p",
     // Elliptic's ECDSA missing check for whether leading bit of r and s is zero - only used in dev
-    "GHSA-977x-g7h5-7qgw"
+    "GHSA-977x-g7h5-7qgw",
+    // Server-Side Request Forgery in axios
+    "GHSA-8hc4-vh64-cxmj"
   ]
 }
