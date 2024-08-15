@@ -47,7 +47,8 @@ export const nova: Config = {
       replenishRateInBasis: 500, // 5% replenishment rate
     },
   },
-  // these validators must still be validators on the old rollup during the upgrade, or the upgrade will fail  validators: [
+  // these validators must still be validators on the old rollup during the upgrade, or the upgrade will fail
+  validators: [ // current validators
     '0xE27d4Ed355e5273A3D4855c8e11BC4a8d3e39b87',
     '0x57004b440Cc4eb2FEd8c4d1865FaC907F9150C76',
     '0x24ca61c31c7f9af3ab104db6b9a444f28e9071e3',
