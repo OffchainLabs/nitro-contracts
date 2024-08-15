@@ -12,6 +12,9 @@ import {DelegateCallAware} from "../libraries/DelegateCallAware.sol";
 import {IExpressLaneAuction, Bid, InitArgs} from "./IExpressLaneAuction.sol";
 import {ELCRound, LatestELCRoundsLib} from "./ELCRound.sol";
 import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
+import {
+    EIP712Upgradeable
+} from "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
 
 // CHRIS: TODO: add ability to set the transferrer of controller rights
 
@@ -22,7 +25,8 @@ import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 contract ExpressLaneAuction is
     IExpressLaneAuction,
     AccessControlEnumerableUpgradeable,
-    DelegateCallAware
+    DelegateCallAware,
+    EIP712Upgradeable
 {
     using SafeERC20 for IERC20;
     using RoundTimingInfoLib for RoundTimingInfo;
@@ -45,8 +49,6 @@ contract ExpressLaneAuction is
     bytes32 public constant BENEFICIARY_SETTER_ROLE = keccak256("BENEFICIARY_SETTER");
     /// @inheritdoc IExpressLaneAuction
     bytes32 public constant ROUND_TIMING_SETTER_ROLE = keccak256("ROUND_TIMING_SETTER");
-    /// @inheritdoc IExpressLaneAuction
-    bytes32 public constant BID_DOMAIN = keccak256("TIMEBOOST_BID");
 
     /// @notice The balances of each address
     mapping(address => Balance) internal _balanceOf;
@@ -74,6 +76,9 @@ contract ExpressLaneAuction is
 
     /// @inheritdoc IExpressLaneAuction
     function initialize(InitArgs memory args) public initializer onlyDelegated {
+        __AccessControl_init();
+        __EIP712_init("ExpressLaneAuction", "1");
+
         if (address(args._biddingToken) == address(0)) {
             revert ZeroBiddingToken();
         }
@@ -339,33 +344,37 @@ contract ExpressLaneAuction is
     }
 
     /// @inheritdoc IExpressLaneAuction
-    function getBidBytes(
-        uint64 _round,
-        uint256 _amount,
-        address _expressLaneController
-    ) public view returns (bytes memory) {
+    function domainSeparator() external view returns (bytes32) {
+        return _domainSeparatorV4();
+    }
+
+    /// @dev Internal bid domain hash
+    bytes32 private constant BID_DOMAIN =
+        keccak256("Bid(uint64 round,address expressLaneController,uint256 amount)");
+
+    /// @inheritdoc IExpressLaneAuction
+    function getBidHash(
+        uint64 round,
+        address expressLaneController,
+        uint256 amount
+    ) public view returns (bytes32) {
         return
-            abi.encodePacked(
-                BID_DOMAIN,
-                block.chainid,
-                address(this),
-                _round,
-                _amount,
-                _expressLaneController
+            _hashTypedDataV4(
+                keccak256(abi.encode(BID_DOMAIN, round, expressLaneController, amount))
             );
     }
 
     /// @notice Recover the signing address of the provided bid, and check that that address has enough funds to fulfil that bid
-    ///         Returns the signing address
+    ///         Returns the signing address and the bid hash that was signed
     /// @param bid The bid to recover the signing address of
     /// @param biddingForRound The round the bid is for the control of
     function recoverAndCheckBalance(
         Bid memory bid,
         uint64 biddingForRound,
         RoundTimingInfo memory info
-    ) internal view returns (address, bytes memory) {
-        bytes memory bidBytes = getBidBytes(biddingForRound, bid.amount, bid.expressLaneController);
-        address bidder = bidBytes.toEthSignedMessageHash().recover(bid.signature);
+    ) internal view returns (address, bytes32) {
+        bytes32 bidHash = getBidHash(biddingForRound, bid.expressLaneController, bid.amount);
+        address bidder = bidHash.recover(bid.signature);
         // always check that the bidder has a much as they're claiming
         if (_balanceOf[bidder].balanceAtRound(info.currentRound()) < bid.amount) {
             revert InsufficientBalanceAcc(
@@ -375,7 +384,7 @@ contract ExpressLaneAuction is
             );
         }
 
-        return (bidder, bidBytes);
+        return (bidder, bidHash);
     }
 
     /// @inheritdoc IExpressLaneAuction
@@ -424,12 +433,12 @@ contract ExpressLaneAuction is
         uint64 biddingForRound = biddingInRound + 1;
         // check the signatures and balances of both bids
         // even the second price bid must have the balance it's claiming
-        (address firstPriceBidder, bytes memory firstBidBytes) = recoverAndCheckBalance(
+        (address firstPriceBidder, bytes32 firstBidHash) = recoverAndCheckBalance(
             firstPriceBid,
             biddingForRound,
             info
         );
-        (address secondPriceBidder, bytes memory secondBidBytes) = recoverAndCheckBalance(
+        (address secondPriceBidder, bytes32 secondBidHash) = recoverAndCheckBalance(
             secondPriceBid,
             biddingForRound,
             info
@@ -446,8 +455,8 @@ contract ExpressLaneAuction is
         // to the check above that ensures the first price bidder and second price bidder are different
         if (
             firstPriceBid.amount == secondPriceBid.amount &&
-            uint256(keccak256(abi.encodePacked(firstPriceBidder, firstBidBytes))) <
-            uint256(keccak256(abi.encodePacked(secondPriceBidder, secondBidBytes)))
+            uint256(keccak256(abi.encodePacked(firstPriceBidder, firstBidHash))) <
+            uint256(keccak256(abi.encodePacked(secondPriceBidder, secondBidHash)))
         ) {
             revert TieBidsWrongOrder();
         }
