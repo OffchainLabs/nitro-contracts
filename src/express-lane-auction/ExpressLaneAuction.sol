@@ -372,7 +372,7 @@ contract ExpressLaneAuction is
         address bidder = bidHash.recover(bid.signature);
         // we are always bidding for in the current round for the next round
         uint64 currentRound = biddingForRound - 1;
-        // always check that the bidder has a much as they're claiming
+        // always check that the bidder has as much as they're claiming
         if (_balanceOf[bidder].balanceAtRound(currentRound) < bid.amount) {
             revert InsufficientBalanceAcc(
                 bidder,
