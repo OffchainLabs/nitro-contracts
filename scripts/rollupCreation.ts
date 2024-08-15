@@ -317,7 +317,6 @@ async function _getDevRollupConfig(
       layerZeroBlockEdgeHeight: 2 ** 5,
       layerZeroBigStepEdgeHeight: 2 ** 5,
       layerZeroSmallStepEdgeHeight: 2 ** 5,
-      anyTrustFastConfirmer: ethers.constants.AddressZero,
       numBigStepLevel: 1,
       challengeGracePeriodBlocks: 10,
       bufferConfig: {threshold: 600, max: 14400, replenishRateInBasis: 500},
