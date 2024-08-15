@@ -44,7 +44,7 @@ export const nova: Config = {
     isDelayBufferable: true,
     bufferConfig: {
       max: hoursToBlocks(48), // 2 days
-      threshold: hoursToBlocks(0.5), // 30 minutes, well above typical posting frequency
+      threshold: hoursToBlocks(1), // 30 minutes, well above typical posting frequency
       replenishRateInBasis: 500, // 5% replenishment rate
     },
   },

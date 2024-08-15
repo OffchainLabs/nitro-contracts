@@ -21,10 +21,9 @@ export const sepolia: Config = {
     seqInbox: '0xdd63bcaa89d7c3199ef220c1dd59c49f821078b8',
   },
   settings: {
-    // TODO: confirm that we want 20/20
-    challengeGracePeriodBlocks: 20,
+    challengeGracePeriodBlocks: hoursToBlocks(48), // same as arb1
     confirmPeriodBlocks: 20, // current is 20 blocks, 45818 is arb1 config
-    challengePeriodBlocks: 45818, // same as arb1 // TODO: do we want to shorten this given validators are whitelisted?
+    challengePeriodBlocks: 45818, // same as arb1
     stakeToken: '0xefb383126640fe4a760010c6e59c397d2b6c7141', // WETH
     stakeAmt: parseEther('36'), // 1/100th of arb1, same for mini stakes
     miniStakeAmounts: [
