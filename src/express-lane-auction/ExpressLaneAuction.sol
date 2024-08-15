@@ -13,34 +13,6 @@ import {IExpressLaneAuction, Bid, InitArgs} from "./IExpressLaneAuction.sol";
 import {ELCRound, LatestELCRoundsLib} from "./ELCRound.sol";
 import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 
-// CHRIS: TODO: do we wamt to include the ability to update the round time?
-// 3. update the round time
-//    * do this via 2 reads each time
-//    * check if an update is there, if so use that if it's in the past
-//    * needs to contain round number as well as other things
-// CHRIS: TODO:
-// also look at every function that uses the offset? yes
-// also everything that is set during the resolve - and find all usages of those
-// wrap all those functions in good getters that have predicatable and easy to reason about return values
-// consider what would happen if the offset is set to the future after some rounds have been resolved. Should be easy to reason about if we've done our job correctly
-// ok, so we will allow an update in the following way
-// 1. direct update of the round timing info
-// 2. when doing this ensure that the current round number stays the same
-// 3. will update the timings of this round and the next
-//    which could have negative consequences - but these need to be pointed out in docs
-//    I think this is better than the complexity of scheduling a future update
-// CHRIS: TODO: when we include updates we need to point out that roundTimestamps() are not
-//              accurate for timestamps after the update timestamp - that will be a bit tricky wont it?
-//              all round timing stuff needs reviewing if we include updates
-// CHRIS: TODO: update the roundTimestamps on interface for what happens if the roundtiminginfo is updated
-//              also consider other places effected by round timing - hopefully only in that lib
-// CHRIS: TODO: if we update round timing we need to add the address to the trusted list in the resolve documentation of the interface
-// CHRIS: TODO: test initiate/finalize withdrawal with round time updates
-// * guarantees are not effected by round time updates
-// * cant set an offset in the future - should be in the past
-// * reducing the round time does have an effect on finalize - add this later
-// * check finalization times with round time update
-
 // CHRIS: TODO: add ability to set the transferrer of controller rights
 
 /// @title ExpressLaneAuction
@@ -71,6 +43,8 @@ contract ExpressLaneAuction is
     bytes32 public constant RESERVE_SETTER_ADMIN_ROLE = keccak256("RESERVE_SETTER_ADMIN");
     /// @inheritdoc IExpressLaneAuction
     bytes32 public constant BENEFICIARY_SETTER_ROLE = keccak256("BENEFICIARY_SETTER");
+    /// @inheritdoc IExpressLaneAuction
+    bytes32 public constant ROUND_TIMING_SETTER_ROLE = keccak256("ROUND_TIMING_SETTER");
     /// @inheritdoc IExpressLaneAuction
     bytes32 public constant BID_DOMAIN = keccak256("TIMEBOOST_BID");
 
@@ -123,6 +97,14 @@ contract ExpressLaneAuction is
         }
 
         roundTimingInfo = args._roundTimingInfo;
+        // CHRIS: TODO: tests for this
+        emit SetRoundTimingInfo(
+            args._roundTimingInfo.currentRound(),
+            args._roundTimingInfo.offsetTimestamp,
+            args._roundTimingInfo.roundDurationSeconds,
+            args._roundTimingInfo.auctionClosingSeconds,
+            args._roundTimingInfo.reserveSubmissionSeconds
+        );
 
         // roles without a custom role admin set will have this as the admin
         _grantRole(DEFAULT_ADMIN_ROLE, args._masterAdmin);
@@ -143,6 +125,7 @@ contract ExpressLaneAuction is
             RESERVE_SETTER_ADMIN_ROLE,
             args._reservePriceSetterAdmin
         );
+        _grantRole(ROUND_TIMING_SETTER_ROLE, args._roundTimingSetter);
     }
 
     /// @notice Set an address for a role, an admin role for the role, and an address for the admin role
@@ -191,6 +174,54 @@ contract ExpressLaneAuction is
 
         emit SetReservePrice(reservePrice, newReservePrice);
         reservePrice = newReservePrice;
+    }
+
+    // CHRIS: TODO: tests
+    /// @inheritdoc IExpressLaneAuction
+    function setRoundTimingInfo(RoundTimingInfo calldata newRoundTimingInfo)
+        external
+        onlyRole(ROUND_TIMING_SETTER_ROLE)
+    {
+        RoundTimingInfo memory currentRoundTimingInfo = roundTimingInfo;
+
+        uint64 currentCurrentRound = currentRoundTimingInfo.currentRound();
+        uint64 newCurrentRound = newRoundTimingInfo.currentRound();
+        // updating round timing info needs to be synchronised
+        // so we ensure that the current round won't change
+        if (currentCurrentRound != newCurrentRound) {
+            revert InvalidNewRound(currentCurrentRound, newCurrentRound);
+        }
+
+        (uint64 currentStart, ) = currentRoundTimingInfo.roundTimestamps(currentCurrentRound + 1);
+        (uint64 newStart, ) = newRoundTimingInfo.roundTimestamps(newCurrentRound + 1);
+        // we also ensure that the current round end time/next round start time, will not change
+        if (currentStart != newStart) {
+            revert InvalidNewStart(currentStart, newStart);
+        }
+
+        // ensure that round duration cannot be too high, other wise this could be used to lock balances
+        // in the contract by setting round duration = uint.max
+        if (newRoundTimingInfo.roundDurationSeconds > 86400) {
+            revert RoundTooLong(newRoundTimingInfo.roundDurationSeconds);
+        }
+
+        // the same check as in initialization - reserve submission and auction closing are non overlapping
+        // sub sections of a round, so must fit within it
+        if (
+            newRoundTimingInfo.reserveSubmissionSeconds + newRoundTimingInfo.auctionClosingSeconds >
+            newRoundTimingInfo.roundDurationSeconds
+        ) {
+            revert RoundDurationTooShort();
+        }
+
+        roundTimingInfo = newRoundTimingInfo;
+        emit SetRoundTimingInfo(
+            newRoundTimingInfo.currentRound(),
+            newRoundTimingInfo.offsetTimestamp,
+            newRoundTimingInfo.roundDurationSeconds,
+            newRoundTimingInfo.auctionClosingSeconds,
+            newRoundTimingInfo.reserveSubmissionSeconds
+        );
     }
 
     /// @inheritdoc IExpressLaneAuction
