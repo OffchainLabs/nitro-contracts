@@ -317,6 +317,10 @@ contract ExpressLaneAuction is
         return _domainSeparatorV4();
     }
 
+    /// @dev Internal bid domain string
+    bytes32 private constant BID_DOMAIN =
+        keccak256("Bid(uint64 round,address expressLaneController,uint256 amount)");
+
     /// @inheritdoc IExpressLaneAuction
     function getBidHash(
         uint64 round,
@@ -325,14 +329,7 @@ contract ExpressLaneAuction is
     ) public view returns (bytes32) {
         return
             _hashTypedDataV4(
-                keccak256(
-                    abi.encode(
-                        keccak256("Bid(uint64 round,address expressLaneController,uint256 amount)"),
-                        round,
-                        expressLaneController,
-                        amount
-                    )
-                )
+                keccak256(abi.encode(BID_DOMAIN, round, expressLaneController, amount))
             );
     }
 
