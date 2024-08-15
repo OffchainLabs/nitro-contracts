@@ -371,13 +371,13 @@ contract ExpressLaneAuction is
         bytes32 bidHash = getBidHash(biddingForRound, bid.expressLaneController, bid.amount);
         address bidder = bidHash.recover(bid.signature);
         // we are always bidding for in the current round for the next round
-        uint64 currentRound = biddingForRound - 1;
+        uint64 curRnd = biddingForRound - 1;
         // always check that the bidder has as much as they're claiming
-        if (_balanceOf[bidder].balanceAtRound(currentRound) < bid.amount) {
+        if (_balanceOf[bidder].balanceAtRound(curRnd) < bid.amount) {
             revert InsufficientBalanceAcc(
                 bidder,
                 bid.amount,
-                _balanceOf[bidder].balanceAtRound(currentRound)
+                _balanceOf[bidder].balanceAtRound(curRnd)
             );
         }
 
