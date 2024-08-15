@@ -39,7 +39,7 @@
     "test:storage": "./test/storage/test.bash",
     "test:signatures": "./test/signatures/test-sigs.bash",
     "test:e2e": "hardhat test test/e2e/*.ts",
-    "test:fix": "yarn run test:signatures || yarn run test:storage",
+    "test:update": "yarn run test:signatures || yarn run test:storage",
     "upload-4bytes": "forge build && find ./out -type f -name \"*.json\" -exec cast upload-signature {} + | grep -v Duplicated:",
     "postinstall": "patch-package",
     "deploy-factory": "hardhat run scripts/deployment.ts",
