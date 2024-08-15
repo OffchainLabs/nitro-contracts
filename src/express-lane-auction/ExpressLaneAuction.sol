@@ -377,7 +377,7 @@ contract ExpressLaneAuction is
     ) internal view returns (address, bytes32) {
         bytes32 bidHash = getBidHash(biddingForRound, bid.expressLaneController, bid.amount);
         address bidder = bidHash.recover(bid.signature);
-        // always check that the bidder has a much as they're claiming
+        // always check that the bidder has as much as they're claiming
         if (_balanceOf[bidder].balanceAtRound(info.currentRound()) < bid.amount) {
             revert InsufficientBalanceAcc(
                 bidder,
