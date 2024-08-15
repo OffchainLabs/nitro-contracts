@@ -13,7 +13,6 @@ import {
     DelayedBackwards,
     DelayedTooFar,
     ForceIncludeBlockTooSoon,
-    ForceIncludeTimeTooSoon,
     IncorrectMessagePreimage,
     NotBatchPoster,
     BadSequencerNumber,
