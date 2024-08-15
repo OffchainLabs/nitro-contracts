@@ -61,6 +61,8 @@ struct InitArgs {
     address _reservePriceSetterAdmin;
     /// @notice The address given the rights to change the beneficiary address
     address _beneficiarySetter;
+    /// @notice _roundTimingSetter The address given the rights to update the round timing info
+    address _roundTimingSetter;
     /// @notice The admin that can manage all the admin roles in the contract
     address _masterAdmin;
 }
@@ -147,6 +149,20 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     /// @param newBeneficiary The new beneficiary
     event SetBeneficiary(address oldBeneficiary, address newBeneficiary);
 
+    /// @notice A new round timing info has been set
+    /// @param currentRound The round during which the timing info was set
+    /// @param offsetTimestamp The new offset timestamp
+    /// @param roundDurationSeconds The new round duration seconds
+    /// @param auctionClosingSeconds The new auction closing seconds
+    /// @param reserveSubmissionSeconds The new reserve submission seconds
+    event SetRoundTimingInfo(
+        uint64 currentRound,
+        uint64 offsetTimestamp,
+        uint64 roundDurationSeconds,
+        uint64 auctionClosingSeconds,
+        uint64 reserveSubmissionSeconds
+    );
+
     /// @notice The role given to the address that can resolve auctions
     function AUCTIONEER_ROLE() external returns (bytes32);
 
@@ -165,8 +181,8 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     /// @notice The role given to the address that can set the beneficiary
     function BENEFICIARY_SETTER_ROLE() external returns (bytes32);
 
-    /// @notice Domain constant to be concatenated with data before signing
-    function BID_DOMAIN() external returns (bytes32);
+    /// @notice The role given to addresses that can set round timing info
+    function ROUND_TIMING_SETTER_ROLE() external returns (bytes32);
 
     /// @notice The beneficiary who receives the funds that are paid by the auction winners
     function beneficiary() external returns (address);
@@ -218,13 +234,18 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
 
     /// @notice Is the current auction round closed for bidding
     ///         After the round has closed the auctioneer can resolve it with the highest bids
+    ///         Note. This can change unexpectedly if a round timing info is updated
     function isAuctionRoundClosed() external view returns (bool);
 
     /// @notice The auction reserve cannot be updated during the blackout period
     ///         This starts ReserveSubmissionSeconds before the round closes and ends when the round is resolved, or the round ends
+    ///         Note. This can change unexpectedly if a round timing info is updated
     function isReserveBlackout() external view returns (bool);
 
     /// @notice Gets the start and end timestamps for a given round
+    ///         This only returns the start and end timestamps given the current round timing info, which can be updated
+    ///         Historical round timestamp can be found by checking the logs for round timing info updates, or by looking
+    ///         at the timing info emitted in events from resolved auctions
     /// @param round The round to find the timestamps for
     /// @return start The start of the round in seconds, inclusive
     /// @return end The end of the round in seconds, inclusive
@@ -257,8 +278,21 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     ///         If the new reserve is set to a very high value eg max(uint) then the auction will never be able to resolve
     ///         the reserve setter is therefore trusted not to do this as it would DOS the auction. Note that even if this occurs
     ///         bidders will not lose their funds and will still be able to withdraw them.
+    ///         Note to reserve price setter, setting reserve price is dependent on the time into the round, which can change if the round timing info is updated
     /// @param newReservePrice The price to set the reserve to
     function setReservePrice(uint256 newReservePrice) external;
+
+    /// @notice Sets new round timing info. When setting a new round timing info the current round and the start
+    ///         timestamp of the next round cannot change. The caller can ensure this by dynamically calculating
+    ///         the correct offset which will produce this for the specified round duration seconds in the new timing info.
+    ///         Changing timing info affects the current ongoing auction, given that the round may already have been resolved
+    ///         this could result in bidders paying for a round that is longer or shorter than they expected. To that end
+    ///         the round timing setter is trusted not to set this function too often, and any observers who depend upon this timing info
+    ///         (eg bidders, auctioneer, reserve price setter etc) should be able to see when this is going to happen.
+    ///         On arbitrum one the expected round timing setter is the arbitrum dao, that can only
+    ///         make changes by passing proposals through timelocks, therefore providing the notice to bidders.
+    /// @param newRoundTimingInfo The new timing info to set
+    function setRoundTimingInfo(RoundTimingInfo calldata newRoundTimingInfo) external;
 
     /// @notice Get the current balance of specified account.
     ///         If a withdrawal is initiated this balance will reduce in current round + 2
@@ -300,21 +334,24 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     ///         This is not done separately so that it does not need to be done during auction resolution, thus saving some gas costs there
     function flushBeneficiaryBalance() external;
 
-    /// @notice Calculates the data to be hashed for signing
-    /// @param _round The round the bid is for the control of
-    /// @param _amount The amount being bid
-    /// @param _expressLaneController The address that will be the express lane controller if the bid wins
-    function getBidBytes(
-        uint64 _round,
-        uint256 _amount,
-        address _expressLaneController
-    ) external view returns (bytes memory);
+    /// @notice The domain separator used in the 712 signing hash
+    function domainSeparator() external view returns (bytes32);
+
+    /// @notice Get the 712 hash of a bid used for signing
+    /// @param round The round the bid is for the control of
+    /// @param expressLaneController The address that will be the express lane controller if the bid wins
+    /// @param amount The amount being bid
+    function getBidHash(
+        uint64 round,
+        address expressLaneController,
+        uint256 amount
+    ) external view returns (bytes32);
 
     /// @notice Resolve the auction with just a single bid. The auctioneer is trusted to call this only when there are
     ///         less than two bids higher than the reserve price for an auction round.
     ///         In this case the highest bidder will pay the reserve price for the round
     /// @dev    We do not enforce it, but the following accounts or their sybils, are trusted not to send bids to the auctioneer
-    ///         Auctioneer, beneficiary, beneficiary setter, reserve price setter, min reserve price setter, role admin
+    ///         Auctioneer, beneficiary, beneficiary setter, reserve price setter, min reserve price setter, role admin, round timing info setter
     /// @param firstPriceBid The highest price bid. Must have a price higher than the reserve. Price paid is the reserve
     function resolveSingleBidAuction(Bid calldata firstPriceBid) external;
 
@@ -322,7 +359,7 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     ///         The highest price bidder pays the price of the second highest bid
     ///         Both bids must be higher than the reserve
     /// @dev    We do not enforce it, but the following accounts or their sybils, are trusted not to send bids to the auctioneer
-    ///         Auctioneer, beneficiary, beneficiary setter, reserve price setter, min reserve price setter, role admin
+    ///         Auctioneer, beneficiary, beneficiary setter, reserve price setter, min reserve price setter, role admin, round timing info setter
     /// @param firstPriceBid The highest price bid
     /// @param secondPriceBid The second highest price bid
     function resolveMultiBidAuction(Bid calldata firstPriceBid, Bid calldata secondPriceBid)
@@ -336,6 +373,8 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
 
     /// @notice Express lane controllers are allowed to transfer their express lane rights for the current or future
     ///         round to another address. They may use this for reselling their rights after purchasing them
+    ///         Again, the priviledged accounts mentioned in resolve documentation are trusted not to try to receive rights via this message.
+    ///         Although they cannot stop someone transferring the rights to them, they should not use the controller rights if that does occur
     /// @param round The round to transfer rights for
     /// @param newExpressLaneController The new express lane controller to transfer the rights to
     function transferExpressLaneController(uint64 round, address newExpressLaneController) external;
