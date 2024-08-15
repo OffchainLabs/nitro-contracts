@@ -317,7 +317,7 @@ contract ExpressLaneAuction is
         return _domainSeparatorV4();
     }
 
-    /// @dev Internal bid domain string
+    /// @dev Internal bid domain hash
     bytes32 private constant BID_DOMAIN =
         keccak256("Bid(uint64 round,address expressLaneController,uint256 amount)");
 
