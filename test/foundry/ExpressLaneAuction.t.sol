@@ -1640,8 +1640,8 @@ contract ExpressLaneAuctionTest is Test {
         vm.prank(bidders[3].elc);
         vm.expectRevert(
             abi.encodeWithSelector(
-                testRound + 2,
                 NotTransferor.selector,
+                testRound + 2,
                 bidders[2].addr,
                 bidders[3].elc
             )
