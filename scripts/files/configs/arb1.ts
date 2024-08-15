@@ -33,7 +33,6 @@ export const arb1: Config = {
       parseEther('79'),
     ],
     chainId: 42161,
-    anyTrustFastConfirmer: '0x0000000000000000000000000000000000000000',
     disableValidatorWhitelist: true,
     blockLeafSize: 2**26,
     bigStepLeafSize: 2**19,

@@ -177,6 +177,12 @@ interface IRollupAdmin {
     function setValidatorWhitelistDisabled(bool _validatorWhitelistDisabled) external;
 
     /**
+     * @notice set the anyTrustFastConfirmer address
+     * @param _anyTrustFastConfirmer new value of anyTrustFastConfirmer
+     */
+    function setAnyTrustFastConfirmer(address _anyTrustFastConfirmer) external;
+
+    /**
      * @notice set a new challengeManager contract
      * @param _challengeManager new value of challengeManager
      */
