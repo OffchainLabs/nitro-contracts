@@ -94,7 +94,6 @@ contract ExpressLaneAuction is
         reservePrice = args._minReservePrice;
         emit SetReservePrice(0, args._minReservePrice);
 
-        // CHRIS: TODO: more tests now
         setRoundTimingInfoInternal(args._roundTimingInfo);
 
         // roles without a custom role admin set will have this as the admin
@@ -168,9 +167,8 @@ contract ExpressLaneAuction is
     }
 
     function setRoundTimingInfoInternal(RoundTimingInfo calldata newRoundTimingInfo) internal {
-        if(newRoundTimingInfo.roundDurationSeconds == 0) {
-            // we divide by round duration, so it cant be 0
-            revert ZeroRoundDuration();
+        if(newRoundTimingInfo.auctionClosingSeconds == 0) {
+            revert ZeroAuctionClosingSeconds();
         }
 
         // ensure that round duration cannot be too high, other wise this could be used to lock balances
@@ -204,7 +202,6 @@ contract ExpressLaneAuction is
         onlyRole(ROUND_TIMING_SETTER_ROLE)
     {
         RoundTimingInfo memory currentRoundTimingInfo = roundTimingInfo;
-
         uint64 currentCurrentRound = currentRoundTimingInfo.currentRound();
         uint64 newCurrentRound = newRoundTimingInfo.currentRound();
         // updating round timing info needs to be synchronised

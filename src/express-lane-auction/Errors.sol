@@ -25,4 +25,4 @@ error NotTransferor(uint64 round, address expectedTransferor, address msgSender)
 error InvalidNewRound(uint64 currentRound, uint64 newRound);
 error InvalidNewStart(uint64 currentStart, uint64 newStart);
 error RoundTooLong(uint64 roundDurationSeconds);
-error ZeroRoundDuration();
+error ZeroAuctionClosingSeconds();

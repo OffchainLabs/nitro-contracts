@@ -156,6 +156,25 @@ contract ExpressLaneAuctionTest is Test {
             });
     }
 
+    function testRoundTimingInit(IExpressLaneAuction auction, MockERC20 token) internal {
+        InitArgs memory rdArgs = createArgs(address(token));
+        rdArgs._roundTimingInfo.auctionClosingSeconds = roundDuration / 2;
+        rdArgs._roundTimingInfo.reserveSubmissionSeconds = roundDuration * 2 + 1;
+        vm.expectRevert(abi.encodeWithSelector(RoundDurationTooShort.selector));
+        auction.initialize(rdArgs);
+        
+        InitArgs memory rdArgs0 = createArgs(address(token));
+        rdArgs0._roundTimingInfo.auctionClosingSeconds = 0;
+        vm.expectRevert(abi.encodeWithSelector(ZeroAuctionClosingSeconds.selector));
+        auction.initialize(rdArgs0);
+
+        uint64 longDuration = 86401;
+        InitArgs memory rdArgs1 = createArgs(address(token));
+        rdArgs1._roundTimingInfo.roundDurationSeconds = longDuration;
+        vm.expectRevert(abi.encodeWithSelector(RoundTooLong.selector, longDuration));
+        auction.initialize(rdArgs1);
+    }
+
     function testInit() public {
         MockERC20 token = new MockERC20();
         ProxyAdmin proxyAdmin = new ProxyAdmin();
@@ -174,11 +193,7 @@ contract ExpressLaneAuctionTest is Test {
         vm.expectRevert(abi.encodeWithSelector(ZeroBiddingToken.selector));
         auction.initialize(zbArgs);
 
-        InitArgs memory rdArgs = createArgs(address(token));
-        rdArgs._roundTimingInfo.auctionClosingSeconds = roundDuration / 2;
-        rdArgs._roundTimingInfo.reserveSubmissionSeconds = roundDuration * 2 + 1;
-        vm.expectRevert(abi.encodeWithSelector(RoundDurationTooShort.selector));
-        auction.initialize(rdArgs);
+        testRoundTimingInit(auction, token);
 
         vm.expectEmit(true, true, true, true);
         emit SetBeneficiary(address(0), beneficiary);
@@ -614,6 +629,7 @@ contract ExpressLaneAuctionTest is Test {
     }
 
     function deployDepositAndBids() public returns (ResolveSetup memory) {
+        vm.chainId(137);
         (MockERC20 erc20, IExpressLaneAuction auction) = deployAndDeposit();
         uint64 biddingForRound = auction.currentRound() + 1;
 
@@ -649,7 +665,7 @@ contract ExpressLaneAuctionTest is Test {
     }
 
     function testGetDomainSeparator() public {
-        (MockERC20 erc20, IExpressLaneAuction auction) = deployAndDeposit();
+        (, IExpressLaneAuction auction) = deployAndDeposit();
         assertEq(
             auction.domainSeparator(),
             keccak256(
@@ -748,10 +764,10 @@ contract ExpressLaneAuctionTest is Test {
         });
 
         vm.expectRevert(TieBidsWrongOrder.selector);
-        rs.auction.resolveMultiBidAuction(rs.bid0, bid1);
+        rs.auction.resolveMultiBidAuction(bid1, rs.bid0);
 
         // success now with the same price
-        rs.auction.resolveMultiBidAuction(bid1, rs.bid0);
+        rs.auction.resolveMultiBidAuction(rs.bid0, bid1);
     }
 
     function testCannotResolveReserveNotMet() public {
@@ -880,17 +896,17 @@ contract ExpressLaneAuctionTest is Test {
             bidders[0].amount / 2
         );
 
-        Bid memory bid0 = Bid({
-            amount: bidders[0].amount / 2,
-            expressLaneController: bidders[0].elc,
-            signature: sign(bidders[0].privKey, h0)
-        });
         vm.chainId(137);
         bytes32 correctH0 = rs.auction.getBidHash(
             rs.biddingForRound,
             bidders[0].elc,
             bidders[0].amount / 2
         );
+        Bid memory bid0 = Bid({
+            amount: bidders[0].amount / 2,
+            expressLaneController: bidders[0].elc,
+            signature: sign(bidders[0].privKey, h0)
+        });
 
         address wrongBidder0 = correctH0.recover(bid0.signature);
 
@@ -1792,6 +1808,17 @@ contract ExpressLaneAuctionTest is Test {
                 offsetTimestamp: newOffset,
                 roundDurationSeconds: longDuration,
                 auctionClosingSeconds: 10,
+                reserveSubmissionSeconds: 20
+            })
+        );
+
+        vm.prank(roundTimingSetter);
+        vm.expectRevert(abi.encodeWithSelector(ZeroAuctionClosingSeconds.selector));
+        auction.setRoundTimingInfo(
+            RoundTimingInfo({
+                offsetTimestamp: offsetTimestamp,
+                roundDurationSeconds: roundDuration,
+                auctionClosingSeconds: 0,
                 reserveSubmissionSeconds: 20
             })
         );
