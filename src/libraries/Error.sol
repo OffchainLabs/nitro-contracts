@@ -77,9 +77,6 @@ error CallNotAllowed();
 
 // Inbox Errors
 
-/// @dev The contract is paused
-error Paused();
-
 /// @dev msg.value sent to the inbox isn't high enough
 error InsufficientValue(uint256 expected, uint256 actual);
 
@@ -151,9 +148,6 @@ error DelayedTooFar();
 
 /// @dev Force include can only read messages more blocks old than the delay period
 error ForceIncludeBlockTooSoon();
-
-/// @dev Force include can only read messages more seconds old than the delay period
-error ForceIncludeTimeTooSoon();
 
 /// @dev The message provided did not match the hash in the delayed inbox
 error IncorrectMessagePreimage();
