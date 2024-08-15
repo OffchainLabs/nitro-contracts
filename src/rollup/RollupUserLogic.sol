@@ -228,12 +228,9 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
      * @notice From the staker's withdrawal address,
      * refund a staker that is currently staked on an assertion that either has a chlid assertion or is the latest confirmed assertion.
      */
-    function returnOldDepositFor(address stakerAddress)
-        external
-        override
-        onlyValidator(stakerAddress)
-        whenNotPaused
-    {
+    function returnOldDepositFor(
+        address stakerAddress
+    ) external override onlyValidator(stakerAddress) whenNotPaused {
         require(msg.sender == withdrawalAddress(stakerAddress), "NOT_WITHDRAWAL_ADDRESS");
         _requireInactiveAndWithdrawStaker(stakerAddress);
     }

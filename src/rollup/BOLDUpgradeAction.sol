@@ -116,11 +116,9 @@ contract StateHashPreImageLookup {
         emit HashSet(h, executionState, inboxMaxCount);
     }
 
-    function get(bytes32 h)
-        public
-        view
-        returns (ExecutionState memory executionState, uint256 inboxMaxCount)
-    {
+    function get(
+        bytes32 h
+    ) public view returns (ExecutionState memory executionState, uint256 inboxMaxCount) {
         (executionState, inboxMaxCount) = abi.decode(preImages[h], (ExecutionState, uint256));
         require(inboxMaxCount != 0, "Hash not yet set");
     }

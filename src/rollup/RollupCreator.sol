@@ -133,11 +133,9 @@ contract RollupCreator is Ownable {
      *          - dataHashReader The address of the data hash reader used to read blob hashes
      * @return The address of the newly created rollup
      */
-    function createRollup(RollupDeploymentParams memory deployParams)
-        public
-        payable
-        returns (address)
-    {
+    function createRollup(
+        RollupDeploymentParams memory deployParams
+    ) public payable returns (address) {
         {
             // Make sure the immutable maxDataSize is as expected
             (

@@ -183,10 +183,9 @@ interface ISequencerInbox is IDelayedMessageProvider {
     /// @notice Calculates the upper bounds of the delay buffer
     /// @param blockNumber The block number when a delayed message was created
     /// @return blockNumberDeadline The block number at when the message can be force included
-    function forceInclusionDeadline(uint64 blockNumber)
-        external
-        view
-        returns (uint64 blockNumberDeadline);
+    function forceInclusionDeadline(
+        uint64 blockNumber
+    ) external view returns (uint64 blockNumberDeadline);
 
     // ---------- BatchPoster functions ----------
 

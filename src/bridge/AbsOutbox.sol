@@ -221,11 +221,9 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         context = prevContext;
     }
 
-    function _calcSpentIndexOffset(uint256 index)
-        internal
-        view
-        returns (uint256, uint256, bytes32)
-    {
+    function _calcSpentIndexOffset(
+        uint256 index
+    ) internal view returns (uint256, uint256, bytes32) {
         uint256 spentIndex = index / 255; // Note: Reserves the MSB.
         uint256 bitOffset = index % 255;
         bytes32 replay = spent[spentIndex];

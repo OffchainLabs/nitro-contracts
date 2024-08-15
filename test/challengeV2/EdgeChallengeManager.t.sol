@@ -30,12 +30,9 @@ contract MockOneStepProofEntry is IOneStepProofEntry {
         return bytes32(proof);
     }
 
-    function getMachineHash(ExecutionState calldata execState)
-        external
-        pure
-        override
-        returns (bytes32)
-    {
+    function getMachineHash(
+        ExecutionState calldata execState
+    ) external pure override returns (bytes32) {
         require(execState.machineStatus == MachineStatus.FINISHED, "BAD_MACHINE_STATUS");
         return GlobalStateLib.hash(execState.globalState);
     }
@@ -793,10 +790,9 @@ contract EdgeChallengeManagerTest is Test {
         bool skipLast;
     }
 
-    function bisectToForkOnly(BisectToForkOnlyArgs memory args)
-        internal
-        returns (BisectionChildren[6] memory, BisectionChildren[6] memory)
-    {
+    function bisectToForkOnly(
+        BisectToForkOnlyArgs memory args
+    ) internal returns (BisectionChildren[6] memory, BisectionChildren[6] memory) {
         BisectionChildren[6] memory winningEdges;
         BisectionChildren[6] memory losingEdges;
 
@@ -859,11 +855,9 @@ contract EdgeChallengeManagerTest is Test {
         return (fullStates, fullExp);
     }
 
-    function toDynamic(BisectionChildren[6] memory l)
-        internal
-        pure
-        returns (BisectionChildren[] memory)
-    {
+    function toDynamic(
+        BisectionChildren[6] memory l
+    ) internal pure returns (BisectionChildren[] memory) {
         BisectionChildren[] memory d = new BisectionChildren[](6);
         for (uint256 i = 0; i < d.length; i++) {
             d[i] = l[i];
@@ -1668,7 +1662,9 @@ contract EdgeChallengeManagerTest is Test {
         );
     }
 
-    function createBlockEdgesAndBisectToFork(CreateBlockEdgesBisectArgs memory args)
+    function createBlockEdgesAndBisectToFork(
+        CreateBlockEdgesBisectArgs memory args
+    )
         internal
         returns (
             bytes32[] memory,
@@ -1701,10 +1697,9 @@ contract EdgeChallengeManagerTest is Test {
         return (states1, states2, edges1, edges2);
     }
 
-    function createMachineEdgesAndBisectToFork(CreateMachineEdgesBisectArgs memory args)
-        internal
-        returns (BisectionData memory)
-    {
+    function createMachineEdgesAndBisectToFork(
+        CreateMachineEdgesBisectArgs memory args
+    ) internal returns (BisectionData memory) {
         (bytes32[] memory states1, bytes32[] memory exp1) =
             appendRandomStatesBetween(genesisStates(), args.endState1, height1);
         bytes32 edge1Id;

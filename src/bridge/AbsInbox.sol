@@ -137,12 +137,9 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
     }
 
     /// @inheritdoc IInboxBase
-    function sendL2Message(bytes calldata messageData)
-        external
-        whenNotPaused
-        onlyAllowed
-        returns (uint256)
-    {
+    function sendL2Message(
+        bytes calldata messageData
+    ) external whenNotPaused onlyAllowed returns (uint256) {
         if (_chainIdChanged()) revert L1Forked();
         return _deliverMessage(L2_MSG, msg.sender, messageData, 0);
     }

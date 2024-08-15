@@ -163,8 +163,7 @@ interface NodeInterface {
      * @return firstBlock The first L2 block number with the given L1 block number
      * @return lastBlock The last L2 block number with the given L1 block number
      */
-    function l2BlockRangeForL1(uint64 blockNum)
-        external
-        view
-        returns (uint64 firstBlock, uint64 lastBlock);
+    function l2BlockRangeForL1(
+        uint64 blockNum
+    ) external view returns (uint64 firstBlock, uint64 lastBlock);
 }

@@ -127,11 +127,9 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
      * @param assertionHash Id of the assertion
      * @return Assertion struct
      */
-    function getAssertionStorage(bytes32 assertionHash)
-        internal
-        view
-        returns (AssertionNode storage)
-    {
+    function getAssertionStorage(
+        bytes32 assertionHash
+    ) internal view returns (AssertionNode storage) {
         require(assertionHash != bytes32(0), "ASSERTION_ID_CANNOT_BE_ZERO");
         return _assertions[assertionHash];
     }
@@ -139,12 +137,9 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     /**
      * @notice Get the Assertion for the given index.
      */
-    function getAssertion(bytes32 assertionHash)
-        public
-        view
-        override
-        returns (AssertionNode memory)
-    {
+    function getAssertion(
+        bytes32 assertionHash
+    ) public view override returns (AssertionNode memory) {
         return getAssertionStorage(assertionHash);
     }
 
@@ -155,12 +150,9 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
      * This function will revert if the given assertion hash does not exist.
      * @dev This function is meant for internal use only and has no stability guarantees.
      */
-    function getAssertionCreationBlockForLogLookup(bytes32 assertionHash)
-        external
-        view
-        override
-        returns (uint256)
-    {
+    function getAssertionCreationBlockForLogLookup(
+        bytes32 assertionHash
+    ) external view override returns (uint256) {
         if (_hostChainIsArbitrum) {
             uint256 blockNum = _assertionCreatedAtArbSysBlock[assertionHash];
             require(blockNum > 0, "NO_ASSERTION");

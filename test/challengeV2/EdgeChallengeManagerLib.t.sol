@@ -35,12 +35,9 @@ contract MockOneStepProofEntry is IOneStepProofEntry {
         return bytes32(proof);
     }
 
-    function getMachineHash(ExecutionState calldata execState)
-        external
-        pure
-        override
-        returns (bytes32)
-    {
+    function getMachineHash(
+        ExecutionState calldata execState
+    ) external pure override returns (bytes32) {
         require(execState.machineStatus == MachineStatus.FINISHED, "BAD_MACHINE_STATUS");
         return GlobalStateLib.hash(execState.globalState);
     }
@@ -2010,10 +2007,9 @@ contract EdgeChallengeManagerLibTest is Test {
         return BisectionChildren(lowerChildId, upperChild.edgeId);
     }
 
-    function bisectToForkOnly(BisectToForkOnlyArgs memory args)
-        internal
-        returns (BisectionChildren[6] memory, BisectionChildren[6] memory)
-    {
+    function bisectToForkOnly(
+        BisectToForkOnlyArgs memory args
+    ) internal returns (BisectionChildren[6] memory, BisectionChildren[6] memory) {
         BisectionChildren[6] memory winningEdges;
         BisectionChildren[6] memory losingEdges;
 
@@ -2047,7 +2043,9 @@ contract EdgeChallengeManagerLibTest is Test {
         return (winningEdges, losingEdges);
     }
 
-    function createBlockEdgesAndBisectToFork(CreateBlockEdgesBisectArgs memory args)
+    function createBlockEdgesAndBisectToFork(
+        CreateBlockEdgesBisectArgs memory args
+    )
         internal
         returns (
             bytes32[] memory,
@@ -2126,10 +2124,9 @@ contract EdgeChallengeManagerLibTest is Test {
 
     AssertionReferenceData emptyArd;
 
-    function createMachineEdgesAndBisectToFork(CreateMachineEdgesBisectArgs memory args)
-        internal
-        returns (BisectionData memory)
-    {
+    function createMachineEdgesAndBisectToFork(
+        CreateMachineEdgesBisectArgs memory args
+    ) internal returns (BisectionData memory) {
         (bytes32[] memory states1, bytes32[] memory exp1) =
             appendRandomStatesBetween(genesisStates(), args.endState1, height1);
         bytes32 edge1Id;

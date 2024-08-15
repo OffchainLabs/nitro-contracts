@@ -306,9 +306,9 @@ contract SequencerInboxTest is Test {
         assertEq(address(seqInboxProxy.rollup()), address(_bridge.rollup()), "Invalid rollup");
     }
 
-    function testInitialize_revert_NativeTokenMismatch_EthFeeToken(BufferConfig memory bufferConfig)
-        public
-    {
+    function testInitialize_revert_NativeTokenMismatch_EthFeeToken(
+        BufferConfig memory bufferConfig
+    ) public {
         Bridge _bridge =
             Bridge(address(new TransparentUpgradeableProxy(address(new Bridge()), proxyAdmin, "")));
         _bridge.initialize(IOwnable(address(new RollupMock(rollupOwner))));
@@ -321,9 +321,9 @@ contract SequencerInboxTest is Test {
         seqInboxProxy.initialize(IBridge(_bridge), maxTimeVariation, bufferConfig);
     }
 
-    function testInitialize_revert_NativeTokenMismatch_FeeTokenEth(BufferConfig memory bufferConfig)
-        public
-    {
+    function testInitialize_revert_NativeTokenMismatch_FeeTokenEth(
+        BufferConfig memory bufferConfig
+    ) public {
         ERC20Bridge _bridge = ERC20Bridge(
             address(new TransparentUpgradeableProxy(address(new ERC20Bridge()), proxyAdmin, ""))
         );
@@ -338,9 +338,9 @@ contract SequencerInboxTest is Test {
         seqInboxProxy.initialize(IBridge(_bridge), maxTimeVariation, bufferConfig);
     }
 
-    function testAddSequencerL2BatchFromOrigin_ArbitrumHosted(BufferConfig memory bufferConfig)
-        public
-    {
+    function testAddSequencerL2BatchFromOrigin_ArbitrumHosted(
+        BufferConfig memory bufferConfig
+    ) public {
         // this will result in 'hostChainIsArbitrum = true'
         vm.mockCall(
             address(100),
@@ -491,10 +491,9 @@ contract SequencerInboxTest is Test {
         );
     }
 
-    function testPostUpgradeInitAlreadyInitBuffer(BufferConfig memory bufferConfig)
-        public
-        returns (SequencerInbox, SequencerInbox)
-    {
+    function testPostUpgradeInitAlreadyInitBuffer(
+        BufferConfig memory bufferConfig
+    ) public returns (SequencerInbox, SequencerInbox) {
         vm.assume(DelayBuffer.isValidBufferConfig(bufferConfig));
         (SequencerInbox seqInbox,) = deployRollup(false, false, bufferConfigDefault);
         SequencerInbox seqInboxImpl = new SequencerInbox(maxDataSize, dummyReader4844, false, true);

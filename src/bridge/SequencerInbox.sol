@@ -159,11 +159,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         return deployTimeChainId != block.chainid;
     }
 
-    function postUpgradeInit(BufferConfig memory bufferConfig_)
-        external
-        onlyDelegated
-        onlyProxyOwner
-    {
+    function postUpgradeInit(
+        BufferConfig memory bufferConfig_
+    ) external onlyDelegated onlyProxyOwner {
         if (!isDelayBufferable) revert NotDelayBufferable();
 
         // Assuming we would not upgrade from a version that does not have the buffer initialized
@@ -555,11 +553,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             && !buffer.isSynced();
     }
 
-    function packHeader(uint256 afterDelayedMessagesRead)
-        internal
-        view
-        returns (bytes memory, IBridge.TimeBounds memory)
-    {
+    function packHeader(
+        uint256 afterDelayedMessagesRead
+    ) internal view returns (bytes memory, IBridge.TimeBounds memory) {
         IBridge.TimeBounds memory timeBounds = getTimeBounds();
         bytes memory header = abi.encodePacked(
             timeBounds.minTimestamp,
@@ -577,11 +573,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     /// @param  afterDelayedMessagesRead The delayed messages count read up to
     /// @return The data hash
     /// @return The timebounds within which the message should be processed
-    function formEmptyDataHash(uint256 afterDelayedMessagesRead)
-        internal
-        view
-        returns (bytes32, IBridge.TimeBounds memory)
-    {
+    function formEmptyDataHash(
+        uint256 afterDelayedMessagesRead
+    ) internal view returns (bytes32, IBridge.TimeBounds memory) {
         (bytes memory header, IBridge.TimeBounds memory timeBounds) =
             packHeader(afterDelayedMessagesRead);
         return (keccak256(header), timeBounds);
@@ -638,12 +632,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     /// @return The data hash
     /// @return The timebounds within which the message should be processed
     /// @return The normalized amount of gas used for blob posting
-    function formBlobDataHash(uint256 afterDelayedMessagesRead)
-        internal
-        view
-        virtual
-        returns (bytes32, IBridge.TimeBounds memory, uint256)
-    {
+    function formBlobDataHash(
+        uint256 afterDelayedMessagesRead
+    ) internal view virtual returns (bytes32, IBridge.TimeBounds memory, uint256) {
         bytes32[] memory dataHashes = reader4844.getDataHashes();
         if (dataHashes.length == 0) revert MissingDataHashes();
 
@@ -759,9 +750,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         }
     }
 
-    function _setMaxTimeVariation(ISequencerInbox.MaxTimeVariation memory maxTimeVariation_)
-        internal
-    {
+    function _setMaxTimeVariation(
+        ISequencerInbox.MaxTimeVariation memory maxTimeVariation_
+    ) internal {
         if (
             maxTimeVariation_.delayBlocks > type(uint64).max
                 || maxTimeVariation_.futureBlocks > type(uint64).max
@@ -777,10 +768,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @inheritdoc ISequencerInbox
-    function setMaxTimeVariation(ISequencerInbox.MaxTimeVariation memory maxTimeVariation_)
-        external
-        onlyRollupOwner
-    {
+    function setMaxTimeVariation(
+        ISequencerInbox.MaxTimeVariation memory maxTimeVariation_
+    ) external onlyRollupOwner {
         _setMaxTimeVariation(maxTimeVariation_);
         emit MaxTimeVariationSet(maxTimeVariation_);
         emit OwnerFunctionCalled(0);

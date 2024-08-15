@@ -95,10 +95,9 @@ interface IRollupCore is IAssertionChain {
      * This function will revert if the given assertion hash does not exist.
      * @dev This function is meant for internal use only and has no stability guarantees.
      */
-    function getAssertionCreationBlockForLogLookup(bytes32 assertionHash)
-        external
-        view
-        returns (uint256);
+    function getAssertionCreationBlockForLogLookup(
+        bytes32 assertionHash
+    ) external view returns (uint256);
 
     /**
      * @notice Get the address of the staker at the given index

@@ -19,10 +19,9 @@ interface ArbGasInfo {
     ///            per ArbGas congestion,
     ///            per ArbGas total
     ///        )
-    function getPricesInWeiWithAggregator(address aggregator)
-        external
-        view
-        returns (uint256, uint256, uint256, uint256, uint256, uint256);
+    function getPricesInWeiWithAggregator(
+        address aggregator
+    ) external view returns (uint256, uint256, uint256, uint256, uint256, uint256);
 
     /// @notice Get gas prices. Uses the caller's preferred aggregator, or the default if the caller doesn't have a preferred one.
     /// @return return gas prices in wei
@@ -41,10 +40,9 @@ interface ArbGasInfo {
 
     /// @notice Get prices in ArbGas for the supplied aggregator
     /// @return (per L2 tx, per L1 calldata byte, per storage allocation)
-    function getPricesInArbGasWithAggregator(address aggregator)
-        external
-        view
-        returns (uint256, uint256, uint256);
+    function getPricesInArbGasWithAggregator(
+        address aggregator
+    ) external view returns (uint256, uint256, uint256);
 
     /// @notice Get prices in ArbGas. Assumes the callers preferred validator, or the default if caller doesn't have a preferred one.
     /// @return (per L2 tx, per L1 calldata byte, per storage allocation)
