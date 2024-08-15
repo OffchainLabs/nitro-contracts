@@ -9,14 +9,12 @@ import {
     AccessControlEnumerableUpgradeable
 } from "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 import {DelegateCallAware} from "../libraries/DelegateCallAware.sol";
-import {IExpressLaneAuction, Bid, InitArgs} from "./IExpressLaneAuction.sol";
+import {IExpressLaneAuction, Bid, InitArgs, Transferor} from "./IExpressLaneAuction.sol";
 import {ELCRound, LatestELCRoundsLib} from "./ELCRound.sol";
 import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
 import {
     EIP712Upgradeable
 } from "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
-
-// CHRIS: TODO: add ability to set the transferrer of controller rights
 
 /// @title ExpressLaneAuction
 /// @notice The express lane allows a controller to submit undelayed transactions to the sequencer
@@ -73,6 +71,9 @@ contract ExpressLaneAuction is
 
     /// @inheritdoc IExpressLaneAuction
     uint256 public beneficiaryBalance;
+
+    /// @inheritdoc IExpressLaneAuction
+    mapping(address => Transferor) public transferorOf;
 
     /// @inheritdoc IExpressLaneAuction
     function initialize(InitArgs memory args) public initializer onlyDelegated {
@@ -328,6 +329,7 @@ contract ExpressLaneAuction is
             biddingForRound,
             address(0),
             firstPriceBid.expressLaneController,
+            address(0),
             roundStart,
             roundEnd
         );
@@ -472,6 +474,22 @@ contract ExpressLaneAuction is
     }
 
     /// @inheritdoc IExpressLaneAuction
+    function setTransferor(Transferor calldata transferor) external {
+        // if a transferor has already been set, it may be fixed until a future round
+        Transferor storage currentTransferor = transferorOf[msg.sender];
+        if (
+            currentTransferor.addr != address(0) &&
+            currentTransferor.fixedUntilRound > roundTimingInfo.currentRound()
+        ) {
+            revert FixedTransferor(currentTransferor.fixedUntilRound);
+        }
+
+        transferorOf[msg.sender] = transferor;
+
+        emit SetTransferor(msg.sender, transferor.addr, transferor.fixedUntilRound);
+    }
+
+    /// @inheritdoc IExpressLaneAuction
     function transferExpressLaneController(uint64 round, address newExpressLaneController)
         external
     {
@@ -486,7 +504,14 @@ contract ExpressLaneAuction is
         ELCRound storage resolvedRound = latestResolvedRounds.resolvedRound(round);
 
         address resolvedELC = resolvedRound.expressLaneController;
-        if (resolvedELC != msg.sender) {
+        address transferor = transferorOf[resolvedELC].addr;
+        // can only be the transferor if one has been set
+        // otherwise we default to the express lane controller to do the transfer
+        if (transferor != address(0)) {
+            if (transferor != msg.sender) {
+                revert NotTransferor(round, transferor, msg.sender);
+            }
+        } else if (resolvedELC != msg.sender) {
             revert NotExpressLaneController(round, resolvedELC, msg.sender);
         }
 
@@ -497,6 +522,7 @@ contract ExpressLaneAuction is
             round,
             resolvedELC,
             newExpressLaneController,
+            transferor != address(0) ? transferor : resolvedELC,
             start < uint64(block.timestamp) ? uint64(block.timestamp) : start,
             end
         );

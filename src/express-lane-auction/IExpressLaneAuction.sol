@@ -25,6 +25,18 @@ struct Bid {
     bytes signature;
 }
 
+/// @notice Sets a transferor for an express lane controller
+///         The transferor is an address that will have the right to transfer express lane controller rights
+///         on behalf an express lane controller.
+struct Transferor {
+    /// @notice The address of the transferor
+    address addr;
+    /// @notice The express lane controller can choose to fix the transferor until a future round number
+    ///         This gives them ability to guarantee to other parties that they will not change transferor during an ongoing round
+    ///         The express lane controller can ignore this feature by setting this value to 0.
+    uint64 fixedUntilRound;
+}
+
 /// @notice The arguments used to initialize an express lane auction
 struct InitArgs {
     /// @notice The address who can resolve auctions
@@ -100,14 +112,26 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     /// @param round The round which the express lane controller will control
     /// @param previousExpressLaneController The previous express lane controller
     /// @param newExpressLaneController The new express lane controller
+    /// @param transferor The address that transferored the controller rights. The transferor if set, otherwise the express lane controller
     /// @param startTimestamp The timestamp at which the new express lane controller takes over
     /// @param endTimestamp The timestamp at which the new express lane controller will cease to have control
     event SetExpressLaneController(
         uint64 round,
-        address previousExpressLaneController,
-        address newExpressLaneController,
+        address indexed previousExpressLaneController,
+        address indexed newExpressLaneController,
+        address indexed transferor,
         uint64 startTimestamp,
         uint64 endTimestamp
+    );
+
+    /// @notice A new transferor has been set for
+    /// @param expressLaneController The express lane controller that has a transferor
+    /// @param transferor The transferor chosen
+    /// @param fixedUntilRound The round until which this transferor is fixed for this controller
+    event SetTransferor(
+        address indexed expressLaneController,
+        address indexed transferor,
+        uint64 fixedUntilRound
     );
 
     /// @notice The minimum reserve price was set
@@ -180,6 +204,14 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     ///         Anyone can call flushBalance to transfer this balance from the auction to the beneficiary
     ///         This is a gas optimisation to avoid making a transfer every time an auction is resolved
     function beneficiaryBalance() external returns (uint256);
+
+    /// @notice Express lane controllers can optionally set a transferor address that has the rights
+    ///         to transfer their controller rights. This function returns the transferor if one has been set
+    ///         Returns the transferor for the supplied controller, and the round until which this
+    ///         transferor is fixed if set.
+    function transferorOf(address expressLaneController)
+        external
+        returns (address addr, uint64 fixedUntil);
 
     /// @notice Initialize the auction
     /// @param args Initialization parameters
@@ -332,6 +364,12 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     /// @param secondPriceBid The second highest price bid
     function resolveMultiBidAuction(Bid calldata firstPriceBid, Bid calldata secondPriceBid)
         external;
+
+    /// @notice Sets a transferor for an express lane controller
+    ///         The transferor is an address that will have the right to transfer express lane controller rights
+    ///         on behalf an express lane controller.
+    /// @param transferor The transferor to set
+    function setTransferor(Transferor calldata transferor) external;
 
     /// @notice Express lane controllers are allowed to transfer their express lane rights for the current or future
     ///         round to another address. They may use this for reselling their rights after purchasing them
