@@ -29,10 +29,10 @@ interface ArbAddressTable {
      * @param offset offset of target address
      * @return resulting address and updated offset into the buffer (revert if buffer is too short)
      */
-    function decompress(bytes calldata buf, uint256 offset)
-        external
-        view
-        returns (address, uint256);
+    function decompress(
+        bytes calldata buf,
+        uint256 offset
+    ) external view returns (address, uint256);
 
     /**
      * @param addr address to lookup

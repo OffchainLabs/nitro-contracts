@@ -20,4 +20,20 @@ cache_path  = 'forge-cache/yul'
 remappings = []
 auto_detect_remappings = false
 
+[fmt]
+line_length = 100
+tab_width = 4
+bracket_spacing = false
+int_types = "long"
+multiline_func_header = "params_first"
+quote_style = "double"
+number_underscore = "preserve"
+hex_underscore = "remove"
+single_line_statement_blocks = "preserve"
+override_spacing = false
+wrap_comments = false
+ignore = []
+contract_new_lines = false
+sort_imports = false
+
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

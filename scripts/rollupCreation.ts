@@ -7,7 +7,7 @@ import { BigNumber, Signer } from 'ethers'
 import { ERC20, ERC20__factory, IERC20__factory } from '../build/types'
 import { sleep } from './testSetup'
 import { promises as fs } from 'fs'
-import { _isRunningOnArbitrum } from './deploymentUtils'
+import { _isRunningOnArbitrum, verifyContract } from './deploymentUtils'
 
 // 1 gwei
 const MAX_FER_PER_GAS = BigNumber.from('1000000000')
@@ -147,21 +147,13 @@ export async function createRollup(
         console.log(
           `Attempting to verify Rollup contract at address ${rollupAddress}...`
         )
-        try {
-          await run('verify:verify', {
-            contract: 'src/rollup/RollupProxy.sol:RollupProxy',
-            address: rollupAddress,
-            constructorArguments: [],
-          })
-        } catch (error: any) {
-          if (error.message.includes('Already Verified')) {
-            console.log(`Contract RollupProxy is already verified.`)
-          } else {
-            console.error(
-              `Verification for RollupProxy failed with the following error: ${error.message}`
-            )
-          }
-        }
+
+        await verifyContract(
+          'RollupProxy',
+          rollupAddress,
+          [],
+          'src/rollup/RollupProxy.sol:RollupProxy'
+        )
       }
 
       console.log('Inbox (proxy) Contract created at address:', inboxAddress)
@@ -313,13 +305,17 @@ async function _getDevRollupConfig(
       chainConfig: chainConfig,
       genesisAssertionState: {}, // AssertionState
       genesisInboxCount: 0,
-      miniStakeValues: [ethers.utils.parseEther('1'), ethers.utils.parseEther('1'), ethers.utils.parseEther('1')],
+      miniStakeValues: [
+        ethers.utils.parseEther('1'),
+        ethers.utils.parseEther('1'),
+        ethers.utils.parseEther('1'),
+      ],
       layerZeroBlockEdgeHeight: 2 ** 5,
       layerZeroBigStepEdgeHeight: 2 ** 5,
       layerZeroSmallStepEdgeHeight: 2 ** 5,
       numBigStepLevel: 1,
       challengeGracePeriodBlocks: 10,
-      bufferConfig: {threshold: 600, max: 14400, replenishRateInBasis: 500},
+      bufferConfig: { threshold: 600, max: 14400, replenishRateInBasis: 500 },
       sequencerInboxMaxTimeVariation: {
         delayBlocks: ethers.BigNumber.from('5760'),
         futureBlocks: ethers.BigNumber.from('12'),

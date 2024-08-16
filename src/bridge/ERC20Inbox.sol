@@ -29,11 +29,10 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
     constructor(uint256 _maxDataSize) AbsInbox(_maxDataSize) {}
 
     /// @inheritdoc IInboxBase
-    function initialize(IBridge _bridge, ISequencerInbox _sequencerInbox)
-        external
-        initializer
-        onlyDelegated
-    {
+    function initialize(
+        IBridge _bridge,
+        ISequencerInbox _sequencerInbox
+    ) external initializer onlyDelegated {
         __AbsInbox_init(_bridge, _sequencerInbox);
 
         // inbox holds native token in transit used to pay for retryable tickets, approve bridge to use it
@@ -52,13 +51,9 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
         }
 
         uint256 amountToMintOnL2 = _fromNativeTo18Decimals(amount);
-        return
-            _deliverMessage(
-                L1MessageType_ethDeposit,
-                msg.sender,
-                abi.encodePacked(dest, amountToMintOnL2),
-                amount
-            );
+        return _deliverMessage(
+            L1MessageType_ethDeposit, msg.sender, abi.encodePacked(dest, amountToMintOnL2), amount
+        );
     }
 
     /// @inheritdoc IERC20Inbox
@@ -73,18 +68,17 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
         uint256 tokenTotalFeeAmount,
         bytes calldata data
     ) external whenNotPaused onlyAllowed returns (uint256) {
-        return
-            _createRetryableTicket(
-                to,
-                l2CallValue,
-                maxSubmissionCost,
-                excessFeeRefundAddress,
-                callValueRefundAddress,
-                gasLimit,
-                maxFeePerGas,
-                tokenTotalFeeAmount,
-                data
-            );
+        return _createRetryableTicket(
+            to,
+            l2CallValue,
+            maxSubmissionCost,
+            excessFeeRefundAddress,
+            callValueRefundAddress,
+            gasLimit,
+            maxFeePerGas,
+            tokenTotalFeeAmount,
+            data
+        );
     }
 
     /// @inheritdoc IERC20Inbox
@@ -99,27 +93,24 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
         uint256 tokenTotalFeeAmount,
         bytes calldata data
     ) public whenNotPaused onlyAllowed returns (uint256) {
-        return
-            _unsafeCreateRetryableTicket(
-                to,
-                l2CallValue,
-                maxSubmissionCost,
-                excessFeeRefundAddress,
-                callValueRefundAddress,
-                gasLimit,
-                maxFeePerGas,
-                tokenTotalFeeAmount,
-                data
-            );
+        return _unsafeCreateRetryableTicket(
+            to,
+            l2CallValue,
+            maxSubmissionCost,
+            excessFeeRefundAddress,
+            callValueRefundAddress,
+            gasLimit,
+            maxFeePerGas,
+            tokenTotalFeeAmount,
+            data
+        );
     }
 
     /// @inheritdoc IInboxBase
-    function calculateRetryableSubmissionFee(uint256, uint256)
-        public
-        pure
-        override(AbsInbox, IInboxBase)
-        returns (uint256)
-    {
+    function calculateRetryableSubmissionFee(
+        uint256,
+        uint256
+    ) public pure override(AbsInbox, IInboxBase) returns (uint256) {
         // retryable ticket's submission fee is not charged when ERC20 token is used to pay for fees
         return 0;
     }
@@ -139,13 +130,9 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
             IERC20(nativeToken).safeTransferFrom(msg.sender, address(this), diff);
         }
 
-        return
-            IERC20Bridge(address(bridge)).enqueueDelayedMessage(
-                kind,
-                AddressAliasHelper.applyL1ToL2Alias(sender),
-                messageDataHash,
-                tokenAmount
-            );
+        return IERC20Bridge(address(bridge)).enqueueDelayedMessage(
+            kind, AddressAliasHelper.applyL1ToL2Alias(sender), messageDataHash, tokenAmount
+        );
     }
 
     /// @inheritdoc AbsInbox

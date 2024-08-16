@@ -13,10 +13,9 @@ interface ArbWasm {
     /// @param program the program to activate
     /// @return version the stylus version the program was activated against
     /// @return dataFee the data fee paid to store the activated program
-    function activateProgram(address program)
-        external
-        payable
-        returns (uint16 version, uint256 dataFee);
+    function activateProgram(
+        address program
+    ) external payable returns (uint16 version, uint256 dataFee);
 
     /// @notice Gets the latest stylus version
     /// @return version the stylus version
@@ -42,10 +41,9 @@ interface ArbWasm {
     /// @notice Gets the cost to invoke the program
     /// @return gas the amount of gas
     /// @return gasWhenCached the amount of gas if the program was recently used
-    function programInitGas(address program)
-        external
-        view
-        returns (uint64 gas, uint64 gasWhenCached);
+    function programInitGas(
+        address program
+    ) external view returns (uint64 gas, uint64 gasWhenCached);
 
     /// @notice Gets the memory footprint of the program at the given address in pages
     /// @return footprint the memory footprint of program in pages (reverts for EVM contracts)

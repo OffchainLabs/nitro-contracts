@@ -25,9 +25,9 @@ library DecimalsConverterHelper {
         if (decimalsIn == decimalsOut) {
             return amount;
         } else if (decimalsIn < decimalsOut) {
-            return amount * 10**(decimalsOut - decimalsIn);
+            return amount * 10 ** (decimalsOut - decimalsIn);
         } else {
-            return amount / 10**(decimalsIn - decimalsOut);
+            return amount / 10 ** (decimalsIn - decimalsOut);
         }
     }
 }

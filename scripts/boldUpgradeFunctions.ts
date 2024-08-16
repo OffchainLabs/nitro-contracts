@@ -26,9 +26,7 @@ import {
   abi as OldRollupAbi,
   bytecode as OldRollupBytecode,
 } from '@arbitrum/nitro-contracts-2.0.0/build/contracts/src/rollup/RollupUserLogic.sol/RollupUserLogic.json'
-import {
-  verifyContract
-} from './deploymentUtils'
+import { verifyContract } from './deploymentUtils'
 
 export const deployDependencies = async (
   signer: Signer,
@@ -36,7 +34,7 @@ export const deployDependencies = async (
   isUsingFeeToken: boolean,
   isDelayBufferable: boolean,
   log: boolean = false,
-  verify: boolean = true,
+  verify: boolean = true
 ): Promise<
   Omit<DeployedContracts, 'boldAction' | 'preImageHashLookup' | 'rollupReader'>
 > => {
@@ -47,7 +45,12 @@ export const deployDependencies = async (
   }
   if (verify) {
     await bridge.deployTransaction.wait(5)
-    await verifyContract('Bridge', bridge.address, [], "src/bridge/Bridge.sol:Bridge")
+    await verifyContract(
+      'Bridge',
+      bridge.address,
+      [],
+      'src/bridge/Bridge.sol:Bridge'
+    )
   }
 
   const contractFactory = new ContractFactory(
@@ -60,7 +63,12 @@ export const deployDependencies = async (
   console.log(`Reader4844 deployed at ${reader4844.address}`)
 
   const seqInboxFac = new SequencerInbox__factory(signer)
-  const seqInbox = await seqInboxFac.deploy(maxDataSize, reader4844.address, isUsingFeeToken, isDelayBufferable)
+  const seqInbox = await seqInboxFac.deploy(
+    maxDataSize,
+    reader4844.address,
+    isUsingFeeToken,
+    isDelayBufferable
+  )
   if (log) {
     console.log(
       `Sequencer inbox implementation deployed at: ${seqInbox.address}`
@@ -68,7 +76,12 @@ export const deployDependencies = async (
   }
   if (verify) {
     await seqInbox.deployTransaction.wait(5)
-    await verifyContract('SequencerInbox', seqInbox.address, [maxDataSize, reader4844.address, isUsingFeeToken, isDelayBufferable])
+    await verifyContract('SequencerInbox', seqInbox.address, [
+      maxDataSize,
+      reader4844.address,
+      isUsingFeeToken,
+      isDelayBufferable,
+    ])
   }
 
   const reiFac = new RollupEventInbox__factory(signer)
@@ -232,13 +245,16 @@ export const deployBoldUpgrade = async (
   wallet: Signer,
   config: Config,
   log: boolean = false,
-  verify: boolean = true,
+  verify: boolean = true
 ): Promise<DeployedContracts> => {
-  const sequencerInbox = SequencerInbox__factory.connect(config.contracts.sequencerInbox, wallet)
+  const sequencerInbox = SequencerInbox__factory.connect(
+    config.contracts.sequencerInbox,
+    wallet
+  )
   const isUsingFeeToken = await sequencerInbox.isUsingFeeToken()
   const deployed = await deployDependencies(
-    wallet, 
-    config.settings.maxDataSize, 
+    wallet,
+    config.settings.maxDataSize,
     isUsingFeeToken,
     config.settings.isDelayBufferable,
     log,
@@ -260,7 +276,7 @@ export const deployBoldUpgrade = async (
       { ...config.contracts, osp: deployed.osp },
       config.proxyAdmins,
       deployed,
-      config.settings
+      config.settings,
     ])
   }
   const deployedAndBold = {

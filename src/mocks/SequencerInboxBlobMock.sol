@@ -19,22 +19,14 @@ contract SequencerInboxBlobMock is SequencerInbox {
     /// @return The data hash
     /// @return The timebounds within which the message should be processed
     /// @return The normalized amount of gas used for blob posting
-    function formBlobDataHash(uint256 afterDelayedMessagesRead)
-        internal
-        view
-        override
-        returns (
-            bytes32,
-            IBridge.TimeBounds memory,
-            uint256
-        )
-    {
+    function formBlobDataHash(
+        uint256 afterDelayedMessagesRead
+    ) internal view override returns (bytes32, IBridge.TimeBounds memory, uint256) {
         bytes32[3] memory dataHashes = [bytes32(0), bytes32(0), bytes32(0)];
         if (dataHashes.length == 0) revert MissingDataHashes();
 
-        (bytes memory header, IBridge.TimeBounds memory timeBounds) = packHeader(
-            afterDelayedMessagesRead
-        );
+        (bytes memory header, IBridge.TimeBounds memory timeBounds) =
+            packHeader(afterDelayedMessagesRead);
         uint256 BLOB_BASE_FEE = 1 gwei;
         uint256 blobCost = BLOB_BASE_FEE * GAS_PER_BLOB * dataHashes.length;
         return (

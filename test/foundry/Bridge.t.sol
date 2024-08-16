@@ -80,9 +80,7 @@ contract BridgeTest is AbsBridgeTest {
 
         uint256 bridgeEthBalanceAfter = address(bridge).balance;
         assertEq(
-            bridgeEthBalanceAfter - bridgeEthBalanceBefore,
-            ethAmount,
-            "Invalid bridge eth balance"
+            bridgeEthBalanceAfter - bridgeEthBalanceBefore, ethAmount, "Invalid bridge eth balance"
         );
 
         uint256 inboxEthBalanceAfter = address(inbox).balance;
@@ -126,9 +124,7 @@ contract BridgeTest is AbsBridgeTest {
 
         uint256 bridgeEthBalanceAfter = address(bridge).balance;
         assertEq(
-            bridgeEthBalanceAfter - bridgeEthBalanceBefore,
-            ethAmount,
-            "Invalid bridge eth balance"
+            bridgeEthBalanceAfter - bridgeEthBalanceBefore, ethAmount, "Invalid bridge eth balance"
         );
 
         uint256 inboxEthBalanceAfter = address(inbox).balance;
@@ -172,7 +168,7 @@ contract BridgeTest is AbsBridgeTest {
 
         //// execute call
         vm.prank(outbox);
-        (bool success, ) = bridge.executeCall({to: user, value: withdrawalAmount, data: ""});
+        (bool success,) = bridge.executeCall({to: user, value: withdrawalAmount, data: ""});
 
         //// checks
         assertTrue(success, "Execute call failed");
@@ -186,9 +182,7 @@ contract BridgeTest is AbsBridgeTest {
 
         uint256 userEthBalanceAfter = address(user).balance;
         assertEq(
-            userEthBalanceAfter - userEthBalanceBefore,
-            withdrawalAmount,
-            "Invalid user eth balance"
+            userEthBalanceAfter - userEthBalanceBefore, withdrawalAmount, "Invalid user eth balance"
         );
     }
 
@@ -217,11 +211,8 @@ contract BridgeTest is AbsBridgeTest {
 
         //// execute call
         vm.prank(outbox);
-        (bool success, ) = bridge.executeCall({
-            to: address(vault),
-            value: withdrawalAmount,
-            data: data
-        });
+        (bool success,) =
+            bridge.executeCall({to: address(vault), value: withdrawalAmount, data: data});
 
         //// checks
         assertTrue(success, "Execute call failed");
@@ -266,11 +257,8 @@ contract BridgeTest is AbsBridgeTest {
 
         //// execute call - do call which reverts
         vm.prank(outbox);
-        (bool success, bytes memory returnData) = bridge.executeCall({
-            to: address(vault),
-            value: withdrawalAmount,
-            data: revertingData
-        });
+        (bool success, bytes memory returnData) =
+            bridge.executeCall({to: address(vault), value: withdrawalAmount, data: revertingData});
 
         //// checks
         assertEq(success, false, "Execute shall be unsuccessful");

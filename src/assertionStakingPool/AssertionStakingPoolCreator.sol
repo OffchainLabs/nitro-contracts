@@ -2,7 +2,6 @@
 // For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 //
-
 pragma solidity ^0.8.0;
 
 import "./AssertionStakingPool.sol";
@@ -16,7 +15,8 @@ contract AssertionStakingPoolCreator is IAssertionStakingPoolCreator {
         address _rollup,
         bytes32 _assertionHash
     ) external returns (IAssertionStakingPool) {
-        AssertionStakingPool assertionPool = new AssertionStakingPool{salt: 0}(_rollup, _assertionHash);
+        AssertionStakingPool assertionPool =
+            new AssertionStakingPool{salt: 0}(_rollup, _assertionHash);
         emit NewAssertionPoolCreated(_rollup, _assertionHash, address(assertionPool));
         return assertionPool;
     }
@@ -28,8 +28,7 @@ contract AssertionStakingPoolCreator is IAssertionStakingPoolCreator {
     ) public view returns (IAssertionStakingPool) {
         return IAssertionStakingPool(
             StakingPoolCreatorUtils.getPool(
-                type(AssertionStakingPool).creationCode, 
-                abi.encode(_rollup, _assertionHash)
+                type(AssertionStakingPool).creationCode, abi.encode(_rollup, _assertionHash)
             )
         );
     }

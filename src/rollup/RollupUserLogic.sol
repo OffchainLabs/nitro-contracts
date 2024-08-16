@@ -96,14 +96,18 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         RollupLib.validateConfigHash(prevConfig, prevAssertion.configHash);
 
         // Check that deadline has passed
-        require(block.number >= assertion.createdAtBlock + prevConfig.confirmPeriodBlocks, "BEFORE_DEADLINE");
+        require(
+            block.number >= assertion.createdAtBlock + prevConfig.confirmPeriodBlocks,
+            "BEFORE_DEADLINE"
+        );
 
         // Check that prev is latest confirmed
         require(prevAssertionHash == latestConfirmed(), "PREV_NOT_LATEST_CONFIRMED");
 
         if (prevAssertion.secondChildBlock > 0) {
             // if the prev has more than 1 child, check if this assertion is the challenge winner
-            ChallengeEdge memory winningEdge = IEdgeChallengeManager(prevConfig.challengeManager).getEdge(winningEdgeId);
+            ChallengeEdge memory winningEdge =
+                IEdgeChallengeManager(prevConfig.challengeManager).getEdge(winningEdgeId);
             require(winningEdge.claimId == assertionHash, "NOT_WINNER");
             require(winningEdge.status == EdgeStatus.Confirmed, "EDGE_NOT_CONFIRMED");
             require(winningEdge.confirmedAtBlock != 0, "ZERO_CONFIRMED_AT_BLOCK");
@@ -124,7 +128,10 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
      * @param depositAmount The amount of either eth or tokens staked
      * @param _withdrawalAddress The new staker's withdrawal address
      */
-    function _newStake(uint256 depositAmount, address _withdrawalAddress) internal onlyValidator(msg.sender) whenNotPaused {
+    function _newStake(
+        uint256 depositAmount,
+        address _withdrawalAddress
+    ) internal onlyValidator(msg.sender) whenNotPaused {
         // Verify that sender is not already a staker
         require(!isStaked(msg.sender), "ALREADY_STAKED");
         // amount will be checked when creating an assertion
@@ -137,11 +144,11 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
      * @param prevAssertionHash The hash of the assertion's parent
      * @param inboxAcc The inbox batch accumulator
      */
-    function computeAssertionHash(bytes32 prevAssertionHash, AssertionState calldata state, bytes32 inboxAcc)
-        external
-        pure
-        returns (bytes32)
-    {
+    function computeAssertionHash(
+        bytes32 prevAssertionHash,
+        AssertionState calldata state,
+        bytes32 inboxAcc
+    ) external pure returns (bytes32) {
         return RollupLib.assertionHash(prevAssertionHash, state, inboxAcc);
     }
 
@@ -150,11 +157,10 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
      * @param assertion The assertion data
      * @param expectedAssertionHash The hash of the assertion being created (protects against reorgs)
      */
-    function stakeOnNewAssertion(AssertionInputs calldata assertion, bytes32 expectedAssertionHash)
-        public
-        onlyValidator(msg.sender)
-        whenNotPaused
-    {
+    function stakeOnNewAssertion(
+        AssertionInputs calldata assertion,
+        bytes32 expectedAssertionHash
+    ) public onlyValidator(msg.sender) whenNotPaused {
         // Early revert on duplicated assertion if expectedAssertionHash is set
         require(
             expectedAssertionHash == bytes32(0)
@@ -169,7 +175,10 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         // the staker may have more than enough stake, and the entire stake will be locked
         // we cannot do a refund here because the staker may be staker on an unconfirmed ancestor that requires more stake
         // excess stake can be removed by calling reduceDeposit when the staker is inactive
-        require(amountStaked(msg.sender) >= assertion.beforeStateData.configData.requiredStake, "INSUFFICIENT_STAKE");
+        require(
+            amountStaked(msg.sender) >= assertion.beforeStateData.configData.requiredStake,
+            "INSUFFICIENT_STAKE"
+        );
 
         bytes32 prevAssertion = RollupLib.assertionHash(
             assertion.beforeStateData.prevPrevAssertionHash,
@@ -202,7 +211,9 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
             // only 1 of the children can be confirmed and get their stake refunded
             // so we send the other children's stake to the loserStakeEscrow
             // NOTE: if the losing staker have staked more than requiredStake, the excess stake will be stuck
-            IERC20(stakeToken).safeTransfer(loserStakeEscrow, assertion.beforeStateData.configData.requiredStake);
+            IERC20(stakeToken).safeTransfer(
+                loserStakeEscrow, assertion.beforeStateData.configData.requiredStake
+            );
         }
     }
 
@@ -214,10 +225,12 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
     }
 
     /**
-     * @notice From the staker's withdrawal address, 
+     * @notice From the staker's withdrawal address,
      * refund a staker that is currently staked on an assertion that either has a chlid assertion or is the latest confirmed assertion.
      */
-    function returnOldDepositFor(address stakerAddress) external override onlyValidator(stakerAddress) whenNotPaused {
+    function returnOldDepositFor(
+        address stakerAddress
+    ) external override onlyValidator(stakerAddress) whenNotPaused {
         require(msg.sender == withdrawalAddress(stakerAddress), "NOT_WITHDRAWAL_ADDRESS");
         _requireInactiveAndWithdrawStaker(stakerAddress);
     }
@@ -235,9 +248,16 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
      * @param stakerAddress Address of the staker whose stake is increased
      * @param depositAmount The amount of either eth or tokens deposited
      */
-    function _addToDeposit(address stakerAddress, address expectedWithdrawalAddress, uint256 depositAmount) internal onlyValidator(stakerAddress) whenNotPaused {
+    function _addToDeposit(
+        address stakerAddress,
+        address expectedWithdrawalAddress,
+        uint256 depositAmount
+    ) internal onlyValidator(stakerAddress) whenNotPaused {
         require(isStaked(stakerAddress), "NOT_STAKED");
-        require(withdrawalAddress(stakerAddress) == expectedWithdrawalAddress, "WRONG_WITHDRAWAL_ADDRESS");
+        require(
+            withdrawalAddress(stakerAddress) == expectedWithdrawalAddress,
+            "WRONG_WITHDRAWAL_ADDRESS"
+        );
         increaseStakeBy(stakerAddress, depositAmount);
     }
 
@@ -277,10 +297,10 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
      *         as doing so would result in incorrect accounting of withdrawable funds in the loserStakeEscrow.
      *         This is because the protocol assume there is only 1 unique confirmable child assertion.
      */
-    function fastConfirmNewAssertion(AssertionInputs calldata assertion, bytes32 expectedAssertionHash)
-        external
-        whenNotPaused
-    {
+    function fastConfirmNewAssertion(
+        AssertionInputs calldata assertion,
+        bytes32 expectedAssertionHash
+    ) external whenNotPaused {
         // Must supply expectedAssertionHash to fastConfirmNewAssertion
         require(expectedAssertionHash != bytes32(0), "EXPECTED_ASSERTION_HASH");
         AssertionStatus status = getAssertionStorage(expectedAssertionHash).status;
@@ -294,12 +314,15 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
 
         if (status == AssertionStatus.NoAssertion) {
             // If not exists, we create the new assertion
-            (bytes32 newAssertionHash,) = createNewAssertion(assertion, prevAssertion, expectedAssertionHash);
+            (bytes32 newAssertionHash,) =
+                createNewAssertion(assertion, prevAssertion, expectedAssertionHash);
             if (!getAssertionStorage(newAssertionHash).isFirstChild) {
                 // only 1 of the children can be confirmed and get their stake refunded
                 // so we send the other children's stake to the loserStakeEscrow
                 // NOTE: if the losing staker have staked more than requiredStake, the excess stake will be stuck
-                IERC20(stakeToken).safeTransfer(loserStakeEscrow, assertion.beforeStateData.configData.requiredStake);
+                IERC20(stakeToken).safeTransfer(
+                    loserStakeEscrow, assertion.beforeStateData.configData.requiredStake
+                );
             }
         }
 
@@ -355,10 +378,7 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
      * @param tokenAmount Amount to stake (can be zero)
      * @param _withdrawalAddress The address the send the stake back upon withdrawal
      */
-    function newStake(
-        uint256 tokenAmount,
-        address _withdrawalAddress
-    ) external whenNotPaused {
+    function newStake(uint256 tokenAmount, address _withdrawalAddress) external whenNotPaused {
         require(_withdrawalAddress != address(0), "EMPTY_WITHDRAWAL_ADDRESS");
         // _newStake makes sure the validator is whitelisted if the whitelist is enabled
         _newStake(tokenAmount, _withdrawalAddress);
@@ -372,7 +392,11 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
      * @param expectedWithdrawalAddress The expected withdrawal address of the staker (protects depositor from a staker changing their withdrawal address)
      * @param tokenAmount the amount of tokens staked
      */
-    function addToDeposit(address stakerAddress, address expectedWithdrawalAddress, uint256 tokenAmount) external whenNotPaused {
+    function addToDeposit(
+        address stakerAddress,
+        address expectedWithdrawalAddress,
+        uint256 tokenAmount
+    ) external whenNotPaused {
         _addToDeposit(stakerAddress, expectedWithdrawalAddress, tokenAmount);
         /// @dev This is an external call, safe because it's at the end of the function
         receiveTokens(tokenAmount);

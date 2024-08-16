@@ -14,7 +14,7 @@ contract ArrayUtilsLibTest is Test {
     function areEqual(bytes32[] memory a, bytes32[] memory b) internal {
         assertEq(a.length, b.length, "Len unequal");
 
-        for (uint i = 0; i < a.length; i++) {
+        for (uint256 i = 0; i < a.length; i++) {
             assertEq(a[i], b[i]);
         }
     }
@@ -57,7 +57,7 @@ contract ArrayUtilsLibTest is Test {
 
     function testSliceAll() public {
         bytes32[] memory o = random.hashes(5);
-        
+
         bytes32[] memory s = ArrayUtilsLib.slice(o, 0, o.length);
         areEqual(o, s);
     }
