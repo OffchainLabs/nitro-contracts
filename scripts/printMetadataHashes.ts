@@ -1,6 +1,7 @@
 import path from 'path'
 import fs from 'fs-extra'
 import hre from 'hardhat'
+import { execSync } from 'child_process'
 
 main()
   .then(() => process.exit(0))
@@ -24,6 +25,30 @@ async function main() {
     'RollupUserLogic',
     'ChallengeManager',
   ]
+
+  // Print the current git tag
+  const gitTag = execSync('git describe --tags').toString().trim()
+  console.log(`Current tag: ${gitTag}`)
+
+  // Check if yarn packages match yarn.lock
+  try {
+    execSync('yarn install --check-files', { stdio: 'ignore' })
+  } catch (e) {
+    console.error('Yarn packages does not match yarn.lock')
+    process.exit(1)
+  }
+
+  // Check if the current working directory is clean
+  try {
+    execSync('git update-index --really-refresh', { stdio: 'ignore' })
+    if (execSync('git status --porcelain').toString().trim()) {
+      console.error('The current working directory have staged changes.')
+      process.exit(1)
+    }
+  } catch (e) {
+    console.error('The current working directory is not clean.')
+    process.exit(1)
+  }
 
   console.log('HARDHAT:')
   for (const contract of contracts) {
