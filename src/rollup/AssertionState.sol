@@ -15,7 +15,9 @@ struct AssertionState {
 }
 
 library AssertionStateLib {
-    function toExecutionState(AssertionState memory state) internal pure returns (ExecutionState memory) {
+    function toExecutionState(
+        AssertionState memory state
+    ) internal pure returns (ExecutionState memory) {
         return ExecutionState(state.globalState, state.machineStatus);
     }
 

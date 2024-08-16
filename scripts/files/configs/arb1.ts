@@ -27,16 +27,12 @@ export const arb1: Config = {
     challengePeriodBlocks: 45818, // same as confirm period
     stakeToken: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
     stakeAmt: parseEther('3600'),
-    miniStakeAmounts: [
-      parseEther('0'),
-      parseEther('555'),
-      parseEther('79'),
-    ],
+    miniStakeAmounts: [parseEther('0'), parseEther('555'), parseEther('79')],
     chainId: 42161,
     disableValidatorWhitelist: true,
-    blockLeafSize: 2**26,
-    bigStepLeafSize: 2**19,
-    smallStepLeafSize: 2**23,
+    blockLeafSize: 2 ** 26,
+    bigStepLeafSize: 2 ** 19,
+    smallStepLeafSize: 2 ** 23,
     numBigStepLevel: 1,
     maxDataSize: 117964,
     isDelayBufferable: true,

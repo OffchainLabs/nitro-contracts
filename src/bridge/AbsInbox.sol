@@ -121,10 +121,10 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
     }
 
     /* solhint-disable func-name-mixedcase */
-    function __AbsInbox_init(IBridge _bridge, ISequencerInbox _sequencerInbox)
-        internal
-        onlyInitializing
-    {
+    function __AbsInbox_init(
+        IBridge _bridge,
+        ISequencerInbox _sequencerInbox
+    ) internal onlyInitializing {
         bridge = _bridge;
         sequencerInbox = _sequencerInbox;
         allowListEnabled = false;
@@ -137,12 +137,9 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
     }
 
     /// @inheritdoc IInboxBase
-    function sendL2Message(bytes calldata messageData)
-        external
-        whenNotPaused
-        onlyAllowed
-        returns (uint256)
-    {
+    function sendL2Message(
+        bytes calldata messageData
+    ) external whenNotPaused onlyAllowed returns (uint256) {
         if (_chainIdChanged()) revert L1Forked();
         return _deliverMessage(L2_MSG, msg.sender, messageData, 0);
     }
@@ -160,21 +157,20 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         if (gasLimit > type(uint64).max) {
             revert GasLimitTooLarge();
         }
-        return
-            _deliverMessage(
-                L2_MSG,
-                msg.sender,
-                abi.encodePacked(
-                    L2MessageType_unsignedEOATx,
-                    gasLimit,
-                    maxFeePerGas,
-                    nonce,
-                    uint256(uint160(to)),
-                    value,
-                    data
-                ),
-                0
-            );
+        return _deliverMessage(
+            L2_MSG,
+            msg.sender,
+            abi.encodePacked(
+                L2MessageType_unsignedEOATx,
+                gasLimit,
+                maxFeePerGas,
+                nonce,
+                uint256(uint160(to)),
+                value,
+                data
+            ),
+            0
+        );
     }
 
     /// @inheritdoc IInboxBase
@@ -189,20 +185,19 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         if (gasLimit > type(uint64).max) {
             revert GasLimitTooLarge();
         }
-        return
-            _deliverMessage(
-                L2_MSG,
-                msg.sender,
-                abi.encodePacked(
-                    L2MessageType_unsignedContractTx,
-                    gasLimit,
-                    maxFeePerGas,
-                    uint256(uint160(to)),
-                    value,
-                    data
-                ),
-                0
-            );
+        return _deliverMessage(
+            L2_MSG,
+            msg.sender,
+            abi.encodePacked(
+                L2MessageType_unsignedContractTx,
+                gasLimit,
+                maxFeePerGas,
+                uint256(uint160(to)),
+                value,
+                data
+            ),
+            0
+        );
     }
 
     /// @inheritdoc IInboxBase
@@ -227,8 +222,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         uint256 amountToBeMintedOnL2 = _fromNativeTo18Decimals(amount);
         if (amountToBeMintedOnL2 < (maxSubmissionCost + l2CallValue + gasLimit * maxFeePerGas)) {
             revert InsufficientValue(
-                maxSubmissionCost + l2CallValue + gasLimit * maxFeePerGas,
-                amountToBeMintedOnL2
+                maxSubmissionCost + l2CallValue + gasLimit * maxFeePerGas, amountToBeMintedOnL2
             );
         }
 
@@ -244,18 +238,17 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         }
 
         // gas limit is validated to be within uint64 in unsafeCreateRetryableTicket
-        return
-            _unsafeCreateRetryableTicket(
-                to,
-                l2CallValue,
-                maxSubmissionCost,
-                excessFeeRefundAddress,
-                callValueRefundAddress,
-                gasLimit,
-                maxFeePerGas,
-                amount,
-                data
-            );
+        return _unsafeCreateRetryableTicket(
+            to,
+            l2CallValue,
+            maxSubmissionCost,
+            excessFeeRefundAddress,
+            callValueRefundAddress,
+            gasLimit,
+            maxFeePerGas,
+            amount,
+            data
+        );
     }
 
     function _unsafeCreateRetryableTicket(
@@ -271,7 +264,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
     ) internal returns (uint256) {
         // gas price and limit of 1 should never be a valid input, so instead they are used as
         // magic values to trigger a revert in eth calls that surface data without requiring a tx trace
-        if (gasLimit == 1 || maxFeePerGas == 1)
+        if (gasLimit == 1 || maxFeePerGas == 1) {
             revert RetryableData(
                 msg.sender,
                 to,
@@ -284,6 +277,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
                 maxFeePerGas,
                 data
             );
+        }
 
         // arbos will discard retryable with gas limit too large
         if (gasLimit > type(uint64).max) {
@@ -291,27 +285,27 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         }
 
         uint256 submissionFee = calculateRetryableSubmissionFee(data.length, block.basefee);
-        if (maxSubmissionCost < submissionFee)
+        if (maxSubmissionCost < submissionFee) {
             revert InsufficientSubmissionCost(submissionFee, maxSubmissionCost);
+        }
 
-        return
-            _deliverMessage(
-                L1MessageType_submitRetryableTx,
-                msg.sender,
-                abi.encodePacked(
-                    uint256(uint160(to)),
-                    l2CallValue,
-                    _fromNativeTo18Decimals(amount),
-                    maxSubmissionCost,
-                    uint256(uint160(excessFeeRefundAddress)),
-                    uint256(uint160(callValueRefundAddress)),
-                    gasLimit,
-                    maxFeePerGas,
-                    data.length,
-                    data
-                ),
-                amount
-            );
+        return _deliverMessage(
+            L1MessageType_submitRetryableTx,
+            msg.sender,
+            abi.encodePacked(
+                uint256(uint160(to)),
+                l2CallValue,
+                _fromNativeTo18Decimals(amount),
+                maxSubmissionCost,
+                uint256(uint160(excessFeeRefundAddress)),
+                uint256(uint160(callValueRefundAddress)),
+                gasLimit,
+                maxFeePerGas,
+                data.length,
+                data
+            ),
+            amount
+        );
     }
 
     function _deliverMessage(
@@ -320,8 +314,9 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         bytes memory _messageData,
         uint256 amount
     ) internal returns (uint256) {
-        if (_messageData.length > maxDataSize)
+        if (_messageData.length > maxDataSize) {
             revert DataTooLarge(_messageData.length, maxDataSize);
+        }
         uint256 msgNum = _deliverToBridge(_kind, _sender, keccak256(_messageData), amount);
         emit InboxMessageDelivered(msgNum, _messageData);
         return msgNum;
@@ -334,11 +329,10 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         uint256 amount
     ) internal virtual returns (uint256);
 
-    function calculateRetryableSubmissionFee(uint256 dataLength, uint256 baseFee)
-        public
-        view
-        virtual
-        returns (uint256);
+    function calculateRetryableSubmissionFee(
+        uint256 dataLength,
+        uint256 baseFee
+    ) public view virtual returns (uint256);
 
     /// @notice get amount of ETH/token to mint on child chain based on provided value.
     ///         In case of ETH-based rollup this amount will always equal the provided

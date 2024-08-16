@@ -4,7 +4,8 @@
 
 pragma solidity >=0.4.21 <0.9.0;
 
-/** @title Interface for providing gas estimation for retryable auto-redeems and constructing outbox proofs
+/**
+ * @title Interface for providing gas estimation for retryable auto-redeems and constructing outbox proofs
  *  @notice This contract doesn't exist on-chain. Instead it is a virtual interface accessible at
  *  0x00000000000000000000000000000000000000C8
  *  This is a cute trick to allow an Arbitrum node to provide data without us having to implement additional RPCs
@@ -41,14 +42,10 @@ interface NodeInterface {
      * @return root the root of the outbox accumulator
      * @return proof level-by-level branch hashes constituting a proof of the send's membership at the given size
      */
-    function constructOutboxProof(uint64 size, uint64 leaf)
-        external
-        view
-        returns (
-            bytes32 send,
-            bytes32 root,
-            bytes32[] memory proof
-        );
+    function constructOutboxProof(
+        uint64 size,
+        uint64 leaf
+    ) external view returns (bytes32 send, bytes32 root, bytes32[] memory proof);
 
     /**
      * @notice Finds the L1 batch containing a requested L2 block, reverting if none does.
@@ -116,11 +113,7 @@ interface NodeInterface {
     )
         external
         payable
-        returns (
-            uint64 gasEstimateForL1,
-            uint256 baseFee,
-            uint256 l1BaseFeeEstimate
-        );
+        returns (uint64 gasEstimateForL1, uint256 baseFee, uint256 l1BaseFeeEstimate);
 
     /**
      * @notice Returns the proof necessary to redeem a message
@@ -136,7 +129,10 @@ interface NodeInterface {
      * @return amount value in L1 message in wei
      * @return calldataForL1 abi-encoded L1 message data
      */
-    function legacyLookupMessageBatchProof(uint256 batchNum, uint64 index)
+    function legacyLookupMessageBatchProof(
+        uint256 batchNum,
+        uint64 index
+    )
         external
         view
         returns (
@@ -167,8 +163,7 @@ interface NodeInterface {
      * @return firstBlock The first L2 block number with the given L1 block number
      * @return lastBlock The last L2 block number with the given L1 block number
      */
-    function l2BlockRangeForL1(uint64 blockNum)
-        external
-        view
-        returns (uint64 firstBlock, uint64 lastBlock);
+    function l2BlockRangeForL1(
+        uint64 blockNum
+    ) external view returns (uint64 firstBlock, uint64 lastBlock);
 }

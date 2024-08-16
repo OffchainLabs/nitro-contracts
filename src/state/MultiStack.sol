@@ -20,25 +20,17 @@ library MultiStackLib {
         require(activeStackHash != NO_STACK_HASH, "MULTISTACK_NOSTACK_ACTIVE");
         if (cothread) {
             require(multi.inactiveStackHash != NO_STACK_HASH, "MULTISTACK_NOSTACK_MAIN");
-            return
-                keccak256(
-                    abi.encodePacked(
-                        "multistack:",
-                        multi.inactiveStackHash,
-                        activeStackHash,
-                        multi.remainingHash
-                    )
-                );
+            return keccak256(
+                abi.encodePacked(
+                    "multistack:", multi.inactiveStackHash, activeStackHash, multi.remainingHash
+                )
+            );
         } else {
-            return
-                keccak256(
-                    abi.encodePacked(
-                        "multistack:",
-                        activeStackHash,
-                        multi.inactiveStackHash,
-                        multi.remainingHash
-                    )
-                );
+            return keccak256(
+                abi.encodePacked(
+                    "multistack:", activeStackHash, multi.inactiveStackHash, multi.remainingHash
+                )
+            );
         }
     }
 

@@ -2,7 +2,6 @@
 // For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 //
-
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -15,12 +14,12 @@ import "./interfaces/IAssertionStakingPool.sol";
 ///         Allows users to deposit stake, create assertion once required stake amount is reached,
 ///         and reclaim their stake when and if the assertion is confirmed.
 ///
-///         Tokens sent directly to this contract will be lost. 
+///         Tokens sent directly to this contract will be lost.
 ///         It is assumed that the rollup will not return more tokens than the amount deposited by the pool.
 ///         Any tokens exceeding the deposited amount to the pool will be stuck in the pool forever.
 contract AssertionStakingPool is AbsBoldStakingPool, IAssertionStakingPool {
     using SafeERC20 for IERC20;
-    
+
     /// @inheritdoc IAssertionStakingPool
     address public immutable rollup;
     /// @inheritdoc IAssertionStakingPool
@@ -32,7 +31,7 @@ contract AssertionStakingPool is AbsBoldStakingPool, IAssertionStakingPool {
         address _rollup,
         bytes32 _assertionHash
     ) AbsBoldStakingPool(IRollupCore(_rollup).stakeToken()) {
-        if(_assertionHash == bytes32(0)) {
+        if (_assertionHash == bytes32(0)) {
             revert EmptyAssertionId();
         }
         rollup = _rollup;
@@ -45,7 +44,9 @@ contract AssertionStakingPool is AbsBoldStakingPool, IAssertionStakingPool {
         // approve spending from rollup for newStakeOnNewAssertion call
         IERC20(stakeToken).safeIncreaseAllowance(rollup, requiredStake);
         // reverts if pool doesn't have enough stake and if assertion has already been asserted
-        IRollupUser(rollup).newStakeOnNewAssertion(requiredStake, assertionInputs, assertionHash, address(this));
+        IRollupUser(rollup).newStakeOnNewAssertion(
+            requiredStake, assertionInputs, assertionHash, address(this)
+        );
     }
 
     /// @inheritdoc IAssertionStakingPool

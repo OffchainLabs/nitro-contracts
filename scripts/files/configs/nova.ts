@@ -28,16 +28,12 @@ export const nova: Config = {
     stakeToken: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // WETH
     // TODO: confirm stakes
     stakeAmt: parseEther('1'),
-    miniStakeAmounts: [
-      parseEther('0'),
-      parseEther('1'),
-      parseEther('1'),
-    ],
+    miniStakeAmounts: [parseEther('0'), parseEther('1'), parseEther('1')],
     chainId: 42170,
     disableValidatorWhitelist: false,
-    blockLeafSize: 2**26, // leaf sizes same as arb1
-    bigStepLeafSize: 2**19,
-    smallStepLeafSize: 2**23,
+    blockLeafSize: 2 ** 26, // leaf sizes same as arb1
+    bigStepLeafSize: 2 ** 19,
+    smallStepLeafSize: 2 ** 23,
     numBigStepLevel: 1,
     maxDataSize: 117964,
     isDelayBufferable: true,
@@ -48,7 +44,8 @@ export const nova: Config = {
     },
   },
   // these validators must still be validators on the old rollup during the upgrade, or the upgrade will fail
-  validators: [ // current validators
+  validators: [
+    // current validators
     '0xE27d4Ed355e5273A3D4855c8e11BC4a8d3e39b87',
     '0x57004b440Cc4eb2FEd8c4d1865FaC907F9150C76',
     '0x24ca61c31c7f9af3ab104db6b9a444f28e9071e3',

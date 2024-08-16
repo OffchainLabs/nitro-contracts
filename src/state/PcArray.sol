@@ -13,11 +13,7 @@ library PcArrayLib {
         return arr.inner[index];
     }
 
-    function set(
-        PcArray memory arr,
-        uint256 index,
-        uint32 val
-    ) internal pure {
+    function set(PcArray memory arr, uint256 index, uint32 val) internal pure {
         arr.inner[index] = val;
     }
 

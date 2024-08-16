@@ -20,19 +20,25 @@ contract MerkleTreeAccess {
         return MerkleTreeLib.root(me);
     }
 
-    function appendCompleteSubTree(bytes32[] memory me, uint256 level, bytes32 subtreeRoot)
-        external
-        pure
-        returns (bytes32[] memory)
-    {
+    function appendCompleteSubTree(
+        bytes32[] memory me,
+        uint256 level,
+        bytes32 subtreeRoot
+    ) external pure returns (bytes32[] memory) {
         return MerkleTreeLib.appendCompleteSubTree(me, level, subtreeRoot);
     }
 
-    function appendLeaf(bytes32[] memory me, bytes32 leaf) external pure returns (bytes32[] memory) {
+    function appendLeaf(
+        bytes32[] memory me,
+        bytes32 leaf
+    ) external pure returns (bytes32[] memory) {
         return MerkleTreeLib.appendLeaf(me, leaf);
     }
 
-    function maximumAppendBetween(uint256 startSize, uint256 endSize) external pure returns (uint256) {
+    function maximumAppendBetween(
+        uint256 startSize,
+        uint256 endSize
+    ) external pure returns (uint256) {
         return MerkleTreeLib.maximumAppendBetween(startSize, endSize);
     }
 
@@ -44,13 +50,17 @@ contract MerkleTreeAccess {
         bytes32[] memory preExpansion,
         bytes32[] memory proof
     ) external pure {
-        return MerkleTreeLib.verifyPrefixProof(preRoot, preSize, postRoot, postSize, preExpansion, proof);
+        return MerkleTreeLib.verifyPrefixProof(
+            preRoot, preSize, postRoot, postSize, preExpansion, proof
+        );
     }
 
-    function verifyInclusionProof(bytes32 rootHash, bytes32 leaf, uint256 index, bytes32[] memory proof)
-        external
-        pure
-    {
+    function verifyInclusionProof(
+        bytes32 rootHash,
+        bytes32 leaf,
+        uint256 index,
+        bytes32[] memory proof
+    ) external pure {
         MerkleTreeLib.verifyInclusionProof(rootHash, leaf, index, proof);
     }
 }

@@ -166,7 +166,7 @@ contract GasRefunder is IGasRefunder, Ownable {
     function withdraw(address payable destination, uint256 amount) external onlyOwner {
         // It's expected that destination is an EOA
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = destination.call{value: amount}("");
+        (bool success,) = destination.call{value: amount}("");
         require(success, "WITHDRAW_FAILED");
         emit Withdrawn(msg.sender, destination, amount);
     }
@@ -187,19 +187,13 @@ contract GasRefunder is IGasRefunder, Ownable {
 
         if (!allowedContracts[msg.sender]) {
             emit RefundGasCostsDenied(
-                refundee,
-                msg.sender,
-                RefundDenyReason.CONTRACT_NOT_ALLOWED,
-                gasUsed
+                refundee, msg.sender, RefundDenyReason.CONTRACT_NOT_ALLOWED, gasUsed
             );
             return false;
         }
         if (!allowedRefundees[refundee]) {
             emit RefundGasCostsDenied(
-                refundee,
-                msg.sender,
-                RefundDenyReason.REFUNDEE_NOT_ALLOWED,
-                gasUsed
+                refundee, msg.sender, RefundDenyReason.REFUNDEE_NOT_ALLOWED, gasUsed
             );
             return false;
         }
@@ -219,9 +213,7 @@ contract GasRefunder is IGasRefunder, Ownable {
 
         // Add in a bit of a buffer for the tx costs not measured with gasleft
         gasUsed +=
-            startGasLeft +
-            commonParams.extraGasMargin +
-            (calldataSize * commonParams.calldataCost);
+            startGasLeft + commonParams.extraGasMargin + (calldataSize * commonParams.calldataCost);
         // Split this up into two statements so that gasleft() comes after the storage loads
         gasUsed -= gasleft();
 
@@ -251,7 +243,7 @@ contract GasRefunder is IGasRefunder, Ownable {
 
         // It's expected that refundee is an EOA
         // solhint-disable-next-line avoid-low-level-calls
-        (success, ) = refundee.call{value: refundAmount}("");
+        (success,) = refundee.call{value: refundAmount}("");
         emit RefundedGasCosts(refundee, msg.sender, success, gasUsed, estGasPrice, refundAmount);
     }
 }

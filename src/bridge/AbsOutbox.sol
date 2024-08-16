@@ -93,8 +93,9 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
 
     /// @notice Allows the rollup owner to sync the rollup address
     function updateRollupAddress() external {
-        if (msg.sender != IOwnable(rollup).owner())
+        if (msg.sender != IOwnable(rollup).owner()) {
             revert NotOwner(msg.sender, IOwnable(rollup).owner());
+        }
         address newRollup = address(bridge.rollup());
         if (rollup == newRollup) revert RollupNotChanged();
         rollup = newRollup;
@@ -163,15 +164,7 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         uint256 value,
         bytes calldata data
     ) external {
-        bytes32 userTx = calculateItemHash(
-            l2Sender,
-            to,
-            l2Block,
-            l1Block,
-            l2Timestamp,
-            value,
-            data
-        );
+        bytes32 userTx = calculateItemHash(l2Sender, to, l2Block, l1Block, l2Timestamp, value, data);
 
         recordOutputAsSpent(proof, index, userTx);
 
@@ -228,15 +221,9 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         context = prevContext;
     }
 
-    function _calcSpentIndexOffset(uint256 index)
-        internal
-        view
-        returns (
-            uint256,
-            uint256,
-            bytes32
-        )
-    {
+    function _calcSpentIndexOffset(
+        uint256 index
+    ) internal view returns (uint256, uint256, bytes32) {
         uint256 spentIndex = index / 255; // Note: Reserves the MSB.
         uint256 bitOffset = index % 255;
         bytes32 replay = spent[spentIndex];
@@ -253,13 +240,9 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         return _isSpent(bitOffset, replay);
     }
 
-    function recordOutputAsSpent(
-        bytes32[] memory proof,
-        uint256 index,
-        bytes32 item
-    ) internal {
+    function recordOutputAsSpent(bytes32[] memory proof, uint256 index, bytes32 item) internal {
         if (proof.length >= 256) revert ProofTooLong(proof.length);
-        if (index >= 2**proof.length) revert PathNotMinimal(index, 2**proof.length);
+        if (index >= 2 ** proof.length) revert PathNotMinimal(index, 2 ** proof.length);
 
         // Hash the leaf an extra time to prove it's a leaf
         bytes32 calcRoot = calculateMerkleRoot(proof, index, item);
@@ -271,11 +254,7 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         spent[spentIndex] = (replay | bytes32(1 << bitOffset));
     }
 
-    function executeBridgeCall(
-        address to,
-        uint256 value,
-        bytes memory data
-    ) internal {
+    function executeBridgeCall(address to, uint256 value, bytes memory data) internal {
         (bool success, bytes memory returndata) = bridge.executeCall(to, value, data);
         if (!success) {
             if (returndata.length > 0) {
@@ -299,8 +278,7 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         uint256 value,
         bytes calldata data
     ) public pure returns (bytes32) {
-        return
-            keccak256(abi.encodePacked(l2Sender, to, l2Block, l1Block, l2Timestamp, value, data));
+        return keccak256(abi.encodePacked(l2Sender, to, l2Block, l1Block, l2Timestamp, value, data));
     }
 
     function calculateMerkleRoot(

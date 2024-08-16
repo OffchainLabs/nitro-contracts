@@ -59,7 +59,7 @@ export interface Config {
     seqInbox: string
   }
   settings: {
-    challengeGracePeriodBlocks: number,
+    challengeGracePeriodBlocks: number
     confirmPeriodBlocks: number
     challengePeriodBlocks: number
     stakeToken: string
@@ -167,7 +167,10 @@ export const validateConfig = async (
     throw new Error('miniStakeAmts length is not numBigStepLevel + 2')
   }
 
-  if (!config.settings.disableValidatorWhitelist && config.validators.length === 0) {
+  if (
+    !config.settings.disableValidatorWhitelist &&
+    config.validators.length === 0
+  ) {
     throw new Error('no validators')
   }
 }

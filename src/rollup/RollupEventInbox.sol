@@ -14,12 +14,9 @@ contract RollupEventInbox is AbsRollupEventInbox {
     constructor() AbsRollupEventInbox() {}
 
     function _enqueueInitializationMsg(bytes memory initMsg) internal override returns (uint256) {
-        return
-            IEthBridge(address(bridge)).enqueueDelayedMessage(
-                INITIALIZATION_MSG_TYPE,
-                address(0),
-                keccak256(initMsg)
-            );
+        return IEthBridge(address(bridge)).enqueueDelayedMessage(
+            INITIALIZATION_MSG_TYPE, address(0), keccak256(initMsg)
+        );
     }
 
     function _currentDataCostToReport() internal view override returns (uint256) {

@@ -313,13 +313,17 @@ async function _getDevRollupConfig(
       chainConfig: chainConfig,
       genesisAssertionState: {}, // AssertionState
       genesisInboxCount: 0,
-      miniStakeValues: [ethers.utils.parseEther('1'), ethers.utils.parseEther('1'), ethers.utils.parseEther('1')],
+      miniStakeValues: [
+        ethers.utils.parseEther('1'),
+        ethers.utils.parseEther('1'),
+        ethers.utils.parseEther('1'),
+      ],
       layerZeroBlockEdgeHeight: 2 ** 5,
       layerZeroBigStepEdgeHeight: 2 ** 5,
       layerZeroSmallStepEdgeHeight: 2 ** 5,
       numBigStepLevel: 1,
       challengeGracePeriodBlocks: 10,
-      bufferConfig: {threshold: 600, max: 14400, replenishRateInBasis: 500},
+      bufferConfig: { threshold: 600, max: 14400, replenishRateInBasis: 500 },
       sequencerInboxMaxTimeVariation: {
         delayBlocks: ethers.BigNumber.from('5760'),
         futureBlocks: ethers.BigNumber.from('12'),
