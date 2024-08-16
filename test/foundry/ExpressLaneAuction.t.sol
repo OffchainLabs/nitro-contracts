@@ -1866,5 +1866,49 @@ contract ExpressLaneAuctionTest is Test {
         assertEq(durationAfter, cNewDuration);
         assertEq(acAfter, 13);
         assertEq(rsAfter, 12);
+
+
+        // set the min duration
+        cNewDuration = 1;
+        (cStart, ) = auction.roundTimestamps(auction.currentRound() + 1);
+        int64 intStart = int64(cStart);
+        // warp to just before that start - we need to be within round duration of the next round
+        vm.warp(cStart - 1);
+        cNewOffset = int64(intStart - int64(cNewDuration * (auction.currentRound() + 1)));
+        vm.prank(roundTimingSetter);
+        auction.setRoundTimingInfo(
+            RoundTimingInfo({
+                offsetTimestamp: cNewOffset,
+                roundDurationSeconds: cNewDuration,
+                auctionClosingSeconds: 1,
+                reserveSubmissionSeconds: 0
+            })
+        );
+        (offsetAfter, durationAfter, acAfter, rsAfter) = auction.roundTimingInfo();
+        assertEq(offsetAfter, cNewOffset);
+        assertEq(durationAfter, cNewDuration);
+        assertEq(acAfter, 1);
+        assertEq(rsAfter, 0);
+
+        // fast forward 10k years - that sets a high number of rounds
+        vm.warp(block.timestamp + (365 * 86400));
+        cNewDuration = 86400;
+        (cStart, ) = auction.roundTimestamps(auction.currentRound() + 1);
+        intStart = int64(cStart);
+        cNewOffset = int64(intStart - int64(cNewDuration * (auction.currentRound() + 1)));
+        vm.prank(roundTimingSetter);
+        auction.setRoundTimingInfo(
+            RoundTimingInfo({
+                offsetTimestamp: cNewOffset,
+                roundDurationSeconds: cNewDuration,
+                auctionClosingSeconds: 13,
+                reserveSubmissionSeconds: 12
+            })
+        );
+        (offsetAfter, durationAfter, acAfter, rsAfter) = auction.roundTimingInfo();
+        assertEq(offsetAfter, cNewOffset);
+        assertEq(durationAfter, cNewDuration);
+        assertEq(acAfter, 13);
+        assertEq(rsAfter, 12);
     }
 }

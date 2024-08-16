@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
+import {NegativeRoundStart} from "./Errors.sol";
+
 /// @notice Information about the timings of auction round. All timings measured in seconds
 ///         Bids can be submitted to the offchain autonomous auctioneer until the auction round closes
 ///         after which the auctioneer can submit the two highest bids to the auction contract to resolve the auction
@@ -100,7 +102,11 @@ library RoundTimingInfoLib {
         pure
         returns (uint64, uint64)
     {
-        uint64 roundStart = uint64(info.offsetTimestamp + int64(info.roundDurationSeconds * round));
+        int64 intRoundStart = info.offsetTimestamp + int64(info.roundDurationSeconds * round);
+        if(intRoundStart < 0) {
+            revert NegativeRoundStart(intRoundStart);
+        }
+        uint64 roundStart = uint64(intRoundStart);
         uint64 roundEnd = roundStart + info.roundDurationSeconds - 1;
         return (roundStart, roundEnd);
     }
