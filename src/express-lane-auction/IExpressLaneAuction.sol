@@ -247,6 +247,8 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     ///         This only returns the start and end timestamps given the current round timing info, which can be updated
     ///         Historical round timestamp can be found by checking the logs for round timing info updates, or by looking
     ///         at the timing info emitted in events from resolved auctions
+    ///         Since it is possible to set a negative offset, the start and end time may also be negative
+    ///         In this case requesting roundTimestamps will revert.
     /// @param round The round to find the timestamps for
     /// @return start The start of the round in seconds, inclusive
     /// @return end The end of the round in seconds, inclusive
@@ -290,8 +292,14 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     ///         this could result in bidders paying for a round that is longer or shorter than they expected. To that end
     ///         the round timing setter is trusted not to set this function too often, and any observers who depend upon this timing info
     ///         (eg bidders, auctioneer, reserve price setter etc) should be able to see when this is going to happen.
-    ///         On arbitrum one the expected round timing setter is the arbitrum dao, that can only
+    ///         On Arbitrum One the expected round timing setter is the Arbitrum DAO, that can only
     ///         make changes by passing proposals through timelocks, therefore providing the notice to bidders.
+    ///         Since the next round of the new info must be the same as the next round of the current info, it follows
+    ///         that the update can only be made within min(roundDuration, newRoundDuration) of the end of the round, making
+    ///         an update outside of this will cause a revert.
+    ///         If necessary negative offsets can be set in order to achieve the next round number, given that
+    ///         the maximum round duration is 1 day it should be possible to have many thousands of years worth of
+    ///         rounds before it is not longer possible (due to int underflow) to change from 1 second to 1 day duration
     /// @param newRoundTimingInfo The new timing info to set
     function setRoundTimingInfo(RoundTimingInfo calldata newRoundTimingInfo) external;
 
