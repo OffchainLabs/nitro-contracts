@@ -93,6 +93,8 @@ library RoundTimingInfoLib {
     }
 
     /// @notice Gets the start and end timestamps (seconds) of a specified round
+    ///         Since it is possible to set a negative offset, the start and end time may also be negative
+    ///         In this case requesting roundTimestamps will revert.
     /// @param info Round timing info
     /// @param round The specified round
     /// @return The timestamp at which the round starts
