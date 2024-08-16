@@ -257,12 +257,7 @@ export async function deployAllContracts(
   const deployHelper = await deployContract('DeployHelper', signer, [], verify)
   if (verify && !process.env.DISABLE_VERIFICATION) {
     // Deploy RollupProxy contract only for verification, should not be used anywhere else
-    await deployContract(
-      'RollupProxy',
-      signer,
-      [],
-      verify
-    )
+    await deployContract('RollupProxy', signer, [], verify)
   }
   return {
     bridgeCreator,
