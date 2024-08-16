@@ -94,6 +94,10 @@ contract ExpressLaneAuction is
         reservePrice = args._minReservePrice;
         emit SetReservePrice(0, args._minReservePrice);
 
+        // the initial timestamp cannot be negative
+        if (args._roundTimingInfo.offsetTimestamp < 0) {
+            revert NegativeOffset();
+        }
         setRoundTimingInfoInternal(args._roundTimingInfo);
 
         // roles without a custom role admin set will have this as the admin

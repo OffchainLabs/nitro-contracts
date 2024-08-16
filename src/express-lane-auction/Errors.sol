@@ -26,3 +26,5 @@ error InvalidNewRound(uint64 currentRound, uint64 newRound);
 error InvalidNewStart(uint64 currentStart, uint64 newStart);
 error RoundTooLong(uint64 roundDurationSeconds);
 error ZeroAuctionClosingSeconds();
+error NegativeOffset();
+error NegativeRoundStart(int64 roundStart);

@@ -54,14 +54,14 @@ contract ExpressLaneAuctionTest is Test {
     );
     event SetRoundTimingInfo(
         uint64 currentRound,
-        uint64 offsetTimestamp,
+        int64 offsetTimestamp,
         uint64 roundDurationSeconds,
         uint64 auctionClosingSeconds,
         uint64 reserveSubmissionSeconds
     );
 
     uint64 roundDuration = 60; // 1 min
-    uint64 offsetTimestamp = 3234000;
+    int64 offsetTimestamp = 3234000;
 
     struct TestBidder {
         uint256 privKey;
@@ -128,7 +128,7 @@ contract ExpressLaneAuctionTest is Test {
 
         // move to round test round
         (, uint64 roundDurationSeconds, , ) = auction.roundTimingInfo();
-        vm.warp(offsetTimestamp + roundDurationSeconds * testRound);
+        vm.warp(uint64(offsetTimestamp) + roundDurationSeconds * testRound);
 
         return (token, IExpressLaneAuction(auction));
     }
@@ -179,6 +179,11 @@ contract ExpressLaneAuctionTest is Test {
         // expect div by 0 or not less than auction closing - either way revert
         vm.expectRevert();
         auction.initialize(rdArgs2);
+
+        InitArgs memory rdArgs3 = createArgs(address(token));
+        rdArgs3._roundTimingInfo.offsetTimestamp = -1;
+        vm.expectRevert(abi.encodeWithSelector(NegativeOffset.selector));
+        auction.initialize(rdArgs3);
     }
 
     function testInit() public {
@@ -217,7 +222,7 @@ contract ExpressLaneAuctionTest is Test {
         );
         auction.initialize(args);
         (
-            uint64 offsetTimestampA,
+            int64 offsetTimestampA,
             uint64 roundDurationSeconds,
             uint64 auctionClosingSeconds,
             uint64 reserveSubmissionSeconds
@@ -393,9 +398,9 @@ contract ExpressLaneAuctionTest is Test {
         vm.warp(1);
         assertEq(auction.currentRound(), 0);
 
-        (uint64 offsetTimestampA, uint64 roundDurationSeconds, , ) = auction.roundTimingInfo();
+        (int64 offsetTimestampA, uint64 roundDurationSeconds, , ) = auction.roundTimingInfo();
 
-        vm.warp(offsetTimestampA - 1);
+        vm.warp(uint64(offsetTimestampA) - 1);
         assertEq(auction.currentRound(), 0);
 
         for (uint256 i = 0; i < testRound; i++) {
@@ -1385,12 +1390,12 @@ contract ExpressLaneAuctionTest is Test {
         ResolveSetup memory rs = deployDepositAndBids();
         // start of the test round
         (
-            uint64 offsetTimestampA,
+            int64 offsetTimestampA,
             uint64 roundDurationSeconds,
             uint64 auctionClosingSeconds,
             uint64 reserveSubmissionSeconds
         ) = rs.auction.roundTimingInfo();
-        vm.warp(offsetTimestampA + roundDurationSeconds * testRound);
+        vm.warp(uint64(offsetTimestampA) + roundDurationSeconds * testRound);
         vm.stopPrank();
 
         assertEq(rs.auction.reservePrice(), minReservePrice, "before reserve price");
@@ -1430,7 +1435,7 @@ contract ExpressLaneAuctionTest is Test {
 
         // during blackout
         vm.warp(
-            offsetTimestamp +
+            uint64(offsetTimestamp) +
                 roundDurationSeconds *
                 (testRound + 1) -
                 auctionClosingSeconds -
@@ -1441,7 +1446,7 @@ contract ExpressLaneAuctionTest is Test {
         vm.expectRevert(abi.encodeWithSelector(ReserveBlackout.selector));
         rs.auction.setReservePrice(minReservePrice);
 
-        vm.warp(offsetTimestamp + roundDurationSeconds * (testRound + 1) - auctionClosingSeconds);
+        vm.warp(uint64(offsetTimestamp) + roundDurationSeconds * (testRound + 1) - auctionClosingSeconds);
 
         vm.prank(reservePriceSetter);
         vm.expectRevert(abi.encodeWithSelector(ReserveBlackout.selector));
@@ -1772,13 +1777,13 @@ contract ExpressLaneAuctionTest is Test {
         auction.setRoundTimingInfo(newInfo);
 
         // set to round 23
-        vm.warp(offsetTimestamp + roundDuration * 23);
+        vm.warp(uint64(offsetTimestamp) + roundDuration * 23);
         // now use an offset that would put us on round 24
         vm.prank(roundTimingSetter);
         vm.expectRevert(abi.encodeWithSelector(InvalidNewRound.selector, 23, 24));
         auction.setRoundTimingInfo(
             RoundTimingInfo({
-                offsetTimestamp: offsetTimestamp - roundDuration,
+                offsetTimestamp: offsetTimestamp - int64(roundDuration),
                 roundDurationSeconds: roundDuration,
                 auctionClosingSeconds: 10,
                 reserveSubmissionSeconds: 20
@@ -1790,8 +1795,8 @@ contract ExpressLaneAuctionTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 InvalidNewStart.selector,
-                offsetTimestamp + roundDuration * 24,
-                offsetTimestamp + (roundDuration - 1) * 24
+                uint64(offsetTimestamp) + roundDuration * 24,
+                uint64(offsetTimestamp) + (roundDuration - 1) * 24
             )
         );
         auction.setRoundTimingInfo(
@@ -1805,7 +1810,7 @@ contract ExpressLaneAuctionTest is Test {
 
         uint64 longDuration = 86401;
         (uint64 start, ) = auction.roundTimestamps(auction.currentRound() + 1);
-        uint64 newOffset = start - longDuration * 24;
+        int64 newOffset = int64(start - longDuration * 24);
 
         vm.prank(roundTimingSetter);
         vm.expectRevert(abi.encodeWithSelector(RoundTooLong.selector, longDuration));
@@ -1842,7 +1847,7 @@ contract ExpressLaneAuctionTest is Test {
 
         uint64 cNewDuration = (roundDuration * 7) / 3;
         (uint64 cStart, ) = auction.roundTimestamps(auction.currentRound() + 1);
-        uint64 cNewOffset = cStart - cNewDuration * (auction.currentRound() + 1);
+        int64 cNewOffset = int64(cStart - cNewDuration * (auction.currentRound() + 1));
 
         vm.expectEmit(true, true, true, true);
         emit SetRoundTimingInfo(auction.currentRound(), cNewOffset, cNewDuration, 13, 12);
@@ -1855,8 +1860,52 @@ contract ExpressLaneAuctionTest is Test {
                 reserveSubmissionSeconds: 12
             })
         );
-        (uint64 offsetAfter, uint64 durationAfter, uint64 acAfter, uint64 rsAfter) = auction
+        (int64 offsetAfter, uint64 durationAfter, uint64 acAfter, uint64 rsAfter) = auction
             .roundTimingInfo();
+        assertEq(offsetAfter, cNewOffset);
+        assertEq(durationAfter, cNewDuration);
+        assertEq(acAfter, 13);
+        assertEq(rsAfter, 12);
+
+
+        // set the min duration
+        cNewDuration = 1;
+        (cStart, ) = auction.roundTimestamps(auction.currentRound() + 1);
+        int64 intStart = int64(cStart);
+        // warp to just before that start - we need to be within round duration of the next round
+        vm.warp(cStart - 1);
+        cNewOffset = int64(intStart - int64(cNewDuration * (auction.currentRound() + 1)));
+        vm.prank(roundTimingSetter);
+        auction.setRoundTimingInfo(
+            RoundTimingInfo({
+                offsetTimestamp: cNewOffset,
+                roundDurationSeconds: cNewDuration,
+                auctionClosingSeconds: 1,
+                reserveSubmissionSeconds: 0
+            })
+        );
+        (offsetAfter, durationAfter, acAfter, rsAfter) = auction.roundTimingInfo();
+        assertEq(offsetAfter, cNewOffset);
+        assertEq(durationAfter, cNewDuration);
+        assertEq(acAfter, 1);
+        assertEq(rsAfter, 0);
+
+        // fast forward 10k years - that sets a high number of rounds
+        vm.warp(block.timestamp + (365 * 86400));
+        cNewDuration = 86400;
+        (cStart, ) = auction.roundTimestamps(auction.currentRound() + 1);
+        intStart = int64(cStart);
+        cNewOffset = int64(intStart - int64(cNewDuration * (auction.currentRound() + 1)));
+        vm.prank(roundTimingSetter);
+        auction.setRoundTimingInfo(
+            RoundTimingInfo({
+                offsetTimestamp: cNewOffset,
+                roundDurationSeconds: cNewDuration,
+                auctionClosingSeconds: 13,
+                reserveSubmissionSeconds: 12
+            })
+        );
+        (offsetAfter, durationAfter, acAfter, rsAfter) = auction.roundTimingInfo();
         assertEq(offsetAfter, cNewOffset);
         assertEq(durationAfter, cNewDuration);
         assertEq(acAfter, 13);
