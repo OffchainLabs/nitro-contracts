@@ -4,7 +4,6 @@ import { createRollup } from './rollupCreation'
 
 async function main() {
   const feeToken = ethers.constants.AddressZero
-
   const rollupCreatorAddress = process.env.ROLLUP_CREATOR_ADDRESS
   if (!rollupCreatorAddress) {
     throw new Error('ROLLUP_CREATOR_ADDRESS not set')
