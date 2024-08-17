@@ -157,6 +157,9 @@ contract ExpressLaneAuction is
 
     /// @inheritdoc IExpressLaneAuction
     function setBeneficiary(address newBeneficiary) external onlyRole(BENEFICIARY_SETTER_ROLE) {
+        if (beneficiaryBalance != 0) {
+            flushBeneficiaryBalance();
+        }
         emit SetBeneficiary(beneficiary, newBeneficiary);
         beneficiary = newBeneficiary;
     }
@@ -179,7 +182,7 @@ contract ExpressLaneAuction is
 
         // ensure that round duration cannot be too high, other wise this could be used to lock balances
         // in the contract by setting round duration = uint.max
-        if (newRoundTimingInfo.roundDurationSeconds > 86400) {
+        if (newRoundTimingInfo.roundDurationSeconds > 1 days) {
             revert RoundTooLong(newRoundTimingInfo.roundDurationSeconds);
         }
 
@@ -288,7 +291,7 @@ contract ExpressLaneAuction is
     }
 
     /// @inheritdoc IExpressLaneAuction
-    function flushBeneficiaryBalance() external {
+    function flushBeneficiaryBalance() public {
         uint256 bal = beneficiaryBalance;
         if (bal == 0) {
             revert ZeroAmount();
@@ -527,7 +530,7 @@ contract ExpressLaneAuction is
     }
 
     /// @inheritdoc IExpressLaneAuction
-    function resolvedRounds() public view returns (ELCRound memory, ELCRound memory) {
+    function resolvedRounds() external view returns (ELCRound memory, ELCRound memory) {
         return
             latestResolvedRounds[0].round > latestResolvedRounds[1].round
                 ? (latestResolvedRounds[0], latestResolvedRounds[1])

@@ -1737,24 +1737,40 @@ contract ExpressLaneAuctionTest is Test {
     }
 
     function testSetBeneficiary() public {
-        (, IExpressLaneAuction auction) = deploy();
+        ResolveSetup memory rs = deployDepositAndBids();
+        vm.stopPrank();
 
         address newBeneficiary = vm.addr(9090);
+        address newBeneficiary2 = vm.addr(9091);
 
         bytes memory revertString = abi.encodePacked(
             "AccessControl: account ",
             Strings.toHexString(uint160(address(this)), 20),
             " is missing role ",
-            Strings.toHexString(uint256(auction.BENEFICIARY_SETTER_ROLE()), 32)
+            Strings.toHexString(uint256(rs.auction.BENEFICIARY_SETTER_ROLE()), 32)
         );
         vm.expectRevert(revertString);
-        auction.setBeneficiary(newBeneficiary);
+        rs.auction.setBeneficiary(newBeneficiary);
 
         vm.prank(beneficiarySetter);
         vm.expectEmit(true, true, true, true);
         emit SetBeneficiary(beneficiary, newBeneficiary);
-        auction.setBeneficiary(newBeneficiary);
-        assertEq(auction.beneficiary(), newBeneficiary, "new beneficiary");
+        rs.auction.setBeneficiary(newBeneficiary);
+        assertEq(rs.auction.beneficiary(), newBeneficiary, "new beneficiary");
+
+        vm.prank(auctioneer);
+        rs.auction.resolveMultiBidAuction(rs.bid1, rs.bid0);
+
+        uint256 balBefore = rs.erc20.balanceOf(newBeneficiary);
+
+        vm.prank(beneficiarySetter);
+        vm.expectEmit(true, true, true, true);
+        emit SetBeneficiary(newBeneficiary, newBeneficiary2);
+        rs.auction.setBeneficiary(newBeneficiary2);
+        assertEq(rs.auction.beneficiary(), newBeneficiary2, "new beneficiary2");
+
+        uint256 balAfter = rs.erc20.balanceOf(newBeneficiary);
+        assertEq(balAfter - balBefore, rs.bid0.amount);
     }
 
     function testSetRoundTimingInfo() public {

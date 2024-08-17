@@ -255,13 +255,14 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     function roundTimestamps(uint64 round) external view returns (uint64 start, uint64 end);
 
     /// @notice Update the beneficiary to a new address
+    ///         Flushes any pending balance to the current beneficiary before updating
     /// @param newBeneficiary The new beneficiary
     function setBeneficiary(address newBeneficiary) external;
 
     /// @notice Set the minimum reserve. The reserve cannot be set below this value
-    ///         Having a minimum reserve ensures that the reserve setter set the reserve too low
+    ///         Having a minimum reserve ensures that the reserve setter doesn't set the reserve too low
     ///         If the new minimum reserve is greater than the current reserve then the reserve will also be set,
-    ///         this will regardless of whether we are in a reserve blackout period or not.
+    ///         this will happen regardless of whether we are in a reserve blackout period or not.
     ///         The min reserve setter is therefore trusted to either give bidders plenty of notice that they may change the min
     ///         reserve, or do so outside of the blackout window. It is expected that the min reserve setter will be controlled by
     ///         Arbitrum DAO who can only make changes via timelocks, thereby providing the notice to bidders.
