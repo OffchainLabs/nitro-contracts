@@ -26,7 +26,7 @@ struct RoundTimingInfo {
 library RoundTimingInfoLib {
     /// @dev Using signed offset involves a lot of casting when comparing the to the block timestamp
     ///      so we provide a helper method here
-    function blockTimestampBeforeOffset(int64 offsetTimestamp) private view returns(bool) {
+    function blockTimestampBeforeOffset(int64 offsetTimestamp) private view returns (bool) {
         return int64(uint64(block.timestamp)) < offsetTimestamp;
     }
 
@@ -42,7 +42,7 @@ library RoundTimingInfoLib {
         if (blockTimestampBeforeOffset(info.offsetTimestamp)) {
             return 0;
         }
-        
+
         return (unsignedSinceTimestamp(info.offsetTimestamp)) / info.roundDurationSeconds;
     }
 
@@ -105,7 +105,7 @@ library RoundTimingInfoLib {
         returns (uint64, uint64)
     {
         int64 intRoundStart = info.offsetTimestamp + int64(info.roundDurationSeconds * round);
-        if(intRoundStart < 0) {
+        if (intRoundStart < 0) {
             revert NegativeRoundStart(intRoundStart);
         }
         uint64 roundStart = uint64(intRoundStart);

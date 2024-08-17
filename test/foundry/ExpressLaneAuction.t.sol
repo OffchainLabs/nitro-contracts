@@ -162,7 +162,7 @@ contract ExpressLaneAuctionTest is Test {
         rdArgs._roundTimingInfo.reserveSubmissionSeconds = roundDuration * 2 + 1;
         vm.expectRevert(abi.encodeWithSelector(RoundDurationTooShort.selector));
         auction.initialize(rdArgs);
-        
+
         InitArgs memory rdArgs0 = createArgs(address(token));
         rdArgs0._roundTimingInfo.auctionClosingSeconds = 0;
         vm.expectRevert(abi.encodeWithSelector(ZeroAuctionClosingSeconds.selector));
@@ -1446,7 +1446,9 @@ contract ExpressLaneAuctionTest is Test {
         vm.expectRevert(abi.encodeWithSelector(ReserveBlackout.selector));
         rs.auction.setReservePrice(minReservePrice);
 
-        vm.warp(uint64(offsetTimestamp) + roundDurationSeconds * (testRound + 1) - auctionClosingSeconds);
+        vm.warp(
+            uint64(offsetTimestamp) + roundDurationSeconds * (testRound + 1) - auctionClosingSeconds
+        );
 
         vm.prank(reservePriceSetter);
         vm.expectRevert(abi.encodeWithSelector(ReserveBlackout.selector));
@@ -1882,7 +1884,6 @@ contract ExpressLaneAuctionTest is Test {
         assertEq(durationAfter, cNewDuration);
         assertEq(acAfter, 13);
         assertEq(rsAfter, 12);
-
 
         // set the min duration
         cNewDuration = 1;

@@ -117,9 +117,7 @@ contract ExpressLaneRoundTimingTest is Test {
         assertTrue(ri.isAuctionRoundClosed(), "Before round start");
         vm.warp(offset + info.roundDurationSeconds);
         assertFalse(ri.isAuctionRoundClosed(), "At round start");
-        vm.warp(
-            offset + 2 * info.roundDurationSeconds - info.auctionClosingSeconds - 1
-        );
+        vm.warp(offset + 2 * info.roundDurationSeconds - info.auctionClosingSeconds - 1);
         assertFalse(ri.isAuctionRoundClosed(), "Before next round start");
         vm.warp(offset + 2 * info.roundDurationSeconds - info.auctionClosingSeconds);
         assertTrue(ri.isAuctionRoundClosed(), "At round start");
@@ -145,9 +143,7 @@ contract ExpressLaneRoundTimingTest is Test {
         assertTrue(nri.isAuctionRoundClosed(), "Before round start");
         vm.warp(negativeOffset + info.roundDurationSeconds);
         assertFalse(nri.isAuctionRoundClosed(), "At round start");
-        vm.warp(
-            negativeOffset + 2 * info.roundDurationSeconds - info.auctionClosingSeconds - 1
-        );
+        vm.warp(negativeOffset + 2 * info.roundDurationSeconds - info.auctionClosingSeconds - 1);
         assertFalse(nri.isAuctionRoundClosed(), "Before next round start");
         vm.warp(negativeOffset + 2 * info.roundDurationSeconds - info.auctionClosingSeconds);
         assertTrue(nri.isAuctionRoundClosed(), "At round start");
@@ -222,7 +218,6 @@ contract ExpressLaneRoundTimingTest is Test {
         assertTrue(mri.isReserveBlackout(1), "mri at next round");
         assertFalse(mri.isReserveBlackout(2), "mri at next round");
 
-
         RoundTimingInfoImp nri = new RoundTimingInfoImp(negativeInfo);
         uint64 negativeOffset = uint64(-negativeInfo.offsetTimestamp);
         vm.warp(negativeOffset - 1);
@@ -262,28 +257,15 @@ contract ExpressLaneRoundTimingTest is Test {
         assertTrue(nri.isReserveBlackout(19), "After blackout");
         assertTrue(nri.isReserveBlackout(20), "After blackout");
         assertFalse(nri.isReserveBlackout(21), "After blackout");
-        vm.warp(
-            negativeOffset +
-                info.roundDurationSeconds -
-                info.auctionClosingSeconds -
-                1
-        );
+        vm.warp(negativeOffset + info.roundDurationSeconds - info.auctionClosingSeconds - 1);
         assertTrue(nri.isReserveBlackout(19), "Before auction closing");
         assertTrue(nri.isReserveBlackout(20), "Before auction closing");
         assertFalse(nri.isReserveBlackout(21), "Before auction closing");
-        vm.warp(
-            negativeOffset +
-                info.roundDurationSeconds -
-                info.auctionClosingSeconds
-        );
+        vm.warp(negativeOffset + info.roundDurationSeconds - info.auctionClosingSeconds);
         assertTrue(nri.isReserveBlackout(19), "At auction closing");
         assertTrue(nri.isReserveBlackout(20), "At auction closing");
         assertFalse(nri.isReserveBlackout(21), "At auction closing");
-        vm.warp(
-            negativeOffset +
-                info.roundDurationSeconds -
-                info.auctionClosingSeconds + 1
-        );
+        vm.warp(negativeOffset + info.roundDurationSeconds - info.auctionClosingSeconds + 1);
         assertTrue(nri.isReserveBlackout(19), "After auction closing");
         assertTrue(nri.isReserveBlackout(20), "After auction closing");
         assertFalse(nri.isReserveBlackout(21), "After auction closing");
@@ -325,15 +307,29 @@ contract ExpressLaneRoundTimingTest is Test {
         assertEq(end, offset + 11058 * info.roundDurationSeconds - 1);
 
         RoundTimingInfoImp nri = new RoundTimingInfoImp(negativeInfo);
-        vm.expectRevert(abi.encodeWithSelector(NegativeRoundStart.selector, negativeInfo.offsetTimestamp));
+        vm.expectRevert(
+            abi.encodeWithSelector(NegativeRoundStart.selector, negativeInfo.offsetTimestamp)
+        );
         nri.roundTimestamps(0);
-        vm.expectRevert(abi.encodeWithSelector(NegativeRoundStart.selector, negativeInfo.offsetTimestamp + int64(negativeInfo.roundDurationSeconds)));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                NegativeRoundStart.selector,
+                negativeInfo.offsetTimestamp + int64(negativeInfo.roundDurationSeconds)
+            )
+        );
         nri.roundTimestamps(1);
-        vm.expectRevert(abi.encodeWithSelector(NegativeRoundStart.selector, negativeInfo.offsetTimestamp));
+        vm.expectRevert(
+            abi.encodeWithSelector(NegativeRoundStart.selector, negativeInfo.offsetTimestamp)
+        );
         nri.roundTimestamps(0);
-        vm.expectRevert(abi.encodeWithSelector(NegativeRoundStart.selector, negativeInfo.offsetTimestamp + int64(negativeInfo.roundDurationSeconds * 9)));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                NegativeRoundStart.selector,
+                negativeInfo.offsetTimestamp + int64(negativeInfo.roundDurationSeconds * 9)
+            )
+        );
         nri.roundTimestamps(9);
-        
+
         (start, end) = nri.roundTimestamps(10);
         assertEq(start, 0);
         assertEq(end, negativeInfo.roundDurationSeconds - 1);

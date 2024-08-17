@@ -176,7 +176,7 @@ contract ExpressLaneAuction is
     function setRoundTimingInfoInternal(RoundTimingInfo calldata newRoundTimingInfo) internal {
         // auction closing seconds of 0 wouldnt make sense as it would then be impossible to close the round
         // due to the check below this also causes round duration > 0
-        if(newRoundTimingInfo.auctionClosingSeconds == 0) {
+        if (newRoundTimingInfo.auctionClosingSeconds == 0) {
             revert ZeroAuctionClosingSeconds();
         }
 
@@ -371,10 +371,11 @@ contract ExpressLaneAuction is
     ///         Returns the signing address and the bid hash that was signed
     /// @param bid The bid to recover the signing address of
     /// @param biddingForRound The round the bid is for the control of
-    function recoverAndCheckBalance(
-        Bid memory bid,
-        uint64 biddingForRound
-    ) internal view returns (address, bytes32) {
+    function recoverAndCheckBalance(Bid memory bid, uint64 biddingForRound)
+        internal
+        view
+        returns (address, bytes32)
+    {
         bytes32 bidHash = getBidHash(biddingForRound, bid.expressLaneController, bid.amount);
         address bidder = bidHash.recover(bid.signature);
         // we are always bidding for in the current round for the next round
@@ -410,7 +411,15 @@ contract ExpressLaneAuction is
         (address firstPriceBidder, ) = recoverAndCheckBalance(firstPriceBid, biddingForRound);
 
         (uint64 roundStart, uint64 roundEnd) = info.roundTimestamps(biddingForRound);
-        resolveAuction(false, firstPriceBid, firstPriceBidder, reservePrice, biddingInRound, roundStart, roundEnd);
+        resolveAuction(
+            false,
+            firstPriceBid,
+            firstPriceBidder,
+            reservePrice,
+            biddingInRound,
+            roundStart,
+            roundEnd
+        );
     }
 
     /// @inheritdoc IExpressLaneAuction

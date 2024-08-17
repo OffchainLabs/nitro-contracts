@@ -91,7 +91,11 @@ contract ExpressLaneELCRoundTest is Test {
         li.resolvedRound(10);
     }
 
-    function getELCRound(LatestELCRoundsImp li, uint8 index) internal view returns (ELCRound memory) {
+    function getELCRound(LatestELCRoundsImp li, uint8 index)
+        internal
+        view
+        returns (ELCRound memory)
+    {
         (address elc, uint64 round) = li.rounds(index);
         return ELCRound(elc, round);
     }
