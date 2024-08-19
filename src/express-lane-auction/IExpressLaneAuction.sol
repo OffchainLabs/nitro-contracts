@@ -255,7 +255,10 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     function roundTimestamps(uint64 round) external view returns (uint64 start, uint64 end);
 
     /// @notice Update the beneficiary to a new address
-    ///         Flushes any pending balance to the current beneficiary before updating
+    ///         Setting the beneficiary does not flush any pending balance, so anyone calling this function should consider
+    ///         whether they want to flush before calling set.
+    ///         It is expected that the DAO will have the rights to set beneficiary, and since they execute calls via
+    ///         action contract they can atomically call flush and set beneficiary together.
     /// @param newBeneficiary The new beneficiary
     function setBeneficiary(address newBeneficiary) external;
 
