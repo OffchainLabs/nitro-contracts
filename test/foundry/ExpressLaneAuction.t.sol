@@ -1759,20 +1759,6 @@ contract ExpressLaneAuctionTest is Test {
         emit SetBeneficiary(beneficiary, newBeneficiary);
         rs.auction.setBeneficiary(newBeneficiary);
         assertEq(rs.auction.beneficiary(), newBeneficiary, "new beneficiary");
-
-        vm.prank(auctioneer);
-        rs.auction.resolveMultiBidAuction(rs.bid1, rs.bid0);
-
-        uint256 balBefore = rs.erc20.balanceOf(newBeneficiary);
-
-        vm.prank(beneficiarySetter);
-        vm.expectEmit(true, true, true, true);
-        emit SetBeneficiary(newBeneficiary, newBeneficiary2);
-        rs.auction.setBeneficiary(newBeneficiary2);
-        assertEq(rs.auction.beneficiary(), newBeneficiary2, "new beneficiary2");
-
-        uint256 balAfter = rs.erc20.balanceOf(newBeneficiary);
-        assertEq(balAfter - balBefore, rs.bid0.amount);
     }
 
     function testSetRoundTimingInfo() public {

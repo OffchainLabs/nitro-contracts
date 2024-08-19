@@ -157,9 +157,6 @@ contract ExpressLaneAuction is
 
     /// @inheritdoc IExpressLaneAuction
     function setBeneficiary(address newBeneficiary) external onlyRole(BENEFICIARY_SETTER_ROLE) {
-        if (beneficiaryBalance != 0) {
-            flushBeneficiaryBalance();
-        }
         emit SetBeneficiary(beneficiary, newBeneficiary);
         beneficiary = newBeneficiary;
     }
