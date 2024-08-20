@@ -288,7 +288,7 @@ contract ExpressLaneAuction is
     }
 
     /// @inheritdoc IExpressLaneAuction
-    function flushBeneficiaryBalance() public {
+    function flushBeneficiaryBalance() external {
         uint256 bal = beneficiaryBalance;
         if (bal == 0) {
             revert ZeroAmount();
