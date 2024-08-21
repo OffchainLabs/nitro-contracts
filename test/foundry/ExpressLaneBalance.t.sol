@@ -122,6 +122,42 @@ contract ExpressLaneBalanceTest is Test {
         }
     }
 
+    function testInitiateWithdrawalBoundaries() public {
+        testInitiateWithdrawal(0, 0, 0);
+        testInitiateWithdrawal(0, 0, 10);
+        testInitiateWithdrawal(0, 0, type(uint64).max);
+        testInitiateWithdrawal(0, 10, 0);
+        testInitiateWithdrawal(0, 10, 5);
+        testInitiateWithdrawal(0, 10, 10);
+        testInitiateWithdrawal(0, 10, 15);
+        testInitiateWithdrawal(0, 10, type(uint64).max);
+        testInitiateWithdrawal(0, type(uint64).max, 0);
+        testInitiateWithdrawal(0, type(uint64).max, 10);
+        testInitiateWithdrawal(0, type(uint64).max, type(uint64).max);
+        testInitiateWithdrawal(10, 0, 0);
+        testInitiateWithdrawal(10, 0, 10);
+        testInitiateWithdrawal(10, 0, type(uint64).max);
+        testInitiateWithdrawal(10, 10, 0);
+        testInitiateWithdrawal(10, 10, 5);
+        testInitiateWithdrawal(10, 10, 10);
+        testInitiateWithdrawal(10, 10, 15);
+        testInitiateWithdrawal(10, 10, type(uint64).max);
+        testInitiateWithdrawal(10, type(uint64).max, 0);
+        testInitiateWithdrawal(10, type(uint64).max, 10);
+        testInitiateWithdrawal(10, type(uint64).max, type(uint64).max);
+        testInitiateWithdrawal(type(uint256).max, 0, 0);
+        testInitiateWithdrawal(type(uint256).max, 0, 10);
+        testInitiateWithdrawal(type(uint256).max, 0, type(uint64).max);
+        testInitiateWithdrawal(type(uint256).max, 10, 0);
+        testInitiateWithdrawal(type(uint256).max, 10, 5);
+        testInitiateWithdrawal(type(uint256).max, 10, 10);
+        testInitiateWithdrawal(type(uint256).max, 10, 15);
+        testInitiateWithdrawal(type(uint256).max, 10, type(uint64).max);
+        testInitiateWithdrawal(type(uint256).max, type(uint64).max, 0);
+        testInitiateWithdrawal(type(uint256).max, type(uint64).max, 10);
+        testInitiateWithdrawal(type(uint256).max, type(uint64).max, type(uint64).max);
+    }
+
     function testInitiateWithdrawal(
         uint256 initialBalance,
         uint64 initialRound,
