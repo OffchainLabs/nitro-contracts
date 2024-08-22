@@ -41,9 +41,9 @@ struct Transferor {
 struct InitArgs {
     /// @notice The address who can resolve auctions
     address _auctioneer;
-    /// @notice The erc20 token that bids will be made in
-    ///                      It is assumed that the this token does NOT have fee-on-transfer, rebasing,
-    ///                      transfer hooks or otherwise non-standard ERC20 logic.
+    /// @notice The ERC20 token that bids will be made in
+    ///         It is assumed that this token does NOT have fee-on-transfer, rebasing,
+    ///         transfer hooks or otherwise non-standard ERC20 logic.
     address _biddingToken;
     /// @notice The address to which auction winners will pay the bid
     address _beneficiary;
