@@ -1505,6 +1505,143 @@ contract ExpressLaneAuctionTest is Test {
         vm.stopPrank();
     }
 
+    function testResolveMultiBidZeroSecondPrice() public {
+        ResolveSetup memory rs = deployDepositAndBids();
+        vm.stopPrank();
+
+        (
+            ,
+            uint64 roundDurationSeconds,
+            uint64 auctionClosingSeconds,
+            uint64 reservePriceSubmissionSeconds
+        ) = rs.auction.roundTimingInfo();
+        uint256 auctionBalanceBefore = rs.erc20.balanceOf(address(rs.auction));
+
+        vm.prank(minReservePriceSetter);
+        rs.auction.setMinReservePrice(0);
+        vm.warp(block.timestamp - reservePriceSubmissionSeconds - 1);
+        vm.prank(reservePriceSetter);
+        rs.auction.setReservePrice(0);
+        vm.warp(block.timestamp + reservePriceSubmissionSeconds + 1);
+
+        uint64 biddingForRound = rs.auction.currentRound() + 1;
+
+        // zero amount bid
+        bytes32 h0 = rs.auction.getBidHash(biddingForRound, bidders[0].elc, 0);
+        Bid memory bid0 = Bid({
+            amount: 0,
+            expressLaneController: bidders[0].elc,
+            signature: sign(bidders[0].privKey, h0)
+        });
+        {
+            bytes32 h1 = rs.auction.getBidHash(biddingForRound, vm.addr(1667), 0);
+            Bid memory bid1 = Bid({
+                amount: 0,
+                expressLaneController: vm.addr(1667),
+                signature: sign(1668, h1)
+            });
+            vm.expectRevert(abi.encodeWithSelector(InsufficientBalance.selector, 0, 0));
+            vm.prank(auctioneer);
+            rs.auction.resolveMultiBidAuction(bid1, bid0);
+        }
+
+        vm.expectEmit(true, true, true, true);
+        emit SetExpressLaneController(
+            biddingForRound,
+            address(0),
+            bidders[1].elc,
+            address(0),
+            uint64(block.timestamp + auctionClosingSeconds),
+            uint64(block.timestamp + auctionClosingSeconds + roundDurationSeconds - 1)
+        );
+        vm.expectEmit(true, true, true, true);
+        emit AuctionResolved(
+            true,
+            biddingForRound,
+            bidders[1].addr,
+            bidders[1].elc,
+            bidders[1].amount / 2,
+            0,
+            uint64(block.timestamp + auctionClosingSeconds),
+            uint64(block.timestamp + auctionClosingSeconds + roundDurationSeconds - 1)
+        );
+        vm.prank(auctioneer);
+        rs.auction.resolveMultiBidAuction(rs.bid1, bid0);
+
+        // firstPriceBidder (bidders[1].addr) pays the price of the second price bidder (bidders[0].addr)
+        assertEq(rs.auction.balanceOf(bidders[1].addr), bidders[1].amount);
+        assertEq(rs.auction.balanceOf(bidders[0].addr), bidders[0].amount);
+        assertEq(rs.auction.beneficiaryBalance(), 0);
+        assertEq(rs.erc20.balanceOf(address(rs.auction)), auctionBalanceBefore);
+        ELCRound memory expected0 = ELCRound(rs.bid1.expressLaneController, biddingForRound);
+        checkResolvedRounds(rs.auction, expected0, ELCRound(address(0), 0));
+    }
+
+    function testResolveSingleBidZeroSecondPrice() public {
+        ResolveSetup memory rs = deployDepositAndBids();
+        vm.stopPrank();
+
+        (
+            ,
+            uint64 roundDurationSeconds,
+            uint64 auctionClosingSeconds,
+            uint64 reservePriceSubmissionSeconds
+        ) = rs.auction.roundTimingInfo();
+        uint256 auctionBalanceBefore = rs.erc20.balanceOf(address(rs.auction));
+
+        vm.prank(minReservePriceSetter);
+        rs.auction.setMinReservePrice(0);
+        vm.warp(block.timestamp - reservePriceSubmissionSeconds - 1);
+        vm.prank(reservePriceSetter);
+        rs.auction.setReservePrice(0);
+        vm.warp(block.timestamp + reservePriceSubmissionSeconds + 1);
+
+        uint64 biddingForRound = rs.auction.currentRound() + 1;
+
+        {
+            bytes32 h1 = rs.auction.getBidHash(biddingForRound, vm.addr(1667), 0);
+            Bid memory bid1 = Bid({
+                amount: 0,
+                expressLaneController: vm.addr(1667),
+                signature: sign(1668, h1)
+            });
+            vm.expectRevert(abi.encodeWithSelector(InsufficientBalance.selector, 0, 0));
+            vm.prank(auctioneer);
+            rs.auction.resolveSingleBidAuction(bid1);
+        }
+
+        vm.expectEmit(true, true, true, true);
+        emit SetExpressLaneController(
+            biddingForRound,
+            address(0),
+            bidders[1].elc,
+            address(0),
+            uint64(block.timestamp + auctionClosingSeconds),
+            uint64(block.timestamp + auctionClosingSeconds + roundDurationSeconds - 1)
+        );
+        vm.expectEmit(true, true, true, true);
+        emit AuctionResolved(
+            false,
+            biddingForRound,
+            bidders[1].addr,
+            bidders[1].elc,
+            bidders[1].amount / 2,
+            0,
+            uint64(block.timestamp + auctionClosingSeconds),
+            uint64(block.timestamp + auctionClosingSeconds + roundDurationSeconds - 1)
+        );
+        vm.prank(auctioneer);
+        rs.auction.resolveSingleBidAuction(rs.bid1);
+
+        // firstPriceBidder (bidders[1].addr) pays the price of the second price bidder (bidders[0].addr)
+        assertEq(rs.auction.balanceOf(bidders[1].addr), bidders[1].amount);
+        assertEq(rs.auction.balanceOf(bidders[0].addr), bidders[0].amount);
+        assertEq(rs.auction.beneficiaryBalance(), 0);
+        assertEq(rs.erc20.balanceOf(address(rs.auction)), auctionBalanceBefore);
+        ELCRound memory expected0 = ELCRound(rs.bid1.expressLaneController, biddingForRound);
+        checkResolvedRounds(rs.auction, expected0, ELCRound(address(0), 0));
+    }
+
     function testResolveMultiBidAuctionWithdrawalInitiated() public {
         ResolveSetup memory rs = deployDepositAndBids();
         vm.stopPrank();

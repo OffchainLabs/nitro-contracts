@@ -103,10 +103,7 @@ contract ExpressLaneBalanceTest is Test {
     ) public {
         Balance memory bal = Balance(initialBalance, initialRound);
         BalanceImp b = new BalanceImp(bal);
-        if (reduceAmount == 0) {
-            vm.expectRevert(ZeroAmount.selector);
-            b.reduce(reduceAmount, reduceRound);
-        } else if (initialRound <= reduceRound) {
+        if (initialRound <= reduceRound) {
             vm.expectRevert(abi.encodeWithSelector(InsufficientBalance.selector, reduceAmount, 0));
             b.reduce(reduceAmount, reduceRound);
         } else if (reduceAmount > initialBalance) {

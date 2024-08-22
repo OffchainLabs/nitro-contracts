@@ -77,12 +77,10 @@ library BalanceLib {
         uint256 amount,
         uint64 round
     ) internal {
-        if (amount == 0) {
-            revert ZeroAmount();
-        }
-
         uint256 balRnd = balanceAtRound(bal, round);
-        if (balRnd < amount) {
+        // we add a zero check since it's possible for the amount to be zero
+        // but even in that case the user must have some balance
+        if (balRnd == 0 || balRnd < amount) {
             revert InsufficientBalance(amount, balRnd);
         }
 
