@@ -28,3 +28,4 @@ error RoundTooLong(uint64 roundDurationSeconds);
 error ZeroAuctionClosingSeconds();
 error NegativeOffset();
 error NegativeRoundStart(int64 roundStart);
+error ZeroAddress();
