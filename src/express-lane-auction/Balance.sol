@@ -4,14 +4,12 @@ pragma solidity ^0.8.0;
 import "./Errors.sol";
 
 /// @notice Account balance and the round at which it can be withdrawn
-///         Balances are withdrawn as part of a two step process - intiation and finalization
+///         Balances are withdrawn as part of a two step process - initiation and finalization
 ///         This is so that a bidder can't withdraw their balance after making a bid
 ///         Instead, if they initiate their withdrawal in round r, they must wait until the beginning of
 ///         round r+2 before they can withdraw the balance. In the mean time their balance can be used to
 ///         resolve an auction if it is part of a valid bid, however the auctioneer may choose to
 ///         reject bids from accounts with an initiated balance withdrawal
-///         Once a withdrawal has been initiated no more balance can be deposited until
-///         after the withdrawal has been finalized
 struct Balance {
     /// @notice The amount of balance in the account
     uint256 balance;
@@ -79,12 +77,11 @@ library BalanceLib {
         uint256 amount,
         uint64 round
     ) internal {
-        if (amount == 0) {
-            revert ZeroAmount();
-        }
-
         uint256 balRnd = balanceAtRound(bal, round);
-        if (balRnd < amount) {
+        // we add a zero check since it's possible for the amount to be zero
+        // but even in that case the user must have some balance
+        // to enforce that parties that havent done the deposit step cannot take part in the auction
+        if (balRnd == 0 || balRnd < amount) {
             revert InsufficientBalance(amount, balRnd);
         }
 
