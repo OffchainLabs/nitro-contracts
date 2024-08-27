@@ -3,13 +3,18 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 import "../../src/express-lane-auction/ExpressLaneAuction.sol";
-import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {
+    ERC20Burnable,
+    IERC20
+} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import "../../src/express-lane-auction/Burner.sol";
 
-contract MockERC20 is ERC20 {
+contract MockERC20 is ERC20Burnable {
     constructor() ERC20("LANE", "LNE") {
         _mint(msg.sender, 1_000_000);
     }
@@ -968,6 +973,86 @@ contract ExpressLaneAuctionTest is Test {
         // cannot flush twice
         vm.expectRevert(ZeroAmount.selector);
         rs.auction.flushBeneficiaryBalance();
+    }
+
+    function testFlushToBurner() public {
+        vm.chainId(137);
+        Bid memory bid0;
+        Bid memory bid1;
+        ExpressLaneAuction auction;
+        MockERC20 erc20 = new MockERC20();
+        Burner burner = new Burner(address(erc20));
+        {
+            ProxyAdmin proxyAdmin = new ProxyAdmin();
+            ExpressLaneAuction impl = new ExpressLaneAuction();
+
+            auction = ExpressLaneAuction(
+                address(new TransparentUpgradeableProxy(address(impl), address(proxyAdmin), ""))
+            );
+            InitArgs memory args = createArgs(address(erc20));
+            args._beneficiary = address(burner);
+            auction.initialize(args);
+
+            erc20.transfer(bidders[0].addr, bidders[0].amount);
+            erc20.transfer(bidders[1].addr, bidders[1].amount);
+
+            vm.startPrank(bidders[0].addr);
+            erc20.approve(address(auction), bidders[0].amount);
+            auction.deposit(bidders[0].amount);
+            vm.stopPrank();
+
+            vm.startPrank(bidders[1].addr);
+            erc20.approve(address(auction), bidders[1].amount);
+            auction.deposit(bidders[1].amount);
+            vm.stopPrank();
+
+            (int64 o, uint64 roundDurationSeconds, uint64 auctionClosingSeconds, ) = auction
+                .roundTimingInfo();
+            vm.warp(
+                uint64(o) +
+                    (roundDurationSeconds * testRound) +
+                    roundDurationSeconds -
+                    auctionClosingSeconds
+            );
+            uint64 biddingForRound = auction.currentRound() + 1;
+
+            bytes32 h0 = auction.getBidHash(biddingForRound, bidders[0].elc, bidders[0].amount / 2);
+            bid0 = Bid({
+                amount: bidders[0].amount / 2,
+                expressLaneController: bidders[0].elc,
+                signature: sign(bidders[0].privKey, h0)
+            });
+            bytes32 h1 = auction.getBidHash(biddingForRound, bidders[1].elc, bidders[1].amount / 2);
+            bid1 = Bid({
+                amount: bidders[1].amount / 2,
+                expressLaneController: bidders[1].elc,
+                signature: sign(bidders[1].privKey, h1)
+            });
+        }
+
+        vm.prank(auctioneer);
+        auction.resolveMultiBidAuction(bid1, bid0);
+
+        assertFalse(auction.beneficiaryBalance() == 0, "bal before");
+        uint256 auctionBalanceBefore = erc20.balanceOf(address(auction));
+        uint256 beneficiaryBalanceBefore = erc20.balanceOf(auction.beneficiary());
+        assertEq(erc20.balanceOf(address(burner)), 0);
+
+        // any random address should be able to call this
+        vm.prank(vm.addr(34567890));
+        auction.flushBeneficiaryBalance();
+
+        uint256 auctionBalanceAfter = erc20.balanceOf(address(auction));
+        uint256 beneficiaryBalanceAfter = erc20.balanceOf(auction.beneficiary());
+        assertTrue(auction.beneficiaryBalance() == 0, "bal after");
+        assertEq(beneficiaryBalanceAfter - beneficiaryBalanceBefore, bid0.amount);
+        assertEq(auctionBalanceBefore - auctionBalanceAfter, bid0.amount);
+        assertEq(erc20.balanceOf(address(burner)), bid0.amount);
+
+        vm.prank(vm.addr(948765));
+        burner.burn();
+
+        assertEq(erc20.balanceOf(address(burner)), 0);
     }
 
     function testCannotResolveNotAuctioneer() public {
