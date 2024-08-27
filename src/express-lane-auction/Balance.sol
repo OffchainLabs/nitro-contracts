@@ -80,6 +80,7 @@ library BalanceLib {
         uint256 balRnd = balanceAtRound(bal, round);
         // we add a zero check since it's possible for the amount to be zero
         // but even in that case the user must have some balance
+        // to enforce that parties that havent done the deposit step cannot take part in the auction
         if (balRnd == 0 || balRnd < amount) {
             revert InsufficientBalance(amount, balRnd);
         }
