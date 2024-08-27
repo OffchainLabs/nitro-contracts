@@ -7,6 +7,7 @@ import {
 import "./Errors.sol";
 
 /// @notice A simple contract that can burn any tokens that are transferred to it
+///         Token must support the ERC20BurnableUpgradeable.burn(uint256) interface
 contract Burner {
     ERC20BurnableUpgradeable public immutable token;
 
