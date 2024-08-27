@@ -312,10 +312,32 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     /// @param account The specified account
     function balanceOf(address account) external view returns (uint256);
 
+    /// @notice Get what the balance will be at some future round
+    ///         Since withdrawals are scheduled for future rounds it is possible to see that a balance
+    ///         will reduce at some future round, this method provides a way to query that.
+    ///         Specifically this will return 0 if the withdrawal round has been set, and is < the supplied round
+    ///         Will revert if a round from the past is supplied
+    /// @param account The specified account
+    /// @param round The round to query the balance at
+    function balanceOfAtRound(address account, uint64 round) external view returns (uint256);
+
     /// @notice The amount of balance that can currently be withdrawn via the finalize method
     ///         This balance only increases current round + 2 after a withdrawal is initiated
     /// @param account The account the check the withdrawable balance for
     function withdrawableBalance(address account) external view returns (uint256);
+
+    /// @notice The amount of balance that can currently be withdrawn via the finalize method
+    ///         Since withdrawals are scheduled for future rounds it is possible to see that a withdrawal balance
+    ///         will increase at some future round, this method provides a way to query that.
+    ///         Specifically this will return 0 unless the withdrawal round has been set, and is >= the supplied round
+    ///         Will revert if a round from the past is supplied
+    ///         This balance only increases current round + 2 after a withdrawal is initiated
+    /// @param account The account the check the withdrawable balance for
+    /// @param round The round to query the withdrawable balance at
+    function withdrawableBalanceAtRound(address account, uint64 round)
+        external
+        view
+        returns (uint256);
 
     /// @notice Deposit an amount of ERC20 token to the auction to make bids with
     ///         Deposits must be submitted prior to bidding.

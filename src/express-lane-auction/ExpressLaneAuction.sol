@@ -256,8 +256,28 @@ contract ExpressLaneAuction is
     }
 
     /// @inheritdoc IExpressLaneAuction
+    function balanceOfAtRound(address account, uint64 round) external view returns (uint256) {
+        if (round < roundTimingInfo.currentRound()) {
+            revert RoundTooOld(round, roundTimingInfo.currentRound());
+        }
+        return _balanceOf[account].balanceAtRound(round);
+    }
+
+    /// @inheritdoc IExpressLaneAuction
     function withdrawableBalance(address account) external view returns (uint256) {
         return _balanceOf[account].withdrawableBalanceAtRound(roundTimingInfo.currentRound());
+    }
+
+    /// @inheritdoc IExpressLaneAuction
+    function withdrawableBalanceAtRound(address account, uint64 round)
+        external
+        view
+        returns (uint256)
+    {
+        if (round < roundTimingInfo.currentRound()) {
+            revert RoundTooOld(round, roundTimingInfo.currentRound());
+        }
+        return _balanceOf[account].withdrawableBalanceAtRound(round);
     }
 
     /// @inheritdoc IExpressLaneAuction

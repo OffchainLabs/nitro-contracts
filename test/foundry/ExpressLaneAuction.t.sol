@@ -393,6 +393,254 @@ contract ExpressLaneAuctionTest is Test {
         vm.stopPrank();
     }
 
+    function testBalanceOf() public {
+        (MockERC20 erc20, IExpressLaneAuction auction) = deploy();
+        erc20.transfer(bidders[0].addr, bidders[0].amount);
+
+        uint64 currentRound = auction.currentRound();
+        vm.expectRevert(
+            abi.encodeWithSelector(RoundTooOld.selector, currentRound - 1, currentRound)
+        );
+        auction.balanceOfAtRound(bidders[0].addr, currentRound - 1);
+        vm.expectRevert(
+            abi.encodeWithSelector(RoundTooOld.selector, currentRound - 1, currentRound)
+        );
+        auction.withdrawableBalanceAtRound(bidders[0].addr, currentRound - 1);
+
+        vm.prank(bidders[0].addr);
+        erc20.approve(address(auction), 20);
+
+        vm.expectEmit(true, true, true, true);
+        emit Deposit(bidders[0].addr, 20);
+        vm.prank(bidders[0].addr);
+        auction.deposit(20);
+        assertEq(auction.balanceOf(bidders[0].addr), 20, "First balance");
+        assertEq(
+            auction.balanceOfAtRound(bidders[0].addr, currentRound),
+            20,
+            "First balance at round"
+        );
+        assertEq(
+            auction.balanceOfAtRound(bidders[0].addr, currentRound + 1),
+            20,
+            "First balance at round + 1"
+        );
+        assertEq(
+            auction.balanceOfAtRound(bidders[0].addr, currentRound + 2),
+            20,
+            "First balance at round + 2"
+        );
+        assertEq(
+            auction.balanceOfAtRound(bidders[0].addr, currentRound + 3),
+            20,
+            "First balance at round + 3"
+        );
+        assertEq(
+            auction.withdrawableBalanceAtRound(bidders[0].addr, currentRound),
+            0,
+            "First withdrawable balance at round"
+        );
+        assertEq(
+            auction.withdrawableBalanceAtRound(bidders[0].addr, currentRound + 1),
+            0,
+            "First withdrawable balance at round + 1"
+        );
+        assertEq(
+            auction.withdrawableBalanceAtRound(bidders[0].addr, currentRound + 2),
+            0,
+            "First withdrawable balance at round + 2"
+        );
+        assertEq(
+            auction.withdrawableBalanceAtRound(bidders[0].addr, currentRound + 3),
+            0,
+            "First withdrawable balance at round + 3"
+        );
+        assertEq(
+            erc20.balanceOf(bidders[0].addr),
+            bidders[0].amount - 20,
+            "First bidders[0].addr erc20 balance"
+        );
+        assertEq(erc20.balanceOf(address(auction)), 20, "First auction erc20 balance");
+
+        // resolve the auction
+        vm.warp(block.timestamp + roundDuration - roundDuration / 4);
+
+        bytes32 h0 = auction.getBidHash(currentRound + 1, bidders[0].elc, minReservePrice + 1);
+        Bid memory bid0 = Bid({
+            amount: minReservePrice + 1,
+            expressLaneController: bidders[0].elc,
+            signature: sign(bidders[0].privKey, h0)
+        });
+
+        vm.prank(auctioneer);
+        auction.resolveSingleBidAuction(bid0);
+
+        assertEq(
+            auction.balanceOfAtRound(bidders[0].addr, currentRound),
+            20 - minReservePrice,
+            "Second balance at round"
+        );
+        assertEq(
+            auction.balanceOfAtRound(bidders[0].addr, currentRound + 1),
+            20 - minReservePrice,
+            "Second balance at round + 1"
+        );
+        assertEq(
+            auction.balanceOfAtRound(bidders[0].addr, currentRound + 2),
+            20 - minReservePrice,
+            "Second balance at round + 2"
+        );
+        assertEq(
+            auction.balanceOfAtRound(bidders[0].addr, currentRound + 3),
+            20 - minReservePrice,
+            "Second balance at round + 3"
+        );
+        assertEq(
+            auction.withdrawableBalanceAtRound(bidders[0].addr, currentRound),
+            0,
+            "Second withdrawable balance at round"
+        );
+        assertEq(
+            auction.withdrawableBalanceAtRound(bidders[0].addr, currentRound + 1),
+            0,
+            "Second withdrawable balance at round + 1"
+        );
+        assertEq(
+            auction.withdrawableBalanceAtRound(bidders[0].addr, currentRound + 2),
+            0,
+            "Second withdrawable balance at round + 2"
+        );
+        assertEq(
+            auction.withdrawableBalanceAtRound(bidders[0].addr, currentRound + 3),
+            0,
+            "Second withdrawable balance at round + 3"
+        );
+
+        vm.prank(bidders[0].addr);
+        auction.initiateWithdrawal();
+
+        assertEq(
+            auction.balanceOfAtRound(bidders[0].addr, currentRound),
+            20 - minReservePrice,
+            "Third balance at round"
+        );
+        assertEq(
+            auction.balanceOfAtRound(bidders[0].addr, currentRound + 1),
+            20 - minReservePrice,
+            "Third balance at round + 1"
+        );
+        assertEq(
+            auction.balanceOfAtRound(bidders[0].addr, currentRound + 2),
+            0,
+            "Third balance at round + 2"
+        );
+        assertEq(
+            auction.balanceOfAtRound(bidders[0].addr, currentRound + 3),
+            0,
+            "Third balance at round + 3"
+        );
+        assertEq(
+            auction.withdrawableBalanceAtRound(bidders[0].addr, currentRound),
+            0,
+            "Third withdrawable balance at round"
+        );
+        assertEq(
+            auction.withdrawableBalanceAtRound(bidders[0].addr, currentRound + 1),
+            0,
+            "Third withdrawable balance at round + 1"
+        );
+        assertEq(
+            auction.withdrawableBalanceAtRound(bidders[0].addr, currentRound + 2),
+            20 - minReservePrice,
+            "Third withdrawable balance at round + 2"
+        );
+        assertEq(
+            auction.withdrawableBalanceAtRound(bidders[0].addr, currentRound + 3),
+            20 - minReservePrice,
+            "Third withdrawable balance at round + 3"
+        );
+
+        vm.warp(block.timestamp + roundDuration);
+
+        assertEq(
+            auction.balanceOfAtRound(bidders[0].addr, currentRound + 1),
+            20 - minReservePrice,
+            "Fourth balance at round + 1"
+        );
+        assertEq(
+            auction.balanceOfAtRound(bidders[0].addr, currentRound + 2),
+            0,
+            "Fourth balance at round + 2"
+        );
+        assertEq(
+            auction.balanceOfAtRound(bidders[0].addr, currentRound + 3),
+            0,
+            "Fourth balance at round + 3"
+        );
+        assertEq(
+            auction.withdrawableBalanceAtRound(bidders[0].addr, currentRound + 1),
+            0,
+            "Fourth withdrawable balance at round + 1"
+        );
+        assertEq(
+            auction.withdrawableBalanceAtRound(bidders[0].addr, currentRound + 2),
+            20 - minReservePrice,
+            "Fourth withdrawable balance at round + 2"
+        );
+        assertEq(
+            auction.withdrawableBalanceAtRound(bidders[0].addr, currentRound + 3),
+            20 - minReservePrice,
+            "Fourth withdrawable balance at round + 3"
+        );
+
+        vm.warp(block.timestamp + roundDuration);
+
+        assertEq(
+            auction.balanceOfAtRound(bidders[0].addr, currentRound + 2),
+            0,
+            "Fifth balance at round + 2"
+        );
+        assertEq(
+            auction.balanceOfAtRound(bidders[0].addr, currentRound + 3),
+            0,
+            "Fifth balance at round + 3"
+        );
+        assertEq(
+            auction.withdrawableBalanceAtRound(bidders[0].addr, currentRound + 2),
+            20 - minReservePrice,
+            "Fifth withdrawable balance at round + 2"
+        );
+        assertEq(
+            auction.withdrawableBalanceAtRound(bidders[0].addr, currentRound + 3),
+            20 - minReservePrice,
+            "Fifth withdrawable balance at round + 3"
+        );
+
+        vm.prank(bidders[0].addr);
+        auction.finalizeWithdrawal();
+
+        assertEq(
+            auction.balanceOfAtRound(bidders[0].addr, currentRound + 2),
+            0,
+            "Sixth balance at round + 2"
+        );
+        assertEq(
+            auction.balanceOfAtRound(bidders[0].addr, currentRound + 3),
+            0,
+            "Sixth balance at round + 3"
+        );
+        assertEq(
+            auction.withdrawableBalanceAtRound(bidders[0].addr, currentRound + 2),
+            0,
+            "Sixth withdrawable balance at round + 2"
+        );
+        assertEq(
+            auction.withdrawableBalanceAtRound(bidders[0].addr, currentRound + 3),
+            0,
+            "Sixth withdrawable balance at round + 3"
+        );
+    }
+
     function testCurrentRound() public {
         (, IExpressLaneAuction auction) = deploy();
         vm.warp(1);
@@ -1743,7 +1991,6 @@ contract ExpressLaneAuctionTest is Test {
         vm.stopPrank();
 
         address newBeneficiary = vm.addr(9090);
-        address newBeneficiary2 = vm.addr(9091);
 
         bytes memory revertString = abi.encodePacked(
             "AccessControl: account ",
@@ -1812,16 +2059,15 @@ contract ExpressLaneAuctionTest is Test {
             })
         );
 
-        uint64 longDuration = 86401;
         (uint64 start, ) = auction.roundTimestamps(auction.currentRound() + 1);
-        int64 newOffset = int64(start - longDuration * 24);
+        int64 newOffset = int64(start - 86401 * 24);
 
         vm.prank(roundTimingSetter);
-        vm.expectRevert(abi.encodeWithSelector(RoundTooLong.selector, longDuration));
+        vm.expectRevert(abi.encodeWithSelector(RoundTooLong.selector, 86401));
         auction.setRoundTimingInfo(
             RoundTimingInfo({
                 offsetTimestamp: newOffset,
-                roundDurationSeconds: longDuration,
+                roundDurationSeconds: 86401,
                 auctionClosingSeconds: 10,
                 reserveSubmissionSeconds: 20
             })
