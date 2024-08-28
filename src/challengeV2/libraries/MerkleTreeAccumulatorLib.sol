@@ -8,83 +8,86 @@ import "../../libraries/MerkleLib.sol";
 import "./ArrayUtilsLib.sol";
 import "./UintUtilsLib.sol";
 
-/// @title  Binary merkle tree utilities
+/// @title  Merkle tree accumulator utilities
 /// @notice
-///         Binary trees
+///         This library provides utilities for manipulating and verifying proofs about a kind of
+///         merkle tree accumulator.
+///
 ///         --------------------------------------------------------------------------------------------
-///         A complete tree is a balanced binary tree - each node has two children except the leaf
-///         Leaves have no children, they are a complete tree of size one
-///         Any tree (can be incomplete) can be represented as a collection of complete sub trees.
-///         Since the tree is binary only one or zero complete tree at each level is enough to define any size of tree.
-///         The root of a tree (incomplete or otherwise) is defined as the cumulative hashing of all of the
-///         roots of each of it's complete and empty subtrees.
+///         A complete tree is a full tree with a leaf size of a power of 2
+///         One or zero complete trees at each power of 2 is enough to define any size of accumulator.
+///         The accumulator is composed of a number of complete trees. A maximum of one tree of a given size
+///         can be included in the accumulator - eg one of size zero or one tree of size 2^n
+///         The root of the accumulator is defined as the cumulative hashing of all of the
+///         roots of each of its complete trees, substituting a zero where no tree is necessary at that power of 2
+///         Where we refer to "level" in this documentation we mean the power of 2 used at the level: 2^level
+///         Where we refer to a subtree we mean one of the complete trees which makes up the accumulator.
 ///         ---------
-///         eg. Below a tree of size 3 is represented as the composition of 2 complete subtrees, one of size
-///         2 (AB) and one of size one (C).
+///         eg. Below are 3 leaves (A, B, C) which can be represented as an accumulator made up of the 
+///         composition of 2 complete subtrees, one of level=1: 2^1=2 (AB) and one of level=0: 2^0=1 (C).
 ///            AB
 ///           /  \
 ///          A    B    C
 ///
 ///         Merkle expansions and roots
 ///         --------------------------------------------------------------------------------------------
-///         The minimal amount of information we need to keep in order to compute the root of a tree
-///         is the roots of each of its sub trees, and the levels of each of those trees
-///         A "merkle expansion" (ME) is this information - it is a vector of roots of each complete subtree,
-///         the level of the tree being the index in the vector, the subtree root being the value.
-///         The root is calculated by hashing each of the levels of the subtree together, adding zero hashes
+///         The minimal amount of information we need to keep in order to compute the accumulator
+///         is the roots of each of its complete subtrees, and the levels of each of those subtrees
+///         A "merkle expansion" (ME) is a representation of this information - it is a vector of roots of each complete subtree,
+///         the level of the tree being the index in the vector, the subtree root being the value.///         The accumulator root is calculated by hashing each of the levels of the subtree together, adding zero hashes
 ///         where relevant to make a balanced tree.
 ///         ---------
 ///
-///         ME Example 1
+///         ME Example 1 - 1 leaf C
 ///
 ///         C => (C)
 ///
-///         ME of the C tree = (C), root=(C)
-///         The merkle expansion of a tree consisting of a single leaf is vector of size one with the
+///         ME of the C tree = (C), accumulator=(C)
+///         The merkle expansion of an accumulator consisting of a single leaf is vector of size one with the
 ///         zeroth index being the leaf C. The zeroth index of the vector represents the presence of a size
-///         one complete subtree in the overall tree. So if a tree has a size one complete subtree as part
-///         of its composition, the root of that size one tree will be present in the zeroth index.
+///         one complete subtree in the accumulator. So if an accumulator has a size one complete subtree as part
+///         of its composition, the root of that size one accumulator will be present in the zeroth index.
 ///
-///         ME Example 2
+///         ME Example 2 - 2 leaves A and B
 ///
 ///            AB
 ///           /  \
 ///          A    B
 ///
-///         ME of the AB tree = (0, AB), root=AB
-///         The merkle expansion of a tree consisting of a single size 2 complete subtree is a vector
+///         ME of the AB tree = (0, AB), accumulator=AB
+///         The merkle expansion of a an accumulator consisting of a single size 2 complete subtree is a vector
 ///         of size 2, with the zeroth index value being 0, and the 1st index value being the root of the size
-///         2 subtree. The zero in the zeroth index indicated that there is not a size 1 subtree in the tree's
-///         composition. If a tree has a size 2 subtree in its composition its root will be present in the
+///         2 subtree. The zero in the zeroth index indicated that there is not a size 1 subtree in the accumulators's
+///         composition. If an accumulator has a size 2 subtree in its composition the root of the subtree will be present in the
 ///         1st index.
 ///
-///         ME Example 3
+///         ME Example 3 - 3 leaves A, B, C
 ///
 ///            AB
 ///           /  \
 ///          A    B    C
 ///
-///         ME of the composed ABC tree = (C, AB), root=hash(AB, hash(C, 0)).
-///         When a tree is not itself a complete subtree, but rather a composition, zeros are added when
-///         calculating the root. To do this hash the first complete sub tree with zero, and from there
-///         cumulatively hash the merkle expansion.
+///         ME of the composed ABC tree = (C, AB), accumulator=hash(AB, hash(C, 0)).
+///         When a accumulator size is not a power of 2, a composition of subtrees is used to calculate it's value. 
+///         The lowest level sub tree is hashed with zero, to form the initial accumulator. The accumulator is then
+///         hashed with the value (including zeros) at each level of the expansion.
 ///         The merkle expansion of this composed tree is a vector of size two. Since it has a size one tree in
-///         its composition the root of that goes in the zeroth index of the expansion - C, and since it has a
+///         its composition, the root of which goes in the zeroth index of the expansion - C, and since it has a
 ///         size two tree in its composition the root of that goes in the 1st index, to give (C, AB).
 ///
 ///         Tree operations
 ///         --------------------------------------------------------------------------------------------
-///         Binary trees are modified by adding or subtracting complete subtrees, however this library
-///         supports additive only trees since we dont have a specific use for subtraction at the moment.
-///         We call adding a complete subtree to an existing tree "appending", appending has the following
+///         Accumulators are modified by adding or subtracting complete subtrees, however this library
+///         supports additive only accumulators since we dont have a specific use for subtraction at the moment.
+///         We call adding a complete subtree to an accumulator "appending", appending has the following
 ///         rules:
 ///         1. Only a complete sub trees can be appended
 ///         2. Complete sub trees can only be appended at the level of the lowest complete subtree in the tree, or below
-///         3. If the existing tree is empty a sub tree can be appended at any level
+///         3. If the existing accumulator is empty a sub tree can be appended at any level
 ///         When appending a sub tree we may increase the size of the merkle expansion vector, in the same
-///         that adding 1 to a binary number may increase the index of its most significant bit
+///         way that adding 1 to a binary number may increase the index of its most significant bit
 ///         ---------
-///         eg. A complete subtree can only be appended to the ABC tree at level 0, since the its lowest complete
+///         eg. A complete subtree can only be appended to the ABC accumulator at level 0, since the its lowest complete
 ///         subtree (C) is at level 0. Doing so would create a complete sub tree at level 1, which would in turn
 ///         cause the creation of new size 4 sub tree
 ///
@@ -97,15 +100,15 @@ import "./UintUtilsLib.sol";
 ///         ME of ABCD = (0, AB) + (C) + (D)
 ///                    = (C, AB) + (D)
 ///                    = (0, 0, ABCD)
-///         root of ABCD =hash(AB, CD)
+///         accumulator of ABCD = hash(AB, CD)
 ///         --------------------------------------------------------------------------------------------
-library MerkleTreeLib {
+library MerkleTreeAccumulatorLib {
     // the go code uses uint64, so we ensure we never go above that here
     uint256 public constant MAX_LEVEL = 64;
 
-    /// @notice The root of the subtree. A collision free commitment to the contents of the tree.
-    /// @dev    The root of a tree is defined as the cumulative hashing of the
-    ///         roots of all of it's subtrees. Throws error for empty tree
+    /// @notice The accumulator root of the a merkle expansion.
+    /// @dev    The accumulator root is defined as the cumulative hashing of the
+    ///         roots of all of its subtrees. Throws error for an empty merkle expansion
     /// @param me   The merkle expansion to calculate the root of
     function root(bytes32[] memory me) internal pure returns (bytes32) {
         require(me.length > 0, "Empty merkle expansion");
@@ -139,9 +142,9 @@ library MerkleTreeLib {
         return accum;
     }
 
-    /// @notice Append a complete subtree to an existing tree
-    /// @dev    See above description of trees for rules on how appending can occur.
-    ///         Briefly, appending works like binary addition only that the value being added be an
+    /// @notice Append a complete subtree to an existing accumulator
+    /// @dev    See above description of the accumulator for rules on how appending can occur.
+    ///         Briefly, appending works like binary addition only that the value being added must be an
     ///         exact power of two (complete), and must equal to or less than the least significant bit
     ///         in the existing tree.
     ///         If the me is empty, will just append directly.
@@ -231,7 +234,7 @@ library MerkleTreeLib {
         return next;
     }
 
-    /// @notice Append a leaf to a subtree
+    /// @notice Append a leaf to a merkle expansion
     /// @dev    Leaves are just complete subtrees at level 0, however we hash the leaf before putting it
     ///         into the tree to avoid root collisions.
     /// @param me   The merkle expansion to append a leaf to
@@ -245,7 +248,7 @@ library MerkleTreeLib {
         return appendCompleteSubTree(me, 0, keccak256(abi.encodePacked(leaf)));
     }
 
-    /// @notice Find the highest level which can be appended to tree of size startSize without
+    /// @notice Find the highest level which can be appended to an accumulator of size startSize without
     ///         creating a tree with size greater than end size (inclusive)
     /// @dev    Subtrees can only be appended according to certain rules, see tree description at top of file
     ///         for details. A subtree can only be appended if it is at the same level, or below, the current lowest
@@ -256,11 +259,11 @@ library MerkleTreeLib {
         uint256 startSize,
         uint256 endSize
     ) internal pure returns (uint256) {
-        // Since the tree is binary we can represent it using the binary representation of a number
+        // The accumulator can be represented in the same way as a binary representation of a number
         // As described above, subtrees can only be appended to a tree if they are at the same level, or below,
         // the current lowest subtree.
         // In this function we want to find the level of the highest tree that can be appended to the current
-        // tree, without the resulting tree surpassing the end point. We do this by looking at the difference
+        // accumulator, without the resulting accumulator size surpassing the end point. We do this by looking at the difference
         // between the start and end size, and iteratively reducing it in the maximal way.
 
         // The start and end size will share some higher order bits, below that they differ, and it is this
@@ -306,16 +309,16 @@ library MerkleTreeLib {
         return sum;
     }
 
-    /// @notice Verify that a pre-root commits to a prefix of the leaves committed by a post-root
-    /// @dev    Verifies by appending sub trees to the pre tree until we get to the size of the post tree
-    ///         and then checking that the root of the calculated post tree is equal to the supplied one
-    /// @param preRoot      The root of the tree which is a prefix of the post tree
-    /// @param preSize      The size of the pre-tree
-    /// @param postRoot     The root the post-tree - the tree which we're proving pre is a prefix of
-    /// @param postSize     The size of the post-tree
-    /// @param preExpansion The merkle expansion of the pre-tree
-    /// @param proof        The proof is the minimum set of complete sub-tree hashes that can be appended to
-    ///                     the pre-tree in order to form the post tree
+    /// @notice Verify that a pre-accumulator-root commits to a prefix of the leaves committed by a post-accumulator-root
+    /// @dev    Verifies by appending sub trees to the pre accumulator until we get to the size of the post accumulator
+    ///         and then checking that the root of the calculated post accumulator is equal to the supplied one
+    /// @param preRoot      The root of the accumulator which is a prefix of the post accumulator
+    /// @param preSize      The size of the pre-accumulator
+    /// @param postRoot     The root the post-accumulator - the accumulator which we're proving pre is a prefix of
+    /// @param postSize     The size of the post-accumulator
+    /// @param preExpansion The merkle expansion of the pre-accumulator
+    /// @param proof        The proof is the minimum set of complete subtree hashes that can be appended to
+    ///                     the accumulator-tree in order to form the post accumulator
     function verifyPrefixProof(
         bytes32 preRoot,
         uint256 preSize,
@@ -356,7 +359,7 @@ library MerkleTreeLib {
         require(proofIndex == proof.length, "Incomplete proof usage");
     }
 
-    /// @notice Using the provided proof verify that the provided leaf is included in the roothash at
+    /// @notice Using the provided proof verify that the provided leaf is included in the roothash of a complete tree at
     ///         the specified index. Note that here we use a 0-indexed value for the leaf number, whereas
     ///         elsewhere we use size.
     /// @param rootHash The root hash to prove inclusion in

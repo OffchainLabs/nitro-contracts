@@ -644,7 +644,7 @@ contract EdgeChallengeManagerLibTest is Test {
         (bytes32[] memory states, bytes32[] memory exp) =
             appendRandomStates(currentStates, numStates - 1);
         bytes32[] memory fullStates = ArrayUtilsLib.append(states, endState);
-        bytes32[] memory fullExp = MerkleTreeLib.appendLeaf(exp, endState);
+        bytes32[] memory fullExp = MerkleTreeAccumulatorLib.appendLeaf(exp, endState);
         return (fullStates, fullExp);
     }
 
@@ -674,8 +674,8 @@ contract EdgeChallengeManagerLibTest is Test {
         uint256 end,
         bytes32[] memory states
     ) internal view returns (ChallengeEdge memory) {
-        bytes32 startRoot = MerkleTreeLib.root(ProofUtils.expansionFromLeaves(states, 0, start + 1));
-        bytes32 endRoot = MerkleTreeLib.root(ProofUtils.expansionFromLeaves(states, 0, end + 1));
+        bytes32 startRoot = MerkleTreeAccumulatorLib.root(ProofUtils.expansionFromLeaves(states, 0, start + 1));
+        bytes32 endRoot = MerkleTreeAccumulatorLib.root(ProofUtils.expansionFromLeaves(states, 0, end + 1));
 
         return ChallengeEdgeLib.newChildEdge(originId, startRoot, start, endRoot, end, 0);
     }
@@ -788,7 +788,7 @@ contract EdgeChallengeManagerLibTest is Test {
         store.add(edge2);
 
         bytes32 bisectionRoot1 =
-            MerkleTreeLib.root(ProofUtils.expansionFromLeaves(states1, 0, bisectionPoint + 1));
+            MerkleTreeAccumulatorLib.root(ProofUtils.expansionFromLeaves(states1, 0, bisectionPoint + 1));
         bisectAndCheck(edge1, bisectionRoot1, bisectionPoint, states1, false, false);
 
         assertEq(
@@ -825,7 +825,7 @@ contract EdgeChallengeManagerLibTest is Test {
         assertFalse(store.hasRival(store.get(edge1.idMem()).upperChildId), "Upper child rival");
 
         bytes32 bisectionRoot2 =
-            MerkleTreeLib.root(ProofUtils.expansionFromLeaves(states2, 0, bisectionPoint + 1));
+            MerkleTreeAccumulatorLib.root(ProofUtils.expansionFromLeaves(states2, 0, bisectionPoint + 1));
         bisectAndCheck(edge2, bisectionRoot2, bisectionPoint, states2, true, false);
 
         assertEq(
@@ -878,7 +878,7 @@ contract EdgeChallengeManagerLibTest is Test {
         store.add(edge2);
 
         bytes32 bisectionRoot1 =
-            MerkleTreeLib.root(ProofUtils.expansionFromLeaves(states1, 0, bisectionPoint + 1));
+            MerkleTreeAccumulatorLib.root(ProofUtils.expansionFromLeaves(states1, 0, bisectionPoint + 1));
         bisectAndCheck(edge1, bisectionRoot1, bisectionPoint, states1, false, false);
 
         assertEq(
@@ -915,7 +915,7 @@ contract EdgeChallengeManagerLibTest is Test {
         assertFalse(store.hasRival(store.get(edge1.idMem()).upperChildId), "Upper child rival");
 
         bytes32 bisectionRoot2 =
-            MerkleTreeLib.root(ProofUtils.expansionFromLeaves(states2, 0, bisectionPoint + 1));
+            MerkleTreeAccumulatorLib.root(ProofUtils.expansionFromLeaves(states2, 0, bisectionPoint + 1));
         bisectAndCheck(edge2, bisectionRoot2, bisectionPoint, states2, false, true);
 
         assertEq(
@@ -978,7 +978,7 @@ contract EdgeChallengeManagerLibTest is Test {
         store.add(edge1);
 
         bytes32 bisectionRoot1 =
-            MerkleTreeLib.root(ProofUtils.expansionFromLeaves(states1, 0, bisectionPoint + 1));
+            MerkleTreeAccumulatorLib.root(ProofUtils.expansionFromLeaves(states1, 0, bisectionPoint + 1));
         bytes32 edgeId = edge1.idMem();
         bytes memory proof = abi.encode(
             ProofUtils.expansionFromLeaves(states1, 0, bisectionPoint + 1),
@@ -1003,7 +1003,7 @@ contract EdgeChallengeManagerLibTest is Test {
         store.add(edge2);
 
         bytes32 bisectionRoot1 =
-            MerkleTreeLib.root(ProofUtils.expansionFromLeaves(states1, 0, bisectionPoint + 1));
+            MerkleTreeAccumulatorLib.root(ProofUtils.expansionFromLeaves(states1, 0, bisectionPoint + 1));
         bytes32 edgeId = edge1.idMem();
         bytes memory proof = abi.encode(
             ProofUtils.expansionFromLeaves(states1, 0, bisectionPoint + 1),
@@ -1032,7 +1032,7 @@ contract EdgeChallengeManagerLibTest is Test {
         store.add(edge2);
 
         bytes32 bisectionRoot1 =
-            MerkleTreeLib.root(ProofUtils.expansionFromLeaves(states1, 0, bisectionPoint + 1));
+            MerkleTreeAccumulatorLib.root(ProofUtils.expansionFromLeaves(states1, 0, bisectionPoint + 1));
         bytes32 edgeId = edge1.idMem();
         bytes memory proof = abi.encode(
             ProofUtils.expansionFromLeaves(states1, 0, bisectionPoint),
@@ -1059,7 +1059,7 @@ contract EdgeChallengeManagerLibTest is Test {
         store.add(edge2);
 
         bytes32 bisectionRoot1 =
-            MerkleTreeLib.root(ProofUtils.expansionFromLeaves(states1, 0, bisectionPoint + 1));
+            MerkleTreeAccumulatorLib.root(ProofUtils.expansionFromLeaves(states1, 0, bisectionPoint + 1));
         bytes memory proof = abi.encode(
             ProofUtils.expansionFromLeaves(states1, 0, bisectionPoint + 1),
             ProofUtils.generatePrefixProof(
@@ -1101,7 +1101,7 @@ contract EdgeChallengeManagerLibTest is Test {
     ) internal view returns (uint256, bytes32, bytes memory) {
         uint256 bisectionPoint = store.mandatoryBisectionHeight(start, end);
         bytes32 bisectionRoot =
-            MerkleTreeLib.root(ProofUtils.expansionFromLeaves(states, 0, bisectionPoint + 1));
+            MerkleTreeAccumulatorLib.root(ProofUtils.expansionFromLeaves(states, 0, bisectionPoint + 1));
         bytes memory proof = abi.encode(
             ProofUtils.expansionFromLeaves(states, 0, bisectionPoint + 1),
             ProofUtils.generatePrefixProof(
@@ -1335,18 +1335,18 @@ contract EdgeChallengeManagerLibTest is Test {
         ConfirmByOneStepData memory data;
         data.e1 = ChallengeEdgeLib.newChildEdge(
             originId,
-            MerkleTreeLib.root(ProofUtils.expansionFromLeaves(states1, 0, startHeight + 1)),
+            MerkleTreeAccumulatorLib.root(ProofUtils.expansionFromLeaves(states1, 0, startHeight + 1)),
             startHeight,
-            MerkleTreeLib.root(ProofUtils.expansionFromLeaves(states1, 0, startHeight + 2)),
+            MerkleTreeAccumulatorLib.root(ProofUtils.expansionFromLeaves(states1, 0, startHeight + 2)),
             startHeight + 1,
             NUM_BIGSTEP_LEVEL + 1
         );
 
         data.e2 = ChallengeEdgeLib.newChildEdge(
             originId,
-            MerkleTreeLib.root(ProofUtils.expansionFromLeaves(states2, 0, startHeight + 1)),
+            MerkleTreeAccumulatorLib.root(ProofUtils.expansionFromLeaves(states2, 0, startHeight + 1)),
             startHeight,
-            MerkleTreeLib.root(ProofUtils.expansionFromLeaves(states2, 0, startHeight + 2)),
+            MerkleTreeAccumulatorLib.root(ProofUtils.expansionFromLeaves(states2, 0, startHeight + 2)),
             startHeight + 1,
             NUM_BIGSTEP_LEVEL + 1
         );
@@ -1598,7 +1598,7 @@ contract EdgeChallengeManagerLibTest is Test {
             endRoot = rand.hash();
             revertArg = "Invalid inclusion proof";
         } else {
-            endRoot = MerkleTreeLib.root(roots.endExp);
+            endRoot = MerkleTreeAccumulatorLib.root(roots.endExp);
         }
         AssertionReferenceData memory ard;
         if (mode != 144) {
@@ -1679,8 +1679,8 @@ contract EdgeChallengeManagerLibTest is Test {
         if (revertArg.length == 0) {
             assertEq(
                 store.get(addedEdge.edgeId).startHistoryRoot,
-                MerkleTreeLib.root(
-                    MerkleTreeLib.appendLeaf(
+                MerkleTreeAccumulatorLib.root(
+                    MerkleTreeAccumulatorLib.appendLeaf(
                         new bytes32[](0),
                         mockOsp.getMachineHash(startExec.assertionState.toExecutionState())
                     )
@@ -1764,9 +1764,9 @@ contract EdgeChallengeManagerLibTest is Test {
         ExpsAndProofs memory claimRoots = newRootsAndProofs(start, end, 0, 0);
         ChallengeEdge memory ce = ChallengeEdgeLib.newChildEdge(
             rand.hash(),
-            MerkleTreeLib.root(claimRoots.startExp),
+            MerkleTreeAccumulatorLib.root(claimRoots.startExp),
             start,
-            MerkleTreeLib.root(claimRoots.endExp),
+            MerkleTreeAccumulatorLib.root(claimRoots.endExp),
             end,
             NUM_BIGSTEP_LEVEL
         );
@@ -1872,7 +1872,7 @@ contract EdgeChallengeManagerLibTest is Test {
         store.createLayerZeroEdge(
             CreateEdgeArgs({
                 level: mode == 163 ? NUM_BIGSTEP_LEVEL : NUM_BIGSTEP_LEVEL + 1,
-                endHistoryRoot: MerkleTreeLib.root(vars.roots.endExp),
+                endHistoryRoot: MerkleTreeAccumulatorLib.root(vars.roots.endExp),
                 endHeight: vars.expectedEndHeight,
                 claimId: vars.claimId,
                 prefixProof: abi.encode(vars.roots.startExp, vars.roots.prefixProof),
@@ -1962,7 +1962,7 @@ contract EdgeChallengeManagerLibTest is Test {
         return store.createLayerZeroEdge(
             CreateEdgeArgs({
                 level: 0,
-                endHistoryRoot: MerkleTreeLib.root(exp),
+                endHistoryRoot: MerkleTreeAccumulatorLib.root(exp),
                 endHeight: height1,
                 claimId: claimId,
                 prefixProof: prefixProof,
@@ -2000,7 +2000,7 @@ contract EdgeChallengeManagerLibTest is Test {
 
         (bytes32 lowerChildId,, EdgeAddedData memory upperChild) = store.bisectEdge(
             edgeId,
-            MerkleTreeLib.root(middleExp),
+            MerkleTreeAccumulatorLib.root(middleExp),
             abi.encode(middleExp, ProofUtils.generatePrefixProof(bisectionSize + 1, upperStates))
         );
 
@@ -2152,7 +2152,7 @@ contract EdgeChallengeManagerLibTest is Test {
             edge1Id = store.createLayerZeroEdge(
                 CreateEdgeArgs({
                     level: args.eType,
-                    endHistoryRoot: MerkleTreeLib.root(exp1),
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(exp1),
                     endHeight: height1,
                     claimId: args.claim1Id,
                     prefixProof: abi.encode(
@@ -2200,7 +2200,7 @@ contract EdgeChallengeManagerLibTest is Test {
             edge2Id = store.createLayerZeroEdge(
                 CreateEdgeArgs({
                     level: args.eType,
-                    endHistoryRoot: MerkleTreeLib.root(exp2),
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(exp2),
                     endHeight: height1,
                     claimId: args.claim2Id,
                     prefixProof: abi.encode(

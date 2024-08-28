@@ -5,7 +5,7 @@
 pragma solidity ^0.8.17;
 
 import "./UintUtilsLib.sol";
-import "./MerkleTreeLib.sol";
+import "./MerkleTreeAccumulatorLib.sol";
 import "./ChallengeEdgeLib.sol";
 import "../../osp/IOneStepProofEntry.sol";
 import "../../rollup/AssertionState.sol";
@@ -315,7 +315,7 @@ library EdgeChallengeManagerLib {
             // if the start and end states are consistent with the claim edge
             // this guarantees that the edge we're creating is a 'continuation' of the claim edge, it is
             // a commitment to the states that between start and end states of the claim
-            MerkleTreeLib.verifyInclusionProof(
+            MerkleTreeAccumulatorLib.verifyInclusionProof(
                 claimEdge.startHistoryRoot,
                 startState,
                 claimEdge.startHeight,
@@ -328,7 +328,7 @@ library EdgeChallengeManagerLib {
             // and later ensuring that the end state is part of the history commitment of the new edge ensures
             // that the end history root of the new edge will be different for different claim ids, and therefore
             // the edge ids will be different
-            MerkleTreeLib.verifyInclusionProof(
+            MerkleTreeAccumulatorLib.verifyInclusionProof(
                 claimEdge.endHistoryRoot, endState, claimEdge.endHeight, claimEndInclusionProof
             );
 
@@ -362,7 +362,7 @@ library EdgeChallengeManagerLib {
         // since zero layer edges have a start height of zero, we know that they are a size
         // one tree containing only the start state. We can then compute the history root directly
         bytes32 startHistoryRoot =
-            MerkleTreeLib.root(MerkleTreeLib.appendLeaf(new bytes32[](0), proofData.startState));
+            MerkleTreeAccumulatorLib.root(MerkleTreeAccumulatorLib.appendLeaf(new bytes32[](0), proofData.startState));
 
         // all end heights are expected to be a power of 2, the specific power is defined by the
         // edge challenge manager itself
@@ -382,7 +382,7 @@ library EdgeChallengeManagerLib {
         // We then ensure that that same end state is part of the end history root we're creating
         // This ensures continuity of states between levels - the state is present in both this
         // level and the one below
-        MerkleTreeLib.verifyInclusionProof(
+        MerkleTreeAccumulatorLib.verifyInclusionProof(
             args.endHistoryRoot, proofData.endState, args.endHeight, proofData.inclusionProof
         );
 
@@ -394,7 +394,7 @@ library EdgeChallengeManagerLib {
         }
         (bytes32[] memory preExpansion, bytes32[] memory preProof) =
             abi.decode(args.prefixProof, (bytes32[], bytes32[]));
-        MerkleTreeLib.verifyPrefixProof(
+        MerkleTreeAccumulatorLib.verifyPrefixProof(
             startHistoryRoot, 1, args.endHistoryRoot, args.endHeight + 1, preExpansion, preProof
         );
 
@@ -680,7 +680,7 @@ library EdgeChallengeManagerLib {
         {
             (bytes32[] memory preExpansion, bytes32[] memory proof) =
                 abi.decode(prefixProof, (bytes32[], bytes32[]));
-            MerkleTreeLib.verifyPrefixProof(
+            MerkleTreeAccumulatorLib.verifyPrefixProof(
                 bisectionHistoryRoot,
                 middleHeight + 1,
                 ce.endHistoryRoot,
@@ -896,7 +896,7 @@ library EdgeChallengeManagerLib {
         }
 
         // the state in the onestep data must be committed to by the startHistoryRoot
-        MerkleTreeLib.verifyInclusionProof(
+        MerkleTreeAccumulatorLib.verifyInclusionProof(
             store.edges[edgeId].startHistoryRoot,
             oneStepData.beforeHash,
             machineStep,
@@ -909,7 +909,7 @@ library EdgeChallengeManagerLib {
         );
 
         // check that the after state was indeed committed to by the endHistoryRoot
-        MerkleTreeLib.verifyInclusionProof(
+        MerkleTreeAccumulatorLib.verifyInclusionProof(
             store.edges[edgeId].endHistoryRoot,
             afterHash,
             machineStep + 1,
