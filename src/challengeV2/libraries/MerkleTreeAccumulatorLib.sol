@@ -14,10 +14,9 @@ import "./UintUtilsLib.sol";
 ///         merkle tree accumulator.
 ///
 ///         --------------------------------------------------------------------------------------------
-///         A complete tree is a full tree with a leaf size of a power of 2
+///         The accumulator is composed of a number of complete merkle trees.
+///         A complete tree is a tree with a leaf size of a power of 2
 ///         One or zero complete trees at each power of 2 is enough to define any size of accumulator.
-///         The accumulator is composed of a number of complete trees. A maximum of one tree of a given size
-///         can be included in the accumulator - eg one of size zero or one tree of size 2^n
 ///         The root of the accumulator is defined as the cumulative hashing of all of the
 ///         roots of each of its complete trees, substituting a zero where no tree is necessary at that power of 2
 ///         Where we refer to "level" in this documentation we mean the power of 2 used at the level: 2^level
@@ -28,6 +27,7 @@ import "./UintUtilsLib.sol";
 ///            AB
 ///           /  \
 ///          A    B    C
+///
 ///
 ///         Merkle expansions and roots
 ///         --------------------------------------------------------------------------------------------
@@ -55,7 +55,7 @@ import "./UintUtilsLib.sol";
 ///          A    B
 ///
 ///         ME of the AB tree = (0, AB), accumulator=AB
-///         The merkle expansion of a an accumulator consisting of a single size 2 complete subtree is a vector
+///         The merkle expansion of an accumulator consisting of a single size 2 complete subtree is a vector
 ///         of size 2, with the zeroth index value being 0, and the 1st index value being the root of the size
 ///         2 subtree. The zero in the zeroth index indicated that there is not a size 1 subtree in the accumulators's
 ///         composition. If an accumulator has a size 2 subtree in its composition the root of the subtree will be present in the
