@@ -19,11 +19,21 @@ interface IAssertionChain {
         bytes32 inboxAcc
     ) external view;
     function validateConfig(bytes32 assertionHash, ConfigData calldata configData) external view;
-    function getFirstChildCreationBlock(bytes32 assertionHash) external view returns (uint64);
-    function getSecondChildCreationBlock(bytes32 assertionHash) external view returns (uint64);
-    function isFirstChild(bytes32 assertionHash) external view returns (bool);
-    function isPending(bytes32 assertionHash) external view returns (bool);
-    function isValidator(address) external view returns (bool);
+    function getFirstChildCreationBlock(
+        bytes32 assertionHash
+    ) external view returns (uint64);
+    function getSecondChildCreationBlock(
+        bytes32 assertionHash
+    ) external view returns (uint64);
+    function isFirstChild(
+        bytes32 assertionHash
+    ) external view returns (bool);
+    function isPending(
+        bytes32 assertionHash
+    ) external view returns (bool);
+    function isValidator(
+        address
+    ) external view returns (bool);
     function getValidators() external view returns (address[] memory);
     function validatorWhitelistDisabled() external view returns (bool);
 }

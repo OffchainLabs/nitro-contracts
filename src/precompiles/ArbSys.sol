@@ -20,7 +20,9 @@ interface ArbSys {
      * @notice Get Arbitrum block hash (reverts unless currentBlockNum-256 <= arbBlockNum < currentBlockNum)
      * @return block hash
      */
-    function arbBlockHash(uint256 arbBlockNum) external view returns (bytes32);
+    function arbBlockHash(
+        uint256 arbBlockNum
+    ) external view returns (bytes32);
 
     /**
      * @notice Gets the rollup's unique chain identifier
@@ -76,7 +78,9 @@ interface ArbSys {
      * @param destination recipient address on L1
      * @return unique identifier for this L2-to-L1 transaction.
      */
-    function withdrawEth(address destination) external payable returns (uint256);
+    function withdrawEth(
+        address destination
+    ) external payable returns (uint256);
 
     /**
      * @notice Send a transaction to L1

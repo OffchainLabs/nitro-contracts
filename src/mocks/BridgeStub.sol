@@ -35,20 +35,28 @@ contract BridgeStub is IBridge, IEthBridge {
     address public nativeToken;
     uint8 public nativeTokenDecimals;
 
-    function setSequencerInbox(address _sequencerInbox) external override {
+    function setSequencerInbox(
+        address _sequencerInbox
+    ) external override {
         sequencerInbox = _sequencerInbox;
         emit SequencerInboxUpdated(_sequencerInbox);
     }
 
-    function allowedDelayedInboxes(address inbox) external view override returns (bool) {
+    function allowedDelayedInboxes(
+        address inbox
+    ) external view override returns (bool) {
         return allowedDelayedInboxesMap[inbox].allowed;
     }
 
-    function allowedOutboxes(address) external pure override returns (bool) {
+    function allowedOutboxes(
+        address
+    ) external pure override returns (bool) {
         revert("NOT_IMPLEMENTED");
     }
 
-    function updateRollupAddress(IOwnable) external pure {
+    function updateRollupAddress(
+        IOwnable
+    ) external pure {
         revert("NOT_IMPLEMENTED");
     }
 
@@ -176,7 +184,9 @@ contract BridgeStub is IBridge, IEthBridge {
 
     function acceptFundsFromOldBridge() external payable {}
 
-    function initialize(IOwnable) external pure {
+    function initialize(
+        IOwnable
+    ) external pure {
         revert("NOT_IMPLEMENTED");
     }
 }

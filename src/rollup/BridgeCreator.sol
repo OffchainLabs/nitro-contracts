@@ -50,12 +50,16 @@ contract BridgeCreator is Ownable {
         erc20BasedTemplates = _erc20BasedTemplates;
     }
 
-    function updateTemplates(BridgeTemplates calldata _newTemplates) external onlyOwner {
+    function updateTemplates(
+        BridgeTemplates calldata _newTemplates
+    ) external onlyOwner {
         ethBasedTemplates = _newTemplates;
         emit TemplatesUpdated();
     }
 
-    function updateERC20Templates(BridgeTemplates calldata _newTemplates) external onlyOwner {
+    function updateERC20Templates(
+        BridgeTemplates calldata _newTemplates
+    ) external onlyOwner {
         erc20BasedTemplates = _newTemplates;
         emit ERC20TemplatesUpdated();
     }

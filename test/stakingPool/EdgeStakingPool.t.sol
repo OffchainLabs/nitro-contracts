@@ -11,11 +11,15 @@ contract MockChallengeManager {
 
     event EdgeCreated(CreateEdgeArgs args);
 
-    constructor(IERC20 _token) {
+    constructor(
+        IERC20 _token
+    ) {
         stakeToken = _token;
     }
 
-    function createLayerZeroEdge(CreateEdgeArgs calldata args) external returns (bytes32) {
+    function createLayerZeroEdge(
+        CreateEdgeArgs calldata args
+    ) external returns (bytes32) {
         stakeToken.transferFrom(msg.sender, address(this), stakeAmounts(args.level));
 
         emit EdgeCreated(args);
@@ -23,7 +27,9 @@ contract MockChallengeManager {
         return keccak256(abi.encode(args));
     }
 
-    function stakeAmounts(uint256 lvl) public pure returns (uint256) {
+    function stakeAmounts(
+        uint256 lvl
+    ) public pure returns (uint256) {
         return 100 * (lvl + 1);
     }
 }
@@ -41,7 +47,9 @@ contract EdgeStakingPoolTest is Test {
         stakingPoolCreator = new EdgeStakingPoolCreator();
     }
 
-    function testProperInitialization(bytes32 edgeId) public {
+    function testProperInitialization(
+        bytes32 edgeId
+    ) public {
         vm.assume(edgeId != bytes32(0));
         IEdgeStakingPool stakingPool =
             stakingPoolCreator.createPool(address(challengeManager), edgeId);
@@ -61,7 +69,9 @@ contract EdgeStakingPoolTest is Test {
         stakingPoolCreator.createPool(address(challengeManager), bytes32(0));
     }
 
-    function testCreateEdge(CreateEdgeArgs memory args) public {
+    function testCreateEdge(
+        CreateEdgeArgs memory args
+    ) public {
         uint256 requiredStake = challengeManager.stakeAmounts(args.level);
         bytes32 realEdgeId = keccak256(abi.encode(args));
         IEdgeStakingPool stakingPool =

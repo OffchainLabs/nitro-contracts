@@ -44,7 +44,9 @@ contract EdgeStakingPool is AbsBoldStakingPool, IEdgeStakingPool {
     }
 
     /// @inheritdoc IEdgeStakingPool
-    function createEdge(CreateEdgeArgs calldata args) external {
+    function createEdge(
+        CreateEdgeArgs calldata args
+    ) external {
         uint256 requiredStake = EdgeChallengeManager(challengeManager).stakeAmounts(args.level);
         IERC20(stakeToken).safeIncreaseAllowance(address(challengeManager), requiredStake);
         bytes32 newEdgeId = EdgeChallengeManager(challengeManager).createLayerZeroEdge(args);

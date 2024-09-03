@@ -13,7 +13,9 @@ library ModuleMemoryLib {
 
     uint256 private constant LEAF_SIZE = 32;
 
-    function hash(ModuleMemory memory mem) internal pure returns (bytes32) {
+    function hash(
+        ModuleMemory memory mem
+    ) internal pure returns (bytes32) {
         return ModuleMemoryCompactLib.hash(mem);
     }
 

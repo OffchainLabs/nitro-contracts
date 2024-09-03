@@ -179,7 +179,9 @@ contract ArbOwnerPublicMock {
     }
 
     // pretend all smart contracts are chain owners
-    function isChainOwner(address addr) external view returns (bool) {
+    function isChainOwner(
+        address addr
+    ) external view returns (bool) {
         uint256 codeSize;
         assembly {
             codeSize := extcodesize(addr)
@@ -190,7 +192,9 @@ contract ArbOwnerPublicMock {
 
 contract ArbWasmMock {
     // returns a non-uniform distribution of mock code sizes
-    function codehashAsmSize(bytes32 codehash) external pure returns (uint64) {
+    function codehashAsmSize(
+        bytes32 codehash
+    ) external pure returns (uint64) {
         return uint64(uint256(keccak256(abi.encodePacked(codehash))) % 65_536);
     }
 }
@@ -200,7 +204,9 @@ contract ArbWasmCacheMock {
     uint256 public numCached;
     uint256 public uselessCalls;
 
-    function cacheProgram(address addr) external {
+    function cacheProgram(
+        address addr
+    ) external {
         bytes32 codehash = addr.codehash;
         if (codehashIsCached[codehash]) {
             uselessCalls++;
@@ -210,7 +216,9 @@ contract ArbWasmCacheMock {
         numCached++;
     }
 
-    function evictCodehash(bytes32 codehash) external {
+    function evictCodehash(
+        bytes32 codehash
+    ) external {
         if (!codehashIsCached[codehash]) {
             uselessCalls++;
             return;

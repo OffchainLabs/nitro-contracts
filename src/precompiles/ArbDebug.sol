@@ -27,7 +27,9 @@ interface ArbDebug {
         bool indexed flag, address indexed field, uint24 number, bytes32 value, bytes store
     );
 
-    function customRevert(uint64 number) external pure;
+    function customRevert(
+        uint64 number
+    ) external pure;
 
     function panic() external;
 

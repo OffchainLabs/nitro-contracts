@@ -27,7 +27,9 @@ contract SequencerInboxStub is SequencerInbox {
         isBatchPoster[sequencer_] = true;
     }
 
-    function addInitMessage(uint256 chainId) external {
+    function addInitMessage(
+        uint256 chainId
+    ) external {
         bytes memory initMsg = abi.encodePacked(chainId);
         uint256 num = IEthBridge(address(bridge)).enqueueDelayedMessage(
             INITIALIZATION_MSG_TYPE, address(0), keccak256(initMsg)

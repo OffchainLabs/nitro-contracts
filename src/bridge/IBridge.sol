@@ -53,15 +53,23 @@ interface IBridge {
 
     event RollupUpdated(address rollup);
 
-    function allowedDelayedInboxList(uint256) external returns (address);
+    function allowedDelayedInboxList(
+        uint256
+    ) external returns (address);
 
-    function allowedOutboxList(uint256) external returns (address);
+    function allowedOutboxList(
+        uint256
+    ) external returns (address);
 
     /// @dev Accumulator for delayed inbox messages; tail represents hash of the current state; each element represents the inclusion of a new message.
-    function delayedInboxAccs(uint256) external view returns (bytes32);
+    function delayedInboxAccs(
+        uint256
+    ) external view returns (bytes32);
 
     /// @dev Accumulator for sequencer inbox messages; tail represents hash of the current state; each element represents the inclusion of a new message.
-    function sequencerInboxAccs(uint256) external view returns (bytes32);
+    function sequencerInboxAccs(
+        uint256
+    ) external view returns (bytes32);
 
     function rollup() external view returns (IOwnable);
 
@@ -69,9 +77,13 @@ interface IBridge {
 
     function activeOutbox() external view returns (address);
 
-    function allowedDelayedInboxes(address inbox) external view returns (bool);
+    function allowedDelayedInboxes(
+        address inbox
+    ) external view returns (bool);
 
-    function allowedOutboxes(address outbox) external view returns (bool);
+    function allowedOutboxes(
+        address outbox
+    ) external view returns (bool);
 
     function sequencerReportedSubMessageCount() external view returns (uint256);
 
@@ -109,11 +121,15 @@ interface IBridge {
 
     // ---------- onlyRollupOrOwner functions ----------
 
-    function setSequencerInbox(address _sequencerInbox) external;
+    function setSequencerInbox(
+        address _sequencerInbox
+    ) external;
 
     function setDelayedInbox(address inbox, bool enabled) external;
 
     function setOutbox(address inbox, bool enabled) external;
 
-    function updateRollupAddress(IOwnable _rollup) external;
+    function updateRollupAddress(
+        IOwnable _rollup
+    ) external;
 }

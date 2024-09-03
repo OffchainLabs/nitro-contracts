@@ -29,5 +29,7 @@ interface IOneStepProofEntry {
         bytes calldata proof
     ) external view returns (bytes32 afterHash);
 
-    function getMachineHash(ExecutionState calldata execState) external pure returns (bytes32);
+    function getMachineHash(
+        ExecutionState calldata execState
+    ) external pure returns (bytes32);
 }

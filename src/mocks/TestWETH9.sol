@@ -9,7 +9,9 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 interface IWETH9 {
     function deposit() external payable;
 
-    function withdraw(uint256 _amount) external;
+    function withdraw(
+        uint256 _amount
+    ) external;
 }
 
 contract TestWETH9 is ERC20, IWETH9 {
@@ -19,7 +21,9 @@ contract TestWETH9 is ERC20, IWETH9 {
         _mint(msg.sender, msg.value);
     }
 
-    function withdraw(uint256 _amount) external override {
+    function withdraw(
+        uint256 _amount
+    ) external override {
         _burn(msg.sender, _amount);
         payable(address(msg.sender)).transfer(_amount);
     }

@@ -17,14 +17,18 @@ interface IInboxBase is IDelayedMessageProvider {
     function maxDataSize() external view returns (uint256);
 
     /// @dev Deprecated due to EIP-3074
-    function sendL2MessageFromOrigin(bytes calldata) external returns (uint256);
+    function sendL2MessageFromOrigin(
+        bytes calldata
+    ) external returns (uint256);
 
     /**
      * @notice Send a generic L2 message to the chain
      * @dev This method can be used to send any type of message that doesn't require L1 validation
      * @param messageData Data of the message being sent
      */
-    function sendL2Message(bytes calldata messageData) external returns (uint256);
+    function sendL2Message(
+        bytes calldata messageData
+    ) external returns (uint256);
 
     function sendUnsignedTransaction(
         uint256 gasLimit,
@@ -67,10 +71,14 @@ interface IInboxBase is IDelayedMessageProvider {
     function setAllowList(address[] memory user, bool[] memory val) external;
 
     /// @notice enable or disable allowList
-    function setAllowListEnabled(bool _allowListEnabled) external;
+    function setAllowListEnabled(
+        bool _allowListEnabled
+    ) external;
 
     /// @notice check if user is in allowList
-    function isAllowed(address user) external view returns (bool);
+    function isAllowed(
+        address user
+    ) external view returns (bool);
 
     /// @notice check if allowList is enabled
     function allowListEnabled() external view returns (bool);

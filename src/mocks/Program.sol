@@ -101,7 +101,9 @@ contract ProgramTest {
         return result;
     }
 
-    function mathTest(address program) external {
+    function mathTest(
+        address program
+    ) external {
         uint256 value = 0xeddecf107b5740cef7f5a01e3ea7e287665c4e75a8eb6afae2fda2e3d4367786;
         value = mulmod(
             value,

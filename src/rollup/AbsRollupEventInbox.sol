@@ -30,7 +30,9 @@ abstract contract AbsRollupEventInbox is
         _;
     }
 
-    function initialize(IBridge _bridge) external override onlyDelegated {
+    function initialize(
+        IBridge _bridge
+    ) external override onlyDelegated {
         if (address(bridge) != address(0)) revert AlreadyInit();
         if (address(_bridge) == address(0)) revert HadZeroInit();
         bridge = _bridge;
@@ -60,7 +62,9 @@ abstract contract AbsRollupEventInbox is
         emit InboxMessageDelivered(num, initMsg);
     }
 
-    function _enqueueInitializationMsg(bytes memory initMsg) internal virtual returns (uint256);
+    function _enqueueInitializationMsg(
+        bytes memory initMsg
+    ) internal virtual returns (uint256);
 
     function _currentDataCostToReport() internal virtual returns (uint256);
 }

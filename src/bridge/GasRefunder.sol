@@ -90,16 +90,22 @@ contract GasRefunder is IGasRefunder, Ownable {
         });
     }
 
-    function setDisallower(address addr) external onlyOwner {
+    function setDisallower(
+        address addr
+    ) external onlyOwner {
         disallower = addr;
         emit DisallowerSet(addr);
     }
 
-    function allowContracts(address[] calldata addresses) external onlyOwner {
+    function allowContracts(
+        address[] calldata addresses
+    ) external onlyOwner {
         setContractsAllowedImpl(addresses, true);
     }
 
-    function disallowContracts(address[] calldata addresses) external {
+    function disallowContracts(
+        address[] calldata addresses
+    ) external {
         require(msg.sender == owner() || msg.sender == disallower, "NOT_AUTHORIZED");
         setContractsAllowedImpl(addresses, false);
     }
@@ -112,11 +118,15 @@ contract GasRefunder is IGasRefunder, Ownable {
         }
     }
 
-    function allowRefundees(address[] calldata addresses) external onlyOwner {
+    function allowRefundees(
+        address[] calldata addresses
+    ) external onlyOwner {
         setRefundeesAllowedImpl(addresses, true);
     }
 
-    function disallowRefundees(address[] calldata addresses) external {
+    function disallowRefundees(
+        address[] calldata addresses
+    ) external {
         require(msg.sender == owner() || msg.sender == disallower, "NOT_AUTHORIZED");
         setRefundeesAllowedImpl(addresses, false);
     }
@@ -129,32 +139,44 @@ contract GasRefunder is IGasRefunder, Ownable {
         }
     }
 
-    function setMaxRefundeeBalance(uint128 newValue) external onlyOwner {
+    function setMaxRefundeeBalance(
+        uint128 newValue
+    ) external onlyOwner {
         commonParams.maxRefundeeBalance = newValue;
         emit CommonParameterSet(CommonParameterKey.MAX_REFUNDEE_BALANCE, newValue);
     }
 
-    function setExtraGasMargin(uint32 newValue) external onlyOwner {
+    function setExtraGasMargin(
+        uint32 newValue
+    ) external onlyOwner {
         commonParams.extraGasMargin = newValue;
         emit CommonParameterSet(CommonParameterKey.EXTRA_GAS_MARGIN, newValue);
     }
 
-    function setCalldataCost(uint8 newValue) external onlyOwner {
+    function setCalldataCost(
+        uint8 newValue
+    ) external onlyOwner {
         commonParams.calldataCost = newValue;
         emit CommonParameterSet(CommonParameterKey.CALLDATA_COST, newValue);
     }
 
-    function setMaxGasTip(uint64 newValue) external onlyOwner {
+    function setMaxGasTip(
+        uint64 newValue
+    ) external onlyOwner {
         commonParams.maxGasTip = newValue;
         emit CommonParameterSet(CommonParameterKey.MAX_GAS_TIP, newValue);
     }
 
-    function setMaxGasCost(uint64 newValue) external onlyOwner {
+    function setMaxGasCost(
+        uint64 newValue
+    ) external onlyOwner {
         commonParams.maxGasCost = newValue;
         emit CommonParameterSet(CommonParameterKey.MAX_GAS_COST, newValue);
     }
 
-    function setMaxSingleGasUsage(uint32 newValue) external onlyOwner {
+    function setMaxSingleGasUsage(
+        uint32 newValue
+    ) external onlyOwner {
         commonParams.maxSingleGasUsage = newValue;
         emit CommonParameterSet(CommonParameterKey.MAX_SINGLE_GAS_USAGE, newValue);
     }

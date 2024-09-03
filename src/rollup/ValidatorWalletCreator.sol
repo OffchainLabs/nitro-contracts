@@ -25,7 +25,9 @@ contract ValidatorWalletCreator is Ownable {
         template = address(new ValidatorWallet());
     }
 
-    function setTemplate(address _template) external onlyOwner {
+    function setTemplate(
+        address _template
+    ) external onlyOwner {
         template = _template;
         emit TemplateUpdated();
     }

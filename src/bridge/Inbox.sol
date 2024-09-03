@@ -37,7 +37,9 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
  * to await inclusion in the SequencerInbox
  */
 contract Inbox is AbsInbox, IInbox {
-    constructor(uint256 _maxDataSize) AbsInbox(_maxDataSize) {}
+    constructor(
+        uint256 _maxDataSize
+    ) AbsInbox(_maxDataSize) {}
 
     /// @inheritdoc IInboxBase
     function initialize(
@@ -48,7 +50,9 @@ contract Inbox is AbsInbox, IInbox {
     }
 
     /// @inheritdoc IInbox
-    function postUpgradeInit(IBridge) external onlyDelegated onlyProxyOwner {}
+    function postUpgradeInit(
+        IBridge
+    ) external onlyDelegated onlyProxyOwner {}
 
     /// @inheritdoc IInbox
     function sendL1FundedUnsignedTransaction(
@@ -217,7 +221,9 @@ contract Inbox is AbsInbox, IInbox {
     }
 
     /// @notice deprecated in favour of depositEth with no parameters
-    function depositEth(uint256) external payable whenNotPaused onlyAllowed returns (uint256) {
+    function depositEth(
+        uint256
+    ) external payable whenNotPaused onlyAllowed returns (uint256) {
         return depositEth();
     }
 
@@ -327,7 +333,9 @@ contract Inbox is AbsInbox, IInbox {
     }
 
     /// @inheritdoc AbsInbox
-    function _fromNativeTo18Decimals(uint256 value) internal pure override returns (uint256) {
+    function _fromNativeTo18Decimals(
+        uint256 value
+    ) internal pure override returns (uint256) {
         return value;
     }
 }

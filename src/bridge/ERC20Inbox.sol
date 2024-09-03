@@ -26,7 +26,9 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 contract ERC20Inbox is AbsInbox, IERC20Inbox {
     using SafeERC20 for IERC20;
 
-    constructor(uint256 _maxDataSize) AbsInbox(_maxDataSize) {}
+    constructor(
+        uint256 _maxDataSize
+    ) AbsInbox(_maxDataSize) {}
 
     /// @inheritdoc IInboxBase
     function initialize(
@@ -41,7 +43,9 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
     }
 
     /// @inheritdoc IERC20Inbox
-    function depositERC20(uint256 amount) public whenNotPaused onlyAllowed returns (uint256) {
+    function depositERC20(
+        uint256 amount
+    ) public whenNotPaused onlyAllowed returns (uint256) {
         address dest = msg.sender;
 
         // solhint-disable-next-line avoid-tx-origin
@@ -136,7 +140,9 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
     }
 
     /// @inheritdoc AbsInbox
-    function _fromNativeTo18Decimals(uint256 value) internal view override returns (uint256) {
+    function _fromNativeTo18Decimals(
+        uint256 value
+    ) internal view override returns (uint256) {
         // In order to keep compatibility of child chain's native currency with external 3rd party tooling we
         // expect 18 decimals to be always used for native currency. If native token uses different number of
         // decimals then here it will be normalized to 18. Keep in mind, when withdrawing from child chain back

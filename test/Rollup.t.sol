@@ -929,7 +929,9 @@ contract RollupTest is Test {
         userRollup.removeWhitelistAfterValidatorAfk();
     }
 
-    function testSuccessSetValidatorAfk(uint32 x) public {
+    function testSuccessSetValidatorAfk(
+        uint32 x
+    ) public {
         vm.assume(x > 0);
         (bytes32 assertionHash,,) = testSuccessConfirmUnchallengedAssertions();
         vm.prank(upgradeExecutorAddr);

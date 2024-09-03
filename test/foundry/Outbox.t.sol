@@ -130,7 +130,9 @@ contract L2ToL1Target {
         withdrawalAmount = msg.value;
     }
 
-    function setOutbox(address _outbox) external {
+    function setOutbox(
+        address _outbox
+    ) external {
         outbox = _outbox;
     }
 }

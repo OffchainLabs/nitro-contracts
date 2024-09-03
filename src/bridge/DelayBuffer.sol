@@ -99,18 +99,24 @@ library DelayBuffer {
 
     /// @dev    This is the `sync validity window` during which no proofs are required.
     /// @notice Returns true if the inbox is in a synced state (no unexpected delays are possible)
-    function isSynced(BufferData storage self) internal view returns (bool) {
+    function isSynced(
+        BufferData storage self
+    ) internal view returns (bool) {
         return block.number - self.prevBlockNumber <= self.threshold;
     }
 
-    function isUpdatable(BufferData storage self) internal view returns (bool) {
+    function isUpdatable(
+        BufferData storage self
+    ) internal view returns (bool) {
         // if synced, the buffer can't be depleted
         // if full, the buffer can't be replenished
         // if neither synced nor full, the buffer updatable (depletable / replenishable)
         return !isSynced(self) || self.bufferBlocks < self.max;
     }
 
-    function isValidBufferConfig(BufferConfig memory config) internal pure returns (bool) {
+    function isValidBufferConfig(
+        BufferConfig memory config
+    ) internal pure returns (bool) {
         return config.threshold != 0 && config.max != 0 && config.replenishRateInBasis <= BASIS
             && config.threshold <= config.max;
     }

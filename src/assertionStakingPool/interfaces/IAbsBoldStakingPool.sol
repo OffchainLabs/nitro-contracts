@@ -17,11 +17,15 @@ interface IAbsBoldStakingPool {
 
     /// @notice Deposit stake into pool contract.
     /// @param amount amount of stake token to deposit
-    function depositIntoPool(uint256 amount) external;
+    function depositIntoPool(
+        uint256 amount
+    ) external;
 
     /// @notice Send supplied amount of stake from this contract back to its depositor.
     /// @param amount stake amount to withdraw
-    function withdrawFromPool(uint256 amount) external;
+    function withdrawFromPool(
+        uint256 amount
+    ) external;
 
     /// @notice Send full balance of stake from this contract back to its depositor.
     function withdrawFromPool() external;
@@ -31,5 +35,7 @@ interface IAbsBoldStakingPool {
 
     /// @notice The balance of the given account
     /// @param account The account to check the balance of
-    function depositBalance(address account) external view returns (uint256);
+    function depositBalance(
+        address account
+    ) external view returns (uint256);
 }

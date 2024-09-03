@@ -337,7 +337,9 @@ library EdgeChallengeManagerLib {
     }
 
     /// @notice Check that a uint is a power of 2
-    function isPowerOfTwo(uint256 x) internal pure returns (bool) {
+    function isPowerOfTwo(
+        uint256 x
+    ) internal pure returns (bool) {
         // zero is not a power of 2
         if (x == 0) {
             return false;

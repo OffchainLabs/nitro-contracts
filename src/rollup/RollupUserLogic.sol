@@ -18,14 +18,18 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
     using SafeERC20 for IERC20;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
-    modifier onlyValidator(address account) {
+    modifier onlyValidator(
+        address account
+    ) {
         require(validators.contains(account) || validatorWhitelistDisabled, "NOT_VALIDATOR");
         _;
     }
 
     /// @dev the user logic just validated configuration and shouldn't write to state during init
     /// this allows the admin logic to ensure consistency on parameters.
-    function initialize(address _stakeToken) external view override onlyProxy {
+    function initialize(
+        address _stakeToken
+    ) external view override onlyProxy {
         require(_stakeToken != address(0), "NEED_STAKE_TOKEN");
     }
 
@@ -238,7 +242,9 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
     /**
      * @dev Require that the staker is inactive and withdraw their stake
      */
-    function _requireInactiveAndWithdrawStaker(address stakerAddress) internal {
+    function _requireInactiveAndWithdrawStaker(
+        address stakerAddress
+    ) internal {
         requireInactiveStaker(stakerAddress);
         withdrawStaker(stakerAddress);
     }
@@ -265,7 +271,9 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
      * @notice Reduce the amount staked for the sender (difference between initial amount staked and target is creditted back to the sender).
      * @param target Target amount of stake for the staker.
      */
-    function reduceDeposit(uint256 target) external onlyValidator(msg.sender) whenNotPaused {
+    function reduceDeposit(
+        uint256 target
+    ) external onlyValidator(msg.sender) whenNotPaused {
         requireInactiveStaker(msg.sender);
         // amount will be checked when creating an assertion
         reduceStakeTo(msg.sender, target);
@@ -413,7 +421,9 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         return amount;
     }
 
-    function receiveTokens(uint256 tokenAmount) private {
+    function receiveTokens(
+        uint256 tokenAmount
+    ) private {
         IERC20(stakeToken).safeTransferFrom(msg.sender, address(this), tokenAmount);
     }
 }

@@ -110,7 +110,9 @@ library MerkleTreeAccumulatorLib {
     /// @dev    The accumulator root is defined as the cumulative hashing of the
     ///         roots of all of its subtrees. Throws error for an empty merkle expansion
     /// @param me   The merkle expansion to calculate the root of
-    function root(bytes32[] memory me) internal pure returns (bytes32) {
+    function root(
+        bytes32[] memory me
+    ) internal pure returns (bytes32) {
         require(me.length > 0, "Empty merkle expansion");
         require(me.length <= MAX_LEVEL, "Merkle expansion too large");
 
@@ -299,7 +301,9 @@ library MerkleTreeAccumulatorLib {
 
     /// @notice Calculate the full tree size represented by a merkle expansion
     /// @param me   The merkle expansion to calculate the tree size of
-    function treeSize(bytes32[] memory me) internal pure returns (uint256) {
+    function treeSize(
+        bytes32[] memory me
+    ) internal pure returns (uint256) {
         uint256 sum = 0;
         for (uint256 i = 0; i < me.length; i++) {
             if (me[i] != 0) {

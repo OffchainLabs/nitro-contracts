@@ -24,7 +24,9 @@ contract ChallengeEdgeLibAccess {
         return storageEdge;
     }
 
-    function setChallengeEdge(ChallengeEdge memory edge) public {
+    function setChallengeEdge(
+        ChallengeEdge memory edge
+    ) public {
         storageEdge = edge;
     }
 
@@ -95,7 +97,9 @@ contract ChallengeEdgeLibAccess {
         return ChallengeEdgeLib.mutualId(storageEdge);
     }
 
-    function mutualIdMem(ChallengeEdge memory ce) public pure returns (bytes32) {
+    function mutualIdMem(
+        ChallengeEdge memory ce
+    ) public pure returns (bytes32) {
         return ChallengeEdgeLib.mutualIdMem(ce);
     }
 
@@ -112,7 +116,9 @@ contract ChallengeEdgeLibAccess {
         );
     }
 
-    function idMem(ChallengeEdge memory edge) public pure returns (bytes32) {
+    function idMem(
+        ChallengeEdge memory edge
+    ) public pure returns (bytes32) {
         return ChallengeEdgeLib.idMem(edge);
     }
 

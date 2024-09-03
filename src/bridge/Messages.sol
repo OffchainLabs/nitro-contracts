@@ -17,7 +17,9 @@ library Messages {
         bytes32 messageDataHash;
     }
 
-    function messageHash(Message memory message) internal pure returns (bytes32) {
+    function messageHash(
+        Message memory message
+    ) internal pure returns (bytes32) {
         return messageHash(
             message.kind,
             message.sender,

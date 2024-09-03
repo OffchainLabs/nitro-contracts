@@ -363,7 +363,9 @@ contract OneStepProverHostIo is IOneStepProver {
         mach.status = MachineStatus.FINISHED;
     }
 
-    function isPowerOfTwo(uint256 value) internal pure returns (bool) {
+    function isPowerOfTwo(
+        uint256 value
+    ) internal pure returns (bool) {
         return value != 0 && (value & (value - 1) == 0);
     }
 

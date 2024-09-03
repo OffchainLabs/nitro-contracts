@@ -39,7 +39,9 @@ contract AssertionStakingPool is AbsBoldStakingPool, IAssertionStakingPool {
     }
 
     /// @inheritdoc IAssertionStakingPool
-    function createAssertion(AssertionInputs calldata assertionInputs) external {
+    function createAssertion(
+        AssertionInputs calldata assertionInputs
+    ) external {
         uint256 requiredStake = assertionInputs.beforeStateData.configData.requiredStake;
         // approve spending from rollup for newStakeOnNewAssertion call
         IERC20(stakeToken).safeIncreaseAllowance(rollup, requiredStake);

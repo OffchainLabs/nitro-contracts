@@ -10,7 +10,9 @@ pragma solidity ^0.8.0;
 contract EthVault {
     uint256 public version = 0;
 
-    function setVersion(uint256 _version) external payable {
+    function setVersion(
+        uint256 _version
+    ) external payable {
         version = _version;
     }
 

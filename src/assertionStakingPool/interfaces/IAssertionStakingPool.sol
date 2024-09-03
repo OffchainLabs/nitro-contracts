@@ -12,7 +12,9 @@ interface IAssertionStakingPool is IAbsBoldStakingPool {
     error EmptyAssertionId();
 
     /// @notice Create assertion. Callable only if required stake has been reached and assertion has not been asserted yet.
-    function createAssertion(AssertionInputs calldata assertionInputs) external;
+    function createAssertion(
+        AssertionInputs calldata assertionInputs
+    ) external;
 
     /// @notice Make stake withdrawable.
     /// @dev Separate call from withdrawStakeBackIntoPool since returnOldDeposit reverts with 0 balance (in e.g., case of admin forceRefundStaker)

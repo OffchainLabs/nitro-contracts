@@ -17,7 +17,9 @@ contract Random {
         return seed;
     }
 
-    function hashes(uint256 count) public returns (bytes32[] memory) {
+    function hashes(
+        uint256 count
+    ) public returns (bytes32[] memory) {
         bytes32[] memory h = new bytes32[](count);
         for (uint256 i = 0; i < h.length; i++) {
             h[i] = hash();
@@ -30,7 +32,9 @@ contract Random {
         return address(bytes20(seed));
     }
 
-    function unsignedInt(uint256 max) public returns (uint256) {
+    function unsignedInt(
+        uint256 max
+    ) public returns (uint256) {
         bytes32 h = hash();
         return uint256(h) % max;
     }
@@ -131,7 +135,9 @@ library ProofUtils {
         return proof;
     }
 
-    function fullTree(bytes32[] memory leaves) internal pure returns (bytes32[][] memory) {
+    function fullTree(
+        bytes32[] memory leaves
+    ) internal pure returns (bytes32[][] memory) {
         uint256 msb = UintUtilsLib.mostSignificantBit(leaves.length);
         uint256 lsb = UintUtilsLib.leastSignificantBit(leaves.length);
 
@@ -159,7 +165,9 @@ library ProofUtils {
         return layers;
     }
 
-    function rehashed(bytes32[] memory arr) internal pure returns (bytes32[] memory) {
+    function rehashed(
+        bytes32[] memory arr
+    ) internal pure returns (bytes32[] memory) {
         bytes32[] memory arr2 = new bytes32[](arr.length);
         for (uint256 i = 0; i < arr.length; i++) {
             arr2[i] = keccak256(abi.encodePacked(arr[i]));

@@ -94,7 +94,9 @@ contract ValidatorWallet is OwnableUpgradeable, DelegateCallAware, GasRefundEnab
     }
 
     /// @dev reverts if the current function can't be called
-    function validateExecuteTransaction(address destination) public view {
+    function validateExecuteTransaction(
+        address destination
+    ) public view {
         if (!allowedExecutorDestinations[destination] && owner() != _msgSender()) {
             revert OnlyOwnerDestination(owner(), _msgSender(), destination);
         }

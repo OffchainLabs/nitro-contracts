@@ -169,7 +169,9 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
      * @param stakerNum Index of the staker
      * @return Address of the staker
      */
-    function getStakerAddress(uint64 stakerNum) external view override returns (address) {
+    function getStakerAddress(
+        uint64 stakerNum
+    ) external view override returns (address) {
         return _stakerList[stakerNum];
     }
 
@@ -178,7 +180,9 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
      * @param staker Staker address to check
      * @return True or False for whether the staker was staked
      */
-    function isStaked(address staker) public view override returns (bool) {
+    function isStaked(
+        address staker
+    ) public view override returns (bool) {
         return _stakerMap[staker].isStaked;
     }
 
@@ -187,7 +191,9 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
      * @param staker Staker address to lookup
      * @return Latest assertion staked of the staker
      */
-    function latestStakedAssertion(address staker) public view override returns (bytes32) {
+    function latestStakedAssertion(
+        address staker
+    ) public view override returns (bytes32) {
         return _stakerMap[staker].latestStakedAssertion;
     }
 
@@ -196,7 +202,9 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
      * @param staker Staker address to lookup
      * @return Amount staked of the staker
      */
-    function amountStaked(address staker) public view override returns (uint256) {
+    function amountStaked(
+        address staker
+    ) public view override returns (uint256) {
         return _stakerMap[staker].amountStaked;
     }
 
@@ -205,7 +213,9 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
      * @param staker Staker address to lookup
      * @return Withdrawal address of the staker
      */
-    function withdrawalAddress(address staker) public view override returns (address) {
+    function withdrawalAddress(
+        address staker
+    ) public view override returns (address) {
         return _stakerMap[staker].withdrawalAddress;
     }
 
@@ -214,7 +224,9 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
      * @param staker Staker address to retrieve
      * @return A structure with information about the requested staker
      */
-    function getStaker(address staker) external view override returns (Staker memory) {
+    function getStaker(
+        address staker
+    ) external view override returns (Staker memory) {
         return _stakerMap[staker];
     }
 
@@ -223,7 +235,9 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
      * @param user Address to check the funds of
      * @return Amount of funds withdrawable by user
      */
-    function withdrawableFunds(address user) external view override returns (uint256) {
+    function withdrawableFunds(
+        address user
+    ) external view override returns (uint256) {
         return _withdrawableFunds[user];
     }
 
@@ -341,7 +355,9 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
      * This should only be called when the staker is inactive
      * @param stakerAddress Address of the staker withdrawing their stake
      */
-    function withdrawStaker(address stakerAddress) internal {
+    function withdrawStaker(
+        address stakerAddress
+    ) internal {
         Staker storage staker = _stakerMap[stakerAddress];
         address _withdrawalAddress = staker.withdrawalAddress;
         uint256 initialStaked = staker.amountStaked;
@@ -355,7 +371,9 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
      * @param account Address of the account to remove funds from
      * @return Amount of funds removed from account
      */
-    function withdrawFunds(address account) internal returns (uint256) {
+    function withdrawFunds(
+        address account
+    ) internal returns (uint256) {
         uint256 amount = _withdrawableFunds[account];
         _withdrawableFunds[account] = 0;
         totalWithdrawableFunds -= amount;
@@ -379,7 +397,9 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
      * @notice Remove the given staker
      * @param stakerAddress Address of the staker to remove
      */
-    function deleteStaker(address stakerAddress) private {
+    function deleteStaker(
+        address stakerAddress
+    ) private {
         Staker storage staker = _stakerMap[stakerAddress];
         require(staker.isStaked, "NOT_STAKED");
         uint64 stakerIndex = staker.index;
@@ -569,11 +589,15 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         });
     }
 
-    function getFirstChildCreationBlock(bytes32 assertionHash) external view returns (uint64) {
+    function getFirstChildCreationBlock(
+        bytes32 assertionHash
+    ) external view returns (uint64) {
         return getAssertionStorage(assertionHash).firstChildBlock;
     }
 
-    function getSecondChildCreationBlock(bytes32 assertionHash) external view returns (uint64) {
+    function getSecondChildCreationBlock(
+        bytes32 assertionHash
+    ) external view returns (uint64) {
         return getAssertionStorage(assertionHash).secondChildBlock;
     }
 
@@ -593,11 +617,15 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         RollupLib.validateConfigHash(configData, getAssertionStorage(assertionHash).configHash);
     }
 
-    function isFirstChild(bytes32 assertionHash) external view returns (bool) {
+    function isFirstChild(
+        bytes32 assertionHash
+    ) external view returns (bool) {
         return getAssertionStorage(assertionHash).isFirstChild;
     }
 
-    function isPending(bytes32 assertionHash) external view returns (bool) {
+    function isPending(
+        bytes32 assertionHash
+    ) external view returns (bool) {
         return getAssertionStorage(assertionHash).status == AssertionStatus.Pending;
     }
 
@@ -605,7 +633,9 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         return validators.values();
     }
 
-    function isValidator(address validator) external view returns (bool) {
+    function isValidator(
+        address validator
+    ) external view returns (bool) {
         return validators.contains(validator);
     }
 
@@ -613,7 +643,9 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
      * @notice Verify that the given staker is not active
      * @param stakerAddress Address to check
      */
-    function requireInactiveStaker(address stakerAddress) internal view {
+    function requireInactiveStaker(
+        address stakerAddress
+    ) internal view {
         require(isStaked(stakerAddress), "NOT_STAKED");
         // A staker is inactive if
         // a) their last staked assertion is the latest confirmed assertion

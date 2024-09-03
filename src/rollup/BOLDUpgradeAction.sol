@@ -66,23 +66,35 @@ interface IOldRollup {
 
     function wasmModuleRoot() external view returns (bytes32);
     function latestConfirmed() external view returns (uint64);
-    function getNode(uint64 nodeNum) external view returns (Node memory);
-    function getStakerAddress(uint64 stakerNum) external view returns (address);
+    function getNode(
+        uint64 nodeNum
+    ) external view returns (Node memory);
+    function getStakerAddress(
+        uint64 stakerNum
+    ) external view returns (address);
     function stakerCount() external view returns (uint64);
-    function getStaker(address staker) external view returns (OldStaker memory);
-    function isValidator(address validator) external view returns (bool);
+    function getStaker(
+        address staker
+    ) external view returns (OldStaker memory);
+    function isValidator(
+        address validator
+    ) external view returns (bool);
     function validatorWalletCreator() external view returns (address);
     function anyTrustFastConfirmer() external view returns (address);
 }
 
 interface IOldRollupAdmin {
-    function forceRefundStaker(address[] memory stacker) external;
+    function forceRefundStaker(
+        address[] memory stacker
+    ) external;
     function pause() external;
     function resume() external;
 }
 
 interface ISeqInboxPostUpgradeInit {
-    function postUpgradeInit(BufferConfig memory bufferConfig_) external;
+    function postUpgradeInit(
+        BufferConfig memory bufferConfig_
+    ) external;
 }
 
 /// @title  Provides pre-images to a state hash
@@ -132,7 +144,9 @@ contract StateHashPreImageLookup {
 contract RollupReader is IOldRollup {
     IOldRollup public immutable rollup;
 
-    constructor(IOldRollup _rollup) {
+    constructor(
+        IOldRollup _rollup
+    ) {
         rollup = _rollup;
     }
 
@@ -144,11 +158,15 @@ contract RollupReader is IOldRollup {
         return rollup.latestConfirmed();
     }
 
-    function getNode(uint64 nodeNum) external view returns (Node memory) {
+    function getNode(
+        uint64 nodeNum
+    ) external view returns (Node memory) {
         return rollup.getNode(nodeNum);
     }
 
-    function getStakerAddress(uint64 stakerNum) external view returns (address) {
+    function getStakerAddress(
+        uint64 stakerNum
+    ) external view returns (address) {
         return rollup.getStakerAddress(stakerNum);
     }
 
@@ -156,11 +174,15 @@ contract RollupReader is IOldRollup {
         return rollup.stakerCount();
     }
 
-    function getStaker(address staker) external view returns (OldStaker memory) {
+    function getStaker(
+        address staker
+    ) external view returns (OldStaker memory) {
         return rollup.getStaker(staker);
     }
 
-    function isValidator(address validator) external view returns (bool) {
+    function isValidator(
+        address validator
+    ) external view returns (bool) {
         return rollup.isValidator(validator);
     }
 
@@ -179,7 +201,9 @@ contract RollupReader is IOldRollup {
 contract ConstantArrayStorage {
     uint256[] internal _array;
 
-    constructor(uint256[] memory __array) {
+    constructor(
+        uint256[] memory __array
+    ) {
         _array = __array;
     }
 
@@ -426,7 +450,9 @@ contract BOLDUpgradeAction {
         });
     }
 
-    function upgradeSurroundingContracts(address newRollupAddress) private {
+    function upgradeSurroundingContracts(
+        address newRollupAddress
+    ) private {
         // upgrade each of these contracts to an implementation that allows
         // the rollup address to be set to the new rollup address
 
@@ -513,7 +539,9 @@ contract BOLDUpgradeAction {
         ISequencerInbox(SEQ_INBOX).updateRollupAddress();
     }
 
-    function perform(address[] memory validators) external {
+    function perform(
+        address[] memory validators
+    ) external {
         // tidy up the old rollup - pause it and refund stakes
         cleanupOldRollup();
 

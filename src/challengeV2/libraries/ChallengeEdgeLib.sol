@@ -178,13 +178,17 @@ library ChallengeEdgeLib {
     ///         Rivals have the same start height, start history root and end height. They also have the same origin id and level.
     ///         The difference between rivals is that they have a different endHistoryRoot, so that information
     ///         is not included in this hash.
-    function mutualId(ChallengeEdge storage ce) internal view returns (bytes32) {
+    function mutualId(
+        ChallengeEdge storage ce
+    ) internal view returns (bytes32) {
         return mutualIdComponent(
             ce.level, ce.originId, ce.startHeight, ce.startHistoryRoot, ce.endHeight
         );
     }
 
-    function mutualIdMem(ChallengeEdge memory ce) internal pure returns (bytes32) {
+    function mutualIdMem(
+        ChallengeEdge memory ce
+    ) internal pure returns (bytes32) {
         return mutualIdComponent(
             ce.level, ce.originId, ce.startHeight, ce.startHistoryRoot, ce.endHeight
         );
@@ -211,7 +215,9 @@ library ChallengeEdgeLib {
     /// @dev    This separate idMem method is to be explicit about when ChallengeEdges are copied into memory. It is
     ///         possible to pass a storage edge to this method and the id be computed correctly, but that would load
     ///         the whole struct into memory, so we're explicit here that this should be used for edges already in memory.
-    function idMem(ChallengeEdge memory edge) internal pure returns (bytes32) {
+    function idMem(
+        ChallengeEdge memory edge
+    ) internal pure returns (bytes32) {
         return idComponent(
             edge.level,
             edge.originId,
@@ -223,7 +229,9 @@ library ChallengeEdgeLib {
     }
 
     /// @notice The id of an edge. Edges are uniquely identified by their id, and commit to the same information
-    function id(ChallengeEdge storage edge) internal view returns (bytes32) {
+    function id(
+        ChallengeEdge storage edge
+    ) internal view returns (bytes32) {
         return idComponent(
             edge.level,
             edge.originId,
@@ -235,13 +243,17 @@ library ChallengeEdgeLib {
     }
 
     /// @notice Does this edge exist in storage
-    function exists(ChallengeEdge storage edge) internal view returns (bool) {
+    function exists(
+        ChallengeEdge storage edge
+    ) internal view returns (bool) {
         // All edges have a createdAtBlock number
         return edge.createdAtBlock != 0;
     }
 
     /// @notice The length of this edge - difference between the start and end heights
-    function length(ChallengeEdge storage edge) internal view returns (uint256) {
+    function length(
+        ChallengeEdge storage edge
+    ) internal view returns (uint256) {
         uint256 len = edge.endHeight - edge.startHeight;
         // It's impossible for a zero length edge to exist
         if (len == 0) {
@@ -268,7 +280,9 @@ library ChallengeEdgeLib {
 
     /// @notice Set the status of an edge to Confirmed
     /// @dev    Only Pending edges can be confirmed
-    function setConfirmed(ChallengeEdge storage edge) internal {
+    function setConfirmed(
+        ChallengeEdge storage edge
+    ) internal {
         if (edge.status != EdgeStatus.Pending) {
             revert EdgeNotPending(ChallengeEdgeLib.id(edge), edge.status);
         }
@@ -277,13 +291,17 @@ library ChallengeEdgeLib {
     }
 
     /// @notice Is the edge a layer zero edge.
-    function isLayerZero(ChallengeEdge storage edge) internal view returns (bool) {
+    function isLayerZero(
+        ChallengeEdge storage edge
+    ) internal view returns (bool) {
         return edge.claimId != 0 && edge.staker != address(0);
     }
 
     /// @notice Set the refunded flag of an edge
     /// @dev    Checks internally that edge is confirmed, layer zero edge and hasnt been refunded already
-    function setRefunded(ChallengeEdge storage edge) internal {
+    function setRefunded(
+        ChallengeEdge storage edge
+    ) internal {
         if (edge.status != EdgeStatus.Confirmed) {
             revert EdgeNotConfirmed(ChallengeEdgeLib.id(edge), edge.status);
         }

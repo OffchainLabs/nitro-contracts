@@ -60,7 +60,9 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
 
     uint128 public constant OUTBOX_VERSION = 2;
 
-    function initialize(IBridge _bridge) external onlyDelegated {
+    function initialize(
+        IBridge _bridge
+    ) external onlyDelegated {
         if (address(_bridge) == address(0)) revert HadZeroInit();
         if (address(bridge) != address(0)) revert AlreadyInit();
         // address zero is returned if no context is set, but the values used in storage
@@ -235,7 +237,9 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
     }
 
     /// @inheritdoc IOutbox
-    function isSpent(uint256 index) external view returns (bool) {
+    function isSpent(
+        uint256 index
+    ) external view returns (bool) {
         (, uint256 bitOffset, bytes32 replay) = _calcSpentIndexOffset(index);
         return _isSpent(bitOffset, replay);
     }
@@ -296,13 +300,17 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
     /// @notice based on provided value, get amount of ETH/token to unlock. In case of ETH-based rollup this amount
     ///         will always equal the provided value. In case of ERC20-based rollup, amount will be re-adjusted to
     ///         reflect the number of decimals used by native token, in case it is different than 18.
-    function _getAmountToUnlock(uint256 value) internal view virtual returns (uint256);
+    function _getAmountToUnlock(
+        uint256 value
+    ) internal view virtual returns (uint256);
 
     /// @notice value to be set for 'amount' field in L2ToL1Context during L2 to L1 transaction execution.
     ///         In case of ERC20-based rollup this is the amount of native token being withdrawn. In case of standard ETH-based
     ///         rollup this amount shall always be 0, because amount of ETH being withdrawn can be read from msg.value.
     /// @return amount of native token being withdrawn in case of ERC20-based rollup, or 0 in case of ETH-based rollup
-    function _amountToSetInContext(uint256 value) internal pure virtual returns (uint256);
+    function _amountToSetInContext(
+        uint256 value
+    ) internal pure virtual returns (uint256);
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new

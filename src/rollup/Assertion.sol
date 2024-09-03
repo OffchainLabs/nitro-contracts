@@ -82,7 +82,9 @@ library AssertionNodeLib {
     /**
      * @notice Update child properties
      */
-    function childCreated(AssertionNode storage self) internal {
+    function childCreated(
+        AssertionNode storage self
+    ) internal {
         if (self.firstChildBlock == 0) {
             self.firstChildBlock = uint64(block.number);
         } else if (self.secondChildBlock == 0) {
@@ -90,7 +92,9 @@ library AssertionNodeLib {
         }
     }
 
-    function requireExists(AssertionNode memory self) internal pure {
+    function requireExists(
+        AssertionNode memory self
+    ) internal pure {
         require(self.status != AssertionStatus.NoAssertion, "ASSERTION_NOT_EXIST");
     }
 }

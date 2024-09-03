@@ -22,5 +22,7 @@ interface IEthBridge is IBridge {
 
     // ---------- initializer ----------
 
-    function initialize(IOwnable rollup_) external;
+    function initialize(
+        IOwnable rollup_
+    ) external;
 }
