@@ -11,7 +11,6 @@ import "../precompiles/ArbGasInfo.sol";
 import "../libraries/ArbitrumChecker.sol";
 import "../bridge/IDelayedMessageProvider.sol";
 import "../libraries/DelegateCallAware.sol";
-import {INITIALIZATION_MSG_TYPE} from "../libraries/MessageTypes.sol";
 import {AlreadyInit, HadZeroInit, RollupNotChanged} from "../libraries/Error.sol";
 
 /**

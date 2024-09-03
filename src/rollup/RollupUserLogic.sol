@@ -10,7 +10,6 @@ import {IRollupUser} from "./IRollupLogic.sol";
 import "../libraries/UUPSNotUpgradeable.sol";
 import "./RollupCore.sol";
 import "./IRollupLogic.sol";
-import {ETH_POS_BLOCK_TIME} from "../libraries/Constants.sol";
 
 contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
     using AssertionNodeLib for AssertionNode;

@@ -13,7 +13,6 @@ import {
     CallNotAllowed,
     NativeTokenDecimalsTooLarge
 } from "../libraries/Error.sol";
-import {DecimalsConverterHelper} from "../libraries/DecimalsConverterHelper.sol";
 import {MAX_ALLOWED_NATIVE_TOKEN_DECIMALS} from "../libraries/Constants.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
