@@ -18,7 +18,9 @@ struct Module {
 library ModuleLib {
     using ModuleMemoryCompactLib for ModuleMemory;
 
-    function hash(Module memory mod) internal pure returns (bytes32) {
+    function hash(
+        Module memory mod
+    ) internal pure returns (bytes32) {
         return keccak256(
             abi.encodePacked(
                 "Module:",

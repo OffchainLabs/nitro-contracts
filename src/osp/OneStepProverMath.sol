@@ -39,7 +39,9 @@ contract OneStepProverMath is IOneStepProver {
         mach.valueStack.push(ValueLib.newI32(output));
     }
 
-    function signExtend(uint32 a) internal pure returns (uint64) {
+    function signExtend(
+        uint32 a
+    ) internal pure returns (uint64) {
         if (a & (1 << 31) != 0) {
             return uint64(a) | uint64(0xffffffff00000000);
         }

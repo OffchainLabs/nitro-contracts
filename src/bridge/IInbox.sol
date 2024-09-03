@@ -129,5 +129,7 @@ interface IInbox is IInboxBase {
      * @dev function to be called one time during the inbox upgrade process
      *      this is used to fix the storage slots
      */
-    function postUpgradeInit(IBridge _bridge) external;
+    function postUpgradeInit(
+        IBridge _bridge
+    ) external;
 }

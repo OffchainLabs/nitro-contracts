@@ -26,5 +26,7 @@ interface NodeInterfaceDebug {
      * @param ticket the retryable's id
      * @return retryable the serialized retryable
      */
-    function getRetryable(bytes32 ticket) external view returns (RetryableInfo memory retryable);
+    function getRetryable(
+        bytes32 ticket
+    ) external view returns (RetryableInfo memory retryable);
 }

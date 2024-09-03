@@ -10,7 +10,9 @@ contract RollupMock {
 
     address public owner;
 
-    constructor(address _owner) {
+    constructor(
+        address _owner
+    ) {
         owner = _owner;
     }
 

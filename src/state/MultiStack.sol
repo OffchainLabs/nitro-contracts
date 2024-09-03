@@ -34,12 +34,16 @@ library MultiStackLib {
         }
     }
 
-    function setEmpty(MultiStack memory multi) internal pure {
+    function setEmpty(
+        MultiStack memory multi
+    ) internal pure {
         multi.inactiveStackHash = NO_STACK_HASH;
         multi.remainingHash = 0;
     }
 
-    function pushNew(MultiStack memory multi) internal pure {
+    function pushNew(
+        MultiStack memory multi
+    ) internal pure {
         if (multi.inactiveStackHash != NO_STACK_HASH) {
             multi.remainingHash = keccak256(
                 abi.encodePacked("cothread:", multi.inactiveStackHash, multi.remainingHash)

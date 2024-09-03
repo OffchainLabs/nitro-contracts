@@ -75,7 +75,9 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
         return _enqueueDelayedMessage(kind, sender, messageDataHash, tokenFeeAmount);
     }
 
-    function _transferFunds(uint256 amount) internal override {
+    function _transferFunds(
+        uint256 amount
+    ) internal override {
         // fetch native token from Inbox
         IERC20(nativeToken).safeTransferFrom(msg.sender, address(this), amount);
     }

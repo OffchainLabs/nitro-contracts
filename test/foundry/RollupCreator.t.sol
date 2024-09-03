@@ -520,22 +520,30 @@ contract RollupCreatorTest is Test {
         return (ospEntry, challengeManager, rollupAdminLogic, rollupUserLogic);
     }
 
-    function _getProxyAdmin(address proxy) internal view returns (address) {
+    function _getProxyAdmin(
+        address proxy
+    ) internal view returns (address) {
         bytes32 adminSlot = bytes32(uint256(keccak256("eip1967.proxy.admin")) - 1);
         return address(uint160(uint256(vm.load(proxy, adminSlot))));
     }
 
-    function _getImpl(address proxy) internal view returns (address) {
+    function _getImpl(
+        address proxy
+    ) internal view returns (address) {
         bytes32 implSlot = bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1);
         return address(uint160(uint256(vm.load(proxy, implSlot))));
     }
 
-    function _getPrimary(address proxy) internal view returns (address) {
+    function _getPrimary(
+        address proxy
+    ) internal view returns (address) {
         bytes32 primarySlot = bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1);
         return address(uint160(uint256(vm.load(proxy, primarySlot))));
     }
 
-    function _getSecondary(address proxy) internal view returns (address) {
+    function _getSecondary(
+        address proxy
+    ) internal view returns (address) {
         bytes32 secondarySlot =
             bytes32(uint256(keccak256("eip1967.proxy.implementation.secondary")) - 1);
         return address(uint160(uint256(vm.load(proxy, secondarySlot))));

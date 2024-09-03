@@ -68,7 +68,9 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     }
 
     /// @notice Allows the rollup owner to set another rollup address
-    function updateRollupAddress(IOwnable _rollup) external onlyRollupOrOwner {
+    function updateRollupAddress(
+        IOwnable _rollup
+    ) external onlyRollupOrOwner {
         rollup = _rollup;
         emit RollupUpdated(address(_rollup));
     }
@@ -84,11 +86,15 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
         return outbox;
     }
 
-    function allowedDelayedInboxes(address inbox) public view returns (bool) {
+    function allowedDelayedInboxes(
+        address inbox
+    ) public view returns (bool) {
         return allowedDelayedInboxesMap[inbox].allowed;
     }
 
-    function allowedOutboxes(address outbox) public view returns (bool) {
+    function allowedOutboxes(
+        address outbox
+    ) public view returns (bool) {
         return allowedOutboxesMap[outbox].allowed;
     }
 
@@ -205,7 +211,9 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
         emit BridgeCallTriggered(msg.sender, to, value, data);
     }
 
-    function setSequencerInbox(address _sequencerInbox) external onlyRollupOrOwner {
+    function setSequencerInbox(
+        address _sequencerInbox
+    ) external onlyRollupOrOwner {
         sequencerInbox = _sequencerInbox;
         emit SequencerInboxUpdated(_sequencerInbox);
     }
@@ -249,7 +257,9 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
         }
     }
 
-    function setSequencerReportedSubMessageCount(uint256 newMsgCount) external onlyRollupOrOwner {
+    function setSequencerReportedSubMessageCount(
+        uint256 newMsgCount
+    ) external onlyRollupOrOwner {
         sequencerReportedSubMessageCount = newMsgCount;
     }
 
@@ -265,7 +275,9 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     function acceptFundsFromOldBridge() external payable {}
 
     /// @dev transfer funds provided to pay for crosschain msg
-    function _transferFunds(uint256 amount) internal virtual;
+    function _transferFunds(
+        uint256 amount
+    ) internal virtual;
 
     function _executeLowLevelCall(
         address to,

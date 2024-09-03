@@ -21,12 +21,16 @@ abstract contract AbsBoldStakingPool is IAbsBoldStakingPool {
     /// @inheritdoc IAbsBoldStakingPool
     mapping(address => uint256) public depositBalance;
 
-    constructor(address _stakeToken) {
+    constructor(
+        address _stakeToken
+    ) {
         stakeToken = _stakeToken;
     }
 
     /// @inheritdoc IAbsBoldStakingPool
-    function depositIntoPool(uint256 amount) external {
+    function depositIntoPool(
+        uint256 amount
+    ) external {
         if (amount == 0) {
             revert ZeroAmount();
         }
@@ -38,7 +42,9 @@ abstract contract AbsBoldStakingPool is IAbsBoldStakingPool {
     }
 
     /// @inheritdoc IAbsBoldStakingPool
-    function withdrawFromPool(uint256 amount) public {
+    function withdrawFromPool(
+        uint256 amount
+    ) public {
         if (amount == 0) {
             revert ZeroAmount();
         }

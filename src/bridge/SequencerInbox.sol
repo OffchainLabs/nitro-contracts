@@ -545,7 +545,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         }
     }
 
-    function isDelayProofRequired(uint256 afterDelayedMessagesRead) internal view returns (bool) {
+    function isDelayProofRequired(
+        uint256 afterDelayedMessagesRead
+    ) internal view returns (bool) {
         // if no new delayed messages are read, no buffer updates can be applied, so no proof required
         // if the buffer is synced, the buffer cannot be depleted, so no proof is required
         return isDelayBufferable && afterDelayedMessagesRead > totalDelayedMessagesRead
@@ -585,7 +587,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     ///         therefore we restrict which flags can be provided as a header in this field
     ///         This also safe guards unused flags for future use, as we know they would have been disallowed up until this point
     /// @param  headerByte The first byte in the calldata
-    function isValidCallDataFlag(bytes1 headerByte) internal pure returns (bool) {
+    function isValidCallDataFlag(
+        bytes1 headerByte
+    ) internal pure returns (bool) {
         return headerByte == BROTLI_MESSAGE_HEADER_FLAG || headerByte == DAS_MESSAGE_HEADER_FLAG
             || (headerByte == (DAS_MESSAGE_HEADER_FLAG | TREE_DAS_MESSAGE_HEADER_FLAG))
             || headerByte == ZERO_HEAVY_MESSAGE_HEADER_FLAG;
@@ -706,7 +710,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         }
     }
 
-    function inboxAccs(uint256 index) external view returns (bytes32) {
+    function inboxAccs(
+        uint256 index
+    ) external view returns (bytes32) {
         return bridge.sequencerInboxAccs(index);
     }
 
@@ -715,7 +721,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @inheritdoc ISequencerInbox
-    function forceInclusionDeadline(uint64 blockNumber) external view returns (uint64) {
+    function forceInclusionDeadline(
+        uint64 blockNumber
+    ) external view returns (uint64) {
         uint64 _delayBlocks = delayBlocks;
         if (isDelayBufferable) {
             uint64 _buffer = buffer.calcPendingBuffer(blockNumber);
@@ -725,11 +733,15 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @notice Calculates the buffer dependent delay blocks
-    function delayBufferableBlocks(uint64 _buffer) internal view returns (uint64) {
+    function delayBufferableBlocks(
+        uint64 _buffer
+    ) internal view returns (uint64) {
         return _buffer < delayBlocks ? _buffer : delayBlocks;
     }
 
-    function _setBufferConfig(BufferConfig memory bufferConfig_) internal {
+    function _setBufferConfig(
+        BufferConfig memory bufferConfig_
+    ) internal {
         if (!isDelayBufferable) revert NotDelayBufferable();
         if (!DelayBuffer.isValidBufferConfig(bufferConfig_)) revert BadBufferConfig();
 
@@ -786,7 +798,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @inheritdoc ISequencerInbox
-    function setValidKeyset(bytes calldata keysetBytes) external onlyRollupOwner {
+    function setValidKeyset(
+        bytes calldata keysetBytes
+    ) external onlyRollupOwner {
         uint256 ksWord = uint256(keccak256(bytes.concat(hex"fe", keccak256(keysetBytes))));
         bytes32 ksHash = bytes32(ksWord ^ (1 << 255));
         if (keysetBytes.length >= 64 * 1024) revert KeysetTooLarge();
@@ -803,7 +817,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @inheritdoc ISequencerInbox
-    function invalidateKeysetHash(bytes32 ksHash) external onlyRollupOwner {
+    function invalidateKeysetHash(
+        bytes32 ksHash
+    ) external onlyRollupOwner {
         if (!dasKeySetInfo[ksHash].isValidKeyset) revert NoSuchKeyset(ksHash);
         // we don't delete the block creation value since its used to fetch the SetValidKeyset
         // event efficiently. The event provides the hash preimage of the key.
@@ -824,23 +840,31 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @inheritdoc ISequencerInbox
-    function setBatchPosterManager(address newBatchPosterManager) external onlyRollupOwner {
+    function setBatchPosterManager(
+        address newBatchPosterManager
+    ) external onlyRollupOwner {
         batchPosterManager = newBatchPosterManager;
         emit BatchPosterManagerSet(newBatchPosterManager);
         emit OwnerFunctionCalled(5);
     }
 
-    function setBufferConfig(BufferConfig memory bufferConfig_) external onlyRollupOwner {
+    function setBufferConfig(
+        BufferConfig memory bufferConfig_
+    ) external onlyRollupOwner {
         _setBufferConfig(bufferConfig_);
         emit BufferConfigSet(bufferConfig_);
     }
 
-    function isValidKeysetHash(bytes32 ksHash) external view returns (bool) {
+    function isValidKeysetHash(
+        bytes32 ksHash
+    ) external view returns (bool) {
         return dasKeySetInfo[ksHash].isValidKeyset;
     }
 
     /// @inheritdoc ISequencerInbox
-    function getKeysetCreationBlock(bytes32 ksHash) external view returns (uint256) {
+    function getKeysetCreationBlock(
+        bytes32 ksHash
+    ) external view returns (uint256) {
         DasKeySetInfo memory ksInfo = dasKeySetInfo[ksHash];
         if (ksInfo.creationBlock == 0) revert NoSuchKeyset(ksHash);
         return uint256(ksInfo.creationBlock);

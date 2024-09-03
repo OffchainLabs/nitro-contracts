@@ -26,11 +26,15 @@ library StateToolsLib {
         return AssertionState({globalState: gs, machineStatus: ms, endHistoryRoot: bytes32(0)});
     }
 
-    function hash(AssertionState memory s) internal pure returns (bytes32) {
+    function hash(
+        AssertionState memory s
+    ) internal pure returns (bytes32) {
         return s.globalState.hash();
     }
 
-    function mockMachineHash(AssertionState memory s) internal pure returns (bytes32) {
+    function mockMachineHash(
+        AssertionState memory s
+    ) internal pure returns (bytes32) {
         return s.globalState.hash();
     }
 }

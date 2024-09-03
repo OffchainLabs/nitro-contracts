@@ -25,7 +25,9 @@ contract MockRollupEventInbox is IRollupEventInbox, IDelayedMessageProvider, Del
         _;
     }
 
-    function initialize(IBridge _bridge) external override onlyDelegated {
+    function initialize(
+        IBridge _bridge
+    ) external override onlyDelegated {
         if (address(bridge) != address(0)) revert AlreadyInit();
         if (address(_bridge) == address(0)) revert HadZeroInit();
         bridge = _bridge;

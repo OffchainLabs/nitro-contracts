@@ -2344,7 +2344,9 @@ contract EdgeChallengeManagerTest is Test {
         }
     }
 
-    function _safeVmRoll(uint256 target) internal {
+    function _safeVmRoll(
+        uint256 target
+    ) internal {
         require(target >= block.number, "BACKWARD_VMROLL");
         vm.roll(target);
     }

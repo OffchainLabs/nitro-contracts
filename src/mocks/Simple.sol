@@ -21,7 +21,9 @@ contract Simple {
         counter++;
     }
 
-    function logAndIncrement(uint256 expected) external {
+    function logAndIncrement(
+        uint256 expected
+    ) external {
         emit LogAndIncrementCalled(expected, counter);
         counter++;
     }

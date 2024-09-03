@@ -69,7 +69,9 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
     }
 
     /// @inheritdoc IInboxBase
-    function setAllowListEnabled(bool _allowListEnabled) external onlyRollupOrOwner {
+    function setAllowListEnabled(
+        bool _allowListEnabled
+    ) external onlyRollupOrOwner {
         require(_allowListEnabled != allowListEnabled, "ALREADY_SET");
         allowListEnabled = _allowListEnabled;
         emit AllowListEnabledUpdated(_allowListEnabled);
@@ -102,7 +104,9 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
     uint256 public immutable maxDataSize;
     uint256 internal immutable deployTimeChainId = block.chainid;
 
-    constructor(uint256 _maxDataSize) {
+    constructor(
+        uint256 _maxDataSize
+    ) {
         maxDataSize = _maxDataSize;
     }
 
@@ -132,7 +136,9 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
     }
 
     /// @inheritdoc IInboxBase
-    function sendL2MessageFromOrigin(bytes calldata) external pure returns (uint256) {
+    function sendL2MessageFromOrigin(
+        bytes calldata
+    ) external pure returns (uint256) {
         revert Deprecated();
     }
 
@@ -341,7 +347,9 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
     ///         decimals used for native currency on child chain.
     /// @dev    provided value has to be less than 'type(uint256).max/10**(18-decimalsIn)'
     ///         or otherwise it will overflow.
-    function _fromNativeTo18Decimals(uint256 value) internal view virtual returns (uint256);
+    function _fromNativeTo18Decimals(
+        uint256 value
+    ) internal view virtual returns (uint256);
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new

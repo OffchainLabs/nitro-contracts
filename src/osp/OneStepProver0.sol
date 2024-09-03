@@ -94,7 +94,9 @@ contract OneStepProver0 is IOneStepProver {
         mach.setPc(frame.returnPc);
     }
 
-    function createReturnValue(Machine memory mach) internal pure returns (Value memory) {
+    function createReturnValue(
+        Machine memory mach
+    ) internal pure returns (Value memory) {
         return ValueLib.newPc(mach.functionPc, mach.functionIdx, mach.moduleIdx);
     }
 

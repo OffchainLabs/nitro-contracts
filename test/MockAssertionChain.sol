@@ -31,7 +31,9 @@ contract MockAssertionChain is IAssertionChain {
     bool public validatorWhitelistDisabled;
     mapping(address => bool) public isValidator;
 
-    function assertionExists(bytes32 assertionHash) public view returns (bool) {
+    function assertionExists(
+        bytes32 assertionHash
+    ) public view returns (bool) {
         return assertions[assertionHash].height != 0;
     }
 
@@ -53,12 +55,16 @@ contract MockAssertionChain is IAssertionChain {
         );
     }
 
-    function getFirstChildCreationBlock(bytes32 assertionHash) external view returns (uint64) {
+    function getFirstChildCreationBlock(
+        bytes32 assertionHash
+    ) external view returns (uint64) {
         require(assertionExists(assertionHash), "Assertion does not exist");
         return assertions[assertionHash].firstChildCreationBlock;
     }
 
-    function getSecondChildCreationBlock(bytes32 assertionHash) external view returns (uint64) {
+    function getSecondChildCreationBlock(
+        bytes32 assertionHash
+    ) external view returns (uint64) {
         require(assertionExists(assertionHash), "Assertion does not exist");
         return assertions[assertionHash].secondChildCreationBlock;
     }
@@ -76,12 +82,16 @@ contract MockAssertionChain is IAssertionChain {
         );
     }
 
-    function isFirstChild(bytes32 assertionHash) external view returns (bool) {
+    function isFirstChild(
+        bytes32 assertionHash
+    ) external view returns (bool) {
         require(assertionExists(assertionHash), "Assertion does not exist");
         return assertions[assertionHash].isFirstChild;
     }
 
-    function isPending(bytes32 assertionHash) external view returns (bool) {
+    function isPending(
+        bytes32 assertionHash
+    ) external view returns (bool) {
         require(assertionExists(assertionHash), "Assertion does not exist");
         return assertions[assertionHash].isPending;
     }
@@ -97,7 +107,9 @@ contract MockAssertionChain is IAssertionChain {
         });
     }
 
-    function childCreated(bytes32 assertionHash) internal {
+    function childCreated(
+        bytes32 assertionHash
+    ) internal {
         if (assertions[assertionHash].firstChildCreationBlock == 0) {
             assertions[assertionHash].firstChildCreationBlock = uint64(block.number);
         } else if (assertions[assertionHash].secondChildCreationBlock == 0) {
@@ -157,7 +169,9 @@ contract MockAssertionChain is IAssertionChain {
         );
     }
 
-    function setValidatorWhitelistDisabled(bool x) external {
+    function setValidatorWhitelistDisabled(
+        bool x
+    ) external {
         validatorWhitelistDisabled = x;
     }
 

@@ -59,7 +59,9 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
         _;
     }
 
-    function setSequencerInbox(address _sequencerInbox) external override onlyRollupOrOwner {
+    function setSequencerInbox(
+        address _sequencerInbox
+    ) external override onlyRollupOrOwner {
         sequencerInbox = _sequencerInbox;
         emit SequencerInboxUpdated(_sequencerInbox);
     }
@@ -72,12 +74,16 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
 
     address private constant EMPTY_ACTIVEOUTBOX = address(type(uint160).max);
 
-    function initialize(IOwnable rollup_) external initializer {
+    function initialize(
+        IOwnable rollup_
+    ) external initializer {
         _activeOutbox = EMPTY_ACTIVEOUTBOX;
         rollup = rollup_;
     }
 
-    function updateRollupAddress(IOwnable _rollup) external {
+    function updateRollupAddress(
+        IOwnable _rollup
+    ) external {
         rollup = _rollup;
     }
 
@@ -86,11 +92,15 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
         return _activeOutbox;
     }
 
-    function allowedDelayedInboxes(address inbox) external view override returns (bool) {
+    function allowedDelayedInboxes(
+        address inbox
+    ) external view override returns (bool) {
         return allowedInboxesMap[inbox].allowed;
     }
 
-    function allowedOutboxes(address outbox) external view override returns (bool) {
+    function allowedOutboxes(
+        address outbox
+    ) external view override returns (bool) {
         return allowedOutboxesMap[outbox].allowed;
     }
 

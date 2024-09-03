@@ -22,7 +22,9 @@ contract OutboxWithoutOptTester is DelegateCallAware, IOutbox {
     address public rollup; // the rollup contract
     IBridge public bridge; // the bridge contract
 
-    function spent(uint256) external pure override returns (bytes32) {
+    function spent(
+        uint256
+    ) external pure override returns (bytes32) {
         revert("NOT_IMPLEMETED");
     }
 
@@ -43,7 +45,9 @@ contract OutboxWithoutOptTester is DelegateCallAware, IOutbox {
     L2ToL1Context internal context;
     uint128 public constant OUTBOX_VERSION = 2;
 
-    function initialize(IBridge _bridge) external {
+    function initialize(
+        IBridge _bridge
+    ) external {
         if (address(bridge) != address(0)) revert AlreadyInit();
         bridge = _bridge;
         rollup = address(_bridge.rollup());

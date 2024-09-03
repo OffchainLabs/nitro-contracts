@@ -51,7 +51,9 @@ interface IEdgeChallengeManager {
 
     /// @notice Performs necessary checks and creates a new layer zero edge
     /// @param args             Edge creation args
-    function createLayerZeroEdge(CreateEdgeArgs calldata args) external returns (bytes32);
+    function createLayerZeroEdge(
+        CreateEdgeArgs calldata args
+    ) external returns (bytes32);
 
     /// @notice Bisect an edge. This creates two child edges:
     ///         lowerChild: has the same start root and height as this edge, but a different end root and height
@@ -132,11 +134,15 @@ interface IEdgeChallengeManager {
 
     /// @notice When zero layer block edges are created a stake is also provided
     ///         The stake on this edge can be refunded if the edge is confirme
-    function refundStake(bytes32 edgeId) external;
+    function refundStake(
+        bytes32 edgeId
+    ) external;
 
     /// @notice Zero layer edges have to be a fixed height.
     ///         This function returns the end height for a given edge type
-    function getLayerZeroEndHeight(EdgeType eType) external view returns (uint256);
+    function getLayerZeroEndHeight(
+        EdgeType eType
+    ) external view returns (uint256);
 
     /// @notice Calculate the unique id of an edge
     /// @param level            The level of the edge
@@ -170,41 +176,59 @@ interface IEdgeChallengeManager {
     ) external pure returns (bytes32);
 
     /// @notice Has the edge already been stored in the manager
-    function edgeExists(bytes32 edgeId) external view returns (bool);
+    function edgeExists(
+        bytes32 edgeId
+    ) external view returns (bool);
 
     /// @notice Get full edge data for an edge
-    function getEdge(bytes32 edgeId) external view returns (ChallengeEdge memory);
+    function getEdge(
+        bytes32 edgeId
+    ) external view returns (ChallengeEdge memory);
 
     /// @notice The length of the edge, from start height to end height
-    function edgeLength(bytes32 edgeId) external view returns (uint256);
+    function edgeLength(
+        bytes32 edgeId
+    ) external view returns (uint256);
 
     /// @notice Does this edge currently have one or more rivals
     ///         Rival edges share the same mutual id
-    function hasRival(bytes32 edgeId) external view returns (bool);
+    function hasRival(
+        bytes32 edgeId
+    ) external view returns (bool);
 
     /// @notice The confirmed rival of this mutual id
     ///         Returns 0 if one does not exist
-    function confirmedRival(bytes32 mutualId) external view returns (bytes32);
+    function confirmedRival(
+        bytes32 mutualId
+    ) external view returns (bytes32);
 
     /// @notice Does the edge have at least one rival, and it has length one
-    function hasLengthOneRival(bytes32 edgeId) external view returns (bool);
+    function hasLengthOneRival(
+        bytes32 edgeId
+    ) external view returns (bool);
 
     /// @notice The amount of time this edge has spent without rivals
     ///         This value is increasing whilst an edge is unrivaled, once a rival is created
     ///         it is fixed. If an edge has rivals from the moment it is created then it will have
     ///         a zero time unrivaled
-    function timeUnrivaled(bytes32 edgeId) external view returns (uint256);
+    function timeUnrivaled(
+        bytes32 edgeId
+    ) external view returns (uint256);
 
     /// @notice Get the id of the prev assertion that this edge is originates from
     /// @dev    Uses the parent chain to traverse upwards SmallStep->BigStep->Block->Assertion
     ///         until it gets to the origin assertion
-    function getPrevAssertionHash(bytes32 edgeId) external view returns (bytes32);
+    function getPrevAssertionHash(
+        bytes32 edgeId
+    ) external view returns (bytes32);
 
     /// @notice Fetch the raw first rival record for the given mutual id
     /// @dev    Returns 0 if there is no edge with the given mutual id
     ///         Returns a magic value if there is one edge but it is unrivaled
     ///         Returns the id of the second edge created with the mutual id, if > 1 exists
-    function firstRival(bytes32 mutualId) external view returns (bytes32);
+    function firstRival(
+        bytes32 mutualId
+    ) external view returns (bytes32);
 
     /// @notice True if an account has made a layer zero edge with the given mutual id.
     ///         This is only tracked when the validator whitelist is enabled
@@ -394,7 +418,9 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
     /////////////////////////////
 
     /// @inheritdoc IEdgeChallengeManager
-    function createLayerZeroEdge(CreateEdgeArgs calldata args) external returns (bytes32) {
+    function createLayerZeroEdge(
+        CreateEdgeArgs calldata args
+    ) external returns (bytes32) {
         // Check if whitelist is enabled in the Rollup
         // We only enforce whitelist in this function as it may exhaust resources
         bool whitelistEnabled = !assertionChain.validatorWhitelistDisabled();
@@ -622,7 +648,9 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
     }
 
     /// @inheritdoc IEdgeChallengeManager
-    function refundStake(bytes32 edgeId) public {
+    function refundStake(
+        bytes32 edgeId
+    ) public {
         ChallengeEdge storage edge = store.get(edgeId);
         // setting refunded also do checks that the edge cannot be refunded twice
         edge.setRefunded();
@@ -641,7 +669,9 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
     // VIEW ONLY SECTION //
     ///////////////////////
     /// @inheritdoc IEdgeChallengeManager
-    function getLayerZeroEndHeight(EdgeType eType) public view returns (uint256) {
+    function getLayerZeroEndHeight(
+        EdgeType eType
+    ) public view returns (uint256) {
         if (eType == EdgeType.Block) {
             return LAYERZERO_BLOCKEDGE_HEIGHT;
         } else if (eType == EdgeType.BigStep) {
@@ -681,47 +711,65 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
     }
 
     /// @inheritdoc IEdgeChallengeManager
-    function edgeExists(bytes32 edgeId) public view returns (bool) {
+    function edgeExists(
+        bytes32 edgeId
+    ) public view returns (bool) {
         return store.edges[edgeId].exists();
     }
 
     /// @inheritdoc IEdgeChallengeManager
-    function getEdge(bytes32 edgeId) public view returns (ChallengeEdge memory) {
+    function getEdge(
+        bytes32 edgeId
+    ) public view returns (ChallengeEdge memory) {
         return store.get(edgeId);
     }
 
     /// @inheritdoc IEdgeChallengeManager
-    function edgeLength(bytes32 edgeId) public view returns (uint256) {
+    function edgeLength(
+        bytes32 edgeId
+    ) public view returns (uint256) {
         return store.get(edgeId).length();
     }
 
     /// @inheritdoc IEdgeChallengeManager
-    function hasRival(bytes32 edgeId) public view returns (bool) {
+    function hasRival(
+        bytes32 edgeId
+    ) public view returns (bool) {
         return store.hasRival(edgeId);
     }
 
     /// @inheritdoc IEdgeChallengeManager
-    function confirmedRival(bytes32 mutualId) public view returns (bytes32) {
+    function confirmedRival(
+        bytes32 mutualId
+    ) public view returns (bytes32) {
         return store.confirmedRivals[mutualId];
     }
 
     /// @inheritdoc IEdgeChallengeManager
-    function hasLengthOneRival(bytes32 edgeId) public view returns (bool) {
+    function hasLengthOneRival(
+        bytes32 edgeId
+    ) public view returns (bool) {
         return store.hasLengthOneRival(edgeId);
     }
 
     /// @inheritdoc IEdgeChallengeManager
-    function timeUnrivaled(bytes32 edgeId) public view returns (uint256) {
+    function timeUnrivaled(
+        bytes32 edgeId
+    ) public view returns (uint256) {
         return store.timeUnrivaled(edgeId);
     }
 
     /// @inheritdoc IEdgeChallengeManager
-    function getPrevAssertionHash(bytes32 edgeId) public view returns (bytes32) {
+    function getPrevAssertionHash(
+        bytes32 edgeId
+    ) public view returns (bytes32) {
         return store.getPrevAssertionHash(edgeId);
     }
 
     /// @inheritdoc IEdgeChallengeManager
-    function firstRival(bytes32 mutualId) public view returns (bytes32) {
+    function firstRival(
+        bytes32 mutualId
+    ) public view returns (bytes32) {
         return store.firstRivals[mutualId];
     }
 

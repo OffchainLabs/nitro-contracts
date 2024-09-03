@@ -11,7 +11,9 @@ library UintUtilsLib {
     /// @dev    Zero indexed from the least sig bit. Eg 1010 => 1, 1100 => 2, 1001 => 0
     ///         Finds lsb in linear (uint size) time
     /// @param x Cannot be zero, since zero that has no signficant bits
-    function leastSignificantBit(uint256 x) internal pure returns (uint256 msb) {
+    function leastSignificantBit(
+        uint256 x
+    ) internal pure returns (uint256 msb) {
         require(x > 0, "Zero has no significant bits");
 
         // isolate the least sig bit
@@ -26,7 +28,9 @@ library UintUtilsLib {
     ///         Taken from https://solidity-by-example.org/bitwise/
     ///         Finds msb in log (uint size) time
     /// @param x Cannot be zero, since zero has no sigificant bits
-    function mostSignificantBit(uint256 x) internal pure returns (uint256 msb) {
+    function mostSignificantBit(
+        uint256 x
+    ) internal pure returns (uint256 msb) {
         require(x != 0, "Zero has no significant bits");
 
         // x >= 2 ** 128

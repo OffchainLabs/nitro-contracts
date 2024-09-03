@@ -14,7 +14,9 @@ interface IERC20Inbox is IInboxBase {
      *      Look into retryable tickets if you are interested in this functionality.
      * @dev This function should not be called inside contract constructors
      */
-    function depositERC20(uint256 amount) external returns (uint256);
+    function depositERC20(
+        uint256 amount
+    ) external returns (uint256);
 
     /**
      * @notice Put a message in the L2 inbox that can be reexecuted for some fixed amount of time if it reverts

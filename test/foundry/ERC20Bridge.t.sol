@@ -399,7 +399,9 @@ contract ERC20BridgeTest is AbsBridgeTest {
 contract MockBridgedToken is ERC20 {
     address public gateway;
 
-    constructor(address _gateway) ERC20("MockBridgedToken", "TT") {
+    constructor(
+        address _gateway
+    ) ERC20("MockBridgedToken", "TT") {
         gateway = _gateway;
         _mint(msg.sender, 1_000_000 ether);
     }

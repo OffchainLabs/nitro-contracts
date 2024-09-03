@@ -12,7 +12,9 @@ import "./Utils.sol";
 contract MockOneStepProofEntry is IOneStepProofEntry {
     using GlobalStateLib for GlobalState;
 
-    constructor(uint256 _testMachineStep) {
+    constructor(
+        uint256 _testMachineStep
+    ) {
         testMachineStep = _testMachineStep;
     }
 
@@ -49,23 +51,33 @@ contract EdgeChallengeManagerLibAccess {
 
     EdgeStore private store;
 
-    function exists(bytes32 edgeId) public view returns (bool) {
+    function exists(
+        bytes32 edgeId
+    ) public view returns (bool) {
         return store.get(edgeId).exists();
     }
 
-    function get(bytes32 edgeId) public view returns (ChallengeEdge memory) {
+    function get(
+        bytes32 edgeId
+    ) public view returns (ChallengeEdge memory) {
         return store.get(edgeId);
     }
 
-    function getNoCheck(bytes32 edgeId) public view returns (ChallengeEdge memory) {
+    function getNoCheck(
+        bytes32 edgeId
+    ) public view returns (ChallengeEdge memory) {
         return store.getNoCheck(edgeId);
     }
 
-    function add(ChallengeEdge memory edge) public returns (EdgeAddedData memory) {
+    function add(
+        ChallengeEdge memory edge
+    ) public returns (EdgeAddedData memory) {
         return store.add(edge);
     }
 
-    function isPowerOfTwo(uint256 x) public pure returns (bool) {
+    function isPowerOfTwo(
+        uint256 x
+    ) public pure returns (bool) {
         return EdgeChallengeManagerLib.isPowerOfTwo(x);
     }
 
@@ -82,11 +94,15 @@ contract EdgeChallengeManagerLibAccess {
         );
     }
 
-    function getPrevAssertionHash(bytes32 edgeId) public view returns (bytes32) {
+    function getPrevAssertionHash(
+        bytes32 edgeId
+    ) public view returns (bytes32) {
         return store.getPrevAssertionHash(edgeId);
     }
 
-    function hasRival(bytes32 edgeId) public view returns (bool) {
+    function hasRival(
+        bytes32 edgeId
+    ) public view returns (bool) {
         return store.hasRival(edgeId);
     }
 
@@ -94,15 +110,21 @@ contract EdgeChallengeManagerLibAccess {
         store.firstRivals[edgeId] = firstRival;
     }
 
-    function hasLengthOneRival(bytes32 edgeId) public view returns (bool) {
+    function hasLengthOneRival(
+        bytes32 edgeId
+    ) public view returns (bool) {
         return store.hasLengthOneRival(edgeId);
     }
 
-    function timeUnrivaled(bytes32 edgeId) public view returns (uint256) {
+    function timeUnrivaled(
+        bytes32 edgeId
+    ) public view returns (uint256) {
         return store.timeUnrivaled(edgeId);
     }
 
-    function timeUnrivaledTotal(bytes32 edgeId) public view returns (uint256) {
+    function timeUnrivaledTotal(
+        bytes32 edgeId
+    ) public view returns (uint256) {
         return store.timeUnrivaledTotal(edgeId);
     }
 
@@ -122,11 +144,15 @@ contract EdgeChallengeManagerLibAccess {
         return store.bisectEdge(edgeId, bisectionHistoryRoot, prefixProof);
     }
 
-    function setConfirmed(bytes32 id) public {
+    function setConfirmed(
+        bytes32 id
+    ) public {
         store.get(id).setConfirmed();
     }
 
-    function setConfirmedRival(bytes32 edgeId) public {
+    function setConfirmedRival(
+        bytes32 edgeId
+    ) public {
         return EdgeChallengeManagerLib.setConfirmedRival(store, edgeId);
     }
 
@@ -134,7 +160,9 @@ contract EdgeChallengeManagerLibAccess {
         store.get(edgeId).claimId = claimId;
     }
 
-    function getConfirmedRival(bytes32 mutualId) public view returns (bytes32) {
+    function getConfirmedRival(
+        bytes32 mutualId
+    ) public view returns (bytes32) {
         return store.confirmedRivals[mutualId];
     }
 
@@ -146,7 +174,9 @@ contract EdgeChallengeManagerLibAccess {
         return EdgeChallengeManagerLib.nextEdgeLevel(level, numBigStepLevel);
     }
 
-    function firstRivals(bytes32 mutualId) public view returns (bytes32) {
+    function firstRivals(
+        bytes32 mutualId
+    ) public view returns (bytes32) {
         return store.firstRivals[mutualId];
     }
 
@@ -158,11 +188,15 @@ contract EdgeChallengeManagerLibAccess {
         store.hasMadeLayerZeroRival[account][mutualId] = x;
     }
 
-    function remove(bytes32 edgeId) public {
+    function remove(
+        bytes32 edgeId
+    ) public {
         delete store.edges[edgeId];
     }
 
-    function confirmedRivals(bytes32 mutualId) public view returns (bytes32) {
+    function confirmedRivals(
+        bytes32 mutualId
+    ) public view returns (bytes32) {
         return store.confirmedRivals[mutualId];
     }
 
@@ -619,7 +653,9 @@ contract EdgeChallengeManagerLibTest is Test {
         assertEq(store.mandatoryBisectionHeight(765273563, 10898783768364), 8796093022208);
     }
 
-    function getExpansion(uint256 leafCount) internal returns (bytes32[] memory) {
+    function getExpansion(
+        uint256 leafCount
+    ) internal returns (bytes32[] memory) {
         bytes32[] memory hashes = rand.hashes(leafCount);
         bytes32[] memory expansion = ProofUtils.expansionFromLeaves(hashes, 0, leafCount);
         return expansion;
@@ -862,7 +898,9 @@ contract EdgeChallengeManagerLibTest is Test {
         assertFalse(store.hasRival(store.get(edge2.idMem()).upperChildId), "Upper child rival");
     }
 
-    function bisectMergeEdge(uint256 agree) internal {
+    function bisectMergeEdge(
+        uint256 agree
+    ) internal {
         uint256 start = 3;
         uint256 end = 11;
         uint256 bisectionPoint = store.mandatoryBisectionHeight(start, end);
@@ -1326,7 +1364,9 @@ contract EdgeChallengeManagerLibTest is Test {
         return stepSize;
     }
 
-    function confirmByOneStep(uint256 flag) internal {
+    function confirmByOneStep(
+        uint256 flag
+    ) internal {
         uint256 startHeight = rand.unsignedInt(SMALLSTEPHEIGHT);
         (bytes32[] memory states1, bytes32[] memory states2) =
             rivalStates(startHeight, startHeight, startHeight + 1);
@@ -1549,7 +1589,9 @@ contract EdgeChallengeManagerLibTest is Test {
         bytes32 machineHash;
     }
 
-    function randomAssertionState(IOneStepProofEntry os) private returns (ExecStateVars memory) {
+    function randomAssertionState(
+        IOneStepProofEntry os
+    ) private returns (ExecStateVars memory) {
         AssertionState memory assertionState = AssertionState(
             GlobalState(
                 [rand.hash(), rand.hash()],
@@ -1563,7 +1605,9 @@ contract EdgeChallengeManagerLibTest is Test {
         return ExecStateVars(assertionState, machineHash);
     }
 
-    function createZeroBlockEdge(uint256 mode) internal returns (EdgeAddedData memory) {
+    function createZeroBlockEdge(
+        uint256 mode
+    ) internal returns (EdgeAddedData memory) {
         return createZeroBlockEdge(mode, "");
     }
 
@@ -1801,7 +1845,9 @@ contract EdgeChallengeManagerLibTest is Test {
         AssertionReferenceData emptyArd;
     }
 
-    function createSmallStepEdge(uint256 mode) internal {
+    function createSmallStepEdge(
+        uint256 mode
+    ) internal {
         CreateSmallStepEdgeData memory vars;
 
         vars.claimStartHeight = 4;

@@ -156,7 +156,9 @@ contract DelayBufferableTest is Test {
         assertEq(buffer, 9);
     }
 
-    function testUpdateDepleteAndReplenish(BufferConfig memory _config) public {
+    function testUpdateDepleteAndReplenish(
+        BufferConfig memory _config
+    ) public {
         vm.assume(DelayBuffer.isValidBufferConfig(_config));
 
         // set config

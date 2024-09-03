@@ -123,7 +123,9 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      * @notice Add a contract authorized to put messages into this rollup's inbox
      * @param _outbox Outbox contract to add
      */
-    function setOutbox(IOutbox _outbox) external override {
+    function setOutbox(
+        IOutbox _outbox
+    ) external override {
         outbox = _outbox;
         bridge.setOutbox(address(_outbox), true);
         emit OutboxSet(address(_outbox));
@@ -134,7 +136,9 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      * @notice Disable an old outbox from interacting with the bridge
      * @param _outbox Outbox contract to remove
      */
-    function removeOldOutbox(address _outbox) external override {
+    function removeOldOutbox(
+        address _outbox
+    ) external override {
         require(_outbox != address(outbox), "CUR_OUTBOX");
         bridge.setOutbox(_outbox, false);
         emit OldOutboxRemoved(address(_outbox));
@@ -175,12 +179,16 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
     /// @notice allows the admin to upgrade the primary logic contract (ie rollup admin logic, aka this)
     /// @dev this function doesn't revert as this primary logic contract is only
     /// reachable by the proxy's admin
-    function _authorizeUpgrade(address newImplementation) internal override {}
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override {}
 
     /// @notice allows the admin to upgrade the secondary logic contract (ie rollup user logic)
     /// @dev this function doesn't revert as this primary logic contract is only
     /// reachable by the proxy's admin
-    function _authorizeSecondaryUpgrade(address newImplementation) internal override {}
+    function _authorizeSecondaryUpgrade(
+        address newImplementation
+    ) internal override {}
 
     /**
      * @notice Set the addresses of the validator whitelist
@@ -207,7 +215,9 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      * @dev it is expected that only the rollup admin can use this facet to set a new owner
      * @param newOwner address of new rollup owner
      */
-    function setOwner(address newOwner) external override {
+    function setOwner(
+        address newOwner
+    ) external override {
         _changeAdmin(newOwner);
         // previously: emit OwnerFunctionCalled(7);
     }
@@ -216,7 +226,9 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      * @notice Set minimum assertion period for the rollup
      * @param newPeriod new minimum period for assertions
      */
-    function setMinimumAssertionPeriod(uint256 newPeriod) external override {
+    function setMinimumAssertionPeriod(
+        uint256 newPeriod
+    ) external override {
         minimumAssertionPeriod = newPeriod;
         emit MinimumAssertionPeriodSet(newPeriod);
         // previously: emit OwnerFunctionCalled(8);
@@ -231,7 +243,9 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      *         to confirm an assertion via the normal method. Therefore we need it to be greater
      *         than max(2* confirmPeriod, 2 * challengePeriod) with some additional margin.
      */
-    function setValidatorAfkBlocks(uint64 newAfkBlocks) external override {
+    function setValidatorAfkBlocks(
+        uint64 newAfkBlocks
+    ) external override {
         validatorAfkBlocks = newAfkBlocks;
         emit ValidatorAfkBlocksSet(newAfkBlocks);
     }
@@ -240,7 +254,9 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      * @notice Set number of blocks until a assertion is considered confirmed
      * @param newConfirmPeriod new number of blocks
      */
-    function setConfirmPeriodBlocks(uint64 newConfirmPeriod) external override {
+    function setConfirmPeriodBlocks(
+        uint64 newConfirmPeriod
+    ) external override {
         require(newConfirmPeriod > 0, "INVALID_CONFIRM_PERIOD");
         confirmPeriodBlocks = newConfirmPeriod;
         emit ConfirmPeriodBlocksSet(newConfirmPeriod);
@@ -251,7 +267,9 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      * @notice Set base stake required for an assertion
      * @param newBaseStake minimum amount of stake required
      */
-    function setBaseStake(uint256 newBaseStake) external override {
+    function setBaseStake(
+        uint256 newBaseStake
+    ) external override {
         // we do not currently allow base stake to be reduced since as doing so might allow a malicious party
         // to withdraw some (up to the difference between baseStake and newBaseStake) honest funds from this contract
         // The sequence of events is as follows:
@@ -265,7 +283,9 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
         // previously: emit OwnerFunctionCalled(12);
     }
 
-    function forceRefundStaker(address[] calldata staker) external override whenPaused {
+    function forceRefundStaker(
+        address[] calldata staker
+    ) external override whenPaused {
         require(staker.length > 0, "EMPTY_ARRAY");
         for (uint256 i = 0; i < staker.length; i++) {
             requireInactiveStaker(staker[i]);
@@ -309,7 +329,9 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
         // previously: emit OwnerFunctionCalled(24);
     }
 
-    function setLoserStakeEscrow(address newLoserStakerEscrow) external override {
+    function setLoserStakeEscrow(
+        address newLoserStakerEscrow
+    ) external override {
         // loser stake is now sent directly to loserStakeEscrow, it must not
         // be address(0) because some token do not allow transfers to address(0)
         require(newLoserStakerEscrow != address(0), "INVALID_ESCROW_0");
@@ -322,7 +344,9 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      * @notice Set the proving WASM module root
      * @param newWasmModuleRoot new module root
      */
-    function setWasmModuleRoot(bytes32 newWasmModuleRoot) external override {
+    function setWasmModuleRoot(
+        bytes32 newWasmModuleRoot
+    ) external override {
         wasmModuleRoot = newWasmModuleRoot;
         emit WasmModuleRootSet(newWasmModuleRoot);
         // previously: emit OwnerFunctionCalled(26);
@@ -332,7 +356,9 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      * @notice set a new sequencer inbox contract
      * @param _sequencerInbox new address of sequencer inbox
      */
-    function setSequencerInbox(address _sequencerInbox) external override {
+    function setSequencerInbox(
+        address _sequencerInbox
+    ) external override {
         bridge.setSequencerInbox(_sequencerInbox);
         emit SequencerInboxSet(_sequencerInbox);
         // previously: emit OwnerFunctionCalled(27);
@@ -342,7 +368,9 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      * @notice sets the rollup's inbox reference. Does not update the bridge's view.
      * @param newInbox new address of inbox
      */
-    function setInbox(IInboxBase newInbox) external {
+    function setInbox(
+        IInboxBase newInbox
+    ) external {
         inbox = newInbox;
         emit InboxSet(address(newInbox));
         // previously: emit OwnerFunctionCalled(28);
@@ -352,7 +380,9 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      * @notice set the validatorWhitelistDisabled flag
      * @param _validatorWhitelistDisabled new value of validatorWhitelistDisabled, i.e. true = disabled
      */
-    function setValidatorWhitelistDisabled(bool _validatorWhitelistDisabled) external {
+    function setValidatorWhitelistDisabled(
+        bool _validatorWhitelistDisabled
+    ) external {
         validatorWhitelistDisabled = _validatorWhitelistDisabled;
         emit ValidatorWhitelistDisabledSet(_validatorWhitelistDisabled);
         // previously: emit OwnerFunctionCalled(30);
@@ -362,7 +392,9 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      * @notice set the anyTrustFastConfirmer address
      * @param _anyTrustFastConfirmer new value of anyTrustFastConfirmer
      */
-    function setAnyTrustFastConfirmer(address _anyTrustFastConfirmer) external {
+    function setAnyTrustFastConfirmer(
+        address _anyTrustFastConfirmer
+    ) external {
         anyTrustFastConfirmer = _anyTrustFastConfirmer;
         emit AnyTrustFastConfirmerSet(_anyTrustFastConfirmer);
         // previously: emit OwnerFunctionCalled(31);
@@ -372,7 +404,9 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      * @notice set a new challengeManager contract
      * @param _challengeManager new value of challengeManager
      */
-    function setChallengeManager(address _challengeManager) external {
+    function setChallengeManager(
+        address _challengeManager
+    ) external {
         challengeManager = IEdgeChallengeManager(_challengeManager);
         emit ChallengeManagerSet(_challengeManager);
         // previously: emit OwnerFunctionCalled(32);

@@ -7,7 +7,9 @@ pragma solidity ^0.8.0;
 import "../libraries/CryptographyPrimitives.sol";
 
 library CryptographyPrimitivesTester {
-    function keccakF(uint256[25] memory input) public pure returns (uint256[25] memory) {
+    function keccakF(
+        uint256[25] memory input
+    ) public pure returns (uint256[25] memory) {
         return CryptographyPrimitives.keccakF(input);
     }
 

@@ -12,7 +12,9 @@ import "./Utils.sol";
 contract MerkleTreeLibTest is Test {
     Random random = new Random();
 
-    function clone(bytes32[] memory arr) internal pure returns (bytes32[] memory) {
+    function clone(
+        bytes32[] memory arr
+    ) internal pure returns (bytes32[] memory) {
         bytes32[] memory newArr = new bytes32[](arr.length);
         for (uint256 i = 0; i < arr.length; i++) {
             newArr[i] = arr[i];
@@ -94,7 +96,9 @@ contract MerkleTreeLibTest is Test {
         proveVerify(20, 7052);
     }
 
-    function testRoot(uint256 size) public {
+    function testRoot(
+        uint256 size
+    ) public {
         vm.assume(size > 0);
         vm.assume(size < 257);
         bytes32[] memory hashes = random.hashes(size);
@@ -108,7 +112,9 @@ contract MerkleTreeLibTest is Test {
         assertEq(root, expRoot, "Roots");
     }
 
-    function getExpansion(uint256 leafCount) internal returns (bytes32[] memory) {
+    function getExpansion(
+        uint256 leafCount
+    ) internal returns (bytes32[] memory) {
         bytes32[] memory hashes = random.hashes(leafCount);
         bytes32[] memory expansion = ProofUtils.expansionFromLeaves(hashes, 0, leafCount);
         return expansion;
@@ -195,7 +201,9 @@ contract MerkleTreeLibTest is Test {
         MerkleTreeLib.root(expansion);
     }
 
-    function testAppendCS(uint256 treeSize) public {
+    function testAppendCS(
+        uint256 treeSize
+    ) public {
         vm.assume(treeSize > 0);
         vm.assume(treeSize < 16);
 
@@ -232,7 +240,9 @@ contract MerkleTreeLibTest is Test {
         }
     }
 
-    function plainAppend(uint256 level) internal {
+    function plainAppend(
+        uint256 level
+    ) internal {
         bytes32[] memory pre = getExpansion(44);
 
         bytes32 rand = random.hash();
