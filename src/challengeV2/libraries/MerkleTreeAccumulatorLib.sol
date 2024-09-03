@@ -22,7 +22,7 @@ import "./UintUtilsLib.sol";
 ///         Where we refer to "level" in this documentation we mean the power of 2 used at the level: 2^level
 ///         Where we refer to a subtree we mean one of the complete trees which makes up the accumulator.
 ///         ---------
-///         eg. Below are 3 leaves (A, B, C) which can be represented as an accumulator made up of the 
+///         eg. Below are 3 leaves (A, B, C) which can be represented as an accumulator made up of the
 ///         composition of 2 complete subtrees, one of level=1: 2^1=2 (AB) and one of level=0: 2^0=1 (C).
 ///            AB
 ///           /  \
@@ -68,7 +68,7 @@ import "./UintUtilsLib.sol";
 ///          A    B    C
 ///
 ///         ME of the composed ABC tree = (C, AB), accumulator=hash(AB, hash(C, 0)).
-///         When a accumulator size is not a power of 2, a composition of subtrees is used to calculate it's value. 
+///         When a accumulator size is not a power of 2, a composition of subtrees is used to calculate it's value.
 ///         The lowest level sub tree is hashed with zero, to form the initial accumulator. The accumulator is then
 ///         hashed with the value (including zeros) at each level of the expansion.
 ///         The merkle expansion of this composed tree is a vector of size two. Since it has a size one tree in
