@@ -10,7 +10,7 @@ import "./UintUtilsLib.sol";
 
 /// @title  Merkle tree accumulator utilities
 /// @notice
-///         This library provides utilities for manipulating and verifying proofs about a kind of
+///         This library provides utilities for manipulating, and verifying proofs about, a kind of
 ///         merkle tree accumulator.
 ///
 ///         --------------------------------------------------------------------------------------------
