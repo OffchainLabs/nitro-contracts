@@ -319,6 +319,12 @@ library MerkleTreeAccumulatorLib {
     /// @param preExpansion The merkle expansion of the pre-accumulator
     /// @param proof        The proof is the minimum set of complete subtree hashes that can be appended to
     ///                     the accumulator-tree in order to form the post accumulator
+    ///                     The first entry in the proof will be appended at the level of the first non-zero entry in the pre-expansion.
+    ///                     The second entry will then be appended to the the first non zero entry in the resulting expansion and so on, until
+    ///                     appending a sub tree will create a tree of greater that the post size. Then, starting at the highest level,
+    ///                     the next entry in the proof is attempted to be appended to the expansion, but the result is only accepted if has a size
+    ///                     less than or equal the post-size. This continues until all proof entries have been used up.
+    ///                     The resulting expansion is then checked to see if it equals the provided post-root
     function verifyPrefixProof(
         bytes32 preRoot,
         uint256 preSize,
