@@ -214,7 +214,8 @@ contract MerkleTreeAccumulatorLibTest is Test {
             if (lowestLevel) {
                 vm.expectRevert("Append above least significant bit");
             }
-            bytes32[] memory post = MerkleTreeAccumulatorLib.appendCompleteSubTree(expansion, i, rand);
+            bytes32[] memory post =
+                MerkleTreeAccumulatorLib.appendCompleteSubTree(expansion, i, rand);
 
             if (expansion[i] != 0) {
                 lowestLevel = true;
@@ -332,7 +333,9 @@ contract MerkleTreeAccumulatorLibTest is Test {
         bytes32 rand = random.hash();
 
         vm.expectRevert("Level too high");
-        MerkleTreeAccumulatorLib.appendCompleteSubTree(pre, MerkleTreeAccumulatorLib.MAX_LEVEL, rand);
+        MerkleTreeAccumulatorLib.appendCompleteSubTree(
+            pre, MerkleTreeAccumulatorLib.MAX_LEVEL, rand
+        );
     }
 
     function testAppendCsMeTooLargs() public {
@@ -526,7 +529,12 @@ contract MerkleTreeAccumulatorLibTest is Test {
         proof[1] = hashTogether(rehashedLeaves[1], rehashedLeaves[2]);
         proof[2] = rehashedLeaves[3];
         MerkleTreeAccumulatorLib.verifyPrefixProof(
-            MerkleTreeAccumulatorLib.root(pre), 5, MerkleTreeAccumulatorLib.root(post), 9, pre, proof
+            MerkleTreeAccumulatorLib.root(pre),
+            5,
+            MerkleTreeAccumulatorLib.root(post),
+            9,
+            pre,
+            proof
         );
     }
 
@@ -568,7 +576,12 @@ contract MerkleTreeAccumulatorLibTest is Test {
         bytes32 randomHash = random.hash();
         vm.expectRevert("Pre expansion root mismatch");
         MerkleTreeAccumulatorLib.verifyPrefixProof(
-            randomHash, preSize, MerkleTreeAccumulatorLib.root(post), preSize + newLeavesCount, pre, proof
+            randomHash,
+            preSize,
+            MerkleTreeAccumulatorLib.root(post),
+            preSize + newLeavesCount,
+            pre,
+            proof
         );
     }
 
@@ -587,7 +600,12 @@ contract MerkleTreeAccumulatorLibTest is Test {
 
         vm.expectRevert("Pre size not less than post size");
         MerkleTreeAccumulatorLib.verifyPrefixProof(
-            MerkleTreeAccumulatorLib.root(pre), preSize, MerkleTreeAccumulatorLib.root(post), preSize, pre, proof
+            MerkleTreeAccumulatorLib.root(pre),
+            preSize,
+            MerkleTreeAccumulatorLib.root(post),
+            preSize,
+            pre,
+            proof
         );
     }
 
@@ -655,7 +673,9 @@ contract MerkleTreeAccumulatorLibTest is Test {
         proof[3] =
             hashTogether(hashTogether(hashTogether(re[8], re[9]), hashTogether(re[10], 0)), 0);
 
-        MerkleTreeAccumulatorLib.verifyInclusionProof(MerkleTreeAccumulatorLib.root(me), leaves[index], index, proof);
+        MerkleTreeAccumulatorLib.verifyInclusionProof(
+            MerkleTreeAccumulatorLib.root(me), leaves[index], index, proof
+        );
     }
 
     function verifyInclusion(uint256 index, uint256 treeSize) internal {
@@ -664,7 +684,9 @@ contract MerkleTreeAccumulatorLibTest is Test {
         bytes32[] memory me = ProofUtils.expansionFromLeaves(leaves, 0, leaves.length);
         bytes32[] memory proof = ProofUtils.generateInclusionProof(re, index);
 
-        MerkleTreeAccumulatorLib.verifyInclusionProof(MerkleTreeAccumulatorLib.root(me), leaves[index], index, proof);
+        MerkleTreeAccumulatorLib.verifyInclusionProof(
+            MerkleTreeAccumulatorLib.root(me), leaves[index], index, proof
+        );
     }
 
     function testProveInclusion() public {

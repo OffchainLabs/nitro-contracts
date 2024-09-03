@@ -65,7 +65,8 @@ contract EdgeChallengeManagerTest is Test {
         return genStates;
     }
 
-    bytes32 genesisRoot = MerkleTreeAccumulatorLib.root(ProofUtils.expansionFromLeaves(genesisStates(), 0, 1));
+    bytes32 genesisRoot =
+        MerkleTreeAccumulatorLib.root(ProofUtils.expansionFromLeaves(genesisStates(), 0, 1));
 
     uint256 genesisHeight = 2;
     uint64 inboxMsgCountGenesis = 7;

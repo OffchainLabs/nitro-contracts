@@ -363,8 +363,9 @@ library EdgeChallengeManagerLib {
     ) private pure returns (bytes32) {
         // since zero layer edges have a start height of zero, we know that they are a size
         // one tree containing only the start state. We can then compute the history root directly
-        bytes32 startHistoryRoot =
-            MerkleTreeAccumulatorLib.root(MerkleTreeAccumulatorLib.appendLeaf(new bytes32[](0), proofData.startState));
+        bytes32 startHistoryRoot = MerkleTreeAccumulatorLib.root(
+            MerkleTreeAccumulatorLib.appendLeaf(new bytes32[](0), proofData.startState)
+        );
 
         // all end heights are expected to be a power of 2, the specific power is defined by the
         // edge challenge manager itself
