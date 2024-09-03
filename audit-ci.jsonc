@@ -63,6 +63,8 @@
     // Elliptic's ECDSA missing check for whether leading bit of r and s is zero - only used in dev
     "GHSA-977x-g7h5-7qgw",
     // Server-Side Request Forgery in axios
-    "GHSA-8hc4-vh64-cxmj"
+    "GHSA-8hc4-vh64-cxmj",
+    // Regular Expression Denial of Service (ReDoS) in micromatch
+    "GHSA-952p-6rrq-rcjv"
   ]
 }
