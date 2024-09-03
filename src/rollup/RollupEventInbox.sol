@@ -6,6 +6,7 @@ pragma solidity ^0.8.0;
 
 import "./AbsRollupEventInbox.sol";
 import "../bridge/IEthBridge.sol";
+import {INITIALIZATION_MSG_TYPE} from "../libraries/MessageTypes.sol";
 
 /**
  * @title The inbox for rollup protocol events

@@ -4,16 +4,7 @@
 
 pragma solidity ^0.8.4;
 
-import {
-    NotOrigin,
-    DataTooLarge,
-    InsufficientValue,
-    InsufficientSubmissionCost,
-    RetryableData,
-    L1Forked,
-    NotForked,
-    GasLimitTooLarge
-} from "../libraries/Error.sol";
+import {NotOrigin, NotForked, GasLimitTooLarge} from "../libraries/Error.sol";
 import "./AbsInbox.sol";
 import "./IInbox.sol";
 import "./IBridge.sol";
@@ -22,7 +13,6 @@ import "../libraries/AddressAliasHelper.sol";
 import {
     L2_MSG,
     L1MessageType_L2FundedByL1,
-    L1MessageType_submitRetryableTx,
     L1MessageType_ethDeposit,
     L2MessageType_unsignedEOATx,
     L2MessageType_unsignedContractTx

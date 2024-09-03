@@ -7,7 +7,6 @@ pragma solidity ^0.8.0;
 import {
     AlreadyInit,
     HadZeroInit,
-    BadPostUpgradeInit,
     NotOrigin,
     DataTooLarge,
     DelayedBackwards,
@@ -45,7 +44,6 @@ import "../precompiles/ArbGasInfo.sol";
 import "../precompiles/ArbSys.sol";
 import "../libraries/IReader4844.sol";
 
-import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
 import "../libraries/DelegateCallAware.sol";
 import {IGasRefunder} from "../libraries/IGasRefunder.sol";
 import {GasRefundEnabled} from "../libraries/GasRefundEnabled.sol";

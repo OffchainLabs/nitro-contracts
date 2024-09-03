@@ -4,8 +4,6 @@
 
 pragma solidity ^0.8.0;
 
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-
 library DecimalsConverterHelper {
     /// @notice generic function for mapping amount from one decimal denomination to another
     /// @dev Ie. let's say amount is 752. If token has 16 decimals and is being adjusted to
