@@ -12,6 +12,9 @@
     "not-rely-on-time": "off",
     "max-states-count": ["warn", 40],
     "no-inline-assembly": "off",
+    "no-global-import": "off",
+    "custom-errors": "off",
+    "immutable-vars-naming": "off",
     "var-name-mixedcase": "off"
   },
   "plugins": []

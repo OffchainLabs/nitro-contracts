@@ -12,7 +12,6 @@ import {
     InsufficientSubmissionCost,
     L1Forked,
     NotAllowedOrigin,
-    NotOrigin,
     NotRollupOrOwner,
     RetryableData
 } from "../libraries/Error.sol";

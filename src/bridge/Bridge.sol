@@ -11,8 +11,6 @@ import "./IEthBridge.sol";
 import "./Messages.sol";
 import "../libraries/DelegateCallAware.sol";
 
-import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
-
 /**
  * @title Staging ground for incoming and outgoing messages
  * @notice It is also the ETH escrow for value sent with these messages.
