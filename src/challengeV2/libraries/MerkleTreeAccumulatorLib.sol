@@ -34,7 +34,8 @@ import "./UintUtilsLib.sol";
 ///         The minimal amount of information we need to keep in order to compute the accumulator
 ///         is the roots of each of its complete subtrees, and the levels of each of those subtrees
 ///         A "merkle expansion" (ME) is a representation of this information - it is a vector of roots of each complete subtree,
-///         the level of the tree being the index in the vector, the subtree root being the value.///         The accumulator root is calculated by hashing each of the levels of the subtree together, adding zero hashes
+///         the level of the tree being the index in the vector, the subtree root being the value.
+///         The accumulator root is calculated by hashing each of the levels of the subtree together, adding zero hashes
 ///         where relevant to make a balanced tree.
 ///         ---------
 ///
