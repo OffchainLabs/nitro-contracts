@@ -65,7 +65,8 @@ contract EdgeChallengeManagerTest is Test {
         return genStates;
     }
 
-    bytes32 genesisRoot = MerkleTreeLib.root(ProofUtils.expansionFromLeaves(genesisStates(), 0, 1));
+    bytes32 genesisRoot =
+        MerkleTreeAccumulatorLib.root(ProofUtils.expansionFromLeaves(genesisStates(), 0, 1));
 
     uint256 genesisHeight = 2;
     uint64 inboxMsgCountGenesis = 7;
@@ -325,11 +326,11 @@ contract EdgeChallengeManagerTest is Test {
         (a1RandomStates, a1RandomStatesExp) = appendRandomStatesBetween(
             genesisStates(), StateToolsLib.mockMachineHash(a1State), height1
         );
-        a1State.endHistoryRoot = MerkleTreeLib.root(a1RandomStatesExp);
+        a1State.endHistoryRoot = MerkleTreeAccumulatorLib.root(a1RandomStatesExp);
         (a2RandomStates, a2RandomStatesExp) = appendRandomStatesBetween(
             genesisStates(), StateToolsLib.mockMachineHash(a2State), height1
         );
-        a2State.endHistoryRoot = MerkleTreeLib.root(a2RandomStatesExp);
+        a2State.endHistoryRoot = MerkleTreeAccumulatorLib.root(a2RandomStatesExp);
 
         // add one since heights are zero indexed in the history states
         bytes32 a1 = assertionChain.addAssertion(
@@ -380,7 +381,7 @@ contract EdgeChallengeManagerTest is Test {
         (bytes32[] memory states, bytes32[] memory exp) = appendRandomStatesBetween(
             genesisStates(), StateToolsLib.mockMachineHash(a1State), height1
         );
-        a1State.endHistoryRoot = MerkleTreeLib.root(exp);
+        a1State.endHistoryRoot = MerkleTreeAccumulatorLib.root(exp);
 
         bytes32 a1 = assertionChain.addAssertion(
             genesis, genesisHeight + height1, inboxMsgCountAssertion, genesisState, a1State, 0
@@ -390,7 +391,7 @@ contract EdgeChallengeManagerTest is Test {
         challengeManager.createLayerZeroEdge(
             CreateEdgeArgs({
                 level: 0,
-                endHistoryRoot: MerkleTreeLib.root(exp),
+                endHistoryRoot: MerkleTreeAccumulatorLib.root(exp),
                 endHeight: height1,
                 claimId: a1,
                 prefixProof: abi.encode(
@@ -416,7 +417,7 @@ contract EdgeChallengeManagerTest is Test {
         ei.challengeManager.createLayerZeroEdge(
             CreateEdgeArgs({
                 level: 0,
-                endHistoryRoot: MerkleTreeLib.root(exp),
+                endHistoryRoot: MerkleTreeAccumulatorLib.root(exp),
                 endHeight: 1,
                 claimId: ei.a1,
                 prefixProof: abi.encode(
@@ -442,7 +443,7 @@ contract EdgeChallengeManagerTest is Test {
         ei.challengeManager.createLayerZeroEdge(
             CreateEdgeArgs({
                 level: 0,
-                endHistoryRoot: MerkleTreeLib.root(exp),
+                endHistoryRoot: MerkleTreeAccumulatorLib.root(exp),
                 endHeight: height1,
                 claimId: ei.a1,
                 prefixProof: abi.encode(
@@ -464,7 +465,7 @@ contract EdgeChallengeManagerTest is Test {
         ei.challengeManager.createLayerZeroEdge(
             CreateEdgeArgs({
                 level: 0,
-                endHistoryRoot: MerkleTreeLib.root(exp),
+                endHistoryRoot: MerkleTreeAccumulatorLib.root(exp),
                 endHeight: height1,
                 claimId: ei.a1,
                 prefixProof: abi.encode(
@@ -490,7 +491,7 @@ contract EdgeChallengeManagerTest is Test {
         ei.challengeManager.createLayerZeroEdge(
             CreateEdgeArgs({
                 level: 0,
-                endHistoryRoot: MerkleTreeLib.root(exp),
+                endHistoryRoot: MerkleTreeAccumulatorLib.root(exp),
                 endHeight: height1,
                 claimId: ei.a2,
                 prefixProof: abi.encode(
@@ -516,7 +517,7 @@ contract EdgeChallengeManagerTest is Test {
         ei.challengeManager.createLayerZeroEdge(
             CreateEdgeArgs({
                 level: 0,
-                endHistoryRoot: MerkleTreeLib.root(exp),
+                endHistoryRoot: MerkleTreeAccumulatorLib.root(exp),
                 endHeight: height1,
                 claimId: ei.a1,
                 prefixProof: abi.encode(
@@ -546,7 +547,7 @@ contract EdgeChallengeManagerTest is Test {
         bytes32 edgeId = ei.challengeManager.createLayerZeroEdge(
             CreateEdgeArgs({
                 level: 0,
-                endHistoryRoot: MerkleTreeLib.root(exp),
+                endHistoryRoot: MerkleTreeAccumulatorLib.root(exp),
                 endHeight: height1,
                 claimId: ei.a1,
                 prefixProof: abi.encode(
@@ -652,7 +653,7 @@ contract EdgeChallengeManagerTest is Test {
             bytes32 edge2Id = ei.challengeManager.createLayerZeroEdge(
                 CreateEdgeArgs({
                     level: 0,
-                    endHistoryRoot: MerkleTreeLib.root(exp2),
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(exp2),
                     endHeight: height1,
                     claimId: ei.a2,
                     prefixProof: abi.encode(
@@ -712,7 +713,7 @@ contract EdgeChallengeManagerTest is Test {
         (bytes32[] memory states2, bytes32[] memory exp2) = appendRandomStatesBetween(
             genesisStates(), StateToolsLib.mockMachineHash(a2State), height1
         );
-        a2State.endHistoryRoot = MerkleTreeLib.root(exp2);
+        a2State.endHistoryRoot = MerkleTreeAccumulatorLib.root(exp2);
         bytes32 a2 = ei.assertionChain.addAssertion(
             ei.genesis, genesisHeight + height1, inboxMsgCountAssertion, genesisState, a2State, 0
         );
@@ -769,7 +770,7 @@ contract EdgeChallengeManagerTest is Test {
 
         (bytes32 lowerChildId, bytes32 upperChildId) = challengeManager.bisectEdge(
             edgeId,
-            MerkleTreeLib.root(middleExp),
+            MerkleTreeAccumulatorLib.root(middleExp),
             abi.encode(middleExp, ProofUtils.generatePrefixProof(bisectionSize + 1, upperStates))
         );
 
@@ -851,7 +852,7 @@ contract EdgeChallengeManagerTest is Test {
         (bytes32[] memory states, bytes32[] memory exp) =
             appendRandomStates(currentStates, numStates - 1);
         bytes32[] memory fullStates = ArrayUtilsLib.append(states, endState);
-        bytes32[] memory fullExp = MerkleTreeLib.appendLeaf(exp, endState);
+        bytes32[] memory fullExp = MerkleTreeAccumulatorLib.appendLeaf(exp, endState);
         return (fullStates, fullExp);
     }
 
@@ -927,7 +928,7 @@ contract EdgeChallengeManagerTest is Test {
         ei.challengeManager.createLayerZeroEdge(
             CreateEdgeArgs({
                 level: 1,
-                endHistoryRoot: MerkleTreeLib.root(bigStepExp),
+                endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
                 endHeight: height1,
                 claimId: edges1[0].lowerChildId,
                 prefixProof: "",
@@ -962,7 +963,7 @@ contract EdgeChallengeManagerTest is Test {
         ei.challengeManager.createLayerZeroEdge(
             CreateEdgeArgs({
                 level: 1,
-                endHistoryRoot: MerkleTreeLib.root(bigStepExp),
+                endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
                 endHeight: height1,
                 claimId: edges1[0].lowerChildId,
                 prefixProof: abi.encode(
@@ -1002,7 +1003,7 @@ contract EdgeChallengeManagerTest is Test {
         ei.challengeManager.createLayerZeroEdge(
             CreateEdgeArgs({
                 level: 1,
-                endHistoryRoot: MerkleTreeLib.root(bigStepExp),
+                endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
                 endHeight: height1,
                 claimId: edges1[0].lowerChildId,
                 prefixProof: abi.encode(
@@ -1042,7 +1043,7 @@ contract EdgeChallengeManagerTest is Test {
         ei.challengeManager.createLayerZeroEdge(
             CreateEdgeArgs({
                 level: 1,
-                endHistoryRoot: MerkleTreeLib.root(bigStepExp),
+                endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
                 endHeight: height1,
                 claimId: edges1[0].lowerChildId,
                 prefixProof: abi.encode(
@@ -1089,7 +1090,7 @@ contract EdgeChallengeManagerTest is Test {
         ei.challengeManager.createLayerZeroEdge(
             CreateEdgeArgs({
                 level: 1,
-                endHistoryRoot: MerkleTreeLib.root(bigStepExp),
+                endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
                 endHeight: height1,
                 claimId: edges1[0].lowerChildId,
                 prefixProof: abi.encode(
@@ -1142,7 +1143,7 @@ contract EdgeChallengeManagerTest is Test {
         ei.challengeManager.createLayerZeroEdge(
             CreateEdgeArgs({
                 level: 1,
-                endHistoryRoot: MerkleTreeLib.root(bigStepExp),
+                endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
                 endHeight: height1,
                 claimId: edges1[0].lowerChildId,
                 prefixProof: abi.encode(
@@ -1195,7 +1196,7 @@ contract EdgeChallengeManagerTest is Test {
         ei.challengeManager.createLayerZeroEdge(
             CreateEdgeArgs({
                 level: 1,
-                endHistoryRoot: MerkleTreeLib.root(bigStepExp),
+                endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
                 endHeight: height1,
                 claimId: edges1[0].lowerChildId,
                 prefixProof: abi.encode(
@@ -1241,7 +1242,7 @@ contract EdgeChallengeManagerTest is Test {
         ei.challengeManager.createLayerZeroEdge(
             CreateEdgeArgs({
                 level: 1,
-                endHistoryRoot: MerkleTreeLib.root(bigStepExp),
+                endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
                 endHeight: 1,
                 claimId: edges1[0].lowerChildId,
                 prefixProof: abi.encode(
@@ -1288,7 +1289,7 @@ contract EdgeChallengeManagerTest is Test {
             edge1BigStepId = ei.challengeManager.createLayerZeroEdge(
                 CreateEdgeArgs({
                     level: 1,
-                    endHistoryRoot: MerkleTreeLib.root(bigStepExp1),
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp1),
                     endHeight: height1,
                     claimId: edges1[0].lowerChildId,
                     prefixProof: abi.encode(
@@ -1312,7 +1313,7 @@ contract EdgeChallengeManagerTest is Test {
             edge2BigStepId = ei.challengeManager.createLayerZeroEdge(
                 CreateEdgeArgs({
                     level: 1,
-                    endHistoryRoot: MerkleTreeLib.root(bigStepExp2),
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp2),
                     endHeight: height1,
                     claimId: edges2[0].lowerChildId,
                     prefixProof: abi.encode(
@@ -1348,7 +1349,7 @@ contract EdgeChallengeManagerTest is Test {
             edge1SmallStepId = ei.challengeManager.createLayerZeroEdge(
                 CreateEdgeArgs({
                     level: 1,
-                    endHistoryRoot: MerkleTreeLib.root(smallStepExp1),
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(smallStepExp1),
                     endHeight: 1,
                     claimId: bigstepedges1[0].lowerChildId,
                     prefixProof: abi.encode(
@@ -1393,7 +1394,7 @@ contract EdgeChallengeManagerTest is Test {
             edge1BigStepId = ei.challengeManager.createLayerZeroEdge(
                 CreateEdgeArgs({
                     level: 2,
-                    endHistoryRoot: MerkleTreeLib.root(bigStepExp1),
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp1),
                     endHeight: height1,
                     claimId: edges1[0].lowerChildId,
                     prefixProof: abi.encode(
@@ -1441,7 +1442,7 @@ contract EdgeChallengeManagerTest is Test {
             edge1BigStepId = ei.challengeManager.createLayerZeroEdge(
                 CreateEdgeArgs({
                     level: 1,
-                    endHistoryRoot: MerkleTreeLib.root(bigStepExp1),
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp1),
                     endHeight: height1,
                     claimId: edges1[0].lowerChildId,
                     prefixProof: abi.encode(
@@ -1465,7 +1466,7 @@ contract EdgeChallengeManagerTest is Test {
             edge2BigStepId = ei.challengeManager.createLayerZeroEdge(
                 CreateEdgeArgs({
                     level: 1,
-                    endHistoryRoot: MerkleTreeLib.root(bigStepExp2),
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp2),
                     endHeight: height1,
                     claimId: edges2[0].lowerChildId,
                     prefixProof: abi.encode(
@@ -1501,7 +1502,7 @@ contract EdgeChallengeManagerTest is Test {
             edge1SmallStepId = ei.challengeManager.createLayerZeroEdge(
                 CreateEdgeArgs({
                     level: 2,
-                    endHistoryRoot: MerkleTreeLib.root(smallStepExp1),
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(smallStepExp1),
                     endHeight: 1,
                     claimId: bigstepedges1[0].lowerChildId,
                     prefixProof: abi.encode(
@@ -1545,7 +1546,7 @@ contract EdgeChallengeManagerTest is Test {
         bytes32 edge1BigStepId = ei.challengeManager.createLayerZeroEdge(
             CreateEdgeArgs({
                 level: 1,
-                endHistoryRoot: MerkleTreeLib.root(bigStepExp),
+                endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
                 endHeight: height1,
                 claimId: edges1[0].lowerChildId,
                 prefixProof: abi.encode(
@@ -1650,7 +1651,7 @@ contract EdgeChallengeManagerTest is Test {
         return challengeManager.createLayerZeroEdge(
             CreateEdgeArgs({
                 level: 0,
-                endHistoryRoot: MerkleTreeLib.root(exp),
+                endHistoryRoot: MerkleTreeAccumulatorLib.root(exp),
                 endHeight: height1,
                 claimId: claimId,
                 prefixProof: abi.encode(
@@ -1725,7 +1726,7 @@ contract EdgeChallengeManagerTest is Test {
             edge1Id = args.challengeManager.createLayerZeroEdge(
                 CreateEdgeArgs({
                     level: args.eType,
-                    endHistoryRoot: MerkleTreeLib.root(exp1),
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(exp1),
                     endHeight: height1,
                     claimId: args.claim1Id,
                     prefixProof: abi.encode(
@@ -1767,7 +1768,7 @@ contract EdgeChallengeManagerTest is Test {
             edge2Id = args.challengeManager.createLayerZeroEdge(
                 CreateEdgeArgs({
                     level: args.eType,
-                    endHistoryRoot: MerkleTreeLib.root(exp2),
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(exp2),
                     endHeight: height1,
                     claimId: args.claim2Id,
                     prefixProof: abi.encode(

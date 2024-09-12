@@ -736,7 +736,7 @@ contract RollupTest is Test {
             bytes32 h0 = osp.getMachineHash(beforeState.toExecutionState());
             bytes32 h1 = osp.getMachineHash(afterState.toExecutionState());
             randomStates1 = fillStatesInBetween(h0, h1, LAYERZERO_BLOCKEDGE_HEIGHT + 1);
-            afterState.endHistoryRoot = MerkleTreeLib.root(
+            afterState.endHistoryRoot = MerkleTreeAccumulatorLib.root(
                 ProofUtils.expansionFromLeaves(randomStates1, 0, LAYERZERO_BLOCKEDGE_HEIGHT + 1)
             );
         }
@@ -783,7 +783,7 @@ contract RollupTest is Test {
             bytes32 h0 = osp.getMachineHash(beforeState.toExecutionState());
             bytes32 h1 = osp.getMachineHash(afterState2.toExecutionState());
             randomStates2 = fillStatesInBetween(h0, h1, LAYERZERO_BLOCKEDGE_HEIGHT + 1);
-            afterState2.endHistoryRoot = MerkleTreeLib.root(
+            afterState2.endHistoryRoot = MerkleTreeAccumulatorLib.root(
                 ProofUtils.expansionFromLeaves(randomStates2, 0, LAYERZERO_BLOCKEDGE_HEIGHT + 1)
             );
         }
@@ -1002,7 +1002,7 @@ contract RollupTest is Test {
             data.assertionHash2
         ) = testSuccessCreateSecondChild();
 
-        bytes32 root = MerkleTreeLib.root(
+        bytes32 root = MerkleTreeAccumulatorLib.root(
             ProofUtils.expansionFromLeaves(randomStates1, 0, LAYERZERO_BLOCKEDGE_HEIGHT + 1)
         );
 
@@ -1036,7 +1036,7 @@ contract RollupTest is Test {
         require(data.genesisInboxCount == 1, "A");
         require(data.newInboxCount == 2, "B");
 
-        bytes32 root = MerkleTreeLib.root(
+        bytes32 root = MerkleTreeAccumulatorLib.root(
             ProofUtils.expansionFromLeaves(randomStates2, 0, LAYERZERO_BLOCKEDGE_HEIGHT + 1)
         );
 

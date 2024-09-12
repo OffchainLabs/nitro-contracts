@@ -4,7 +4,7 @@
 //
 pragma solidity ^0.8.17;
 
-import "../../src/challengeV2/libraries/MerkleTreeLib.sol";
+import "../../src/challengeV2/libraries/MerkleTreeAccumulatorLib.sol";
 import "../../src/challengeV2/libraries/UintUtilsLib.sol";
 import "../../src/challengeV2/libraries/ArrayUtilsLib.sol";
 import "forge-std/Test.sol";
@@ -65,7 +65,7 @@ library ProofUtils {
 
         bytes32[] memory expansion = new bytes32[](0);
         for (uint256 i = leafStartIndex; i < leafEndIndex; i++) {
-            expansion = MerkleTreeLib.appendLeaf(expansion, leaves[i]);
+            expansion = MerkleTreeAccumulatorLib.appendLeaf(expansion, leaves[i]);
         }
 
         return expansion;
@@ -91,7 +91,7 @@ library ProofUtils {
         // that we can append at, then append these leaves, then repeat the process.
 
         while (size < postSize) {
-            uint256 level = MerkleTreeLib.maximumAppendBetween(size, postSize);
+            uint256 level = MerkleTreeAccumulatorLib.maximumAppendBetween(size, postSize);
             // add 2^level leaves to create a subtree
             uint256 numLeaves = 1 << level;
 
@@ -99,7 +99,7 @@ library ProofUtils {
             uint256 endIndex = startIndex + numLeaves;
             // create a complete sub tree at the specified level
             bytes32[] memory exp = expansionFromLeaves(newLeaves, startIndex, endIndex);
-            proof = ArrayUtilsLib.append(proof, MerkleTreeLib.root(exp));
+            proof = ArrayUtilsLib.append(proof, MerkleTreeAccumulatorLib.root(exp));
 
             size += numLeaves;
 
