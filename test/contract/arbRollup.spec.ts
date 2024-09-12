@@ -1397,11 +1397,9 @@ describe('ArbRollup', () => {
   it('can set is sequencer', async function () {
     const testAddress = await accounts[9].getAddress()
     expect(await sequencerInbox.isSequencer(testAddress)).to.be.false
-    await expect(
-      sequencerInbox.setIsSequencer(testAddress, true)
-    ).to.revertedWith(
-      `NotBatchPosterManager("${await sequencerInbox.signer.getAddress()}")`
-    )
+    await expect(sequencerInbox.setIsSequencer(testAddress, true))
+      .to.revertedWith(`NotBatchPosterManager`)
+      .withArgs(await sequencerInbox.signer.getAddress())
     expect(await sequencerInbox.isSequencer(testAddress)).to.be.false
 
     await (
@@ -1424,11 +1422,9 @@ describe('ArbRollup', () => {
   it('can set a batch poster', async function () {
     const testAddress = await accounts[9].getAddress()
     expect(await sequencerInbox.isBatchPoster(testAddress)).to.be.false
-    await expect(
-      sequencerInbox.setIsBatchPoster(testAddress, true)
-    ).to.revertedWith(
-      `NotBatchPosterManager("${await sequencerInbox.signer.getAddress()}")`
-    )
+    await expect(sequencerInbox.setIsBatchPoster(testAddress, true))
+      .to.revertedWith(`NotBatchPosterManager`)
+      .withArgs(await sequencerInbox.signer.getAddress())
     expect(await sequencerInbox.isBatchPoster(testAddress)).to.be.false
 
     await (
@@ -1455,7 +1451,9 @@ describe('ArbRollup', () => {
     )
     await expect(
       sequencerInbox.connect(accounts[8]).setBatchPosterManager(testManager)
-    ).to.revertedWith(`NotOwner("${testManager}", "${upgradeExecutor}")`)
+    )
+      .to.revertedWith('NotOwner')
+      .withArgs(testManager, upgradeExecutor)
     expect(await sequencerInbox.batchPosterManager()).to.eq(
       await batchPosterManager.getAddress()
     )
@@ -1471,7 +1469,7 @@ describe('ArbRollup', () => {
 
   it('should fail the chainid fork check', async function () {
     await expect(sequencerInbox.removeDelayAfterFork()).to.revertedWith(
-      'NotForked()'
+      'NotForked'
     )
   })
 
@@ -1485,7 +1483,7 @@ describe('ArbRollup', () => {
         0,
         0
       )
-    ).to.revertedWith('NotBatchPoster()')
+    ).to.revertedWith('NotBatchPoster')
   })
 
   it('should fail the onlyValidator check', async function () {
@@ -1504,5 +1502,109 @@ describe('ArbRollup', () => {
     await expect(rollupUser.removeWhitelistAfterValidatorAfk()).to.revertedWith(
       'VALIDATOR_NOT_AFK'
     )
+  })
+})
+
+const fastConfirmerAddr = '0x000000000000000000000000000000000000fa51'
+describe.only('ArbRollupFastConfirm', () => {
+  it('should initialize', async function () {
+    const {
+      rollupAdmin: rollupAdminContract,
+      rollupUser: rollupUserContract,
+      bridge: bridgeContract,
+      admin: adminI,
+      validators: validatorsI,
+      batchPosterManager: batchPosterManagerI,
+      upgradeExecutorAddress,
+    } = await setup()
+    rollupAdmin = rollupAdminContract
+    rollupUser = rollupUserContract
+    bridge = bridgeContract
+    admin = adminI
+    validators = validatorsI
+    upgradeExecutor = upgradeExecutorAddress
+    // adminproxy = adminproxyAddress
+    rollup = new RollupContract(rollupUser.connect(validators[0]))
+    batchPosterManager = batchPosterManagerI
+  })
+  it('should set fast confirmer', async function () {
+    await (
+      await rollupAdmin
+        .connect(await impersonateAccount(upgradeExecutor))
+        .setAnyTrustFastConfirmer(fastConfirmerAddr)
+    ).wait()
+    await expect(await rollup.rollup.anyTrustFastConfirmer()).to.eq(
+      fastConfirmerAddr
+    )
+  })
+  it('should place stake on new node', async function () {
+    await tryAdvanceChain(minimumAssertionPeriod)
+
+    const initNode: {
+      assertion: { afterState: ExecutionStateStruct }
+      nodeNum: number
+      nodeHash: BytesLike
+      inboxMaxCount: BigNumber
+    } = {
+      assertion: {
+        afterState: {
+          globalState: {
+            bytes32Vals: [zerobytes32, zerobytes32],
+            u64Vals: [0, 0],
+          },
+          machineStatus: MachineStatus.FINISHED,
+        },
+      },
+      inboxMaxCount: BigNumber.from(1),
+      nodeHash: zerobytes32,
+      nodeNum: 0,
+    }
+
+    const stake = await rollup.currentRequiredStake()
+    const { node } = await makeSimpleNode(
+      rollup,
+      sequencerInbox,
+      initNode,
+      undefined,
+      undefined,
+      stake
+    )
+    updatePrevNode(node)
+  })
+  it('should fail to confirm before deadline', async function () {
+    await expect(rollup.confirmNextNode(prevNodes[0])).to.be.revertedWith(
+      'BEFORE_DEADLINE'
+    )
+  })
+  it('should fail to fast confirm if not fast confirmer', async function () {
+    await expect(
+      rollup.fastConfirmNextNode(prevNodes[0], ethers.constants.HashZero)
+    ).to.be.revertedWith('NFC')
+  })
+  it('should fail to fast confirm if not validator', async function () {
+    await expect(
+      rollup
+        .connect(await impersonateAccount(fastConfirmerAddr))
+        .fastConfirmNextNode(prevNodes[0], prevNodes[0].nodeHash)
+    ).to.be.revertedWith('NOT_VALIDATOR')
+  })
+  it('should be able to set fast confirmer as validator', async function () {
+    await (
+      await rollupAdmin
+        .connect(await impersonateAccount(upgradeExecutor))
+        .setValidator([fastConfirmerAddr], [true])
+    ).wait()
+  })
+  it('should fail to fast confirm if wrong nodehash', async function () {
+    await expect(
+      rollup
+        .connect(await impersonateAccount(fastConfirmerAddr))
+        .fastConfirmNextNode(prevNodes[0], ethers.constants.HashZero)
+    ).to.be.revertedWith('WH')
+  })
+  it('should fast confirm', async function () {
+    await rollup
+      .connect(await impersonateAccount(fastConfirmerAddr))
+      .fastConfirmNextNode(prevNodes[0], prevNodes[0].nodeHash)
   })
 })

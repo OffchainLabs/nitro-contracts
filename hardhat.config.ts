@@ -5,6 +5,7 @@ import '@nomiclabs/hardhat-etherscan'
 import '@typechain/hardhat'
 import 'solidity-coverage'
 import 'hardhat-gas-reporter'
+import 'hardhat-contract-sizer'
 import 'hardhat-ignore-warnings'
 // import '@tovarishfin/hardhat-yul';
 import dotenv from 'dotenv'
@@ -23,7 +24,17 @@ const solidity = {
       },
     },
   ],
-  overrides: {},
+  overrides: {
+    'src/rollup/RollupUserLogic.sol': {
+      version: '0.8.9',
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 0,
+        },
+      },
+    },
+  },
 }
 
 if (process.env['INTERFACE_TESTER_SOLC_VERSION']) {
@@ -188,4 +199,7 @@ module.exports = {
     outDir: 'build/types',
     target: 'ethers-v5',
   },
+  contractSizer: {
+    strict: true
+  }
 }

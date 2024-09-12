@@ -1,0 +1,60 @@
+{
+  "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
+  "low": true,
+  "allowlist": [
+    // OpenZeppelin Contracts's SignatureChecker may revert on invalid EIP-1271 signers
+    "GHSA-4g63-c64m-25w9",
+    // OpenZeppelin Contracts's GovernorVotesQuorumFraction updates to quorum may affect past defeated proposals
+    "GHSA-xrc4-737v-9q75",
+    // OpenZeppelin Contracts's ERC165Checker may revert instead of returning false
+    "GHSA-qh9x-gcfh-pcrw",
+    // OpenZeppelin Contracts vulnerable to ECDSA signature malleability. Only an issue for the functions that take a single `bytes` argument, and not the functions that take `r, v, s` or `r, vs` as separate arguments.
+    "GHSA-4h98-2769-gh6h",
+    // GovernorCompatibilityBravo may trim proposal calldata
+    "GHSA-93hq-5wgc-jc82",
+    // OpenZeppelin Contracts ERC165Checker unbounded gas consumption
+    "GHSA-7grf-83vw-6f5x",
+    // OpenZeppelin: Using ERC2771Context with a custom forwarder can yield address(0)
+    "GHSA-g4vp-m682-qqmp",
+    // OpenZeppelin Contracts TransparentUpgradeableProxy clashing selector calls may not be delegated
+    "GHSA-mx2q-35m2-x2rh",
+    // OpenZeppelin Contracts's governor proposal creation may be blocked by frontrunning
+    "GHSA-5h3x-9wvq-w4m2",
+    // axios cookies data-privacy issue; used only in hardhat-deploy and sol2uml (dev deps)
+    "GHSA-wf5p-g6vw-rhxx",
+    // flat vulnerable to Prototype Pollution
+    "GHSA-2j2x-2gpw-g8fm",
+    // regular expression DoS in debug
+    "GHSA-gxpj-cx7g-858c",
+    // tough-cookie Prototype Pollution vulnerability; used only via eth-gas-reporter
+    "GHSA-72xf-g2v4-qvf3",
+    // minimatch ReDoS vulnerability
+    "GHSA-f8q6-p94x-37v3",
+    // Server-Side Request Forgery in Request
+    "GHSA-p8p7-x288-28g6",
+    //  OpenZeppelin Contracts using MerkleProof multiproofs may allow proving arbitrary leaves for specific trees; unused
+    "GHSA-wprv-93r4-jj2p",
+    //  follow-redirects improperly handles URLs in the url.parse() function
+    "GHSA-jchw-25xp-jwwc",
+    // yargs-parser Vulnerable to Prototype Pollution
+    "GHSA-p9pc-299p-vxgp",
+    // Axios vulnerable to Server-Side Request Forgery
+    "GHSA-4w2v-q235-vp99",
+    // axios Inefficient Regular Expression Complexity vulnerability
+    "GHSA-cph5-m8f7-6c5x",
+    // Exposure of Sensitive Information to an Unauthorized Actor in follow-redirects
+    "GHSA-pw2r-vq6v-hr8c",
+    // Exposure of sensitive information in follow-redirects
+    "GHSA-74fj-2j2h-c42q",
+    // Open Zeppelin: Base64 encoding may read from potentially dirty memory
+    "GHSA-9vx6-7xxf-x967",
+    // semver vulnerable to Regular Expression Denial of Service
+    "GHSA-c2qf-rxjj-qqgw",
+    // follow-redirects' Proxy-Authorization header kept across hosts
+    "GHSA-cxjh-pqwp-8mfp",
+    // Prototype Pollution in async
+    "GHSA-fwr7-v2mv-hh25",
+    // ws affected by a DoS when handling a request with many HTTP headers
+    "GHSA-3h5v-q93c-6h6q"
+  ]
+}

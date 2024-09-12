@@ -77,6 +77,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     uint64 internal constant GENESIS_NODE = 0;
 
     bool public validatorWhitelistDisabled;
+    address public anyTrustFastConfirmer;
 
     // If the chain this RollupCore is deployed on is an Arbitrum chain.
     bool internal immutable _hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
