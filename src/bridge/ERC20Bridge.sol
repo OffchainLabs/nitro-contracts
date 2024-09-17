@@ -74,10 +74,9 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
 
     function _transferFunds(uint256 amount) internal override {
         // fetch native token from Inbox
-        if (amount == 0) {
-            return;
+        if (amount > 0) {
+            IERC20(nativeToken).safeTransferFrom(msg.sender, address(this), amount);
         }
-        IERC20(nativeToken).safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function _executeLowLevelCall(
@@ -94,7 +93,9 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
         }
 
         // first release native token
-        IERC20(_nativeToken).safeTransfer(to, value); // note: potential zero transfer
+        if (value > 0) {
+            IERC20(_nativeToken).safeTransfer(to, value);
+        }
         success = true;
 
         // if there's data do additional contract call. Make sure that call is not used to
