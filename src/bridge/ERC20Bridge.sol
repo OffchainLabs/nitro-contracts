@@ -74,7 +74,10 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
 
     function _transferFunds(uint256 amount) internal override {
         // fetch native token from Inbox
-        IERC20(nativeToken).safeTransferFrom(msg.sender, address(this), amount); // note: potential zero transfer
+        if (amount == 0) {
+            return;
+        }
+        IERC20(nativeToken).safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function _executeLowLevelCall(
