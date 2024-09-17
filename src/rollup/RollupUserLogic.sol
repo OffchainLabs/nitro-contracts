@@ -780,13 +780,13 @@ contract ERC20RollupUserLogic is AbsRollupUserLogic, IRollupUserERC20 {
     {
         uint256 amount = withdrawFunds(msg.sender);
         // This is safe because it occurs after all checks and effects
-        require(IERC20Upgradeable(stakeToken).transfer(msg.sender, amount), "TRANSFER_FAILED"); // note: potential zero transfer
+        require(IERC20Upgradeable(stakeToken).transfer(msg.sender, amount), "TRANSFER_FAILED");
         return amount;
     }
 
     function receiveTokens(uint256 tokenAmount) private {
         require(
-            IERC20Upgradeable(stakeToken).transferFrom(msg.sender, address(this), tokenAmount), // note: potential zero transfer
+            IERC20Upgradeable(stakeToken).transferFrom(msg.sender, address(this), tokenAmount),
             "TRANSFER_FAIL"
         );
     }
