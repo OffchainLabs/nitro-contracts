@@ -309,7 +309,7 @@ contract RollupCreator is Ownable {
                 totalFeeNativeDenominated = totalFee * (10**(decimals - 18));
             }
 
-            IERC20(_nativeToken).safeTransferFrom(msg.sender, _inbox, totalFeeNativeDenominated); // note: potential zero transfer
+            IERC20(_nativeToken).safeTransferFrom(msg.sender, _inbox, totalFeeNativeDenominated);
 
             // do it
             l2FactoriesDeployer.perform(_inbox, _nativeToken, _maxFeePerGas);
