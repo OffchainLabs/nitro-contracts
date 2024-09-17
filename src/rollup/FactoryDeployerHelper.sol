@@ -19,7 +19,7 @@ contract FactoryDeployerHelper {
         address feeToken = IERC20Bridge(bridge).nativeToken();
 
         uint256 amount = IDeployHelper(DEPLOY_HELPER).getDeploymentTotalCost(inbox, maxFeePerGas);
-        IERC20(feeToken).transferFrom(msg.sender, inbox, amount);
+        IERC20(feeToken).transferFrom(msg.sender, inbox, amount); // note: potential zero transfer
         IDeployHelper(DEPLOY_HELPER).perform(inbox, feeToken, maxFeePerGas);
     }
 }
