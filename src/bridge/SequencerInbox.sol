@@ -630,6 +630,26 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         );
     }
 
+    // CHRIS: TODO: how to account for the cost of doing the trade, and moving from child to parent
+    // CHRIS: TODO: how does the gas buffer work on nitro? do we need to build up a buffer of child chain native tokens?
+    // CHRIS: TODO: include in release notes or documentation that any reference to the l1 gas price in nitro will not refer to the actual l1 gas price, but instead to a scaled version of this
+    // CHRIS: TODO: decide whether we want to offer more configureability over the price - eg div instead of multiply, or use custom decimals. Probably not, everything else happens in 'connectors', and we keep it simple in the contract
+
+    // CHRIS: TODO: hostChainIsArbitrum is checked for l3s on arbitrum so that l1 cost can be charged for within nitro. This wont work for l4s and it wont work for l3s that are settling to a different chain eg Base. In the Base case we need to find another way to guess at the l1 cost I think?
+
+    // CHRIS: TODO: remove below
+    // when submitting a batch we lookup the price of child-parent chain tokens and scale the gas price, so that the correct amount is refunded on child
+    // Integration tests
+    // Submit a batch, get refunded, check the amount on child is the diff on parent in child units. Check what value the l1 gas price got set to?
+    // Unit tests
+    // Batch spending report contains a scaled gas price
+    // If in rollup, scaling is required
+    // If in anytrust, optionally include an oracle to get the 210,000 if we want to
+
+    // gas price (eth/gas)
+    // (usdc/eth)
+    // child gas price (usdc/gas)
+
     /// @dev   Submit a batch spending report message so that the batch poster can be reimbursed on the rollup
     ///        This function expect msg.sender is tx.origin, and will always record tx.origin as the spender
     /// @param dataHash The hash of the message the spending report is being submitted for
@@ -646,14 +666,20 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         // solhint-disable-next-line avoid-tx-origin
         address batchPoster = tx.origin;
 
-        // this msg isn't included in the current sequencer batch, but instead added to
-        // the delayed messages queue that is yet to be included
+        
         if (hostChainIsArbitrum) {
             // Include extra gas for the host chain's L1 gas charging
             uint256 l1Fees = ArbGasInfo(address(0x6c)).getCurrentTxL1GasFees();
             extraGas += l1Fees / block.basefee;
         }
         require(extraGas <= type(uint64).max, "EXTRA_GAS_NOT_UINT64");
+
+        if(isUsingFeeToken && feeTokenPricer) {
+            gasPrice = 
+        }
+
+        // this msg isn't included in the current sequencer batch, but instead added to
+        // the delayed messages queue that is yet to be included
         bytes memory spendingReportMsg = abi.encodePacked(
             block.timestamp,
             batchPoster,
@@ -698,7 +724,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
         totalDelayedMessagesRead = afterDelayedMessagesRead;
 
-        if (calldataLengthPosted > 0 && !isUsingFeeToken) {
+        if (calldataLengthPosted > 0) {
             // only report batch poster spendings if chain is using ETH as native currency
             submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, 0);
         }
