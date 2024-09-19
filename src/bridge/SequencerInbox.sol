@@ -117,8 +117,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     /// @inheritdoc ISequencerInbox
     address public batchPosterManager;
 
-    // Goran TODO: Add it to the interface along with docs;
-    // who should be able to configure it?
+    /// @inheritdoc ISequencerInbox
     IFeeTokenPricer public feeTokenPricer;
 
     // On L1 this should be set to 117964: 90% of Geth's 128KB tx size limit, leaving ~13KB for proving
@@ -182,7 +181,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     function initialize(
         IBridge bridge_,
-        ISequencerInbox.MaxTimeVariation calldata maxTimeVariation_
+        ISequencerInbox.MaxTimeVariation calldata maxTimeVariation_,
+        IFeeTokenPricer feeTokenPricer_
     ) external onlyDelegated {
         if (bridge != IBridge(address(0))) revert AlreadyInit();
         if (bridge_ == IBridge(address(0))) revert HadZeroInit();
@@ -203,6 +203,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         rollup = bridge_.rollup();
 
         _setMaxTimeVariation(maxTimeVariation_);
+
+        feeTokenPricer = feeTokenPricer_;
     }
 
     /// @notice Allows the rollup owner to sync the rollup address
@@ -833,6 +835,15 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     function setBatchPosterManager(address newBatchPosterManager) external onlyRollupOwner {
         batchPosterManager = newBatchPosterManager;
         emit OwnerFunctionCalled(5);
+    }
+
+    /// @inheritdoc ISequencerInbox
+    function setFeeTokenPricer(IFeeTokenPricer feeTokenPricer_)
+        external
+        onlyRollupOwner
+    {
+        feeTokenPricer = feeTokenPricer_;
+        emit OwnerFunctionCalled(6);
     }
 
     function isValidKeysetHash(bytes32 ksHash) external view returns (bool) {

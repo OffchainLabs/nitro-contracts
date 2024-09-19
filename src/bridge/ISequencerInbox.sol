@@ -249,7 +249,7 @@ interface IFeeTokenPricer {
      * @notice Get the number of child chain's fee tokens per 1 parent chain's native token. Exchange rate must be
      *         denominated in 18 decimals.
      * @dev    For example, parent chain's native token is ETH, fee token is DAI. If price of 1ETH = 2000DAI, then function should return 2000*1e18.
-     *         If fee token is USDC instead and price of 1ETH = 2000USDC, function should still return 2000*1e18, no matter that USDC usees 6 decimals.
+     *         If fee token is USDC instead and price of 1ETH = 2000USDC, function should still return 2000*1e18, no matter that USDC uses 6 decimals.
      */
     function getExchangeRate() external returns (uint256);
 }
