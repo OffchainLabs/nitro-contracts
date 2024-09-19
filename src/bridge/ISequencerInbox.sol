@@ -95,6 +95,15 @@ interface ISequencerInbox is IDelayedMessageProvider {
     ///         This enables the batch poster to do key rotation
     function batchPosterManager() external view returns (address);
 
+    /// @notice Pricer contract is used to get the exchange rate between child chain's fee token
+    ///         and parent chain's native token. This is needed when child chain uses custom fee
+    ///         token which is different from parent chain's native token. The exchange rate is
+    ///         used to correctly report converted gas price in the batch spending reports, so
+    ///         that batch poster can get properly reimbursed on the child chain. If chain uses
+    ///         custom fee token, but pricer is not set, then batch poster reports won't be reported
+    ///         and batch poster won't get reimbursed.
+    function feeTokenPricer() external view returns (IFeeTokenPricer);
+
     struct DasKeySetInfo {
         bool isValidKeyset;
         uint64 creationBlock;
@@ -219,6 +228,13 @@ interface ISequencerInbox is IDelayedMessageProvider {
      * @param newBatchPosterManager The new batch poster manager to be set
      */
     function setBatchPosterManager(address newBatchPosterManager) external;
+
+    /**
+     * @notice Updates the fee token pricer, the contract which is used to get the exchange rate between child
+     *         chain's fee token and parent chain's native token in rollups that use custom fee token.
+     * @param newFeeTokenPricer The new fee token pricer to be set
+     */
+    function setFeeTokenPricer(IFeeTokenPricer newFeeTokenPricer) external;
 
     /// @notice Allows the rollup owner to sync the rollup address
     function updateRollupAddress() external;
