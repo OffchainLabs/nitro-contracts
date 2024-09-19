@@ -134,7 +134,8 @@ contract RollupCreatorTest is Test {
                 nativeToken: address(0),
                 deployFactoriesToL2: true,
                 maxFeePerGasForRetryables: MAX_FEE_PER_GAS,
-                batchPosterManager: batchPosterManager
+                batchPosterManager: batchPosterManager,
+                feeTokenPricer: IFeeTokenPricer(address(0))
             });
         address rollupAddress = rollupCreator.createRollup{value: factoryDeploymentFunds}(
             deployParams
@@ -290,7 +291,8 @@ contract RollupCreatorTest is Test {
                 nativeToken: nativeToken,
                 deployFactoriesToL2: true,
                 maxFeePerGasForRetryables: MAX_FEE_PER_GAS,
-                batchPosterManager: batchPosterManager
+                batchPosterManager: batchPosterManager,
+                feeTokenPricer: IFeeTokenPricer(makeAddr("feeTokenPricer"))
             });
 
         address rollupAddress = rollupCreator.createRollup(deployParams);
@@ -443,7 +445,8 @@ contract RollupCreatorTest is Test {
                 nativeToken: address(0),
                 deployFactoriesToL2: true,
                 maxFeePerGasForRetryables: MAX_FEE_PER_GAS,
-                batchPosterManager: batchPosterManager
+                batchPosterManager: batchPosterManager,
+                feeTokenPricer: IFeeTokenPricer(address(0))
             });
         address rollupAddress = rollupCreator.createRollup{value: factoryDeploymentFunds}(
             deployParams
