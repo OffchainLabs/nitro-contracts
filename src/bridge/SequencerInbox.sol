@@ -119,7 +119,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     // Goran TODO: Add it to the interface along with docs;
     // who should be able to configure it?
-    address public feeTokenPricer;
+    IFeeTokenPricer public feeTokenPricer;
 
     // On L1 this should be set to 117964: 90% of Geth's 128KB tx size limit, leaving ~13KB for proving
     uint256 public immutable maxDataSize;
@@ -671,8 +671,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         // we need to get the exchange rate between the child chain fee token and the parent chain's native token. Pricer
         // is required to get the exchange rate. If the pricer is not set, then we do not send batch reports and batch poster
         // never gets reimbursed
-        address _feeTokenPricer = feeTokenPricer;
-        if(isUsingFeeToken && _feeTokenPricer == address(0)) {
+        IFeeTokenPricer _feeTokenPricer = feeTokenPricer;
+        if(isUsingFeeToken && address(_feeTokenPricer) == address(0)) {
             return;
         }
 
@@ -680,7 +680,6 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         // if msg.sender is used and is a contract, it might not be able to spend the refund on l2
         // solhint-disable-next-line avoid-tx-origin
         address batchPoster = tx.origin;
-
         
         if (hostChainIsArbitrum) {
             // Include extra gas for the host chain's L1 gas charging
@@ -689,13 +688,12 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         }
         require(extraGas <= type(uint64).max, "EXTRA_GAS_NOT_UINT64");
 
-        // do the actual scaling
-        if(isUsingFeeToken && _feeTokenPricer != address(0)) {
+        if(isUsingFeeToken && address(_feeTokenPricer) != address(0)) {
             // gasPrice is originally denominated in parent chain's native token and we want to scale it to child 
             // chain's fee token. For that we need the exchange rate which tells us how many child chain's fee tokens
             // we get for 1 parent chain's native token. Exchange rate itself should be denominated in 18 decimals.
             uint256 exchangeRate = _feeTokenPricer.getExchangeRate();
-            gasPrice = gasPrice * exchangeRate / 1e18;
+            gasPrice = (gasPrice * exchangeRate) / 1e18;
         }
 
         // this msg isn't included in the current sequencer batch, but instead added to
