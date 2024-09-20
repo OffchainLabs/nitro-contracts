@@ -332,6 +332,15 @@ contract SequencerInboxTest is Test {
         seqInboxProxy.initialize(IBridge(_bridge), maxTimeVariation, IFeeTokenPricer(makeAddr("feeTokenPricer")));
     }
 
+    function testInitialize_revert_CannotSetFeeTokenPricer() public {
+        address bridge = address(new Bridge());
+        address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false));
+        SequencerInbox seqInboxProxy = SequencerInbox(TestUtil.deployProxy(seqInboxLogic));
+        IFeeTokenPricer pricer = IFeeTokenPricer(makeAddr("feeTokenPricer"));
+        vm.expectRevert(abi.encodeWithSelector(CannotSetFeeTokenPricer.selector));
+        seqInboxProxy.initialize(IBridge(bridge), maxTimeVariation, pricer);
+    }
+
     function testAddSequencerL2BatchFromOrigin_ArbitrumHosted() public {
         // this will result in 'hostChainIsArbitrum = true'
         vm.mockCall(
@@ -492,7 +501,7 @@ contract SequencerInboxTest is Test {
     }
 
     function testSetFeeTokenPricer() public {
-        (SequencerInbox seqInbox,) = deployRollup(false);
+        (SequencerInbox seqInbox,) = deployFeeTokenBasedRollup();
         IFeeTokenPricer newPricer = IFeeTokenPricer(makeAddr("newPricer"));
 
         vm.expectEmit(true, true, true, true);
@@ -509,6 +518,15 @@ contract SequencerInboxTest is Test {
         IFeeTokenPricer newPricer = IFeeTokenPricer(makeAddr("newPricer"));
 
         vm.expectRevert(abi.encodeWithSelector(NotOwner.selector, address(this), rollupOwner));
+        seqInbox.setFeeTokenPricer(newPricer);
+    }
+
+    function testSetFeeTokenPricer_revert_CannotSetFeeTokenPricer() public {
+        (SequencerInbox seqInbox,) = deployRollup(false);
+        IFeeTokenPricer newPricer = IFeeTokenPricer(makeAddr("newPricer"));
+
+        vm.expectRevert(abi.encodeWithSelector(CannotSetFeeTokenPricer.selector));
+        vm.prank(rollupOwner);
         seqInbox.setFeeTokenPricer(newPricer);
     }
 
