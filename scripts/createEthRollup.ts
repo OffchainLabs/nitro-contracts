@@ -4,6 +4,7 @@ import { createRollup } from './rollupCreation'
 
 async function main() {
   const feeToken = ethers.constants.AddressZero
+  const feeTokenPricer = ethers.constants.AddressZero
   const rollupCreatorAddress = process.env.ROLLUP_CREATOR_ADDRESS
   if (!rollupCreatorAddress) {
     throw new Error('ROLLUP_CREATOR_ADDRESS not set')
@@ -11,7 +12,7 @@ async function main() {
 
   const [signer] = await ethers.getSigners()
 
-  await createRollup(signer, false, rollupCreatorAddress, feeToken)
+  await createRollup(signer, false, rollupCreatorAddress, feeToken, feeTokenPricer)
 }
 
 main()

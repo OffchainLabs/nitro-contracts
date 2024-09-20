@@ -3,8 +3,8 @@ import '@nomiclabs/hardhat-ethers'
 import { run } from 'hardhat'
 import { abi as rollupCreatorAbi } from '../build/contracts/src/rollup/RollupCreator.sol/RollupCreator.json'
 import { config, maxDataSize } from './config'
-import { BigNumber, Signer } from 'ethers'
-import { ERC20, ERC20__factory, IERC20__factory } from '../build/types'
+import { BigNumber, Event, Signer } from 'ethers'
+import { ERC20, ERC20__factory, IERC20__factory, RollupCreator } from '../build/types'
 import { sleep } from './testSetup'
 import { promises as fs } from 'fs'
 import { _isRunningOnArbitrum, verifyContract } from './deploymentUtils'
@@ -57,11 +57,14 @@ interface ChainInfo {
   'has-genesis-state': boolean
 }
 
+// CHRIS: TODO: do we check on init that fee token pricer must be 0 if fee token is 0?
+
 export async function createRollup(
   signer: Signer,
   isDevDeployment: boolean,
   rollupCreatorAddress: string,
-  feeToken: string
+  feeToken: string,
+  feeTokenPricer: string
 ): Promise<{
   rollupCreationResult: RollupCreationResult
   chainInfo: ChainInfo
@@ -76,7 +79,7 @@ export async function createRollup(
     rollupCreatorAddress,
     rollupCreatorAbi,
     signer
-  )
+  ) as RollupCreator
   const validatorWalletCreator = await rollupCreator.validatorWalletCreator()
 
   try {
@@ -101,7 +104,7 @@ export async function createRollup(
     // Call the createRollup function
     console.log('Calling createRollup to generate a new rollup ...')
     const deployParams = isDevDeployment
-      ? await _getDevRollupConfig(feeToken, validatorWalletCreator)
+      ? await _getDevRollupConfig(feeToken, feeTokenPricer, validatorWalletCreator)
       : {
           config: config.rollupConfig,
           validators: config.validators,
@@ -111,6 +114,7 @@ export async function createRollup(
           maxFeePerGasForRetryables: MAX_FER_PER_GAS,
           batchPosters: config.batchPosters,
           batchPosterManager: config.batchPosterManager,
+          feeTokenPricer: feeTokenPricer
         }
 
     const createRollupTx = await rollupCreator.createRollup(deployParams, {
@@ -119,7 +123,7 @@ export async function createRollup(
     const createRollupReceipt = await createRollupTx.wait()
 
     const rollupCreatedEvent = createRollupReceipt.events?.find(
-      (event: RollupCreatedEvent) =>
+      (event: Event): event is Event =>
         event.event === 'RollupCreated' &&
         event.address.toLowerCase() === rollupCreatorAddress.toLowerCase()
     )
@@ -222,6 +226,7 @@ export async function createRollup(
 
 async function _getDevRollupConfig(
   feeToken: string,
+  feeTokenPricer: string,
   validatorWalletCreator: string
 ) {
   // set up owner address
@@ -321,6 +326,7 @@ async function _getDevRollupConfig(
     maxFeePerGasForRetryables: MAX_FER_PER_GAS,
     batchPosters: batchPosters,
     batchPosterManager: batchPosterManager,
+    feeTokenPricer: feeTokenPricer
   }
 
   function _createValidatorAddress(
