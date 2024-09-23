@@ -129,7 +129,8 @@ contract SequencerInboxTest is Test {
         SequencerInbox seqInbox,
         bytes memory data,
         bool hostChainIsArbitrum,
-        bool isUsingFeeToken
+        bool isUsingFeeToken,
+        uint256 exchangeRate
     ) internal {
         uint256 delayedMessagesRead = bridge.delayedMessageCount();
         uint256 sequenceNumber = bridge.sequencerMessageCount();
@@ -155,53 +156,61 @@ contract SequencerInboxTest is Test {
             )
         );
 
+        // calculate expected spending report message
+        bytes memory expectedSpendingReportMsg = "";
+        {
+            uint256 expectedReportedExtraGas = 0;
+            if (hostChainIsArbitrum) {
+                // set 0.1 gwei basefee
+                uint256 basefee = 100000000;
+                vm.fee(basefee);
+                // 30 gwei TX L1 fees
+                uint256 l1Fees = 30000000000;
+                vm.mockCall(
+                    address(0x6c),
+                    abi.encodeWithSignature("getCurrentTxL1GasFees()"),
+                    abi.encode(l1Fees)
+                );
+                expectedReportedExtraGas = l1Fees / basefee;
+            }
+
+            uint256 expectedReportedGasPrice = block.basefee;
+            if (isUsingFeeToken && address(seqInbox.feeTokenPricer()) != address(0)) {
+                expectedReportedGasPrice = (expectedReportedGasPrice * exchangeRate) / 1e18;
+            }
+            expectedSpendingReportMsg = abi.encodePacked(
+                block.timestamp,
+                msg.sender,
+                dataHash,
+                sequenceNumber,
+                expectedReportedGasPrice,
+                uint64(expectedReportedExtraGas)
+            );
+        }
+
         bytes32 beforeAcc = bytes32(0);
         bytes32 delayedAcc = bridge.delayedInboxAccs(delayedMessagesRead - 1);
         bytes32 afterAcc = keccak256(abi.encodePacked(beforeAcc, dataHash, delayedAcc));
 
-        uint256 expectedReportedExtraGas = 0;
-        if (hostChainIsArbitrum) {
-            // set 0.1 gwei basefee
-            uint256 basefee = 100000000;
-            vm.fee(basefee);
-            // 30 gwei TX L1 fees
-            uint256 l1Fees = 30000000000;
-            vm.mockCall(
-                address(0x6c),
-                abi.encodeWithSignature("getCurrentTxL1GasFees()"),
-                abi.encode(l1Fees)
-            );
-            expectedReportedExtraGas = l1Fees / basefee;
-        }
-
-        bytes memory spendingReportMsg = abi.encodePacked(
-            block.timestamp,
-            msg.sender,
-            dataHash,
-            sequenceNumber,
-            block.basefee,
-            uint64(expectedReportedExtraGas)
-        );
-
         // spending report
-        vm.expectEmit();
+        vm.expectEmit(true, true, true, true);
         emit MessageDelivered(
             delayedMessagesRead,
             delayedAcc,
             address(seqInbox),
             L1MessageType_batchPostingReport,
             tx.origin,
-            keccak256(spendingReportMsg),
+            keccak256(expectedSpendingReportMsg),
             block.basefee,
             uint64(block.timestamp)
         );
 
         // spending report event in seq inbox
-        vm.expectEmit();
-        emit InboxMessageDelivered(delayedMessagesRead, spendingReportMsg);
+        vm.expectEmit(true, true, true, true);
+        emit InboxMessageDelivered(delayedMessagesRead, expectedSpendingReportMsg);
 
         // sequencer batch delivered
-        vm.expectEmit();
+        vm.expectEmit(true, true, true, true);
         emit SequencerBatchDelivered(
             sequenceNumber,
             beforeAcc,
@@ -233,7 +242,7 @@ contract SequencerInboxTest is Test {
         // set 60 gwei basefee
         uint256 basefee = 60000000000;
         vm.fee(basefee);
-        expectEvents(bridge, seqInbox, data, false, false);
+        expectEvents(bridge, seqInbox, data, false, false, 0);
 
         vm.prank(tx.origin);
         seqInbox.addSequencerL2BatchFromOrigin(
@@ -362,7 +371,7 @@ contract SequencerInboxTest is Test {
         uint256 sequenceNumber = bridge.sequencerMessageCount();
         uint256 delayedMessagesRead = bridge.delayedMessageCount();
 
-        expectEvents(bridge, seqInbox, data, true, false);
+        expectEvents(bridge, seqInbox, data, true, false, 0);
 
         vm.prank(tx.origin);
         seqInbox.addSequencerL2BatchFromOrigin(
@@ -393,7 +402,7 @@ contract SequencerInboxTest is Test {
         uint256 basefee = 40000000000;
         vm.fee(basefee);
 
-        expectEvents(IBridge(address(bridge)), seqInbox, data, true, true);
+        expectEvents(IBridge(address(bridge)), seqInbox, data, true, true, 1e18);
 
         address feeTokenPricer = address(seqInbox.feeTokenPricer());
         vm.mockCall(
@@ -492,6 +501,44 @@ contract SequencerInboxTest is Test {
         vm.prank(tx.origin);
         seqInbox.addSequencerL2BatchFromOrigin(
             sequenceNumber + 5,
+            data,
+            delayedMessagesRead,
+            IGasRefunder(address(0)),
+            subMessageCount,
+            subMessageCount + 1
+        );
+    }
+
+    function testFuzz_addSequencerBatch_FeeToken(uint256 exchangeRate) public {
+        exchangeRate = bound(exchangeRate, 0, 100000000e18);
+
+        (SequencerInbox seqInbox, ERC20Bridge bridge) = deployFeeTokenBasedRollup();
+        address delayedInboxSender = address(140);
+        uint8 delayedInboxKind = 3;
+        bytes32 messageDataHash = RAND.Bytes32();
+        bytes memory data = hex"80567890";
+
+        vm.prank(dummyInbox);
+        bridge.enqueueDelayedMessage(delayedInboxKind, delayedInboxSender, messageDataHash, 0);
+
+        uint256 subMessageCount = bridge.sequencerReportedSubMessageCount();
+        uint256 sequenceNumber = bridge.sequencerMessageCount();
+        uint256 delayedMessagesRead = bridge.delayedMessageCount();
+
+        // set 40 gwei basefee
+        vm.fee(40000000000);
+
+        expectEvents(IBridge(address(bridge)), seqInbox, data, true, true, exchangeRate);
+
+        address feeTokenPricer = address(seqInbox.feeTokenPricer());
+        vm.mockCall(
+            feeTokenPricer,
+            abi.encodeWithSelector(IFeeTokenPricer.getExchangeRate.selector),
+            abi.encode(exchangeRate)
+        );
+        vm.prank(tx.origin);
+        seqInbox.addSequencerL2BatchFromOrigin(
+            sequenceNumber,
             data,
             delayedMessagesRead,
             IGasRefunder(address(0)),
