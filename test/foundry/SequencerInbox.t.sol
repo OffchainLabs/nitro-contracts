@@ -176,6 +176,7 @@ contract SequencerInboxTest is Test {
 
             uint256 expectedReportedGasPrice = block.basefee;
             if (isUsingFeeToken && address(seqInbox.feeTokenPricer()) != address(0)) {
+                // calculate the scaled gas price for reporting
                 expectedReportedGasPrice = (expectedReportedGasPrice * exchangeRate) / 1e18;
             }
             expectedSpendingReportMsg = abi.encodePacked(
@@ -513,13 +514,12 @@ contract SequencerInboxTest is Test {
         exchangeRate = bound(exchangeRate, 0, 100000000e18);
 
         (SequencerInbox seqInbox, ERC20Bridge bridge) = deployFeeTokenBasedRollup();
-        address delayedInboxSender = address(140);
         uint8 delayedInboxKind = 3;
         bytes32 messageDataHash = RAND.Bytes32();
         bytes memory data = hex"80567890";
 
         vm.prank(dummyInbox);
-        bridge.enqueueDelayedMessage(delayedInboxKind, delayedInboxSender, messageDataHash, 0);
+        bridge.enqueueDelayedMessage(delayedInboxKind, address(140), messageDataHash, 0);
 
         uint256 subMessageCount = bridge.sequencerReportedSubMessageCount();
         uint256 sequenceNumber = bridge.sequencerMessageCount();
@@ -528,14 +528,29 @@ contract SequencerInboxTest is Test {
         // set 40 gwei basefee
         vm.fee(40000000000);
 
-        expectEvents(IBridge(address(bridge)), seqInbox, data, true, true, exchangeRate);
-
-        address feeTokenPricer = address(seqInbox.feeTokenPricer());
+        // make fee token pricer return specified exchange rate
         vm.mockCall(
-            feeTokenPricer,
+            address(seqInbox.feeTokenPricer()),
             abi.encodeWithSelector(IFeeTokenPricer.getExchangeRate.selector),
             abi.encode(exchangeRate)
         );
+
+        // check if call will overflow due to too high exchange rate
+        bool expectedToOverflow = false;
+        {
+            unchecked {
+                uint256 mul = block.basefee * exchangeRate;
+                if (exchangeRate != 0 && ((mul / exchangeRate) != block.basefee)) {
+                    expectedToOverflow = true;
+                }
+            }
+        }
+
+        if(expectedToOverflow) {
+            vm.expectRevert(stdError.arithmeticError);
+        } else {
+            expectEvents(IBridge(address(bridge)), seqInbox, data, true, true, exchangeRate);
+        }
         vm.prank(tx.origin);
         seqInbox.addSequencerL2BatchFromOrigin(
             sequenceNumber,
