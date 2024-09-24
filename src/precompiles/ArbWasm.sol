@@ -82,7 +82,7 @@ interface ArbWasm {
     /// @notice Gets the minimum costs to invoke a program
     /// @return gas amount of gas in increments of 256 when not cached
     /// @return cached amount of gas in increments of 64 when cached
-    function minInitGas() external view returns (uint8 gas, uint8 cached);
+    function minInitGas() external view returns (uint64 gas, uint64 cached);
 
     /// @notice Gets the linear adjustment made to program init costs.
     /// @return percent the adjustment (100% = no adjustment).
