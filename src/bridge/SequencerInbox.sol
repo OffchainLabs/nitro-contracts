@@ -643,6 +643,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     // CHRIS: TODO: hostChainIsArbitrum is checked for l3s on arbitrum so that l1 cost can be charged for within nitro. This wont work for l4s and it wont work for l3s that are settling to a different chain eg Base. In the Base case we need to find another way to guess at the l1 cost I think?
 
+    // CHRIS: TODO: consider any safety checks against re-entrancy from feetokenpricer, or from calling to a different contract eg bridge
+
     // CHRIS: TODO: remove below
     // when submitting a batch we lookup the price of child-parent chain tokens and scale the gas price, so that the correct amount is refunded on child
     // Integration tests

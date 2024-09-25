@@ -6,10 +6,11 @@ import {
   L2TransactionReceipt,
   addCustomNetwork,
 } from '@arbitrum/sdk'
-import { getBaseFee } from '@arbitrum/sdk/dist/lib/utils/lib'
+import { getBaseFee, wait } from '@arbitrum/sdk/dist/lib/utils/lib'
 import { Filter, JsonRpcProvider } from '@ethersproject/providers'
 import { expect } from 'chai'
 import {
+  ArbGasInfo__factory,
   ArbSys__factory,
   Bridge__factory,
   DeployHelper__factory,
@@ -18,6 +19,7 @@ import {
   ERC20__factory,
   EthVault__factory,
   IERC20Bridge__factory,
+  IFeeTokenPricer__factory,
   IInbox__factory,
   Inbox__factory,
   RollupCore__factory,
@@ -27,6 +29,7 @@ import {
 import { getLocalNetworks } from '../../scripts/testSetup'
 import { applyAlias } from '../contract/utils'
 import { BigNumber, ContractTransaction, Wallet, ethers } from 'ethers'
+import { ARB_GAS_INFO } from '@arbitrum/sdk/dist/lib/dataEntities/constants'
 
 const LOCALHOST_L2_RPC = 'http://127.0.0.1:8547'
 const LOCALHOST_L3_RPC = 'http://127.0.0.1:3347'
@@ -75,13 +78,11 @@ describe.only('Custom fee token orbit rollup', () => {
       customL1Network: l1Network,
       customL2Network: l2Network,
     })
-    
+
     l1Provider = new JsonRpcProvider(LOCALHOST_L2_RPC)
     l2Provider = new JsonRpcProvider(LOCALHOST_L3_RPC)
     userL1Wallet = new Wallet(
-      ethers.utils.sha256(
-        ethers.utils.toUtf8Bytes('user_token_bridge_deployer')
-      ),
+      ethers.utils.sha256(ethers.utils.toUtf8Bytes('user_fee_token_deployer')),
       l1Provider
     )
     userL2Wallet = new ethers.Wallet(userL1Wallet.privateKey, l2Provider)
@@ -93,12 +94,253 @@ describe.only('Custom fee token orbit rollup', () => {
       nativeTokenAddress === ethers.constants.AddressZero
         ? undefined
         : ERC20__factory.connect(nativeTokenAddress, l1Provider)
-    expect(nativeToken, "native token undefined").to.not.eq(ethers.constants.AddressZero)
+    expect(nativeToken, 'native token undefined').to.not.eq(
+      ethers.constants.AddressZero
+    )
   })
 
+  function generateRandomHexString(sizeInKB: number): string {
+    const hexCharacters = '0123456789ABCDEF';
+    const bytesPerKB = 1024;
+    const totalBytes = sizeInKB * bytesPerKB;
+    let result = '';
+
+    for (let i = 0; i < totalBytes * 2; i++) {
+        result += hexCharacters.charAt(Math.floor(Math.random() * 16));
+    }
+
+    return result;
+}
+
+
+
   it('batch poster can get refunded on L2', async function () {
-    const seqInbox = SequencerInbox__factory.connect(l2Network.ethBridge.sequencerInbox, l1Provider)
-    const feeTokenPricer = await seqInbox.callStatic.feeTokenPricer()
+    const arbGasInfo = ArbGasInfo__factory.connect(ARB_GAS_INFO, l2Provider);
+    console.log("HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+    console.log("l1 fees available", (await arbGasInfo.getL1FeesAvailable()).toString())
+    console.log("l1 base fee estimate", (await arbGasInfo.getL1BaseFeeEstimate()).toString())
+    console.log("l1 gas price estimate", (await arbGasInfo.getL1GasPriceEstimate()).toString())
+    console.log("l1 pricing funds due for rewards", (await arbGasInfo.getL1PricingFundsDueForRewards()).toString())
+    console.log("l1 surplus", (await arbGasInfo.getL1PricingSurplus()).toString())
+    console.log("l1 pricing units since update", (await arbGasInfo.getL1PricingUnitsSinceUpdate()).toString())
+    console.log("l1 reward rate", (await arbGasInfo.getL1RewardRate()).toString())
+    console.log("l1 reward recipient", (await arbGasInfo.getL1RewardRecipient()).toString())
+    console.log("last l1 pricing surplus", (await arbGasInfo.getLastL1PricingSurplus()).toString())
+    console.log("las l1 pricing update time", (await arbGasInfo.getLastL1PricingUpdateTime()).toString())
+    console.log("HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+    return;
+
+    const seqInbox = SequencerInbox__factory.connect(
+      l2Network.ethBridge.sequencerInbox,
+      l1Provider
+    )
+    const feeTokenPricerAddr = await seqInbox.callStatic.feeTokenPricer()
+    const feeTokenPricer = IFeeTokenPricer__factory.connect(
+      feeTokenPricerAddr,
+      l1Provider
+    )
+    // console.log(feeTokenPricer)
+    // console.log((await feeTokenPricer.callStatic.getExchangeRate()).toString());
+
+    // console.log(l2Network.ethBridge.sequencerInbox)
+    // const logs = await l1Provider.getLogs({
+    //   address: l2Network.ethBridge.sequencerInbox,
+    //   topics: seqInbox.interface.encodeFilterTopics(seqInbox.interface.getEventTopic("OwnerFunctionCalled"), [1]),
+    //   fromBlock: 0,
+    //   toBlock: "latest"
+    // })
+    // const tx = await l1Provider.getTransaction(logs[0].transactionHash)
+    // console.log(tx.data)
+    // const rollupCreator = RollupCreator__factory.connect(tx.to!, l1Provider)
+    // const res = rollupCreator.interface.decodeFunctionData(rollupCreator.interface.getFunction("createRollup"), tx.data)
+    // console.log(res)
+
+    const batchPosterAddr = '0x3E6134aAD4C4d422FF2A4391Dc315c4DDf98D1a5'
+    console.log(await (await l1Provider.getBalance(batchPosterAddr)).toString())
+    console.log((await l2Provider.getBalance(batchPosterAddr)).toString())
+
+    // checked that the fee token pricer is working
+    // now we just need to monitor the batch poster account on l2 to make sure it goes up
+    // and that it goes up by the right amount
+
+    // while (true) {
+    //   // if((await l2Provider.getBalance(batchPosterAddr)).gt(0)) {
+    //   //   break;
+    //   // }
+    //   console.log('user2 balance', (await userL2Wallet.getBalance()).toString())
+
+    //   console.log(
+    //     'bathposter bal',
+    //     await (await l2Provider.getBalance(batchPosterAddr)).toString()
+    //   )
+    //   console.log(
+    //     'pending tx count',
+    //     await userL2Wallet.getTransactionCount('pending')
+    //   )
+    //   console.log('sendng tx')
+    //   const tx = await userL2Wallet.sendTransaction({
+    //     to: '0x00000000000000000000000000000000000000dd',
+    //     value: 0,
+    //   })
+    //   console.log('awaiting receipt')
+    //   console.log(
+    //     'pending tx count',
+    //     await userL2Wallet.getTransactionCount('pending')
+    //   )
+    //   await tx.wait()
+    //   console.log('sent tx')
+    //   await wait(2000)
+    // }
+    while(true) {
+
+    const batchPosterNonceBefore = await l1Provider.getTransactionCount(
+      batchPosterAddr,
+      'latest'
+    )
+    const batchPosterL3BalanceBefore = await l2Provider.getBalance(
+      batchPosterAddr
+    )
+    
+
+    // send a sin10
+    // for (let index = 0; index < 10; index++) {
+      await (
+        await userL2Wallet.sendTransaction({
+          to: '0x00000000000000000000000000000000000000dd',
+          value: 0,
+          // data: "0x" + generateRandomHexString(50)
+        })
+      ).wait()
+      
+      
+    // }
+
+    // InboxMessageDelivered
+    //   abi.encodePacked(
+    //     block.timestamp,
+    //     batchPoster,
+    //     dataHash,
+    //     seqMessageIndex,
+    //     gasPrice,
+    //     uint64(extraGas)
+    // );
+
+    // we need to do the difference
+
+    // wait for the batch poster to send a transaction, then get the inboxmessagedelivered event
+    while (true) {
+      const currentNonce = await l1Provider.getTransactionCount(
+        batchPosterAddr,
+        'latest'
+      )
+      if (currentNonce == batchPosterNonceBefore + 1) {
+        break
+      }
+      await wait(1000)
+    }
+    const batchSpendingReportEvents = await l1Provider.getLogs({
+      address: seqInbox.address,
+      fromBlock: 0,
+      toBlock: 'latest',
+      topics: seqInbox.interface.encodeFilterTopics(
+        'InboxMessageDelivered',
+        []
+      ),
+    })
+    const batchSpendingReportEvent =
+      batchSpendingReportEvents[batchSpendingReportEvents.length - 1]
+    // console.log(batchSpendingReportEvents)
+    const batchSpendingReportData = seqInbox.interface.decodeEventLog(
+      'InboxMessageDelivered',
+      batchSpendingReportEvent.data
+    ).data as string
+    
+    console.log(batchSpendingReportData)
+    const bp = batchSpendingReportData.substring(66, 106)
+    const gasPrice = BigNumber.from(
+      '0x' + batchSpendingReportData.substring(236, 298)
+    )
+    const extraGas = BigNumber.from(
+      '0x' + batchSpendingReportData.substring(298)
+    )
+    // 0x 0-2
+    // 0000000000000000000000000000000000000000000000000000000066f2e9f5 0-64
+    // 3e6134aad4c4d422ff2a4391dc315c4ddf98d1a5 64-104
+    // 09439a47bdef12ca3bc0dccff5bf8cfb4df2a9005cb73da35284d81b4899a05c 104-168
+    // 000000000000000000000000000000000000000000000000000000000000000b 168-252
+    // 0000000000000000000000000000000000000000000000000000000059682f00 252-316
+    // 00000000000000
+
+    console.log(bp, gasPrice, extraGas)
+
+    // const res = ethers.utils.defaultAbiCoder.decode(
+    //   ['uint256', 'address', 'bytes32', 'uint256', 'uint256', 'uint64'],
+    //   batchSpendingReportData
+    // )
+    expect('0x' + bp.toLowerCase(), 'batch poster from message').to.eq(
+      batchPosterAddr.toLowerCase()
+    )
+    const l2GasPrice = await l1Provider.getGasPrice()
+    const exchangeRate = await feeTokenPricer.callStatic.getExchangeRate()
+    expect(
+      l2GasPrice
+        .mul(exchangeRate)
+        .div(ethers.constants.WeiPerEther)
+        .eq(gasPrice),
+      'unexpected gas price'
+    ).to.be.true
+
+    const txData = (
+      await l1Provider.getTransaction(batchSpendingReportEvent.transactionHash)
+    ).data
+    const zeros = txData
+      .substring(2)
+      .split('')
+      .filter(char => char === '0').length
+    const nonZeros = txData
+      .substring(2)
+      .split('')
+      .filter(char => char !== '0').length
+      console.log("txdatalen", txData.length)
+    const dataGas = zeros * 4 + nonZeros * 68
+    console.log("HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+    console.log((await arbGasInfo.getL1FeesAvailable()).toString())
+    console.log((await arbGasInfo.getL1BaseFeeEstimate()).toString())
+    console.log((await arbGasInfo.getL1GasPriceEstimate()).toString())
+    console.log((await arbGasInfo.getL1PricingFundsDueForRewards()).toString())
+    console.log((await arbGasInfo.getL1PricingSurplus()).toString())
+    console.log((await arbGasInfo.getL1PricingUnitsSinceUpdate()).toString())
+    console.log((await arbGasInfo.getL1RewardRate()).toString())
+    console.log((await arbGasInfo.getL1RewardRecipient()).toString())
+    console.log("HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+    const reimbursedGas = dataGas + (await arbGasInfo.getPerBatchGasCharge()).toNumber()
+    const reimbursedTokens = gasPrice.mul(reimbursedGas)
+    console.log("gas", reimbursedGas.toString())
+    console.log("price", gasPrice.toString())
+
+    let batchPosterL3BalanceAfter = BigNumber.from("0");
+    // wait until the change is reflected
+    while(true) {
+      batchPosterL3BalanceAfter = await l2Provider.getBalance(
+        batchPosterAddr
+      )
+      if(!batchPosterL3BalanceAfter.eq(batchPosterL3BalanceBefore)) {
+        break;
+      }
+      await wait(1000)
+    }
+    console.log("balance    diff", batchPosterL3BalanceAfter.sub(batchPosterL3BalanceBefore).toString())
+    console.log("expected though", reimbursedTokens.toString())
+    break;
+  }
+    
+    // expect(
+    //   batchPosterL3BalanceAfter
+    //     .sub(batchPosterL3BalanceBefore)
+    //     .eq(reimbursedTokens),
+    //   'bal after'
+    // ).to.be.true
+
     // const c = seqInbox.interface.encodeFunctionData("feeTokenPricer")
     // console.log(c)
     // const res = await l1Provider.call({
@@ -106,7 +348,6 @@ describe.only('Custom fee token orbit rollup', () => {
     //   data: "0x34875567"
     // })
     // console.log(res)
-    
   })
 
   // it('should have deployed bridge contracts', async function () {
