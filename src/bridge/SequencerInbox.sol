@@ -29,7 +29,8 @@ import {
     InvalidHeaderFlag,
     NativeTokenMismatch,
     BadMaxTimeVariation,
-    Deprecated
+    Deprecated,
+    CannotSetFeeTokenPricer
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./IInboxBase.sol";
@@ -204,6 +205,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
         _setMaxTimeVariation(maxTimeVariation_);
 
+        if (!isUsingFeeToken && feeTokenPricer_ != IFeeTokenPricer(address(0))) {
+            revert CannotSetFeeTokenPricer();
+        }
         feeTokenPricer = feeTokenPricer_;
     }
 
@@ -841,6 +845,10 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     /// @inheritdoc ISequencerInbox
     function setFeeTokenPricer(IFeeTokenPricer feeTokenPricer_) external onlyRollupOwner {
+        if (!isUsingFeeToken) {
+            revert CannotSetFeeTokenPricer();
+        }
+
         feeTokenPricer = feeTokenPricer_;
         emit OwnerFunctionCalled(6);
     }
