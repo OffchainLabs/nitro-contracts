@@ -1,41 +1,23 @@
-import {
-  L1ToL2MessageGasEstimator,
-  L1ToL2MessageStatus,
-  L1TransactionReceipt,
-  L2Network,
-  L2TransactionReceipt,
-  addCustomNetwork,
-} from '@arbitrum/sdk'
-import { getBaseFee, wait } from '@arbitrum/sdk/dist/lib/utils/lib'
-import { Filter, JsonRpcProvider } from '@ethersproject/providers'
+import { L2Network, addCustomNetwork } from '@arbitrum/sdk'
+import { wait } from '@arbitrum/sdk/dist/lib/utils/lib'
+import { JsonRpcProvider } from '@ethersproject/providers'
 import { expect } from 'chai'
 import {
   ArbGasInfo__factory,
-  ArbSys__factory,
-  Bridge__factory,
-  DeployHelper__factory,
+  ArbOwner__factory,
   ERC20,
-  ERC20Inbox__factory,
   ERC20__factory,
-  EthVault__factory,
   IERC20Bridge__factory,
   IFeeTokenPricer__factory,
   IInbox__factory,
-  Inbox__factory,
-  RollupCore__factory,
-  RollupCreator__factory,
   SequencerInbox__factory,
 } from '../../build/types'
 import { getLocalNetworks } from '../../scripts/testSetup'
-import { applyAlias } from '../contract/utils'
-import { BigNumber, ContractTransaction, Wallet, ethers } from 'ethers'
+import { BigNumber, Wallet, ethers } from 'ethers'
 import { ARB_GAS_INFO } from '@arbitrum/sdk/dist/lib/dataEntities/constants'
 
 const LOCALHOST_L2_RPC = 'http://127.0.0.1:8547'
 const LOCALHOST_L3_RPC = 'http://127.0.0.1:3347'
-
-// when code at address is empty, ethers.js returns '0x'
-const EMPTY_CODE_LENGTH = 2
 
 let l1Provider: JsonRpcProvider
 let l2Provider: JsonRpcProvider
@@ -44,10 +26,26 @@ let l2Network: L2Network
 let userL1Wallet: Wallet
 let userL2Wallet: Wallet
 let nativeToken: ERC20 | undefined
-const excessFeeRefundAddress = Wallet.createRandom().address
-const callValueRefundAddress = Wallet.createRandom().address
 
-describe.only('Custom fee token orbit rollup', () => {
+describe('Custom fee token orbit rollup', () => {
+  async function _getFeeToken(
+    inbox: string,
+    l1Provider: ethers.providers.Provider
+  ): Promise<string> {
+    const bridge = await IInbox__factory.connect(inbox, l1Provider).bridge()
+    let feeToken = ethers.constants.AddressZero
+    try {
+      feeToken = await IERC20Bridge__factory.connect(
+        bridge,
+        l1Provider
+      ).nativeToken()
+    } catch {
+      feeToken = ethers.constants.AddressZero
+    }
+
+    return feeToken
+  }
+
   // setup providers and connect deployed contracts
   before(async function () {
     const { l1Network, l2Network: coreL2Network } = await getLocalNetworks(
@@ -99,100 +97,9 @@ describe.only('Custom fee token orbit rollup', () => {
     )
   })
 
-  function generateRandomHexString(sizeInKB: number): string {
-    const hexCharacters = '0123456789ABCDEF';
-    const bytesPerKB = 1024;
-    const totalBytes = sizeInKB * bytesPerKB;
-    let result = '';
+  const batchPosterAddr = '0x3E6134aAD4C4d422FF2A4391Dc315c4DDf98D1a5'
 
-    for (let i = 0; i < totalBytes * 2; i++) {
-        result += hexCharacters.charAt(Math.floor(Math.random() * 16));
-    }
-
-    return result;
-}
-
-
-
-  it('batch poster can get refunded on L2', async function () {
-    const arbGasInfo = ArbGasInfo__factory.connect(ARB_GAS_INFO, l2Provider);
-    console.log("HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
-    console.log("l1 fees available", (await arbGasInfo.getL1FeesAvailable()).toString())
-    console.log("l1 base fee estimate", (await arbGasInfo.getL1BaseFeeEstimate()).toString())
-    console.log("l1 gas price estimate", (await arbGasInfo.getL1GasPriceEstimate()).toString())
-    console.log("l1 pricing funds due for rewards", (await arbGasInfo.getL1PricingFundsDueForRewards()).toString())
-    console.log("l1 surplus", (await arbGasInfo.getL1PricingSurplus()).toString())
-    console.log("l1 pricing units since update", (await arbGasInfo.getL1PricingUnitsSinceUpdate()).toString())
-    console.log("l1 reward rate", (await arbGasInfo.getL1RewardRate()).toString())
-    console.log("l1 reward recipient", (await arbGasInfo.getL1RewardRecipient()).toString())
-    console.log("last l1 pricing surplus", (await arbGasInfo.getLastL1PricingSurplus()).toString())
-    console.log("las l1 pricing update time", (await arbGasInfo.getLastL1PricingUpdateTime()).toString())
-    console.log("HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
-    return;
-
-    const seqInbox = SequencerInbox__factory.connect(
-      l2Network.ethBridge.sequencerInbox,
-      l1Provider
-    )
-    const feeTokenPricerAddr = await seqInbox.callStatic.feeTokenPricer()
-    const feeTokenPricer = IFeeTokenPricer__factory.connect(
-      feeTokenPricerAddr,
-      l1Provider
-    )
-    // console.log(feeTokenPricer)
-    // console.log((await feeTokenPricer.callStatic.getExchangeRate()).toString());
-
-    // console.log(l2Network.ethBridge.sequencerInbox)
-    // const logs = await l1Provider.getLogs({
-    //   address: l2Network.ethBridge.sequencerInbox,
-    //   topics: seqInbox.interface.encodeFilterTopics(seqInbox.interface.getEventTopic("OwnerFunctionCalled"), [1]),
-    //   fromBlock: 0,
-    //   toBlock: "latest"
-    // })
-    // const tx = await l1Provider.getTransaction(logs[0].transactionHash)
-    // console.log(tx.data)
-    // const rollupCreator = RollupCreator__factory.connect(tx.to!, l1Provider)
-    // const res = rollupCreator.interface.decodeFunctionData(rollupCreator.interface.getFunction("createRollup"), tx.data)
-    // console.log(res)
-
-    const batchPosterAddr = '0x3E6134aAD4C4d422FF2A4391Dc315c4DDf98D1a5'
-    console.log(await (await l1Provider.getBalance(batchPosterAddr)).toString())
-    console.log((await l2Provider.getBalance(batchPosterAddr)).toString())
-
-    // checked that the fee token pricer is working
-    // now we just need to monitor the batch poster account on l2 to make sure it goes up
-    // and that it goes up by the right amount
-
-    // while (true) {
-    //   // if((await l2Provider.getBalance(batchPosterAddr)).gt(0)) {
-    //   //   break;
-    //   // }
-    //   console.log('user2 balance', (await userL2Wallet.getBalance()).toString())
-
-    //   console.log(
-    //     'bathposter bal',
-    //     await (await l2Provider.getBalance(batchPosterAddr)).toString()
-    //   )
-    //   console.log(
-    //     'pending tx count',
-    //     await userL2Wallet.getTransactionCount('pending')
-    //   )
-    //   console.log('sendng tx')
-    //   const tx = await userL2Wallet.sendTransaction({
-    //     to: '0x00000000000000000000000000000000000000dd',
-    //     value: 0,
-    //   })
-    //   console.log('awaiting receipt')
-    //   console.log(
-    //     'pending tx count',
-    //     await userL2Wallet.getTransactionCount('pending')
-    //   )
-    //   await tx.wait()
-    //   console.log('sent tx')
-    //   await wait(2000)
-    // }
-    while(true) {
-
+  const sendTxAndWaitForBatch = async () => {
     const batchPosterNonceBefore = await l1Provider.getTransactionCount(
       batchPosterAddr,
       'latest'
@@ -200,34 +107,15 @@ describe.only('Custom fee token orbit rollup', () => {
     const batchPosterL3BalanceBefore = await l2Provider.getBalance(
       batchPosterAddr
     )
-    
 
-    // send a sin10
-    // for (let index = 0; index < 10; index++) {
-      await (
-        await userL2Wallet.sendTransaction({
-          to: '0x00000000000000000000000000000000000000dd',
-          value: 0,
-          // data: "0x" + generateRandomHexString(50)
-        })
-      ).wait()
-      
-      
-    // }
+    await (
+      await userL2Wallet.sendTransaction({
+        to: '0x00000000000000000000000000000000000000dd',
+        value: 0,
+      })
+    ).wait()
 
-    // InboxMessageDelivered
-    //   abi.encodePacked(
-    //     block.timestamp,
-    //     batchPoster,
-    //     dataHash,
-    //     seqMessageIndex,
-    //     gasPrice,
-    //     uint64(extraGas)
-    // );
-
-    // we need to do the difference
-
-    // wait for the batch poster to send a transaction, then get the inboxmessagedelivered event
+    // wait for the batch poster to send their tx, we wait for their nonce to increase
     while (true) {
       const currentNonce = await l1Provider.getTransactionCount(
         batchPosterAddr,
@@ -238,6 +126,32 @@ describe.only('Custom fee token orbit rollup', () => {
       }
       await wait(1000)
     }
+
+    // batch submission reports occur via delayed messages
+    // wait until we see a change in the batch poster balance
+    let batchPosterL3BalanceAfter = BigNumber.from('0')
+    while (true) {
+      batchPosterL3BalanceAfter = await l2Provider.getBalance(batchPosterAddr)
+      if (!batchPosterL3BalanceAfter.eq(batchPosterL3BalanceBefore)) {
+        break
+      }
+      await wait(1000)
+    }
+
+    return batchPosterL3BalanceAfter.sub(batchPosterL3BalanceBefore)
+  }
+
+  const getLatestBatchExpectedCost = async () => {
+    const seqInbox = SequencerInbox__factory.connect(
+      l2Network.ethBridge.sequencerInbox,
+      l1Provider
+    )
+    const feeTokenPricerAddr = await seqInbox.callStatic.feeTokenPricer()
+    const feeTokenPricer = IFeeTokenPricer__factory.connect(
+      feeTokenPricerAddr,
+      l1Provider
+    )
+
     const batchSpendingReportEvents = await l1Provider.getLogs({
       address: seqInbox.address,
       fromBlock: 0,
@@ -249,13 +163,12 @@ describe.only('Custom fee token orbit rollup', () => {
     })
     const batchSpendingReportEvent =
       batchSpendingReportEvents[batchSpendingReportEvents.length - 1]
-    // console.log(batchSpendingReportEvents)
     const batchSpendingReportData = seqInbox.interface.decodeEventLog(
       'InboxMessageDelivered',
-      batchSpendingReportEvent.data
+      batchSpendingReportEvent.data,
+      batchSpendingReportEvent.topics
     ).data as string
-    
-    console.log(batchSpendingReportData)
+
     const bp = batchSpendingReportData.substring(66, 106)
     const gasPrice = BigNumber.from(
       '0x' + batchSpendingReportData.substring(236, 298)
@@ -263,23 +176,10 @@ describe.only('Custom fee token orbit rollup', () => {
     const extraGas = BigNumber.from(
       '0x' + batchSpendingReportData.substring(298)
     )
-    // 0x 0-2
-    // 0000000000000000000000000000000000000000000000000000000066f2e9f5 0-64
-    // 3e6134aad4c4d422ff2a4391dc315c4ddf98d1a5 64-104
-    // 09439a47bdef12ca3bc0dccff5bf8cfb4df2a9005cb73da35284d81b4899a05c 104-168
-    // 000000000000000000000000000000000000000000000000000000000000000b 168-252
-    // 0000000000000000000000000000000000000000000000000000000059682f00 252-316
-    // 00000000000000
-
-    console.log(bp, gasPrice, extraGas)
-
-    // const res = ethers.utils.defaultAbiCoder.decode(
-    //   ['uint256', 'address', 'bytes32', 'uint256', 'uint256', 'uint64'],
-    //   batchSpendingReportData
-    // )
     expect('0x' + bp.toLowerCase(), 'batch poster from message').to.eq(
       batchPosterAddr.toLowerCase()
     )
+    expect(extraGas.toNumber(), 'batch poster extra gas').to.eq(0)
     const l2GasPrice = await l1Provider.getGasPrice()
     const exchangeRate = await feeTokenPricer.callStatic.getExchangeRate()
     expect(
@@ -289,1139 +189,112 @@ describe.only('Custom fee token orbit rollup', () => {
         .eq(gasPrice),
       'unexpected gas price'
     ).to.be.true
-
     const txData = (
       await l1Provider.getTransaction(batchSpendingReportEvent.transactionHash)
     ).data
-    const zeros = txData
-      .substring(2)
-      .split('')
-      .filter(char => char === '0').length
-    const nonZeros = txData
-      .substring(2)
-      .split('')
-      .filter(char => char !== '0').length
-      console.log("txdatalen", txData.length)
-    const dataGas = zeros * 4 + nonZeros * 68
-    console.log("HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
-    console.log((await arbGasInfo.getL1FeesAvailable()).toString())
-    console.log((await arbGasInfo.getL1BaseFeeEstimate()).toString())
-    console.log((await arbGasInfo.getL1GasPriceEstimate()).toString())
-    console.log((await arbGasInfo.getL1PricingFundsDueForRewards()).toString())
-    console.log((await arbGasInfo.getL1PricingSurplus()).toString())
-    console.log((await arbGasInfo.getL1PricingUnitsSinceUpdate()).toString())
-    console.log((await arbGasInfo.getL1RewardRate()).toString())
-    console.log((await arbGasInfo.getL1RewardRecipient()).toString())
-    console.log("HEREEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
-    const reimbursedGas = dataGas + (await arbGasInfo.getPerBatchGasCharge()).toNumber()
-    const reimbursedTokens = gasPrice.mul(reimbursedGas)
-    console.log("gas", reimbursedGas.toString())
-    console.log("price", gasPrice.toString())
-
-    let batchPosterL3BalanceAfter = BigNumber.from("0");
-    // wait until the change is reflected
-    while(true) {
-      batchPosterL3BalanceAfter = await l2Provider.getBalance(
-        batchPosterAddr
-      )
-      if(!batchPosterL3BalanceAfter.eq(batchPosterL3BalanceBefore)) {
-        break;
-      }
-      await wait(1000)
+    const batchtxData = seqInbox.interface.decodeFunctionData(
+      seqInbox.interface.functions[
+        'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256)'
+      ],
+      txData
+    )
+    const computeBatchCost = (batchData: string) => {
+      const zeroBytes = batchData
+        .substring(2)
+        .split('')
+        .reduce(
+          (count, char, index, array) =>
+            index % 2 === 0 && char === '0' && array[index + 1] === '0'
+              ? count + 1
+              : count,
+          0
+        )
+      const nonZeroBytes = batchData
+        .substring(2)
+        .split('')
+        .reduce(
+          (count, char, index, array) =>
+            index % 2 === 0 && (char !== '0' || array[index + 1] !== '0')
+              ? count + 1
+              : count,
+          0
+        )
+      const dataGas = zeroBytes * 4 + nonZeroBytes * 16
+      const words = Math.ceil(batchData.substring(2).length / 64)
+      const keccakGas = words * 6 + 30
+      const storageGas = 2 * 20000
+      return dataGas + keccakGas + storageGas
     }
-    console.log("balance    diff", batchPosterL3BalanceAfter.sub(batchPosterL3BalanceBefore).toString())
-    console.log("expected though", reimbursedTokens.toString())
-    break;
+    const txReceipt = await l1Provider.getTransactionReceipt(
+      batchSpendingReportEvent.transactionHash
+    )
+    const seqBatchDeliveredEvent = seqInbox.interface.decodeEventLog(
+      'SequencerBatchDelivered',
+      txReceipt.logs[txReceipt.logs.length - 1].data
+    )
+
+    const padTo8Byte = (b: BigNumber) => {
+      return ethers.utils.hexZeroPad(b.toHexString(), 8).substring(2)
+    }
+    const headerVals =
+      '0x' +
+      padTo8Byte(seqBatchDeliveredEvent['timeBounds'].minTimestamp) +
+      padTo8Byte(seqBatchDeliveredEvent['timeBounds'].maxTimestamp) +
+      padTo8Byte(seqBatchDeliveredEvent['timeBounds'].minBlockNumber) +
+      padTo8Byte(seqBatchDeliveredEvent['timeBounds'].maxBlockNumber) +
+      padTo8Byte(seqBatchDeliveredEvent['afterDelayedMessagesRead'])
+
+    const batchGas = computeBatchCost(
+      headerVals + batchtxData['data'].substring(2)
+    )
+    const arbGasInfo = ArbGasInfo__factory.connect(ARB_GAS_INFO, l2Provider)
+    const reimbursedGas =
+      batchGas + (await arbGasInfo.getPerBatchGasCharge()).toNumber()
+    return gasPrice.mul(reimbursedGas)
   }
-    
-    // expect(
-    //   batchPosterL3BalanceAfter
-    //     .sub(batchPosterL3BalanceBefore)
-    //     .eq(reimbursedTokens),
-    //   'bal after'
-    // ).to.be.true
 
-    // const c = seqInbox.interface.encodeFunctionData("feeTokenPricer")
-    // console.log(c)
-    // const res = await l1Provider.call({
-    //   to: seqInbox.address,
-    //   data: "0x34875567"
-    // })
-    // console.log(res)
+  const prepareBatchPostingTest = async () => {
+    // set some parameters to make the test easier to verify
+    const l3Owner = ethers.Wallet.fromMnemonic(
+      'indoor dish desk flag debris potato excuse depart ticket judge file exit',
+      "m/44'/60'/0'/0/" + '3'
+    ).connect(l2Provider)
+    const arbOwner = ArbOwner__factory.connect(
+      '0x0000000000000000000000000000000000000070',
+      l3Owner
+    )
+    // set the l1 fees to be very high
+    const arbGasInfo = ArbGasInfo__factory.connect(ARB_GAS_INFO, l2Provider)
+    const l1BaseFeeEstimate = await arbGasInfo.getL1BaseFeeEstimate()
+    const higherL1Price = l1BaseFeeEstimate.mul(1000)
+    // set a higher l1 price per unit. Since we only send a single small transaction, the per batch
+    // cost is over 100x greater than the data cost. This means that we need to set a much higher gas price
+    // to cover these per batch costs. In a normal orbit chain we would expect the batch poster not to post
+    // too frequently and this would keep per batch values a small percentage of the overall cost. We would expect
+    // the l1 base fee estimate to increase by this small percentage.
+    await (await arbOwner.setL1PricePerUnit(higherL1Price)).wait()
+    // we want to ensure the batch poster is full refunded in this test, so we dont cap the amount
+    // of amortized gas the batch poster should receive
+    await (await arbOwner.setAmortizedCostCapBips(10000000)).wait()
+    // it's possible to configure the batch poster or another address to receive a reward
+    // we disable this to simplify this test
+    await (await arbOwner.setL1PricingRewardRate(0)).wait()
+  }
+
+  it('batch poster can get refunded on L2', async function () {
+    await prepareBatchPostingTest()
+
+    // send 1 tx. We start out with a small negative surpluss, which will cause an over-refund
+    // in the first batch. So we just send one to clear it
+    await sendTxAndWaitForBatch()
+
+    // now send a tx and batch and measure that the gas reimbursed is correct
+    const reimbursedTokens = await sendTxAndWaitForBatch()
+    const expectedReimbursedTokens = await getLatestBatchExpectedCost()
+
+    // check that the balance diff is as expected
+    expect(reimbursedTokens.toString(), 'reimbursed tokens').to.eq(
+      expectedReimbursedTokens
+    )
   })
-
-  // it('should have deployed bridge contracts', async function () {
-  //   // get rollup as entry point
-  //   const rollup = RollupCore__factory.connect(
-  //     l2Network.ethBridge.rollup,
-  //     l1Provider
-  //   )
-
-  //   // check contract refs are properly set
-  //   expect(rollup.address).to.be.eq(l2Network.ethBridge.rollup)
-  //   expect(await rollup.sequencerInbox()).to.be.eq(
-  //     l2Network.ethBridge.sequencerInbox
-  //   )
-  //   expect(await rollup.outbox()).to.be.eq(l2Network.ethBridge.outbox)
-  //   expect(await rollup.inbox()).to.be.eq(l2Network.ethBridge.inbox)
-  //   expect(await rollup.bridge()).to.be.eq(l2Network.ethBridge.bridge)
-  // })
-
-  // it('can deposit native asset to L2', async function () {
-  //   // snapshot state before deposit
-  //   const userL2Balance = await l2Provider.getBalance(userL2Wallet.address)
-  //   let userL1NativeAssetBalance: BigNumber
-  //   let bridgeL1NativeAssetBalance: BigNumber
-
-  //   if (nativeToken) {
-  //     userL1NativeAssetBalance = await nativeToken.balanceOf(
-  //       userL1Wallet.address
-  //     )
-  //     bridgeL1NativeAssetBalance = await nativeToken.balanceOf(
-  //       l2Network.ethBridge.bridge
-  //     )
-  //   } else {
-  //     userL1NativeAssetBalance = await l1Provider.getBalance(
-  //       userL1Wallet.address
-  //     )
-  //     bridgeL1NativeAssetBalance = await l1Provider.getBalance(
-  //       l2Network.ethBridge.bridge
-  //     )
-  //   }
-
-  //   /// bridge native asset
-  //   const amountToDeposit = await _applyDecimalsToAmount('3')
-
-  //   let depositTx
-  //   if (nativeToken) {
-  //     await (
-  //       await nativeToken
-  //         .connect(userL1Wallet)
-  //         .approve(l2Network.ethBridge.inbox, amountToDeposit)
-  //     ).wait()
-  //     depositTx = await ERC20Inbox__factory.connect(
-  //       l2Network.ethBridge.inbox,
-  //       userL1Wallet
-  //     ).depositERC20(amountToDeposit)
-  //   } else {
-  //     depositTx = await Inbox__factory.connect(
-  //       l2Network.ethBridge.inbox,
-  //       userL1Wallet
-  //     )['depositEth()']({ value: amountToDeposit })
-  //   }
-
-  //   // wait for deposit to be processed
-  //   const depositRec = await L1TransactionReceipt.monkeyPatchEthDepositWait(
-  //     depositTx
-  //   ).wait()
-  //   const l2Result = await depositRec.waitForL2(l2Provider)
-  //   expect(l2Result.complete).to.be.true
-
-  //   // check user balance decreased on L1
-  //   let userL1NativeAssetBalanceAfter: BigNumber
-  //   if (nativeToken) {
-  //     userL1NativeAssetBalanceAfter = await nativeToken.balanceOf(
-  //       userL1Wallet.address
-  //     )
-  //     expect(
-  //       userL1NativeAssetBalance.sub(userL1NativeAssetBalanceAfter)
-  //     ).to.be.eq(amountToDeposit)
-  //   } else {
-  //     userL1NativeAssetBalanceAfter = await l1Provider.getBalance(
-  //       userL1Wallet.address
-  //     )
-  //     expect(
-  //       userL1NativeAssetBalance.sub(userL1NativeAssetBalanceAfter)
-  //     ).to.be.gte(amountToDeposit)
-  //   }
-
-  //   // check user balance increased on L2
-  //   const userL2BalanceAfter = await l2Provider.getBalance(userL2Wallet.address)
-  //   let expectedL2BalanceIncrease = amountToDeposit
-  //   if (nativeToken) {
-  //     expectedL2BalanceIncrease = await _scaleFromNativeTo18(amountToDeposit)
-  //   }
-  //   expect(userL2BalanceAfter.sub(userL2Balance)).to.be.eq(
-  //     expectedL2BalanceIncrease
-  //   )
-
-  //   // check bridge balance increased
-  //   let bridgeL1NativeAssetBalanceAfter
-  //   if (nativeToken) {
-  //     bridgeL1NativeAssetBalanceAfter = await nativeToken.balanceOf(
-  //       l2Network.ethBridge.bridge
-  //     )
-  //   } else {
-  //     bridgeL1NativeAssetBalanceAfter = await l1Provider.getBalance(
-  //       l2Network.ethBridge.bridge
-  //     )
-  //   }
-  //   expect(
-  //     bridgeL1NativeAssetBalanceAfter.sub(bridgeL1NativeAssetBalance)
-  //   ).to.be.eq(amountToDeposit)
-  // })
-
-  // it('can issue retryable ticket (no calldata)', async function () {
-  //   // snapshot state before deposit
-  //   const userL2Balance = await l2Provider.getBalance(userL2Wallet.address)
-  //   const aliasL2Balance = await l2Provider.getBalance(
-  //     applyAlias(userL2Wallet.address)
-  //   )
-  //   const excessFeeReceiverBalance = await l2Provider.getBalance(
-  //     excessFeeRefundAddress
-  //   )
-  //   const callValueRefundReceiverBalance = await l2Provider.getBalance(
-  //     callValueRefundAddress
-  //   )
-
-  //   let userL1NativeAssetBalance: BigNumber
-  //   let bridgeL1NativeAssetBalance: BigNumber
-  //   if (nativeToken) {
-  //     userL1NativeAssetBalance = await nativeToken.balanceOf(
-  //       userL1Wallet.address
-  //     )
-  //     bridgeL1NativeAssetBalance = await nativeToken.balanceOf(
-  //       l2Network.ethBridge.bridge
-  //     )
-  //   } else {
-  //     userL1NativeAssetBalance = await l1Provider.getBalance(
-  //       userL1Wallet.address
-  //     )
-  //     bridgeL1NativeAssetBalance = await l1Provider.getBalance(
-  //       l2Network.ethBridge.bridge
-  //     )
-  //   }
-
-  //   //// retryables params
-
-  //   const to = userL1Wallet.address
-  //   const l2CallValue = await _applyDecimalsToAmount('2')
-  //   const data = '0x'
-
-  //   const l1ToL2MessageGasEstimate = new L1ToL2MessageGasEstimator(l2Provider)
-  //   const retryableParams = await l1ToL2MessageGasEstimate.estimateAll(
-  //     {
-  //       from: userL1Wallet.address,
-  //       to: to,
-  //       l2CallValue: l2CallValue,
-  //       excessFeeRefundAddress: excessFeeRefundAddress,
-  //       callValueRefundAddress: callValueRefundAddress,
-  //       data: data,
-  //     },
-  //     await getBaseFee(l1Provider),
-  //     l1Provider
-  //   )
-
-  //   let tokenTotalFeeAmount = retryableParams.deposit
-  //   const gasLimit = retryableParams.gasLimit
-  //   const maxFeePerGas = retryableParams.maxFeePerGas
-  //   const maxSubmissionCost = retryableParams.maxSubmissionCost
-
-  //   /// deposit tokens using retryable
-  //   let retryableTx: ContractTransaction
-  //   if (nativeToken) {
-  //     tokenTotalFeeAmount = await _scaleFrom18ToNative(retryableParams.deposit)
-
-  //     await (
-  //       await nativeToken
-  //         .connect(userL1Wallet)
-  //         .approve(l2Network.ethBridge.inbox, tokenTotalFeeAmount)
-  //     ).wait()
-
-  //     retryableTx = await ERC20Inbox__factory.connect(
-  //       l2Network.ethBridge.inbox,
-  //       userL1Wallet
-  //     )
-  //       .connect(userL1Wallet)
-  //       .createRetryableTicket(
-  //         to,
-  //         l2CallValue,
-  //         maxSubmissionCost,
-  //         excessFeeRefundAddress,
-  //         callValueRefundAddress,
-  //         gasLimit,
-  //         maxFeePerGas,
-  //         tokenTotalFeeAmount,
-  //         data
-  //       )
-  //   } else {
-  //     retryableTx = await Inbox__factory.connect(
-  //       l2Network.ethBridge.inbox,
-  //       userL1Wallet
-  //     )
-  //       .connect(userL1Wallet)
-  //       .createRetryableTicket(
-  //         to,
-  //         l2CallValue,
-  //         maxSubmissionCost,
-  //         excessFeeRefundAddress,
-  //         callValueRefundAddress,
-  //         gasLimit,
-  //         maxFeePerGas,
-  //         data,
-  //         { value: retryableParams.deposit }
-  //       )
-  //   }
-
-  //   // wait for L2 msg to be executed
-  //   await waitOnL2Msg(retryableTx)
-
-  //   // check balances after retryable is processed
-  //   let userL1TokenAfter, bridgeL1TokenAfter: BigNumber
-  //   if (nativeToken) {
-  //     userL1TokenAfter = await nativeToken.balanceOf(userL1Wallet.address)
-  //     bridgeL1TokenAfter = await nativeToken.balanceOf(
-  //       l2Network.ethBridge.bridge
-  //     )
-
-  //     expect(userL1NativeAssetBalance.sub(userL1TokenAfter)).to.be.eq(
-  //       tokenTotalFeeAmount
-  //     )
-  //     expect(bridgeL1TokenAfter.sub(bridgeL1NativeAssetBalance)).to.be.eq(
-  //       tokenTotalFeeAmount
-  //     )
-  //   } else {
-  //     userL1TokenAfter = await l1Provider.getBalance(userL1Wallet.address)
-  //     bridgeL1TokenAfter = await l1Provider.getBalance(
-  //       l2Network.ethBridge.bridge
-  //     )
-  //     expect(userL1NativeAssetBalance.sub(userL1TokenAfter)).to.be.gte(
-  //       retryableParams.deposit
-  //     )
-  //     expect(bridgeL1TokenAfter.sub(bridgeL1NativeAssetBalance)).to.be.eq(
-  //       retryableParams.deposit
-  //     )
-  //   }
-
-  //   const userL2After = await l2Provider.getBalance(userL2Wallet.address)
-  //   expect(userL2After.sub(userL2Balance)).to.be.eq(l2CallValue)
-
-  //   const aliasL2BalanceAfter = await l2Provider.getBalance(
-  //     applyAlias(userL2Wallet.address)
-  //   )
-  //   let expectedAliasL2BalanceExtraFunds = BigNumber.from(0)
-  //   // due to rounding effect there can be some funds left on alias address
-  //   if (nativeToken && (await nativeToken.decimals()) < 18) {
-  //     expectedAliasL2BalanceExtraFunds = (
-  //       await _scaleFromNativeTo18(tokenTotalFeeAmount)
-  //     ).sub(retryableParams.deposit)
-  //   }
-  //   expect(aliasL2BalanceAfter.sub(expectedAliasL2BalanceExtraFunds)).to.be.eq(
-  //     aliasL2Balance
-  //   )
-
-  //   const excessFeeReceiverBalanceAfter = await l2Provider.getBalance(
-  //     excessFeeRefundAddress
-  //   )
-  //   expect(excessFeeReceiverBalanceAfter).to.be.gte(excessFeeReceiverBalance)
-
-  //   const callValueRefundReceiverBalanceAfter = await l2Provider.getBalance(
-  //     callValueRefundAddress
-  //   )
-  //   expect(callValueRefundReceiverBalanceAfter).to.be.eq(
-  //     callValueRefundReceiverBalance
-  //   )
-  // })
-
-  // it('can issue retryable ticket', async function () {
-  //   // deploy contract on L2 which will be retryable's target
-  //   const ethVaultContract = await new EthVault__factory(
-  //     userL2Wallet.connect(l2Provider)
-  //   ).deploy()
-  //   await ethVaultContract.deployed()
-
-  //   // snapshot state before retryable
-  //   let userL1NativeAssetBalance, bridgeL1NativeAssetBalance: BigNumber
-  //   if (nativeToken) {
-  //     userL1NativeAssetBalance = await nativeToken.balanceOf(
-  //       userL1Wallet.address
-  //     )
-  //     bridgeL1NativeAssetBalance = await nativeToken.balanceOf(
-  //       l2Network.ethBridge.bridge
-  //     )
-  //   } else {
-  //     userL1NativeAssetBalance = await l1Provider.getBalance(
-  //       userL1Wallet.address
-  //     )
-  //     bridgeL1NativeAssetBalance = await l1Provider.getBalance(
-  //       l2Network.ethBridge.bridge
-  //     )
-  //   }
-
-  //   const userL2Balance = await l2Provider.getBalance(userL2Wallet.address)
-  //   const aliasL2Balance = await l2Provider.getBalance(
-  //     applyAlias(userL2Wallet.address)
-  //   )
-
-  //   const excessFeeReceiverBalance = await l2Provider.getBalance(
-  //     excessFeeRefundAddress
-  //   )
-  //   const callValueRefundReceiverBalance = await l2Provider.getBalance(
-  //     callValueRefundAddress
-  //   )
-
-  //   //// retryables params
-
-  //   const to = ethVaultContract.address
-  //   const l2CallValue = await _applyDecimalsToAmount('1')
-  //   // calldata -> change 'version' field to 11
-  //   const newValue = 11
-  //   const data = new ethers.utils.Interface([
-  //     'function setVersion(uint256 _version)',
-  //   ]).encodeFunctionData('setVersion', [newValue])
-
-  //   const l1ToL2MessageGasEstimate = new L1ToL2MessageGasEstimator(l2Provider)
-  //   const retryableParams = await l1ToL2MessageGasEstimate.estimateAll(
-  //     {
-  //       from: userL1Wallet.address,
-  //       to: to,
-  //       l2CallValue: l2CallValue,
-  //       excessFeeRefundAddress: excessFeeRefundAddress,
-  //       callValueRefundAddress: callValueRefundAddress,
-  //       data: data,
-  //     },
-  //     await getBaseFee(l1Provider),
-  //     l1Provider
-  //   )
-
-  //   let tokenTotalFeeAmount = retryableParams.deposit
-  //   const gasLimit = retryableParams.gasLimit
-  //   const maxFeePerGas = retryableParams.maxFeePerGas
-  //   const maxSubmissionCost = retryableParams.maxSubmissionCost
-
-  //   /// execute retryable
-  //   let retryableTx: ContractTransaction
-  //   if (nativeToken) {
-  //     tokenTotalFeeAmount = await _scaleFrom18ToNative(retryableParams.deposit)
-
-  //     await (
-  //       await nativeToken
-  //         .connect(userL1Wallet)
-  //         .approve(l2Network.ethBridge.inbox, tokenTotalFeeAmount)
-  //     ).wait()
-
-  //     retryableTx = await ERC20Inbox__factory.connect(
-  //       l2Network.ethBridge.inbox,
-  //       userL1Wallet
-  //     )
-  //       .connect(userL1Wallet)
-  //       .createRetryableTicket(
-  //         to,
-  //         l2CallValue,
-  //         maxSubmissionCost,
-  //         excessFeeRefundAddress,
-  //         callValueRefundAddress,
-  //         gasLimit,
-  //         maxFeePerGas,
-  //         tokenTotalFeeAmount,
-  //         data
-  //       )
-  //   } else {
-  //     retryableTx = await Inbox__factory.connect(
-  //       l2Network.ethBridge.inbox,
-  //       userL1Wallet
-  //     )
-  //       .connect(userL1Wallet)
-  //       .createRetryableTicket(
-  //         to,
-  //         l2CallValue,
-  //         maxSubmissionCost,
-  //         excessFeeRefundAddress,
-  //         callValueRefundAddress,
-  //         gasLimit,
-  //         maxFeePerGas,
-  //         data,
-  //         { value: retryableParams.deposit }
-  //       )
-  //   }
-
-  //   // wait for L2 msg to be executed
-  //   await waitOnL2Msg(retryableTx)
-
-  //   // check balances after retryable is processed
-  //   let userL1TokenAfter, bridgeL1TokenAfter: BigNumber
-  //   if (nativeToken) {
-  //     userL1TokenAfter = await nativeToken.balanceOf(userL1Wallet.address)
-
-  //     bridgeL1TokenAfter = await nativeToken.balanceOf(
-  //       l2Network.ethBridge.bridge
-  //     )
-  //   } else {
-  //     userL1TokenAfter = await l1Provider.getBalance(userL1Wallet.address)
-
-  //     bridgeL1TokenAfter = await l1Provider.getBalance(
-  //       l2Network.ethBridge.bridge
-  //     )
-  //   }
-  //   expect(userL1NativeAssetBalance.sub(userL1TokenAfter)).to.be.gte(
-  //     tokenTotalFeeAmount
-  //   )
-  //   expect(bridgeL1TokenAfter.sub(bridgeL1NativeAssetBalance)).to.be.eq(
-  //     tokenTotalFeeAmount
-  //   )
-
-  //   const userL2After = await l2Provider.getBalance(userL2Wallet.address)
-  //   expect(userL2After).to.be.eq(userL2Balance)
-
-  //   const ethVaultBalanceAfter = await l2Provider.getBalance(
-  //     ethVaultContract.address
-  //   )
-  //   expect(ethVaultBalanceAfter).to.be.eq(l2CallValue)
-
-  //   const ethVaultVersion = await ethVaultContract.version()
-  //   expect(ethVaultVersion).to.be.eq(newValue)
-
-  //   const aliasL2BalanceAfter = await l2Provider.getBalance(
-  //     applyAlias(userL1Wallet.address)
-  //   )
-  //   let expectedAliasL2BalanceExtraFunds = BigNumber.from(0)
-  //   // due to rounding effect there can be some funds left on alias address
-  //   if (nativeToken && (await nativeToken.decimals()) < 18) {
-  //     expectedAliasL2BalanceExtraFunds = (
-  //       await _scaleFromNativeTo18(tokenTotalFeeAmount)
-  //     ).sub(retryableParams.deposit)
-  //   }
-  //   expect(aliasL2BalanceAfter.sub(expectedAliasL2BalanceExtraFunds)).to.be.eq(
-  //     aliasL2Balance
-  //   )
-
-  //   const excessFeeReceiverBalanceAfter = await l2Provider.getBalance(
-  //     excessFeeRefundAddress
-  //   )
-  //   expect(excessFeeReceiverBalanceAfter).to.be.gte(excessFeeReceiverBalance)
-
-  //   const callValueRefundReceiverBalanceAfter = await l2Provider.getBalance(
-  //     callValueRefundAddress
-  //   )
-  //   expect(callValueRefundReceiverBalanceAfter).to.be.eq(
-  //     callValueRefundReceiverBalance
-  //   )
-  // })
-
-  // it('can withdraw funds from L2 to L1', async function () {
-  //   // snapshot state before issuing retryable
-  //   let userL1NativeAssetBalance: BigNumber
-  //   let bridgeL1NativeAssetBalance: BigNumber
-  //   if (nativeToken) {
-  //     userL1NativeAssetBalance = await nativeToken.balanceOf(
-  //       userL1Wallet.address
-  //     )
-  //     bridgeL1NativeAssetBalance = await nativeToken.balanceOf(
-  //       l2Network.ethBridge.bridge
-  //     )
-  //   } else {
-  //     userL1NativeAssetBalance = await l1Provider.getBalance(
-  //       userL1Wallet.address
-  //     )
-  //     bridgeL1NativeAssetBalance = await l1Provider.getBalance(
-  //       l2Network.ethBridge.bridge
-  //     )
-  //   }
-
-  //   const userL2Balance = await l2Provider.getBalance(userL2Wallet.address)
-
-  //   /// send L2 to L1 TX
-  //   const arbSys = ArbSys__factory.connect(
-  //     '0x0000000000000000000000000000000000000064',
-  //     l2Provider
-  //   )
-  //   const withdrawAmount = ethers.utils.parseEther('1')
-  //   const withdrawTx = await arbSys
-  //     .connect(userL2Wallet)
-  //     .sendTxToL1(userL1Wallet.address, '0x', {
-  //       value: withdrawAmount,
-  //     })
-  //   const withdrawReceipt = await withdrawTx.wait()
-  //   const l2Receipt = new L2TransactionReceipt(withdrawReceipt)
-
-  //   // wait until dispute period passes and withdrawal is ready for execution
-  //   const messages = await l2Receipt.getL2ToL1Messages(userL1Wallet)
-  //   const l2ToL1Msg = messages[0]
-  //   const timeToWaitMs = 60 * 1000
-  //   await l2ToL1Msg.waitUntilReadyToExecute(l2Provider, timeToWaitMs)
-
-  //   // execute
-  //   await (await l2ToL1Msg.execute(l2Provider)).wait()
-
-  //   // check balances after withdrawal is processed
-  //   const withdrawAmountInNativeDecimals =
-  //     nativeToken == undefined
-  //       ? withdrawAmount
-  //       : await _scaleFrom18ToNative(withdrawAmount)
-
-  //   let userL1NativeAssetBalanceAfter,
-  //     bridgeL1NativeAssetBalanceAfter: BigNumber
-  //   if (nativeToken) {
-  //     userL1NativeAssetBalanceAfter = await nativeToken.balanceOf(
-  //       userL1Wallet.address
-  //     )
-  //     bridgeL1NativeAssetBalanceAfter = await nativeToken.balanceOf(
-  //       l2Network.ethBridge.bridge
-  //     )
-  //     expect(
-  //       userL1NativeAssetBalanceAfter.sub(userL1NativeAssetBalance)
-  //     ).to.be.eq(withdrawAmountInNativeDecimals)
-  //   } else {
-  //     userL1NativeAssetBalanceAfter = await l1Provider.getBalance(
-  //       userL1Wallet.address
-  //     )
-  //     bridgeL1NativeAssetBalanceAfter = await l1Provider.getBalance(
-  //       l2Network.ethBridge.bridge
-  //     )
-  //     expect(
-  //       userL1NativeAssetBalanceAfter.sub(userL1NativeAssetBalance)
-  //     ).to.be.lte(withdrawAmount)
-  //     expect(
-  //       userL1NativeAssetBalanceAfter.sub(userL1NativeAssetBalance)
-  //     ).to.be.gt(BigNumber.from(0))
-  //   }
-
-  //   expect(
-  //     bridgeL1NativeAssetBalance.sub(bridgeL1NativeAssetBalanceAfter)
-  //   ).to.be.eq(withdrawAmountInNativeDecimals)
-
-  //   const userL2BalanceAfter = await l2Provider.getBalance(userL2Wallet.address)
-  //   expect(userL2BalanceAfter).to.be.lte(
-  //     userL2Balance.sub(withdrawAmountInNativeDecimals)
-  //   )
-  // })
-
-  // it('can deploy deterministic factories to L2', async function () {
-  //   const rollupCreator = RollupCreator__factory.connect(
-  //     await _getRollupCreatorFromLogs(l1Provider),
-  //     l1Provider
-  //   )
-
-  //   const deployHelper = DeployHelper__factory.connect(
-  //     await rollupCreator.l2FactoriesDeployer(),
-  //     l1Provider
-  //   )
-
-  //   const inbox = l2Network.ethBridge.inbox
-  //   const maxFeePerGas = BigNumber.from('100000000') // 0.1 gwei
-  //   let fee = await deployHelper.getDeploymentTotalCost(inbox, maxFeePerGas)
-
-  //   if (nativeToken) {
-  //     const decimals = await nativeToken.decimals()
-  //     if (decimals < 18) {
-  //       // if token has less than 18 decimals we need to sum fee costs per each retryable,
-  //       // as there could be rounding effect for each one of them
-  //       fee = BigNumber.from(0)
-  //       fee = fee.add(
-  //         await _scaleFrom18ToNative(
-  //           (
-  //             await deployHelper.NICK_CREATE2_VALUE()
-  //           ).add(maxFeePerGas.mul(BigNumber.from(21000)))
-  //         )
-  //       )
-  //       fee = fee.add(
-  //         await _scaleFrom18ToNative(
-  //           (
-  //             await deployHelper.ERC2470_VALUE()
-  //           ).add(maxFeePerGas.mul(BigNumber.from(21000)))
-  //         )
-  //       )
-  //       fee = fee.add(
-  //         await _scaleFrom18ToNative(
-  //           (
-  //             await deployHelper.ZOLTU_VALUE()
-  //           ).add(maxFeePerGas.mul(BigNumber.from(21000)))
-  //         )
-  //       )
-  //       fee = fee.add(
-  //         await _scaleFrom18ToNative(
-  //           (
-  //             await deployHelper.ERC1820_VALUE()
-  //           ).add(maxFeePerGas.mul(BigNumber.from(21000)))
-  //         )
-  //       )
-  //     } else {
-  //       fee = await _scaleFrom18ToNative(fee)
-  //     }
-
-  //     await (
-  //       await nativeToken.connect(userL1Wallet).transfer(inbox, fee)
-  //     ).wait()
-  //   }
-
-  //   // deploy factories
-  //   const receipt = await (
-  //     await deployHelper
-  //       .connect(userL1Wallet)
-  //       .perform(
-  //         inbox,
-  //         nativeToken ? nativeToken.address : ethers.constants.AddressZero,
-  //         maxFeePerGas,
-  //         { value: nativeToken ? BigNumber.from(0) : fee }
-  //       )
-  //   ).wait()
-
-  //   const l1TxReceipt = new L1TransactionReceipt(receipt)
-  //   const messages = await l1TxReceipt.getL1ToL2Messages(l2Provider)
-  //   const messageResults = await Promise.all(
-  //     messages.map(message => message.waitForStatus())
-  //   )
-
-  //   expect(messageResults[0].status).to.be.eq(L1ToL2MessageStatus.REDEEMED)
-  //   expect(messageResults[1].status).to.be.eq(L1ToL2MessageStatus.REDEEMED)
-  //   expect(messageResults[2].status).to.be.eq(L1ToL2MessageStatus.REDEEMED)
-  //   expect(messageResults[3].status).to.be.eq(L1ToL2MessageStatus.REDEEMED)
-
-  //   const deployedFactories = [
-  //     '0x4e59b44847b379578588920ca78fbf26c0b4956c',
-  //     '0xce0042B868300000d44A59004Da54A005ffdcf9f',
-  //     '0x7A0D94F55792C434d74a40883C6ed8545E406D12',
-  //     '0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24',
-  //   ]
-  //   deployedFactories.forEach(async factory => {
-  //     expect((await l2Provider.getCode(factory)).length).to.be.gt(
-  //       EMPTY_CODE_LENGTH
-  //     )
-  //   })
-  // })
-
-  // it('can deploy deterministic factories to L2 through RollupCreator', async function () {
-  //   const rollupCreator = RollupCreator__factory.connect(
-  //     await _getRollupCreatorFromLogs(l1Provider),
-  //     l1Provider
-  //   )
-
-  //   const deployHelper = DeployHelper__factory.connect(
-  //     await rollupCreator.l2FactoriesDeployer(),
-  //     l1Provider
-  //   )
-
-  //   const inbox = l2Network.ethBridge.inbox
-  //   const maxFeePerGas = BigNumber.from('100000000') // 0.1 gwei
-  //   let fee = await deployHelper.getDeploymentTotalCost(inbox, maxFeePerGas)
-  //   if (nativeToken) {
-  //     const decimals = await nativeToken.decimals()
-  //     if (decimals < 18) {
-  //       // if token has less than 18 decimals we need to sum fee costs per each retryable,
-  //       // as there could be rounding effect for each one of them
-  //       fee = BigNumber.from(0)
-  //       fee = fee.add(
-  //         await _scaleFrom18ToNative(
-  //           (
-  //             await deployHelper.NICK_CREATE2_VALUE()
-  //           ).add(maxFeePerGas.mul(BigNumber.from(21000)))
-  //         )
-  //       )
-  //       fee = fee.add(
-  //         await _scaleFrom18ToNative(
-  //           (
-  //             await deployHelper.ERC2470_VALUE()
-  //           ).add(maxFeePerGas.mul(BigNumber.from(21000)))
-  //         )
-  //       )
-  //       fee = fee.add(
-  //         await _scaleFrom18ToNative(
-  //           (
-  //             await deployHelper.ZOLTU_VALUE()
-  //           ).add(maxFeePerGas.mul(BigNumber.from(21000)))
-  //         )
-  //       )
-  //       fee = fee.add(
-  //         await _scaleFrom18ToNative(
-  //           (
-  //             await deployHelper.ERC1820_VALUE()
-  //           ).add(maxFeePerGas.mul(BigNumber.from(21000)))
-  //         )
-  //       )
-  //     } else {
-  //       fee = await _scaleFrom18ToNative(fee)
-  //     }
-
-  //     await (
-  //       await nativeToken
-  //         .connect(userL1Wallet)
-  //         .approve(rollupCreator.address, fee)
-  //     ).wait()
-  //   }
-
-  //   let userL1NativeAssetBalance: BigNumber
-  //   if (nativeToken) {
-  //     userL1NativeAssetBalance = await nativeToken.balanceOf(
-  //       userL1Wallet.address
-  //     )
-  //   } else {
-  //     userL1NativeAssetBalance = await l1Provider.getBalance(
-  //       userL1Wallet.address
-  //     )
-  //   }
-
-  //   /// deploy params
-  //   const config = {
-  //     confirmPeriodBlocks: ethers.BigNumber.from('150'),
-  //     extraChallengeTimeBlocks: ethers.BigNumber.from('200'),
-  //     stakeToken: ethers.constants.AddressZero,
-  //     baseStake: ethers.utils.parseEther('1'),
-  //     wasmModuleRoot:
-  //       '0xda4e3ad5e7feacb817c21c8d0220da7650fe9051ece68a3f0b1c5d38bbb27b21',
-  //     owner: '0x72f7EEedF02C522242a4D3Bdc8aE6A8583aD7c5e',
-  //     loserStakeEscrow: ethers.constants.AddressZero,
-  //     chainId: ethers.BigNumber.from('433333'),
-  //     chainConfig:
-  //       '{"chainId":433333,"homesteadBlock":0,"daoForkBlock":null,"daoForkSupport":true,"eip150Block":0,"eip150Hash":"0x0000000000000000000000000000000000000000000000000000000000000000","eip155Block":0,"eip158Block":0,"byzantiumBlock":0,"constantinopleBlock":0,"petersburgBlock":0,"istanbulBlock":0,"muirGlacierBlock":0,"berlinBlock":0,"londonBlock":0,"clique":{"period":0,"epoch":0},"arbitrum":{"EnableArbOS":true,"AllowDebugPrecompiles":false,"DataAvailabilityCommittee":false,"InitialArbOSVersion":10,"InitialChainOwner":"0x72f7EEedF02C522242a4D3Bdc8aE6A8583aD7c5e","GenesisBlockNum":0}}',
-  //     genesisBlockNum: ethers.BigNumber.from('0'),
-  //     sequencerInboxMaxTimeVariation: {
-  //       delayBlocks: ethers.BigNumber.from('5760'),
-  //       futureBlocks: ethers.BigNumber.from('12'),
-  //       delaySeconds: ethers.BigNumber.from('86400'),
-  //       futureSeconds: ethers.BigNumber.from('3600'),
-  //     },
-  //   }
-  //   const batchPosters = [ethers.Wallet.createRandom().address]
-  //   const batchPosterManager = ethers.Wallet.createRandom().address
-  //   const validators = [ethers.Wallet.createRandom().address]
-  //   const maxDataSize = 104857
-  //   const nativeTokenAddress = nativeToken
-  //     ? nativeToken.address
-  //     : ethers.constants.AddressZero
-  //   const deployFactoriesToL2 = true
-  //   const maxFeePerGasForRetryables = BigNumber.from('100000000') // 0.1 gwei
-
-  //   const deployParams = {
-  //     config,
-  //     batchPosters,
-  //     batchPosterManager,
-  //     validators,
-  //     maxDataSize,
-  //     nativeToken: nativeTokenAddress,
-  //     deployFactoriesToL2,
-  //     maxFeePerGasForRetryables,
-  //   }
-
-  //   /// deploy it
-  //   const receipt = await (
-  //     await rollupCreator.connect(userL1Wallet).createRollup(deployParams, {
-  //       value: nativeToken ? BigNumber.from(0) : fee,
-  //     })
-  //   ).wait()
-  //   const l1TxReceipt = new L1TransactionReceipt(receipt)
-
-  //   // 1 init message + 8 msgs for deploying factories
-  //   const events = l1TxReceipt.getMessageEvents()
-  //   expect(events.length).to.be.eq(9)
-
-  //   // 1st retryable
-  //   expect(events[1].inboxMessageEvent.messageNum.toString()).to.be.eq('1')
-  //   await _verifyInboxMsg(
-  //     events[1].inboxMessageEvent.data,
-  //     await deployHelper.NICK_CREATE2_DEPLOYER(),
-  //     await deployHelper.NICK_CREATE2_VALUE(),
-  //     receipt.effectiveGasPrice,
-  //     rollupCreator.address
-  //   )
-  //   expect(events[2].inboxMessageEvent.messageNum.toString()).to.be.eq('2')
-  //   expect(events[2].inboxMessageEvent.data).to.be.eq(
-  //     await deployHelper.NICK_CREATE2_PAYLOAD()
-  //   )
-
-  //   // 2nd retryable
-  //   expect(events[3].inboxMessageEvent.messageNum.toString()).to.be.eq('3')
-  //   await _verifyInboxMsg(
-  //     events[3].inboxMessageEvent.data,
-  //     await deployHelper.ERC2470_DEPLOYER(),
-  //     await deployHelper.ERC2470_VALUE(),
-  //     receipt.effectiveGasPrice,
-  //     rollupCreator.address
-  //   )
-  //   expect(events[4].inboxMessageEvent.messageNum.toString()).to.be.eq('4')
-  //   expect(events[4].inboxMessageEvent.data).to.be.eq(
-  //     await deployHelper.ERC2470_PAYLOAD()
-  //   )
-
-  //   // 3rd retryable
-  //   expect(events[5].inboxMessageEvent.messageNum.toString()).to.be.eq('5')
-  //   await _verifyInboxMsg(
-  //     events[5].inboxMessageEvent.data,
-  //     await deployHelper.ZOLTU_CREATE2_DEPLOYER(),
-  //     await deployHelper.ZOLTU_VALUE(),
-  //     receipt.effectiveGasPrice,
-  //     rollupCreator.address
-  //   )
-  //   expect(events[6].inboxMessageEvent.messageNum.toString()).to.be.eq('6')
-  //   expect(events[6].inboxMessageEvent.data).to.be.eq(
-  //     await deployHelper.ZOLTU_CREATE2_PAYLOAD()
-  //   )
-
-  //   // 4th retryable
-  //   expect(events[7].inboxMessageEvent.messageNum.toString()).to.be.eq('7')
-  //   await _verifyInboxMsg(
-  //     events[7].inboxMessageEvent.data,
-  //     await deployHelper.ERC1820_DEPLOYER(),
-  //     await deployHelper.ERC1820_VALUE(),
-  //     receipt.effectiveGasPrice,
-  //     rollupCreator.address
-  //   )
-  //   expect(events[8].inboxMessageEvent.messageNum.toString()).to.be.eq('8')
-  //   expect(events[8].inboxMessageEvent.data).to.be.eq(
-  //     await deployHelper.ERC1820_PAYLOAD()
-  //   )
-
-  //   // check total amount to be minted is correct
-  //   const { amountToBeMintedOnChildChain: amount1 } = await _decodeInboxMessage(
-  //     events[1].inboxMessageEvent.data
-  //   )
-  //   const { amountToBeMintedOnChildChain: amount2 } = await _decodeInboxMessage(
-  //     events[3].inboxMessageEvent.data
-  //   )
-  //   const { amountToBeMintedOnChildChain: amount3 } = await _decodeInboxMessage(
-  //     events[5].inboxMessageEvent.data
-  //   )
-  //   const { amountToBeMintedOnChildChain: amount4 } = await _decodeInboxMessage(
-  //     events[7].inboxMessageEvent.data
-  //   )
-  //   const amountToBeMinted = amount1.add(amount2).add(amount3).add(amount4)
-  //   let expectedAmountToBeMinted = amountToBeMinted
-  //   if (nativeToken && (await nativeToken.decimals()) < 18) {
-  //     // sum up every retryable cost separately due to rounding effect possibly applied to each one
-  //     const gasCost = maxFeePerGas.mul(BigNumber.from(21000))
-  //     expectedAmountToBeMinted = BigNumber.from(0)
-  //     expectedAmountToBeMinted = expectedAmountToBeMinted.add(
-  //       await _scaleFrom18ToNative(
-  //         (await deployHelper.NICK_CREATE2_VALUE()).add(gasCost)
-  //       )
-  //     )
-  //     expectedAmountToBeMinted = expectedAmountToBeMinted.add(
-  //       await _scaleFrom18ToNative(
-  //         (await deployHelper.ERC2470_VALUE()).add(gasCost)
-  //       )
-  //     )
-  //     expectedAmountToBeMinted = expectedAmountToBeMinted.add(
-  //       await _scaleFrom18ToNative(
-  //         (await deployHelper.ZOLTU_VALUE()).add(gasCost)
-  //       )
-  //     )
-  //     expectedAmountToBeMinted = expectedAmountToBeMinted.add(
-  //       await _scaleFrom18ToNative(
-  //         (await deployHelper.ERC1820_VALUE()).add(gasCost)
-  //       )
-  //     )
-  //     expectedAmountToBeMinted = await _scaleFromNativeTo18(
-  //       expectedAmountToBeMinted
-  //     )
-  //   }
-
-  //   expect(amountToBeMinted).to.be.eq(expectedAmountToBeMinted)
-
-  //   // check amount locked (taken from deployer) matches total amount to be minted
-  //   let amountTransferedFromDeployer
-  //   if (nativeToken) {
-  //     const transferLogs = receipt.logs.filter(log =>
-  //       log.topics.includes(nativeToken!.interface.getEventTopic('Transfer'))
-  //     )
-  //     const decodedEvents = transferLogs.map(
-  //       log => nativeToken!.interface.parseLog(log).args
-  //     )
-  //     const transferedFromDeployer = decodedEvents.filter(
-  //       log => log.from === userL1Wallet.address
-  //     )
-  //     expect(transferedFromDeployer.length).to.be.eq(1)
-  //     amountTransferedFromDeployer = transferedFromDeployer[0].value
-  //     expect(await _scaleFromNativeTo18(amountTransferedFromDeployer)).to.be.eq(
-  //       amountToBeMinted
-  //     )
-  //   } else {
-  //     amountTransferedFromDeployer = userL1NativeAssetBalance.sub(
-  //       await l1Provider.getBalance(userL1Wallet.address)
-  //     )
-  //     expect(amountTransferedFromDeployer).to.be.gte(amountToBeMinted)
-  //   }
-
-  //   // check balances after retryable is processed
-  //   let userL1NativeAssetBalanceAfter, bridgeBalanceAfter: BigNumber
-  //   const rollupCreatedEvent = receipt.logs.filter(log =>
-  //     log.topics.includes(
-  //       rollupCreator.interface.getEventTopic('RollupCreated')
-  //     )
-  //   )[0]
-  //   const decodedRollupCreatedEvent =
-  //     rollupCreator.interface.parseLog(rollupCreatedEvent)
-  //   const bridge = decodedRollupCreatedEvent.args.bridge
-  //   if (nativeToken) {
-  //     userL1NativeAssetBalanceAfter = await nativeToken.balanceOf(
-  //       userL1Wallet.address
-  //     )
-  //     expect(
-  //       userL1NativeAssetBalance.sub(userL1NativeAssetBalanceAfter)
-  //     ).to.be.eq(amountTransferedFromDeployer)
-  //     bridgeBalanceAfter = await nativeToken.balanceOf(bridge)
-  //     expect(bridgeBalanceAfter).to.be.eq(amountTransferedFromDeployer)
-  //   } else {
-  //     userL1NativeAssetBalanceAfter = await l1Provider.getBalance(
-  //       userL1Wallet.address
-  //     )
-  //     bridgeBalanceAfter = await l1Provider.getBalance(bridge)
-  //     expect(
-  //       userL1NativeAssetBalance.sub(userL1NativeAssetBalanceAfter)
-  //     ).to.be.eq(amountTransferedFromDeployer)
-  //     expect(bridgeBalanceAfter).to.be.eq(amountToBeMinted)
-  //   }
-  // })
 })
-
-async function _verifyInboxMsg(
-  inboxMsg: string,
-  create2Deployer: string,
-  create2Value: BigNumber,
-  gasPrice: BigNumber,
-  rollupCreatorAddress: string
-) {
-  const maxFeePerGasForRetryables = BigNumber.from('100000000') // 0.1 gwei
-
-  const msg1 = await _decodeInboxMessage(inboxMsg)
-  expect(msg1.to).to.be.eq(create2Deployer)
-  expect(msg1.l2CallValue).to.be.eq(create2Value)
-
-  let expectedAmountToBeMinted = BigNumber.from(create2Value)
-    .add(maxFeePerGasForRetryables.mul(21000))
-    .add(_submissionCost(gasPrice))
-  if (nativeToken && (await nativeToken.decimals()) < 18) {
-    expectedAmountToBeMinted = await _scaleFromNativeTo18(
-      await _scaleFrom18ToNative(expectedAmountToBeMinted)
-    )
-  }
-  expect(msg1.amountToBeMintedOnChildChain).to.be.eq(expectedAmountToBeMinted)
-  expect(msg1.maxSubmissionCost).to.be.eq(_submissionCost(gasPrice))
-  expect(msg1.excessFeeRefundAddress).to.be.eq(applyAlias(rollupCreatorAddress))
-  expect(msg1.callValueRefundAddress).to.be.eq(applyAlias(rollupCreatorAddress))
-  expect(msg1.gasLimit).to.be.eq('21000')
-  expect(msg1.maxFeePerGas).to.be.eq(maxFeePerGasForRetryables)
-  expect(msg1.dataLength).to.be.eq('0')
-}
-
-async function _decodeInboxMessage(encodedMsg: string) {
-  const abiCoder = new ethers.utils.AbiCoder()
-  const types = [
-    'uint256', // uint256(uint160(to))
-    'uint256', // l2CallValue
-    'uint256', // _fromNativeTo18Decimals(amount)
-    'uint256', // maxSubmissionCost
-    'uint256', // uint256(uint160(excessFeeRefundAddress))
-    'uint256', // uint256(uint160(callValueRefundAddress))
-    'uint256', // gasLimit
-    'uint256', // maxFeePerGas
-    'uint256', // data.length (assuming it's a uint256)
-  ]
-
-  const decoded = abiCoder.decode(types, encodedMsg)
-  return {
-    to: _uint256ToAddress(decoded[0]),
-    l2CallValue: decoded[1],
-    amountToBeMintedOnChildChain: decoded[2],
-    maxSubmissionCost: decoded[3],
-    excessFeeRefundAddress: _uint256ToAddress(decoded[4]),
-    callValueRefundAddress: _uint256ToAddress(decoded[5]),
-    gasLimit: decoded[6],
-    maxFeePerGas: decoded[7],
-    dataLength: decoded[8],
-  }
-}
-
-function _uint256ToAddress(uint256: string) {
-  return ethers.utils.getAddress(ethers.utils.hexStripZeros(uint256))
-}
-
-function _submissionCost(gasPrice: BigNumber) {
-  if (nativeToken) {
-    return BigNumber.from(0)
-  } else {
-    return BigNumber.from(1400).mul(gasPrice)
-  }
-}
-
-async function _applyDecimalsToAmount(amount: string) {
-  if (nativeToken) {
-    return BigNumber.from(amount).mul(
-      BigNumber.from(10).pow(await nativeToken.decimals())
-    )
-  } else {
-    return ethers.utils.parseEther(amount.toString())
-  }
-}
-
-async function waitOnL2Msg(tx: ethers.ContractTransaction) {
-  const retryableReceipt = await tx.wait()
-  const l1TxReceipt = new L1TransactionReceipt(retryableReceipt)
-  const messages = await l1TxReceipt.getL1ToL2Messages(l2Provider)
-
-  // 1 msg expected
-  const messageResult = await messages[0].waitForStatus()
-  const status = messageResult.status
-  expect(status).to.be.eq(L1ToL2MessageStatus.REDEEMED)
-}
-
-async function _getFeeToken(
-  inbox: string,
-  l1Provider: ethers.providers.Provider
-): Promise<string> {
-  const bridge = await IInbox__factory.connect(inbox, l1Provider).bridge()
-  let feeToken = ethers.constants.AddressZero
-  try {
-    feeToken = await IERC20Bridge__factory.connect(
-      bridge,
-      l1Provider
-    ).nativeToken()
-  } catch {
-    feeToken = ethers.constants.AddressZero
-  }
-
-  return feeToken
-}
-
-async function _scaleFromNativeTo18(amount: BigNumber): Promise<BigNumber> {
-  const decimals = BigNumber.from(await nativeToken!.decimals())
-  if (decimals.lt(BigNumber.from(18))) {
-    return amount.mul(BigNumber.from(10).pow(BigNumber.from(18).sub(decimals)))
-  } else if (decimals.gt(BigNumber.from(18))) {
-    return amount.div(BigNumber.from(10).pow(decimals.sub(BigNumber.from(18))))
-  }
-
-  return amount
-}
-
-async function _scaleFrom18ToNative(
-  amount: ethers.BigNumber
-): Promise<BigNumber> {
-  const decimals = BigNumber.from(await nativeToken!.decimals())
-  if (decimals.lt(BigNumber.from(18))) {
-    const scalingFactor = BigNumber.from(10).pow(
-      BigNumber.from(18).sub(decimals)
-    )
-    let prescaledAmount = amount.div(scalingFactor)
-    // round up if needed
-    if (prescaledAmount.mul(scalingFactor).lt(amount)) {
-      prescaledAmount = prescaledAmount.add(BigNumber.from(1))
-    }
-    return prescaledAmount
-  } else if (decimals.gt(BigNumber.from(18))) {
-    return amount.mul(BigNumber.from(10).pow(decimals.sub(BigNumber.from(18))))
-  }
-
-  return amount
-}
-
-async function _getRollupCreatorFromLogs(
-  provider: JsonRpcProvider
-): Promise<string> {
-  const filter: Filter = {
-    topics: [
-      ethers.utils.id(
-        'RollupCreated(address,address,address,address,address,address,address,address,address,address,address,address)'
-      ),
-    ],
-  }
-
-  const logs = await provider.getLogs({
-    ...filter,
-    fromBlock: '0x1',
-    toBlock: 'latest',
-  })
-  if (logs.length === 0) {
-    throw new Error(`Couldn't find any RollupCreated event`)
-  }
-
-  return logs[0].address
-}
