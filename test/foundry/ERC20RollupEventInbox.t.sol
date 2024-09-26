@@ -5,6 +5,12 @@ import "./AbsRollupEventInbox.t.sol";
 import {TestUtil} from "./util/TestUtil.sol";
 import {ERC20RollupEventInbox} from "../../src/rollup/ERC20RollupEventInbox.sol";
 import {ERC20Bridge, IERC20Bridge, IOwnable} from "../../src/bridge/ERC20Bridge.sol";
+import {
+    SequencerInbox,
+    ISequencerInbox,
+    IReader4844,
+    IFeeTokenPricer
+} from "../../src/bridge/SequencerInbox.sol";
 import {ERC20PresetMinterPauser} from
     "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 
@@ -20,6 +26,29 @@ contract ERC20RollupEventInboxTest is AbsRollupEventInboxTest {
         bridge.setDelayedInbox(address(rollupEventInbox), true);
 
         rollupEventInbox.initialize(bridge);
+
+        vm.mockCall(
+            address(100),
+            abi.encodeWithSelector(ArbSys.arbOSVersion.selector),
+            abi.encode(uint256(11))
+        );
+
+        SequencerInbox si = SequencerInbox(
+            TestUtil.deployProxy(address(new SequencerInbox(10_000, IReader4844(address(0)), true)))
+        );
+        si.initialize(
+            bridge,
+            ISequencerInbox.MaxTimeVariation({
+                delayBlocks: 10,
+                futureBlocks: 10,
+                delaySeconds: 100,
+                futureSeconds: 100
+            }),
+            IFeeTokenPricer(makeAddr("feeTokenPricer"))
+        );
+
+        vm.prank(rollup);
+        bridge.setSequencerInbox(address(si));
     }
 
     /* solhint-disable func-name-mixedcase */
@@ -36,11 +65,33 @@ contract ERC20RollupEventInboxTest is AbsRollupEventInboxTest {
         string memory chainConfig = "chainConfig";
 
         uint8 expectedInitMsgVersion = 1;
-        uint256 expectedCurrentDataCost = 0;
+
+        /// calculate expectedCurrentDataCost
+
+        // 7 gwei basefee
+        uint256 l2Fee = 7_000_000_000;
+        vm.fee(l2Fee);
+
+        // 80 gwei L1 basefee
+        uint256 l1Fee = 80_000_000_000;
+        vm.mockCall(
+            address(0x6c), abi.encodeWithSignature("getL1BaseFeeEstimate()"), abi.encode(l1Fee)
+        );
+
+        // convert from eth to fee token
+        uint256 exchangeRate = 3e18;
+        vm.mockCall(
+            address(ISequencerInbox(rollupEventInbox.bridge().sequencerInbox()).feeTokenPricer()),
+            abi.encodeWithSelector(IFeeTokenPricer.getExchangeRate.selector),
+            abi.encode(exchangeRate)
+        );
+
+        uint256 expectedCurrentDataCost = ((l2Fee + l1Fee) * exchangeRate) / 1e18;
+
         bytes memory expectedInitMsg =
             abi.encodePacked(chainId, expectedInitMsgVersion, expectedCurrentDataCost, chainConfig);
 
-        // expect event
+        /// expect event
         vm.expectEmit(true, true, true, true);
         emit MessageDelivered(
             0,
