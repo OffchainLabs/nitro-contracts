@@ -30,7 +30,7 @@
     "lint:test": "eslint ./test",
     "solhint": "solhint -f table src/**/*.sol",
     "prettier:solidity": "prettier --write src/**/*.sol",
-    "format": "prettier './**/*.{js,json,ts,yml,sol}' --write && yarn run lint:test --fix",
+    "format": "prettier './test/e2e/**/*.{js,json,ts,yml,sol}' --write && yarn run lint:test --fix",
     "build:0.6": "INTERFACE_TESTER_SOLC_VERSION=0.6.9 yarn run build",
     "build:0.7": "INTERFACE_TESTER_SOLC_VERSION=0.7.0 yarn run build",
     "test": "DISABLE_GAS_REPORTER=true hardhat --network hardhat test test/contract/*.spec.ts",
