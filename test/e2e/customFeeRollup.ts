@@ -15,6 +15,10 @@ import {
 import { getLocalNetworks } from '../../scripts/testSetup'
 import { BigNumber, Wallet, ethers } from 'ethers'
 import { ARB_GAS_INFO } from '@arbitrum/sdk/dist/lib/dataEntities/constants'
+import {
+  l1Networks,
+  l2Networks,
+} from '@arbitrum/sdk/dist/lib/dataEntities/networks'
 
 const LOCALHOST_L2_RPC = 'http://127.0.0.1:8547'
 const LOCALHOST_L3_RPC = 'http://127.0.0.1:3347'
@@ -72,10 +76,18 @@ describe('Custom fee token orbit rollup', () => {
         l2WethGateway: '',
       },
     }
-    addCustomNetwork({
-      customL1Network: l1Network,
-      customL2Network: l2Network,
-    })
+    if (!l2Networks[l2Network.chainID.toString()]) {
+      if (!l1Networks[l2Network.chainID.toString()]) {
+        addCustomNetwork({
+          customL1Network: l1Network,
+          customL2Network: l2Network,
+        })
+      } else {
+        addCustomNetwork({
+          customL2Network: l2Network,
+        })
+      }
+    }
 
     l1Provider = new JsonRpcProvider(LOCALHOST_L2_RPC)
     l2Provider = new JsonRpcProvider(LOCALHOST_L3_RPC)
@@ -266,6 +278,8 @@ describe('Custom fee token orbit rollup', () => {
     // set the l1 fees to be very high
     const arbGasInfo = ArbGasInfo__factory.connect(ARB_GAS_INFO, l2Provider)
     const l1BaseFeeEstimate = await arbGasInfo.getL1BaseFeeEstimate()
+    if (l1BaseFeeEstimate.gt(BigNumber.from('15000000000'))) return
+
     const higherL1Price = l1BaseFeeEstimate.mul(1000)
     // set a higher l1 price per unit. Since we only send a single small transaction, the per batch
     // cost is over 100x greater than the data cost. This means that we need to set a much higher gas price
