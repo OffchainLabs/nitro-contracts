@@ -188,7 +188,7 @@ jobs:
       - uses: OffchainLabs/actions/run-nitro-test-node@main
         with:
           l3-node: true
-          args: --l3-fee-token
+          args: --l3-fee-token --l3-fee-token-pricer
           no-token-bridge: true
           no-l3-token-bridge: true
           nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
