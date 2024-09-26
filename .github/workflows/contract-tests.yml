@@ -175,8 +175,8 @@ jobs:
       - name: Compile contracts
         run: yarn build
 
-      - name: Run e2e tests
-        run: yarn test:e2e
+      - name: Run e2e orbit tests
+        run: yarn test:e2e:orbit
   test-e2e-custom-fee-token:
     name: Test e2e custom fee token
     runs-on: ubuntu-latest
@@ -188,7 +188,42 @@ jobs:
       - uses: OffchainLabs/actions/run-nitro-test-node@main
         with:
           l3-node: true
-          args: --init --l3-fee-token --l3-fee-token-pricer
+          args: --l3-fee-token --l3-fee-token-pricer
+          no-token-bridge: true
+          no-l3-token-bridge: true
+          nitro-testnode-ref: fee-token-pricer
+          nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
+
+      - name: Setup node/yarn
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'yarn'
+          cache-dependency-path: '**/yarn.lock'
+
+      - name: Install packages
+        run: yarn
+
+      - name: Compile contracts
+        run: yarn build
+
+      - name: Run e2e orbit tests
+        run: yarn test:e2e:orbit
+
+      - name: Run e2e orbit custom fee token rollup tests
+        run: yarn test:e2e:orbit-fee-token-rollup
+  test-e2e-fee-token-6-decimals:
+    name: Test e2e fee token with 6 decimals
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: OffchainLabs/actions/run-nitro-test-node@main
+        with:
+          l3-node: true
+          args: --l3-fee-token --l3-fee-token-pricer --l3-fee-token-decimals 6
           no-token-bridge: true
           no-l3-token-bridge: true
           nitro-testnode-ref: fee-token-pricer
@@ -209,34 +244,6 @@ jobs:
 
       - name: Run e2e tests
         run: yarn test:e2e
-  test-e2e-fee-token-6-decimals:
-    name: Test e2e fee token with 6 decimals
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-
-      - uses: OffchainLabs/actions/run-nitro-test-node@main
-        with:
-          l3-node: true
-          args: --l3-fee-token --l3-fee-token-decimals 6
-          no-token-bridge: true
-          no-l3-token-bridge: true
-          nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
-
-      - name: Setup node/yarn
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          cache: 'yarn'
-          cache-dependency-path: '**/yarn.lock'
-
-      - name: Install packages
-        run: yarn
-
-      - name: Compile contracts
-        run: yarn build
-
-      - name: Run e2e tests
-        run: yarn test:e2e
+      
+      - name: Run e2e orbit custom fee token rollup tests
+        run: yarn test:e2e:orbit-fee-token-rollup

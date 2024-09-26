@@ -96,6 +96,7 @@ describe('Custom fee token orbit rollup', () => {
       l1Provider
     )
     userL2Wallet = new ethers.Wallet(userL1Wallet.privateKey, l2Provider)
+    console.log((await userL2Wallet.getBalance()).toString())
     const nativeTokenAddress = await _getFeeToken(
       l2Network.ethBridge.inbox,
       l1Provider
