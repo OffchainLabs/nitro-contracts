@@ -30,7 +30,7 @@ contract ERC20RollupEventInbox is AbsRollupEventInbox {
         ISequencerInbox seqInbox = ISequencerInbox(bridge.sequencerInbox());
         IFeeTokenPricer feeTokenPricer = seqInbox.feeTokenPricer();
         // CHRIS: TODO: check that we're using the isUseFeeToken?
-        if(address(feeTokenPricer) != address(0)) {
+        if (address(feeTokenPricer) != address(0)) {
             uint256 gasPrice = block.basefee;
             if (ArbitrumChecker.runningOnArbitrum()) {
                 gasPrice += ArbGasInfo(address(0x6c)).getL1BaseFeeEstimate();

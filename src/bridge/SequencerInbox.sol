@@ -644,14 +644,14 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     //            : * batch poster needs to cover cost of trade + l2->l1 message
     //            : * batch poster shouldt post too often, or else users will pay high overhead
     //            : * l1 base fee/ price per unit needs to be set/read in child chain token value
-    // 
+    //
 
-    // CHRIS: TODO: hostChainIsArbitrum is checked for l3s on arbitrum so that l1 cost can be charged for within nitro. 
-    // This wont work for l4s and it wont work for l3s that are settling to a different chain eg Base. 
+    // CHRIS: TODO: hostChainIsArbitrum is checked for l3s on arbitrum so that l1 cost can be charged for within nitro.
+    // This wont work for l4s and it wont work for l3s that are settling to a different chain eg Base.
     // In the Base case we need to find another way to guess at the l1 cost I think?
 
     // CHRIS: TODO: // include re-etrancy in non best practice. Worst that could happen is that the batch submission reports arrive in the wrong order
-    
+
     /// @dev   Submit a batch spending report message so that the batch poster can be reimbursed on the rollup
     ///        This function expect msg.sender is tx.origin, and will always record tx.origin as the spender
     /// @param dataHash The hash of the message the spending report is being submitted for

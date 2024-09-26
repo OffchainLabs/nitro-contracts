@@ -247,6 +247,7 @@ interface ISequencerInbox is IDelayedMessageProvider {
         IFeeTokenPricer feeTokenPricer_
     ) external;
 }
+
 // CHRIS: TODO: analyse possible effects of a malicious fee token pricer
 // CHRIS: TODO: should the interface be a view function?
 interface IFeeTokenPricer {
