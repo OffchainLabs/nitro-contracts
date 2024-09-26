@@ -25,7 +25,10 @@ import {
 import { getLocalNetworks } from '../../scripts/testSetup'
 import { applyAlias } from '../contract/utils'
 import { BigNumber, ContractTransaction, Wallet, ethers } from 'ethers'
-import { l1Networks, l2Networks } from '@arbitrum/sdk/dist/lib/dataEntities/networks'
+import {
+  l1Networks,
+  l2Networks,
+} from '@arbitrum/sdk/dist/lib/dataEntities/networks'
 
 const LOCALHOST_L2_RPC = 'http://127.0.0.1:8547'
 const LOCALHOST_L3_RPC = 'http://127.0.0.1:3347'
@@ -843,7 +846,7 @@ describe('Orbit Chain', () => {
       nativeToken: nativeTokenAddress,
       deployFactoriesToL2,
       maxFeePerGasForRetryables,
-      feeTokenPricer: ethers.constants.AddressZero
+      feeTokenPricer: ethers.constants.AddressZero,
     }
 
     /// deploy it
