@@ -701,6 +701,7 @@ describe('Orbit Chain', () => {
     }
 
     // deploy factories
+    console.log("l1 wallet balance", (await userL1Wallet.getBalance()).toString(), fee.toString())
     await deployHelper
       .connect(userL1Wallet)
       .estimateGas
