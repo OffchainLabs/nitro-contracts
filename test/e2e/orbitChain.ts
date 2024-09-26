@@ -701,6 +701,16 @@ describe('Orbit Chain', () => {
     }
 
     // deploy factories
+    await deployHelper
+      .connect(userL1Wallet)
+      .estimateGas
+      .perform(
+        inbox,
+        nativeToken ? nativeToken.address : ethers.constants.AddressZero,
+        maxFeePerGas,
+        { value: nativeToken ? BigNumber.from(0) : fee }
+      )
+
     const receipt = await (
       await deployHelper
         .connect(userL1Wallet)
