@@ -861,6 +861,12 @@ describe('Orbit Chain', () => {
     }
 
     /// deploy it
+    // CHRIS: TODO: remove and above
+    console.log("bal", await userL1Wallet.getBalance(), fee)
+    console.log(nativeToken)
+    await rollupCreator.connect(userL1Wallet).estimateGas.createRollup(deployParams, {
+      value: nativeToken ? BigNumber.from(0) : fee,
+    })
     const receipt = await (
       await rollupCreator.connect(userL1Wallet).createRollup(deployParams, {
         value: nativeToken ? BigNumber.from(0) : fee,
