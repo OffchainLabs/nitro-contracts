@@ -26,29 +26,6 @@ contract ERC20RollupEventInboxTest is AbsRollupEventInboxTest {
         bridge.setDelayedInbox(address(rollupEventInbox), true);
 
         rollupEventInbox.initialize(bridge);
-
-        vm.mockCall(
-            address(100),
-            abi.encodeWithSelector(ArbSys.arbOSVersion.selector),
-            abi.encode(uint256(11))
-        );
-
-        SequencerInbox si = SequencerInbox(
-            TestUtil.deployProxy(address(new SequencerInbox(10_000, IReader4844(address(0)), true)))
-        );
-        si.initialize(
-            bridge,
-            ISequencerInbox.MaxTimeVariation({
-                delayBlocks: 10,
-                futureBlocks: 10,
-                delaySeconds: 100,
-                futureSeconds: 100
-            }),
-            IFeeTokenPricer(makeAddr("feeTokenPricer"))
-        );
-
-        vm.prank(rollup);
-        bridge.setSequencerInbox(address(si));
     }
 
     /* solhint-disable func-name-mixedcase */
@@ -61,33 +38,14 @@ contract ERC20RollupEventInboxTest is AbsRollupEventInboxTest {
     }
 
     function test_rollupInitialized_ArbitrumHosted() public {
+        _setSequencerInbox(true);
+
         uint256 chainId = 400;
         string memory chainConfig = "chainConfig";
 
         uint8 expectedInitMsgVersion = 1;
-
-        /// calculate expectedCurrentDataCost
-
-        // 7 gwei basefee
-        uint256 l2Fee = 7_000_000_000;
-        vm.fee(l2Fee);
-
-        // 80 gwei L1 basefee
-        uint256 l1Fee = 80_000_000_000;
-        vm.mockCall(
-            address(0x6c), abi.encodeWithSignature("getL1BaseFeeEstimate()"), abi.encode(l1Fee)
-        );
-
-        // convert from eth to fee token
-        uint256 exchangeRate = 3e18;
-        vm.mockCall(
-            address(ISequencerInbox(rollupEventInbox.bridge().sequencerInbox()).feeTokenPricer()),
-            abi.encodeWithSelector(IFeeTokenPricer.getExchangeRate.selector),
-            abi.encode(exchangeRate)
-        );
-
-        uint256 expectedCurrentDataCost = ((l2Fee + l1Fee) * exchangeRate) / 1e18;
-
+        uint256 exchangeRate = 3.15e18;
+        uint256 expectedCurrentDataCost = _calculateExpectedCurrentDataCost(exchangeRate, true);
         bytes memory expectedInitMsg =
             abi.encodePacked(chainId, expectedInitMsgVersion, expectedCurrentDataCost, chainConfig);
 
@@ -119,11 +77,13 @@ contract ERC20RollupEventInboxTest is AbsRollupEventInboxTest {
     }
 
     function test_rollupInitialized_NonArbitrumHosted() public {
+        _setSequencerInbox(false);
+
         uint256 chainId = 500;
         string memory chainConfig = "chainConfig2";
 
         uint8 expectedInitMsgVersion = 1;
-        uint256 expectedCurrentDataCost = 0;
+        uint256 expectedCurrentDataCost = _calculateExpectedCurrentDataCost(3e18, false);
         bytes memory expectedInitMsg =
             abi.encodePacked(chainId, expectedInitMsgVersion, expectedCurrentDataCost, chainConfig);
 
@@ -145,5 +105,62 @@ contract ERC20RollupEventInboxTest is AbsRollupEventInboxTest {
 
         vm.prank(rollup);
         rollupEventInbox.rollupInitialized(chainId, chainConfig);
+    }
+
+    function _calculateExpectedCurrentDataCost(uint256 exchangeRate, bool isArbHosted)
+        internal
+        returns (uint256)
+    {
+        // 7 gwei basefee
+        uint256 l2Fee = 7_000_000_000;
+        vm.fee(l2Fee);
+
+        uint256 l1Fee = 0;
+        if (isArbHosted) {
+            // 80 gwei L1 basefee
+            l1Fee = 80_000_000_000;
+            vm.mockCall(
+                address(0x6c), abi.encodeWithSignature("getL1BaseFeeEstimate()"), abi.encode(l1Fee)
+            );
+        }
+
+        // convert from eth to fee token
+        vm.mockCall(
+            address(ISequencerInbox(rollupEventInbox.bridge().sequencerInbox()).feeTokenPricer()),
+            abi.encodeWithSelector(IFeeTokenPricer.getExchangeRate.selector),
+            abi.encode(exchangeRate)
+        );
+
+        uint256 expectedCurrentDataCost = ((l2Fee + l1Fee) * exchangeRate) / 1e18;
+
+        return expectedCurrentDataCost;
+    }
+
+    function _setSequencerInbox(bool isArbHosted) internal {
+        IReader4844 reader = IReader4844(makeAddr("reader"));
+        if (isArbHosted) {
+            reader = IReader4844(address(0));
+            vm.mockCall(
+                address(100),
+                abi.encodeWithSelector(ArbSys.arbOSVersion.selector),
+                abi.encode(uint256(11))
+            );
+        }
+
+        SequencerInbox si =
+            SequencerInbox(TestUtil.deployProxy(address(new SequencerInbox(10_000, reader, true))));
+        si.initialize(
+            bridge,
+            ISequencerInbox.MaxTimeVariation({
+                delayBlocks: 10,
+                futureBlocks: 10,
+                delaySeconds: 100,
+                futureSeconds: 100
+            }),
+            IFeeTokenPricer(makeAddr("feeTokenPricer"))
+        );
+
+        vm.prank(rollup);
+        bridge.setSequencerInbox(address(si));
     }
 }
