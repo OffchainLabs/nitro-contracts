@@ -655,7 +655,10 @@ describe('Orbit Chain', () => {
 
     const inbox = l2Network.ethBridge.inbox
     const maxFeePerGas = BigNumber.from('100000000') // 0.1 gwei
-    let fee = await deployHelper.getDeploymentTotalCost(inbox, maxFeePerGas)
+    let fee = await deployHelper.getDeploymentTotalCost(inbox, maxFeePerGas, {
+      from: userL1Wallet.address,
+      gasPrice: maxFeePerGas,
+    })
 
     if (nativeToken) {
       const decimals = await nativeToken.decimals()
@@ -699,18 +702,6 @@ describe('Orbit Chain', () => {
         await nativeToken.connect(userL1Wallet).transfer(inbox, fee)
       ).wait()
     }
-
-    // deploy factories
-    console.log("l1 wallet balance", (await userL1Wallet.getBalance()).toString(), fee.toString())
-    await deployHelper
-      .connect(userL1Wallet)
-      .estimateGas
-      .perform(
-        inbox,
-        nativeToken ? nativeToken.address : ethers.constants.AddressZero,
-        maxFeePerGas,
-        { value: nativeToken ? BigNumber.from(0) : fee }
-      )
 
     const receipt = await (
       await deployHelper
@@ -760,7 +751,10 @@ describe('Orbit Chain', () => {
 
     const inbox = l2Network.ethBridge.inbox
     const maxFeePerGas = BigNumber.from('100000000') // 0.1 gwei
-    let fee = await deployHelper.getDeploymentTotalCost(inbox, maxFeePerGas)
+    let fee = await deployHelper.getDeploymentTotalCost(inbox, maxFeePerGas, {
+      from: userL1Wallet.address,
+      gasPrice: maxFeePerGas,
+    })
     if (nativeToken) {
       const decimals = await nativeToken.decimals()
       if (decimals < 18) {
@@ -861,12 +855,6 @@ describe('Orbit Chain', () => {
     }
 
     /// deploy it
-    // CHRIS: TODO: remove and above
-    console.log("bal", await userL1Wallet.getBalance(), fee)
-    console.log(nativeToken)
-    await rollupCreator.connect(userL1Wallet).estimateGas.createRollup(deployParams, {
-      value: nativeToken ? BigNumber.from(0) : fee,
-    })
     const receipt = await (
       await rollupCreator.connect(userL1Wallet).createRollup(deployParams, {
         value: nativeToken ? BigNumber.from(0) : fee,

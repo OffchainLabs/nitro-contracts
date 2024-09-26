@@ -23,12 +23,12 @@ import {
 const LOCALHOST_L2_RPC = 'http://127.0.0.1:8547'
 const LOCALHOST_L3_RPC = 'http://127.0.0.1:3347'
 
-let l1Provider: JsonRpcProvider
 let l2Provider: JsonRpcProvider
+let l3Provider: JsonRpcProvider
 
 let l2Network: L2Network
-let userL1Wallet: Wallet
 let userL2Wallet: Wallet
+let userL3Wallet: Wallet
 let nativeToken: ERC20 | undefined
 
 describe('Custom fee token orbit rollup', () => {
@@ -89,22 +89,22 @@ describe('Custom fee token orbit rollup', () => {
       }
     }
 
-    l1Provider = new JsonRpcProvider(LOCALHOST_L2_RPC)
-    l2Provider = new JsonRpcProvider(LOCALHOST_L3_RPC)
-    userL1Wallet = new Wallet(
+    l2Provider = new JsonRpcProvider(LOCALHOST_L2_RPC)
+    l3Provider = new JsonRpcProvider(LOCALHOST_L3_RPC)
+    userL2Wallet = new Wallet(
       ethers.utils.sha256(ethers.utils.toUtf8Bytes('user_fee_token_deployer')),
-      l1Provider
+      l2Provider
     )
-    userL2Wallet = new ethers.Wallet(userL1Wallet.privateKey, l2Provider)
-    console.log((await userL2Wallet.getBalance()).toString())
+    userL3Wallet = new ethers.Wallet(userL2Wallet.privateKey, l3Provider)
+    console.log((await userL3Wallet.getBalance()).toString())
     const nativeTokenAddress = await _getFeeToken(
       l2Network.ethBridge.inbox,
-      l1Provider
+      l2Provider
     )
     nativeToken =
       nativeTokenAddress === ethers.constants.AddressZero
         ? undefined
-        : ERC20__factory.connect(nativeTokenAddress, l1Provider)
+        : ERC20__factory.connect(nativeTokenAddress, l2Provider)
     expect(nativeToken, 'native token undefined').to.not.eq(
       ethers.constants.AddressZero
     )
@@ -113,16 +113,16 @@ describe('Custom fee token orbit rollup', () => {
   const batchPosterAddr = '0x3E6134aAD4C4d422FF2A4391Dc315c4DDf98D1a5'
 
   const sendTxAndWaitForBatch = async () => {
-    const batchPosterNonceBefore = await l1Provider.getTransactionCount(
+    const batchPosterNonceBefore = await l2Provider.getTransactionCount(
       batchPosterAddr,
       'latest'
     )
-    const batchPosterL3BalanceBefore = await l2Provider.getBalance(
+    const batchPosterL3BalanceBefore = await l3Provider.getBalance(
       batchPosterAddr
     )
 
     await (
-      await userL2Wallet.sendTransaction({
+      await userL3Wallet.sendTransaction({
         to: '0x00000000000000000000000000000000000000dd',
         value: 0,
       })
@@ -131,7 +131,7 @@ describe('Custom fee token orbit rollup', () => {
     // wait for the batch poster to send their tx, we wait for their nonce to increase
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      const currentNonce = await l1Provider.getTransactionCount(
+      const currentNonce = await l2Provider.getTransactionCount(
         batchPosterAddr,
         'latest'
       )
@@ -146,7 +146,7 @@ describe('Custom fee token orbit rollup', () => {
     let batchPosterL3BalanceAfter = BigNumber.from('0')
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      batchPosterL3BalanceAfter = await l2Provider.getBalance(batchPosterAddr)
+      batchPosterL3BalanceAfter = await l3Provider.getBalance(batchPosterAddr)
       if (!batchPosterL3BalanceAfter.eq(batchPosterL3BalanceBefore)) {
         break
       }
@@ -159,15 +159,15 @@ describe('Custom fee token orbit rollup', () => {
   const getLatestBatchExpectedCost = async () => {
     const seqInbox = SequencerInbox__factory.connect(
       l2Network.ethBridge.sequencerInbox,
-      l1Provider
+      l2Provider
     )
     const feeTokenPricerAddr = await seqInbox.callStatic.feeTokenPricer()
     const feeTokenPricer = IFeeTokenPricer__factory.connect(
       feeTokenPricerAddr,
-      l1Provider
+      l2Provider
     )
 
-    const batchSpendingReportEvents = await l1Provider.getLogs({
+    const batchSpendingReportEvents = await l2Provider.getLogs({
       address: seqInbox.address,
       fromBlock: 0,
       toBlock: 'latest',
@@ -195,7 +195,7 @@ describe('Custom fee token orbit rollup', () => {
       batchPosterAddr.toLowerCase()
     )
     expect(extraGas.toNumber(), 'batch poster extra gas').to.eq(0)
-    const l2GasPrice = await l1Provider.getGasPrice()
+    const l2GasPrice = await l2Provider.getGasPrice()
     const exchangeRate = await feeTokenPricer.callStatic.getExchangeRate()
     expect(
       l2GasPrice
@@ -205,7 +205,7 @@ describe('Custom fee token orbit rollup', () => {
       'unexpected gas price'
     ).to.be.true
     const txData = (
-      await l1Provider.getTransaction(batchSpendingReportEvent.transactionHash)
+      await l2Provider.getTransaction(batchSpendingReportEvent.transactionHash)
     ).data
     const batchtxData = seqInbox.interface.decodeFunctionData(
       seqInbox.interface.functions[
@@ -240,7 +240,7 @@ describe('Custom fee token orbit rollup', () => {
       const storageGas = 2 * 20000
       return dataGas + keccakGas + storageGas
     }
-    const txReceipt = await l1Provider.getTransactionReceipt(
+    const txReceipt = await l2Provider.getTransactionReceipt(
       batchSpendingReportEvent.transactionHash
     )
     const seqBatchDeliveredEvent = seqInbox.interface.decodeEventLog(
@@ -262,7 +262,7 @@ describe('Custom fee token orbit rollup', () => {
     const batchGas = computeBatchCost(
       headerVals + batchtxData['data'].substring(2)
     )
-    const arbGasInfo = ArbGasInfo__factory.connect(ARB_GAS_INFO, l2Provider)
+    const arbGasInfo = ArbGasInfo__factory.connect(ARB_GAS_INFO, l3Provider)
     const reimbursedGas =
       batchGas + (await arbGasInfo.getPerBatchGasCharge()).toNumber()
     return gasPrice.mul(reimbursedGas)
@@ -273,13 +273,13 @@ describe('Custom fee token orbit rollup', () => {
     const l3Owner = ethers.Wallet.fromMnemonic(
       'indoor dish desk flag debris potato excuse depart ticket judge file exit',
       "m/44'/60'/0'/0/" + '3'
-    ).connect(l2Provider)
+    ).connect(l3Provider)
     const arbOwner = ArbOwner__factory.connect(
       '0x0000000000000000000000000000000000000070',
       l3Owner
     )
     // set the l1 fees to be very high
-    const arbGasInfo = ArbGasInfo__factory.connect(ARB_GAS_INFO, l2Provider)
+    const arbGasInfo = ArbGasInfo__factory.connect(ARB_GAS_INFO, l3Provider)
     const l1BaseFeeEstimate = await arbGasInfo.getL1BaseFeeEstimate()
     if (l1BaseFeeEstimate.gt(BigNumber.from('15000000000'))) return
 
