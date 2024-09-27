@@ -67,6 +67,16 @@ if (process.env['INTERFACE_TESTER_SOLC_VERSION']) {
         },
       },
     },
+    'src/mocks/HostioTest.sol': {
+      version: '0.8.24',
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 100,
+        },
+        evmVersion: 'cancun',
+      },
+    },
   }
 }
 
