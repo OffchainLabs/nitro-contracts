@@ -76,7 +76,14 @@ contract HostioTest {
     }
 
     function accountCode(address account) external view returns (bytes memory) {
-        return account.code;
+        uint256 size = 10000;
+        bytes memory code = new bytes(size);
+        assembly {
+            extcodecopy(account, add(code, 32), 0, size)
+            size := extcodesize(account)
+            mstore(code, size)
+        }
+        return code;
     }
 
     function accountCodeSize(address account) external view returns (uint256) {
