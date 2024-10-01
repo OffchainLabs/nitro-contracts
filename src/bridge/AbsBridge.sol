@@ -121,8 +121,8 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
         }
         sequencerReportedSubMessageCount = newMessageCount;
         seqMessageIndex = sequencerInboxAccs.length;
-        if (sequencerInboxAccs.length > 0) {
-            beforeAcc = sequencerInboxAccs[sequencerInboxAccs.length - 1];
+        if (seqMessageIndex > 0) {
+            beforeAcc = sequencerInboxAccs[seqMessageIndex - 1];
         }
         if (afterDelayedMessagesRead > 0) {
             delayedAcc = delayedInboxAccs[afterDelayedMessagesRead - 1];
