@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.0;
+pragma solidity 0.8.9;
 
 /**
  * @title Helper contract for cross-chain deployment of deterministic factories when rollup uses custom fee token
