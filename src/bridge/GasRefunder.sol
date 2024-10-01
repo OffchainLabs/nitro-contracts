@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-pragma solidity ^0.8.7;
+pragma solidity 0.8.9;
 
 import "../libraries/IGasRefunder.sol";
 

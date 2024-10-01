@@ -2,7 +2,7 @@
 // For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.9;
 
 import "../libraries/CryptographyPrimitives.sol";
 
