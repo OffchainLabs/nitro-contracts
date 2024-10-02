@@ -32,7 +32,7 @@ error NotOrigin();
 error DataTooLarge(uint256 dataLength, uint256 maxDataLength);
 
 /// @dev The provided is not a contract and was expected to be
-/// @param addr The adddress in question
+/// @param addr The address in question
 error NotContract(address addr);
 
 /// @dev The merkle proof provided was too long
@@ -173,7 +173,7 @@ error NoSuchKeyset(bytes32);
 /// @dev Thrown when the provided address is not the designated batch poster manager
 error NotBatchPosterManager(address);
 
-/// @dev Thrown when a data blob feature is attempted to be used on a chain that doesnt support it
+/// @dev Thrown when a data blob feature is attempted to be used on a chain that doesn't support it
 error DataBlobsNotSupported();
 
 /// @dev Thrown when an init param was supplied as empty
