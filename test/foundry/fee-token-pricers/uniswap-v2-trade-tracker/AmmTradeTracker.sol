@@ -19,23 +19,26 @@ contract AmmTradeTracker is IFeeTokenPricer, Ownable {
         router = _router;
         token = _token;
         weth = _router.WETH();
+
+        IERC20(token).approve(address(router), type(uint256).max);
     }
 
     // @inheritdoc IFeeTokenPricer
     function getExchangeRate() external view returns (uint256) {
+        // todo - scale for decimals to get 1e18 denominator
         return totalTokenSpent * 1e18 / totalEthReceived;
     }
 
     function swapTokenToEth(uint256 tokenAmount) external onlyOwner {
-        IERC20(token).approve(address(router), tokenAmount);
-
         address[] memory path = new address[](2);
         path[0] = token;
         path[1] = weth;
 
+        // todo - properly calculate slippage
+        uint256 amountOutMin = 1;
         uint256[] memory amounts = router.swapExactTokensForETH({
             amountIn: tokenAmount,
-            amountOutMin: 1,
+            amountOutMin: amountOutMin,
             path: path,
             to: msg.sender,
             deadline: block.timestamp
