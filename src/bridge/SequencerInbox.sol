@@ -12,6 +12,7 @@ import {
     DelayedBackwards,
     DelayedTooFar,
     ForceIncludeBlockTooSoon,
+    HasCode,
     IncorrectMessagePreimage,
     NotBatchPoster,
     BadSequencerNumber,
@@ -335,6 +336,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     ) external refundsGas(gasRefunder, IReader4844(address(0))) {
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
+        if (msg.sender.code.length != 0) revert HasCode();
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
         if (isDelayProofRequired(afterDelayedMessagesRead)) revert DelayProofRequired();
 
