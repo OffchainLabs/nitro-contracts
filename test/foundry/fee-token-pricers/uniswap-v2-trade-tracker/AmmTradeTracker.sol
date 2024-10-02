@@ -30,6 +30,8 @@ contract AmmTradeTracker is IFeeTokenPricer, Ownable {
     }
 
     function swapTokenToEth(uint256 tokenAmount) external onlyOwner {
+        IERC20(token).transferFrom(msg.sender, address(this), tokenAmount);
+
         address[] memory path = new address[](2);
         path[0] = token;
         path[1] = weth;
@@ -63,4 +65,5 @@ interface IUniswapV2Router01 {
 
 interface IERC20 {
     function approve(address spender, uint256 value) external returns (bool);
+    function transferFrom(address from, address to, uint256 value) external returns (bool);
 }
