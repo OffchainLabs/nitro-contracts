@@ -3,11 +3,12 @@ pragma solidity ^0.8.0;
 
 import {IFeeTokenPricer} from "../../../../src/bridge/ISequencerInbox.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IGasRefunder} from "../../../../src/libraries/IGasRefunder.sol";
 
 /**
  * @title Test implementation of a fee token pricer that trades on AMM and keeps track of trades
  */
-contract AmmTradeTracker is IFeeTokenPricer, Ownable {
+contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
     IUniswapV2Router01 public immutable router;
     address public immutable token;
     address public immutable weth;
@@ -49,6 +50,13 @@ contract AmmTradeTracker is IFeeTokenPricer, Ownable {
 
         totalEthReceived += ethReceived;
         totalTokenSpent += tokenAmount;
+    }
+
+    function onGasSpent(address payable spender, uint256 gasUsed, uint256 calldataSize)
+        external
+        returns (bool success)
+    {
+        // update internal state
     }
 }
 
