@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {IFeeTokenPricer} from "../../../src/bridge/ISequencerInbox.sol";
+import {IFeeTokenPricer} from "../../../../src/bridge/ISequencerInbox.sol";
 import "@uniswap/v2-core/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/interfaces/IUniswapV2Pair.sol";
-import "@uniswap/lib/libraries/FixedPoint.sol";
+import {FixedPoint} from "./FixedPoint.sol";
 
 /**
- * @title Test implementation of a fee token pricer that returns a constant exchange rate
- * @notice Exchange rate is set in constructor and cannot be changed
+ * @title Test implementation of a fee token pricer that uses Uniswap V2 TWAP
  */
 contract UniswapV2TwapPricer is IFeeTokenPricer {
     uint256 public constant TWAP_WINDOW = 1 hours;
@@ -37,7 +36,7 @@ contract UniswapV2TwapPricer is IFeeTokenPricer {
     }
 
     // @inheritdoc IFeeTokenPricer
-    function getExchangeRate() external view returns (uint256) {
+    function getExchangeRate() external returns (uint256) {
         uint32 currentBlockTimestamp = uint32(block.timestamp);
         uint32 timeElapsed = currentBlockTimestamp - pricerUpdatedAt;
 

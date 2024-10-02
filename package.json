@@ -54,7 +54,6 @@
     "@offchainlabs/upgrade-executor": "1.1.0-beta.0",
     "@openzeppelin/contracts": "4.5.0",
     "@openzeppelin/contracts-upgradeable": "4.5.2",
-    "@uniswap/lib": "^4.0.1-alpha",
     "@uniswap/v2-core": "^1.0.1",
     "patch-package": "^6.4.7",
     "solady": "0.0.182"
