@@ -173,9 +173,51 @@ abstract contract AbsInboxTest is Test {
         inb.initialize(bridge, ISequencerInbox(seqInbox));
     }
 
-    function test_sendL2MessageFromOrigin_revert() public {
-        vm.expectRevert(abi.encodeWithSelector(Deprecated.selector));
+    function test_sendL2MessageFromOrigin() public {
+        // L2 msg params
+        bytes memory data = abi.encodePacked("some msg");
+
+        // expect event
+        vm.expectEmit(true, true, true, true);
+        emit InboxMessageDeliveredFromOrigin(0);
+
+        // send L2 msg -> tx.origin == msg.sender
+        vm.prank(user, user);
+        uint256 msgNum = inbox.sendL2MessageFromOrigin(data);
+
+        //// checks
+        assertEq(msgNum, 0, "Invalid msgNum");
+        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
+    }
+
+    function test_sendL2MessageFromOrigin_revert_WhenPaused() public {
+        vm.prank(rollup);
+        inbox.pause();
+
+        vm.expectRevert("Pausable: paused");
         vm.prank(user);
+        inbox.sendL2MessageFromOrigin(abi.encodePacked("some msg"));
+    }
+
+    function test_sendL2MessageFromOrigin_revert_NotAllowed() public {
+        vm.prank(rollup);
+        inbox.setAllowListEnabled(true);
+
+        vm.expectRevert(abi.encodeWithSelector(NotAllowedOrigin.selector, user));
+        vm.prank(user, user);
+        inbox.sendL2MessageFromOrigin(abi.encodePacked("some msg"));
+    }
+
+    function test_sendL2MessageFromOrigin_revert_L1Forked() public {
+        vm.chainId(10);
+        vm.expectRevert(abi.encodeWithSelector(L1Forked.selector));
+        vm.prank(user, user);
+        inbox.sendL2MessageFromOrigin(abi.encodePacked("some msg"));
+    }
+
+    function test_sendL2MessageFromOrigin_revert_NotTopLevel() public {
+        // TODO: actual test with 7702 in-place
+        vm.expectRevert(abi.encodeWithSelector(NotTopLevel.selector));
         inbox.sendL2MessageFromOrigin(abi.encodePacked("some msg"));
     }
 

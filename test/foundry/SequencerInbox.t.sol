@@ -427,7 +427,7 @@ contract SequencerInboxTest is Test {
         uint256 sequenceNumber = bridge.sequencerMessageCount();
         uint256 delayedMessagesRead = bridge.delayedMessageCount();
 
-        vm.expectRevert(abi.encodeWithSelector(NotOrigin.selector));
+        vm.expectRevert(abi.encodeWithSelector(NotTopLevel.selector));
         seqInbox.addSequencerL2BatchFromOrigin(
             sequenceNumber,
             data,
