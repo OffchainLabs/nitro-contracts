@@ -92,6 +92,10 @@ contract MerkleTreeAccumulatorLibTest is Test {
         proveVerify(2, 3);
         proveVerify(2, 13);
         proveVerify(17, 7052);
+    }
+
+    function testVerifyPrefixProof2() public {
+        // split the test to avoid memory oog
         proveVerify(23, 7052);
         proveVerify(20, 7052);
     }
