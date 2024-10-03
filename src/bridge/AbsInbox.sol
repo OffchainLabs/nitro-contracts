@@ -6,7 +6,6 @@ pragma solidity ^0.8.4;
 
 import {
     DataTooLarge,
-    Deprecated,
     GasLimitTooLarge,
     InsufficientValue,
     InsufficientSubmissionCost,
