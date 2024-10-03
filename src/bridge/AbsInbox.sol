@@ -140,7 +140,6 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         bytes calldata messageData
     ) external whenNotPaused onlyAllowed returns (uint256) {
         if (_chainIdChanged()) revert L1Forked();
-        // solhint-disable-next-line avoid-tx-origin
         if (!CallerChecker.isCallerTopLevel()) revert NotTopLevel();
         if (messageData.length > maxDataSize) revert DataTooLarge(messageData.length, maxDataSize);
         uint256 msgNum = _deliverToBridge(L2_MSG, msg.sender, keccak256(messageData), 0);

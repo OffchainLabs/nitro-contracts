@@ -438,7 +438,6 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         // submit a batch spending report to refund the entity that produced the blob batch data
         // same as using calldata, we only submit spending report if the caller is the origin of the tx
         // such that one cannot "double-claim" batch posting refund in the same tx
-        // solhint-disable-next-line avoid-tx-origin
         if (CallerChecker.isCallerTopLevel() && !isUsingFeeToken) {
             submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, blobGas);
         }
