@@ -8,12 +8,11 @@ import {
     DataTooLarge,
     Deprecated,
     GasLimitTooLarge,
-    HasCode,
     InsufficientValue,
     InsufficientSubmissionCost,
     L1Forked,
     NotAllowedOrigin,
-    NotOrigin,
+    NotTopLevel,
     NotRollupOrOwner,
     RetryableData
 } from "../libraries/Error.sol";
@@ -21,6 +20,7 @@ import "./IInboxBase.sol";
 import "./ISequencerInbox.sol";
 import "./IBridge.sol";
 import "../libraries/AddressAliasHelper.sol";
+import "../libraries/CallerChecker.sol";
 import "../libraries/DelegateCallAware.sol";
 import {
     L1MessageType_submitRetryableTx,
@@ -142,8 +142,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
     ) external whenNotPaused onlyAllowed returns (uint256) {
         if (_chainIdChanged()) revert L1Forked();
         // solhint-disable-next-line avoid-tx-origin
-        if (msg.sender != tx.origin) revert NotOrigin();
-        if (msg.sender.code.length != 0) revert HasCode();
+        if (!CallerChecker.isCallerTopLevel()) revert NotTopLevel();
         if (messageData.length > maxDataSize) revert DataTooLarge(messageData.length, maxDataSize);
         uint256 msgNum = _deliverToBridge(L2_MSG, msg.sender, keccak256(messageData), 0);
         emit InboxMessageDeliveredFromOrigin(msgNum);

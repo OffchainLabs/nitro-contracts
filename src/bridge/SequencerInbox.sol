@@ -12,7 +12,6 @@ import {
     DelayedBackwards,
     DelayedTooFar,
     ForceIncludeBlockTooSoon,
-    HasCode,
     IncorrectMessagePreimage,
     NotBatchPoster,
     BadSequencerNumber,
@@ -20,6 +19,7 @@ import {
     NoSuchKeyset,
     NotForked,
     NotBatchPosterManager,
+    NotTopLevel,
     RollupNotChanged,
     DataBlobsNotSupported,
     InitParamZero,
@@ -43,6 +43,7 @@ import "../rollup/IRollupLogic.sol";
 import "./Messages.sol";
 import "../precompiles/ArbGasInfo.sol";
 import "../precompiles/ArbSys.sol";
+import "../libraries/CallerChecker.sol";
 import "../libraries/IReader4844.sol";
 
 import "../libraries/DelegateCallAware.sol";
@@ -334,9 +335,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 prevMessageCount,
         uint256 newMessageCount
     ) external refundsGas(gasRefunder, IReader4844(address(0))) {
-        // solhint-disable-next-line avoid-tx-origin
-        if (msg.sender != tx.origin) revert NotOrigin();
-        if (msg.sender.code.length != 0) revert HasCode();
+        if (!CallerChecker.isCallerTopLevel()) revert NotTopLevel();
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
         if (isDelayProofRequired(afterDelayedMessagesRead)) revert DelayProofRequired();
 
@@ -389,9 +388,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 newMessageCount,
         DelayProof calldata delayProof
     ) external refundsGas(gasRefunder, IReader4844(address(0))) {
-        // solhint-disable-next-line avoid-tx-origin
-        if (msg.sender != tx.origin) revert NotOrigin();
-        if (msg.sender.code.length != 0) revert HasCode();
+        if (!CallerChecker.isCallerTopLevel()) revert NotTopLevel();
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
         if (!isDelayBufferable) revert NotDelayBufferable();
 
@@ -442,7 +439,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         // same as using calldata, we only submit spending report if the caller is the origin of the tx
         // such that one cannot "double-claim" batch posting refund in the same tx
         // solhint-disable-next-line avoid-tx-origin
-        if (msg.sender == tx.origin && msg.sender.code.length == 0 && !isUsingFeeToken) {
+        if (CallerChecker.isCallerTopLevel() && !isUsingFeeToken) {
             submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, blobGas);
         }
     }
