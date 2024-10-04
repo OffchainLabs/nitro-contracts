@@ -61,8 +61,19 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder {
             uint256 ethDelta = gasUsed * block.basefee;
             uint256 tokenDelta = ethDelta * exchangeRateUsed / 1e18;
 
-            ethAccumulatorPerSpender[spender] -= ethDelta;
-            tokenAccumulatorPerSpender[spender] -= tokenDelta;
+            uint256 ethAcc = ethAccumulatorPerSpender[spender];
+            if (ethDelta > ethAcc) {
+                ethAccumulatorPerSpender[spender] = 0;
+            } else {
+                ethAccumulatorPerSpender[spender] -= ethDelta;
+            }
+
+            uint256 tokenAcc = tokenAccumulatorPerSpender[spender];
+            if (tokenDelta > tokenAcc) {
+                tokenAccumulatorPerSpender[spender] = 0;
+            } else {
+                tokenAccumulatorPerSpender[spender] -= tokenDelta;
+            }
         }
 
         success = true;
