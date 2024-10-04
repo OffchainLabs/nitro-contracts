@@ -13,8 +13,8 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
     address public immutable token;
     address public immutable weth;
 
-    uint256 public ethAccumulator;
-    uint256 public tokenAccumulator;
+    mapping(address => uint256) ethAccumulatorPerSpender;
+    mapping(address => uint256) tokenAccumulatorPerSpender;
 
     constructor(IUniswapV2Router01 _router, address _token) Ownable() {
         router = _router;
@@ -26,8 +26,7 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
 
     // @inheritdoc IFeeTokenPricer
     function getExchangeRate() external view returns (uint256) {
-        // todo - scale for decimals to get 1e18 denominator
-        return tokenAccumulator * 1e18 / ethAccumulator;
+        return _getExchangeRate();
     }
 
     function swapTokenToEth(uint256 tokenAmount) external onlyOwner {
@@ -48,8 +47,8 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
         });
         uint256 ethReceived = amounts[amounts.length - 1];
 
-        ethAccumulator += ethReceived;
-        tokenAccumulator += tokenAmount;
+        ethAccumulatorPerSpender[msg.sender] += ethReceived;
+        tokenAccumulatorPerSpender[msg.sender] += tokenAmount;
     }
 
     function onGasSpent(address payable spender, uint256 gasUsed, uint256 calldataSize)
@@ -57,16 +56,27 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
         returns (bool success)
     {
         // update internal state
-        uint256 exchangeRateUsed = tokenAccumulator * 1e18 / ethAccumulator;
+        uint256 exchangeRateUsed = _getExchangeRate();
+        if (exchangeRateUsed != 0) {
+            gasUsed += calldataSize * 16;
+            uint256 ethDelta = gasUsed * block.basefee;
+            uint256 tokenDelta = ethDelta * exchangeRateUsed / 1e18;
 
-        gasUsed += calldataSize * 16;
-        uint256 ethDelta = gasUsed * block.basefee;
-        uint256 tokenDelta = ethDelta * exchangeRateUsed / 1e18;
-
-        ethAccumulator -= ethDelta;
-        tokenAccumulator -= tokenDelta;
+            ethAccumulatorPerSpender[spender] -= ethDelta;
+            tokenAccumulatorPerSpender[spender] -= tokenDelta;
+        }
 
         success = true;
+    }
+
+    function _getExchangeRate() internal view returns (uint256) {
+        uint256 ethAcc = ethAccumulatorPerSpender[tx.origin];
+        if (ethAcc == 0) {
+            return 0;
+        }
+        uint256 tokenAcc = tokenAccumulatorPerSpender[tx.origin];
+        // todo - scale for decimals to get 1e18 denominator
+        return tokenAcc * 1e18 / tokenAcc;
     }
 }
 
