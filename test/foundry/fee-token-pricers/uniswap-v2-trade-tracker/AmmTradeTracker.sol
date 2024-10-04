@@ -2,13 +2,12 @@
 pragma solidity ^0.8.0;
 
 import {IFeeTokenPricer} from "../../../../src/bridge/ISequencerInbox.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IGasRefunder} from "../../../../src/libraries/IGasRefunder.sol";
 
 /**
  * @title Test implementation of a fee token pricer that trades on AMM and keeps track of trades
  */
-contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
+contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder {
     IUniswapV2Router01 public immutable router;
     address public immutable token;
     address public immutable weth;
@@ -16,7 +15,7 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
     mapping(address => uint256) ethAccumulatorPerSpender;
     mapping(address => uint256) tokenAccumulatorPerSpender;
 
-    constructor(IUniswapV2Router01 _router, address _token) Ownable() {
+    constructor(IUniswapV2Router01 _router, address _token) {
         router = _router;
         token = _token;
         weth = _router.WETH();
@@ -29,7 +28,7 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
         return _getExchangeRate();
     }
 
-    function swapTokenToEth(uint256 tokenAmount) external onlyOwner {
+    function swapTokenToEth(uint256 tokenAmount) external {
         IERC20(token).transferFrom(msg.sender, address(this), tokenAmount);
 
         address[] memory path = new address[](2);
