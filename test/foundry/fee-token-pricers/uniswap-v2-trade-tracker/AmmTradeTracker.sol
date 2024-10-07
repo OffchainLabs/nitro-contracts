@@ -12,6 +12,7 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
     IUniswapV2Router01 public immutable router;
     address public immutable token;
     address public immutable weth;
+    uint8 public immutable tokenDecimals;
 
     mapping(address => uint256) ethAccumulatorPerSpender;
     mapping(address => uint256) tokenAccumulatorPerSpender;
@@ -24,7 +25,9 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
         router = _router;
         token = _token;
         weth = _router.WETH();
+
         defaultExchangeRate = _defaultExchangeRate;
+        tokenDecimals = IERC20(_token).decimals();
 
         IERC20(token).approve(address(router), type(uint256).max);
     }
@@ -93,8 +96,18 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
             return defaultExchangeRate;
         }
         uint256 tokenAcc = tokenAccumulatorPerSpender[tx.origin];
-        // todo - scale for decimals to get 1e18 denominator
-        return tokenAcc * 1e18 / tokenAcc;
+
+        return _scaleTo18Decimals(tokenAcc) * 1e18 / ethAcc;
+    }
+
+    function _scaleTo18Decimals(uint256 amount) internal view returns (uint256) {
+        if (tokenDecimals == 18) {
+            return amount;
+        } else if (tokenDecimals < 18) {
+            return amount * 10 ** (18 - tokenDecimals);
+        } else {
+            return amount * 10 ** (18 - tokenDecimals);
+        }
     }
 }
 
@@ -112,4 +125,5 @@ interface IUniswapV2Router01 {
 interface IERC20 {
     function approve(address spender, uint256 value) external returns (bool);
     function transferFrom(address from, address to, uint256 value) external returns (bool);
+    function decimals() external view returns (uint8);
 }
