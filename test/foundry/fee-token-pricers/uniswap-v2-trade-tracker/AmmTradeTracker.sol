@@ -3,11 +3,12 @@ pragma solidity ^0.8.0;
 
 import {IFeeTokenPricer} from "../../../../src/bridge/ISequencerInbox.sol";
 import {IGasRefunder} from "../../../../src/libraries/IGasRefunder.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title Test implementation of a fee token pricer that trades on AMM and keeps track of trades
  */
-contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder {
+contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
     IUniswapV2Router01 public immutable router;
     address public immutable token;
     address public immutable weth;
@@ -15,10 +16,15 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder {
     mapping(address => uint256) ethAccumulatorPerSpender;
     mapping(address => uint256) tokenAccumulatorPerSpender;
 
-    constructor(IUniswapV2Router01 _router, address _token) {
+    uint256 public defaultExchangeRate;
+
+    constructor(IUniswapV2Router01 _router, address _token, uint256 _defaultExchangeRate)
+        Ownable()
+    {
         router = _router;
         token = _token;
         weth = _router.WETH();
+        defaultExchangeRate = _defaultExchangeRate;
 
         IERC20(token).approve(address(router), type(uint256).max);
     }
@@ -79,10 +85,14 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder {
         success = true;
     }
 
+    function setDefaultExchangeRate(uint256 _defaultExchangeRate) external onlyOwner {
+        defaultExchangeRate = _defaultExchangeRate;
+    }
+
     function _getExchangeRate() internal view returns (uint256) {
         uint256 ethAcc = ethAccumulatorPerSpender[tx.origin];
         if (ethAcc == 0) {
-            return 0;
+            return defaultExchangeRate;
         }
         uint256 tokenAcc = tokenAccumulatorPerSpender[tx.origin];
         // todo - scale for decimals to get 1e18 denominator
