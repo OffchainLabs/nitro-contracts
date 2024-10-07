@@ -100,6 +100,8 @@ export async function deployAllContracts(
 ): Promise<Record<string, Contract>> {
   const isOnArb = await _isRunningOnArbitrum(signer)
 
+  const expressLaneAuction = await deployContract('ExpressLaneAuction', signer, [], verify)
+
   const ethBridge = await deployContract('Bridge', signer, [], verify)
   const reader4844 = isOnArb
     ? ethers.constants.AddressZero
@@ -241,6 +243,7 @@ export async function deployAllContracts(
     validatorWalletCreator,
     rollupCreator,
     deployHelper,
+    expressLaneAuction,
   }
 }
 
