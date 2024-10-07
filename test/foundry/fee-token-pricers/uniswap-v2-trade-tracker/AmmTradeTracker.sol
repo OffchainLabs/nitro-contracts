@@ -34,18 +34,16 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
         return _getExchangeRate();
     }
 
-    function swapTokenToEth(uint256 tokenAmount) external {
+    function swapTokenToEth(uint256 tokenAmount, uint256 minEthReceived) external {
         IERC20(token).transferFrom(msg.sender, address(this), tokenAmount);
 
         address[] memory path = new address[](2);
         path[0] = token;
         path[1] = weth;
 
-        // todo - properly calculate slippage
-        uint256 amountOutMin = 1;
         uint256[] memory amounts = router.swapExactTokensForETH({
             amountIn: tokenAmount,
-            amountOutMin: amountOutMin,
+            amountOutMin: minEthReceived,
             path: path,
             to: msg.sender,
             deadline: block.timestamp
