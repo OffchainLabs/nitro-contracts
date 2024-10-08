@@ -15,7 +15,6 @@ contract AmmTradeTrackerTest is Test {
 
     function setUp() public {
         vm.createSelectFork(vm.envString("ARB"), 261_666_155);
-        console.log(vm.envString("ARB"));
 
         vm.prank(owner);
         tradeTracker = new AmmTradeTracker(
@@ -27,14 +26,35 @@ contract AmmTradeTrackerTest is Test {
         uint256 usdcAmount = 250e6;
         uint256 minEthReceived = 0.1 ether;
 
-        deal(USDC_ARB1, batchPosterOperator, usdcAmount);
+        uint256 ethReceived = _swapTokenToEth(usdcAmount, minEthReceived);
 
-        vm.startPrank(batchPosterOperator);
-        IERC20(USDC_ARB1).approve(address(tradeTracker), usdcAmount);
-        uint256 ethReceived = tradeTracker.swapTokenToEth(usdcAmount, minEthReceived);
-        vm.stopPrank();
-
+        assertGe(ethReceived, minEthReceived);
         assertEq(tradeTracker.ethAccumulatorPerSpender(batchPosterOperator), ethReceived);
         assertEq(tradeTracker.tokenAccumulatorPerSpender(batchPosterOperator), usdcAmount);
+    }
+
+    function testFork_GetExchangeRate() public {
+        assertEq(tradeTracker.getExchangeRate(), DEFAULT_EXCHANGE_RATE);
+
+        uint256 usdcAmount = 250e6;
+        uint256 minEthReceived = 0.1 ether;
+        uint256 ethReceived = _swapTokenToEth(usdcAmount, minEthReceived);
+
+        vm.prank(batchPosterOperator, batchPosterOperator);
+        uint256 actualExchangeRate = tradeTracker.getExchangeRate();
+        uint256 expectedExchangeRate = (usdcAmount * 1e30) / ethReceived;
+        assertEq(actualExchangeRate, expectedExchangeRate);
+    }
+
+    function _swapTokenToEth(uint256 tokenAmount, uint256 minEthReceived)
+        internal
+        returns (uint256 ethReceived)
+    {
+        deal(USDC_ARB1, batchPosterOperator, tokenAmount);
+
+        vm.startPrank(batchPosterOperator, batchPosterOperator);
+        IERC20(USDC_ARB1).approve(address(tradeTracker), tokenAmount);
+        ethReceived = tradeTracker.swapTokenToEth(tokenAmount, minEthReceived);
+        vm.stopPrank();
     }
 }
