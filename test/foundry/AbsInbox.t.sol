@@ -215,10 +215,18 @@ abstract contract AbsInboxTest is Test {
         inbox.sendL2MessageFromOrigin(abi.encodePacked("some msg"));
     }
 
-    function test_sendL2MessageFromOrigin_revert_NotCodelessOrigin() public {
-        // TODO: actual test with 7702 in-place
+    function test_sendL2MessageFromOrigin_revert_NotOrigin() public {
         vm.expectRevert(abi.encodeWithSelector(NotCodelessOrigin.selector));
         inbox.sendL2MessageFromOrigin(abi.encodePacked("some msg"));
+    }
+
+    function test_sendL2MessageFromOrigin_revert_NotCodeless() public {
+        assertEq(user.code.length, 0, "user is codeless");
+        vm.etch(user, bytes("some code"));
+        vm.prank(user, user);
+        vm.expectRevert(abi.encodeWithSelector(NotCodelessOrigin.selector));
+        inbox.sendL2MessageFromOrigin(abi.encodePacked("some msg"));
+        vm.etch(user, bytes(""));
     }
 
     function test_sendL2Message() public {
