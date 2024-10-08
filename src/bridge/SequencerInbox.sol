@@ -19,7 +19,7 @@ import {
     NoSuchKeyset,
     NotForked,
     NotBatchPosterManager,
-    NotTopLevel,
+    CalldataNotSameAsTx,
     RollupNotChanged,
     DataBlobsNotSupported,
     InitParamZero,
@@ -335,7 +335,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 prevMessageCount,
         uint256 newMessageCount
     ) external refundsGas(gasRefunder, IReader4844(address(0))) {
-        if (!CallerChecker.isCallerTopLevel()) revert NotTopLevel();
+        if (!CallerChecker.isCalldataSameAsTx()) revert CalldataNotSameAsTx();
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
         if (isDelayProofRequired(afterDelayedMessagesRead)) revert DelayProofRequired();
 
@@ -388,7 +388,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 newMessageCount,
         DelayProof calldata delayProof
     ) external refundsGas(gasRefunder, IReader4844(address(0))) {
-        if (!CallerChecker.isCallerTopLevel()) revert NotTopLevel();
+        if (!CallerChecker.isCalldataSameAsTx()) revert CalldataNotSameAsTx();
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
         if (!isDelayBufferable) revert NotDelayBufferable();
 
@@ -438,7 +438,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         // submit a batch spending report to refund the entity that produced the blob batch data
         // same as using calldata, we only submit spending report if the caller is the origin of the tx
         // such that one cannot "double-claim" batch posting refund in the same tx
-        if (CallerChecker.isCallerTopLevel() && !isUsingFeeToken) {
+        if (CallerChecker.isCalldataSameAsTx() && !isUsingFeeToken) {
             submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, blobGas);
         }
     }

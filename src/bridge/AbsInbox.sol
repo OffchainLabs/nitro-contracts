@@ -5,13 +5,13 @@
 pragma solidity ^0.8.4;
 
 import {
+    CalldataNotSameAsTx,
     DataTooLarge,
     GasLimitTooLarge,
     InsufficientValue,
     InsufficientSubmissionCost,
     L1Forked,
     NotAllowedOrigin,
-    NotTopLevel,
     NotRollupOrOwner,
     RetryableData
 } from "../libraries/Error.sol";
@@ -140,7 +140,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         bytes calldata messageData
     ) external whenNotPaused onlyAllowed returns (uint256) {
         if (_chainIdChanged()) revert L1Forked();
-        if (!CallerChecker.isCallerTopLevel()) revert NotTopLevel();
+        if (!CallerChecker.isCalldataSameAsTx()) revert CalldataNotSameAsTx();
         if (messageData.length > maxDataSize) revert DataTooLarge(messageData.length, maxDataSize);
         uint256 msgNum = _deliverToBridge(L2_MSG, msg.sender, keccak256(messageData), 0);
         emit InboxMessageDeliveredFromOrigin(msgNum);

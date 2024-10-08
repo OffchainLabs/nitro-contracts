@@ -4,12 +4,12 @@
 
 pragma solidity ^0.8.0;
 
-library CallerChecker {
+library CalldataChecker {
     /**
-     * @notice A EIP-7702 safe check for top level caller, used to ensure the calldata is available in the tx
-     * @return bool true if the caller is a top level caller, false otherwise
+     * @notice A EIP-7702 safe check to ensure the calldata is available in the top level tx
+     * @return bool true if calldata is guaranteed to be available in the top level tx
      */
-    function isCallerTopLevel() internal view returns (bool) {
+    function isCalldataSameAsTx() internal view returns (bool) {
         // solhint-disable-next-line avoid-tx-origin
         return msg.sender == tx.origin && msg.sender.code.length == 0;
     }

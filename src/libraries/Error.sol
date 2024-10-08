@@ -13,8 +13,8 @@ error HadZeroInit();
 /// @dev Thrown when post upgrade init validation fails
 error BadPostUpgradeInit();
 
-/// @dev Thrown when the caller is not a top level caller
-error NotTopLevel();
+/// @dev Thrown when the calldata is not same as the top level tx
+error CalldataNotSameAsTx();
 
 /// @dev Thrown when non owner tries to access an only-owner function
 /// @param sender The msg.sender who is not the owner
