@@ -42,7 +42,10 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
         return _getExchangeRate();
     }
 
-    function swapTokenToEth(uint256 tokenAmount, uint256 minEthReceived) external {
+    function swapTokenToEth(uint256 tokenAmount, uint256 minEthReceived)
+        external
+        returns (uint256)
+    {
         IERC20(token).safeTransferFrom(msg.sender, address(this), tokenAmount);
 
         address[] memory path = new address[](2);
@@ -60,6 +63,8 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
 
         ethAccumulatorPerSpender[msg.sender] += ethReceived;
         tokenAccumulatorPerSpender[msg.sender] += tokenAmount;
+
+        return ethReceived;
     }
 
     function onGasSpent(address payable spender, uint256 gasUsed, uint256 calldataSize)
