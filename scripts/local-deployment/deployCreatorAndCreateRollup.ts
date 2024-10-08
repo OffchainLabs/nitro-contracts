@@ -83,6 +83,10 @@ async function main() {
 
   const { rollupCreationResult, chainInfo } = result
 
+  // TODO should this have a proxy contract created in createRollup?
+  rollupCreationResult['express-lane-auction'] = contracts.expressLaneAuction.address
+  chainInfo.rollup['express-lane-auction'] = contracts.expressLaneAuction.address
+
   /// store deployment address
   // chain deployment info
   const chainDeploymentInfo =

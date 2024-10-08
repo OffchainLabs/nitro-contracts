@@ -41,6 +41,7 @@ interface RollupCreationResult {
   'upgrade-executor': string
   'validator-utils': string
   'validator-wallet-creator': string
+  'express-lane-auction'?: string
 }
 
 interface ChainInfo {
