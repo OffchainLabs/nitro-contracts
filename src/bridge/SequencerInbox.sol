@@ -436,7 +436,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         if (hostChainIsArbitrum) revert DataBlobsNotSupported();
 
         // submit a batch spending report to refund the entity that produced the blob batch data
-        // same as using calldata, we only submit spending report if the caller is the origin of the tx
+        // same as using calldata, we only submit spending report if the caller is the origin and is codeless
         // such that one cannot "double-claim" batch posting refund in the same tx
         if (CallerChecker.isCallerCodelessOrigin() && !isUsingFeeToken) {
             submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, blobGas);
@@ -449,7 +449,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 afterDelayedMessagesRead,
         uint256 prevMessageCount,
         uint256 newMessageCount,
-        bool isFromOrigin
+        bool isFromCodelessOrigin
     ) internal {
         (bytes32 dataHash, IBridge.TimeBounds memory timeBounds) =
             formCallDataHash(data, afterDelayedMessagesRead);
@@ -457,7 +457,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         addSequencerL2BatchImpl(
             dataHash,
             afterDelayedMessagesRead,
-            isFromOrigin ? data.length : 0,
+            isFromCodelessOrigin ? data.length : 0,
             prevMessageCount,
             newMessageCount
         );
@@ -474,12 +474,12 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             delayedAcc,
             totalDelayedMessagesRead,
             timeBounds,
-            isFromOrigin
+            isFromCodelessOrigin
                 ? IBridge.BatchDataLocation.TxInput
                 : IBridge.BatchDataLocation.SeparateBatchEvent
         );
 
-        if (!isFromOrigin) {
+        if (!isFromCodelessOrigin) {
             emit SequencerBatchData(seqMessageIndex, data);
         }
     }
