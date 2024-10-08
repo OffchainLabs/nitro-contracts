@@ -19,7 +19,7 @@ import "./IInboxBase.sol";
 import "./ISequencerInbox.sol";
 import "./IBridge.sol";
 import "../libraries/AddressAliasHelper.sol";
-import "../libraries/CallerChecker.sol";
+import "../libraries/CalldataChecker.sol";
 import "../libraries/DelegateCallAware.sol";
 import {
     L1MessageType_submitRetryableTx,
@@ -140,7 +140,7 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         bytes calldata messageData
     ) external whenNotPaused onlyAllowed returns (uint256) {
         if (_chainIdChanged()) revert L1Forked();
-        if (!CallerChecker.isCalldataSameAsTx()) revert CalldataNotSameAsTx();
+        if (!CalldataChecker.isCalldataSameAsTx()) revert CalldataNotSameAsTx();
         if (messageData.length > maxDataSize) revert DataTooLarge(messageData.length, maxDataSize);
         uint256 msgNum = _deliverToBridge(L2_MSG, msg.sender, keccak256(messageData), 0);
         emit InboxMessageDeliveredFromOrigin(msgNum);
