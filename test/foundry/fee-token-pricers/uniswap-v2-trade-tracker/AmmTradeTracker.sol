@@ -4,18 +4,23 @@ pragma solidity ^0.8.0;
 import {IFeeTokenPricer} from "../../../../src/bridge/ISequencerInbox.sol";
 import {IGasRefunder} from "../../../../src/libraries/IGasRefunder.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
- * @title Test implementation of a fee token pricer that trades on AMM and keeps track of trades
+ * @title Test implementation of a fee token pricer that trades on AMM and keeps track of traded amount to calculate exchange rate
  */
 contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
+    using SafeERC20 for IERC20;
+
     IUniswapV2Router01 public immutable router;
     address public immutable token;
     address public immutable weth;
     uint8 public immutable tokenDecimals;
 
-    mapping(address => uint256) ethAccumulatorPerSpender;
-    mapping(address => uint256) tokenAccumulatorPerSpender;
+    mapping(address => uint256) public ethAccumulatorPerSpender;
+    mapping(address => uint256) public tokenAccumulatorPerSpender;
 
     uint256 public defaultExchangeRate;
 
@@ -27,9 +32,9 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
         weth = _router.WETH();
 
         defaultExchangeRate = _defaultExchangeRate;
-        tokenDecimals = IERC20(_token).decimals();
+        tokenDecimals = ERC20(_token).decimals();
 
-        IERC20(token).approve(address(router), type(uint256).max);
+        IERC20(token).safeApprove(address(router), type(uint256).max);
     }
 
     // @inheritdoc IFeeTokenPricer
@@ -38,7 +43,7 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
     }
 
     function swapTokenToEth(uint256 tokenAmount, uint256 minEthReceived) external {
-        IERC20(token).transferFrom(msg.sender, address(this), tokenAmount);
+        IERC20(token).safeTransferFrom(msg.sender, address(this), tokenAmount);
 
         address[] memory path = new address[](2);
         path[0] = token;
@@ -120,10 +125,4 @@ interface IUniswapV2Router01 {
         address to,
         uint256 deadline
     ) external returns (uint256[] memory amounts);
-}
-
-interface IERC20 {
-    function approve(address spender, uint256 value) external returns (bool);
-    function transferFrom(address from, address to, uint256 value) external returns (bool);
-    function decimals() external view returns (uint8);
 }
