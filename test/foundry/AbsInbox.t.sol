@@ -215,9 +215,9 @@ abstract contract AbsInboxTest is Test {
         inbox.sendL2MessageFromOrigin(abi.encodePacked("some msg"));
     }
 
-    function test_sendL2MessageFromOrigin_revert_CalldataNotSameAsTx() public {
+    function test_sendL2MessageFromOrigin_revert_NotCodelessOrigin() public {
         // TODO: actual test with 7702 in-place
-        vm.expectRevert(abi.encodeWithSelector(CalldataNotSameAsTx.selector));
+        vm.expectRevert(abi.encodeWithSelector(NotCodelessOrigin.selector));
         inbox.sendL2MessageFromOrigin(abi.encodePacked("some msg"));
     }
 
