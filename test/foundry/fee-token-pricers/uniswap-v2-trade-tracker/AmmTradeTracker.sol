@@ -26,12 +26,17 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
     uint256 public defaultExchangeRate;
     uint256 public calldataCost;
 
+    error CallerNotAllowed(address caller);
+
+    event DefaultExchangeRateSet(uint256 defaultExchangeRate);
+    event CalldataCostSet(uint256 calldataCost);
+    event CallerAllowed(address indexed caller, bool allowed);
+
     constructor(
         IUniswapV2Router01 _router,
         address _token,
         uint256 _defaultExchangeRate,
-        uint256 _calldataCost,
-        address _sequencerInbox
+        uint256 _calldataCost
     ) Ownable() {
         router = _router;
         token = _token;
@@ -39,7 +44,6 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
 
         defaultExchangeRate = _defaultExchangeRate;
         calldataCost = _calldataCost;
-        allowedCallers[_sequencerInbox] = true;
         tokenDecimals = ERC20(_token).decimals();
 
         IERC20(token).safeApprove(address(router), type(uint256).max);
@@ -77,7 +81,7 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
         external
         returns (bool)
     {
-        require(allowedCallers[msg.sender], "AmmTradeTracker: Caller not allowed");
+        if (!allowedCallers[msg.sender]) revert CallerNotAllowed(msg.sender);
 
         // update internal state
         uint256 exchangeRateUsed = _getExchangeRate();
@@ -113,14 +117,17 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
 
     function setDefaultExchangeRate(uint256 _defaultExchangeRate) external onlyOwner {
         defaultExchangeRate = _defaultExchangeRate;
+        emit DefaultExchangeRateSet(_defaultExchangeRate);
     }
 
     function setCalldataCost(uint256 _calldataCost) external onlyOwner {
         calldataCost = _calldataCost;
+        emit CalldataCostSet(_calldataCost);
     }
 
     function allowCaller(address caller, bool allowed) external onlyOwner {
         allowedCallers[caller] = allowed;
+        emit CallerAllowed(caller, allowed);
     }
 
     function _getExchangeRate() internal view returns (uint256) {

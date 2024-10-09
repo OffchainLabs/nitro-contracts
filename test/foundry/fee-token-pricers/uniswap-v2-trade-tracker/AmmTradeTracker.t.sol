@@ -58,6 +58,8 @@ contract AmmTradeTrackerTest is Test {
 
     function testFork_postBatch() public {
         (SequencerInbox seqInbox,) = _deployFeeTokenRollup();
+        vm.prank(owner);
+        tradeTracker.allowCaller(address(seqInbox), true);
 
         // swap some tokens
         uint256 usdcAmount = 250e6;
