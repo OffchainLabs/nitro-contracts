@@ -114,7 +114,7 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
         } else if (tokenDecimals < 18) {
             return amount * 10 ** (18 - tokenDecimals);
         } else {
-            return amount * 10 ** (18 - tokenDecimals);
+            return amount / 10 ** (tokenDecimals - 18);
         }
     }
 }
