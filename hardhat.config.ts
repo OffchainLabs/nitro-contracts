@@ -43,6 +43,16 @@ const solidity = {
         },
       },
     },
+    'src/mocks/HostioTest.sol': {
+      version: '0.8.24',
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 100,
+        },
+        evmVersion: 'cancun',
+      },
+    },
   },
 }
 
@@ -67,6 +77,16 @@ if (process.env['INTERFACE_TESTER_SOLC_VERSION']) {
             runs: 100,
           },
         },
+      },
+    },
+    'src/mocks/HostioTest.sol': {
+      version: '0.8.24',
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 100,
+        },
+        evmVersion: 'cancun',
       },
     },
   }
