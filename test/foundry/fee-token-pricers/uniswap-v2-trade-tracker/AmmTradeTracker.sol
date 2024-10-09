@@ -21,6 +21,7 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
 
     mapping(address => uint256) public ethAccumulatorPerSpender;
     mapping(address => uint256) public tokenAccumulatorPerSpender;
+    mapping(address => bool) public allowedCallers;
 
     uint256 public defaultExchangeRate;
     uint256 public calldataCost;
@@ -29,7 +30,8 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
         IUniswapV2Router01 _router,
         address _token,
         uint256 _defaultExchangeRate,
-        uint256 _calldataCost
+        uint256 _calldataCost,
+        address _sequencerInbox
     ) Ownable() {
         router = _router;
         token = _token;
@@ -37,6 +39,7 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
 
         defaultExchangeRate = _defaultExchangeRate;
         calldataCost = _calldataCost;
+        allowedCallers[_sequencerInbox] = true;
         tokenDecimals = ERC20(_token).decimals();
 
         IERC20(token).safeApprove(address(router), type(uint256).max);
@@ -74,6 +77,8 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
         external
         returns (bool)
     {
+        require(allowedCallers[msg.sender], "AmmTradeTracker: Caller not allowed");
+
         // update internal state
         uint256 exchangeRateUsed = _getExchangeRate();
         if (exchangeRateUsed != 0) {
@@ -89,6 +94,7 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
             uint256 tokenAcc = tokenAccumulatorPerSpender[spender];
             uint256 tokenDelta = (ethDelta * tokenAcc) / ethAcc;
 
+            // update accumulators
             if (ethDelta > ethAcc) {
                 ethAccumulatorPerSpender[spender] = 0;
             } else {
@@ -111,6 +117,10 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
 
     function setCalldataCost(uint256 _calldataCost) external onlyOwner {
         calldataCost = _calldataCost;
+    }
+
+    function allowCaller(address caller, bool allowed) external onlyOwner {
+        allowedCallers[caller] = allowed;
     }
 
     function _getExchangeRate() internal view returns (uint256) {
