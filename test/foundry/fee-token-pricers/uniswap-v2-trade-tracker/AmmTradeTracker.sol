@@ -14,7 +14,6 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
     using SafeERC20 for IERC20;
 
-    uint256 public constant calldataCost = 12;
     IUniswapV2Router01 public immutable router;
     address public immutable token;
     address public immutable weth;
@@ -24,15 +23,20 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
     mapping(address => uint256) public tokenAccumulatorPerSpender;
 
     uint256 public defaultExchangeRate;
+    uint256 public calldataCost;
 
-    constructor(IUniswapV2Router01 _router, address _token, uint256 _defaultExchangeRate)
-        Ownable()
-    {
+    constructor(
+        IUniswapV2Router01 _router,
+        address _token,
+        uint256 _defaultExchangeRate,
+        uint256 _calldataCost
+    ) Ownable() {
         router = _router;
         token = _token;
         weth = _router.WETH();
 
         defaultExchangeRate = _defaultExchangeRate;
+        calldataCost = _calldataCost;
         tokenDecimals = ERC20(_token).decimals();
 
         IERC20(token).safeApprove(address(router), type(uint256).max);
@@ -100,6 +104,10 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
 
     function setDefaultExchangeRate(uint256 _defaultExchangeRate) external onlyOwner {
         defaultExchangeRate = _defaultExchangeRate;
+    }
+
+    function setCalldataCost(uint256 _calldataCost) external onlyOwner {
+        calldataCost = _calldataCost;
     }
 
     function _getExchangeRate() internal view returns (uint256) {

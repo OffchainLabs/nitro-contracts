@@ -17,6 +17,7 @@ contract AmmTradeTrackerTest is Test {
     address public constant V2_ROUTER_ARB1 = address(0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24);
     address public constant USDC_ARB1 = address(0xaf88d065e77c8cC2239327C5EDb3A432268e5831);
     uint256 public constant DEFAULT_EXCHANGE_RATE = 2500e18;
+    uint256 public constant DEFAULT_CALLDATA_COST = 12;
 
     function setUp() public {
         string memory arbRpc = vm.envString("ARB_RPC");
@@ -24,7 +25,10 @@ contract AmmTradeTrackerTest is Test {
 
         vm.prank(owner);
         tradeTracker = new AmmTradeTracker(
-            IUniswapV2Router01(V2_ROUTER_ARB1), USDC_ARB1, DEFAULT_EXCHANGE_RATE
+            IUniswapV2Router01(V2_ROUTER_ARB1),
+            USDC_ARB1,
+            DEFAULT_EXCHANGE_RATE,
+            DEFAULT_CALLDATA_COST
         );
     }
 
