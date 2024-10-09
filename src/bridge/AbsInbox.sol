@@ -6,12 +6,12 @@ pragma solidity ^0.8.4;
 
 import {
     DataTooLarge,
-    Deprecated,
     GasLimitTooLarge,
     InsufficientValue,
     InsufficientSubmissionCost,
     L1Forked,
     NotAllowedOrigin,
+    NotCodelessOrigin,
     NotRollupOrOwner,
     RetryableData
 } from "../libraries/Error.sol";
@@ -19,6 +19,7 @@ import "./IInboxBase.sol";
 import "./ISequencerInbox.sol";
 import "./IBridge.sol";
 import "../libraries/AddressAliasHelper.sol";
+import "../libraries/CallerChecker.sol";
 import "../libraries/DelegateCallAware.sol";
 import {
     L1MessageType_submitRetryableTx,
@@ -136,9 +137,14 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
 
     /// @inheritdoc IInboxBase
     function sendL2MessageFromOrigin(
-        bytes calldata
-    ) external pure returns (uint256) {
-        revert Deprecated();
+        bytes calldata messageData
+    ) external whenNotPaused onlyAllowed returns (uint256) {
+        if (_chainIdChanged()) revert L1Forked();
+        if (!CallerChecker.isCallerCodelessOrigin()) revert NotCodelessOrigin();
+        if (messageData.length > maxDataSize) revert DataTooLarge(messageData.length, maxDataSize);
+        uint256 msgNum = _deliverToBridge(L2_MSG, msg.sender, keccak256(messageData), 0);
+        emit InboxMessageDeliveredFromOrigin(msgNum);
+        return msgNum;
     }
 
     /// @inheritdoc IInboxBase
