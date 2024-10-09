@@ -72,7 +72,7 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
 
     function onGasSpent(address payable spender, uint256 gasUsed, uint256 calldataSize)
         external
-        returns (bool success)
+        returns (bool)
     {
         // update internal state
         uint256 exchangeRateUsed = _getExchangeRate();
@@ -83,6 +83,9 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
 
             // calculate amount of token spent to purchase ethDelta
             uint256 ethAcc = ethAccumulatorPerSpender[spender];
+            if (ethAcc == 0) {
+                return true;
+            }
             uint256 tokenAcc = tokenAccumulatorPerSpender[spender];
             uint256 tokenDelta = (ethDelta * tokenAcc) / ethAcc;
 
@@ -99,7 +102,7 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
             }
         }
 
-        success = true;
+        return true;
     }
 
     function setDefaultExchangeRate(uint256 _defaultExchangeRate) external onlyOwner {
