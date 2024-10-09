@@ -39,18 +39,16 @@ contract OneStepProverMath is IOneStepProver {
         mach.valueStack.push(ValueLib.newI32(output));
     }
 
-    function signExtend(uint32 a) internal pure returns (uint64) {
+    function signExtend(
+        uint32 a
+    ) internal pure returns (uint64) {
         if (a & (1 << 31) != 0) {
             return uint64(a) | uint64(0xffffffff00000000);
         }
         return uint64(a);
     }
 
-    function i64RelOp(
-        uint64 a,
-        uint64 b,
-        uint16 relop
-    ) internal pure returns (bool) {
+    function i64RelOp(uint64 a, uint64 b, uint16 relop) internal pure returns (bool) {
         if (relop == Instructions.IRELOP_EQ) {
             return (a == b);
         } else if (relop == Instructions.IRELOP_NE) {
@@ -90,10 +88,8 @@ contract OneStepProverMath is IOneStepProver {
         uint64 b64;
 
         if (
-            relop == Instructions.IRELOP_LT_S ||
-            relop == Instructions.IRELOP_GT_S ||
-            relop == Instructions.IRELOP_LE_S ||
-            relop == Instructions.IRELOP_GE_S
+            relop == Instructions.IRELOP_LT_S || relop == Instructions.IRELOP_GT_S
+                || relop == Instructions.IRELOP_LE_S || relop == Instructions.IRELOP_GE_S
         ) {
             a64 = signExtend(a);
             b64 = signExtend(b);
@@ -123,11 +119,7 @@ contract OneStepProverMath is IOneStepProver {
         mach.valueStack.push(ValueLib.newBoolean(res));
     }
 
-    function genericIUnOp(
-        uint64 a,
-        uint16 unop,
-        uint16 bits
-    ) internal pure returns (uint32) {
+    function genericIUnOp(uint64 a, uint16 unop, uint16 bits) internal pure returns (uint32) {
         require(bits == 32 || bits == 64, "WRONG USE OF genericUnOp");
         if (unop == Instructions.IUNOP_CLZ) {
             /* curbits is one-based to keep with unsigned mathematics */
@@ -480,25 +472,25 @@ contract OneStepProverMath is IOneStepProver {
         if (opcode == Instructions.I32_EQZ || opcode == Instructions.I64_EQZ) {
             impl = executeEqz;
         } else if (
-            opcode >= Instructions.I32_RELOP_BASE &&
-            opcode <= Instructions.I32_RELOP_BASE + Instructions.IRELOP_LAST
+            opcode >= Instructions.I32_RELOP_BASE
+                && opcode <= Instructions.I32_RELOP_BASE + Instructions.IRELOP_LAST
         ) {
             impl = executeI32RelOp;
         } else if (
-            opcode >= Instructions.I32_UNOP_BASE &&
-            opcode <= Instructions.I32_UNOP_BASE + Instructions.IUNOP_LAST
+            opcode >= Instructions.I32_UNOP_BASE
+                && opcode <= Instructions.I32_UNOP_BASE + Instructions.IUNOP_LAST
         ) {
             impl = executeI32UnOp;
         } else if (opcode >= Instructions.I32_ADD && opcode <= Instructions.I32_ROTR) {
             impl = executeI32BinOp;
         } else if (
-            opcode >= Instructions.I64_RELOP_BASE &&
-            opcode <= Instructions.I64_RELOP_BASE + Instructions.IRELOP_LAST
+            opcode >= Instructions.I64_RELOP_BASE
+                && opcode <= Instructions.I64_RELOP_BASE + Instructions.IRELOP_LAST
         ) {
             impl = executeI64RelOp;
         } else if (
-            opcode >= Instructions.I64_UNOP_BASE &&
-            opcode <= Instructions.I64_UNOP_BASE + Instructions.IUNOP_LAST
+            opcode >= Instructions.I64_UNOP_BASE
+                && opcode <= Instructions.I64_UNOP_BASE + Instructions.IUNOP_LAST
         ) {
             impl = executeI64UnOp;
         } else if (opcode >= Instructions.I64_ADD && opcode <= Instructions.I64_ROTR) {

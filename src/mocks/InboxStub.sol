@@ -48,7 +48,9 @@ contract InboxStub is IInboxBase, IInbox {
      * @dev This method is an optimization to avoid having to emit the entirety of the messageData in a log. Instead validators are expected to be able to parse the data from the transaction's input
      * @param messageData Data of the message being sent
      */
-    function sendL2MessageFromOrigin(bytes calldata messageData) external returns (uint256) {
+    function sendL2MessageFromOrigin(
+        bytes calldata messageData
+    ) external returns (uint256) {
         // solhint-disable-next-line avoid-tx-origin
         require(msg.sender == tx.origin, "origin only");
         uint256 msgNum = deliverToBridge(L2_MSG, msg.sender, keccak256(messageData));
@@ -61,7 +63,9 @@ contract InboxStub is IInboxBase, IInbox {
      * @dev This method can be used to send any type of message that doesn't require L1 validation
      * @param messageData Data of the message being sent
      */
-    function sendL2Message(bytes calldata messageData) external override returns (uint256) {
+    function sendL2Message(
+        bytes calldata messageData
+    ) external override returns (uint256) {
         uint256 msgNum = deliverToBridge(L2_MSG, msg.sender, keccak256(messageData));
         emit InboxMessageDelivered(msgNum, messageData);
         return msgNum;
@@ -72,12 +76,9 @@ contract InboxStub is IInboxBase, IInbox {
         address sender,
         bytes32 messageDataHash
     ) internal returns (uint256) {
-        return
-            IEthBridge(address(bridge)).enqueueDelayedMessage{value: msg.value}(
-                kind,
-                sender,
-                messageDataHash
-            );
+        return IEthBridge(address(bridge)).enqueueDelayedMessage{value: msg.value}(
+            kind, sender, messageDataHash
+        );
     }
 
     function sendUnsignedTransaction(
@@ -181,14 +182,14 @@ contract InboxStub is IInboxBase, IInbox {
         revert("NOT_IMPLEMENTED");
     }
 
-    function postUpgradeInit(IBridge _bridge) external {}
+    function postUpgradeInit(
+        IBridge _bridge
+    ) external {}
 
-    function calculateRetryableSubmissionFee(uint256, uint256)
-        external
-        pure
-        override
-        returns (uint256)
-    {
+    function calculateRetryableSubmissionFee(
+        uint256,
+        uint256
+    ) external pure override returns (uint256) {
         revert("NOT_IMPLEMENTED");
     }
 
@@ -196,11 +197,15 @@ contract InboxStub is IInboxBase, IInbox {
         revert("NOT_IMPLEMENTED");
     }
 
-    function setAllowListEnabled(bool) external pure {
+    function setAllowListEnabled(
+        bool
+    ) external pure {
         revert("NOT_IMPLEMENTED");
     }
 
-    function isAllowed(address) external pure returns (bool) {
+    function isAllowed(
+        address
+    ) external pure returns (bool) {
         revert("NOT_IMPLEMENTED");
     }
 

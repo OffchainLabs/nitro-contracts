@@ -9,9 +9,20 @@ async function main() {
     throw new Error('ROLLUP_CREATOR_ADDRESS not set')
   }
 
+  const stakeTokenAddress = process.env.STAKE_TOKEN_ADDRESS
+  if (!stakeTokenAddress) {
+    throw new Error('STAKE_TOKEN_ADDRESS not set')
+  }
+
   const [signer] = await ethers.getSigners()
 
-  await createRollup(signer, false, rollupCreatorAddress, feeToken)
+  await createRollup(
+    signer,
+    false,
+    rollupCreatorAddress,
+    feeToken,
+    stakeTokenAddress
+  )
 }
 
 main()

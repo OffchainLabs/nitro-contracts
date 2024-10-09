@@ -26,7 +26,9 @@ contract MultiCallTest {
     // solhint-disable reason-string
     // solhint-disable avoid-low-level-calls
     // solhint-disable-next-line prettier/prettier
-    fallback(bytes calldata input) external payable returns (bytes memory) {
+    fallback(
+        bytes calldata input
+    ) external payable returns (bytes memory) {
         require(input.length > 0);
         uint8 count = uint8(input[0]);
         input = input[1:];

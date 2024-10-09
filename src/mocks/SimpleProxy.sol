@@ -9,7 +9,9 @@ import "@openzeppelin/contracts/proxy/Proxy.sol";
 contract SimpleProxy is Proxy {
     address private immutable impl;
 
-    constructor(address impl_) {
+    constructor(
+        address impl_
+    ) {
         impl = impl_;
     }
 

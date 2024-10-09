@@ -14,7 +14,9 @@ contract HostioTest {
         }
     }
 
-    function transientLoadBytes32(bytes32 key) external view returns (bytes32) {
+    function transientLoadBytes32(
+        bytes32 key
+    ) external view returns (bytes32) {
         bytes32 data;
         assembly {
             data := tload(key)
@@ -71,11 +73,15 @@ contract HostioTest {
         }
     }
 
-    function accountBalance(address account) external view returns (uint256) {
+    function accountBalance(
+        address account
+    ) external view returns (uint256) {
         return account.balance;
     }
 
-    function accountCode(address account) external view returns (bytes memory) {
+    function accountCode(
+        address account
+    ) external view returns (bytes memory) {
         uint256 size = 10000;
         bytes memory code = new bytes(size);
         assembly {
@@ -86,7 +92,9 @@ contract HostioTest {
         return code;
     }
 
-    function accountCodeSize(address account) external view returns (uint256) {
+    function accountCodeSize(
+        address account
+    ) external view returns (uint256) {
         uint256 size;
         assembly {
             size := extcodesize(account)
@@ -94,7 +102,9 @@ contract HostioTest {
         return size;
     }
 
-    function accountCodehash(address account) external view returns (bytes32) {
+    function accountCodehash(
+        address account
+    ) external view returns (bytes32) {
         bytes32 hash;
         assembly {
             hash := extcodehash(account)
@@ -154,19 +164,11 @@ contract HostioTest {
         return result;
     }
 
-    function mathAddMod(
-        uint256 a,
-        uint256 b,
-        uint256 c
-    ) external pure returns (uint256) {
+    function mathAddMod(uint256 a, uint256 b, uint256 c) external pure returns (uint256) {
         return addmod(a, b, c);
     }
 
-    function mathMulMod(
-        uint256 a,
-        uint256 b,
-        uint256 c
-    ) external pure returns (uint256) {
+    function mathMulMod(uint256 a, uint256 b, uint256 c) external pure returns (uint256) {
         return mulmod(a, b, c);
     }
 
@@ -178,7 +180,9 @@ contract HostioTest {
         return msg.value;
     }
 
-    function keccak(bytes calldata preimage) external pure returns (bytes32) {
+    function keccak(
+        bytes calldata preimage
+    ) external pure returns (bytes32) {
         return keccak256(preimage);
     }
 

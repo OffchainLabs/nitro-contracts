@@ -35,20 +35,28 @@ contract BridgeStub is IBridge, IEthBridge {
     address public nativeToken;
     uint8 public nativeTokenDecimals;
 
-    function setSequencerInbox(address _sequencerInbox) external override {
+    function setSequencerInbox(
+        address _sequencerInbox
+    ) external override {
         sequencerInbox = _sequencerInbox;
         emit SequencerInboxUpdated(_sequencerInbox);
     }
 
-    function allowedDelayedInboxes(address inbox) external view override returns (bool) {
+    function allowedDelayedInboxes(
+        address inbox
+    ) external view override returns (bool) {
         return allowedDelayedInboxesMap[inbox].allowed;
     }
 
-    function allowedOutboxes(address) external pure override returns (bool) {
+    function allowedOutboxes(
+        address
+    ) external pure override returns (bool) {
         revert("NOT_IMPLEMENTED");
     }
 
-    function updateRollupAddress(IOwnable) external pure {
+    function updateRollupAddress(
+        IOwnable
+    ) external pure {
         revert("NOT_IMPLEMENTED");
     }
 
@@ -58,15 +66,14 @@ contract BridgeStub is IBridge, IEthBridge {
         bytes32 messageDataHash
     ) external payable override returns (uint256) {
         require(allowedDelayedInboxesMap[msg.sender].allowed, "NOT_FROM_INBOX");
-        return
-            addMessageToDelayedAccumulator(
-                kind,
-                sender,
-                block.number,
-                block.timestamp, // solhint-disable-line not-rely-on-time
-                block.basefee,
-                messageDataHash
-            );
+        return addMessageToDelayedAccumulator(
+            kind,
+            sender,
+            block.number,
+            block.timestamp, // solhint-disable-line not-rely-on-time
+            block.basefee,
+            messageDataHash
+        );
     }
 
     function enqueueSequencerMessage(
@@ -76,17 +83,11 @@ contract BridgeStub is IBridge, IEthBridge {
         uint256 newMessageCount
     )
         external
-        returns (
-            uint256 seqMessageIndex,
-            bytes32 beforeAcc,
-            bytes32 delayedAcc,
-            bytes32 acc
-        )
+        returns (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc)
     {
         if (
-            sequencerReportedSubMessageCount != prevMessageCount &&
-            prevMessageCount != 0 &&
-            sequencerReportedSubMessageCount != 0
+            sequencerReportedSubMessageCount != prevMessageCount && prevMessageCount != 0
+                && sequencerReportedSubMessageCount != 0
         ) {
             revert BadSequencerMessageNumber(sequencerReportedSubMessageCount, prevMessageCount);
         }
@@ -102,10 +103,10 @@ contract BridgeStub is IBridge, IEthBridge {
         sequencerInboxAccs.push(acc);
     }
 
-    function submitBatchSpendingReport(address batchPoster, bytes32 dataHash)
-        external
-        returns (uint256)
-    {
+    function submitBatchSpendingReport(
+        address batchPoster,
+        bytes32 dataHash
+    ) external returns (uint256) {
         // TODO: implement stub
     }
 
@@ -118,15 +119,8 @@ contract BridgeStub is IBridge, IEthBridge {
         bytes32 messageDataHash
     ) internal returns (uint256) {
         uint256 count = delayedInboxAccs.length;
-        bytes32 messageHash = Messages.messageHash(
-            0,
-            address(uint160(0)),
-            0,
-            0,
-            0,
-            0,
-            messageDataHash
-        );
+        bytes32 messageHash =
+            Messages.messageHash(0, address(uint160(0)), 0, 0, 0, 0, messageDataHash);
         bytes32 prevAcc = 0;
         if (count > 0) {
             prevAcc = delayedInboxAccs[count - 1];
@@ -136,11 +130,21 @@ contract BridgeStub is IBridge, IEthBridge {
     }
 
     function executeCall(
-        address,
-        uint256,
-        bytes calldata
-    ) external pure override returns (bool, bytes memory) {
-        revert("NOT_IMPLEMENTED");
+        address to,
+        uint256 value,
+        bytes calldata data
+    ) external override returns (bool success, bytes memory returnData) {
+        (success, returnData) = _executeLowLevelCall(to, value, data);
+        emit BridgeCallTriggered(msg.sender, to, value, data);
+    }
+
+    function _executeLowLevelCall(
+        address to,
+        uint256 value,
+        bytes memory data
+    ) internal returns (bool success, bytes memory returnData) {
+        // solhint-disable-next-line avoid-low-level-calls
+        (success, returnData) = to.call{value: value}(data);
     }
 
     function setDelayedInbox(address inbox, bool enabled) external override {
@@ -154,19 +158,15 @@ contract BridgeStub is IBridge, IEthBridge {
             allowedDelayedInboxesMap[inbox] = InOutInfo(allowedDelayedInboxList.length, true);
             allowedDelayedInboxList.push(inbox);
         } else {
-            allowedDelayedInboxList[info.index] = allowedDelayedInboxList[
-                allowedDelayedInboxList.length - 1
-            ];
+            allowedDelayedInboxList[info.index] =
+                allowedDelayedInboxList[allowedDelayedInboxList.length - 1];
             allowedDelayedInboxesMap[allowedDelayedInboxList[info.index]].index = info.index;
             allowedDelayedInboxList.pop();
             delete allowedDelayedInboxesMap[inbox];
         }
     }
 
-    function setOutbox(
-        address, /* outbox */
-        bool /* enabled*/
-    ) external pure override {
+    function setOutbox(address, /* outbox */ bool /* enabled*/ ) external pure override {
         revert("NOT_IMPLEMENTED");
     }
 
@@ -184,7 +184,9 @@ contract BridgeStub is IBridge, IEthBridge {
 
     function acceptFundsFromOldBridge() external payable {}
 
-    function initialize(IOwnable) external pure {
+    function initialize(
+        IOwnable
+    ) external pure {
         revert("NOT_IMPLEMENTED");
     }
 }
