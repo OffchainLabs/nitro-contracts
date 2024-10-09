@@ -29,7 +29,8 @@ import {
     InvalidHeaderFlag,
     NativeTokenMismatch,
     BadMaxTimeVariation,
-    Deprecated
+    Deprecated,
+    CannotSetFeeTokenPricer
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./IInboxBase.sol";
@@ -117,6 +118,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     /// @inheritdoc ISequencerInbox
     address public batchPosterManager;
 
+    /// @inheritdoc ISequencerInbox
+    IFeeTokenPricer public feeTokenPricer;
+
     // On L1 this should be set to 117964: 90% of Geth's 128KB tx size limit, leaving ~13KB for proving
     uint256 public immutable maxDataSize;
     uint256 internal immutable deployTimeChainId = block.chainid;
@@ -178,7 +182,8 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     function initialize(
         IBridge bridge_,
-        ISequencerInbox.MaxTimeVariation calldata maxTimeVariation_
+        ISequencerInbox.MaxTimeVariation calldata maxTimeVariation_,
+        IFeeTokenPricer feeTokenPricer_
     ) external onlyDelegated {
         if (bridge != IBridge(address(0))) revert AlreadyInit();
         if (bridge_ == IBridge(address(0))) revert HadZeroInit();
@@ -199,6 +204,11 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         rollup = bridge_.rollup();
 
         _setMaxTimeVariation(maxTimeVariation_);
+
+        if (!isUsingFeeToken && feeTokenPricer_ != IFeeTokenPricer(address(0))) {
+            revert CannotSetFeeTokenPricer();
+        }
+        feeTokenPricer = feeTokenPricer_;
     }
 
     /// @notice Allows the rollup owner to sync the rollup address
@@ -460,7 +470,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         // same as using calldata, we only submit spending report if the caller is the origin of the tx
         // such that one cannot "double-claim" batch posting refund in the same tx
         // solhint-disable-next-line avoid-tx-origin
-        if (msg.sender == tx.origin && !isUsingFeeToken) {
+        if (msg.sender == tx.origin) {
             submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, blobGas);
         }
     }
@@ -641,19 +651,37 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 gasPrice,
         uint256 extraGas
     ) internal {
+        // When using fee token batch poster needs to be reimbursed on the child chain in the fee token. For that reason
+        // we need to get the exchange rate between the child chain fee token and the parent chain's native token. Pricer
+        // is required to get the exchange rate. If the pricer is not set, then we do not send batch reports and batch poster
+        // never gets reimbursed
+        IFeeTokenPricer _feeTokenPricer = feeTokenPricer;
+        if (isUsingFeeToken && address(_feeTokenPricer) == address(0)) {
+            return;
+        }
+
         // report the account who paid the gas (tx.origin) for the tx as batch poster
         // if msg.sender is used and is a contract, it might not be able to spend the refund on l2
         // solhint-disable-next-line avoid-tx-origin
         address batchPoster = tx.origin;
 
-        // this msg isn't included in the current sequencer batch, but instead added to
-        // the delayed messages queue that is yet to be included
         if (hostChainIsArbitrum) {
             // Include extra gas for the host chain's L1 gas charging
             uint256 l1Fees = ArbGasInfo(address(0x6c)).getCurrentTxL1GasFees();
             extraGas += l1Fees / block.basefee;
         }
         require(extraGas <= type(uint64).max, "EXTRA_GAS_NOT_UINT64");
+
+        if (isUsingFeeToken && address(_feeTokenPricer) != address(0)) {
+            // gasPrice is originally denominated in parent chain's native token and we want to scale it to child
+            // chain's fee token. For that we need the exchange rate which tells us how many child chain's fee tokens
+            // we get for 1 parent chain's native token. Exchange rate itself should be denominated in 18 decimals.
+            uint256 exchangeRate = _feeTokenPricer.getExchangeRate();
+            gasPrice = (gasPrice * exchangeRate) / 1e18;
+        }
+
+        // this msg isn't included in the current sequencer batch, but instead added to
+        // the delayed messages queue that is yet to be included
         bytes memory spendingReportMsg = abi.encodePacked(
             block.timestamp,
             batchPoster,
@@ -698,8 +726,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
         totalDelayedMessagesRead = afterDelayedMessagesRead;
 
-        if (calldataLengthPosted > 0 && !isUsingFeeToken) {
-            // only report batch poster spendings if chain is using ETH as native currency
+        if (calldataLengthPosted > 0) {
             submitBatchSpendingReport(dataHash, seqMessageIndex, block.basefee, 0);
         }
     }
@@ -790,6 +817,16 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     function setBatchPosterManager(address newBatchPosterManager) external onlyRollupOwner {
         batchPosterManager = newBatchPosterManager;
         emit OwnerFunctionCalled(5);
+    }
+
+    /// @inheritdoc ISequencerInbox
+    function setFeeTokenPricer(IFeeTokenPricer feeTokenPricer_) external onlyRollupOwner {
+        if (!isUsingFeeToken) {
+            revert CannotSetFeeTokenPricer();
+        }
+
+        feeTokenPricer = feeTokenPricer_;
+        emit OwnerFunctionCalled(6);
     }
 
     function isValidKeysetHash(bytes32 ksHash) external view returns (bool) {

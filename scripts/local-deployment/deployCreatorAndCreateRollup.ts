@@ -41,6 +41,10 @@ async function main() {
   if (!feeToken) {
     feeToken = ethers.constants.AddressZero
   }
+  let feeTokenPricer = process.env.FEE_TOKEN_PRICER_ADDRESS as string
+  if (!feeTokenPricer) {
+    feeTokenPricer = ethers.constants.AddressZero
+  }
 
   /// deploy templates and rollup creator
   console.log('Deploy RollupCreator')
@@ -74,7 +78,8 @@ async function main() {
     deployerWallet,
     true,
     contracts.rollupCreator.address,
-    feeToken
+    feeToken,
+    feeTokenPricer
   )
 
   if (!result) {

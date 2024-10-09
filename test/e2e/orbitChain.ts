@@ -851,6 +851,7 @@ describe('Orbit Chain', () => {
       nativeToken: nativeTokenAddress,
       deployFactoriesToL2,
       maxFeePerGasForRetryables,
+      feeTokenPricer: ethers.constants.AddressZero,
     }
 
     /// deploy it

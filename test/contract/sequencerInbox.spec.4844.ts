@@ -275,12 +275,16 @@ describe('SequencerInbox', async () => {
       .connect(user)
     await (await bridgeAdmin.initialize(rollupMock.address)).wait()
     await (
-      await sequencerInbox.initialize(bridgeProxy.address, {
-        delayBlocks: maxDelayBlocks,
-        delaySeconds: maxDelayTime,
-        futureBlocks: 10,
-        futureSeconds: 3000,
-      })
+      await sequencerInbox.initialize(
+        bridgeProxy.address,
+        {
+          delayBlocks: maxDelayBlocks,
+          delaySeconds: maxDelayTime,
+          futureBlocks: 10,
+          futureSeconds: 3000,
+        },
+        constants.AddressZero
+      )
     ).wait()
 
     const inbox = await inboxFac.attach(inboxProxy.address).connect(user)

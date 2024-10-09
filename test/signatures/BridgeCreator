@@ -1,5 +1,5 @@
 {
-  "createBridge(address,address,address,(uint256,uint256,uint256,uint256))": "b4a5cc34",
+  "createBridge(address,address,address,(uint256,uint256,uint256,uint256),address)": "3730f526",
   "erc20BasedTemplates()": "76768ab9",
   "ethBasedTemplates()": "11f02227",
   "owner()": "8da5cb5b",

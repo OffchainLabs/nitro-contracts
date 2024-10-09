@@ -116,6 +116,7 @@ contract BridgeCreatorTest is Test {
         address proxyAdmin = address(300);
         address rollup = address(301);
         address nativeToken = address(0);
+        address feeTokenPricer = address(0);
         ISequencerInbox.MaxTimeVariation memory timeVars = ISequencerInbox.MaxTimeVariation(
             10,
             20,
@@ -128,7 +129,8 @@ contract BridgeCreatorTest is Test {
             proxyAdmin,
             rollup,
             nativeToken,
-            timeVars
+            timeVars,
+            IFeeTokenPricer(feeTokenPricer)
         );
         (
             IBridge bridge,
@@ -187,6 +189,7 @@ contract BridgeCreatorTest is Test {
         address nativeToken = address(
             new ERC20PresetFixedSupply("Appchain Token", "App", 1_000_000, address(this))
         );
+        address feeTokenPricer = makeAddr("feeTokenPricer");
         ISequencerInbox.MaxTimeVariation memory timeVars = ISequencerInbox.MaxTimeVariation(
             10,
             20,
@@ -199,7 +202,8 @@ contract BridgeCreatorTest is Test {
             proxyAdmin,
             rollup,
             nativeToken,
-            timeVars
+            timeVars,
+            IFeeTokenPricer(feeTokenPricer)
         );
         (
             IBridge bridge,

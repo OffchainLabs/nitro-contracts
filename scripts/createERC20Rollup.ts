@@ -34,12 +34,18 @@ async function main() {
     throw new Error('ROLLUP_CREATOR_ADDRESS not set')
   }
 
-  console.log('Creating new rollup with', customFeeTokenAddress, 'as fee token')
+  let feeTokenPricer = process.env.FEE_TOKEN_PRICER_ADDRESS
+  if(!feeTokenPricer) {
+    feeTokenPricer = ethers.constants.AddressZero
+  }
+
+  console.log('Creating new rollup with', customFeeTokenAddress, 'as fee token and', feeTokenPricer, 'as fee token pricer')
   await createRollup(
     deployer,
     false,
     rollupCreatorAddress,
-    customFeeTokenAddress
+    customFeeTokenAddress,
+    feeTokenPricer
   )
 }
 

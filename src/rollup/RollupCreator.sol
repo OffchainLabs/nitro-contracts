@@ -42,6 +42,7 @@ contract RollupCreator is Ownable {
         uint256 maxFeePerGasForRetryables;
         address[] batchPosters;
         address batchPosterManager;
+        IFeeTokenPricer feeTokenPricer;
     }
 
     BridgeCreator public bridgeCreator;
@@ -144,7 +145,8 @@ contract RollupCreator is Ownable {
             address(proxyAdmin),
             address(rollup),
             deployParams.nativeToken,
-            deployParams.config.sequencerInboxMaxTimeVariation
+            deployParams.config.sequencerInboxMaxTimeVariation,
+            deployParams.feeTokenPricer
         );
 
         IChallengeManager challengeManager = IChallengeManager(
