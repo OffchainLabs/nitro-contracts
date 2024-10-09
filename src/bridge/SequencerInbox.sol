@@ -640,18 +640,6 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         );
     }
 
-    // CHRIS: TODO: things to document publicly - not code
-    //            : * batch poster needs to cover cost of trade + l2->l1 message
-    //            : * batch poster shouldt post too often, or else users will pay high overhead
-    //            : * l1 base fee/ price per unit needs to be set/read in child chain token value
-    //
-
-    // CHRIS: TODO: hostChainIsArbitrum is checked for l3s on arbitrum so that l1 cost can be charged for within nitro.
-    // This wont work for l4s and it wont work for l3s that are settling to a different chain eg Base.
-    // In the Base case we need to find another way to guess at the l1 cost I think?
-
-    // CHRIS: TODO: // include re-etrancy in non best practice. Worst that could happen is that the batch submission reports arrive in the wrong order
-
     /// @dev   Submit a batch spending report message so that the batch poster can be reimbursed on the rollup
     ///        This function expect msg.sender is tx.origin, and will always record tx.origin as the spender
     /// @param dataHash The hash of the message the spending report is being submitted for
@@ -663,8 +651,6 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 gasPrice,
         uint256 extraGas
     ) internal {
-        // check if batch report is supposed to be sent
-        // Goran TODO: Review if we want to keep this check here, or use it before this function is called
         // When using fee token batch poster needs to be reimbursed on the child chain in the fee token. For that reason
         // we need to get the exchange rate between the child chain fee token and the parent chain's native token. Pricer
         // is required to get the exchange rate. If the pricer is not set, then we do not send batch reports and batch poster
