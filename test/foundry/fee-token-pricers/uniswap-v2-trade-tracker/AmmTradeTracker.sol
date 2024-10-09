@@ -14,6 +14,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
     using SafeERC20 for IERC20;
 
+    uint256 public constant calldataCost = 12;
     IUniswapV2Router01 public immutable router;
     address public immutable token;
     address public immutable weth;
@@ -72,18 +73,21 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
         // update internal state
         uint256 exchangeRateUsed = _getExchangeRate();
         if (exchangeRateUsed != 0) {
-            gasUsed += calldataSize * 16;
+            // calculate amount of ETH spent
+            gasUsed += calldataSize * calldataCost;
             uint256 ethDelta = gasUsed * block.basefee;
-            uint256 tokenDelta = ethDelta * exchangeRateUsed / 1e18;
 
+            // calculate amount of token spent to purchase ethDelta
             uint256 ethAcc = ethAccumulatorPerSpender[spender];
+            uint256 tokenAcc = tokenAccumulatorPerSpender[spender];
+            uint256 tokenDelta = (ethDelta * tokenAcc) / ethAcc;
+
             if (ethDelta > ethAcc) {
                 ethAccumulatorPerSpender[spender] = 0;
             } else {
                 ethAccumulatorPerSpender[spender] -= ethDelta;
             }
 
-            uint256 tokenAcc = tokenAccumulatorPerSpender[spender];
             if (tokenDelta > tokenAcc) {
                 tokenAccumulatorPerSpender[spender] = 0;
             } else {
