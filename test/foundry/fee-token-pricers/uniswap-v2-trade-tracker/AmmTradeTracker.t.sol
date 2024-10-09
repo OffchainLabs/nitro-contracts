@@ -3,6 +3,11 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 import {AmmTradeTracker, IUniswapV2Router01, IERC20} from "./AmmTradeTracker.sol";
+import "../../../../src/bridge/SequencerInbox.sol";
+import {ERC20Bridge} from "../../../../src/bridge/ERC20Bridge.sol";
+import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
+
+import "../../util/TestUtil.sol";
 
 contract AmmTradeTrackerTest is Test {
     AmmTradeTracker public tradeTracker;
@@ -14,7 +19,8 @@ contract AmmTradeTrackerTest is Test {
     uint256 public constant DEFAULT_EXCHANGE_RATE = 2500e18;
 
     function setUp() public {
-        vm.createSelectFork(vm.envString("ARB"), 261_666_155);
+        string memory arbRpc = vm.envString("ARB_RPC");
+        vm.createSelectFork(arbRpc, 261_666_155);
 
         vm.prank(owner);
         tradeTracker = new AmmTradeTracker(
@@ -46,6 +52,46 @@ contract AmmTradeTrackerTest is Test {
         assertEq(actualExchangeRate, expectedExchangeRate);
     }
 
+    function testFork_postBatch() public {
+        (SequencerInbox seqInbox,) = _deployFeeTokenRollup();
+
+        // swap some tokens
+        uint256 usdcAmount = 250e6;
+        uint256 minEthReceived = 0.1 ether;
+        _swapTokenToEth(usdcAmount, minEthReceived);
+
+        // snapshot values before batch has been posted
+        uint256 ethAccBefore = tradeTracker.ethAccumulatorPerSpender(batchPosterOperator);
+        uint256 tokenAccBefore = tradeTracker.tokenAccumulatorPerSpender(batchPosterOperator);
+        vm.prank(batchPosterOperator, batchPosterOperator);
+        uint256 exchangeRateBefore = tradeTracker.getExchangeRate();
+
+        // set 0.1 gwei basefee and 30 gwei TX L1 fees
+        uint256 basefee = 100_000_000;
+        vm.fee(basefee);
+        uint256 l1Fees = 30_000_000_000;
+        vm.mockCall(
+            address(0x6c), abi.encodeWithSignature("getCurrentTxL1GasFees()"), abi.encode(l1Fees)
+        );
+
+        // post batch
+        address feeTokenPricer = address(seqInbox.feeTokenPricer());
+        bytes memory batchData = hex"80567890";
+        vm.prank(batchPosterOperator, batchPosterOperator);
+        seqInbox.addSequencerL2BatchFromOrigin(0, batchData, 0, IGasRefunder(feeTokenPricer), 0, 1);
+
+        // snapshot values after batch has been posted
+        uint256 ethAccAfter = tradeTracker.ethAccumulatorPerSpender(batchPosterOperator);
+        uint256 tokenAccAfter = tradeTracker.tokenAccumulatorPerSpender(batchPosterOperator);
+        vm.prank(batchPosterOperator, batchPosterOperator);
+        uint256 exchangeRateAfter = tradeTracker.getExchangeRate();
+
+        // checks
+        assertTrue(ethAccAfter < ethAccBefore);
+        assertTrue(tokenAccAfter < tokenAccBefore);
+        assertTrue(exchangeRateAfter != exchangeRateBefore);
+    }
+
     function _swapTokenToEth(uint256 tokenAmount, uint256 minEthReceived)
         internal
         returns (uint256 ethReceived)
@@ -56,5 +102,54 @@ contract AmmTradeTrackerTest is Test {
         IERC20(USDC_ARB1).approve(address(tradeTracker), tokenAmount);
         ethReceived = tradeTracker.swapTokenToEth(tokenAmount, minEthReceived);
         vm.stopPrank();
+    }
+
+    function _deployFeeTokenRollup() internal returns (SequencerInbox, ERC20Bridge) {
+        RollupMock rollupMock = new RollupMock(owner);
+        ERC20Bridge bridgeImpl = new ERC20Bridge();
+        address proxyAdmin = makeAddr("proxyAdmin");
+        ERC20Bridge bridge = ERC20Bridge(
+            address(new TransparentUpgradeableProxy(address(bridgeImpl), proxyAdmin, ""))
+        );
+        address nativeToken = address(new ERC20PresetMinterPauser("Appchain Token", "App"));
+
+        bridge.initialize(IOwnable(address(rollupMock)), nativeToken);
+        vm.prank(owner);
+        bridge.setDelayedInbox(makeAddr("inbox"), true);
+
+        /// this will result in 'hostChainIsArbitrum = true'
+        vm.mockCall(
+            address(100),
+            abi.encodeWithSelector(ArbSys.arbOSVersion.selector),
+            abi.encode(uint256(11))
+        );
+        uint256 maxDataSize = 10_000;
+        SequencerInbox seqInboxImpl = new SequencerInbox(maxDataSize, IReader4844(address(0)), true);
+        SequencerInbox seqInbox = SequencerInbox(
+            address(new TransparentUpgradeableProxy(address(seqInboxImpl), proxyAdmin, ""))
+        );
+        ISequencerInbox.MaxTimeVariation memory maxTimeVariation = ISequencerInbox.MaxTimeVariation({
+            delayBlocks: 10,
+            futureBlocks: 10,
+            delaySeconds: 100,
+            futureSeconds: 100
+        });
+        seqInbox.initialize(bridge, maxTimeVariation, IFeeTokenPricer(tradeTracker));
+
+        vm.prank(owner);
+        seqInbox.setIsBatchPoster(batchPosterOperator, true);
+
+        vm.prank(owner);
+        bridge.setSequencerInbox(address(seqInbox));
+
+        return (seqInbox, bridge);
+    }
+}
+
+contract RollupMock {
+    address public immutable owner;
+
+    constructor(address _owner) {
+        owner = _owner;
     }
 }
