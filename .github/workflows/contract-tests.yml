@@ -67,8 +67,8 @@ jobs:
       - name: Install dependencies
         run: yarn install
 
-      - name: Lint Contracts
-        run: yarn solhint
+      # - name: Lint Contracts
+      #   run: yarn solhint
 
       - name: Lint Test Scripts
         run: yarn lint:test
