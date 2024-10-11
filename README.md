@@ -28,7 +28,7 @@ If you want to use the already deployed `RollupCreator`, you can update the `ROL
 
 ### 3. Deploy Rollup Creator and initialize the espresso contracts
 
-Change the `config.ts.example` to `config.ts` and run the following command to deploy the rollup creator and initialize the espresso contracts.
+Run the following command to deploy the rollup creator and initialize the espresso contracts.
 
 `npx hardhat run scripts/deployment.ts --network sepolia`
 
@@ -36,7 +36,7 @@ This will deploy the rollup creator and initialize the espresso contracts.
 
 ### 4. Create the rollup
 
-Change the `config.ts.example` to `config.ts` and run the following command to create the rollup if you haven't already done so.
+Change the `config.ts.example` to `config.ts` and update the config specific to your rollup. Then run the following command to create the rollup if you haven't already done so.
 
 `npx hardhat run scripts/createEthRollup.ts --network sepolia`
 
