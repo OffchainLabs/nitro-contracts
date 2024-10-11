@@ -51,12 +51,12 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
     uint128 public constant OUTBOX_VERSION = 2;
 
     // transient storage vars for L2ToL1Context
-    uint256 transient contextL2Block;
-    uint256 transient contextTimestamp;
-    bytes32 transient contextOutputId;
-    address transient contextSender;
-    uint256 transient contextL1Block;
-    uint256 transient contextWithdrawalAmount;
+    uint256 internal transient contextL2Block;
+    uint256 internal transient contextTimestamp;
+    bytes32 internal transient contextOutputId;
+    address internal transient contextSender;
+    uint256 internal transient contextL1Block;
+    uint256 internal transient contextWithdrawalAmount;
 
     function initialize(IBridge _bridge) external onlyDelegated {
         if (address(_bridge) == address(0)) revert HadZeroInit();
