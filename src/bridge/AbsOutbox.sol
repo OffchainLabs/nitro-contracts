@@ -2,7 +2,7 @@
 // For license information, see https://github.com/nitro/blob/master/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.28;
 
 import {
     AlreadyInit,
@@ -45,10 +45,8 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         uint256 withdrawalAmount;
     }
 
-    // Note, these variables are set and then wiped during a single transaction.
-    // Therefore their values don't need to be maintained, and their slots will
-    // hold default values (which are interpreted as empty values) outside of transactions
-    L2ToL1Context internal context;
+    // @dev Deprecated in place of transient storage
+    L2ToL1Context internal __context;
 
     // default context values to be used in storage instead of zero, to save on storage refunds
     // it is assumed that arb-os never assigns these values to a valid leaf to be redeemed
@@ -80,14 +78,14 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
 
     function postUpgradeInit() external onlyDelegated onlyProxyOwner {
         // prevent postUpgradeInit within a withdrawal
-        if (context.l2Block != L2BLOCK_DEFAULT_CONTEXT) revert BadPostUpgradeInit();
-        context = L2ToL1Context({
-            l2Block: L2BLOCK_DEFAULT_CONTEXT,
-            l1Block: L1BLOCK_DEFAULT_CONTEXT,
-            timestamp: TIMESTAMP_DEFAULT_CONTEXT,
-            outputId: OUTPUTID_DEFAULT_CONTEXT,
-            sender: SENDER_DEFAULT_CONTEXT,
-            withdrawalAmount: _defaultContextAmount()
+        if (__context.l2Block != type(uint128).max) revert BadPostUpgradeInit();
+        __context = L2ToL1Context({
+            l2Block: uint128(0),
+            l1Block: uint96(0),
+            timestamp: uint128(0),
+            outputId: bytes32(0),
+            sender: address(0),
+            withdrawalAmount: uint256(0)
         });
     }
 
