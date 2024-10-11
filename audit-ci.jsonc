@@ -65,6 +65,10 @@
     // Server-Side Request Forgery in axios
     "GHSA-8hc4-vh64-cxmj",
     // Regular Expression Denial of Service (ReDoS) in micromatch
-    "GHSA-952p-6rrq-rcjv"
+    "GHSA-952p-6rrq-rcjv",
+    // Elliptic's verify function omits validation
+    "GHSA-434g-2637-qmqr",
+    // cookie accepts cookie name, path, and domain with out of bounds characters
+    "GHSA-pxg6-pf52-xh8x"
   ]
 }
