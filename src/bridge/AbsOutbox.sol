@@ -48,30 +48,11 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
     // @dev Deprecated in place of transient storage
     L2ToL1Context internal __context;
 
-    // default context values to be used in storage instead of zero, to save on storage refunds
-    // it is assumed that arb-os never assigns these values to a valid leaf to be redeemed
-    uint128 private constant L2BLOCK_DEFAULT_CONTEXT = type(uint128).max;
-    uint96 private constant L1BLOCK_DEFAULT_CONTEXT = type(uint96).max;
-    uint128 private constant TIMESTAMP_DEFAULT_CONTEXT = type(uint128).max;
-    bytes32 private constant OUTPUTID_DEFAULT_CONTEXT = bytes32(type(uint256).max);
-    address private constant SENDER_DEFAULT_CONTEXT = address(type(uint160).max);
-
     uint128 public constant OUTBOX_VERSION = 2;
 
     function initialize(IBridge _bridge) external onlyDelegated {
         if (address(_bridge) == address(0)) revert HadZeroInit();
         if (address(bridge) != address(0)) revert AlreadyInit();
-        // address zero is returned if no context is set, but the values used in storage
-        // are non-zero to save users some gas (as storage refunds are usually maxed out)
-        // EIP-1153 would help here
-        context = L2ToL1Context({
-            l2Block: L2BLOCK_DEFAULT_CONTEXT,
-            l1Block: L1BLOCK_DEFAULT_CONTEXT,
-            timestamp: TIMESTAMP_DEFAULT_CONTEXT,
-            outputId: OUTPUTID_DEFAULT_CONTEXT,
-            sender: SENDER_DEFAULT_CONTEXT,
-            withdrawalAmount: _defaultContextAmount()
-        });
         bridge = _bridge;
         rollup = address(_bridge.rollup());
     }
