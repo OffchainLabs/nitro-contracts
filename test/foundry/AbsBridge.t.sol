@@ -454,7 +454,7 @@ abstract contract AbsBridgeTest is Test {
     }
 
     function test_setOutbox_revert_InvalidOutboxSet() public {
-        address invalidOutbox = address(type(uint160).max);
+        address invalidOutbox = address(0);
 
         // setOutbox shall revert
         vm.expectRevert(abi.encodeWithSelector(InvalidOutboxSet.selector, invalidOutbox));
