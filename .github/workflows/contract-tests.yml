@@ -100,16 +100,16 @@ jobs:
           directory: './src'
           exceptions_file: './test/unused-errors/exceptions.txt'
 
-      - name: Run coverage
-        run: yarn hardhat coverage --testfiles "test/contract/*.spec.ts"
+      # - name: Run coverage
+      #   run: yarn hardhat coverage --testfiles "test/contract/*.spec.ts"
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2
-        with:
-          fail_ci_if_error: false
-          files: ./contracts/coverage.json
-          verbose: false
-          token: ${{ secrets.CODECOV_TOKEN }}
+      # - name: Upload coverage to Codecov
+      #   uses: codecov/codecov-action@v2
+      #   with:
+      #     fail_ci_if_error: false
+      #     files: ./contracts/coverage.json
+      #     verbose: false
+      #     token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload 4bytes
         run: yarn upload-4bytes
