@@ -41,13 +41,16 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
     address[] public allowedDelayedInboxList;
     address[] public allowedOutboxList;
 
-    address private _activeOutbox;
+    // @dev deprecated
+    address private __activeOutbox;
 
     IOwnable public rollup;
     address public sequencerInbox;
 
     address public nativeToken;
     uint8 public nativeTokenDecimals;
+
+    address internal transient currentActiveOutbox;
 
     modifier onlyRollupOrOwner() {
         if (msg.sender != address(rollup)) {
@@ -70,10 +73,7 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
     bytes32[] public override sequencerInboxAccs;
     uint256 public override sequencerReportedSubMessageCount;
 
-    address private constant EMPTY_ACTIVEOUTBOX = address(type(uint160).max);
-
     function initialize(IOwnable rollup_) external initializer {
-        _activeOutbox = EMPTY_ACTIVEOUTBOX;
         rollup = rollup_;
     }
 
@@ -82,8 +82,7 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
     }
 
     function activeOutbox() public view returns (address) {
-        if (_activeOutbox == EMPTY_ACTIVEOUTBOX) return address(uint160(0));
-        return _activeOutbox;
+        return currentActiveOutbox;
     }
 
     function allowedDelayedInboxes(address inbox) external view override returns (bool) {
@@ -183,15 +182,17 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
     ) external override returns (bool success, bytes memory returnData) {
         if (!allowedOutboxesMap[msg.sender].allowed) revert NotOutbox(msg.sender);
         if (data.length > 0 && !to.isContract()) revert NotContract(to);
-        address prevOutbox = _activeOutbox;
-        _activeOutbox = msg.sender;
-        // We set and reset active outbox around external call so activeOutbox remains valid during call
+
+        // We set and reset active outbox around external call so activeOutbox() remains valid during call
+        address prevOutbox = currentActiveOutbox;
+        currentActiveOutbox = msg.sender;
 
         // We use a low level call here since we want to bubble up whether it succeeded or failed to the caller
         // rather than reverting on failure as well as allow contract and non-contract calls
         // solhint-disable-next-line avoid-low-level-calls
         (success, returnData) = to.call{value: value}(data);
-        _activeOutbox = prevOutbox;
+        
+        currentActiveOutbox = prevOutbox;
         emit BridgeCallTriggered(msg.sender, to, value, data);
     }
 

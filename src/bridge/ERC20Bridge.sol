@@ -45,7 +45,6 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
     function initialize(IOwnable rollup_, address nativeToken_) external initializer onlyDelegated {
         if (nativeToken_ == address(0)) revert InvalidTokenSet(nativeToken_);
         nativeToken = nativeToken_;
-        _activeOutbox = EMPTY_ACTIVEOUTBOX;
         rollup = rollup_;
 
         // store number of decimals used by native token
