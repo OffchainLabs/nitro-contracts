@@ -50,12 +50,13 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
 
     uint128 public constant OUTBOX_VERSION = 2;
 
-    // transient storage vars for L2ToL1Context
-    uint256 internal transient contextL2Block;
-    uint256 internal transient contextTimestamp;
+    // Transient storage vars for context, matching L2ToL1Context slot assignment
+    // Using structs in transient storage is not supported in 0.8.28
+    uint128 internal transient contextL2Block;
+    uint128 internal transient contextTimestamp;
     bytes32 internal transient contextOutputId;
     address internal transient contextSender;
-    uint256 internal transient contextL1Block;
+    uint96 internal transient contextL1Block;
     uint256 internal transient contextWithdrawalAmount;
 
     function initialize(IBridge _bridge) external onlyDelegated {
@@ -100,17 +101,17 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
 
     /// @inheritdoc IOutbox
     function l2ToL1Block() external view returns (uint256) {
-        return contextL2Block;
+        return uint256(contextL2Block);
     }
 
     /// @inheritdoc IOutbox
     function l2ToL1EthBlock() external view returns (uint256) {
-        return contextL1Block;
+        return uint256(contextL1Block);
     }
 
     /// @inheritdoc IOutbox
     function l2ToL1Timestamp() external view returns (uint256) {
-        return contextTimestamp;
+        return uint256(contextTimestamp);
     }
 
     /// @notice batch number is deprecated and now always returns 0
@@ -179,11 +180,11 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
 
         // we temporarily store the previous values so the outbox can naturally
         // unwind itself when there are nested calls to `executeTransaction`
-        uint256 prevL2Block = contextL2Block;
-        uint256 prevTimestamp = contextTimestamp;
+        uint128 prevL2Block = contextL2Block;
+        uint128 prevTimestamp = contextTimestamp;
         bytes32 prevOutputId = contextOutputId;
         address prevSender = contextSender;
-        uint256 prevL1Block = contextL1Block;
+        uint96 prevL1Block = contextL1Block;
         uint256 prevWithdrawalAmount = contextWithdrawalAmount;
 
         // get amount to unlock based on provided value. It might differ in case
@@ -191,11 +192,11 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         uint256 amountToUnlock = _getAmountToUnlock(value);
 
         // store the new values into transient vars for the `executeTransaction` call
-        contextL2Block = l2Block;
-        contextTimestamp = l2Timestamp;
+        contextL2Block = uint128(l2Block);
+        contextTimestamp = uint128(l2Timestamp);
         contextOutputId = bytes32(outputId);
         contextSender = l2Sender;
-        contextL1Block = l1Block;
+        contextL1Block = uint96(l1Block);
         contextWithdrawalAmount = _amountToSetInContext(amountToUnlock);
 
         // set and reset vars around execution so they remain valid during call
