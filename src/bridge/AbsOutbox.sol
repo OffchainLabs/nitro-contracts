@@ -66,6 +66,7 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         rollup = address(_bridge.rollup());
     }
 
+    /// @inheritdoc IOutbox
     function postUpgradeInit() external onlyDelegated onlyProxyOwner {
         // prevent postUpgradeInit within a withdrawal
         if (__context.l2Block != type(uint128).max) revert BadPostUpgradeInit();

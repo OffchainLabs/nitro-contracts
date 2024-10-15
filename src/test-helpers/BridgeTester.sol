@@ -2,7 +2,7 @@
 // For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
@@ -13,7 +13,8 @@ import {
     NotDelayedInbox,
     NotSequencerInbox,
     NotOutbox,
-    InvalidOutboxSet
+    InvalidOutboxSet,
+    BadPostUpgradeInit
 } from "../libraries/Error.sol";
 import "../bridge/IBridge.sol";
 import "../bridge/IEthBridge.sol";
@@ -60,6 +61,12 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
             }
         }
         _;
+    }
+
+    function postUpgradeInit() external onlyDelegated onlyProxyOwner {
+        // prevent postUpgradeInit within a withdrawal
+        if (__activeOutbox != address(type(uint160).max)) revert BadPostUpgradeInit();
+        __activeOutbox = address(0);
     }
 
     function setSequencerInbox(address _sequencerInbox) external override onlyRollupOrOwner {

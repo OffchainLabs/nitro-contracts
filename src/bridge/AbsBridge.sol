@@ -70,6 +70,7 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
         _;
     }
 
+    /// @inheritdoc IBridge
     function postUpgradeInit() external onlyDelegated onlyProxyOwner {
         // prevent postUpgradeInit within a withdrawal
         if (__activeOutbox != address(type(uint160).max)) revert BadPostUpgradeInit();
