@@ -14,7 +14,8 @@ import {
     NotSequencerInbox,
     NotOutbox,
     InvalidOutboxSet,
-    BadSequencerMessageNumber
+    BadSequencerMessageNumber,
+    BadPostUpgradeInit
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./Messages.sol";
@@ -67,6 +68,12 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
             }
         }
         _;
+    }
+
+    function postUpgradeInit() external onlyDelegated onlyProxyOwner {
+        // prevent postUpgradeInit within a withdrawal
+        if (__activeOutbox != address(type(uint160).max)) revert BadPostUpgradeInit();
+        __activeOutbox = address(0);
     }
 
     /// @notice Allows the rollup owner to set another rollup address
