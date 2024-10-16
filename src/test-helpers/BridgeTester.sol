@@ -2,7 +2,7 @@
 // For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
@@ -13,7 +13,8 @@ import {
     NotDelayedInbox,
     NotSequencerInbox,
     NotOutbox,
-    InvalidOutboxSet
+    InvalidOutboxSet,
+    BadPostUpgradeInit
 } from "../libraries/Error.sol";
 import "../bridge/IBridge.sol";
 import "../bridge/IEthBridge.sol";
@@ -41,13 +42,16 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
     address[] public allowedDelayedInboxList;
     address[] public allowedOutboxList;
 
-    address private _activeOutbox;
+    // @dev deprecated
+    address private __activeOutbox;
 
     IOwnable public rollup;
     address public sequencerInbox;
 
     address public nativeToken;
     uint8 public nativeTokenDecimals;
+
+    address internal transient currentActiveOutbox;
 
     modifier onlyRollupOrOwner() {
         if (msg.sender != address(rollup)) {
@@ -57,6 +61,12 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
             }
         }
         _;
+    }
+
+    function postUpgradeInit() external onlyDelegated onlyProxyOwner {
+        // prevent postUpgradeInit within a withdrawal
+        if (__activeOutbox != address(type(uint160).max)) revert BadPostUpgradeInit();
+        __activeOutbox = address(0);
     }
 
     function setSequencerInbox(
@@ -72,12 +82,9 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
     bytes32[] public override sequencerInboxAccs;
     uint256 public override sequencerReportedSubMessageCount;
 
-    address private constant EMPTY_ACTIVEOUTBOX = address(type(uint160).max);
-
     function initialize(
         IOwnable rollup_
     ) external initializer {
-        _activeOutbox = EMPTY_ACTIVEOUTBOX;
         rollup = rollup_;
     }
 
@@ -88,8 +95,7 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
     }
 
     function activeOutbox() public view returns (address) {
-        if (_activeOutbox == EMPTY_ACTIVEOUTBOX) return address(uint160(0));
-        return _activeOutbox;
+        return currentActiveOutbox;
     }
 
     function allowedDelayedInboxes(
@@ -174,15 +180,17 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
     ) external override returns (bool success, bytes memory returnData) {
         if (!allowedOutboxesMap[msg.sender].allowed) revert NotOutbox(msg.sender);
         if (data.length > 0 && !to.isContract()) revert NotContract(to);
-        address prevOutbox = _activeOutbox;
-        _activeOutbox = msg.sender;
-        // We set and reset active outbox around external call so activeOutbox remains valid during call
+
+        // We set and reset active outbox around external call so activeOutbox() remains valid during call
+        address prevOutbox = currentActiveOutbox;
+        currentActiveOutbox = msg.sender;
 
         // We use a low level call here since we want to bubble up whether it succeeded or failed to the caller
         // rather than reverting on failure as well as allow contract and non-contract calls
         // solhint-disable-next-line avoid-low-level-calls
         (success, returnData) = to.call{value: value}(data);
-        _activeOutbox = prevOutbox;
+        
+        currentActiveOutbox = prevOutbox;
         emit BridgeCallTriggered(msg.sender, to, value, data);
     }
 

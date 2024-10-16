@@ -2,7 +2,7 @@
 // For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.28;
 
 import {
     AlreadyInit,
@@ -45,51 +45,40 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         uint256 withdrawalAmount;
     }
 
-    // Note, these variables are set and then wiped during a single transaction.
-    // Therefore their values don't need to be maintained, and their slots will
-    // hold default values (which are interpreted as empty values) outside of transactions
-    L2ToL1Context internal context;
-
-    // default context values to be used in storage instead of zero, to save on storage refunds
-    // it is assumed that arb-os never assigns these values to a valid leaf to be redeemed
-    uint128 private constant L2BLOCK_DEFAULT_CONTEXT = type(uint128).max;
-    uint96 private constant L1BLOCK_DEFAULT_CONTEXT = type(uint96).max;
-    uint128 private constant TIMESTAMP_DEFAULT_CONTEXT = type(uint128).max;
-    bytes32 private constant OUTPUTID_DEFAULT_CONTEXT = bytes32(type(uint256).max);
-    address private constant SENDER_DEFAULT_CONTEXT = address(type(uint160).max);
+    // @dev Deprecated in place of transient storage
+    L2ToL1Context internal __context;
 
     uint128 public constant OUTBOX_VERSION = 2;
+
+    // Transient storage vars for context, matching L2ToL1Context slot assignment
+    // Using structs in transient storage is not supported in 0.8.28
+    uint128 internal transient contextL2Block;
+    uint128 internal transient contextTimestamp;
+    bytes32 internal transient contextOutputId;
+    address internal transient contextSender;
+    uint96 internal transient contextL1Block;
+    uint256 internal transient contextWithdrawalAmount;
 
     function initialize(
         IBridge _bridge
     ) external onlyDelegated {
         if (address(_bridge) == address(0)) revert HadZeroInit();
         if (address(bridge) != address(0)) revert AlreadyInit();
-        // address zero is returned if no context is set, but the values used in storage
-        // are non-zero to save users some gas (as storage refunds are usually maxed out)
-        // EIP-1153 would help here
-        context = L2ToL1Context({
-            l2Block: L2BLOCK_DEFAULT_CONTEXT,
-            l1Block: L1BLOCK_DEFAULT_CONTEXT,
-            timestamp: TIMESTAMP_DEFAULT_CONTEXT,
-            outputId: OUTPUTID_DEFAULT_CONTEXT,
-            sender: SENDER_DEFAULT_CONTEXT,
-            withdrawalAmount: _defaultContextAmount()
-        });
         bridge = _bridge;
         rollup = address(_bridge.rollup());
     }
 
+    /// @inheritdoc IOutbox
     function postUpgradeInit() external onlyDelegated onlyProxyOwner {
         // prevent postUpgradeInit within a withdrawal
-        if (context.l2Block != L2BLOCK_DEFAULT_CONTEXT) revert BadPostUpgradeInit();
-        context = L2ToL1Context({
-            l2Block: L2BLOCK_DEFAULT_CONTEXT,
-            l1Block: L1BLOCK_DEFAULT_CONTEXT,
-            timestamp: TIMESTAMP_DEFAULT_CONTEXT,
-            outputId: OUTPUTID_DEFAULT_CONTEXT,
-            sender: SENDER_DEFAULT_CONTEXT,
-            withdrawalAmount: _defaultContextAmount()
+        if (__context.l2Block != type(uint128).max) revert BadPostUpgradeInit();
+        __context = L2ToL1Context({
+            l2Block: uint128(0),
+            l1Block: uint96(0),
+            timestamp: uint128(0),
+            outputId: bytes32(0),
+            sender: address(0),
+            withdrawalAmount: uint256(0)
         });
     }
 
@@ -111,34 +100,22 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
 
     /// @inheritdoc IOutbox
     function l2ToL1Sender() external view returns (address) {
-        address sender = context.sender;
-        // we don't return the default context value to avoid a breaking change in the API
-        if (sender == SENDER_DEFAULT_CONTEXT) return address(0);
-        return sender;
+        return contextSender;
     }
 
     /// @inheritdoc IOutbox
     function l2ToL1Block() external view returns (uint256) {
-        uint128 l2Block = context.l2Block;
-        // we don't return the default context value to avoid a breaking change in the API
-        if (l2Block == L2BLOCK_DEFAULT_CONTEXT) return uint256(0);
-        return uint256(l2Block);
+        return uint256(contextL2Block);
     }
 
     /// @inheritdoc IOutbox
     function l2ToL1EthBlock() external view returns (uint256) {
-        uint96 l1Block = context.l1Block;
-        // we don't return the default context value to avoid a breaking change in the API
-        if (l1Block == L1BLOCK_DEFAULT_CONTEXT) return uint256(0);
-        return uint256(l1Block);
+        return uint256(contextL1Block);
     }
 
     /// @inheritdoc IOutbox
     function l2ToL1Timestamp() external view returns (uint256) {
-        uint128 timestamp = context.timestamp;
-        // we don't return the default context value to avoid a breaking change in the API
-        if (timestamp == TIMESTAMP_DEFAULT_CONTEXT) return uint256(0);
-        return uint256(timestamp);
+        return uint256(contextTimestamp);
     }
 
     /// @notice batch number is deprecated and now always returns 0
@@ -148,10 +125,7 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
 
     /// @inheritdoc IOutbox
     function l2ToL1OutputId() external view returns (bytes32) {
-        bytes32 outputId = context.outputId;
-        // we don't return the default context value to avoid a breaking change in the API
-        if (outputId == OUTPUTID_DEFAULT_CONTEXT) return bytes32(0);
-        return outputId;
+        return contextOutputId;
     }
 
     /// @inheritdoc IOutbox
@@ -200,27 +174,37 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
     ) internal {
         emit OutBoxTransactionExecuted(to, l2Sender, 0, outputId);
 
+        // we temporarily store the previous values so the outbox can naturally
+        // unwind itself when there are nested calls to `executeTransaction`
+        uint128 prevL2Block = contextL2Block;
+        uint128 prevTimestamp = contextTimestamp;
+        bytes32 prevOutputId = contextOutputId;
+        address prevSender = contextSender;
+        uint96 prevL1Block = contextL1Block;
+        uint256 prevWithdrawalAmount = contextWithdrawalAmount;
+
         // get amount to unlock based on provided value. It might differ in case
         // of native token which uses number of decimals different than 18
         uint256 amountToUnlock = _getAmountToUnlock(value);
 
-        // we temporarily store the previous values so the outbox can naturally
-        // unwind itself when there are nested calls to `executeTransaction`
-        L2ToL1Context memory prevContext = context;
-
-        context = L2ToL1Context({
-            sender: l2Sender,
-            l2Block: uint128(l2Block),
-            l1Block: uint96(l1Block),
-            timestamp: uint128(l2Timestamp),
-            outputId: bytes32(outputId),
-            withdrawalAmount: _amountToSetInContext(amountToUnlock)
-        });
+        // store the new values into transient vars for the `executeTransaction` call
+        contextL2Block = uint128(l2Block);
+        contextTimestamp = uint128(l2Timestamp);
+        contextOutputId = bytes32(outputId);
+        contextSender = l2Sender;
+        contextL1Block = uint96(l1Block);
+        contextWithdrawalAmount = _amountToSetInContext(amountToUnlock);
 
         // set and reset vars around execution so they remain valid during call
         executeBridgeCall(to, amountToUnlock, data);
 
-        context = prevContext;
+        // restore the previous values
+        contextL2Block = prevL2Block;
+        contextTimestamp = prevTimestamp;
+        contextOutputId = prevOutputId;
+        contextSender = prevSender;
+        contextL1Block = prevL1Block;
+        contextWithdrawalAmount = prevWithdrawalAmount;
     }
 
     function _calcSpentIndexOffset(
@@ -292,10 +276,6 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
     ) public pure returns (bytes32) {
         return MerkleLib.calculateRoot(proof, path, keccak256(abi.encodePacked(item)));
     }
-
-    /// @notice default value to be used for 'amount' field in L2ToL1Context outside of transaction execution.
-    /// @return default 'amount' in case of ERC20-based rollup is type(uint256).max, or 0 in case of ETH-based rollup
-    function _defaultContextAmount() internal pure virtual returns (uint256);
 
     /// @notice based on provided value, get amount of ETH/token to unlock. In case of ETH-based rollup this amount
     ///         will always equal the provided value. In case of ERC20-based rollup, amount will be re-adjusted to

@@ -13,6 +13,7 @@
   "initialize(address,address)": "485cc955",
   "nativeToken()": "e1758bd8",
   "nativeTokenDecimals()": "ad48cb5e",
+  "postUpgradeInit()": "95fcea78",
   "rollup()": "cb23bcb5",
   "sequencerInbox()": "ee35f327",
   "sequencerInboxAccs(uint256)": "16bf5579",

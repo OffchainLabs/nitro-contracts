@@ -15,8 +15,9 @@ dotenv.config()
 const solidity = {
   compilers: [
     {
-      version: '0.8.17',
+      version: '0.8.28',
       settings: {
+        evmVersion: 'cancun',
         optimizer: {
           enabled: true,
           runs: 2000,

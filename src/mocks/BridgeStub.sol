@@ -189,4 +189,6 @@ contract BridgeStub is IBridge, IEthBridge {
     ) external pure {
         revert("NOT_IMPLEMENTED");
     }
+
+    function postUpgradeInit() external {}
 }

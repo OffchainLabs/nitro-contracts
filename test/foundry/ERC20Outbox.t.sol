@@ -126,6 +126,12 @@ contract ERC20OutboxTest is AbsOutboxTest {
             value: withdrawalAmount,
             data: data
         });
+
+        assertEq(outbox.l2ToL1Sender(), address(0), "Invalid l2ToL1Sender");
+        assertEq(outbox.l2ToL1Block(), 0, "Invalid l2ToL1Block");
+        assertEq(outbox.l2ToL1EthBlock(), 0, "Invalid l2ToL1EthBlock");
+        assertEq(outbox.l2ToL1Timestamp(), 0, "Invalid l2ToL1Timestamp");
+        assertEq(outbox.l2ToL1OutputId(), bytes32(0), "Invalid l2ToL1OutputId");
     }
 
     function test_executeTransaction_revert_CallTargetNotAllowed() public {
@@ -285,6 +291,12 @@ contract ERC20OutboxTest is AbsOutboxTest {
             value: withdrawalAmount,
             data: data
         });
+
+        assertEq(outbox.l2ToL1Sender(), address(0), "Invalid l2ToL1Sender");
+        assertEq(outbox.l2ToL1Block(), 0, "Invalid l2ToL1Block");
+        assertEq(outbox.l2ToL1EthBlock(), 0, "Invalid l2ToL1EthBlock");
+        assertEq(outbox.l2ToL1Timestamp(), 0, "Invalid l2ToL1Timestamp");
+        assertEq(outbox.l2ToL1OutputId(), bytes32(0), "Invalid l2ToL1OutputId");
     }
 
     function test_executeTransaction_DecimalsMoreThan18() public {
@@ -391,6 +403,12 @@ contract ERC20OutboxTest is AbsOutboxTest {
             value: withdrawalAmount,
             data: data
         });
+
+        assertEq(outbox.l2ToL1Sender(), address(0), "Invalid l2ToL1Sender");
+        assertEq(outbox.l2ToL1Block(), 0, "Invalid l2ToL1Block");
+        assertEq(outbox.l2ToL1EthBlock(), 0, "Invalid l2ToL1EthBlock");
+        assertEq(outbox.l2ToL1Timestamp(), 0, "Invalid l2ToL1Timestamp");
+        assertEq(outbox.l2ToL1OutputId(), bytes32(0), "Invalid l2ToL1OutputId");
     }
 
     function test_executeTransaction_revert_AmountTooLarge() public {
