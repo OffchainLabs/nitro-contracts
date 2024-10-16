@@ -61,9 +61,7 @@ contract InboxTest is AbsInboxTest {
 
         uint256 userEthBalanceAfter = address(user).balance;
         assertEq(
-            userEthBalanceBefore - userEthBalanceAfter,
-            depositAmount,
-            "Invalid user eth balance"
+            userEthBalanceBefore - userEthBalanceAfter, depositAmount, "Invalid user eth balance"
         );
 
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
@@ -78,8 +76,7 @@ contract InboxTest is AbsInboxTest {
         // expect event
         vm.expectEmit(true, true, true, true);
         emit InboxMessageDelivered(
-            0,
-            abi.encodePacked(AddressAliasHelper.applyL1ToL2Alias(user), depositAmount)
+            0, abi.encodePacked(AddressAliasHelper.applyL1ToL2Alias(user), depositAmount)
         );
 
         // deposit tokens -> tx.origin != msg.sender
@@ -97,9 +94,7 @@ contract InboxTest is AbsInboxTest {
 
         uint256 userEthBalanceAfter = address(user).balance;
         assertEq(
-            userEthBalanceBefore - userEthBalanceAfter,
-            depositAmount,
-            "Invalid eth token balance"
+            userEthBalanceBefore - userEthBalanceAfter, depositAmount, "Invalid eth token balance"
         );
 
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
@@ -181,9 +176,7 @@ contract InboxTest is AbsInboxTest {
 
         uint256 userEthBalanceAfter = address(user).balance;
         assertEq(
-            userEthBalanceBefore - userEthBalanceAfter,
-            ethToSend,
-            "Invalid user token balance"
+            userEthBalanceBefore - userEthBalanceAfter, ethToSend, "Invalid user token balance"
         );
 
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
@@ -409,18 +402,13 @@ contract InboxTest is AbsInboxTest {
 
         // simulate 23 gwei basefee
         vm.fee(23000000000);
-        uint256 submissionFee = ethInbox.calculateRetryableSubmissionFee(
-            data.length,
-            block.basefee
-        );
+        uint256 submissionFee = ethInbox.calculateRetryableSubmissionFee(data.length, block.basefee);
 
         // call shall revert
         vm.prank(user, user);
         vm.expectRevert(
             abi.encodePacked(
-                InsufficientSubmissionCost.selector,
-                submissionFee,
-                tooSmallMaxSubmissionCost
+                InsufficientSubmissionCost.selector, submissionFee, tooSmallMaxSubmissionCost
             )
         );
         ethInbox.createRetryableTicket{value: 1 ether}({
@@ -490,9 +478,7 @@ contract InboxTest is AbsInboxTest {
 
         uint256 userEthBalanceAfter = address(user).balance;
         assertEq(
-            userEthBalanceBefore - userEthBalanceAfter,
-            ethToSend,
-            "Invalid user token balance"
+            userEthBalanceBefore - userEthBalanceAfter, ethToSend, "Invalid user token balance"
         );
 
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");

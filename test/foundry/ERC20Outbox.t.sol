@@ -497,7 +497,9 @@ contract ERC20L2ToL1Target {
         withdrawalAmount = ERC20Outbox(outbox).l2ToL1WithdrawalAmount();
     }
 
-    function setOutbox(address _outbox) external {
+    function setOutbox(
+        address _outbox
+    ) external {
         outbox = _outbox;
     }
 }

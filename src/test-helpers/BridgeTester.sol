@@ -69,7 +69,9 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
         __activeOutbox = address(0);
     }
 
-    function setSequencerInbox(address _sequencerInbox) external override onlyRollupOrOwner {
+    function setSequencerInbox(
+        address _sequencerInbox
+    ) external override onlyRollupOrOwner {
         sequencerInbox = _sequencerInbox;
         emit SequencerInboxUpdated(_sequencerInbox);
     }
@@ -80,11 +82,15 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
     bytes32[] public override sequencerInboxAccs;
     uint256 public override sequencerReportedSubMessageCount;
 
-    function initialize(IOwnable rollup_) external initializer {
+    function initialize(
+        IOwnable rollup_
+    ) external initializer {
         rollup = rollup_;
     }
 
-    function updateRollupAddress(IOwnable _rollup) external {
+    function updateRollupAddress(
+        IOwnable _rollup
+    ) external {
         rollup = _rollup;
     }
 
@@ -92,11 +98,15 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
         return currentActiveOutbox;
     }
 
-    function allowedDelayedInboxes(address inbox) external view override returns (bool) {
+    function allowedDelayedInboxes(
+        address inbox
+    ) external view override returns (bool) {
         return allowedInboxesMap[inbox].allowed;
     }
 
-    function allowedOutboxes(address outbox) external view override returns (bool) {
+    function allowedOutboxes(
+        address outbox
+    ) external view override returns (bool) {
         return allowedOutboxesMap[outbox].allowed;
     }
 
@@ -107,20 +117,15 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
         uint256 newMessageCount
     )
         external
-        returns (
-            uint256 seqMessageIndex,
-            bytes32 beforeAcc,
-            bytes32 delayedAcc,
-            bytes32 acc
-        )
+        returns (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc)
     {
         // TODO: implement stub logic
     }
 
-    function submitBatchSpendingReport(address batchPoster, bytes32 dataHash)
-        external
-        returns (uint256)
-    {
+    function submitBatchSpendingReport(
+        address batchPoster,
+        bytes32 dataHash
+    ) external returns (uint256) {
         // TODO: implement stub
     }
 
@@ -135,15 +140,14 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
         bytes32 messageDataHash
     ) external payable override returns (uint256) {
         if (!allowedInboxesMap[msg.sender].allowed) revert NotDelayedInbox(msg.sender);
-        return
-            addMessageToDelayedAccumulator(
-                kind,
-                sender,
-                uint64(block.number),
-                uint64(block.timestamp), // solhint-disable-line not-rely-on-time
-                block.basefee,
-                messageDataHash
-            );
+        return addMessageToDelayedAccumulator(
+            kind,
+            sender,
+            uint64(block.number),
+            uint64(block.timestamp), // solhint-disable-line not-rely-on-time
+            block.basefee,
+            messageDataHash
+        );
     }
 
     function addMessageToDelayedAccumulator(
@@ -156,13 +160,7 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
     ) internal returns (uint256) {
         uint256 count = delayedInboxAccs.length;
         bytes32 messageHash = Messages.messageHash(
-            kind,
-            sender,
-            blockNumber,
-            blockTimestamp,
-            count,
-            baseFeeL1,
-            messageDataHash
+            kind, sender, blockNumber, blockTimestamp, count, baseFeeL1, messageDataHash
         );
         bytes32 prevAcc = 0;
         if (count > 0) {
@@ -170,14 +168,7 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
         }
         delayedInboxAccs.push(Messages.accumulateInboxMessage(prevAcc, messageHash));
         emit MessageDelivered(
-            count,
-            prevAcc,
-            msg.sender,
-            kind,
-            sender,
-            messageDataHash,
-            baseFeeL1,
-            blockTimestamp
+            count, prevAcc, msg.sender, kind, sender, messageDataHash, baseFeeL1, blockTimestamp
         );
         return count;
     }
@@ -214,9 +205,8 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
             allowedInboxesMap[inbox] = InOutInfo(allowedDelayedInboxList.length, true);
             allowedDelayedInboxList.push(inbox);
         } else {
-            allowedDelayedInboxList[info.index] = allowedDelayedInboxList[
-                allowedDelayedInboxList.length - 1
-            ];
+            allowedDelayedInboxList[info.index] =
+                allowedDelayedInboxList[allowedDelayedInboxList.length - 1];
             allowedInboxesMap[allowedDelayedInboxList[info.index]].index = info.index;
             allowedDelayedInboxList.pop();
             delete allowedInboxesMap[inbox];
