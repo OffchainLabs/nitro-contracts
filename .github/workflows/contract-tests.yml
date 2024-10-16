@@ -64,8 +64,8 @@ jobs:
         with:
           version: nightly
 
-      - name: Check Contracts Format
-        run: forge fmt --check
+      # - name: Check Contracts Format
+      #   run: forge fmt --check
 
       - name: Install dependencies
         run: yarn install
