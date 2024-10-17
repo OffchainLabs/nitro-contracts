@@ -7,9 +7,18 @@ pragma solidity ^0.8.4;
 import "./AbsBridge.sol";
 import "./IERC20Bridge.sol";
 import "../libraries/AddressAliasHelper.sol";
-import {InvalidTokenSet, CallTargetNotAllowed, CallNotAllowed} from "../libraries/Error.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {
+    InvalidTokenSet,
+    CallTargetNotAllowed,
+    CallNotAllowed,
+    NativeTokenDecimalsTooLarge
+} from "../libraries/Error.sol";
+import {DecimalsConverterHelper} from "../libraries/DecimalsConverterHelper.sol";
+import {MAX_ALLOWED_NATIVE_TOKEN_DECIMALS} from "../libraries/Constants.sol";
+
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /**
  * @title Staging ground for incoming and outgoing messages
@@ -20,6 +29,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  *       - The token must only be transferrable via a call to the token address itself
  *       - The token must only be able to set allowance via a call to the token address itself
  *       - The token must not have a callback on transfer, and more generally a user must not be able to make a transfer to themselves revert
+ *       - The token must have a max of 2^256 - 1 wei total supply unscaled
+ *       - The token must have a max of 2^256 - 1 wei total supply when scaled to 18 decimals
  */
 contract ERC20Bridge is AbsBridge, IERC20Bridge {
     using SafeERC20 for IERC20;
@@ -28,11 +39,27 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
     address public nativeToken;
 
     /// @inheritdoc IERC20Bridge
+    uint8 public nativeTokenDecimals;
+
+    /// @inheritdoc IERC20Bridge
     function initialize(IOwnable rollup_, address nativeToken_) external initializer onlyDelegated {
         if (nativeToken_ == address(0)) revert InvalidTokenSet(nativeToken_);
         nativeToken = nativeToken_;
         _activeOutbox = EMPTY_ACTIVEOUTBOX;
         rollup = rollup_;
+
+        // store number of decimals used by native token
+        try ERC20(nativeToken_).decimals() returns (uint8 decimals) {
+            if (decimals > MAX_ALLOWED_NATIVE_TOKEN_DECIMALS) {
+                revert NativeTokenDecimalsTooLarge(decimals);
+            }
+            nativeTokenDecimals = decimals;
+        } catch {
+            // decimal is not part of the ERC20 spec
+            // assume it have 0 decimals if it does not have decimals() method
+            // we do this to align with the token bridge behavior
+            nativeTokenDecimals = 0;
+        }
     }
 
     /// @inheritdoc IERC20Bridge

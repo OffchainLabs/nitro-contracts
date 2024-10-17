@@ -1,6 +1,7 @@
 {
   "_stakerMap(address)": "e8bd4922",
   "amountStaked(address)": "ef40a670",
+  "anyTrustFastConfirmer()": "55840a58",
   "baseStake()": "76e7e23b",
   "bridge()": "e78cea92",
   "chainId()": "9a8a0592",

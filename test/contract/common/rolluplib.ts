@@ -224,6 +224,14 @@ export class RollupContract {
     )
   }
 
+  fastConfirmNextNode(node: Node, nodeHash): Promise<ContractTransaction> {
+    return this.rollup.fastConfirmNextNode(
+      node.assertion.afterState.globalState.bytes32Vals[0],
+      node.assertion.afterState.globalState.bytes32Vals[1],
+      nodeHash
+    )
+  }
+
   rejectNextNode(stakerAddress: string): Promise<ContractTransaction> {
     return this.rollup.rejectNextNode(stakerAddress)
   }

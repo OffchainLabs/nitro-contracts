@@ -4,10 +4,10 @@ import { run } from 'hardhat'
 import { abi as rollupCreatorAbi } from '../build/contracts/src/rollup/RollupCreator.sol/RollupCreator.json'
 import { config, maxDataSize } from './config'
 import { BigNumber, Signer } from 'ethers'
-import { IERC20__factory } from '../build/types'
+import { ERC20, ERC20__factory, IERC20__factory } from '../build/types'
 import { sleep } from './testSetup'
 import { promises as fs } from 'fs'
-import { _isRunningOnArbitrum } from './deploymentUtils'
+import { _isRunningOnArbitrum, verifyContract } from './deploymentUtils'
 
 // 1 gwei
 const MAX_FER_PER_GAS = BigNumber.from('1000000000')
@@ -85,6 +85,10 @@ export async function createRollup(
     let feeCost = ethers.utils.parseEther('0.13')
     if (feeToken != ethers.constants.AddressZero) {
       // in case fees are paid via fee token, then approve rollup cretor to spend required amount
+      feeCost = await _getPrescaledAmount(
+        ERC20__factory.connect(feeToken, signer),
+        feeCost
+      )
       await (
         await IERC20__factory.connect(feeToken, signer).approve(
           rollupCreator.address,
@@ -145,21 +149,13 @@ export async function createRollup(
         console.log(
           `Attempting to verify Rollup contract at address ${rollupAddress}...`
         )
-        try {
-          await run('verify:verify', {
-            contract: 'src/rollup/RollupProxy.sol:RollupProxy',
-            address: rollupAddress,
-            constructorArguments: [],
-          })
-        } catch (error: any) {
-          if (error.message.includes('Already Verified')) {
-            console.log(`Contract RollupProxy is already verified.`)
-          } else {
-            console.error(
-              `Verification for RollupProxy failed with the following error: ${error.message}`
-            )
-          }
-        }
+
+        await verifyContract(
+          'RollupProxy',
+          rollupAddress,
+          [],
+          'src/rollup/RollupProxy.sol:RollupProxy'
+        )
       }
 
       console.log('Inbox (proxy) Contract created at address:', inboxAddress)
@@ -342,4 +338,26 @@ async function _getDevRollupConfig(
       nonce: nonceHex,
     })
   }
+}
+
+async function _getPrescaledAmount(
+  nativeToken: ERC20,
+  amount: BigNumber
+): Promise<BigNumber> {
+  const decimals = BigNumber.from(await nativeToken.decimals())
+  if (decimals.lt(BigNumber.from(18))) {
+    const scalingFactor = BigNumber.from(10).pow(
+      BigNumber.from(18).sub(decimals)
+    )
+    let prescaledAmount = amount.div(scalingFactor)
+    // round up if needed
+    if (prescaledAmount.mul(scalingFactor).lt(amount)) {
+      prescaledAmount = prescaledAmount.add(BigNumber.from(1))
+    }
+    return prescaledAmount
+  } else if (decimals.gt(BigNumber.from(18))) {
+    return amount.mul(BigNumber.from(10).pow(decimals.sub(BigNumber.from(18))))
+  }
+
+  return amount
 }

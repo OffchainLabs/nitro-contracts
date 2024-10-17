@@ -1521,3 +1521,107 @@ describe('ArbRollup', () => {
     )
   })
 })
+
+const fastConfirmerAddr = '0x000000000000000000000000000000000000fa51'
+describe.only('ArbRollupFastConfirm', () => {
+  it('should initialize', async function () {
+    const {
+      rollupAdmin: rollupAdminContract,
+      rollupUser: rollupUserContract,
+      bridge: bridgeContract,
+      admin: adminI,
+      validators: validatorsI,
+      batchPosterManager: batchPosterManagerI,
+      upgradeExecutorAddress,
+    } = await setup()
+    rollupAdmin = rollupAdminContract
+    rollupUser = rollupUserContract
+    bridge = bridgeContract
+    admin = adminI
+    validators = validatorsI
+    upgradeExecutor = upgradeExecutorAddress
+    // adminproxy = adminproxyAddress
+    rollup = new RollupContract(rollupUser.connect(validators[0]))
+    batchPosterManager = batchPosterManagerI
+  })
+  it('should set fast confirmer', async function () {
+    await (
+      await rollupAdmin
+        .connect(await impersonateAccount(upgradeExecutor))
+        .setAnyTrustFastConfirmer(fastConfirmerAddr)
+    ).wait()
+    await expect(await rollup.rollup.anyTrustFastConfirmer()).to.eq(
+      fastConfirmerAddr
+    )
+  })
+  it('should place stake on new node', async function () {
+    await tryAdvanceChain(minimumAssertionPeriod)
+
+    const initNode: {
+      assertion: { afterState: ExecutionStateStruct }
+      nodeNum: number
+      nodeHash: BytesLike
+      inboxMaxCount: BigNumber
+    } = {
+      assertion: {
+        afterState: {
+          globalState: {
+            bytes32Vals: [zerobytes32, zerobytes32],
+            u64Vals: [0, 0],
+          },
+          machineStatus: MachineStatus.FINISHED,
+        },
+      },
+      inboxMaxCount: BigNumber.from(1),
+      nodeHash: zerobytes32,
+      nodeNum: 0,
+    }
+
+    const stake = await rollup.currentRequiredStake()
+    const { node } = await makeSimpleNode(
+      rollup,
+      sequencerInbox,
+      initNode,
+      undefined,
+      undefined,
+      stake
+    )
+    updatePrevNode(node)
+  })
+  it('should fail to confirm before deadline', async function () {
+    await expect(rollup.confirmNextNode(prevNodes[0])).to.be.revertedWith(
+      'BEFORE_DEADLINE'
+    )
+  })
+  it('should fail to fast confirm if not fast confirmer', async function () {
+    await expect(
+      rollup.fastConfirmNextNode(prevNodes[0], ethers.constants.HashZero)
+    ).to.be.revertedWith('NFC')
+  })
+  it('should fail to fast confirm if not validator', async function () {
+    await expect(
+      rollup
+        .connect(await impersonateAccount(fastConfirmerAddr))
+        .fastConfirmNextNode(prevNodes[0], prevNodes[0].nodeHash)
+    ).to.be.revertedWith('NOT_VALIDATOR')
+  })
+  it('should be able to set fast confirmer as validator', async function () {
+    await (
+      await rollupAdmin
+        .connect(await impersonateAccount(upgradeExecutor))
+        .setValidator([fastConfirmerAddr], [true])
+    ).wait()
+  })
+  it('should fail to fast confirm if wrong nodehash', async function () {
+    await expect(
+      rollup
+        .connect(await impersonateAccount(fastConfirmerAddr))
+        .fastConfirmNextNode(prevNodes[0], ethers.constants.HashZero)
+    ).to.be.revertedWith('WH')
+  })
+  it('should fast confirm', async function () {
+    await rollup
+      .connect(await impersonateAccount(fastConfirmerAddr))
+      .fastConfirmNextNode(prevNodes[0], prevNodes[0].nodeHash)
+  })
+})

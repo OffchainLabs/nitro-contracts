@@ -1,6 +1,7 @@
 {
   "_stakerMap(address)": "e8bd4922",
   "amountStaked(address)": "ef40a670",
+  "anyTrustFastConfirmer()": "55840a58",
   "baseStake()": "76e7e23b",
   "bridge()": "e78cea92",
   "chainId()": "9a8a0592",
@@ -40,6 +41,7 @@
   "rollupDeploymentBlock()": "1b1689e9",
   "rollupEventInbox()": "aa38a6e7",
   "sequencerInbox()": "ee35f327",
+  "setAnyTrustFastConfirmer(address)": "0d561b37",
   "setBaseStake(uint256)": "06ae5851",
   "setConfirmPeriodBlocks(uint64)": "ce66d05c",
   "setDelayedInbox(address,bool)": "47fb24c5",
