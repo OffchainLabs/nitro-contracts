@@ -46,6 +46,29 @@ interface ISequencerInbox is IDelayedMessageProvider {
     /// @dev a keyset was invalidated
     event InvalidateKeyset(bytes32 indexed keysetHash);
 
+    /// @dev Owner set max time variation.
+    ///      This event may have been introduced in an upgrade and therefore might not give the full history.
+    ///      To get the full history, search for `OwnerFunctionCalled(0)` events.
+    event MaxTimeVariationSet(MaxTimeVariation maxTimeVariation);
+
+    /// @dev Owner set a batch poster.
+    ///      This event may have been introduced in an upgrade and therefore might not give the full history.
+    ///      To get the full history, search for `OwnerFunctionCalled(1)` events.
+    event BatchPosterSet(address batchPoster, bool isBatchPoster);
+
+    /// @dev Owner or batch poster manager set a sequencer.
+    ///      This event may have been introduced in an upgrade and therefore might not give the full history.
+    ///      To get the full history, search for `OwnerFunctionCalled(4)` events.
+    event SequencerSet(address addr, bool isSequencer);
+
+    /// @dev Owner set the batch poster manager.
+    ///      This event may have been introduced in an upgrade and therefore might not give the full history.
+    ///      To get the full history, search for `OwnerFunctionCalled(5)` events.
+    event BatchPosterManagerSet(address newBatchPosterManager);
+
+    /// @dev Owner set the buffer config.
+    event BufferConfigSet(BufferConfig bufferConfig);
+
     function totalDelayedMessagesRead() external view returns (uint256);
 
     function bridge() external view returns (IBridge);
@@ -92,9 +115,13 @@ interface ISequencerInbox is IDelayedMessageProvider {
 
     function rollup() external view returns (IOwnable);
 
-    function isBatchPoster(address) external view returns (bool);
+    function isBatchPoster(
+        address
+    ) external view returns (bool);
 
-    function isSequencer(address) external view returns (bool);
+    function isSequencer(
+        address
+    ) external view returns (bool);
 
     /// @notice True is the sequencer inbox is delay bufferable
     function isDelayBufferable() external view returns (bool);
@@ -121,7 +148,9 @@ interface ISequencerInbox is IDelayedMessageProvider {
             uint256 futureSeconds
         );
 
-    function dasKeySetInfo(bytes32) external view returns (bool, uint64);
+    function dasKeySetInfo(
+        bytes32
+    ) external view returns (bool, uint64);
 
     /// @notice Remove force inclusion delay after a L1 chainId fork
     function removeDelayAfterFork() external;
@@ -145,14 +174,20 @@ interface ISequencerInbox is IDelayedMessageProvider {
         bytes32 messageDataHash
     ) external;
 
-    function inboxAccs(uint256 index) external view returns (bytes32);
+    function inboxAccs(
+        uint256 index
+    ) external view returns (bytes32);
 
     function batchCount() external view returns (uint256);
 
-    function isValidKeysetHash(bytes32 ksHash) external view returns (bool);
+    function isValidKeysetHash(
+        bytes32 ksHash
+    ) external view returns (bool);
 
     /// @notice the creation block is intended to still be available after a keyset is deleted
-    function getKeysetCreationBlock(bytes32 ksHash) external view returns (uint256);
+    function getKeysetCreationBlock(
+        bytes32 ksHash
+    ) external view returns (uint256);
 
     /// @dev    The delay buffer can change due to pending depletion/replenishment.
     ///         This function applies pending buffer changes to proactively calculate the force inclusion deadline.
@@ -160,10 +195,9 @@ interface ISequencerInbox is IDelayedMessageProvider {
     /// @notice Calculates the upper bounds of the delay buffer
     /// @param blockNumber The block number when a delayed message was created
     /// @return blockNumberDeadline The block number at when the message can be force included
-    function forceInclusionDeadline(uint64 blockNumber)
-        external
-        view
-        returns (uint64 blockNumberDeadline);
+    function forceInclusionDeadline(
+        uint64 blockNumber
+    ) external view returns (uint64 blockNumberDeadline);
 
     // ---------- BatchPoster functions ----------
 
@@ -244,7 +278,9 @@ interface ISequencerInbox is IDelayedMessageProvider {
      * @notice Set max delay for sequencer inbox
      * @param maxTimeVariation_ the maximum time variation parameters
      */
-    function setMaxTimeVariation(MaxTimeVariation memory maxTimeVariation_) external;
+    function setMaxTimeVariation(
+        MaxTimeVariation memory maxTimeVariation_
+    ) external;
 
     /**
      * @notice Updates whether an address is authorized to be a batch poster at the sequencer inbox
@@ -257,13 +293,17 @@ interface ISequencerInbox is IDelayedMessageProvider {
      * @notice Makes Data Availability Service keyset valid
      * @param keysetBytes bytes of the serialized keyset
      */
-    function setValidKeyset(bytes calldata keysetBytes) external;
+    function setValidKeyset(
+        bytes calldata keysetBytes
+    ) external;
 
     /**
      * @notice Invalidates a Data Availability Service keyset
      * @param ksHash hash of the keyset
      */
-    function invalidateKeysetHash(bytes32 ksHash) external;
+    function invalidateKeysetHash(
+        bytes32 ksHash
+    ) external;
 
     /**
      * @notice Updates whether an address is authorized to be a sequencer.
@@ -277,7 +317,9 @@ interface ISequencerInbox is IDelayedMessageProvider {
      * @notice Updates the batch poster manager, the address which has the ability to rotate batch poster keys
      * @param newBatchPosterManager The new batch poster manager to be set
      */
-    function setBatchPosterManager(address newBatchPosterManager) external;
+    function setBatchPosterManager(
+        address newBatchPosterManager
+    ) external;
 
     /// @notice Allows the rollup owner to sync the rollup address
     function updateRollupAddress() external;
