@@ -54,7 +54,7 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
         return _getExchangeRate();
     }
 
-    function swapTokenToEth(uint256 tokenAmount, uint256 minEthReceived)
+    function swapTokenToEth(uint256 tokenAmount, uint256 minEthReceived, uint256 deadline)
         external
         returns (uint256 ethReceived)
     {
@@ -69,7 +69,7 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
             amountOutMin: minEthReceived,
             path: path,
             to: msg.sender,
-            deadline: block.timestamp
+            deadline: deadline
         });
         ethReceived = amounts[amounts.length - 1];
 

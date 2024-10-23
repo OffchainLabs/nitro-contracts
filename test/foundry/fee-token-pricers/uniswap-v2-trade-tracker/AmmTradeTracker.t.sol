@@ -106,7 +106,8 @@ contract AmmTradeTrackerTest is Test {
 
         vm.startPrank(batchPosterOperator, batchPosterOperator);
         IERC20(USDC_ARB1).approve(address(tradeTracker), tokenAmount);
-        ethReceived = tradeTracker.swapTokenToEth(tokenAmount, minEthReceived);
+        ethReceived =
+            tradeTracker.swapTokenToEth(tokenAmount, minEthReceived, block.timestamp + 100);
         vm.stopPrank();
     }
 
