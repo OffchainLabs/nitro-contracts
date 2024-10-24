@@ -9,9 +9,7 @@ contract LatestELCRoundsImp {
 
     ELCRound[2] public rounds;
 
-    constructor(
-        ELCRound[2] memory r
-    ) {
+    constructor(ELCRound[2] memory r) {
         rounds[0] = r[0];
         rounds[1] = r[1];
     }
@@ -20,9 +18,7 @@ contract LatestELCRoundsImp {
         return rounds.latestELCRound();
     }
 
-    function resolvedRound(
-        uint64 round
-    ) public view returns (ELCRound memory) {
+    function resolvedRound(uint64 round) public view returns (ELCRound memory) {
         return rounds.resolvedRound(round);
     }
 
@@ -95,10 +91,11 @@ contract ExpressLaneELCRoundTest is Test {
         li.resolvedRound(10);
     }
 
-    function getELCRound(
-        LatestELCRoundsImp li,
-        uint8 index
-    ) internal view returns (ELCRound memory) {
+    function getELCRound(LatestELCRoundsImp li, uint8 index)
+        internal
+        view
+        returns (ELCRound memory)
+    {
         (address elc, uint64 round) = li.rounds(index);
         return ELCRound(elc, round);
     }
