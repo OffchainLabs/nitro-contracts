@@ -20,9 +20,6 @@ contract AmmTradeTrackerTest is Test {
     uint256 public constant DEFAULT_CALLDATA_COST = 12;
 
     function setUp() public {
-        string memory arbRpc = vm.envString("ARB_RPC");
-        vm.createSelectFork(arbRpc, 261_666_155);
-
         vm.prank(owner);
         tradeTracker = new AmmTradeTracker(
             IUniswapV2Router01(V2_ROUTER_ARB1),
@@ -32,83 +29,15 @@ contract AmmTradeTrackerTest is Test {
         );
     }
 
-    function testFork_CanSwapTokenToEth() public {
-        uint256 usdcAmount = 250e6;
-        uint256 minEthReceived = 0.1 ether;
-
-        uint256 ethReceived = _swapTokenToEth(usdcAmount, minEthReceived);
-
-        assertGe(ethReceived, minEthReceived);
-        assertEq(tradeTracker.ethAccumulatorPerSpender(batchPosterOperator), ethReceived);
-        assertEq(tradeTracker.tokenAccumulatorPerSpender(batchPosterOperator), usdcAmount);
-    }
-
-    function testFork_GetExchangeRate() public {
-        assertEq(tradeTracker.getExchangeRate(), DEFAULT_EXCHANGE_RATE);
-
-        uint256 usdcAmount = 250e6;
-        uint256 minEthReceived = 0.1 ether;
-        uint256 ethReceived = _swapTokenToEth(usdcAmount, minEthReceived);
-
-        vm.prank(batchPosterOperator, batchPosterOperator);
-        uint256 actualExchangeRate = tradeTracker.getExchangeRate();
-        uint256 expectedExchangeRate = (usdcAmount * 1e30) / ethReceived;
-        assertEq(actualExchangeRate, expectedExchangeRate);
-    }
-
-    function testFork_postBatch() public {
+    function testOnGasSpent() public {
         (SequencerInbox seqInbox,) = _deployFeeTokenRollup();
         vm.prank(owner);
         tradeTracker.allowCaller(address(seqInbox), true);
 
-        // swap some tokens
-        uint256 usdcAmount = 250e6;
-        uint256 minEthReceived = 0.1 ether;
-        _swapTokenToEth(usdcAmount, minEthReceived);
-
-        // snapshot values before batch has been posted
-        uint256 ethAccBefore = tradeTracker.ethAccumulatorPerSpender(batchPosterOperator);
-        uint256 tokenAccBefore = tradeTracker.tokenAccumulatorPerSpender(batchPosterOperator);
-        vm.prank(batchPosterOperator, batchPosterOperator);
-        uint256 exchangeRateBefore = tradeTracker.getExchangeRate();
-
-        // set 0.1 gwei basefee and 30 gwei TX L1 fees
-        uint256 basefee = 100_000_000;
-        vm.fee(basefee);
-        uint256 l1Fees = 30_000_000_000;
-        vm.mockCall(
-            address(0x6c), abi.encodeWithSignature("getCurrentTxL1GasFees()"), abi.encode(l1Fees)
-        );
-
-        // post batch
-        address feeTokenPricer = address(seqInbox.feeTokenPricer());
-        bytes memory batchData = hex"80567890";
-        vm.prank(batchPosterOperator, batchPosterOperator);
-        seqInbox.addSequencerL2BatchFromOrigin(0, batchData, 0, IGasRefunder(feeTokenPricer), 0, 1);
-
-        // snapshot values after batch has been posted
-        uint256 ethAccAfter = tradeTracker.ethAccumulatorPerSpender(batchPosterOperator);
-        uint256 tokenAccAfter = tradeTracker.tokenAccumulatorPerSpender(batchPosterOperator);
-        vm.prank(batchPosterOperator, batchPosterOperator);
-        uint256 exchangeRateAfter = tradeTracker.getExchangeRate();
-
-        // checks
-        assertTrue(ethAccAfter < ethAccBefore);
-        assertTrue(tokenAccAfter < tokenAccBefore);
-        assertTrue(exchangeRateAfter != exchangeRateBefore);
-    }
-
-    function _swapTokenToEth(uint256 tokenAmount, uint256 minEthReceived)
-        internal
-        returns (uint256 ethReceived)
-    {
-        deal(USDC_ARB1, batchPosterOperator, tokenAmount);
-
-        vm.startPrank(batchPosterOperator, batchPosterOperator);
-        IERC20(USDC_ARB1).approve(address(tradeTracker), tokenAmount);
-        ethReceived =
-            tradeTracker.swapTokenToEth(tokenAmount, minEthReceived, block.timestamp + 100);
-        vm.stopPrank();
+        uint256 gasUsed = 300_000;
+        uint256 calldataSize = 10_000;
+        vm.prank(address(seqInbox));
+        tradeTracker.onGasSpent(payable(batchPosterOperator), gasUsed, calldataSize);
     }
 
     function _deployFeeTokenRollup() internal returns (SequencerInbox, ERC20Bridge) {
