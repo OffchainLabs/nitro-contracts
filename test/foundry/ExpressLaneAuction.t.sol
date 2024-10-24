@@ -4,8 +4,7 @@ pragma solidity ^0.8.0;
 import "forge-std/Test.sol";
 import "../../src/express-lane-auction/ExpressLaneAuction.sol";
 import {
-    ERC20Burnable,
-    IERC20
+    ERC20Burnable, IERC20
 } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
@@ -26,9 +25,7 @@ contract ExpressLaneAuctionTest is Test {
 
     event Deposit(address indexed account, uint256 amount);
     event WithdrawalInitiated(
-        address indexed account,
-        uint256 withdrawalAmount,
-        uint256 roundWithdrawable
+        address indexed account, uint256 withdrawalAmount, uint256 roundWithdrawable
     );
     event WithdrawalFinalized(address indexed account, uint256 withdrawalAmount);
     event AuctionResolved(
@@ -53,9 +50,7 @@ contract ExpressLaneAuctionTest is Test {
     );
     event SetBeneficiary(address oldBeneficiary, address newBeneficiary);
     event SetTransferor(
-        address indexed expressLaneController,
-        address indexed transferor,
-        uint64 fixedUntilRound
+        address indexed expressLaneController, address indexed transferor, uint64 fixedUntilRound
     );
     event SetRoundTimingInfo(
         uint64 currentRound,
@@ -78,12 +73,8 @@ contract ExpressLaneAuctionTest is Test {
     TestBidder[4] bidders;
 
     function setUp() public {
-        bidders[0] = TestBidder({
-            privKey: 137,
-            addr: vm.addr(137),
-            elc: vm.addr(138),
-            amount: roundDuration
-        });
+        bidders[0] =
+            TestBidder({privKey: 137, addr: vm.addr(137), elc: vm.addr(138), amount: roundDuration});
         bidders[1] = TestBidder({
             privKey: 139,
             addr: vm.addr(139),
@@ -132,33 +123,34 @@ contract ExpressLaneAuctionTest is Test {
         auction.initialize(args);
 
         // move to round test round
-        (, uint64 roundDurationSeconds, , ) = auction.roundTimingInfo();
+        (, uint64 roundDurationSeconds,,) = auction.roundTimingInfo();
         vm.warp(uint64(offsetTimestamp) + roundDurationSeconds * testRound);
 
         return (token, IExpressLaneAuction(auction));
     }
 
-    function createArgs(address token) internal view returns (InitArgs memory) {
-        return
-            InitArgs({
-                _auctioneer: auctioneer,
-                _beneficiary: beneficiary,
-                _biddingToken: token,
-                _roundTimingInfo: RoundTimingInfo({
-                    offsetTimestamp: offsetTimestamp,
-                    roundDurationSeconds: roundDuration,
-                    auctionClosingSeconds: roundDuration / 4,
-                    reserveSubmissionSeconds: roundDuration / 4
-                }),
-                _minReservePrice: minReservePrice,
-                _auctioneerAdmin: auctioneerAdmin,
-                _minReservePriceSetter: minReservePriceSetter,
-                _reservePriceSetter: reservePriceSetter,
-                _reservePriceSetterAdmin: reservePriceSetterAdmin,
-                _beneficiarySetter: beneficiarySetter,
-                _roundTimingSetter: roundTimingSetter,
-                _masterAdmin: masterAdmin
-            });
+    function createArgs(
+        address token
+    ) internal view returns (InitArgs memory) {
+        return InitArgs({
+            _auctioneer: auctioneer,
+            _beneficiary: beneficiary,
+            _biddingToken: token,
+            _roundTimingInfo: RoundTimingInfo({
+                offsetTimestamp: offsetTimestamp,
+                roundDurationSeconds: roundDuration,
+                auctionClosingSeconds: roundDuration / 4,
+                reserveSubmissionSeconds: roundDuration / 4
+            }),
+            _minReservePrice: minReservePrice,
+            _auctioneerAdmin: auctioneerAdmin,
+            _minReservePriceSetter: minReservePriceSetter,
+            _reservePriceSetter: reservePriceSetter,
+            _reservePriceSetterAdmin: reservePriceSetterAdmin,
+            _beneficiarySetter: beneficiarySetter,
+            _roundTimingSetter: roundTimingSetter,
+            _masterAdmin: masterAdmin
+        });
     }
 
     function testRoundTimingInit(IExpressLaneAuction auction, MockERC20 token) internal {
@@ -269,31 +261,26 @@ contract ExpressLaneAuctionTest is Test {
         );
         assertEq(auction.getRoleAdmin(auction.AUCTIONEER_ROLE()), auction.AUCTIONEER_ADMIN_ROLE());
         assertEq(
-            auction.getRoleAdmin(auction.MIN_RESERVE_SETTER_ROLE()),
-            auction.DEFAULT_ADMIN_ROLE()
+            auction.getRoleAdmin(auction.MIN_RESERVE_SETTER_ROLE()), auction.DEFAULT_ADMIN_ROLE()
         );
         assertEq(
-            auction.getRoleAdmin(auction.RESERVE_SETTER_ROLE()),
-            auction.RESERVE_SETTER_ADMIN_ROLE()
+            auction.getRoleAdmin(auction.RESERVE_SETTER_ROLE()), auction.RESERVE_SETTER_ADMIN_ROLE()
         );
         assertEq(
-            auction.getRoleAdmin(auction.BENEFICIARY_SETTER_ROLE()),
-            auction.DEFAULT_ADMIN_ROLE()
+            auction.getRoleAdmin(auction.BENEFICIARY_SETTER_ROLE()), auction.DEFAULT_ADMIN_ROLE()
         );
         assertEq(
-            auction.getRoleAdmin(auction.AUCTIONEER_ADMIN_ROLE()),
-            auction.DEFAULT_ADMIN_ROLE()
+            auction.getRoleAdmin(auction.AUCTIONEER_ADMIN_ROLE()), auction.DEFAULT_ADMIN_ROLE()
         );
         assertEq(
-            auction.getRoleAdmin(auction.RESERVE_SETTER_ADMIN_ROLE()),
-            auction.DEFAULT_ADMIN_ROLE()
+            auction.getRoleAdmin(auction.RESERVE_SETTER_ADMIN_ROLE()), auction.DEFAULT_ADMIN_ROLE()
         );
 
         vm.expectRevert("Initializable: contract is already initialized");
         auction.initialize(args);
 
         // cannot send funds to the contract
-        (bool success, ) = address(auction).call{value: 10}(hex"");
+        (bool success,) = address(auction).call{value: 10}(hex"");
         assertFalse(success, "auction value call");
         assertEq(address(auction).balance, 0, "bal after");
     }
@@ -367,16 +354,14 @@ contract ExpressLaneAuctionTest is Test {
         assertEq(auction.balanceOf(bidders[0].addr), bidders[0].amount, "Full first balance");
         assertEq(erc20.balanceOf(bidders[0].addr), 0, "Full first bidders[0].addr erc20 balance");
         assertEq(
-            erc20.balanceOf(address(auction)),
-            bidders[0].amount,
-            "Full dirst auction erc20 balance"
+            erc20.balanceOf(address(auction)), bidders[0].amount, "Full dirst auction erc20 balance"
         );
         vm.stopPrank();
 
         // can deposit different bidder, do it once per second for 2 rounds
         // to ensure that deposit can occur at any time
         vm.startPrank(bidders[1].addr);
-        (, uint64 roundDurationSeconds, , ) = auction.roundTimingInfo();
+        (, uint64 roundDurationSeconds,,) = auction.roundTimingInfo();
         erc20.approve(address(auction), roundDurationSeconds * 3);
         for (uint256 i = 0; i < roundDurationSeconds * 3; i++) {
             vm.warp(block.timestamp + 1);
@@ -421,9 +406,7 @@ contract ExpressLaneAuctionTest is Test {
         auction.deposit(20);
         assertEq(auction.balanceOf(bidders[0].addr), 20, "First balance");
         assertEq(
-            auction.balanceOfAtRound(bidders[0].addr, currentRound),
-            20,
-            "First balance at round"
+            auction.balanceOfAtRound(bidders[0].addr, currentRound), 20, "First balance at round"
         );
         assertEq(
             auction.balanceOfAtRound(bidders[0].addr, currentRound + 1),
@@ -651,7 +634,7 @@ contract ExpressLaneAuctionTest is Test {
         vm.warp(1);
         assertEq(auction.currentRound(), 0);
 
-        (int64 offsetTimestampA, uint64 roundDurationSeconds, , ) = auction.roundTimingInfo();
+        (int64 offsetTimestampA, uint64 roundDurationSeconds,,) = auction.roundTimingInfo();
 
         vm.warp(uint64(offsetTimestampA) - 1);
         assertEq(auction.currentRound(), 0);
@@ -685,7 +668,7 @@ contract ExpressLaneAuctionTest is Test {
         assertEq(auction.withdrawableBalance(bidders[0].addr), 0);
 
         // round 1.5
-        (, uint64 roundDurationSeconds, , ) = auction.roundTimingInfo();
+        (, uint64 roundDurationSeconds,,) = auction.roundTimingInfo();
         vm.warp(block.timestamp + roundDurationSeconds / 2);
 
         assertEq(auction.currentRound(), curRound);
@@ -796,7 +779,7 @@ contract ExpressLaneAuctionTest is Test {
         vm.expectRevert(abi.encodeWithSelector(NothingToWithdraw.selector));
         auction.finalizeWithdrawal();
 
-        (, uint64 roundDurationSeconds, , ) = auction.roundTimingInfo();
+        (, uint64 roundDurationSeconds,,) = auction.roundTimingInfo();
         vm.warp(block.timestamp + roundDurationSeconds);
 
         assertEq(auction.currentRound(), curRound + 1);
@@ -827,9 +810,7 @@ contract ExpressLaneAuctionTest is Test {
         uint256 auctionErc20BalAfter = erc20.balanceOf(address(auction));
         assertEq(bidderErc20BalAfter, bidderErc20BalBefore + bidders[0].amount, "balance after");
         assertEq(
-            auctionErc20BalAfter,
-            auctionErc20BalBefore - bidders[0].amount,
-            "auction balance after"
+            auctionErc20BalAfter, auctionErc20BalBefore - bidders[0].amount, "auction balance after"
         );
 
         // expect revert
@@ -852,7 +833,7 @@ contract ExpressLaneAuctionTest is Test {
 
         auction.initiateWithdrawal();
 
-        (, uint64 roundDurationSeconds, , ) = auction.roundTimingInfo();
+        (, uint64 roundDurationSeconds,,) = auction.roundTimingInfo();
         vm.warp(block.timestamp + roundDurationSeconds * 5);
 
         assertEq(auction.currentRound(), curRound + 5);
@@ -910,22 +891,21 @@ contract ExpressLaneAuctionTest is Test {
             signature: sign(bidders[1].privKey, h1)
         });
 
-        (, uint64 roundDurationSeconds, uint64 auctionClosingSeconds, ) = auction.roundTimingInfo();
+        (, uint64 roundDurationSeconds, uint64 auctionClosingSeconds,) = auction.roundTimingInfo();
 
         vm.warp(block.timestamp + roundDurationSeconds - auctionClosingSeconds);
 
         vm.startPrank(auctioneer);
 
-        return
-            ResolveSetup({
-                erc20: erc20,
-                auction: auction,
-                bid0: bid0,
-                bid1: bid1,
-                h0: h0,
-                h1: h1,
-                biddingForRound: biddingForRound
-            });
+        return ResolveSetup({
+            erc20: erc20,
+            auction: auction,
+            bid0: bid0,
+            bid1: bid1,
+            h0: h0,
+            h1: h1,
+            biddingForRound: biddingForRound
+        });
     }
 
     function testGetDomainSeparator() public {
@@ -1006,13 +986,11 @@ contract ExpressLaneAuctionTest is Test {
             auction.deposit(bidders[1].amount);
             vm.stopPrank();
 
-            (int64 o, uint64 roundDurationSeconds, uint64 auctionClosingSeconds, ) = auction
-                .roundTimingInfo();
+            (int64 o, uint64 roundDurationSeconds, uint64 auctionClosingSeconds,) =
+                auction.roundTimingInfo();
             vm.warp(
-                uint64(o) +
-                    (roundDurationSeconds * testRound) +
-                    roundDurationSeconds -
-                    auctionClosingSeconds
+                uint64(o) + (roundDurationSeconds * testRound) + roundDurationSeconds
+                    - auctionClosingSeconds
             );
             uint64 biddingForRound = auction.currentRound() + 1;
 
@@ -1096,11 +1074,8 @@ contract ExpressLaneAuctionTest is Test {
         ResolveSetup memory rs = deployDepositAndBids();
 
         // bid1.amount == bid0.amount
-        bytes32 h1 = rs.auction.getBidHash(
-            rs.biddingForRound,
-            bidders[0].elc,
-            bidders[0].amount / 2
-        );
+        bytes32 h1 =
+            rs.auction.getBidHash(rs.biddingForRound, bidders[0].elc, bidders[0].amount / 2);
         Bid memory bid1 = Bid({
             amount: bidders[0].amount / 2,
             expressLaneController: bidders[0].elc,
@@ -1126,18 +1101,14 @@ contract ExpressLaneAuctionTest is Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                ReservePriceNotMet.selector,
-                minReservePrice - 1,
-                minReservePrice
+                ReservePriceNotMet.selector, minReservePrice - 1, minReservePrice
             )
         );
         rs.auction.resolveMultiBidAuction(rs.bid1, bid0);
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                ReservePriceNotMet.selector,
-                minReservePrice - 1,
-                minReservePrice
+                ReservePriceNotMet.selector, minReservePrice - 1, minReservePrice
             )
         );
         rs.auction.resolveSingleBidAuction(bid0);
@@ -1146,11 +1117,8 @@ contract ExpressLaneAuctionTest is Test {
     function testCannotResolveInsufficientFunds() public {
         ResolveSetup memory rs = deployDepositAndBids();
 
-        bytes32 h1 = rs.auction.getBidHash(
-            rs.biddingForRound,
-            bidders[1].elc,
-            bidders[1].amount * 2
-        );
+        bytes32 h1 =
+            rs.auction.getBidHash(rs.biddingForRound, bidders[1].elc, bidders[1].amount * 2);
         Bid memory bid1 = Bid({
             amount: bidders[1].amount * 2,
             expressLaneController: bidders[1].elc,
@@ -1167,11 +1135,8 @@ contract ExpressLaneAuctionTest is Test {
         );
         rs.auction.resolveMultiBidAuction(bid1, rs.bid0);
 
-        bytes32 h0 = rs.auction.getBidHash(
-            rs.biddingForRound,
-            bidders[0].elc,
-            (bidders[0].amount * 3) / 2
-        );
+        bytes32 h0 =
+            rs.auction.getBidHash(rs.biddingForRound, bidders[0].elc, (bidders[0].amount * 3) / 2);
         Bid memory bid0 = Bid({
             amount: (bidders[0].amount * 3) / 2,
             expressLaneController: bidders[0].elc,
@@ -1202,18 +1167,12 @@ contract ExpressLaneAuctionTest is Test {
     function testCannotResolveWrongChain() public {
         ResolveSetup memory rs = deployDepositAndBids();
         vm.chainId(31337);
-        bytes32 h1 = rs.auction.getBidHash(
-            rs.biddingForRound,
-            bidders[1].elc,
-            bidders[1].amount / 2
-        );
+        bytes32 h1 =
+            rs.auction.getBidHash(rs.biddingForRound, bidders[1].elc, bidders[1].amount / 2);
 
         vm.chainId(137);
-        bytes32 correctH1 = rs.auction.getBidHash(
-            rs.biddingForRound,
-            bidders[1].elc,
-            bidders[1].amount / 2
-        );
+        bytes32 correctH1 =
+            rs.auction.getBidHash(rs.biddingForRound, bidders[1].elc, bidders[1].amount / 2);
         Bid memory bid1 = Bid({
             amount: bidders[1].amount / 2,
             expressLaneController: bidders[1].elc,
@@ -1225,27 +1184,18 @@ contract ExpressLaneAuctionTest is Test {
         // wrong chain means wrong hash means wrong address
         vm.expectRevert(
             abi.encodeWithSelector(
-                InsufficientBalanceAcc.selector,
-                wrongBidder1,
-                bidders[1].amount / 2,
-                0
+                InsufficientBalanceAcc.selector, wrongBidder1, bidders[1].amount / 2, 0
             )
         );
         rs.auction.resolveMultiBidAuction(bid1, rs.bid0);
 
         vm.chainId(31337);
-        bytes32 h0 = rs.auction.getBidHash(
-            rs.biddingForRound,
-            bidders[0].elc,
-            bidders[0].amount / 2
-        );
+        bytes32 h0 =
+            rs.auction.getBidHash(rs.biddingForRound, bidders[0].elc, bidders[0].amount / 2);
 
         vm.chainId(137);
-        bytes32 correctH0 = rs.auction.getBidHash(
-            rs.biddingForRound,
-            bidders[0].elc,
-            bidders[0].amount / 2
-        );
+        bytes32 correctH0 =
+            rs.auction.getBidHash(rs.biddingForRound, bidders[0].elc, bidders[0].amount / 2);
         Bid memory bid0 = Bid({
             amount: bidders[0].amount / 2,
             expressLaneController: bidders[0].elc,
@@ -1257,10 +1207,7 @@ contract ExpressLaneAuctionTest is Test {
         // wrong chain means wrong hash means wrong address
         vm.expectRevert(
             abi.encodeWithSelector(
-                InsufficientBalanceAcc.selector,
-                wrongBidder0,
-                bidders[0].amount / 2,
-                0
+                InsufficientBalanceAcc.selector, wrongBidder0, bidders[0].amount / 2, 0
             )
         );
         rs.auction.resolveMultiBidAuction(rs.bid1, bid0);
@@ -1268,10 +1215,7 @@ contract ExpressLaneAuctionTest is Test {
         // wrong chain means wrong hash means wrong address
         vm.expectRevert(
             abi.encodeWithSelector(
-                InsufficientBalanceAcc.selector,
-                wrongBidder1,
-                bidders[1].amount / 2,
-                0
+                InsufficientBalanceAcc.selector, wrongBidder1, bidders[1].amount / 2, 0
             )
         );
         rs.auction.resolveSingleBidAuction(bid1);
@@ -1295,20 +1239,14 @@ contract ExpressLaneAuctionTest is Test {
             expressLaneController: bidders[1].elc,
             signature: sign(bidders[1].privKey, h1)
         });
-        bytes32 correctH1 = rs.auction.getBidHash(
-            rs.biddingForRound,
-            bidders[1].elc,
-            bidders[1].amount / 2
-        );
+        bytes32 correctH1 =
+            rs.auction.getBidHash(rs.biddingForRound, bidders[1].elc, bidders[1].amount / 2);
         address wrongBidder1 = correctH1.recover(bid1.signature);
 
         // wrong chain means wrong hash means wrong address
         vm.expectRevert(
             abi.encodeWithSelector(
-                InsufficientBalanceAcc.selector,
-                wrongBidder1,
-                bidders[1].amount / 2,
-                0
+                InsufficientBalanceAcc.selector, wrongBidder1, bidders[1].amount / 2, 0
             )
         );
         rs.auction.resolveMultiBidAuction(bid1, rs.bid0);
@@ -1327,20 +1265,14 @@ contract ExpressLaneAuctionTest is Test {
             expressLaneController: bidders[0].elc,
             signature: sign(bidders[0].privKey, h0)
         });
-        bytes32 correctH0 = rs.auction.getBidHash(
-            rs.biddingForRound,
-            bidders[0].elc,
-            bidders[0].amount / 2
-        );
+        bytes32 correctH0 =
+            rs.auction.getBidHash(rs.biddingForRound, bidders[0].elc, bidders[0].amount / 2);
         address wrongBidder0 = correctH0.recover(bid0.signature);
 
         // wrong chain means wrong hash means wrong address
         vm.expectRevert(
             abi.encodeWithSelector(
-                InsufficientBalanceAcc.selector,
-                wrongBidder0,
-                bidders[0].amount / 2,
-                0
+                InsufficientBalanceAcc.selector, wrongBidder0, bidders[0].amount / 2, 0
             )
         );
         rs.auction.resolveMultiBidAuction(rs.bid1, bid0);
@@ -1348,10 +1280,7 @@ contract ExpressLaneAuctionTest is Test {
         // wrong chain means wrong hash means wrong address
         vm.expectRevert(
             abi.encodeWithSelector(
-                InsufficientBalanceAcc.selector,
-                wrongBidder0,
-                bidders[0].amount / 2,
-                0
+                InsufficientBalanceAcc.selector, wrongBidder0, bidders[0].amount / 2, 0
             )
         );
         rs.auction.resolveSingleBidAuction(bid0);
@@ -1362,11 +1291,8 @@ contract ExpressLaneAuctionTest is Test {
     function testCannotResolveWrongSig() public {
         ResolveSetup memory rs = deployDepositAndBids();
 
-        bytes32 h1 = rs.auction.getBidHash(
-            rs.biddingForRound,
-            bidders[1].elc,
-            bidders[1].amount / 2
-        );
+        bytes32 h1 =
+            rs.auction.getBidHash(rs.biddingForRound, bidders[1].elc, bidders[1].amount / 2);
         (, bytes32 r2, bytes32 s2) = vm.sign(bidders[1].privKey, h1);
         uint8 badV = 17;
         Bid memory bid1 = Bid({
@@ -1380,11 +1306,8 @@ contract ExpressLaneAuctionTest is Test {
         vm.expectRevert(abi.encodePacked("ECDSA: invalid signature 'v' value"));
         rs.auction.resolveMultiBidAuction(bid1, rs.bid0);
 
-        bytes32 h0 = rs.auction.getBidHash(
-            rs.biddingForRound,
-            bidders[0].elc,
-            bidders[0].amount / 2
-        );
+        bytes32 h0 =
+            rs.auction.getBidHash(rs.biddingForRound, bidders[0].elc, bidders[0].amount / 2);
         (, bytes32 r1, bytes32 s1) = vm.sign(bidders[0].privKey, h0);
         Bid memory bid0 = Bid({
             amount: bidders[0].amount / 2,
@@ -1439,9 +1362,8 @@ contract ExpressLaneAuctionTest is Test {
     function testResolveMultiBidAuction() public {
         ResolveSetup memory rs = deployDepositAndBids();
         uint64 biddingForRound = rs.auction.currentRound() + 1;
-        (, uint64 roundDurationSeconds, uint64 auctionClosingSeconds, ) = rs
-            .auction
-            .roundTimingInfo();
+        (, uint64 roundDurationSeconds, uint64 auctionClosingSeconds,) =
+            rs.auction.roundTimingInfo();
         uint256 auctionBalanceBefore = rs.erc20.balanceOf(address(rs.auction));
 
         vm.expectEmit(true, true, true, true);
@@ -1507,14 +1429,9 @@ contract ExpressLaneAuctionTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 InsufficientBalanceAcc.selector,
-                rs
-                    .auction
-                    .getBidHash(
-                        rs.auction.currentRound() + 1,
-                        bidders[3].elc,
-                        bidders[3].amount / 4
-                    )
-                    .recover(bid34[1].signature),
+                rs.auction.getBidHash(
+                    rs.auction.currentRound() + 1, bidders[3].elc, bidders[3].amount / 4
+                ).recover(bid34[1].signature),
                 bidders[3].amount / 4,
                 0
             )
@@ -1571,9 +1488,7 @@ contract ExpressLaneAuctionTest is Test {
             "bidders[3].addr balance"
         );
         assertEq(
-            rs.auction.balanceOf(bidders[2].addr),
-            bidders[2].amount,
-            "bidders[2].addr balance"
+            rs.auction.balanceOf(bidders[2].addr), bidders[2].amount, "bidders[2].addr balance"
         );
         assertEq(
             rs.auction.beneficiaryBalance() - beneficiaryBalanceBefore,
@@ -1582,9 +1497,7 @@ contract ExpressLaneAuctionTest is Test {
         );
         assertEq(rs.erc20.balanceOf(address(rs.auction)), auctionBalanceBefore, "auction balance");
         checkResolvedRounds(
-            rs.auction,
-            ELCRound(bid34[1].expressLaneController, biddingForRound),
-            expected0
+            rs.auction, ELCRound(bid34[1].expressLaneController, biddingForRound), expected0
         );
 
         vm.stopPrank();
@@ -1620,11 +1533,8 @@ contract ExpressLaneAuctionTest is Test {
         });
         {
             bytes32 h1 = rs.auction.getBidHash(biddingForRound, vm.addr(1667), 0);
-            Bid memory bid1 = Bid({
-                amount: 0,
-                expressLaneController: vm.addr(1667),
-                signature: sign(1668, h1)
-            });
+            Bid memory bid1 =
+                Bid({amount: 0, expressLaneController: vm.addr(1667), signature: sign(1668, h1)});
             vm.expectRevert(abi.encodeWithSelector(InsufficientBalance.selector, 0, 0));
             vm.prank(auctioneer);
             rs.auction.resolveMultiBidAuction(bid1, bid0);
@@ -1685,11 +1595,8 @@ contract ExpressLaneAuctionTest is Test {
 
         {
             bytes32 h1 = rs.auction.getBidHash(biddingForRound, vm.addr(1667), 0);
-            Bid memory bid1 = Bid({
-                amount: 0,
-                expressLaneController: vm.addr(1667),
-                signature: sign(1668, h1)
-            });
+            Bid memory bid1 =
+                Bid({amount: 0, expressLaneController: vm.addr(1667), signature: sign(1668, h1)});
             vm.expectRevert(abi.encodeWithSelector(InsufficientBalance.selector, 0, 0));
             vm.prank(auctioneer);
             rs.auction.resolveSingleBidAuction(bid1);
@@ -1751,7 +1658,7 @@ contract ExpressLaneAuctionTest is Test {
         vm.stopPrank();
 
         // go back and initiate a withdrawal
-        (, uint64 roundDurationSeconds, , ) = rs.auction.roundTimingInfo();
+        (, uint64 roundDurationSeconds,,) = rs.auction.roundTimingInfo();
         vm.warp(block.timestamp - 1 - roundDurationSeconds);
 
         vm.prank(bidders[0].addr);
@@ -1771,7 +1678,7 @@ contract ExpressLaneAuctionTest is Test {
         vm.stopPrank();
 
         // go back and initiate a withdrawal
-        (, uint64 roundDurationSeconds, , ) = rs.auction.roundTimingInfo();
+        (, uint64 roundDurationSeconds,,) = rs.auction.roundTimingInfo();
         vm.warp(block.timestamp - 1 - roundDurationSeconds * 2);
 
         vm.prank(bidders[0].addr);
@@ -1782,10 +1689,7 @@ contract ExpressLaneAuctionTest is Test {
         vm.prank(auctioneer);
         vm.expectRevert(
             abi.encodeWithSelector(
-                InsufficientBalanceAcc.selector,
-                bidders[0].addr,
-                rs.bid0.amount,
-                0
+                InsufficientBalanceAcc.selector, bidders[0].addr, rs.bid0.amount, 0
             )
         );
         rs.auction.resolveMultiBidAuction(rs.bid1, rs.bid0);
@@ -1796,7 +1700,7 @@ contract ExpressLaneAuctionTest is Test {
         vm.stopPrank();
 
         // go back and initiate a withdrawal
-        (, uint64 roundDurationSeconds, , ) = rs.auction.roundTimingInfo();
+        (, uint64 roundDurationSeconds,,) = rs.auction.roundTimingInfo();
         vm.warp(block.timestamp - 1 - roundDurationSeconds * 2);
 
         vm.prank(bidders[1].addr);
@@ -1807,10 +1711,7 @@ contract ExpressLaneAuctionTest is Test {
         vm.prank(auctioneer);
         vm.expectRevert(
             abi.encodeWithSelector(
-                InsufficientBalanceAcc.selector,
-                bidders[1].addr,
-                rs.bid1.amount,
-                0
+                InsufficientBalanceAcc.selector, bidders[1].addr, rs.bid1.amount, 0
             )
         );
         rs.auction.resolveMultiBidAuction(rs.bid1, rs.bid0);
@@ -1819,9 +1720,8 @@ contract ExpressLaneAuctionTest is Test {
     function testResolveSingleBidAuction() public {
         ResolveSetup memory rs = deployDepositAndBids();
         uint64 biddingForRound = rs.auction.currentRound() + 1;
-        (, uint64 roundDurationSeconds, uint64 auctionClosingSeconds, ) = rs
-            .auction
-            .roundTimingInfo();
+        (, uint64 roundDurationSeconds, uint64 auctionClosingSeconds,) =
+            rs.auction.roundTimingInfo();
 
         uint256 auctionBalanceBefore = rs.erc20.balanceOf(address(rs.auction));
 
@@ -1884,9 +1784,7 @@ contract ExpressLaneAuctionTest is Test {
         vm.prank(reservePriceSetter);
         vm.expectRevert(
             abi.encodeWithSelector(
-                ReservePriceTooLow.selector,
-                minReservePrice - 1,
-                minReservePrice
+                ReservePriceTooLow.selector, minReservePrice - 1, minReservePrice
             )
         );
         rs.auction.setReservePrice(minReservePrice - 1);
@@ -1905,11 +1803,8 @@ contract ExpressLaneAuctionTest is Test {
 
         // during blackout
         vm.warp(
-            uint64(offsetTimestamp) +
-                roundDurationSeconds *
-                (testRound + 1) -
-                auctionClosingSeconds -
-                reserveSubmissionSeconds
+            uint64(offsetTimestamp) + roundDurationSeconds * (testRound + 1) - auctionClosingSeconds
+                - reserveSubmissionSeconds
         );
 
         vm.prank(reservePriceSetter);
@@ -1993,10 +1888,8 @@ contract ExpressLaneAuctionTest is Test {
             uint64 reserveSubmissionSeconds
         ) = auction.roundTimingInfo();
         vm.warp(
-            block.timestamp +
-                roundDurationSeconds -
-                auctionClosingSeconds -
-                reserveSubmissionSeconds
+            block.timestamp + roundDurationSeconds - auctionClosingSeconds
+                - reserveSubmissionSeconds
         );
         assertEq(auction.isReserveBlackout(), true);
 
@@ -2033,10 +1926,7 @@ contract ExpressLaneAuctionTest is Test {
         rs.auction.transferExpressLaneController(testRound, bidders[0].elc);
         vm.expectRevert(
             abi.encodeWithSelector(
-                NotExpressLaneController.selector,
-                testRound + 1,
-                bidders[1].elc,
-                address(this)
+                NotExpressLaneController.selector, testRound + 1, bidders[1].elc, address(this)
             )
         );
         rs.auction.transferExpressLaneController(testRound + 1, bidders[0].elc);
@@ -2045,16 +1935,11 @@ contract ExpressLaneAuctionTest is Test {
         vm.prank(bidders[1].elc);
         vm.expectEmit(true, true, true, true);
         emit SetExpressLaneController(
-            testRound + 1,
-            bidders[1].elc,
-            bidders[0].elc,
-            bidders[1].elc,
-            start,
-            end
+            testRound + 1, bidders[1].elc, bidders[0].elc, bidders[1].elc, start, end
         );
         rs.auction.transferExpressLaneController(testRound + 1, bidders[0].elc);
 
-        (, uint64 roundDurationSeconds, , ) = rs.auction.roundTimingInfo();
+        (, uint64 roundDurationSeconds,,) = rs.auction.roundTimingInfo();
         vm.warp(block.timestamp + roundDurationSeconds);
 
         // round has moved forward
@@ -2109,10 +1994,7 @@ contract ExpressLaneAuctionTest is Test {
         // cant change next from wrong sender
         vm.expectRevert(
             abi.encodeWithSelector(
-                NotExpressLaneController.selector,
-                testRound + 2,
-                bidders[3].elc,
-                address(this)
+                NotExpressLaneController.selector, testRound + 2, bidders[3].elc, address(this)
             )
         );
         rs.auction.transferExpressLaneController(testRound + 2, bidders[2].elc);
@@ -2123,12 +2005,7 @@ contract ExpressLaneAuctionTest is Test {
         vm.prank(bidders[3].elc);
         vm.expectEmit(true, true, true, true);
         emit SetExpressLaneController(
-            testRound + 2,
-            bidders[3].elc,
-            bidders[2].elc,
-            bidders[3].elc,
-            start,
-            end
+            testRound + 2, bidders[3].elc, bidders[2].elc, bidders[3].elc, start, end
         );
         rs.auction.transferExpressLaneController(testRound + 2, bidders[2].elc);
 
@@ -2139,10 +2016,7 @@ contract ExpressLaneAuctionTest is Test {
         vm.prank(bidders[3].elc);
         vm.expectRevert(
             abi.encodeWithSelector(
-                NotTransferor.selector,
-                testRound + 2,
-                bidders[2].addr,
-                bidders[3].elc
+                NotTransferor.selector, testRound + 2, bidders[2].addr, bidders[3].elc
             )
         );
         rs.auction.transferExpressLaneController(testRound + 2, bidders[2].elc);
@@ -2151,12 +2025,7 @@ contract ExpressLaneAuctionTest is Test {
         vm.prank(bidders[2].addr);
         vm.expectEmit(true, true, true, true);
         emit SetExpressLaneController(
-            testRound + 2,
-            bidders[2].elc,
-            bidders[3].elc,
-            bidders[2].addr,
-            start,
-            end
+            testRound + 2, bidders[2].elc, bidders[3].elc, bidders[2].addr, start, end
         );
         rs.auction.transferExpressLaneController(testRound + 2, bidders[3].elc);
     }
@@ -2281,7 +2150,7 @@ contract ExpressLaneAuctionTest is Test {
             })
         );
 
-        (uint64 start, ) = auction.roundTimestamps(auction.currentRound() + 1);
+        (uint64 start,) = auction.roundTimestamps(auction.currentRound() + 1);
         int64 newOffset = int64(start - 86401 * 24);
 
         vm.prank(roundTimingSetter);
@@ -2318,7 +2187,7 @@ contract ExpressLaneAuctionTest is Test {
         );
 
         uint64 cNewDuration = (roundDuration * 7) / 3;
-        (uint64 cStart, ) = auction.roundTimestamps(auction.currentRound() + 1);
+        (uint64 cStart,) = auction.roundTimestamps(auction.currentRound() + 1);
         int64 cNewOffset = int64(cStart - cNewDuration * (auction.currentRound() + 1));
 
         vm.expectEmit(true, true, true, true);
@@ -2332,8 +2201,8 @@ contract ExpressLaneAuctionTest is Test {
                 reserveSubmissionSeconds: 12
             })
         );
-        (int64 offsetAfter, uint64 durationAfter, uint64 acAfter, uint64 rsAfter) = auction
-            .roundTimingInfo();
+        (int64 offsetAfter, uint64 durationAfter, uint64 acAfter, uint64 rsAfter) =
+            auction.roundTimingInfo();
         assertEq(offsetAfter, cNewOffset);
         assertEq(durationAfter, cNewDuration);
         assertEq(acAfter, 13);
@@ -2341,7 +2210,7 @@ contract ExpressLaneAuctionTest is Test {
 
         // set the min duration
         cNewDuration = 1;
-        (cStart, ) = auction.roundTimestamps(auction.currentRound() + 1);
+        (cStart,) = auction.roundTimestamps(auction.currentRound() + 1);
         int64 intStart = int64(cStart);
         // warp to just before that start - we need to be within round duration of the next round
         vm.warp(cStart - 1);
@@ -2364,7 +2233,7 @@ contract ExpressLaneAuctionTest is Test {
         // fast forward 10k years - that sets a high number of rounds
         vm.warp(block.timestamp + (365 * 86400));
         cNewDuration = 86400;
-        (cStart, ) = auction.roundTimestamps(auction.currentRound() + 1);
+        (cStart,) = auction.roundTimestamps(auction.currentRound() + 1);
         intStart = int64(cStart);
         cNewOffset = int64(intStart - int64(cNewDuration * (auction.currentRound() + 1)));
         vm.prank(roundTimingSetter);
