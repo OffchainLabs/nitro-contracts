@@ -29,7 +29,6 @@ contract ERC20RollupEventInbox is AbsRollupEventInbox {
         // if a fee token pricer is configured then it can be used to charge for data posting fees
         ISequencerInbox seqInbox = ISequencerInbox(bridge.sequencerInbox());
         IFeeTokenPricer feeTokenPricer = seqInbox.feeTokenPricer();
-        // CHRIS: TODO: check that we're using the isUseFeeToken?
         if (address(feeTokenPricer) != address(0)) {
             uint256 gasPrice = block.basefee;
             if (ArbitrumChecker.runningOnArbitrum()) {

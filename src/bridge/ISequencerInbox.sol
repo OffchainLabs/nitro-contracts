@@ -248,12 +248,10 @@ interface ISequencerInbox is IDelayedMessageProvider {
     ) external;
 }
 
-// CHRIS: TODO: analyse possible effects of a malicious fee token pricer
-// CHRIS: TODO: should the interface be a view function?
 interface IFeeTokenPricer {
     /**
      * @notice Get the number of child chain's fee tokens per 1 parent chain's native token. Exchange rate must be
-     *         denominated in 18 decimals.
+     *         denominated in 18 decimals. Function is mutable so it allows the pricer to keep internal state.
      * @dev    For example, parent chain's native token is ETH, fee token is DAI. If price of 1ETH = 2000DAI, then function should return 2000*1e18.
      *         If fee token is USDC instead and price of 1ETH = 2000USDC, function should still return 2000*1e18, no matter that USDC uses 6 decimals.
      */

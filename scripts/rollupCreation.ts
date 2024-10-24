@@ -57,8 +57,6 @@ interface ChainInfo {
   'has-genesis-state': boolean
 }
 
-// CHRIS: TODO: do we check on init that fee token pricer must be 0 if fee token is 0?
-
 export async function createRollup(
   signer: Signer,
   isDevDeployment: boolean,
