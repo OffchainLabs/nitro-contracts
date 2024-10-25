@@ -1,5 +1,5 @@
 import { ethers } from 'hardhat'
-import { ContractFactory, Contract, Overrides, BigNumber } from 'ethers'
+import { ContractFactory, Contract, Overrides, BigNumber, Wallet } from 'ethers'
 import '@nomiclabs/hardhat-ethers'
 import { run } from 'hardhat'
 import {
@@ -9,6 +9,7 @@ import {
 import { Toolkit4844 } from '../test/contract/toolkit4844'
 import {
   ArbOwner__factory,
+  ArbOwnerPublic__factory,
   ArbSys__factory,
   CacheManager__factory,
 } from '../build/types'
@@ -16,6 +17,7 @@ import {
 const INIT_CACHE_SIZE = 536870912
 const INIT_DECAY = 10322197911
 const ARB_OWNER_ADDRESS = '0x0000000000000000000000000000000000000070'
+const ARB_OWNER_PUBLIC_ADDRESS = '0x000000000000000000000000000000000000006b'
 const ARB_SYS_ADDRESS = '0x0000000000000000000000000000000000000064'
 
 // Define a verification function
@@ -32,9 +34,11 @@ export async function verifyContract(
       contract?: string
       address: string
       constructorArguments: any[]
+      force: boolean
     } = {
       address: contractAddress,
       constructorArguments: constructorArguments,
+      force: true,
     }
 
     // if contractPathAndName is provided, add it to the verification options
@@ -45,8 +49,15 @@ export async function verifyContract(
     await run('verify:verify', verificationOptions)
     console.log(`Verified contract ${contractName} successfully.`)
   } catch (error: any) {
-    if (error.message.includes('Already Verified')) {
+    if (error.message.toLowerCase().includes('already verified')) {
       console.log(`Contract ${contractName} is already verified.`)
+    } else if (error.message.includes('does not have bytecode')) {
+      await verifyContract(
+        contractName,
+        contractAddress,
+        constructorArguments,
+        contractPathAndName
+      )
     } else {
       console.error(
         `Verification for ${contractName} failed with the following error: ${error.message}`
@@ -69,11 +80,21 @@ export async function deployContract(
   let deploymentArgs = [...constructorArgs]
   if (overrides) {
     deploymentArgs.push(overrides)
+  } else {
+    // overrides = {
+    //   maxFeePerGas: ethers.utils.parseUnits('5.0', 'gwei'),
+    //   maxPriorityFeePerGas: ethers.utils.parseUnits('0.01', 'gwei')
+    // }
+    // deploymentArgs.push(overrides)
   }
 
   const contract: Contract = await connectedFactory.deploy(...deploymentArgs)
   await contract.deployTransaction.wait()
-  console.log(`New ${contractName} created at address:`, contract.address)
+  console.log(
+    `* New ${contractName} created at address: ${
+      contract.address
+    } ${constructorArgs.join(' ')}`
+  )
 
   if (verify)
     await verifyContract(contractName, contract.address, constructorArgs)
@@ -209,6 +230,7 @@ export async function deployAllContracts(
   )
   const rollupUser = await deployContract('RollupUserLogic', signer, [], verify)
   const upgradeExecutor = await deployUpgradeExecutor(signer)
+  await upgradeExecutor.deployTransaction.wait()
   const validatorUtils = await deployContract(
     'ValidatorUtils',
     signer,
@@ -228,6 +250,15 @@ export async function deployAllContracts(
     verify
   )
   const deployHelper = await deployContract('DeployHelper', signer, [], verify)
+  if (verify && !process.env.DISABLE_VERIFICATION) {
+    // Deploy RollupProxy contract only for verification, should not be used anywhere else
+    await deployContract(
+      'RollupProxy',
+      signer,
+      [],
+      verify
+    )
+  }
   return {
     ethBridge,
     ethSequencerInbox,
@@ -257,23 +288,22 @@ export async function deployAllContracts(
 }
 
 export async function deployAndSetCacheManager(
-  chainOwnerWallet: any,
+  chainOwnerWallet: Wallet,
   verify: boolean = true
 ) {
+  // deploy CacheManager
   const cacheManagerLogic = await deployContract(
     'CacheManager',
     chainOwnerWallet,
     [],
     verify
   )
-
   const proxyAdmin = await deployContract(
     'ProxyAdmin',
     chainOwnerWallet,
     [],
     verify
   )
-
   const cacheManagerProxy = await deployContract(
     'TransparentUpgradeableProxy',
     chainOwnerWallet,
@@ -281,18 +311,43 @@ export async function deployAndSetCacheManager(
     verify
   )
 
+  // initialize CacheManager
   const cacheManager = CacheManager__factory.connect(
     cacheManagerProxy.address,
     chainOwnerWallet
   )
-
   await (await cacheManager.initialize(INIT_CACHE_SIZE, INIT_DECAY)).wait()
 
-  const arbOwner = ArbOwner__factory.connect(
+  /// add CacheManager to ArbOwner
+  const arbOwnerAccount = (
+    await ArbOwnerPublic__factory.connect(
+      ARB_OWNER_PUBLIC_ADDRESS,
+      chainOwnerWallet
+    ).getAllChainOwners()
+  )[0]
+
+  const arbOwnerPrecompile = ArbOwner__factory.connect(
     ARB_OWNER_ADDRESS,
     chainOwnerWallet
   )
-  await (await arbOwner.addWasmCacheManager(cacheManagerProxy.address)).wait()
+  if ((await chainOwnerWallet.provider.getCode(arbOwnerAccount)) === '0x') {
+    // arb owner is EOA, add cache manager directly
+    await (
+      await arbOwnerPrecompile.addWasmCacheManager(cacheManagerProxy.address)
+    ).wait()
+  } else {
+    // assume upgrade executor is arb owner
+    const upgradeExecutor = new ethers.Contract(
+      arbOwnerAccount,
+      UpgradeExecutorABI,
+      chainOwnerWallet
+    )
+    const data = arbOwnerPrecompile.interface.encodeFunctionData(
+      'addWasmCacheManager',
+      [cacheManagerProxy.address]
+    )
+    await (await upgradeExecutor.executeCall(ARB_OWNER_ADDRESS, data)).wait()
+  }
 
   return cacheManagerProxy
 }

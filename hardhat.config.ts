@@ -1,7 +1,7 @@
 import '@nomiclabs/hardhat-waffle'
 import 'hardhat-deploy'
 import '@nomiclabs/hardhat-ethers'
-import '@nomiclabs/hardhat-etherscan'
+import '@nomicfoundation/hardhat-verify'
 import '@typechain/hardhat'
 import 'solidity-coverage'
 import 'hardhat-gas-reporter'
@@ -30,8 +30,18 @@ const solidity = {
       settings: {
         optimizer: {
           enabled: true,
-          runs: 20,
+          runs: 0,
         },
+      },
+    },
+    'src/mocks/HostioTest.sol': {
+      version: '0.8.24',
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 100,
+        },
+        evmVersion: 'cancun',
       },
     },
   },
@@ -55,6 +65,16 @@ if (process.env['INTERFACE_TESTER_SOLC_VERSION']) {
           enabled: true,
           runs: 100,
         },
+      },
+    },
+    'src/mocks/HostioTest.sol': {
+      version: '0.8.24',
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 100,
+        },
+        evmVersion: 'cancun',
       },
     },
   }
@@ -110,8 +130,8 @@ module.exports = {
         ? [process.env['DEVNET_PRIVKEY']]
         : [],
     },
-    rinkeby: {
-      url: 'https://rinkeby.infura.io/v3/' + process.env['INFURA_KEY'],
+    holesky: {
+      url: 'https://holesky.infura.io/v3/' + process.env['INFURA_KEY'],
       accounts: process.env['DEVNET_PRIVKEY']
         ? [process.env['DEVNET_PRIVKEY']]
         : [],
@@ -146,6 +166,18 @@ module.exports = {
         ? [process.env['MAINNET_PRIVKEY']]
         : [],
     },
+    base: {
+      url: 'https://mainnet.base.org',
+      accounts: process.env['MAINNET_PRIVKEY']
+        ? [process.env['MAINNET_PRIVKEY']]
+        : [],
+    },
+    baseSepolia: {
+      url: 'https://sepolia.base.org',
+      accounts: process.env['DEVNET_PRIVKEY']
+        ? [process.env['DEVNET_PRIVKEY']]
+        : [],
+    },
     geth: {
       url: 'http://localhost:8545',
     },
@@ -155,12 +187,14 @@ module.exports = {
       mainnet: process.env['ETHERSCAN_API_KEY'],
       goerli: process.env['ETHERSCAN_API_KEY'],
       sepolia: process.env['ETHERSCAN_API_KEY'],
-      rinkeby: process.env['ETHERSCAN_API_KEY'],
+      holesky: process.env['ETHERSCAN_API_KEY'],
       arbitrumOne: process.env['ARBISCAN_API_KEY'],
       arbitrumTestnet: process.env['ARBISCAN_API_KEY'],
       nova: process.env['NOVA_ARBISCAN_API_KEY'],
       arbGoerliRollup: process.env['ARBISCAN_API_KEY'],
       arbSepolia: process.env['ARBISCAN_API_KEY'],
+      base: process.env['BASESCAN_API_KEY'],
+      baseSepolia: process.env['BASESCAN_API_KEY'],
     },
     customChains: [
       {
@@ -183,8 +217,8 @@ module.exports = {
         network: 'arbSepolia',
         chainId: 421614,
         urls: {
-          apiURL: 'https://sepolia-explorer.arbitrum.io/api',
-          browserURL: 'https://sepolia-explorer.arbitrum.io/',
+          apiURL: 'https://api-sepolia.arbiscan.io/api',
+          browserURL: 'https://sepolia.arbiscan.io/',
         },
       },
     ],
@@ -198,5 +232,8 @@ module.exports = {
   typechain: {
     outDir: 'build/types',
     target: 'ethers-v5',
+  },
+  contractSizer: {
+    strict: true,
   },
 }

@@ -120,7 +120,7 @@ abstract contract AbsRollupUserLogic is
         bytes32 blockHash,
         bytes32 sendRoot,
         bool isFastConfirm
-    ) internal {
+    ) internal whenNotPaused {
         requireUnresolvedExists();
 
         uint64 nodeNum = firstUnresolvedNode();
@@ -159,11 +159,7 @@ abstract contract AbsRollupUserLogic is
      * @param blockHash The block hash at the end of the assertion
      * @param sendRoot The send root at the end of the assertion
      */
-    function confirmNextNode(bytes32 blockHash, bytes32 sendRoot)
-        external
-        onlyValidator
-        whenNotPaused
-    {
+    function confirmNextNode(bytes32 blockHash, bytes32 sendRoot) external onlyValidator {
         _confirmNextNode(blockHash, sendRoot, false);
     }
 
@@ -171,9 +167,15 @@ abstract contract AbsRollupUserLogic is
      * @notice This allow anyTrustFastConfirmer to confirm next node regardless of deadline
      *         the anyTrustFastConfirmer is supposed to be set only on an AnyTrust chain to
      *         a contract that can call this function when received sufficient signatures
+     *         node hash must be match the node to be confirmed to protect against reorgs
      */
-    function fastConfirmNextNode(bytes32 blockHash, bytes32 sendRoot) external whenNotPaused {
-        require(msg.sender == anyTrustFastConfirmer, "NOT_FAST_CONFIRMER");
+    function fastConfirmNextNode(
+        bytes32 blockHash,
+        bytes32 sendRoot,
+        bytes32 nodeHash
+    ) external {
+        require(msg.sender == anyTrustFastConfirmer, "NFC");
+        require(nodeHash == getNodeStorage(firstUnresolvedNode()).nodeHash, "WH");
         _confirmNextNode(blockHash, sendRoot, true);
     }
 

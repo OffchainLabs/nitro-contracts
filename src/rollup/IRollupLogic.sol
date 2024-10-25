@@ -24,7 +24,11 @@ interface IRollupUserAbs is IRollupCore, IOwnable {
 
     function confirmNextNode(bytes32 blockHash, bytes32 sendRoot) external;
 
-    function fastConfirmNextNode(bytes32 blockHash, bytes32 sendRoot) external;
+    function fastConfirmNextNode(
+        bytes32 blockHash,
+        bytes32 sendRoot,
+        bytes32 nodeHash
+    ) external;
 
     function stakeOnExistingNode(uint64 nodeNum, bytes32 nodeHash) external;
 

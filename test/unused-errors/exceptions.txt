@@ -1,0 +1,13 @@
+Custom
+Unused
+NoTicketWithID
+NotCallable
+InvalidBlockNumber
+ProgramExpired
+ProgramInsufficientValue
+ProgramKeepaliveTooSoon
+ProgramNeedsUpgrade
+ProgramNotActivated
+ProgramNotWasm
+ProgramUpToDate
+CallerNotArbOS

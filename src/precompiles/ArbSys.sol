@@ -29,7 +29,8 @@ interface ArbSys {
     function arbChainID() external view returns (uint256);
 
     /**
-     * @notice Get internal version number identifying an ArbOS build
+     * @notice Get internal version number identifying an ArbOS build, this is `55 + nitroArbOS version number`
+     *         e.g. on ArbOS 31 this would return 86. This is the only function that have the 55 offset.
      * @return version number as int
      */
     function arbOSVersion() external view returns (uint256);
