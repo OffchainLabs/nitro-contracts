@@ -69,6 +69,10 @@
     // Elliptic's verify function omits validation
     "GHSA-434g-2637-qmqr",
     // cookie accepts cookie name, path, and domain with out of bounds characters
-    "GHSA-pxg6-pf52-xh8x"
+    "GHSA-pxg6-pf52-xh8x",
+    // secp256k1-node allows private key extraction over ECDH
+    "GHSA-584q-6j8j-r5pm",
+    // Valid ECDSA signatures erroneously rejected in Elliptic
+    "GHSA-fc9h-whq2-v747"
   ]
 }
