@@ -45,7 +45,7 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         uint256 withdrawalAmount;
     }
 
-    // @dev Deprecated in place of transient storage
+    /// @dev Deprecated in place of transient storage
     L2ToL1Context internal __context;
 
     uint128 public constant OUTBOX_VERSION = 2;

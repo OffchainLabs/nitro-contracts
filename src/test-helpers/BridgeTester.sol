@@ -51,7 +51,7 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
     address public nativeToken;
     uint8 public nativeTokenDecimals;
 
-    address internal transient currentActiveOutbox;
+    address public transient activeOutbox;
 
     modifier onlyRollupOrOwner() {
         if (msg.sender != address(rollup)) {
@@ -92,10 +92,6 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
         IOwnable _rollup
     ) external {
         rollup = _rollup;
-    }
-
-    function activeOutbox() public view returns (address) {
-        return currentActiveOutbox;
     }
 
     function allowedDelayedInboxes(
@@ -182,15 +178,15 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
         if (data.length > 0 && !to.isContract()) revert NotContract(to);
 
         // We set and reset active outbox around external call so activeOutbox() remains valid during call
-        address prevOutbox = currentActiveOutbox;
-        currentActiveOutbox = msg.sender;
+        address prevOutbox = activeOutbox;
+        activeOutbox = msg.sender;
 
         // We use a low level call here since we want to bubble up whether it succeeded or failed to the caller
         // rather than reverting on failure as well as allow contract and non-contract calls
         // solhint-disable-next-line avoid-low-level-calls
         (success, returnData) = to.call{value: value}(data);
         
-        currentActiveOutbox = prevOutbox;
+        activeOutbox = prevOutbox;
         emit BridgeCallTriggered(msg.sender, to, value, data);
     }
 

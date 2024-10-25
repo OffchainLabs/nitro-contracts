@@ -43,7 +43,7 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     address[] public allowedDelayedInboxList;
     address[] public allowedOutboxList;
 
-    // @dev Deprecated in place of transient storage
+    /// @dev Deprecated in place of transient storage
     address internal __activeOutbox;
 
     /// @inheritdoc IBridge
@@ -58,7 +58,7 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     uint256 public override sequencerReportedSubMessageCount;
 
     // transient storage vars
-    address internal transient currentActiveOutbox;
+    address public transient activeOutbox;
 
     modifier onlyRollupOrOwner() {
         if (msg.sender != address(rollup)) {
@@ -83,11 +83,6 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     ) external onlyRollupOrOwner {
         rollup = _rollup;
         emit RollupUpdated(address(_rollup));
-    }
-
-    /// @dev returns the address of current active Outbox, or zero if no outbox is active
-    function activeOutbox() public view returns (address) {
-        return currentActiveOutbox;
     }
 
     function allowedDelayedInboxes(
@@ -205,14 +200,14 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
         if (data.length > 0 && !to.isContract()) revert NotContract(to);
 
         // We set and reset active outbox around external call so activeOutbox() remains valid during call
-        address prevOutbox = currentActiveOutbox;
-        currentActiveOutbox = msg.sender;
+        address prevOutbox = activeOutbox;
+        activeOutbox = msg.sender;
 
         // We use a low level call here since we want to bubble up whether it succeeded or failed to the caller
         // rather than reverting on failure as well as allow contract and non-contract calls
         (success, returnData) = _executeLowLevelCall(to, value, data);
 
-        currentActiveOutbox = prevOutbox;
+        activeOutbox = prevOutbox;
         emit BridgeCallTriggered(msg.sender, to, value, data);
     }
 
