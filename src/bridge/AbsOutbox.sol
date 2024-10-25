@@ -52,12 +52,13 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
 
     // Transient storage vars for context, matching L2ToL1Context slot assignment
     // Using structs in transient storage is not supported in 0.8.28
-    uint128 internal transient contextL2Block;
-    uint128 internal transient contextTimestamp;
-    bytes32 internal transient contextOutputId;
-    address internal transient contextSender;
-    uint96 internal transient contextL1Block;
-    uint256 internal transient contextWithdrawalAmount;
+    uint256 public transient l2ToL1Block;
+    uint256 public transient l2ToL1Timestamp;
+    bytes32 public transient l2ToL1OutputId;
+    address public transient l2ToL1Sender;
+    uint256 public transient l2ToL1EthBlock;
+    // exposed only in ERC20Outbox. In eth based chains withdrawal amount can be accessed via msg.value
+    uint256 internal transient _l2ToL1WithdrawalAmount;
 
     function initialize(
         IBridge _bridge
@@ -98,34 +99,9 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         emit SendRootUpdated(root, l2BlockHash);
     }
 
-    /// @inheritdoc IOutbox
-    function l2ToL1Sender() external view returns (address) {
-        return contextSender;
-    }
-
-    /// @inheritdoc IOutbox
-    function l2ToL1Block() external view returns (uint256) {
-        return uint256(contextL2Block);
-    }
-
-    /// @inheritdoc IOutbox
-    function l2ToL1EthBlock() external view returns (uint256) {
-        return uint256(contextL1Block);
-    }
-
-    /// @inheritdoc IOutbox
-    function l2ToL1Timestamp() external view returns (uint256) {
-        return uint256(contextTimestamp);
-    }
-
     /// @notice batch number is deprecated and now always returns 0
     function l2ToL1BatchNum() external pure returns (uint256) {
         return 0;
-    }
-
-    /// @inheritdoc IOutbox
-    function l2ToL1OutputId() external view returns (bytes32) {
-        return contextOutputId;
     }
 
     /// @inheritdoc IOutbox
@@ -176,35 +152,35 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
 
         // we temporarily store the previous values so the outbox can naturally
         // unwind itself when there are nested calls to `executeTransaction`
-        uint128 prevL2Block = contextL2Block;
-        uint128 prevTimestamp = contextTimestamp;
-        bytes32 prevOutputId = contextOutputId;
-        address prevSender = contextSender;
-        uint96 prevL1Block = contextL1Block;
-        uint256 prevWithdrawalAmount = contextWithdrawalAmount;
+        uint256 prevL2Block = l2ToL1Block;
+        uint256 prevTimestamp = l2ToL1Timestamp;
+        bytes32 prevOutputId = l2ToL1OutputId;
+        address prevSender = l2ToL1Sender;
+        uint256 prevL1Block = l2ToL1EthBlock;
+        uint256 prevWithdrawalAmount = _l2ToL1WithdrawalAmount;
 
         // get amount to unlock based on provided value. It might differ in case
         // of native token which uses number of decimals different than 18
         uint256 amountToUnlock = _getAmountToUnlock(value);
 
         // store the new values into transient vars for the `executeTransaction` call
-        contextL2Block = uint128(l2Block);
-        contextTimestamp = uint128(l2Timestamp);
-        contextOutputId = bytes32(outputId);
-        contextSender = l2Sender;
-        contextL1Block = uint96(l1Block);
-        contextWithdrawalAmount = _amountToSetInContext(amountToUnlock);
+        l2ToL1Block = l2Block;
+        l2ToL1Timestamp = l2Timestamp;
+        l2ToL1OutputId = bytes32(outputId);
+        l2ToL1Sender = l2Sender;
+        l2ToL1EthBlock = l1Block;
+        _l2ToL1WithdrawalAmount = _amountToSetInContext(amountToUnlock);
 
         // set and reset vars around execution so they remain valid during call
         executeBridgeCall(to, amountToUnlock, data);
 
         // restore the previous values
-        contextL2Block = prevL2Block;
-        contextTimestamp = prevTimestamp;
-        contextOutputId = prevOutputId;
-        contextSender = prevSender;
-        contextL1Block = prevL1Block;
-        contextWithdrawalAmount = prevWithdrawalAmount;
+        l2ToL1Block = prevL2Block;
+        l2ToL1Timestamp = prevTimestamp;
+        l2ToL1OutputId = prevOutputId;
+        l2ToL1Sender = prevSender;
+        l2ToL1EthBlock = prevL1Block;
+        _l2ToL1WithdrawalAmount = prevWithdrawalAmount;
     }
 
     function _calcSpentIndexOffset(

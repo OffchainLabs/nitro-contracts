@@ -10,7 +10,7 @@ import {DecimalsConverterHelper} from "../libraries/DecimalsConverterHelper.sol"
 
 contract ERC20Outbox is AbsOutbox {
     function l2ToL1WithdrawalAmount() external view returns (uint256) {
-        return contextWithdrawalAmount;
+        return _l2ToL1WithdrawalAmount;
     }
 
     /// @inheritdoc AbsOutbox
