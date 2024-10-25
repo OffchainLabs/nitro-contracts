@@ -44,6 +44,9 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     address[] public allowedOutboxList;
 
     /// @dev Deprecated in place of transient storage
+    /// @dev Due to how arb governance works, it is not possible to wipe out the content of this
+    ///      slot during the upgrade. So after deprecation value in this slot will be still be
+    ///      type(uint256).max, but slot will not be used or accessible in any way.
     address internal __activeOutbox;
 
     /// @inheritdoc IBridge
@@ -68,13 +71,6 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
             }
         }
         _;
-    }
-
-    /// @inheritdoc IBridge
-    function postUpgradeInit() external onlyDelegated onlyProxyOwner {
-        // prevent postUpgradeInit within a withdrawal
-        if (__activeOutbox != address(type(uint160).max)) revert BadPostUpgradeInit();
-        __activeOutbox = address(0);
     }
 
     /// @notice Allows the rollup owner to set another rollup address

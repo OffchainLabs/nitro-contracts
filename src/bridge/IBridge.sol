@@ -132,6 +132,4 @@ interface IBridge {
     function updateRollupAddress(
         IOwnable _rollup
     ) external;
-
-    function postUpgradeInit() external;
 }

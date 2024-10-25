@@ -126,10 +126,4 @@ interface IOutbox {
         uint256 path,
         bytes32 item
     ) external pure returns (bytes32);
-
-    /**
-     * @dev function to be called one time during the outbox upgrade process
-     *      this is used to fix the storage slots
-     */
-    function postUpgradeInit() external;
 }
