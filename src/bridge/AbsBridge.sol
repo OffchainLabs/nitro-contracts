@@ -43,10 +43,9 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     address[] public allowedDelayedInboxList;
     address[] public allowedOutboxList;
 
-    /// @dev Deprecated in place of transient storage
-    /// @dev Due to how arb governance works, it is not possible to wipe out the content of this
-    ///      slot during the upgrade. So after deprecation value in this slot will be still be
-    ///      type(uint256).max, but slot will not be used or accessible in any way.
+    /// @notice Deprecated in place of transient storage
+    /// @dev After deprecation value in this slot will be type(uint256).max,
+    ///      but slot will not be used or accessible in any way.
     address internal __activeOutbox;
 
     /// @inheritdoc IBridge
@@ -60,7 +59,7 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
 
     uint256 public override sequencerReportedSubMessageCount;
 
-    // transient storage vars
+    /// @notice Transient storage ref to active outbox
     address public transient activeOutbox;
 
     modifier onlyRollupOrOwner() {

@@ -45,16 +45,15 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         uint256 withdrawalAmount;
     }
 
-    /// @dev Deprecated in place of transient storage
-    /// @dev Due to how arb governance works, it is not possible to wipe out the content of these
-    ///      4 storage slots during the upgrade. So after deprecation values in these slots will
-    ///      stay "dirty" with default values, but slots will not be used or accessible in any way.
+    /// @notice Deprecated in place of transient storage
+    /// @dev After deprecation values in these slots will stay "dirty" with
+    ///      default values, but slots will not be used or accessible in any way.
     L2ToL1Context internal __context;
 
     uint128 public constant OUTBOX_VERSION = 2;
 
-    // Transient storage vars for context
-    // Using structs in transient storage is not supported in 0.8.28
+    /// @notice Transient storage vars for context
+    /// @dev Using structs in transient storage is not supported in 0.8.28
     uint256 public transient l2ToL1Block;
     uint256 public transient l2ToL1Timestamp;
     bytes32 public transient l2ToL1OutputId;
