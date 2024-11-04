@@ -13,7 +13,6 @@
   "l2ToL1OutputId()": "72f2a8c7",
   "l2ToL1Sender()": "80648b02",
   "l2ToL1Timestamp()": "b0f30537",
-  "postUpgradeInit()": "95fcea78",
   "rollup()": "cb23bcb5",
   "roots(bytes32)": "ae6dead7",
   "spent(uint256)": "d5b5cc23",

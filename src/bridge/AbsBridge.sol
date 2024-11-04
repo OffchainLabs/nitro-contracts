@@ -2,7 +2,7 @@
 // For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
@@ -14,7 +14,8 @@ import {
     NotSequencerInbox,
     NotOutbox,
     InvalidOutboxSet,
-    BadSequencerMessageNumber
+    BadSequencerMessageNumber,
+    BadPostUpgradeInit
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./Messages.sol";
@@ -42,7 +43,10 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     address[] public allowedDelayedInboxList;
     address[] public allowedOutboxList;
 
-    address internal _activeOutbox;
+    /// @notice Deprecated in place of transient storage
+    /// @dev After deprecation value in this slot will be type(uint256).max,
+    ///      but slot will not be used or accessible in any way.
+    address internal __activeOutbox;
 
     /// @inheritdoc IBridge
     bytes32[] public delayedInboxAccs;
@@ -55,7 +59,8 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
 
     uint256 public override sequencerReportedSubMessageCount;
 
-    address internal constant EMPTY_ACTIVEOUTBOX = address(type(uint160).max);
+    /// @notice Transient storage ref to active outbox
+    address public transient activeOutbox;
 
     modifier onlyRollupOrOwner() {
         if (msg.sender != address(rollup)) {
@@ -73,17 +78,6 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     ) external onlyRollupOrOwner {
         rollup = _rollup;
         emit RollupUpdated(address(_rollup));
-    }
-
-    /// @dev returns the address of current active Outbox, or zero if no outbox is active
-    function activeOutbox() public view returns (address) {
-        address outbox = _activeOutbox;
-        // address zero is returned if no outbox is set, but the value used in storage
-        // is non-zero to save users some gas (as storage refunds are usually maxed out)
-        // EIP-1153 would help here.
-        // we don't return `EMPTY_ACTIVEOUTBOX` to avoid a breaking change on the current api
-        if (outbox == EMPTY_ACTIVEOUTBOX) return address(0);
-        return outbox;
     }
 
     function allowedDelayedInboxes(
@@ -199,15 +193,16 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     ) external returns (bool success, bytes memory returnData) {
         if (!allowedOutboxes(msg.sender)) revert NotOutbox(msg.sender);
         if (data.length > 0 && !to.isContract()) revert NotContract(to);
-        address prevOutbox = _activeOutbox;
-        _activeOutbox = msg.sender;
-        // We set and reset active outbox around external call so activeOutbox remains valid during call
+
+        // We set and reset active outbox around external call so activeOutbox() remains valid during call
+        address prevOutbox = activeOutbox;
+        activeOutbox = msg.sender;
 
         // We use a low level call here since we want to bubble up whether it succeeded or failed to the caller
         // rather than reverting on failure as well as allow contract and non-contract calls
         (success, returnData) = _executeLowLevelCall(to, value, data);
 
-        _activeOutbox = prevOutbox;
+        activeOutbox = prevOutbox;
         emit BridgeCallTriggered(msg.sender, to, value, data);
     }
 
@@ -238,7 +233,7 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     }
 
     function setOutbox(address outbox, bool enabled) external onlyRollupOrOwner {
-        if (outbox == EMPTY_ACTIVEOUTBOX) revert InvalidOutboxSet(outbox);
+        if (outbox == address(0)) revert InvalidOutboxSet(outbox);
 
         InOutInfo storage info = allowedOutboxesMap[outbox];
         bool alreadyEnabled = info.allowed;

@@ -14,7 +14,6 @@
   "l2ToL1Sender()": "80648b02",
   "l2ToL1Timestamp()": "b0f30537",
   "l2ToL1WithdrawalAmount()": "cbf96f63",
-  "postUpgradeInit()": "95fcea78",
   "rollup()": "cb23bcb5",
   "roots(bytes32)": "ae6dead7",
   "spent(uint256)": "d5b5cc23",
