@@ -40,7 +40,9 @@ interface IEdgeChallengeManager {
 
     function stakeToken() external view returns (IERC20);
 
-    function stakeAmounts(uint256) external view returns (uint256);
+    function stakeAmounts(
+        uint256
+    ) external view returns (uint256);
 
     function challengePeriodBlocks() external view returns (uint64);
 
