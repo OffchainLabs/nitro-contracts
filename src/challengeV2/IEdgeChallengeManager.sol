@@ -38,6 +38,10 @@ interface IEdgeChallengeManager {
         uint256[] calldata _stakeAmounts
     ) external;
 
+    function stakeToken() external view returns (IERC20);
+
+    function stakeAmounts(uint256) external view returns (uint256);
+
     function challengePeriodBlocks() external view returns (uint64);
 
     /// @notice The one step proof resolver used to decide between rival SmallStep edges of length 1
