@@ -6,63 +6,7 @@ pragma solidity ^0.8.17;
 
 import "./Enums.sol";
 import "./ChallengeErrors.sol";
-
-/// @notice An edge committing to a range of states. These edges will be bisected, slowly
-///         reducing them in length until they reach length one. At that point new edges of a different
-///         level will be added that claim the result of this edge, or a one step proof will be calculated
-///         if the edge level is already of type SmallStep.
-struct ChallengeEdge {
-    /// @notice The origin id is a link from the edge to an edge or assertion at a lower level.
-    ///         Intuitively all edges with the same origin id agree on the information committed to in the origin id
-    ///         For a SmallStep edge the origin id is the 'mutual' id of the length one BigStep edge being claimed by the zero layer ancestors of this edge
-    ///         For a BigStep edge the origin id is the 'mutual' id of the length one Block edge being claimed by the zero layer ancestors of this edge
-    ///         For a Block edge the origin id is the assertion hash of the assertion that is the root of the challenge - all edges in this challenge agree
-    ///         that that assertion hash is valid.
-    ///         The purpose of the origin id is to ensure that only edges that agree on a common start position
-    ///         are being compared against one another.
-    bytes32 originId;
-    /// @notice A root of all the states in the history up to the startHeight
-    bytes32 startHistoryRoot;
-    /// @notice The height of the start history root
-    uint256 startHeight;
-    /// @notice A root of all the states in the history up to the endHeight. Since endHeight > startHeight, the startHistoryRoot must
-    ///         commit to a prefix of the states committed to by the endHistoryRoot
-    bytes32 endHistoryRoot;
-    /// @notice The height of the end history root
-    uint256 endHeight;
-    /// @notice Edges can be bisected into two children. If this edge has been bisected the id of the
-    ///         lower child is populated here, until that time this value is 0. The lower child has startHistoryRoot and startHeight
-    ///         equal to this edge, but endHistoryRoot and endHeight equal to some prefix of the endHistoryRoot of this edge
-    bytes32 lowerChildId;
-    /// @notice Edges can be bisected into two children. If this edge has been bisected the id of the
-    ///         upper child is populated here, until that time this value is 0. The upper child has startHistoryRoot and startHeight
-    ///         equal to some prefix of the endHistoryRoot of this edge, and endHistoryRoot and endHeight equal to this edge
-    bytes32 upperChildId;
-    /// @notice The edge or assertion in the upper level that this edge claims to be true.
-    ///         Only populated on zero layer edges
-    bytes32 claimId;
-    /// @notice The entity that supplied a mini-stake accompanying this edge
-    ///         Only populated on zero layer edges
-    address staker;
-    /// @notice The block number when this edge was created
-    uint64 createdAtBlock;
-    /// @notice The block number at which this edge was confirmed
-    ///         Zero if not confirmed
-    uint64 confirmedAtBlock;
-    /// @notice Current status of this edge. All edges are created Pending, and may be updated to Confirmed
-    ///         Once Confirmed they cannot transition back to Pending
-    EdgeStatus status;
-    /// @notice The level of this edge.
-    ///         Level 0 is type Block
-    ///         Last level (defined by NUM_BIGSTEP_LEVEL + 1) is type SmallStep
-    ///         All levels in between are of type BigStep
-    uint8 level;
-    /// @notice Set to true when the staker has been refunded. Can only be set to true if the status is Confirmed
-    ///         and the staker is non zero.
-    bool refunded;
-    /// @notice TODO
-    uint64 totalTimeUnrivaledCache;
-}
+import "./Structs.sol";
 
 library ChallengeEdgeLib {
     /// @notice Common checks to do when adding an edge
