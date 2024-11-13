@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@arbitrum/nitro-contracts-2.0.0@npm:@arbitrum/nitro-contracts@2.0.0-beta.0":
-  version "2.0.0-beta.0"
-  resolved "https://registry.yarnpkg.com/@arbitrum/nitro-contracts/-/nitro-contracts-2.0.0-beta.0.tgz#f8e75b843cc67100ce99f7a0f7aa583315ad1f9e"
-  integrity sha512-MzWGBKInvLqr5Qh0ux8G8tN3meX+uhil1ozsMrAce1NTiDWUSijj6q4zGJEVjKTSN5YX0rVg7CR7HjwveGZrCg==
+"@arbitrum/nitro-contracts-2.1.0@npm:@arbitrum/nitro-contracts@2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@arbitrum/nitro-contracts/-/nitro-contracts-2.1.0.tgz#b2900c0b9fad38716dce29c2b3cc96eb35611b55"
+  integrity sha512-Bh89H5/ihWVcAI2eNBc1McybZAmpTHJ5eFLauLz8bjicZTOD545vSYAreJN41Uo+AlHKVAMtODUQdoP0NVtg3Q==
   dependencies:
     "@offchainlabs/upgrade-executor" "1.1.0-beta.0"
     "@openzeppelin/contracts" "4.5.0"

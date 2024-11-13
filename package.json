@@ -64,7 +64,7 @@
   },
   "private": false,
   "devDependencies": {
-    "@arbitrum/nitro-contracts-2.0.0": "npm:@arbitrum/nitro-contracts@2.0.0-beta.0",
+    "@arbitrum/nitro-contracts-2.1.0": "npm:@arbitrum/nitro-contracts@2.1.0",
     "@arbitrum/sdk": "^3.4.1",
     "@ethersproject/providers": "^5.7.2",
     "@nomicfoundation/hardhat-verify": "^2.0.9",
