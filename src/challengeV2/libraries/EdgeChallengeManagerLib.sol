@@ -8,124 +8,13 @@ import "./UintUtilsLib.sol";
 import "./MerkleTreeAccumulatorLib.sol";
 import "./ChallengeEdgeLib.sol";
 import "../../osp/IOneStepProofEntry.sol";
-import "../../rollup/AssertionState.sol";
 import "../../libraries/Constants.sol";
 import "./ChallengeErrors.sol";
-
-/// @notice An execution state and proof to show that it's valid
-struct AssertionStateData {
-    /// @notice An execution state
-    AssertionState assertionState;
-    /// @notice assertion Hash of the prev assertion
-    bytes32 prevAssertionHash;
-    /// @notice Inbox accumulator of the assertion
-    bytes32 inboxAcc;
-}
-
-/// @notice Data for creating a layer zero edge
-struct CreateEdgeArgs {
-    /// @notice The level of edge to be created. Challenges are decomposed into multiple levels.
-    ///         The first (level 0) being of type Block, followed by n (set by NUM_BIGSTEP_LEVEL) levels of type BigStep, and finally
-    ///         followed by a single level of type SmallStep. Each level is bisected until an edge
-    ///         of length one is reached before proceeding to the next level. The first edge in each level (the layer zero edge)
-    ///         makes a claim about an assertion or assertion in the lower level.
-    ///         Finally in the last level, a SmallStep edge is added that claims a lower level length one BigStep edge, and these
-    ///         SmallStep edges are bisected until they reach length one. A length one small step edge
-    ///         can then be directly executed using a one-step proof.
-    uint8 level;
-    /// @notice The end history root of the edge to be created
-    bytes32 endHistoryRoot;
-    /// @notice The end height of the edge to be created.
-    /// @dev    End height is deterministic for different levels but supplying it here gives the
-    ///         caller a bit of extra security that they are supplying data for the correct level of edge
-    uint256 endHeight;
-    /// @notice The edge, or assertion, that is being claimed correct by the newly created edge.
-    bytes32 claimId;
-    /// @notice Proof that the start history root commits to a prefix of the states that
-    ///         end history root commits to
-    bytes prefixProof;
-    /// @notice Edge type specific data
-    ///         For Block type edges this is the abi encoding of:
-    ///         bytes32[]: Inclusion proof - proof to show that the end state is the last state in the end history root
-    ///         AssertionStateData: the before state of the edge
-    ///         AssertionStateData: the after state of the edge
-    ///         bytes32 predecessorId: id of the prev assertion
-    ///         bytes32 inboxAcc:  the inbox accumulator of the assertion
-    ///         For BigStep and SmallStep edges this is the abi encoding of:
-    ///         bytes32: Start state - first state the edge commits to
-    ///         bytes32: End state - last state the edge commits to
-    ///         bytes32[]: Claim start inclusion proof - proof to show the start state is the first state in the claim edge
-    ///         bytes32[]: Claim end inclusion proof - proof to show the end state is the last state in the claim edge
-    ///         bytes32[]: Inclusion proof - proof to show that the end state is the last state in the end history root
-    bytes proof;
-}
-
-/// @notice Data parsed raw proof data
-struct ProofData {
-    /// @notice The first state being committed to by an edge
-    bytes32 startState;
-    /// @notice The last state being committed to by an edge
-    bytes32 endState;
-    /// @notice A proof that the end state is included in the edge
-    bytes32[] inclusionProof;
-}
-
-/// @notice Stores all edges and their rival status
-struct EdgeStore {
-    /// @notice A mapping of edge id to edges. Edges are never deleted, only created, and potentially confirmed.
-    mapping(bytes32 => ChallengeEdge) edges;
-    /// @notice A mapping of mutualId to edge id. Rivals share the same mutual id, and here we
-    ///         store the edge id of the second edge that was created with the same mutual id - the first rival
-    ///         When only one edge exists for a specific mutual id then a special magic string hash is stored instead
-    ///         of the first rival id, to signify that a single edge does exist with this mutual id
-    mapping(bytes32 => bytes32) firstRivals;
-    /// @notice A mapping of mutualId to the edge id of the confirmed rival with that mutualId
-    /// @dev    Each group of rivals (edges sharing mutual id) can only have at most one confirmed edge
-    mapping(bytes32 => bytes32) confirmedRivals;
-    /// @notice A mapping of account -> mutualId -> bool indicating if the account has created a layer zero edge with a mutual id
-    mapping(address => mapping(bytes32 => bool)) hasMadeLayerZeroRival;
-}
-
-/// @notice Input data to a one step proof
-struct OneStepData {
-    /// @notice The hash of the state that's being executed from
-    bytes32 beforeHash;
-    /// @notice Proof data to accompany the execution context
-    bytes proof;
-}
-
-/// @notice Data about a recently added edge
-struct EdgeAddedData {
-    bytes32 edgeId;
-    bytes32 mutualId;
-    bytes32 originId;
-    bytes32 claimId;
-    uint256 length;
-    uint8 level;
-    bool hasRival;
-    bool isLayerZero;
-}
-
-/// @notice Data about an assertion that is being claimed by an edge
-/// @dev    This extra information that is needed in order to verify that a block edge can be created
-struct AssertionReferenceData {
-    /// @notice The id of the assertion - will be used in a sanity check
-    bytes32 assertionHash;
-    /// @notice The predecessor of the assertion
-    bytes32 predecessorId;
-    /// @notice Is the assertion pending
-    bool isPending;
-    /// @notice Does the assertion have a sibling
-    bool hasSibling;
-    /// @notice The execution state of the predecessor assertion
-    AssertionState startState;
-    /// @notice The execution state of the assertion being claimed
-    AssertionState endState;
-}
-
+import "./Structs.sol";
 /// @title  Core functionality for the Edge Challenge Manager
 /// @notice The edge manager library allows edges to be added and bisected, and keeps track of the amount
 ///         of time an edge remained unrivaled.
+
 library EdgeChallengeManagerLib {
     using ChallengeEdgeLib for ChallengeEdge;
     using GlobalStateLib for GlobalState;

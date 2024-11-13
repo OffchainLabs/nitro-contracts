@@ -12,7 +12,7 @@ import "../bridge/IOutbox.sol";
 import "../bridge/IInboxBase.sol";
 import "./Assertion.sol";
 import "./IRollupEventInbox.sol";
-import "../challengeV2/EdgeChallengeManager.sol";
+import "../challengeV2/IEdgeChallengeManager.sol";
 
 library RollupLib {
     using GlobalStateLib for GlobalState;

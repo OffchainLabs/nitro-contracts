@@ -67,6 +67,12 @@
     // Regular Expression Denial of Service (ReDoS) in micromatch
     "GHSA-952p-6rrq-rcjv",
     // cookie accepts cookie name, path, and domain with out of bounds characters
-    "GHSA-pxg6-pf52-xh8x"
+    "GHSA-pxg6-pf52-xh8x",
+    // Elliptic's verify function omits uniqueness validation
+    "GHSA-434g-2637-qmqr",
+    // Valid ECDSA signatures erroneously rejected in Elliptic
+    "GHSA-fc9h-whq2-v747",
+    // secp256k1-node allows private key extraction over ECDH
+    "GHSA-584q-6j8j-r5pm"
   ]
 }

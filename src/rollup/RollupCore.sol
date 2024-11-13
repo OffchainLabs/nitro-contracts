@@ -17,7 +17,7 @@ import "../state/Machine.sol";
 import "../bridge/ISequencerInbox.sol";
 import "../bridge/IBridge.sol";
 import "../bridge/IOutbox.sol";
-import "../challengeV2/EdgeChallengeManager.sol";
+import "../challengeV2/IEdgeChallengeManager.sol";
 import "../libraries/ArbitrumChecker.sol";
 
 abstract contract RollupCore is IRollupCore, PausableUpgradeable {

@@ -2,7 +2,7 @@
 // For license information, see https://github.com/offchainlabs/bold/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 //
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.0;
 
 import "../bridge/IBridge.sol";
 import "../osp/IOneStepProofEntry.sol";
