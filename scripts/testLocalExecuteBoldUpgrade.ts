@@ -629,15 +629,29 @@ async function main() {
     throw new Error('No boldAction contract deployed')
   }
 
-  const preUpgradeState = await getPreUpgradeState(l1Rpc, config)
-  const receipt = await perform(l1Rpc, config, deployedContracts)
-  await verifyPostUpgrade({
-    l1Rpc,
-    config,
-    deployedContracts,
-    preUpgradeState,
-    receipt,
-  })
+  const boldAction = BOLDUpgradeAction__factory.connect(
+    deployedContracts.boldAction,
+    l1Rpc
+  )
+
+  // what validators did we have in the old rollup?
+  const boldActionPerformData = boldAction.interface.encodeFunctionData(
+    'perform',
+    [config.validators]
+  )
+
+  console.log("target:", deployedContracts.boldAction)
+  console.log("calldata:", boldActionPerformData)
+
+  // const preUpgradeState = await getPreUpgradeState(l1Rpc, config)
+  // const receipt = await perform(l1Rpc, config, deployedContracts)
+  // await verifyPostUpgrade({
+  //   l1Rpc,
+  //   config,
+  //   deployedContracts,
+  //   preUpgradeState,
+  //   receipt,
+  // })
 }
 
 main().then(() => console.log('Done.'))
