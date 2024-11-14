@@ -43,6 +43,7 @@ const executors: { [key: string]: string } = {
   arb1: '0xE6841D92B0C345144506576eC13ECf5103aC7f49',
   nova: '0xE6841D92B0C345144506576eC13ECf5103aC7f49',
   sepolia: '0x6EC62D826aDc24AeA360be9cF2647c42b9Cdb19b',
+  local: '0x5E1497dD1f08C87b2d8FE23e9AAB6c1De833D927'
 }
 
 async function getPreUpgradeState(l1Rpc: JsonRpcProvider, config: Config) {
