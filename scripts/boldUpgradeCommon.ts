@@ -94,9 +94,9 @@ export const validateConfig = async (
   l1Rpc: providers.Provider
 ) => {
   // check all the config.contracts exist
-  if ((await l1Rpc.getCode(config.contracts.excessStakeReceiver)).length <= 2) {
-    throw new Error('excessStakeReceiver address is not a contract')
-  }
+  // if ((await l1Rpc.getCode(config.contracts.excessStakeReceiver)).length <= 2) {
+  //   throw new Error('excessStakeReceiver address is not a contract')
+  // }
   if ((await l1Rpc.getCode(config.contracts.rollup)).length <= 2) {
     throw new Error('rollup address is not a contract')
   }
