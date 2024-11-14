@@ -309,10 +309,10 @@ export const populateLookup = async (
 
   let latestConfirmedLog
   let toBlock = await wallet.provider!.getBlockNumber()
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 1000; i++) {
     latestConfirmedLog = await wallet.provider!.getLogs({
       address: rollupAddr,
-      fromBlock: toBlock - 1000,
+      fromBlock: toBlock - 100,
       toBlock: toBlock,
       topics: [
         oldRollup.interface.getEventTopic('NodeCreated'),
@@ -320,7 +320,13 @@ export const populateLookup = async (
       ],
     })
     if (latestConfirmedLog.length == 1) break
-    toBlock -= 1000
+    if (toBlock == 0) {
+      throw new Error('Could not find latest confirmed node')
+    }
+    toBlock -= 100
+    if (toBlock < 0) {
+      toBlock = 0
+    }
   }
 
   if (!latestConfirmedLog || latestConfirmedLog.length != 1) {
