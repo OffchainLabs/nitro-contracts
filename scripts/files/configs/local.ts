@@ -48,5 +48,5 @@ export const local: Config = {
       replenishRateInBasis: 500,
     },
   },
-  validators: ['0xf10EF80c6eF4930A62C5F9661c91339Df4dBB173'],
+  validators: ['0x6A568afe0f82d34759347bb36F14A6bB171d2CBe'],
 }
