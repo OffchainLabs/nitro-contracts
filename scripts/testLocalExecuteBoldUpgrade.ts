@@ -83,9 +83,10 @@ async function perform(
       'no executor found for CONFIG_NETWORK_NAME or CONFIG_NETWORK_NAME not set'
     )
   }
-  await l1Rpc.send('hardhat_impersonateAccount', [executor])
 
-  await l1Rpc.send('hardhat_setBalance', [executor, '0x1000000000000000'])
+  // await l1Rpc.send('hardhat_impersonateAccount', [executor])
+
+  // await l1Rpc.send('hardhat_setBalance', [executor, '0x1000000000000000'])
 
   const timelockImposter = l1Rpc.getSigner(executor)
 
@@ -99,15 +100,26 @@ async function perform(
     timelockImposter
   )
 
-  // what validators did we have in the old rollup?
+  // // what validators did we have in the old rollup?
   const boldActionPerformData = boldAction.interface.encodeFunctionData(
     'perform',
     [config.validators]
   )
 
-  return (await (
-    await upExec.execute(deployedContracts.boldAction, boldActionPerformData)
-  ).wait()) as ContractReceipt
+  const performCallData = upExec.interface.encodeFunctionData('execute', [
+    deployedContracts.boldAction,
+    boldActionPerformData,
+  ])
+
+  console.log('eoa with executor role:', executor)
+  console.log('upgrade executor:', config.contracts.upgradeExecutor)
+  // console.log("target:", deployedContracts.boldAction)
+  // console.log("calldata:", boldActionPerformData)
+  console.log("execute(...) call to upgrade executor:", performCallData)
+
+  // return (await (
+  //   await upExec.execute(deployedContracts.boldAction, boldActionPerformData)
+  // ).wait()) as ContractReceipt
 }
 
 async function verifyPostUpgrade(params: VerificationParams) {
@@ -640,11 +652,8 @@ async function main() {
     [config.validators]
   )
 
-  console.log("target:", deployedContracts.boldAction)
-  console.log("calldata:", boldActionPerformData)
-
   // const preUpgradeState = await getPreUpgradeState(l1Rpc, config)
-  // const receipt = await perform(l1Rpc, config, deployedContracts)
+  const receipt = await perform(l1Rpc, config, deployedContracts)
   // await verifyPostUpgrade({
   //   l1Rpc,
   //   config,
