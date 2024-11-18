@@ -25,6 +25,8 @@ contract BridgeCreator is Ownable {
     event TemplatesUpdated();
     event ERC20TemplatesUpdated();
 
+    error RollupCodeEmpty();
+
     struct BridgeContracts {
         IBridge bridge;
         ISequencerInbox sequencerInbox;
@@ -84,6 +86,12 @@ contract BridgeCreator is Ownable {
         address nativeToken,
         ISequencerInbox.MaxTimeVariation calldata maxTimeVariation
     ) external returns (BridgeContracts memory) {
+        // make sure the rollup exists
+        // otherwise the rollup creator could be DOSed by frontrunning
+        if (rollup.code.length == 0) {
+            revert RollupCodeEmpty();
+        }
+
         // use create2 salt to ensure deterministic addresses
         bytes32 create2Salt = keccak256(abi.encode(adminProxy, rollup, nativeToken, maxTimeVariation));
 
