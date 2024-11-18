@@ -1,4 +1,4 @@
-import { Contract, ContractReceipt } from 'ethers'
+import { Contract, ContractReceipt, Wallet } from 'ethers'
 import { ethers } from 'hardhat'
 import {
   Config,
@@ -22,7 +22,7 @@ import { abi as UpgradeExecutorAbi } from '@offchainlabs/upgrade-executor/build/
 import dotenv from 'dotenv'
 import { RollupMigratedEvent } from '../build/types/src/rollup/BOLDUpgradeAction.sol/BOLDUpgradeAction'
 import { abi as OldRollupAbi } from '@arbitrum/nitro-contracts-2.1.0/build/contracts/src/rollup/RollupUserLogic.sol/RollupUserLogic.json'
-import { JsonRpcProvider } from '@ethersproject/providers'
+import { JsonRpcProvider, JsonRpcSigner } from '@ethersproject/providers'
 import { getAddress } from 'ethers/lib/utils'
 import path from 'path'
 
@@ -85,20 +85,25 @@ async function perform(
     )
   }
 
-  // await l1Rpc.send('hardhat_impersonateAccount', [executor])
-
-  // await l1Rpc.send('hardhat_setBalance', [executor, '0x1000000000000000'])
-
-  const timelockImposter = l1Rpc.getSigner(executor)
+  const l1PrivKey = process.env.L1_PRIV_KEY
+  if (!l1PrivKey) {
+    throw new Error('L1_PRIV_KEY env variable not set')
+  }
+  let timelockSigner = (new Wallet(l1PrivKey, l1Rpc)) as unknown as JsonRpcSigner
+  if (process.env.ANVILFORK === 'true') {
+    timelockSigner = await l1Rpc.getSigner(executor)
+    await l1Rpc.send('hardhat_impersonateAccount', [executor])
+    await l1Rpc.send('hardhat_setBalance', [executor, '0x1000000000000000'])
+  }
 
   const upExec = new Contract(
     config.contracts.upgradeExecutor,
     UpgradeExecutorAbi,
-    timelockImposter
+    timelockSigner
   )
   const boldAction = BOLDUpgradeAction__factory.connect(
     deployedContracts.boldAction,
-    timelockImposter
+    timelockSigner
   )
 
   // // what validators did we have in the old rollup?
@@ -114,16 +119,18 @@ async function perform(
 
   console.log('eoa with executor role:', executor)
   console.log('upgrade executor:', config.contracts.upgradeExecutor)
-  // console.log("target:", deployedContracts.boldAction)
-  // console.log("calldata:", boldActionPerformData)
   console.log("execute(...) call to upgrade executor:", performCallData)
 
-  // return (await (
-  //   await upExec.execute(deployedContracts.boldAction, boldActionPerformData)
-  // ).wait()) as ContractReceipt
+  console.log('executing the upgrade...')
+  const receipt = (await (
+    await upExec.execute(deployedContracts.boldAction, boldActionPerformData)
+  ).wait()) as ContractReceipt
+  console.log('upgrade executed')
+  return receipt
 }
 
 async function verifyPostUpgrade(params: VerificationParams) {
+  console.log('verifying the upgrade...')
   const { l1Rpc, deployedContracts, receipt } = params
 
   const boldAction = BOLDUpgradeAction__factory.connect(
@@ -134,6 +141,7 @@ async function verifyPostUpgrade(params: VerificationParams) {
   const parsedLog = boldAction.interface.parseLog(
     receipt.events![receipt.events!.length - 2]
   ).args as RollupMigratedEvent['args']
+  console.log('RollupMigratedEvent:', parsedLog)
 
   const edgeChallengeManager = EdgeChallengeManager__factory.connect(
     parsedLog.challengeManager,
@@ -150,6 +158,8 @@ async function verifyPostUpgrade(params: VerificationParams) {
   await checkOldRollup(params)
   await checkNewRollup(params, newRollup, edgeChallengeManager)
   await checkNewChallengeManager(params, newRollup, edgeChallengeManager)
+
+  console.log('upgrade verified')
 }
 
 async function checkSequencerInbox(
@@ -642,26 +652,15 @@ async function main() {
     throw new Error('No boldAction contract deployed')
   }
 
-  const boldAction = BOLDUpgradeAction__factory.connect(
-    deployedContracts.boldAction,
-    l1Rpc
-  )
-
-  // what validators did we have in the old rollup?
-  const boldActionPerformData = boldAction.interface.encodeFunctionData(
-    'perform',
-    [config.validators]
-  )
-
-  // const preUpgradeState = await getPreUpgradeState(l1Rpc, config)
+  const preUpgradeState = await getPreUpgradeState(l1Rpc, config)
   const receipt = await perform(l1Rpc, config, deployedContracts)
-  // await verifyPostUpgrade({
-  //   l1Rpc,
-  //   config,
-  //   deployedContracts,
-  //   preUpgradeState,
-  //   receipt,
-  // })
+  await verifyPostUpgrade({
+    l1Rpc,
+    config,
+    deployedContracts,
+    preUpgradeState,
+    receipt,
+  })
 }
 
 main().then(() => console.log('Done.'))
