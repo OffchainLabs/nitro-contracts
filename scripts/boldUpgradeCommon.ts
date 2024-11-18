@@ -36,6 +36,10 @@ export const getConfig = async (
   if (!config) {
     throw new Error('config not found')
   }
+  if (process.env.ROLLUP_ADDRESS) {
+    console.log('Using ROLLUP_ADDRESS from env:', process.env.ROLLUP_ADDRESS)
+    config.contracts.rollup = process.env.ROLLUP_ADDRESS
+  }
   await validateConfig(config, l1Rpc)
   return config
 }
