@@ -121,7 +121,7 @@ contract BridgeCreator is Ownable {
 
         // use create2 salt to ensure deterministic addresses
         bytes32 create2Salt = keccak256(
-            abi.encode(adminProxy, rollup, nativeToken, maxTimeVariation)
+            abi.encode(rollup)
         );
 
         // create ETH-based bridge if address zero is provided for native token, otherwise create ERC20-based bridge
