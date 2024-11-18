@@ -53,29 +53,56 @@ contract BridgeCreator is Ownable {
         emit ERC20TemplatesUpdated();
     }
 
-    function _createBridge(bytes32 create2Salt, address adminProxy, BridgeContracts storage templates)
-        internal
-        returns (BridgeContracts memory)
-    {
+    function _createBridge(
+        bytes32 create2Salt,
+        address adminProxy,
+        BridgeContracts storage templates
+    ) internal returns (BridgeContracts memory) {
         BridgeContracts memory frame;
         frame.bridge = IBridge(
-            address(new TransparentUpgradeableProxy{salt: create2Salt}(address(templates.bridge), adminProxy, ""))
+            address(
+                new TransparentUpgradeableProxy{salt: create2Salt}(
+                    address(templates.bridge),
+                    adminProxy,
+                    ""
+                )
+            )
         );
         frame.sequencerInbox = ISequencerInbox(
             address(
-                new TransparentUpgradeableProxy{salt: create2Salt}(address(templates.sequencerInbox), adminProxy, "")
+                new TransparentUpgradeableProxy{salt: create2Salt}(
+                    address(templates.sequencerInbox),
+                    adminProxy,
+                    ""
+                )
             )
         );
         frame.inbox = IInboxBase(
-            address(new TransparentUpgradeableProxy{salt: create2Salt}(address(templates.inbox), adminProxy, ""))
+            address(
+                new TransparentUpgradeableProxy{salt: create2Salt}(
+                    address(templates.inbox),
+                    adminProxy,
+                    ""
+                )
+            )
         );
         frame.rollupEventInbox = IRollupEventInbox(
             address(
-                new TransparentUpgradeableProxy{salt: create2Salt}(address(templates.rollupEventInbox), adminProxy, "")
+                new TransparentUpgradeableProxy{salt: create2Salt}(
+                    address(templates.rollupEventInbox),
+                    adminProxy,
+                    ""
+                )
             )
         );
         frame.outbox = IOutbox(
-            address(new TransparentUpgradeableProxy{salt: create2Salt}(address(templates.outbox), adminProxy, ""))
+            address(
+                new TransparentUpgradeableProxy{salt: create2Salt}(
+                    address(templates.outbox),
+                    adminProxy,
+                    ""
+                )
+            )
         );
         return frame;
     }
@@ -93,7 +120,9 @@ contract BridgeCreator is Ownable {
         }
 
         // use create2 salt to ensure deterministic addresses
-        bytes32 create2Salt = keccak256(abi.encode(adminProxy, rollup, nativeToken, maxTimeVariation));
+        bytes32 create2Salt = keccak256(
+            abi.encode(adminProxy, rollup, nativeToken, maxTimeVariation)
+        );
 
         // create ETH-based bridge if address zero is provided for native token, otherwise create ERC20-based bridge
         BridgeContracts memory frame = _createBridge(
