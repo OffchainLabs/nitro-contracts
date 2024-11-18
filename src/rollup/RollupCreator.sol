@@ -92,8 +92,6 @@ contract RollupCreator is Ownable {
      * @dev - config.rollupOwner should have executor role on upgradeExecutor
      * @dev - Bridge should have a single inbox and outbox
      * @dev - Validators, batch posters and batch poster manager should be set if provided
-     * @dev While the rollup address is salted with deployParams and thus is safe from reorgs, other contracts such as the inbox are not.
-     * @dev Users should wait for finality before depositing funds to the rollup through the inbox.
      * @param deployParams The parameters for the rollup deployment. It consists of:
      *          - config        The configuration for the rollup
      *          - validators    The list of validator addresses, not used when set to empty list
