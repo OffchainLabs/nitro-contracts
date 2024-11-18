@@ -99,6 +99,7 @@ export async function createRollup(
     }
 
     // Call the createRollup function
+    console.log('rollupConfig:', JSON.stringify(config.rollupConfig))
     console.log('Calling createRollup to generate a new rollup ...')
     const deployParams = isDevDeployment
       ? await _getDevRollupConfig(feeToken, validatorWalletCreator)
@@ -112,6 +113,7 @@ export async function createRollup(
           batchPosters: config.batchPosters,
           batchPosterManager: config.batchPosterManager,
         }
+    console.log('deployParams:', JSON.stringify(deployParams))
 
     const createRollupTx = await rollupCreator.createRollup(deployParams, {
       value: feeCost,
