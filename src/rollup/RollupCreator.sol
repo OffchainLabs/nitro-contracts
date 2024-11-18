@@ -136,11 +136,14 @@ contract RollupCreator is Ownable {
             );
         }
 
-        // create proxy admin which will manage bridge contracts
-        ProxyAdmin proxyAdmin = new ProxyAdmin();
-
         // Create the rollup proxy to figure out the address and initialize it later
         RollupProxy rollup = new RollupProxy{salt: keccak256(abi.encode(deployParams))}();
+
+        // create proxy admin which will manage bridge contracts
+        // use create2 so the proxyAdmin address is deterministic based on the rollup config
+        // all proxies are be deployed with a create2 salt of 0, 
+        // ensuring all proxies are deterministic based on the rollup config
+        ProxyAdmin proxyAdmin = new ProxyAdmin{salt: keccak256(abi.encodePacked(address(rollup)))}();
 
         BridgeCreator.BridgeContracts memory bridgeContracts = bridgeCreator.createBridge(
             address(proxyAdmin),
@@ -151,7 +154,7 @@ contract RollupCreator is Ownable {
 
         IChallengeManager challengeManager = IChallengeManager(
             address(
-                new TransparentUpgradeableProxy(
+                new TransparentUpgradeableProxy{salt: 0}(
                     address(challengeManagerTemplate),
                     address(proxyAdmin),
                     ""
@@ -240,7 +243,7 @@ contract RollupCreator is Ownable {
     {
         IUpgradeExecutor upgradeExecutor = IUpgradeExecutor(
             address(
-                new TransparentUpgradeableProxy(
+                new TransparentUpgradeableProxy{salt: 0}(
                     address(upgradeExecutorLogic),
                     address(proxyAdmin),
                     bytes("")
