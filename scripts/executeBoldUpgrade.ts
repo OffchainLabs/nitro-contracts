@@ -14,9 +14,11 @@ import {
   EdgeChallengeManager__factory,
   Outbox__factory,
   RollupEventInbox__factory,
+  RollupReader__factory,
   RollupUserLogic,
   RollupUserLogic__factory,
   SequencerInbox__factory,
+  StateHashPreImageLookup__factory,
 } from '../build/types'
 import { abi as UpgradeExecutorAbi } from '@offchainlabs/upgrade-executor/build/contracts/src/UpgradeExecutor.sol/UpgradeExecutor.json'
 import dotenv from 'dotenv'
@@ -155,8 +157,8 @@ async function verifyPostUpgrade(params: VerificationParams) {
   await checkBridge(params, newRollup)
   await checkRollupEventInbox(params, newRollup)
   await checkOutbox(params, newRollup)
-  await checkOldRollup(params)
-  await checkNewRollup(params, newRollup, edgeChallengeManager)
+  const { oldLatestConfirmedStateHash } = await checkOldRollup(params)
+  await checkNewRollup(params, newRollup, edgeChallengeManager, oldLatestConfirmedStateHash)
   await checkNewChallengeManager(params, newRollup, edgeChallengeManager)
 
   console.log('upgrade verified')
@@ -305,7 +307,7 @@ async function checkBridge(
   }
 }
 
-async function checkOldRollup(params: VerificationParams) {
+async function checkOldRollup(params: VerificationParams): Promise<{oldLatestConfirmedStateHash: string}> {
   const { l1Rpc, config, deployedContracts, preUpgradeState } = params
 
   const oldRollupContract = new Contract(
@@ -338,32 +340,56 @@ async function checkOldRollup(params: VerificationParams) {
   ) {
     throw new Error('Old rollup was not upgraded')
   }
+
+  // using the reader factory here for typing
+  const rollupReaderContract = RollupReader__factory.connect(config.contracts.rollup, l1Rpc)
+  const latestConfirmed = await rollupReaderContract.latestConfirmed()
+  const latestConfirmedStateHash = (await rollupReaderContract.getNode(latestConfirmed)).stateHash
+  return {
+    oldLatestConfirmedStateHash: latestConfirmedStateHash,
+  }
 }
 
 async function checkInitialAssertion(
   params: VerificationParams,
   newRollup: RollupUserLogic,
-  newEdgeChallengeManager: EdgeChallengeManager
+  newEdgeChallengeManager: EdgeChallengeManager,
+  oldLatestConfirmedStateHash: string
 ) {
   const { config, l1Rpc } = params
 
-  const bridgeContract = Bridge__factory.connect(config.contracts.bridge, l1Rpc)
-
   const latestConfirmed = await newRollup.latestConfirmed()
 
-  await newRollup.validateConfig(latestConfirmed, {
-    wasmModuleRoot: params.preUpgradeState.wasmModuleRoot,
-    requiredStake: config.settings.stakeAmt,
-    challengeManager: newEdgeChallengeManager.address,
-    confirmPeriodBlocks: config.settings.confirmPeriodBlocks,
-    nextInboxPosition: await bridgeContract.sequencerMessageCount(),
-  })
+  const lookup = StateHashPreImageLookup__factory.connect(
+    params.deployedContracts.preImageHashLookup,
+    l1Rpc
+  )
+  // fetch inboxMaxCount from the lookup contract
+  const { inboxMaxCount } = await lookup.get(oldLatestConfirmedStateHash)
+  try {
+    await newRollup.validateConfig(latestConfirmed, {
+      wasmModuleRoot: params.preUpgradeState.wasmModuleRoot,
+      requiredStake: config.settings.stakeAmt,
+      challengeManager: newEdgeChallengeManager.address,
+      confirmPeriodBlocks: config.settings.confirmPeriodBlocks,
+      nextInboxPosition: inboxMaxCount,
+    })
+  } catch (e: any) {
+    await newRollup.validateConfig(latestConfirmed, {
+      wasmModuleRoot: params.preUpgradeState.wasmModuleRoot,
+      requiredStake: config.settings.stakeAmt,
+      challengeManager: newEdgeChallengeManager.address,
+      confirmPeriodBlocks: config.settings.confirmPeriodBlocks,
+      nextInboxPosition: inboxMaxCount.add(1), // can be +1 in rare cases
+    })
+  }
 }
 
 async function checkNewRollup(
   params: VerificationParams,
   newRollup: RollupUserLogic,
-  newEdgeChallengeManager: EdgeChallengeManager
+  newEdgeChallengeManager: EdgeChallengeManager,
+  oldLatestConfirmedStateHash: string
 ) {
   const { config, deployedContracts, preUpgradeState } = params
 
@@ -432,7 +458,7 @@ async function checkNewRollup(
   }
 
   // check initial assertion TODO
-  await checkInitialAssertion(params, newRollup, newEdgeChallengeManager)
+  await checkInitialAssertion(params, newRollup, newEdgeChallengeManager, oldLatestConfirmedStateHash)
 
   // check validator whitelist disabled
   if (
@@ -654,6 +680,7 @@ async function main() {
 
   const preUpgradeState = await getPreUpgradeState(l1Rpc, config)
   const receipt = await perform(l1Rpc, config, deployedContracts)
+  console.log('upgrade tx hash:', receipt.transactionHash)
   await verifyPostUpgrade({
     l1Rpc,
     config,
