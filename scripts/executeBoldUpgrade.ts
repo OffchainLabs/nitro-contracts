@@ -1,4 +1,4 @@
-import { BigNumberish, Contract, ContractReceipt, Wallet } from 'ethers'
+import { Contract, ContractReceipt, Wallet } from 'ethers'
 import { ethers } from 'hardhat'
 import {
   Config,
@@ -143,9 +143,6 @@ async function verifyPostUpgrade(params: VerificationParams) {
   ).args as RollupMigratedEvent['args']
   console.log('RollupMigratedEvent:', parsedLog)
 
-  const bridgeContract = Bridge__factory.connect(params.config.contracts.bridge, l1Rpc)
-  const nextInboxPosition = await bridgeContract.sequencerMessageCount({blockTag: receipt.blockNumber})
-
   const edgeChallengeManager = EdgeChallengeManager__factory.connect(
     parsedLog.challengeManager,
     l1Rpc
@@ -159,7 +156,7 @@ async function verifyPostUpgrade(params: VerificationParams) {
   await checkRollupEventInbox(params, newRollup)
   await checkOutbox(params, newRollup)
   await checkOldRollup(params)
-  await checkNewRollup(params, newRollup, edgeChallengeManager, nextInboxPosition)
+  await checkNewRollup(params, newRollup, edgeChallengeManager)
   await checkNewChallengeManager(params, newRollup, edgeChallengeManager)
 
   console.log('upgrade verified')
@@ -346,10 +343,11 @@ async function checkOldRollup(params: VerificationParams) {
 async function checkInitialAssertion(
   params: VerificationParams,
   newRollup: RollupUserLogic,
-  newEdgeChallengeManager: EdgeChallengeManager,
-  nextInboxPosition: BigNumberish
+  newEdgeChallengeManager: EdgeChallengeManager
 ) {
   const { config, l1Rpc } = params
+
+  const bridgeContract = Bridge__factory.connect(config.contracts.bridge, l1Rpc)
 
   const latestConfirmed = await newRollup.latestConfirmed()
 
@@ -358,15 +356,14 @@ async function checkInitialAssertion(
     requiredStake: config.settings.stakeAmt,
     challengeManager: newEdgeChallengeManager.address,
     confirmPeriodBlocks: config.settings.confirmPeriodBlocks,
-    nextInboxPosition: nextInboxPosition,
+    nextInboxPosition: await bridgeContract.sequencerMessageCount(),
   })
 }
 
 async function checkNewRollup(
   params: VerificationParams,
   newRollup: RollupUserLogic,
-  newEdgeChallengeManager: EdgeChallengeManager,
-  nextInboxPosition: BigNumberish
+  newEdgeChallengeManager: EdgeChallengeManager
 ) {
   const { config, deployedContracts, preUpgradeState } = params
 
@@ -435,7 +432,7 @@ async function checkNewRollup(
   }
 
   // check initial assertion TODO
-  await checkInitialAssertion(params, newRollup, newEdgeChallengeManager, nextInboxPosition)
+  await checkInitialAssertion(params, newRollup, newEdgeChallengeManager)
 
   // check validator whitelist disabled
   if (
