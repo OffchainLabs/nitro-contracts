@@ -312,7 +312,7 @@ export const populateLookup = async (
   for (let i = 0; i < 1000; i++) {
     latestConfirmedLog = await wallet.provider!.getLogs({
       address: rollupAddr,
-      fromBlock: toBlock - 100,
+      fromBlock: toBlock >= 100 ? toBlock - 100 : 0,
       toBlock: toBlock,
       topics: [
         oldRollup.interface.getEventTopic('NodeCreated'),
