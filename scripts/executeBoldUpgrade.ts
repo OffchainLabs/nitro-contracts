@@ -143,7 +143,8 @@ async function verifyPostUpgrade(params: VerificationParams) {
   const parsedLog = boldAction.interface.parseLog(
     receipt.events![receipt.events!.length - 2]
   ).args as RollupMigratedEvent['args']
-  console.log('RollupMigratedEvent:', parsedLog)
+  console.log('BOLD Rollup:', parsedLog.rollup)
+  console.log('BOLD Challenge Manager:', parsedLog.challengeManager)
 
   const edgeChallengeManager = EdgeChallengeManager__factory.connect(
     parsedLog.challengeManager,
