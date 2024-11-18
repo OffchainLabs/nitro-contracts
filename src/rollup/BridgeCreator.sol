@@ -57,23 +57,23 @@ contract BridgeCreator is Ownable {
     {
         BridgeContracts memory frame;
         frame.bridge = IBridge(
-            address(new TransparentUpgradeableProxy{salt: 0}(address(templates.bridge), adminProxy, ""))
+            address(new TransparentUpgradeableProxy(address(templates.bridge), adminProxy, ""))
         );
         frame.sequencerInbox = ISequencerInbox(
             address(
-                new TransparentUpgradeableProxy{salt: 0}(address(templates.sequencerInbox), adminProxy, "")
+                new TransparentUpgradeableProxy(address(templates.sequencerInbox), adminProxy, "")
             )
         );
         frame.inbox = IInboxBase(
-            address(new TransparentUpgradeableProxy{salt: 0}(address(templates.inbox), adminProxy, ""))
+            address(new TransparentUpgradeableProxy(address(templates.inbox), adminProxy, ""))
         );
         frame.rollupEventInbox = IRollupEventInbox(
             address(
-                new TransparentUpgradeableProxy{salt: 0}(address(templates.rollupEventInbox), adminProxy, "")
+                new TransparentUpgradeableProxy(address(templates.rollupEventInbox), adminProxy, "")
             )
         );
         frame.outbox = IOutbox(
-            address(new TransparentUpgradeableProxy{salt: 0}(address(templates.outbox), adminProxy, ""))
+            address(new TransparentUpgradeableProxy(address(templates.outbox), adminProxy, ""))
         );
         return frame;
     }
