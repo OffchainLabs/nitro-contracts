@@ -1,4 +1,4 @@
-import { Contract, ContractReceipt, Wallet } from 'ethers'
+import { BigNumberish, Contract, ContractReceipt, Wallet } from 'ethers'
 import { ethers } from 'hardhat'
 import {
   Config,
@@ -18,7 +18,6 @@ import {
   RollupUserLogic,
   RollupUserLogic__factory,
   SequencerInbox__factory,
-  StateHashPreImageLookup__factory,
 } from '../build/types'
 import { abi as UpgradeExecutorAbi } from '@offchainlabs/upgrade-executor/build/contracts/src/UpgradeExecutor.sol/UpgradeExecutor.json'
 import dotenv from 'dotenv'
@@ -27,6 +26,7 @@ import { abi as OldRollupAbi } from '@arbitrum/nitro-contracts-2.1.0/build/contr
 import { JsonRpcProvider, JsonRpcSigner } from '@ethersproject/providers'
 import { getAddress } from 'ethers/lib/utils'
 import path from 'path'
+import { AssertionCreatedEvent } from '../build/types/src/rollup/IRollupCore'
 
 dotenv.config()
 
@@ -140,20 +140,45 @@ async function verifyPostUpgrade(params: VerificationParams) {
     l1Rpc
   )
 
-  const parsedLog = boldAction.interface.parseLog(
-    receipt.events![receipt.events!.length - 2]
-  ).args as RollupMigratedEvent['args']
+  const rollupMigratedLogs = receipt.events!.filter((event) => event.topics[0] === boldAction.interface.getEventTopic('RollupMigrated'))
+  if (rollupMigratedLogs.length !== 1) {
+    console.log(rollupMigratedLogs)
+    throw new Error('RollupMigratedEvent not found or have multiple')
+  }
+  const rollupMigratedLog = boldAction.interface.parseLog(rollupMigratedLogs[0]).args as RollupMigratedEvent['args']
 
-  console.log('Old Rollup:', params.config.contracts.rollup)
-  console.log('BOLD Rollup:', parsedLog.rollup)
-  console.log('BOLD Challenge Manager:', parsedLog.challengeManager)
-
-  const edgeChallengeManager = EdgeChallengeManager__factory.connect(
-    parsedLog.challengeManager,
+  const boldRollup = RollupUserLogic__factory.connect(
+    rollupMigratedLog.rollup,
     l1Rpc
   )
 
-  const newRollup = RollupUserLogic__factory.connect(parsedLog.rollup, l1Rpc)
+  const assertionCreatedLogs = receipt.events!.filter((event) => event.topics[0] === boldRollup.interface.getEventTopic('AssertionCreated'))
+  if (assertionCreatedLogs.length !== 1) {
+    console.log(assertionCreatedLogs)
+    throw new Error('AssertionCreatedEvent not found or have multiple')
+  }
+  const assertionCreatedLog = boldRollup.interface.parseLog(assertionCreatedLogs[0]).args as AssertionCreatedEvent['args']
+
+  console.log('Old Rollup:', params.config.contracts.rollup)
+  console.log('BOLD Rollup:', rollupMigratedLog.rollup)
+  console.log('BOLD Challenge Manager:', rollupMigratedLog.challengeManager)
+
+  console.log('BOLD AssertionCreated assertionHash:', assertionCreatedLog.assertionHash)
+  console.log('BOLD AssertionCreated parentAssertionHash:', assertionCreatedLog.parentAssertionHash)
+  console.log('BOLD AssertionCreated assertion:', JSON.stringify(assertionCreatedLog.assertion))
+  console.log('BOLD AssertionCreated afterInboxBatchAcc:', assertionCreatedLog.afterInboxBatchAcc)
+  console.log('BOLD AssertionCreated inboxMaxCount:', assertionCreatedLog.inboxMaxCount)
+  console.log('BOLD AssertionCreated wasmModuleRoot:', assertionCreatedLog.wasmModuleRoot)
+  console.log('BOLD AssertionCreated requiredStake:', assertionCreatedLog.requiredStake)
+  console.log('BOLD AssertionCreated challengeManager:', assertionCreatedLog.challengeManager)
+  console.log('BOLD AssertionCreated confirmPeriodBlocks:', assertionCreatedLog.confirmPeriodBlocks)
+
+  const edgeChallengeManager = EdgeChallengeManager__factory.connect(
+    rollupMigratedLog.challengeManager,
+    l1Rpc
+  )
+
+  const newRollup = RollupUserLogic__factory.connect(rollupMigratedLog.rollup, l1Rpc)
 
   await checkSequencerInbox(params, newRollup)
   await checkInbox(params)
@@ -162,7 +187,7 @@ async function verifyPostUpgrade(params: VerificationParams) {
   await checkOutbox(params, newRollup)
   const { oldLatestConfirmedStateHash } = await checkOldRollup(params)
   console.log('oldLatestConfirmedStateHash', oldLatestConfirmedStateHash)
-  await checkNewRollup(params, newRollup, edgeChallengeManager, oldLatestConfirmedStateHash)
+  await checkNewRollup(params, newRollup, edgeChallengeManager, assertionCreatedLog.inboxMaxCount)
   await checkNewChallengeManager(params, newRollup, edgeChallengeManager)
 
   console.log('upgrade verified')
@@ -358,35 +383,19 @@ async function checkInitialAssertion(
   params: VerificationParams,
   newRollup: RollupUserLogic,
   newEdgeChallengeManager: EdgeChallengeManager,
-  oldLatestConfirmedStateHash: string
+  currentInboxCount: BigNumberish
 ): Promise<{latestConfirmed: string}> {
   const { config, l1Rpc } = params
 
   const latestConfirmed = await newRollup.latestConfirmed()
 
-  const lookup = StateHashPreImageLookup__factory.connect(
-    params.deployedContracts.preImageHashLookup,
-    l1Rpc
-  )
-  // fetch inboxMaxCount from the lookup contract
-  const { inboxMaxCount } = await lookup.get(oldLatestConfirmedStateHash)
-  try {
-    await newRollup.validateConfig(latestConfirmed, {
-      wasmModuleRoot: params.preUpgradeState.wasmModuleRoot,
-      requiredStake: config.settings.stakeAmt,
-      challengeManager: newEdgeChallengeManager.address,
-      confirmPeriodBlocks: config.settings.confirmPeriodBlocks,
-      nextInboxPosition: inboxMaxCount,
-    })
-  } catch (e: any) {
-    await newRollup.validateConfig(latestConfirmed, {
-      wasmModuleRoot: params.preUpgradeState.wasmModuleRoot,
-      requiredStake: config.settings.stakeAmt,
-      challengeManager: newEdgeChallengeManager.address,
-      confirmPeriodBlocks: config.settings.confirmPeriodBlocks,
-      nextInboxPosition: inboxMaxCount.add(1), // can be +1 in rare cases
-    })
-  }
+  await newRollup.validateConfig(latestConfirmed, {
+    wasmModuleRoot: params.preUpgradeState.wasmModuleRoot,
+    requiredStake: config.settings.stakeAmt,
+    challengeManager: newEdgeChallengeManager.address,
+    confirmPeriodBlocks: config.settings.confirmPeriodBlocks,
+    nextInboxPosition: currentInboxCount,
+  })
 
   return {
     latestConfirmed
@@ -397,7 +406,7 @@ async function checkNewRollup(
   params: VerificationParams,
   newRollup: RollupUserLogic,
   newEdgeChallengeManager: EdgeChallengeManager,
-  oldLatestConfirmedStateHash: string
+  currentInboxCount: BigNumberish
 ) {
   const { config, deployedContracts, preUpgradeState } = params
 
@@ -466,7 +475,7 @@ async function checkNewRollup(
   }
 
   // check initial assertion
-  const { latestConfirmed } = await checkInitialAssertion(params, newRollup, newEdgeChallengeManager, oldLatestConfirmedStateHash)
+  const { latestConfirmed } = await checkInitialAssertion(params, newRollup, newEdgeChallengeManager, currentInboxCount)
   console.log('BOLD latest confirmed:', latestConfirmed)
 
   // check validator whitelist disabled
