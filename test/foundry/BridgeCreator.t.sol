@@ -124,6 +124,9 @@ contract BridgeCreatorTest is Test {
         );
         timeVars.delayBlocks;
 
+        // give the rollup some code, otherwise it will revert
+        vm.etch(rollup, hex"0123");
+
         BridgeCreator.BridgeContracts memory contracts = creator.createBridge(
             proxyAdmin,
             rollup,
@@ -195,6 +198,9 @@ contract BridgeCreatorTest is Test {
         );
         timeVars.delayBlocks; // TODO: what is this?
 
+        // give the rollup some code, otherwise it will revert
+        vm.etch(rollup, hex"0123");
+
         BridgeCreator.BridgeContracts memory contracts = creator.createBridge(
             proxyAdmin,
             rollup,
@@ -251,5 +257,26 @@ contract BridgeCreatorTest is Test {
         // outbox
         assertEq(address(outbox.bridge()), address(bridge), "Invalid bridge ref");
         assertEq(address(outbox.rollup()), rollup, "Invalid rollup ref");
+    }
+
+    function test_emptyRollupShouldRevert() external {
+        address proxyAdmin = address(300);
+        address rollup = address(301);
+        address nativeToken = address(
+            new ERC20PresetFixedSupply("Appchain Token", "App", 1_000_000, address(this))
+        );
+        ISequencerInbox.MaxTimeVariation memory timeVars = ISequencerInbox.MaxTimeVariation(
+            10,
+            20,
+            30,
+            40
+        );
+
+        // give the proxy admin some code
+        vm.etch(proxyAdmin, hex"0123");
+
+        // empty rollup should revert
+        vm.expectRevert(BridgeCreator.RollupCodeEmpty.selector);
+        creator.createBridge(proxyAdmin, rollup, nativeToken, timeVars);
     }
 }
