@@ -141,8 +141,8 @@ contract RollupCreator is Ownable {
 
         // create proxy admin which will manage bridge contracts
         // use create2 so the proxyAdmin address is deterministic based on the rollup config
-        // all proxies are be deployed with a create2 salt of 0, 
-        // ensuring all proxies are deterministic based on the rollup config
+        // all proxies administered by it are deployed with a create2 salt of 0, 
+        // ensuring their addresses are deterministic based on the rollup config
         ProxyAdmin proxyAdmin = new ProxyAdmin{salt: keccak256(abi.encodePacked(address(rollup)))}();
 
         BridgeCreator.BridgeContracts memory bridgeContracts = bridgeCreator.createBridge(
