@@ -99,7 +99,6 @@ export async function createRollup(
     }
 
     // Call the createRollup function
-    console.log('rollupConfig:', JSON.stringify(config.rollupConfig))
     console.log('Calling createRollup to generate a new rollup ...')
     const deployParams = isDevDeployment
       ? await _getDevRollupConfig(feeToken, validatorWalletCreator)
