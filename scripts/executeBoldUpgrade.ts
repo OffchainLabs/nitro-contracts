@@ -143,6 +143,8 @@ async function verifyPostUpgrade(params: VerificationParams) {
   const parsedLog = boldAction.interface.parseLog(
     receipt.events![receipt.events!.length - 2]
   ).args as RollupMigratedEvent['args']
+
+  console.log('Old Rollup:', params.config.contracts.rollup)
   console.log('BOLD Rollup:', parsedLog.rollup)
   console.log('BOLD Challenge Manager:', parsedLog.challengeManager)
 
@@ -159,6 +161,7 @@ async function verifyPostUpgrade(params: VerificationParams) {
   await checkRollupEventInbox(params, newRollup)
   await checkOutbox(params, newRollup)
   const { oldLatestConfirmedStateHash } = await checkOldRollup(params)
+  console.log('oldLatestConfirmedStateHash', oldLatestConfirmedStateHash)
   await checkNewRollup(params, newRollup, edgeChallengeManager, oldLatestConfirmedStateHash)
   await checkNewChallengeManager(params, newRollup, edgeChallengeManager)
 
@@ -356,7 +359,7 @@ async function checkInitialAssertion(
   newRollup: RollupUserLogic,
   newEdgeChallengeManager: EdgeChallengeManager,
   oldLatestConfirmedStateHash: string
-) {
+): Promise<{latestConfirmed: string}> {
   const { config, l1Rpc } = params
 
   const latestConfirmed = await newRollup.latestConfirmed()
@@ -383,6 +386,10 @@ async function checkInitialAssertion(
       confirmPeriodBlocks: config.settings.confirmPeriodBlocks,
       nextInboxPosition: inboxMaxCount.add(1), // can be +1 in rare cases
     })
+  }
+
+  return {
+    latestConfirmed
   }
 }
 
@@ -458,8 +465,9 @@ async function checkNewRollup(
     throw new Error('Loser stake escrow address does not match')
   }
 
-  // check initial assertion TODO
-  await checkInitialAssertion(params, newRollup, newEdgeChallengeManager, oldLatestConfirmedStateHash)
+  // check initial assertion
+  const { latestConfirmed } = await checkInitialAssertion(params, newRollup, newEdgeChallengeManager, oldLatestConfirmedStateHash)
+  console.log('BOLD latest confirmed:', latestConfirmed)
 
   // check validator whitelist disabled
   if (
