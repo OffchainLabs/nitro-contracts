@@ -478,11 +478,13 @@ contract BOLDUpgradeAction {
     }
 
     function expectedRollupAddress(
+        address deployer,
         uint256 chainId
     ) external view returns (address) {
         bytes32 rollupSalt = keccak256(abi.encode(chainId));
-        return
-            Create2Upgradeable.computeAddress(rollupSalt, keccak256(type(RollupProxy).creationCode));
+        return Create2Upgradeable.computeAddress(
+            rollupSalt, keccak256(type(RollupProxy).creationCode), deployer
+        );
     }
 
     function perform(

@@ -137,7 +137,7 @@ async function perform(
 
 async function verifyPostUpgrade(params: VerificationParams) {
   console.log('verifying the upgrade...')
-  const { l1Rpc, deployedContracts, receipt } = params
+  const { l1Rpc, deployedContracts, config, receipt } = params
 
   const boldAction = BOLDUpgradeAction__factory.connect(
     deployedContracts.boldAction,
@@ -145,7 +145,8 @@ async function verifyPostUpgrade(params: VerificationParams) {
   )
 
   const expectedRollupAddress = await boldAction.expectedRollupAddress(
-    params.config.settings.chainId
+    config.contracts.upgradeExecutor,
+    config.settings.chainId
   )
 
   const rollupMigratedLogs = receipt.events!.filter(
