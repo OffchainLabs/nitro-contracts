@@ -144,11 +144,6 @@ async function verifyPostUpgrade(params: VerificationParams) {
     l1Rpc
   )
 
-  const expectedRollupAddress = await boldAction.expectedRollupAddress(
-    config.contracts.upgradeExecutor,
-    config.settings.chainId
-  )
-
   const rollupMigratedLogs = receipt.events!.filter(
     event =>
       event.topics[0] === boldAction.interface.getEventTopic('RollupMigrated')
@@ -160,11 +155,11 @@ async function verifyPostUpgrade(params: VerificationParams) {
   const rollupMigratedLog = boldAction.interface.parseLog(rollupMigratedLogs[0])
     .args as RollupMigratedEvent['args']
 
-  if (rollupMigratedLog.rollup !== expectedRollupAddress) {
-    throw new Error(
-      'RollupMigratedEvent rollup address does not match expected'
-    )
-  }
+  await boldAction.validateRollupDeployedAtAddress(
+    rollupMigratedLog.rollup,
+    config.contracts.upgradeExecutor,
+    config.settings.chainId
+  )
 
   const boldRollup = RollupUserLogic__factory.connect(
     rollupMigratedLog.rollup,

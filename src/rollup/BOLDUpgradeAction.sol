@@ -487,13 +487,15 @@ contract BOLDUpgradeAction {
         );
     }
 
-    function isRollupDeployedAtAddress(
+    function validateRollupDeployedAtAddress(
         address rollupAddress,
         address deployer,
         uint256 chainId
-    ) external view returns (bool) {
-        return rollupAddress.code.length > 0
-            && expectedRollupAddress(deployer, chainId) == rollupAddress;
+    ) external view {
+        require(rollupAddress.code.length > 0, "ROLLUP_NOT_DEPLOYED");
+        require(
+            expectedRollupAddress(deployer, chainId) == rollupAddress, "ROLLUP_ADDRESS_MISMATCH"
+        );
     }
 
     function perform(
