@@ -21,11 +21,6 @@ import {
 import { bytecode as Reader4844Bytecode } from '../out/yul/Reader4844.yul/Reader4844.json'
 import { DeployedContracts, Config } from './boldUpgradeCommon'
 import { AssertionStateStruct } from '../build/types/src/challengeV2/IAssertionChain'
-// taken from https://github.com/OffchainLabs/nitro-contracts/blob/210e5b3bc96a513d276deaba90399130a60131d5/src/rollup/RollupUserLogic.sol
-import {
-  abi as OldRollupAbi,
-  bytecode as OldRollupBytecode,
-} from '@arbitrum/nitro-contracts-2.1.0/build/contracts/src/rollup/RollupUserLogic.sol/RollupUserLogic.json'
 import { verifyContract } from './deploymentUtils'
 
 export const deployDependencies = async (
@@ -115,21 +110,6 @@ export const deployDependencies = async (
   if (verify) {
     await inbox.deployTransaction.wait(5)
     await verifyContract('Inbox', inbox.address, [maxDataSize])
-  }
-
-  const oldRollupUserFac = new ContractFactory(
-    OldRollupAbi,
-    OldRollupBytecode,
-    signer
-  )
-  const oldRollupUser = await oldRollupUserFac.deploy()
-  await oldRollupUser.deployed()
-  if (log) {
-    console.log(`Old rollup user logic deployed at: ${oldRollupUser.address}`)
-  }
-  if (verify) {
-    await oldRollupUser.deployTransaction.wait(5)
-    await verifyContract('OldRollupUserLogic', oldRollupUser.address, [])
   }
 
   const newRollupUserFac = new RollupUserLogic__factory(signer)
@@ -236,7 +216,6 @@ export const deployDependencies = async (
     rei: rei.address,
     outbox: outbox.address,
     inbox: inbox.address,
-    oldRollupUser: oldRollupUser.address,
     newRollupUser: newRollupUser.address,
     newRollupAdmin: newRollupAdmin.address,
     challengeManager: challengeManager.address,

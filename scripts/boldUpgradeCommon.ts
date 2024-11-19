@@ -10,7 +10,6 @@ export interface DeployedContracts {
   rei: string
   outbox: string
   inbox: string
-  oldRollupUser: string
   newRollupUser: string
   newRollupAdmin: string
   challengeManager: string

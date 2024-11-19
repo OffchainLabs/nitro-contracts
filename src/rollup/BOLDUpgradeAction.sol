@@ -162,6 +162,7 @@ contract ConstantArrayStorage {
 /// @notice Requires implementation contracts to be pre-deployed and provided in the constructor
 ///         Also requires a lookup contract to be provided that contains the pre-image of the state hash
 ///         that is in the latest confirmed assertion in the current rollup.
+///         The old rollup should be on v2.1.0 or later or allow stake withdrawals after the upgrade
 contract BOLDUpgradeAction {
     using AssertionStateLib for AssertionState;
 
@@ -208,8 +209,6 @@ contract BOLDUpgradeAction {
     address public immutable IMPL_INBOX;
     address public immutable IMPL_REI;
     address public immutable IMPL_OUTBOX;
-    // the old rollup, but with whenNotPaused protection removed from stake withdrawal functions
-    address public immutable IMPL_PATCHED_OLD_ROLLUP_USER;
     address public immutable IMPL_NEW_ROLLUP_USER;
     address public immutable IMPL_NEW_ROLLUP_ADMIN;
     address public immutable IMPL_CHALLENGE_MANAGER;
@@ -248,7 +247,6 @@ contract BOLDUpgradeAction {
         address inbox;
         address rei;
         address outbox;
-        address oldRollupUser;
         address newRollupUser;
         address newRollupAdmin;
         address challengeManager;
@@ -292,7 +290,6 @@ contract BOLDUpgradeAction {
         IMPL_INBOX = implementations.inbox;
         IMPL_REI = implementations.rei;
         IMPL_OUTBOX = implementations.outbox;
-        IMPL_PATCHED_OLD_ROLLUP_USER = implementations.oldRollupUser;
         IMPL_NEW_ROLLUP_USER = implementations.newRollupUser;
         IMPL_NEW_ROLLUP_ADMIN = implementations.newRollupAdmin;
         IMPL_CHALLENGE_MANAGER = implementations.challengeManager;
@@ -339,11 +336,6 @@ contract BOLDUpgradeAction {
                 i++;
             }
         }
-
-        // upgrade the rollup to one that allows validators to withdraw even whilst paused
-        DoubleLogicUUPSUpgradeable(address(OLD_ROLLUP)).upgradeSecondaryTo(
-            IMPL_PATCHED_OLD_ROLLUP_USER
-        );
     }
 
     /// @dev    Create a config for the new rollup - fetches the latest confirmed

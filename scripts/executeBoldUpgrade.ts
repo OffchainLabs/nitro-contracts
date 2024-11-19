@@ -1,4 +1,4 @@
-import { BigNumberish, Contract, ContractReceipt, Wallet } from 'ethers'
+import { BigNumber, BigNumberish, Contract, ContractReceipt, Wallet } from 'ethers'
 import { ethers } from 'hardhat'
 import {
   Config,
@@ -22,7 +22,6 @@ import {
 import { abi as UpgradeExecutorAbi } from '@offchainlabs/upgrade-executor/build/contracts/src/UpgradeExecutor.sol/UpgradeExecutor.json'
 import dotenv from 'dotenv'
 import { RollupMigratedEvent } from '../build/types/src/rollup/BOLDUpgradeAction.sol/BOLDUpgradeAction'
-import { abi as OldRollupAbi } from '@arbitrum/nitro-contracts-2.1.0/build/contracts/src/rollup/RollupUserLogic.sol/RollupUserLogic.json'
 import { JsonRpcProvider, JsonRpcSigner } from '@ethersproject/providers'
 import { getAddress } from 'ethers/lib/utils'
 import path from 'path'
@@ -49,16 +48,15 @@ const executors: { [key: string]: string } = {
 }
 
 async function getPreUpgradeState(l1Rpc: JsonRpcProvider, config: Config) {
-  const oldRollupContract = new Contract(
+  const oldRollupContract = IOldRollup__factory.connect(
     config.contracts.rollup,
-    OldRollupAbi,
     l1Rpc
   )
 
   const stakerCount = await oldRollupContract.stakerCount()
 
   const stakers: string[] = []
-  for (let i = 0; i < stakerCount; i++) {
+  for (let i = BigNumber.from(0); i.lt(stakerCount); i = i.add(1)) {
     stakers.push(await oldRollupContract.getStakerAddress(i))
   }
 
@@ -405,14 +403,6 @@ async function checkOldRollup(
     if (!(await oldRollupContract.isZombie(staker))) {
       throw new Error('Old staker is not a zombie')
     }
-  }
-
-  // ensure old rollup was upgraded
-  if (
-    (await getProxyImpl(l1Rpc, config.contracts.rollup, true)) !==
-    getAddress(deployedContracts.oldRollupUser)
-  ) {
-    throw new Error('Old rollup was not upgraded')
   }
 
   const latestConfirmed = await oldRollupContract.latestConfirmed()
