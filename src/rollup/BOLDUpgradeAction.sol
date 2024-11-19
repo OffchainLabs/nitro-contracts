@@ -6,6 +6,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/utils/Create2Upgradeable.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import "@openzeppelin/contracts/utils/Create2.sol";
 import "./RollupProxy.sol";
 import "./RollupLib.sol";
 import "./RollupAdminLogic.sol";
@@ -476,6 +477,14 @@ contract BOLDUpgradeAction {
         ISequencerInbox(SEQ_INBOX).updateRollupAddress();
     }
 
+    function expectedRollupAddress(
+        uint256 chainId
+    ) external view returns (address) {
+        bytes32 rollupSalt = keccak256(abi.encode(chainId));
+        return
+            Create2Upgradeable.computeAddress(rollupSalt, keccak256(type(RollupProxy).creationCode));
+    }
+
     function perform(
         address[] memory validators
     ) external {
@@ -512,7 +521,8 @@ contract BOLDUpgradeAction {
 
         // upgrade the surrounding contracts eg bridge, outbox, seq inbox, rollup event inbox
         // to set of the new rollup address
-        bytes32 rollupSalt = keccak256(abi.encode(config));
+        // this is different from the typical salt, it is ok because the caller should deploy the upgrade only once for each chainid
+        bytes32 rollupSalt = keccak256(abi.encode(config.chainId));
         address expectedRollupAddress =
             Create2Upgradeable.computeAddress(rollupSalt, keccak256(type(RollupProxy).creationCode));
         upgradeSurroundingContracts(expectedRollupAddress);
