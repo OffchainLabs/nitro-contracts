@@ -162,7 +162,7 @@ contract ConstantArrayStorage {
 /// @notice Requires implementation contracts to be pre-deployed and provided in the constructor
 ///         Also requires a lookup contract to be provided that contains the pre-image of the state hash
 ///         that is in the latest confirmed assertion in the current rollup.
-///         The old rollup should be on v2.1.0 or later to allow stake withdrawals after the upgrade
+///         The old rollup should be on v1.1.0 or later to allow stake withdrawals after the upgrade
 contract BOLDUpgradeAction {
     using AssertionStateLib for AssertionState;
 
