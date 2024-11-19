@@ -15,7 +15,6 @@ export interface DeployedContracts {
   newRollupAdmin: string
   challengeManager: string
   boldAction: string
-  rollupReader: string
   preImageHashLookup: string
   prover0: string
   proverMem: string

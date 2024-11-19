@@ -12,9 +12,9 @@ import {
   Bridge__factory,
   EdgeChallengeManager,
   EdgeChallengeManager__factory,
+  IOldRollup__factory,
   Outbox__factory,
   RollupEventInbox__factory,
-  RollupReader__factory,
   RollupUserLogic,
   RollupUserLogic__factory,
   SequencerInbox__factory,
@@ -339,11 +339,7 @@ async function checkBridge(
 async function checkOldRollup(params: VerificationParams): Promise<{oldLatestConfirmedStateHash: string}> {
   const { l1Rpc, config, deployedContracts, preUpgradeState } = params
 
-  const oldRollupContract = new Contract(
-    config.contracts.rollup,
-    OldRollupAbi,
-    l1Rpc
-  )
+  const oldRollupContract = IOldRollup__factory.connect(config.contracts.rollup, l1Rpc)
 
   // ensure the old rollup is paused
   if (!(await oldRollupContract.paused())) {
@@ -370,10 +366,8 @@ async function checkOldRollup(params: VerificationParams): Promise<{oldLatestCon
     throw new Error('Old rollup was not upgraded')
   }
 
-  // using the reader factory here for typing
-  const rollupReaderContract = RollupReader__factory.connect(config.contracts.rollup, l1Rpc)
-  const latestConfirmed = await rollupReaderContract.latestConfirmed()
-  const latestConfirmedStateHash = (await rollupReaderContract.getNode(latestConfirmed)).stateHash
+  const latestConfirmed = await oldRollupContract.latestConfirmed()
+  const latestConfirmedStateHash = (await oldRollupContract.getNode(latestConfirmed)).stateHash
   return {
     oldLatestConfirmedStateHash: latestConfirmedStateHash,
   }
