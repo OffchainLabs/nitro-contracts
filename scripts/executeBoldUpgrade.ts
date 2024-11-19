@@ -387,7 +387,7 @@ async function checkBridge(
 async function checkOldRollup(
   params: VerificationParams
 ): Promise<{ oldLatestConfirmedStateHash: string }> {
-  const { l1Rpc, config, deployedContracts, preUpgradeState } = params
+  const { l1Rpc, config, preUpgradeState } = params
 
   const oldRollupContract = IOldRollup__factory.connect(
     config.contracts.rollup,
@@ -408,6 +408,22 @@ async function checkOldRollup(
   for (const staker of preUpgradeState.stakers) {
     if (!(await oldRollupContract.isZombie(staker))) {
       throw new Error('Old staker is not a zombie')
+    }
+  }
+
+  if (preUpgradeState.stakers.length > 0) {
+    try {
+      await oldRollupContract.callStatic.withdrawStakerFunds({
+        from: preUpgradeState.stakers[0],
+      })
+    } catch (e) {
+      if (e instanceof Error && e.message.includes('Pausable: paused')) {
+        console.warn(
+          '!!!!! Withdraw staker funds FAILED, old rollup need to be upgraded to enable withdrawals !!!!!'
+        )
+      } else {
+        throw e
+      }
     }
   }
 

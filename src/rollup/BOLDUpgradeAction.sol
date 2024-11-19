@@ -68,6 +68,7 @@ interface IOldRollup {
     function isZombie(
         address staker
     ) external view returns (bool);
+    function withdrawStakerFunds() external returns (uint256);
 
     function wasmModuleRoot() external view returns (bytes32);
     function latestConfirmed() external view returns (uint64);
