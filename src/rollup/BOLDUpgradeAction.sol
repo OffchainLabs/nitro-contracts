@@ -6,7 +6,6 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/utils/Create2Upgradeable.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import "@openzeppelin/contracts/utils/Create2.sol";
 import "./RollupProxy.sol";
 import "./RollupLib.sol";
 import "./RollupAdminLogic.sol";
@@ -469,10 +468,10 @@ contract BOLDUpgradeAction {
         // verify
         (uint256 _delayBlocks, uint256 _futureBlocks, uint256 _delaySeconds, uint256 _futureSeconds)
         = ISequencerInbox(SEQ_INBOX).maxTimeVariation();
-        require(_delayBlocks == delayBlocks, "DelayBuffer: delayBlocks not set");
-        require(_delaySeconds == delaySeconds, "DelayBuffer: delaySeconds not set");
-        require(_futureBlocks == futureBlocks, "DelayBuffer: futureBlocks not set");
-        require(_futureSeconds == futureSeconds, "DelayBuffer: futureSeconds not set");
+        require(_delayBlocks == delayBlocks, "DelayBuffer: delayBlocks");
+        require(_delaySeconds == delaySeconds, "DelayBuffer: delaySeconds");
+        require(_futureBlocks == futureBlocks, "DelayBuffer: futureBlocks");
+        require(_futureSeconds == futureSeconds, "DelayBuffer: futureSeconds");
 
         ISequencerInbox(SEQ_INBOX).updateRollupAddress();
     }
@@ -492,9 +491,10 @@ contract BOLDUpgradeAction {
         address deployer,
         uint256 chainId
     ) external view {
-        require(rollupAddress.code.length > 0, "ROLLUP_NOT_DEPLOYED");
         require(
-            expectedRollupAddress(deployer, chainId) == rollupAddress, "ROLLUP_ADDRESS_MISMATCH"
+            (rollupAddress.code.length > 0)
+                && expectedRollupAddress(deployer, chainId) == rollupAddress,
+            "ADDR_MISMATCH"
         );
     }
 
@@ -536,12 +536,11 @@ contract BOLDUpgradeAction {
         // to set of the new rollup address
         // this is different from the typical salt, it is ok because the caller should deploy the upgrade only once for each chainid
         bytes32 rollupSalt = keccak256(abi.encode(config.chainId));
-        address expectedRollupAddress =
-            Create2Upgradeable.computeAddress(rollupSalt, keccak256(type(RollupProxy).creationCode));
-        upgradeSurroundingContracts(expectedRollupAddress);
+        address _expectedRollupAddress = expectedRollupAddress(address(this), config.chainId);
+        upgradeSurroundingContracts(_expectedRollupAddress);
 
         challengeManager.initialize({
-            _assertionChain: IAssertionChain(expectedRollupAddress),
+            _assertionChain: IAssertionChain(_expectedRollupAddress),
             _challengePeriodBlocks: CHALLENGE_PERIOD_BLOCKS,
             _oneStepProofEntry: OSP,
             layerZeroBlockEdgeHeight: config.layerZeroBlockEdgeHeight,
@@ -554,7 +553,7 @@ contract BOLDUpgradeAction {
         });
 
         RollupProxy rollup = new RollupProxy{salt: rollupSalt}();
-        require(address(rollup) == expectedRollupAddress, "UNEXPCTED_ROLLUP_ADDR");
+        require(address(rollup) == _expectedRollupAddress, "UNEXPCTED_ROLLUP_ADDR");
 
         // initialize the rollup with this contract as owner to set batch poster and validators
         // it will transfer the ownership back to the actual owner later
@@ -586,6 +585,6 @@ contract BOLDUpgradeAction {
 
         IRollupAdmin(address(rollup)).setOwner(actualOwner);
 
-        emit RollupMigrated(expectedRollupAddress, address(challengeManager));
+        emit RollupMigrated(_expectedRollupAddress, address(challengeManager));
     }
 }
