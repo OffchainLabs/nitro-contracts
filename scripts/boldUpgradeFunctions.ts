@@ -35,9 +35,7 @@ export const deployDependencies = async (
   isDelayBufferable: boolean,
   log: boolean = false,
   verify: boolean = true
-): Promise<
-  Omit<DeployedContracts, 'boldAction' | 'preImageHashLookup'>
-> => {
+): Promise<Omit<DeployedContracts, 'boldAction' | 'preImageHashLookup'>> => {
   const bridgeFac = new Bridge__factory(signer)
   const bridge = await bridgeFac.deploy()
   await bridge.deployed()
@@ -302,10 +300,7 @@ export const populateLookup = async (
   rollupAddr: string,
   preImageHashLookupAddr: string
 ) => {
-  const oldRollup = IOldRollup__factory.connect(
-    rollupAddr,
-    wallet
-  )
+  const oldRollup = IOldRollup__factory.connect(rollupAddr, wallet)
 
   const latestConfirmed = await oldRollup.latestConfirmed()
   let latestConfirmedLog

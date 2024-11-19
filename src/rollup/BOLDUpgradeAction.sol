@@ -63,8 +63,11 @@ interface IOldRollup {
         bytes32 wasmModuleRoot,
         uint256 inboxMaxCount
     );
+
     function paused() external view returns (bool);
-    function isZombie(address staker) external view returns (bool);
+    function isZombie(
+        address staker
+    ) external view returns (bool);
 
     function wasmModuleRoot() external view returns (bytes32);
     function latestConfirmed() external view returns (uint64);
