@@ -73,6 +73,8 @@
     // Valid ECDSA signatures erroneously rejected in Elliptic
     "GHSA-fc9h-whq2-v747",
     // secp256k1-node allows private key extraction over ECDH
-    "GHSA-584q-6j8j-r5pm"
+    "GHSA-584q-6j8j-r5pm",
+    // Regular Expression Denial of Service (ReDoS) in cross-spawn
+    "GHSA-3xgq-45jj-v275"
   ]
 }
