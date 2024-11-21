@@ -1,4 +1,4 @@
-import { Contract, ContractReceipt } from 'ethers'
+import { BigNumberish, Contract, ContractReceipt, Wallet } from 'ethers'
 import { ethers } from 'hardhat'
 import {
   Config,
@@ -14,6 +14,7 @@ import {
   EdgeChallengeManager__factory,
   Outbox__factory,
   RollupEventInbox__factory,
+  RollupReader__factory,
   RollupUserLogic,
   RollupUserLogic__factory,
   SequencerInbox__factory,
@@ -21,10 +22,11 @@ import {
 import { abi as UpgradeExecutorAbi } from '@offchainlabs/upgrade-executor/build/contracts/src/UpgradeExecutor.sol/UpgradeExecutor.json'
 import dotenv from 'dotenv'
 import { RollupMigratedEvent } from '../build/types/src/rollup/BOLDUpgradeAction.sol/BOLDUpgradeAction'
-import { abi as OldRollupAbi } from '@arbitrum/nitro-contracts-2.0.0/build/contracts/src/rollup/RollupUserLogic.sol/RollupUserLogic.json'
-import { JsonRpcProvider } from '@ethersproject/providers'
+import { abi as OldRollupAbi } from '@arbitrum/nitro-contracts-2.1.0/build/contracts/src/rollup/RollupUserLogic.sol/RollupUserLogic.json'
+import { JsonRpcProvider, JsonRpcSigner } from '@ethersproject/providers'
 import { getAddress } from 'ethers/lib/utils'
 import path from 'path'
+import { AssertionCreatedEvent } from '../build/types/src/rollup/IRollupCore'
 
 dotenv.config()
 
@@ -43,6 +45,7 @@ const executors: { [key: string]: string } = {
   arb1: '0xE6841D92B0C345144506576eC13ECf5103aC7f49',
   nova: '0xE6841D92B0C345144506576eC13ECf5103aC7f49',
   sepolia: '0x6EC62D826aDc24AeA360be9cF2647c42b9Cdb19b',
+  local: '0x5E1497dD1f08C87b2d8FE23e9AAB6c1De833D927'
 }
 
 async function getPreUpgradeState(l1Rpc: JsonRpcProvider, config: Config) {
@@ -83,20 +86,26 @@ async function perform(
       'no executor found for CONFIG_NETWORK_NAME or CONFIG_NETWORK_NAME not set'
     )
   }
-  await l1Rpc.send('hardhat_impersonateAccount', [executor])
 
-  await l1Rpc.send('hardhat_setBalance', [executor, '0x1000000000000000'])
-
-  const timelockImposter = l1Rpc.getSigner(executor)
+  const l1PrivKey = process.env.L1_PRIV_KEY
+  if (!l1PrivKey) {
+    throw new Error('L1_PRIV_KEY env variable not set')
+  }
+  let timelockSigner = (new Wallet(l1PrivKey, l1Rpc)) as unknown as JsonRpcSigner
+  if (process.env.ANVILFORK === 'true') {
+    timelockSigner = await l1Rpc.getSigner(executor)
+    await l1Rpc.send('hardhat_impersonateAccount', [executor])
+    await l1Rpc.send('hardhat_setBalance', [executor, '0x1000000000000000'])
+  }
 
   const upExec = new Contract(
     config.contracts.upgradeExecutor,
     UpgradeExecutorAbi,
-    timelockImposter
+    timelockSigner
   )
   const boldAction = BOLDUpgradeAction__factory.connect(
     deployedContracts.boldAction,
-    timelockImposter
+    timelockSigner
   )
 
   // what validators did we have in the old rollup?
@@ -105,12 +114,25 @@ async function perform(
     [config.validators]
   )
 
-  return (await (
+  const performCallData = upExec.interface.encodeFunctionData('execute', [
+    deployedContracts.boldAction,
+    boldActionPerformData,
+  ])
+
+  console.log('eoa with executor role:', executor)
+  console.log('upgrade executor:', config.contracts.upgradeExecutor)
+  console.log("execute(...) call to upgrade executor:", performCallData)
+
+  console.log('executing the upgrade...')
+  const receipt = (await (
     await upExec.execute(deployedContracts.boldAction, boldActionPerformData)
   ).wait()) as ContractReceipt
+  console.log('upgrade executed')
+  return receipt
 }
 
 async function verifyPostUpgrade(params: VerificationParams) {
+  console.log('verifying the upgrade...')
   const { l1Rpc, deployedContracts, receipt } = params
 
   const boldAction = BOLDUpgradeAction__factory.connect(
@@ -118,25 +140,57 @@ async function verifyPostUpgrade(params: VerificationParams) {
     l1Rpc
   )
 
-  const parsedLog = boldAction.interface.parseLog(
-    receipt.events![receipt.events!.length - 2]
-  ).args as RollupMigratedEvent['args']
+  const rollupMigratedLogs = receipt.events!.filter((event) => event.topics[0] === boldAction.interface.getEventTopic('RollupMigrated'))
+  if (rollupMigratedLogs.length !== 1) {
+    console.log(rollupMigratedLogs)
+    throw new Error('RollupMigratedEvent not found or have multiple')
+  }
+  const rollupMigratedLog = boldAction.interface.parseLog(rollupMigratedLogs[0]).args as RollupMigratedEvent['args']
 
-  const edgeChallengeManager = EdgeChallengeManager__factory.connect(
-    parsedLog.challengeManager,
+  const boldRollup = RollupUserLogic__factory.connect(
+    rollupMigratedLog.rollup,
     l1Rpc
   )
 
-  const newRollup = RollupUserLogic__factory.connect(parsedLog.rollup, l1Rpc)
+  const assertionCreatedLogs = receipt.events!.filter((event) => event.topics[0] === boldRollup.interface.getEventTopic('AssertionCreated'))
+  if (assertionCreatedLogs.length !== 1) {
+    console.log(assertionCreatedLogs)
+    throw new Error('AssertionCreatedEvent not found or have multiple')
+  }
+  const assertionCreatedLog = boldRollup.interface.parseLog(assertionCreatedLogs[0]).args as AssertionCreatedEvent['args']
+
+  console.log('Old Rollup:', params.config.contracts.rollup)
+  console.log('BOLD Rollup:', rollupMigratedLog.rollup)
+  console.log('BOLD Challenge Manager:', rollupMigratedLog.challengeManager)
+
+  console.log('BOLD AssertionCreated assertionHash:', assertionCreatedLog.assertionHash)
+  console.log('BOLD AssertionCreated parentAssertionHash:', assertionCreatedLog.parentAssertionHash)
+  console.log('BOLD AssertionCreated assertion:', JSON.stringify(assertionCreatedLog.assertion))
+  console.log('BOLD AssertionCreated afterInboxBatchAcc:', assertionCreatedLog.afterInboxBatchAcc)
+  console.log('BOLD AssertionCreated inboxMaxCount:', assertionCreatedLog.inboxMaxCount)
+  console.log('BOLD AssertionCreated wasmModuleRoot:', assertionCreatedLog.wasmModuleRoot)
+  console.log('BOLD AssertionCreated requiredStake:', assertionCreatedLog.requiredStake)
+  console.log('BOLD AssertionCreated challengeManager:', assertionCreatedLog.challengeManager)
+  console.log('BOLD AssertionCreated confirmPeriodBlocks:', assertionCreatedLog.confirmPeriodBlocks)
+
+  const edgeChallengeManager = EdgeChallengeManager__factory.connect(
+    rollupMigratedLog.challengeManager,
+    l1Rpc
+  )
+
+  const newRollup = RollupUserLogic__factory.connect(rollupMigratedLog.rollup, l1Rpc)
 
   await checkSequencerInbox(params, newRollup)
   await checkInbox(params)
   await checkBridge(params, newRollup)
   await checkRollupEventInbox(params, newRollup)
   await checkOutbox(params, newRollup)
-  await checkOldRollup(params)
-  await checkNewRollup(params, newRollup, edgeChallengeManager)
+  const { oldLatestConfirmedStateHash } = await checkOldRollup(params)
+  console.log('oldLatestConfirmedStateHash', oldLatestConfirmedStateHash)
+  await checkNewRollup(params, newRollup, edgeChallengeManager, assertionCreatedLog.inboxMaxCount)
   await checkNewChallengeManager(params, newRollup, edgeChallengeManager)
+
+  console.log('upgrade verified')
 }
 
 async function checkSequencerInbox(
@@ -282,7 +336,7 @@ async function checkBridge(
   }
 }
 
-async function checkOldRollup(params: VerificationParams) {
+async function checkOldRollup(params: VerificationParams): Promise<{oldLatestConfirmedStateHash: string}> {
   const { l1Rpc, config, deployedContracts, preUpgradeState } = params
 
   const oldRollupContract = new Contract(
@@ -315,16 +369,23 @@ async function checkOldRollup(params: VerificationParams) {
   ) {
     throw new Error('Old rollup was not upgraded')
   }
+
+  // using the reader factory here for typing
+  const rollupReaderContract = RollupReader__factory.connect(config.contracts.rollup, l1Rpc)
+  const latestConfirmed = await rollupReaderContract.latestConfirmed()
+  const latestConfirmedStateHash = (await rollupReaderContract.getNode(latestConfirmed)).stateHash
+  return {
+    oldLatestConfirmedStateHash: latestConfirmedStateHash,
+  }
 }
 
 async function checkInitialAssertion(
   params: VerificationParams,
   newRollup: RollupUserLogic,
-  newEdgeChallengeManager: EdgeChallengeManager
-) {
+  newEdgeChallengeManager: EdgeChallengeManager,
+  currentInboxCount: BigNumberish
+): Promise<{latestConfirmed: string}> {
   const { config, l1Rpc } = params
-
-  const bridgeContract = Bridge__factory.connect(config.contracts.bridge, l1Rpc)
 
   const latestConfirmed = await newRollup.latestConfirmed()
 
@@ -333,14 +394,19 @@ async function checkInitialAssertion(
     requiredStake: config.settings.stakeAmt,
     challengeManager: newEdgeChallengeManager.address,
     confirmPeriodBlocks: config.settings.confirmPeriodBlocks,
-    nextInboxPosition: await bridgeContract.sequencerMessageCount(),
+    nextInboxPosition: currentInboxCount,
   })
+
+  return {
+    latestConfirmed
+  }
 }
 
 async function checkNewRollup(
   params: VerificationParams,
   newRollup: RollupUserLogic,
-  newEdgeChallengeManager: EdgeChallengeManager
+  newEdgeChallengeManager: EdgeChallengeManager,
+  currentInboxCount: BigNumberish
 ) {
   const { config, deployedContracts, preUpgradeState } = params
 
@@ -408,8 +474,9 @@ async function checkNewRollup(
     throw new Error('Loser stake escrow address does not match')
   }
 
-  // check initial assertion TODO
-  await checkInitialAssertion(params, newRollup, newEdgeChallengeManager)
+  // check initial assertion
+  const { latestConfirmed } = await checkInitialAssertion(params, newRollup, newEdgeChallengeManager, currentInboxCount)
+  console.log('BOLD latest confirmed:', latestConfirmed)
 
   // check validator whitelist disabled
   if (
@@ -631,6 +698,7 @@ async function main() {
 
   const preUpgradeState = await getPreUpgradeState(l1Rpc, config)
   const receipt = await perform(l1Rpc, config, deployedContracts)
+  console.log('upgrade tx hash:', receipt.transactionHash)
   await verifyPostUpgrade({
     l1Rpc,
     config,

@@ -25,7 +25,7 @@ import { AssertionStateStruct } from '../build/types/src/challengeV2/IAssertionC
 import {
   abi as OldRollupAbi,
   bytecode as OldRollupBytecode,
-} from '@arbitrum/nitro-contracts-2.0.0/build/contracts/src/rollup/RollupUserLogic.sol/RollupUserLogic.json'
+} from '@arbitrum/nitro-contracts-2.1.0/build/contracts/src/rollup/RollupUserLogic.sol/RollupUserLogic.json'
 import { verifyContract } from './deploymentUtils'
 
 export const deployDependencies = async (
@@ -40,6 +40,7 @@ export const deployDependencies = async (
 > => {
   const bridgeFac = new Bridge__factory(signer)
   const bridge = await bridgeFac.deploy()
+  await bridge.deployed()
   if (log) {
     console.log(`Bridge implementation deployed at: ${bridge.address}`)
   }
@@ -69,6 +70,7 @@ export const deployDependencies = async (
     isUsingFeeToken,
     isDelayBufferable
   )
+  await seqInbox.deployed()
   if (log) {
     console.log(
       `Sequencer inbox implementation deployed at: ${seqInbox.address}`
@@ -86,6 +88,7 @@ export const deployDependencies = async (
 
   const reiFac = new RollupEventInbox__factory(signer)
   const rei = await reiFac.deploy()
+  await rei.deployed()
   if (log) {
     console.log(`Rollup event inbox implementation deployed at: ${rei.address}`)
   }
@@ -96,6 +99,7 @@ export const deployDependencies = async (
 
   const outboxFac = new Outbox__factory(signer)
   const outbox = await outboxFac.deploy()
+  await outbox.deployed()
   if (log) {
     console.log(`Outbox implementation deployed at: ${outbox.address}`)
   }
@@ -106,6 +110,7 @@ export const deployDependencies = async (
 
   const inboxFac = new Inbox__factory(signer)
   const inbox = await inboxFac.deploy(maxDataSize)
+  await inbox.deployed()
   if (log) {
     console.log(`Inbox implementation deployed at: ${inbox.address}`)
   }
@@ -120,6 +125,7 @@ export const deployDependencies = async (
     signer
   )
   const oldRollupUser = await oldRollupUserFac.deploy()
+  await oldRollupUser.deployed()
   if (log) {
     console.log(`Old rollup user logic deployed at: ${oldRollupUser.address}`)
   }
@@ -130,6 +136,7 @@ export const deployDependencies = async (
 
   const newRollupUserFac = new RollupUserLogic__factory(signer)
   const newRollupUser = await newRollupUserFac.deploy()
+  await newRollupUser.deployed()
   if (log) {
     console.log(`New rollup user logic deployed at: ${newRollupUser.address}`)
   }
@@ -140,6 +147,7 @@ export const deployDependencies = async (
 
   const newRollupAdminFac = new RollupAdminLogic__factory(signer)
   const newRollupAdmin = await newRollupAdminFac.deploy()
+  await newRollupAdmin.deployed()
   if (log) {
     console.log(`New rollup admin logic deployed at: ${newRollupAdmin.address}`)
   }
@@ -150,6 +158,7 @@ export const deployDependencies = async (
 
   const challengeManagerFac = new EdgeChallengeManager__factory(signer)
   const challengeManager = await challengeManagerFac.deploy()
+  await challengeManager.deployed()
   if (log) {
     console.log(`Challenge manager deployed at: ${challengeManager.address}`)
   }
@@ -303,7 +312,7 @@ export const populateLookup = async (
   for (let i = 0; i < 100; i++) {
     latestConfirmedLog = await wallet.provider!.getLogs({
       address: rollupAddr,
-      fromBlock: toBlock - 1000,
+      fromBlock: toBlock >= 1000 ? toBlock - 1000 : 0,
       toBlock: toBlock,
       topics: [
         oldRollup.interface.getEventTopic('NodeCreated'),
@@ -311,7 +320,13 @@ export const populateLookup = async (
       ],
     })
     if (latestConfirmedLog.length == 1) break
+    if (toBlock == 0) {
+      throw new Error('Could not find latest confirmed node')
+    }
     toBlock -= 1000
+    if (toBlock < 0) {
+      toBlock = 0
+    }
   }
 
   if (!latestConfirmedLog || latestConfirmedLog.length != 1) {

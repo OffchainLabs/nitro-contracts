@@ -7,7 +7,7 @@ export const local: Config = {
     bridge: '0x5eCF728ffC5C5E802091875f96281B5aeECf6C49',
     inbox: '0x9f8c1c641336A371031499e3c362e40d58d0f254',
     outbox: '0x50143333b44Ea46255BEb67255C9Afd35551072F',
-    rollup: '0xC3124dD1FA0e5D6135c25279760DBF9d9286467B',
+    rollup: '0x3A052fF29EAFdd226Df1C4824d51A56a8Ad5D7A4',
     sequencerInbox: '0x18d19C5d3E685f5be5b9C86E097f0E439285D216',
     rollupEventInbox: '0x0e73faf857e1ca53e700856fcf19f31f920a1e3c',
     upgradeExecutor: '0x513d9f96d4d0563debae8a0dc307ea0e46b10ed7',
@@ -48,5 +48,5 @@ export const local: Config = {
       replenishRateInBasis: 500,
     },
   },
-  validators: ['0xf10EF80c6eF4930A62C5F9661c91339Df4dBB173'],
+  validators: ['0x139A0b6B1Dd1e7F912361B32A09cAD89e82F29db'],
 }
