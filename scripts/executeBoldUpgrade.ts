@@ -108,7 +108,7 @@ async function perform(
     timelockSigner
   )
 
-  // // what validators did we have in the old rollup?
+  // what validators did we have in the old rollup?
   const boldActionPerformData = boldAction.interface.encodeFunctionData(
     'perform',
     [config.validators]
