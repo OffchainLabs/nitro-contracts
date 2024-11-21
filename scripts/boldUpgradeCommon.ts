@@ -10,12 +10,10 @@ export interface DeployedContracts {
   rei: string
   outbox: string
   inbox: string
-  oldRollupUser: string
   newRollupUser: string
   newRollupAdmin: string
   challengeManager: string
   boldAction: string
-  rollupReader: string
   preImageHashLookup: string
   prover0: string
   proverMem: string

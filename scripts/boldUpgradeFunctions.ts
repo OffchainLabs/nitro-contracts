@@ -11,21 +11,16 @@ import {
   Outbox__factory,
   RollupAdminLogic__factory,
   RollupEventInbox__factory,
-  RollupReader__factory,
   RollupUserLogic__factory,
   SequencerInbox__factory,
   Inbox__factory,
   StateHashPreImageLookup__factory,
   IReader4844__factory,
+  IOldRollup__factory,
 } from '../build/types'
 import { bytecode as Reader4844Bytecode } from '../out/yul/Reader4844.yul/Reader4844.json'
 import { DeployedContracts, Config } from './boldUpgradeCommon'
 import { AssertionStateStruct } from '../build/types/src/challengeV2/IAssertionChain'
-// taken from https://github.com/OffchainLabs/nitro-contracts/blob/210e5b3bc96a513d276deaba90399130a60131d5/src/rollup/RollupUserLogic.sol
-import {
-  abi as OldRollupAbi,
-  bytecode as OldRollupBytecode,
-} from '@arbitrum/nitro-contracts-2.1.0/build/contracts/src/rollup/RollupUserLogic.sol/RollupUserLogic.json'
 import { verifyContract } from './deploymentUtils'
 
 export const deployDependencies = async (
@@ -35,9 +30,7 @@ export const deployDependencies = async (
   isDelayBufferable: boolean,
   log: boolean = false,
   verify: boolean = true
-): Promise<
-  Omit<DeployedContracts, 'boldAction' | 'preImageHashLookup' | 'rollupReader'>
-> => {
+): Promise<Omit<DeployedContracts, 'boldAction' | 'preImageHashLookup'>> => {
   const bridgeFac = new Bridge__factory(signer)
   const bridge = await bridgeFac.deploy()
   await bridge.deployed()
@@ -117,21 +110,6 @@ export const deployDependencies = async (
   if (verify) {
     await inbox.deployTransaction.wait(5)
     await verifyContract('Inbox', inbox.address, [maxDataSize])
-  }
-
-  const oldRollupUserFac = new ContractFactory(
-    OldRollupAbi,
-    OldRollupBytecode,
-    signer
-  )
-  const oldRollupUser = await oldRollupUserFac.deploy()
-  await oldRollupUser.deployed()
-  if (log) {
-    console.log(`Old rollup user logic deployed at: ${oldRollupUser.address}`)
-  }
-  if (verify) {
-    await oldRollupUser.deployTransaction.wait(5)
-    await verifyContract('OldRollupUserLogic', oldRollupUser.address, [])
   }
 
   const newRollupUserFac = new RollupUserLogic__factory(signer)
@@ -238,7 +216,6 @@ export const deployDependencies = async (
     rei: rei.address,
     outbox: outbox.address,
     inbox: inbox.address,
-    oldRollupUser: oldRollupUser.address,
     newRollupUser: newRollupUser.address,
     newRollupAdmin: newRollupAdmin.address,
     challengeManager: challengeManager.address,
@@ -291,7 +268,6 @@ export const deployBoldUpgrade = async (
   const deployedAndBold = {
     ...deployed,
     boldAction: boldUpgradeAction.address,
-    rollupReader: await boldUpgradeAction.ROLLUP_READER(),
     preImageHashLookup: await boldUpgradeAction.PREIMAGE_LOOKUP(),
   }
 
@@ -301,12 +277,11 @@ export const deployBoldUpgrade = async (
 export const populateLookup = async (
   wallet: Signer,
   rollupAddr: string,
-  preImageHashLookupAddr: string,
-  rollupReaderAddr: string
+  preImageHashLookupAddr: string
 ) => {
-  const oldRollup = new Contract(rollupAddr, OldRollupAbi, wallet.provider)
-  const latestConfirmed: number = await oldRollup.latestConfirmed()
+  const oldRollup = IOldRollup__factory.connect(rollupAddr, wallet)
 
+  const latestConfirmed = await oldRollup.latestConfirmed()
   let latestConfirmedLog
   let toBlock = await wallet.provider!.getBlockNumber()
   for (let i = 0; i < 100; i++) {
@@ -343,11 +318,8 @@ export const populateLookup = async (
     preImageHashLookupAddr,
     wallet
   )
-  const oldRollupReader = RollupReader__factory.connect(
-    rollupReaderAddr,
-    wallet
-  )
-  const node = await oldRollupReader.getNode(latestConfirmed)
+
+  const node = await oldRollup.getNode(latestConfirmed)
   const stateHash = await lookup.stateHash(afterState, inboxCount)
   if (node.stateHash != stateHash) {
     throw new Error(`State hash mismatch ${node.stateHash} != ${stateHash}}`)

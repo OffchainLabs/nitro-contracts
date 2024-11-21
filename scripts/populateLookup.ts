@@ -45,8 +45,7 @@ async function main() {
   await populateLookup(
     wallet,
     config.contracts.rollup,
-    deployedContracts.preImageHashLookup,
-    deployedContracts.rollupReader
+    deployedContracts.preImageHashLookup
   )
 }
 
