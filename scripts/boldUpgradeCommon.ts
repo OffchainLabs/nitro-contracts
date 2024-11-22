@@ -34,9 +34,17 @@ export const getConfig = async (
   if (!config) {
     throw new Error('config not found')
   }
-  if (process.env.ROLLUP_ADDRESS) {
-    console.log('Using ROLLUP_ADDRESS from env:', process.env.ROLLUP_ADDRESS)
-    config.contracts.rollup = process.env.ROLLUP_ADDRESS
+  // in testnode mode we allow some config to be overridden from env for easier testing
+  if (process.env.TESTNODE_MODE) {
+    console.log('In testnode mode')
+    if (process.env.ROLLUP_ADDRESS) {
+      console.log('Using ROLLUP_ADDRESS from env:', process.env.ROLLUP_ADDRESS)
+      config.contracts.rollup = process.env.ROLLUP_ADDRESS
+    }
+    if (process.env.STAKE_TOKEN) {
+      console.log('Using STAKE_TOKEN from env:', process.env.STAKE_TOKEN)
+      config.settings.stakeToken = process.env.STAKE_TOKEN
+    }
   }
   await validateConfig(config, l1Rpc)
   return config
