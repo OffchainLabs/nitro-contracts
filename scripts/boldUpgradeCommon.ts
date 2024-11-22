@@ -146,6 +146,9 @@ export const validateConfig = async (
   if (config.settings.stakeToken.length === 0) {
     throw new Error('stakeToken address is empty')
   }
+  if ((await l1Rpc.getCode(config.settings.stakeToken)).length <= 2) {
+    throw new Error('stakeToken address is not a contract')
+  }
   if (config.settings.chainId === 0) {
     throw new Error('chainId is 0')
   }
