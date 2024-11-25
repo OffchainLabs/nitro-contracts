@@ -19,6 +19,8 @@ import "../../src/rollup/DeployHelper.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
+import {NoZeroTransferToken} from "./util/NoZeroTransferToken.sol";
+
 
 contract RollupCreatorTest is Test {
     RollupCreator public rollupCreator;
@@ -241,10 +243,23 @@ contract RollupCreatorTest is Test {
     }
 
     function test_createErc20Rollup() public {
-        vm.startPrank(deployer);
         address nativeToken = address(
             new ERC20PresetFixedSupply("Appchain Token", "App", 1_000_000 ether, deployer)
         );
+
+        _createERC20Rollup(nativeToken);
+    }
+
+    function test_createErc20RollupNoZeroTransfer() public {
+        address nativeToken = address(
+            new NoZeroTransferToken("Appchain Token", "App", 1_000_000 ether, deployer)
+        );
+
+        _createERC20Rollup(nativeToken);
+    }
+
+    function _createERC20Rollup(address nativeToken) internal {
+        vm.startPrank(deployer);
 
         // deployment params
         ISequencerInbox.MaxTimeVariation memory timeVars = ISequencerInbox.MaxTimeVariation(
@@ -297,6 +312,10 @@ contract RollupCreatorTest is Test {
 
         vm.stopPrank();
 
+        _postCreateERC20RollupChecks(rollupAddress, batchPosterManager, nativeToken, validators, batchPosters);
+    }
+
+    function _postCreateERC20RollupChecks(address rollupAddress, address batchPosterManager, address nativeToken, address[] memory validators, address[] memory batchPosters) internal {
         /// common checks
 
         /// rollup creator
