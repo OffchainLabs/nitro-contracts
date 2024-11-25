@@ -110,6 +110,10 @@ jobs:
           files: ./contracts/coverage.json
           verbose: false
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload 4bytes
+        run: yarn upload-4bytes
+
   test-4844:
     name: 4844 tests
     runs-on: ubuntu-latest
@@ -123,9 +127,8 @@ jobs:
         with:
           version: nightly
 
-      - uses: OffchainLabs/actions/run-nitro-test-node@test-node-args
+      - uses: OffchainLabs/actions/run-nitro-test-node@main
         with:
-          nitro-testnode-ref: deneb-integration
           args: --pos
           no-token-bridge: true
 

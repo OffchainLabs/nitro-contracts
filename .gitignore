@@ -10,3 +10,5 @@ scripts/config.ts
 forge-cache/
 out/
 .env
+lcov.info
+output_directory
