@@ -373,6 +373,8 @@ contract BOLDUpgradeAction {
             loserStakeEscrow: EXCESS_STAKE_RECEIVER, // additional funds get sent to the l1 timelock
             chainId: CHAIN_ID,
             chainConfig: "", // we can use an empty chain config it wont be used in the rollup initialization because we check if the rei is already connected there
+            minimumAssertionPeriod: 75,
+            validatorAfkBlocks: 201600,
             miniStakeValues: ConstantArrayStorage(MINI_STAKE_AMOUNTS_STORAGE).array(),
             sequencerInboxMaxTimeVariation: maxTimeVariation,
             layerZeroBlockEdgeHeight: BLOCK_LEAF_SIZE,
