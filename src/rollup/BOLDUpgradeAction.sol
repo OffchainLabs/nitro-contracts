@@ -185,6 +185,9 @@ contract BOLDUpgradeAction {
     address public immutable STAKE_TOKEN;
     uint256 public immutable STAKE_AMOUNT;
     uint256 public immutable CHAIN_ID;
+    uint256 public immutable MINIMUM_ASSERTION_PERIOD;
+    uint64 public immutable VALIDATOR_AFK_BLOCKS;
+
     bool public immutable DISABLE_VALIDATOR_WHITELIST;
     uint64 public immutable CHALLENGE_GRACE_PERIOD_BLOCKS;
     address public immutable MINI_STAKE_AMOUNTS_STORAGE;
@@ -223,6 +226,8 @@ contract BOLDUpgradeAction {
         uint256 stakeAmt;
         uint256[] miniStakeAmounts;
         uint256 chainId;
+        uint256 minimumAssertionPeriod;
+        uint64 validatorAfkBlocks;
         bool disableValidatorWhitelist;
         uint256 blockLeafSize;
         uint256 bigStepLeafSize;
@@ -296,6 +301,8 @@ contract BOLDUpgradeAction {
         IMPL_CHALLENGE_MANAGER = implementations.challengeManager;
 
         CHAIN_ID = settings.chainId;
+        MINIMUM_ASSERTION_PERIOD = settings.minimumAssertionPeriod;
+        VALIDATOR_AFK_BLOCKS = settings.validatorAfkBlocks;
         CONFIRM_PERIOD_BLOCKS = settings.confirmPeriodBlocks;
         CHALLENGE_PERIOD_BLOCKS = settings.challengePeriodBlocks;
         STAKE_TOKEN = settings.stakeToken;
@@ -373,8 +380,8 @@ contract BOLDUpgradeAction {
             loserStakeEscrow: EXCESS_STAKE_RECEIVER, // additional funds get sent to the l1 timelock
             chainId: CHAIN_ID,
             chainConfig: "", // we can use an empty chain config it wont be used in the rollup initialization because we check if the rei is already connected there
-            minimumAssertionPeriod: 75,
-            validatorAfkBlocks: 201600,
+            minimumAssertionPeriod: MINIMUM_ASSERTION_PERIOD,
+            validatorAfkBlocks: VALIDATOR_AFK_BLOCKS,
             miniStakeValues: ConstantArrayStorage(MINI_STAKE_AMOUNTS_STORAGE).array(),
             sequencerInboxMaxTimeVariation: maxTimeVariation,
             layerZeroBlockEdgeHeight: BLOCK_LEAF_SIZE,
