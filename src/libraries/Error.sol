@@ -197,5 +197,5 @@ error Deprecated();
 /// @dev Thrown when any component of maxTimeVariation is over uint64
 error BadMaxTimeVariation();
 
-/// @dev Thrown when fee token pricer is provided, but chain doesn't use fee token
+/// @dev Thrown when a fee token pricer is provided but the chain doesn't use a fee token
 error CannotSetFeeTokenPricer();

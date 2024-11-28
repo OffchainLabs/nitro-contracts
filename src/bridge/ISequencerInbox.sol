@@ -95,13 +95,13 @@ interface ISequencerInbox is IDelayedMessageProvider {
     ///         This enables the batch poster to do key rotation
     function batchPosterManager() external view returns (address);
 
-    /// @notice Pricer contract is used to get the exchange rate between child chain's fee token
-    ///         and parent chain's native token. This is needed when child chain uses custom fee
-    ///         token which is different from parent chain's native token. The exchange rate is
+    /// @notice The fee token pricer is used to get the exchange rate between the child chain's fee token
+    ///         and parent chain's fee token. This is needed when the child chain uses a custom fee
+    ///         token which is different from the parent chain's fee token. The exchange rate is
     ///         used to correctly report converted gas price in the batch spending reports, so
-    ///         that batch poster can get properly reimbursed on the child chain. If chain uses
-    ///         custom fee token, but pricer is not set, then batch poster reports won't be reported
-    ///         and batch poster won't get reimbursed.
+    ///         the batch poster can get properly reimbursed on the child chain. If the chain uses
+    ///         a custom fee token, but the pricer is not set, then the batch poster reports won't be reported
+    ///         and the batch poster won't get reimbursed.
     function feeTokenPricer() external view returns (IFeeTokenPricer);
 
     struct DasKeySetInfo {
@@ -231,7 +231,7 @@ interface ISequencerInbox is IDelayedMessageProvider {
 
     /**
      * @notice Updates the fee token pricer, the contract which is used to get the exchange rate between child
-     *         chain's fee token and parent chain's native token in rollups that use custom fee token.
+     *         chain's fee token and parent chain's fee token in rollups that use a custom fee token.
      * @param newFeeTokenPricer The new fee token pricer to be set
      */
     function setFeeTokenPricer(IFeeTokenPricer newFeeTokenPricer) external;
@@ -250,10 +250,10 @@ interface ISequencerInbox is IDelayedMessageProvider {
 
 interface IFeeTokenPricer {
     /**
-     * @notice Get the number of child chain's fee tokens per 1 parent chain's native token. Exchange rate must be
+     * @notice Get the number of child chain fee tokens per 1 parent chain fee token. Exchange rate must be
      *         denominated in 18 decimals. Function is mutable so it allows the pricer to keep internal state.
      * @dev    For example, parent chain's native token is ETH, fee token is DAI. If price of 1ETH = 2000DAI, then function should return 2000*1e18.
-     *         If fee token is USDC instead and price of 1ETH = 2000USDC, function should still return 2000*1e18, no matter that USDC uses 6 decimals.
+     *         If fee token is USDC instead and price of 1ETH = 2000USDC, function should still return 2000*1e18, despite USDC using 6 decimals.
      */
     function getExchangeRate() external returns (uint256);
 }

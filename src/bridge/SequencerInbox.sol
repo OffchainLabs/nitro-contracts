@@ -651,10 +651,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 gasPrice,
         uint256 extraGas
     ) internal {
-        // When using fee token batch poster needs to be reimbursed on the child chain in the fee token. For that reason
-        // we need to get the exchange rate between the child chain fee token and the parent chain's native token. Pricer
-        // is required to get the exchange rate. If the pricer is not set, then we do not send batch reports and batch poster
-        // never gets reimbursed
+        // When using a fee token the batch poster needs to be reimbursed on the child chain in units of the child chain fee token.
+        // We need to get the exchange rate between the child chain fee token and the parent chain fee token using the pricer.
+        // If the pricer is not set, then we do not send batch reports and batch poster never gets reimbursed
         IFeeTokenPricer _feeTokenPricer = feeTokenPricer;
         if (isUsingFeeToken && address(_feeTokenPricer) == address(0)) {
             return;
@@ -673,9 +672,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         require(extraGas <= type(uint64).max, "EXTRA_GAS_NOT_UINT64");
 
         if (isUsingFeeToken && address(_feeTokenPricer) != address(0)) {
-            // gasPrice is originally denominated in parent chain's native token and we want to scale it to child
-            // chain's fee token. For that we need the exchange rate which tells us how many child chain's fee tokens
-            // we get for 1 parent chain's native token. Exchange rate itself should be denominated in 18 decimals.
+            // gasPrice is originally denominated in parent chain's native token and we want to scale it to the child
+            // chain's fee token. For that we need the exchange rate which tells us how many child chain fee tokens
+            // we get for 1 parent chain fee token. Exchange rate is denominated in 18 decimals.
             uint256 exchangeRate = _feeTokenPricer.getExchangeRate();
             gasPrice = (gasPrice * exchangeRate) / 1e18;
         }
