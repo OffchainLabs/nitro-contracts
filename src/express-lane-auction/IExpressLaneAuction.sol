@@ -18,8 +18,7 @@ struct Bid {
     ///         however this is the maximum amount up to which they may have to pay
     uint256 amount;
     /// @notice Authentication of this bid by the bidder.
-    ///         The bidder signs over a hash of the following
-    ///         keccak256("\x19Ethereum Signed Message:\n144" ++ keccak256("TIMEBOOST_BID") ++ chainId ++ auctionContractAddress ++ auctionRound ++ bidAmount ++ expressLaneController)
+    ///         The bidder signs the 712 hash of the struct Bid(uint64 round,address expressLaneController,uint256 amount)
     bytes signature;
 }
 
