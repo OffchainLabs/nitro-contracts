@@ -13,10 +13,9 @@ interface ArbWasm {
     /// @param program the program to activate
     /// @return version the stylus version the program was activated against
     /// @return dataFee the data fee paid to store the activated program
-    function activateProgram(address program)
-        external
-        payable
-        returns (uint16 version, uint256 dataFee);
+    function activateProgram(
+        address program
+    ) external payable returns (uint16 version, uint256 dataFee);
 
     /// @notice Gets the latest stylus version
     /// @return version the stylus version
@@ -24,36 +23,47 @@ interface ArbWasm {
 
     /// @notice Gets the stylus version the program with codehash was most recently activated against
     /// @return version the program version (reverts for EVM contracts)
-    function codehashVersion(bytes32 codehash) external view returns (uint16 version);
+    function codehashVersion(
+        bytes32 codehash
+    ) external view returns (uint16 version);
 
     /// @notice Extends a program's expiration date.
     /// Reverts if too soon or if the program is not up to date.
-    function codehashKeepalive(bytes32 codehash) external payable;
+    function codehashKeepalive(
+        bytes32 codehash
+    ) external payable;
 
     /// @notice Gets a program's asm size.
     /// Reverts if program is not active.
     /// @return size the size in bytes
-    function codehashAsmSize(bytes32 codehash) external view returns (uint32 size);
+    function codehashAsmSize(
+        bytes32 codehash
+    ) external view returns (uint32 size);
 
     /// @notice Gets the stylus version the program was most recently activated against
     /// @return version the program version (reverts for EVM contracts)
-    function programVersion(address program) external view returns (uint16 version);
+    function programVersion(
+        address program
+    ) external view returns (uint16 version);
 
     /// @notice Gets the cost to invoke the program
     /// @return gas the amount of gas
     /// @return gasWhenCached the amount of gas if the program was recently used
-    function programInitGas(address program)
-        external
-        view
-        returns (uint64 gas, uint64 gasWhenCached);
+    function programInitGas(
+        address program
+    ) external view returns (uint64 gas, uint64 gasWhenCached);
 
     /// @notice Gets the memory footprint of the program at the given address in pages
     /// @return footprint the memory footprint of program in pages (reverts for EVM contracts)
-    function programMemoryFootprint(address program) external view returns (uint16 footprint);
+    function programMemoryFootprint(
+        address program
+    ) external view returns (uint16 footprint);
 
     /// @notice Gets the amount of time remaining until the program expires
     /// @return _secs the time left in seconds (reverts for EVM contracts)
-    function programTimeLeft(address program) external view returns (uint64 _secs);
+    function programTimeLeft(
+        address program
+    ) external view returns (uint64 _secs);
 
     /// @notice Gets the conversion rate between gas and ink
     /// @return price the amount of ink 1 gas buys

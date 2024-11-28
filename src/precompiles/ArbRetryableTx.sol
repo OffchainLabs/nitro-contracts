@@ -15,7 +15,9 @@ interface ArbRetryableTx {
      * @param ticketId unique identifier of retryable message: keccak256(keccak256(ArbchainId, inbox-sequence-number), uint(0) )
      * @return txId that the redeem attempt will have
      */
-    function redeem(bytes32 ticketId) external returns (bytes32);
+    function redeem(
+        bytes32 ticketId
+    ) external returns (bytes32);
 
     /**
      * @notice Return the minimum lifetime of redeemable txn.
@@ -28,7 +30,9 @@ interface ArbRetryableTx {
      * @param ticketId unique ticket identifier
      * @return timestamp for ticket's deadline
      */
-    function getTimeout(bytes32 ticketId) external view returns (uint256);
+    function getTimeout(
+        bytes32 ticketId
+    ) external view returns (uint256);
 
     /**
      * @notice Adds one lifetime period to the life of ticketId.
@@ -38,7 +42,9 @@ interface ArbRetryableTx {
      * @param ticketId unique ticket identifier
      * @return new timeout of ticketId
      */
-    function keepalive(bytes32 ticketId) external returns (uint256);
+    function keepalive(
+        bytes32 ticketId
+    ) external returns (uint256);
 
     /**
      * @notice Return the beneficiary of ticketId.
@@ -46,14 +52,18 @@ interface ArbRetryableTx {
      * @param ticketId unique ticket identifier
      * @return address of beneficiary for ticket
      */
-    function getBeneficiary(bytes32 ticketId) external view returns (address);
+    function getBeneficiary(
+        bytes32 ticketId
+    ) external view returns (address);
 
     /**
      * @notice Cancel ticketId and refund its callvalue to its beneficiary.
      * Revert if ticketId doesn't exist, or if called by anyone other than ticketId's beneficiary.
      * @param ticketId unique ticket identifier
      */
-    function cancel(bytes32 ticketId) external;
+    function cancel(
+        bytes32 ticketId
+    ) external;
 
     /**
      * @notice Gets the redeemer of the current retryable redeem attempt.

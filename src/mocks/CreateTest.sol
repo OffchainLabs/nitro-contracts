@@ -12,7 +12,9 @@ contract CreateTest {
     // solhint-disable reason-string
     // solhint-disable avoid-low-level-calls
     // solhint-disable-next-line prettier/prettier
-    fallback(bytes calldata input) external returns (bytes memory) {
+    fallback(
+        bytes calldata input
+    ) external returns (bytes memory) {
         uint8 kind = uint8(input[0]);
         input = input[1:];
 

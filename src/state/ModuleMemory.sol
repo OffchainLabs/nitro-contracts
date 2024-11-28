@@ -13,7 +13,9 @@ library ModuleMemoryLib {
 
     uint256 private constant LEAF_SIZE = 32;
 
-    function hash(ModuleMemory memory mem) internal pure returns (bytes32) {
+    function hash(
+        ModuleMemory memory mem
+    ) internal pure returns (bytes32) {
         return ModuleMemoryCompactLib.hash(mem);
     }
 
@@ -22,15 +24,7 @@ library ModuleMemoryLib {
         uint256 leafIdx,
         bytes calldata proof,
         uint256 startOffset
-    )
-        internal
-        pure
-        returns (
-            bytes32 contents,
-            uint256 offset,
-            MerkleProof memory merkle
-        )
-    {
+    ) internal pure returns (bytes32 contents, uint256 offset, MerkleProof memory merkle) {
         offset = startOffset;
         (contents, offset) = Deserialize.b32(proof, offset);
         (merkle, offset) = Deserialize.merkleProof(proof, offset);
@@ -56,15 +50,7 @@ library ModuleMemoryLib {
         uint256 width,
         bytes calldata proof,
         uint256 proofOffset
-    )
-        internal
-        pure
-        returns (
-            bool err,
-            uint256 value,
-            uint256 offset
-        )
-    {
+    ) internal pure returns (bool err, uint256 value, uint256 offset) {
         if (start + width > mem.size) {
             return (true, 0, proofOffset);
         }
@@ -76,12 +62,7 @@ library ModuleMemoryLib {
             uint256 idx = start + i;
             uint256 leafIdx = idx / LEAF_SIZE;
             if (leafIdx != lastProvedLeafIdx) {
-                (lastProvedLeafContents, proofOffset, ) = proveLeaf(
-                    mem,
-                    leafIdx,
-                    proof,
-                    proofOffset
-                );
+                (lastProvedLeafContents, proofOffset,) = proveLeaf(mem, leafIdx, proof, proofOffset);
                 lastProvedLeafIdx = leafIdx;
             }
             uint256 indexWithinLeaf = idx % LEAF_SIZE;

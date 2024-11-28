@@ -5,21 +5,22 @@
 pragma solidity ^0.8.0;
 
 import "./IOneStepProver.sol";
+import "../state/Machine.sol";
 
 library OneStepProofEntryLib {
     uint256 internal constant MAX_STEPS = 1 << 43;
 }
 
-interface IOneStepProofEntry {
-    function getStartMachineHash(bytes32 globalStateHash, bytes32 wasmModuleRoot)
-        external
-        pure
-        returns (bytes32);
+struct ExecutionState {
+    GlobalState globalState;
+    MachineStatus machineStatus;
+}
 
-    function getEndMachineHash(MachineStatus status, bytes32 globalStateHash)
-        external
-        pure
-        returns (bytes32);
+interface IOneStepProofEntry {
+    function getStartMachineHash(
+        bytes32 globalStateHash,
+        bytes32 wasmModuleRoot
+    ) external pure returns (bytes32);
 
     function proveOneStep(
         ExecutionContext calldata execCtx,
@@ -27,4 +28,8 @@ interface IOneStepProofEntry {
         bytes32 beforeHash,
         bytes calldata proof
     ) external view returns (bytes32 afterHash);
+
+    function getMachineHash(
+        ExecutionState calldata execState
+    ) external pure returns (bytes32);
 }

@@ -22,7 +22,9 @@ contract OutboxWithoutOptTester is DelegateCallAware, IOutbox {
     address public rollup; // the rollup contract
     IBridge public bridge; // the bridge contract
 
-    function spent(uint256) external pure override returns (bytes32) {
+    function spent(
+        uint256
+    ) external pure override returns (bytes32) {
         revert("NOT_IMPLEMETED");
     }
 
@@ -39,10 +41,13 @@ contract OutboxWithoutOptTester is DelegateCallAware, IOutbox {
     // Note, these variables are set and then wiped during a single transaction.
     // Therefore their values don't need to be maintained, and their slots will
     // be empty outside of transactions
+
     L2ToL1Context internal context;
     uint128 public constant OUTBOX_VERSION = 2;
 
-    function initialize(IBridge _bridge) external {
+    function initialize(
+        IBridge _bridge
+    ) external {
         if (address(bridge) != address(0)) revert AlreadyInit();
         bridge = _bridge;
         rollup = address(_bridge.rollup());
@@ -115,15 +120,8 @@ contract OutboxWithoutOptTester is DelegateCallAware, IOutbox {
     ) external virtual override {
         bytes32 outputId;
         {
-            bytes32 userTx = calculateItemHash(
-                l2Sender,
-                to,
-                l2Block,
-                l1Block,
-                l2Timestamp,
-                value,
-                data
-            );
+            bytes32 userTx =
+                calculateItemHash(l2Sender, to, l2Block, l1Block, l2Timestamp, value, data);
 
             outputId = recordOutputAsSpent(proof, index, userTx);
             emit OutBoxTransactionExecuted(to, l2Sender, 0, index);
@@ -166,7 +164,7 @@ contract OutboxWithoutOptTester is DelegateCallAware, IOutbox {
         bytes32 item
     ) internal returns (bytes32) {
         if (proof.length >= 256) revert ProofTooLong(proof.length);
-        if (index >= 2**proof.length) revert PathNotMinimal(index, 2**proof.length);
+        if (index >= 2 ** proof.length) revert PathNotMinimal(index, 2 ** proof.length);
 
         // Hash the leaf an extra time to prove it's a leaf
         bytes32 calcRoot = calculateMerkleRoot(proof, index, item);
@@ -178,11 +176,7 @@ contract OutboxWithoutOptTester is DelegateCallAware, IOutbox {
         return bytes32(index);
     }
 
-    function executeBridgeCall(
-        address to,
-        uint256 value,
-        bytes memory data
-    ) internal {
+    function executeBridgeCall(address to, uint256 value, bytes memory data) internal {
         (bool success, bytes memory returndata) = bridge.executeCall(to, value, data);
         if (!success) {
             if (returndata.length > 0) {
@@ -206,8 +200,7 @@ contract OutboxWithoutOptTester is DelegateCallAware, IOutbox {
         uint256 value,
         bytes calldata data
     ) public pure override returns (bytes32) {
-        return
-            keccak256(abi.encodePacked(l2Sender, to, l2Block, l1Block, l2Timestamp, value, data));
+        return keccak256(abi.encodePacked(l2Sender, to, l2Block, l1Block, l2Timestamp, value, data));
     }
 
     function calculateMerkleRoot(

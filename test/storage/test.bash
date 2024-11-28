@@ -1,6 +1,6 @@
 #!/bin/bash
 output_dir="./test/storage"
-for CONTRACTNAME in Bridge Inbox Outbox RollupCore RollupUserLogic RollupAdminLogic SequencerInbox ChallengeManager ERC20Bridge ERC20Inbox ERC20Outbox CacheManager 
+for CONTRACTNAME in Bridge Inbox Outbox RollupCore RollupUserLogic RollupAdminLogic SequencerInbox EdgeChallengeManager ERC20Bridge ERC20Inbox ERC20Outbox OneStepProofEntry CacheManager 
 do
     echo "Checking storage change of $CONTRACTNAME"
     [ -f "$output_dir/$CONTRACTNAME" ] && mv "$output_dir/$CONTRACTNAME" "$output_dir/$CONTRACTNAME-old"

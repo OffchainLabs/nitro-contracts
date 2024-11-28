@@ -20,7 +20,9 @@ struct Value {
 }
 
 library ValueLib {
-    function hash(Value memory val) internal pure returns (bytes32) {
+    function hash(
+        Value memory val
+    ) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked("Value:", val.valueType, val.contents));
     }
 
@@ -28,14 +30,18 @@ library ValueLib {
         return ValueType.INTERNAL_REF;
     }
 
-    function assumeI32(Value memory val) internal pure returns (uint32) {
+    function assumeI32(
+        Value memory val
+    ) internal pure returns (uint32) {
         uint256 uintval = uint256(val.contents);
         require(val.valueType == ValueType.I32, "NOT_I32");
         require(uintval < (1 << 32), "BAD_I32");
         return uint32(uintval);
     }
 
-    function assumeI64(Value memory val) internal pure returns (uint64) {
+    function assumeI64(
+        Value memory val
+    ) internal pure returns (uint64) {
         uint256 uintval = uint256(val.contents);
         require(val.valueType == ValueType.I64, "NOT_I64");
         require(uintval < (1 << 64), "BAD_I64");
@@ -46,15 +52,21 @@ library ValueLib {
         return Value({valueType: ValueType.REF_NULL, contents: 0});
     }
 
-    function newI32(uint32 x) internal pure returns (Value memory) {
+    function newI32(
+        uint32 x
+    ) internal pure returns (Value memory) {
         return Value({valueType: ValueType.I32, contents: uint256(x)});
     }
 
-    function newI64(uint64 x) internal pure returns (Value memory) {
+    function newI64(
+        uint64 x
+    ) internal pure returns (Value memory) {
         return Value({valueType: ValueType.I64, contents: uint256(x)});
     }
 
-    function newBoolean(bool x) internal pure returns (Value memory) {
+    function newBoolean(
+        bool x
+    ) internal pure returns (Value memory) {
         if (x) {
             return newI32(uint32(1));
         } else {

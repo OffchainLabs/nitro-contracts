@@ -1,5 +1,5 @@
 // Copyright 2021-2022, Offchain Labs, Inc.
-// For license information, see https://github.com/nitro/blob/master/LICENSE
+// For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
 // solhint-disable-next-line compiler-version
@@ -129,5 +129,7 @@ interface IInbox is IInboxBase {
      * @dev function to be called one time during the inbox upgrade process
      *      this is used to fix the storage slots
      */
-    function postUpgradeInit(IBridge _bridge) external;
+    function postUpgradeInit(
+        IBridge _bridge
+    ) external;
 }

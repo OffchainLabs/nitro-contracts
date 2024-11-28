@@ -94,7 +94,9 @@ contract OneStepProver0 is IOneStepProver {
         mach.setPc(frame.returnPc);
     }
 
-    function createReturnValue(Machine memory mach) internal pure returns (Value memory) {
+    function createReturnValue(
+        Machine memory mach
+    ) internal pure returns (Value memory) {
         return ValueLib.newPc(mach.functionPc, mach.functionIdx, mach.moduleIdx);
     }
 
@@ -252,16 +254,11 @@ contract OneStepProver0 is IOneStepProver {
                 (tableMerkleProof, offset) = Deserialize.merkleProof(proof, offset);
 
                 // Validate the information by recomputing known hashes
-                bytes32 recomputed = keccak256(
-                    abi.encodePacked("Call indirect:", tableIdx, wantedFuncTypeHash)
-                );
+                bytes32 recomputed =
+                    keccak256(abi.encodePacked("Call indirect:", tableIdx, wantedFuncTypeHash));
                 require(recomputed == bytes32(inst.argumentData), "BAD_CALL_INDIRECT_DATA");
-                recomputed = tableMerkleProof.computeRootFromTable(
-                    tableIdx,
-                    tableType,
-                    tableSize,
-                    elemsRoot
-                );
+                recomputed =
+                    tableMerkleProof.computeRootFromTable(tableIdx, tableType, tableSize, elemsRoot);
                 require(recomputed == mod.tablesMerkleRoot, "BAD_TABLES_ROOT");
 
                 // Check if the table access is out of bounds
@@ -278,9 +275,7 @@ contract OneStepProver0 is IOneStepProver {
             (functionPointer, offset) = Deserialize.value(proof, offset);
             (elementMerkleProof, offset) = Deserialize.merkleProof(proof, offset);
             bytes32 recomputedElemRoot = elementMerkleProof.computeRootFromElement(
-                elementIdx,
-                elemFuncTypeHash,
-                functionPointer
+                elementIdx, elemFuncTypeHash, functionPointer
             );
             require(recomputedElemRoot == elemsRoot, "BAD_ELEMENTS_ROOT");
 
@@ -390,12 +385,8 @@ contract OneStepProver0 is IOneStepProver {
     ) internal pure {
         Value memory newVal = mach.valueStack.pop();
         StackFrame memory frame = mach.frameStack.peek();
-        frame.localsMerkleRoot = merkleProveSetValue(
-            frame.localsMerkleRoot,
-            inst.argumentData,
-            newVal,
-            proof
-        );
+        frame.localsMerkleRoot =
+            merkleProveSetValue(frame.localsMerkleRoot, inst.argumentData, newVal, proof);
     }
 
     function executeGlobalGet(
@@ -415,12 +406,8 @@ contract OneStepProver0 is IOneStepProver {
         bytes calldata proof
     ) internal pure {
         Value memory newVal = mach.valueStack.pop();
-        mod.globalsMerkleRoot = merkleProveSetValue(
-            mod.globalsMerkleRoot,
-            inst.argumentData,
-            newVal,
-            proof
-        );
+        mod.globalsMerkleRoot =
+            merkleProveSetValue(mod.globalsMerkleRoot, inst.argumentData, newVal, proof);
     }
 
     function executeInitFrame(
@@ -523,8 +510,8 @@ contract OneStepProver0 is IOneStepProver {
         } else if (opcode >= Instructions.I32_CONST && opcode <= Instructions.F64_CONST) {
             impl = executeConstPush;
         } else if (
-            opcode == Instructions.MOVE_FROM_STACK_TO_INTERNAL ||
-            opcode == Instructions.MOVE_FROM_INTERNAL_TO_STACK
+            opcode == Instructions.MOVE_FROM_STACK_TO_INTERNAL
+                || opcode == Instructions.MOVE_FROM_INTERNAL_TO_STACK
         ) {
             impl = executeMoveInternal;
         } else if (opcode == Instructions.DUP) {
