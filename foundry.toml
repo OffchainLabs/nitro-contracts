@@ -2,12 +2,8 @@
 src = 'src'
 out = 'out'
 libs = ['node_modules', 'lib']
-<<<<<<< HEAD
 test = 'test/foundry'
 cache_path = 'forge-cache/sol'
-=======
-cache_path  = 'forge-cache/sol'
->>>>>>> custom-fee-rollup
 optimizer = true
 optimizer_runs = 2000
 via_ir = false
