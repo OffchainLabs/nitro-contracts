@@ -13,6 +13,9 @@ error HadZeroInit();
 /// @dev Thrown when post upgrade init validation fails
 error BadPostUpgradeInit();
 
+/// @dev Thrown when the caller is not a codeless origin
+error NotCodelessOrigin();
+
 /// @dev Thrown when non owner tries to access an only-owner function
 /// @param sender The msg.sender who is not the owner
 /// @param owner The owner address
@@ -149,9 +152,6 @@ error DelayedTooFar();
 /// @dev Force include can only read messages more blocks old than the delay period
 error ForceIncludeBlockTooSoon();
 
-/// @dev Force include can only read messages more seconds old than the delay period
-error ForceIncludeTimeTooSoon();
-
 /// @dev The message provided did not match the hash in the delayed inbox
 error IncorrectMessagePreimage();
 
@@ -176,6 +176,15 @@ error NotBatchPosterManager(address);
 /// @dev Thrown when a data blob feature is attempted to be used on a chain that doesnt support it
 error DataBlobsNotSupported();
 
+/// @dev Thrown when batches are posted without buffer proof, this is only allowed in a sync state or when no new delayed messages are read
+error DelayProofRequired();
+
+/// @dev The DelayedAccPreimage is invalid
+error InvalidDelayedAccPreimage();
+
+/// @dev Thrown when the sequencer attempts to post a batch with delay / sync proofs without delay bufferability enabled
+error NotDelayBufferable();
+
 /// @dev Thrown when an init param was supplied as empty
 error InitParamZero(string name);
 
@@ -199,3 +208,12 @@ error BadMaxTimeVariation();
 
 /// @dev Thrown when a fee token pricer is provided but the chain doesn't use a fee token
 error CannotSetFeeTokenPricer();
+
+/// @dev Thrown when any component of bufferConfig is zero
+error BadBufferConfig();
+
+/// @dev Thrown when extra gas is not a uint64
+error ExtraGasNotUint64();
+
+/// @dev Thrown when keysetBytes is too large
+error KeysetTooLarge();

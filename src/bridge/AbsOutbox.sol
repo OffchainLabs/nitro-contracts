@@ -1,5 +1,5 @@
 // Copyright 2021-2022, Offchain Labs, Inc.
-// For license information, see https://github.com/nitro/blob/master/LICENSE
+// For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity ^0.8.4;
@@ -60,7 +60,9 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
 
     uint128 public constant OUTBOX_VERSION = 2;
 
-    function initialize(IBridge _bridge) external onlyDelegated {
+    function initialize(
+        IBridge _bridge
+    ) external onlyDelegated {
         if (address(_bridge) == address(0)) revert HadZeroInit();
         if (address(bridge) != address(0)) revert AlreadyInit();
         // address zero is returned if no context is set, but the values used in storage
@@ -93,8 +95,9 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
 
     /// @notice Allows the rollup owner to sync the rollup address
     function updateRollupAddress() external {
-        if (msg.sender != IOwnable(rollup).owner())
+        if (msg.sender != IOwnable(rollup).owner()) {
             revert NotOwner(msg.sender, IOwnable(rollup).owner());
+        }
         address newRollup = address(bridge.rollup());
         if (rollup == newRollup) revert RollupNotChanged();
         rollup = newRollup;
@@ -163,15 +166,7 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         uint256 value,
         bytes calldata data
     ) external {
-        bytes32 userTx = calculateItemHash(
-            l2Sender,
-            to,
-            l2Block,
-            l1Block,
-            l2Timestamp,
-            value,
-            data
-        );
+        bytes32 userTx = calculateItemHash(l2Sender, to, l2Block, l1Block, l2Timestamp, value, data);
 
         recordOutputAsSpent(proof, index, userTx);
 
@@ -228,15 +223,9 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         context = prevContext;
     }
 
-    function _calcSpentIndexOffset(uint256 index)
-        internal
-        view
-        returns (
-            uint256,
-            uint256,
-            bytes32
-        )
-    {
+    function _calcSpentIndexOffset(
+        uint256 index
+    ) internal view returns (uint256, uint256, bytes32) {
         uint256 spentIndex = index / 255; // Note: Reserves the MSB.
         uint256 bitOffset = index % 255;
         bytes32 replay = spent[spentIndex];
@@ -248,18 +237,16 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
     }
 
     /// @inheritdoc IOutbox
-    function isSpent(uint256 index) external view returns (bool) {
+    function isSpent(
+        uint256 index
+    ) external view returns (bool) {
         (, uint256 bitOffset, bytes32 replay) = _calcSpentIndexOffset(index);
         return _isSpent(bitOffset, replay);
     }
 
-    function recordOutputAsSpent(
-        bytes32[] memory proof,
-        uint256 index,
-        bytes32 item
-    ) internal {
+    function recordOutputAsSpent(bytes32[] memory proof, uint256 index, bytes32 item) internal {
         if (proof.length >= 256) revert ProofTooLong(proof.length);
-        if (index >= 2**proof.length) revert PathNotMinimal(index, 2**proof.length);
+        if (index >= 2 ** proof.length) revert PathNotMinimal(index, 2 ** proof.length);
 
         // Hash the leaf an extra time to prove it's a leaf
         bytes32 calcRoot = calculateMerkleRoot(proof, index, item);
@@ -271,11 +258,7 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         spent[spentIndex] = (replay | bytes32(1 << bitOffset));
     }
 
-    function executeBridgeCall(
-        address to,
-        uint256 value,
-        bytes memory data
-    ) internal {
+    function executeBridgeCall(address to, uint256 value, bytes memory data) internal {
         (bool success, bytes memory returndata) = bridge.executeCall(to, value, data);
         if (!success) {
             if (returndata.length > 0) {
@@ -299,8 +282,7 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         uint256 value,
         bytes calldata data
     ) public pure returns (bytes32) {
-        return
-            keccak256(abi.encodePacked(l2Sender, to, l2Block, l1Block, l2Timestamp, value, data));
+        return keccak256(abi.encodePacked(l2Sender, to, l2Block, l1Block, l2Timestamp, value, data));
     }
 
     function calculateMerkleRoot(
@@ -318,13 +300,17 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
     /// @notice based on provided value, get amount of ETH/token to unlock. In case of ETH-based rollup this amount
     ///         will always equal the provided value. In case of ERC20-based rollup, amount will be re-adjusted to
     ///         reflect the number of decimals used by native token, in case it is different than 18.
-    function _getAmountToUnlock(uint256 value) internal view virtual returns (uint256);
+    function _getAmountToUnlock(
+        uint256 value
+    ) internal view virtual returns (uint256);
 
     /// @notice value to be set for 'amount' field in L2ToL1Context during L2 to L1 transaction execution.
     ///         In case of ERC20-based rollup this is the amount of native token being withdrawn. In case of standard ETH-based
     ///         rollup this amount shall always be 0, because amount of ETH being withdrawn can be read from msg.value.
     /// @return amount of native token being withdrawn in case of ERC20-based rollup, or 0 in case of ETH-based rollup
-    function _amountToSetInContext(uint256 value) internal pure virtual returns (uint256);
+    function _amountToSetInContext(
+        uint256 value
+    ) internal pure virtual returns (uint256);
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new

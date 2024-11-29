@@ -9,8 +9,10 @@ import {
     SequencerInbox,
     ISequencerInbox,
     IReader4844,
-    IFeeTokenPricer
+    IFeeTokenPricer,
+    BufferConfig
 } from "../../src/bridge/SequencerInbox.sol";
+import {INITIALIZATION_MSG_TYPE} from "../../src/libraries/MessageTypes.sol";
 import {ERC20PresetMinterPauser} from
     "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 
@@ -211,8 +213,14 @@ contract ERC20RollupEventInboxTest is AbsRollupEventInboxTest {
             );
         }
 
+        BufferConfig memory bufferConfig = BufferConfig({
+            threshold: type(uint64).max,
+            max: type(uint64).max,
+            replenishRateInBasis: 0
+        });
+
         SequencerInbox si =
-            SequencerInbox(TestUtil.deployProxy(address(new SequencerInbox(10_000, reader, true))));
+            SequencerInbox(TestUtil.deployProxy(address(new SequencerInbox(10_000, reader, true, true))));
         si.initialize(
             bridge,
             ISequencerInbox.MaxTimeVariation({
@@ -221,6 +229,7 @@ contract ERC20RollupEventInboxTest is AbsRollupEventInboxTest {
                 delaySeconds: 100,
                 futureSeconds: 100
             }),
+            bufferConfig,
             IFeeTokenPricer(makeAddr("feeTokenPricer"))
         );
 

@@ -1,6 +1,6 @@
 | Name             | Type                     | Slot | Offset | Bytes | Contract                   |
 |------------------|--------------------------|------|--------|-------|----------------------------|
-| _initialized     | bool                     | 0    | 0      | 1     | src/bridge/Inbox.sol:Inbox |
+| _initialized     | uint8                    | 0    | 0      | 1     | src/bridge/Inbox.sol:Inbox |
 | _initializing    | bool                     | 0    | 1      | 1     | src/bridge/Inbox.sol:Inbox |
 | __gap            | uint256[50]              | 1    | 0      | 1600  | src/bridge/Inbox.sol:Inbox |
 | _paused          | bool                     | 51   | 0      | 1     | src/bridge/Inbox.sol:Inbox |

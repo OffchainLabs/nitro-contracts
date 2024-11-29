@@ -8,9 +8,8 @@
   "renounceOwnership()": "715018a6",
   "rollupAdminLogic()": "9dba3241",
   "rollupUserLogic()": "9d4798e3",
-  "setTemplates(address,address,address,address,address,address,address,address,address)": "ac9a97b4",
+  "setTemplates(address,address,address,address,address,address,address,address)": "f0dae494",
   "transferOwnership(address)": "f2fde38b",
   "upgradeExecutorLogic()": "030cb85e",
-  "validatorUtils()": "014cc92c",
   "validatorWalletCreator()": "bc45e0ae"
 }

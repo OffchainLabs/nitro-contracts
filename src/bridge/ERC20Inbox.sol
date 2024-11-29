@@ -1,5 +1,5 @@
 // Copyright 2021-2022, Offchain Labs, Inc.
-// For license information, see https://github.com/nitro/blob/master/LICENSE
+// For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity ^0.8.4;
@@ -26,14 +26,15 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 contract ERC20Inbox is AbsInbox, IERC20Inbox {
     using SafeERC20 for IERC20;
 
-    constructor(uint256 _maxDataSize) AbsInbox(_maxDataSize) {}
+    constructor(
+        uint256 _maxDataSize
+    ) AbsInbox(_maxDataSize) {}
 
     /// @inheritdoc IInboxBase
-    function initialize(IBridge _bridge, ISequencerInbox _sequencerInbox)
-        external
-        initializer
-        onlyDelegated
-    {
+    function initialize(
+        IBridge _bridge,
+        ISequencerInbox _sequencerInbox
+    ) external initializer onlyDelegated {
         __AbsInbox_init(_bridge, _sequencerInbox);
 
         // inbox holds native token in transit used to pay for retryable tickets, approve bridge to use it
@@ -42,7 +43,9 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
     }
 
     /// @inheritdoc IERC20Inbox
-    function depositERC20(uint256 amount) public whenNotPaused onlyAllowed returns (uint256) {
+    function depositERC20(
+        uint256 amount
+    ) public whenNotPaused onlyAllowed returns (uint256) {
         address dest = msg.sender;
 
         // solhint-disable-next-line avoid-tx-origin
@@ -52,13 +55,9 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
         }
 
         uint256 amountToMintOnL2 = _fromNativeTo18Decimals(amount);
-        return
-            _deliverMessage(
-                L1MessageType_ethDeposit,
-                msg.sender,
-                abi.encodePacked(dest, amountToMintOnL2),
-                amount
-            );
+        return _deliverMessage(
+            L1MessageType_ethDeposit, msg.sender, abi.encodePacked(dest, amountToMintOnL2), amount
+        );
     }
 
     /// @inheritdoc IERC20Inbox
@@ -73,18 +72,17 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
         uint256 tokenTotalFeeAmount,
         bytes calldata data
     ) external whenNotPaused onlyAllowed returns (uint256) {
-        return
-            _createRetryableTicket(
-                to,
-                l2CallValue,
-                maxSubmissionCost,
-                excessFeeRefundAddress,
-                callValueRefundAddress,
-                gasLimit,
-                maxFeePerGas,
-                tokenTotalFeeAmount,
-                data
-            );
+        return _createRetryableTicket(
+            to,
+            l2CallValue,
+            maxSubmissionCost,
+            excessFeeRefundAddress,
+            callValueRefundAddress,
+            gasLimit,
+            maxFeePerGas,
+            tokenTotalFeeAmount,
+            data
+        );
     }
 
     /// @inheritdoc IERC20Inbox
@@ -99,27 +97,24 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
         uint256 tokenTotalFeeAmount,
         bytes calldata data
     ) public whenNotPaused onlyAllowed returns (uint256) {
-        return
-            _unsafeCreateRetryableTicket(
-                to,
-                l2CallValue,
-                maxSubmissionCost,
-                excessFeeRefundAddress,
-                callValueRefundAddress,
-                gasLimit,
-                maxFeePerGas,
-                tokenTotalFeeAmount,
-                data
-            );
+        return _unsafeCreateRetryableTicket(
+            to,
+            l2CallValue,
+            maxSubmissionCost,
+            excessFeeRefundAddress,
+            callValueRefundAddress,
+            gasLimit,
+            maxFeePerGas,
+            tokenTotalFeeAmount,
+            data
+        );
     }
 
     /// @inheritdoc IInboxBase
-    function calculateRetryableSubmissionFee(uint256, uint256)
-        public
-        pure
-        override(AbsInbox, IInboxBase)
-        returns (uint256)
-    {
+    function calculateRetryableSubmissionFee(
+        uint256,
+        uint256
+    ) public pure override(AbsInbox, IInboxBase) returns (uint256) {
         // retryable ticket's submission fee is not charged when ERC20 token is used to pay for fees
         return 0;
     }
@@ -139,17 +134,15 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
             IERC20(nativeToken).safeTransferFrom(msg.sender, address(this), diff);
         }
 
-        return
-            IERC20Bridge(address(bridge)).enqueueDelayedMessage(
-                kind,
-                AddressAliasHelper.applyL1ToL2Alias(sender),
-                messageDataHash,
-                tokenAmount
-            );
+        return IERC20Bridge(address(bridge)).enqueueDelayedMessage(
+            kind, AddressAliasHelper.applyL1ToL2Alias(sender), messageDataHash, tokenAmount
+        );
     }
 
     /// @inheritdoc AbsInbox
-    function _fromNativeTo18Decimals(uint256 value) internal view override returns (uint256) {
+    function _fromNativeTo18Decimals(
+        uint256 value
+    ) internal view override returns (uint256) {
         // In order to keep compatibility of child chain's native currency with external 3rd party tooling we
         // expect 18 decimals to be always used for native currency. If native token uses different number of
         // decimals then here it will be normalized to 18. Keep in mind, when withdrawing from child chain back

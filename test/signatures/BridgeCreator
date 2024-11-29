@@ -5,6 +5,6 @@
   "owner()": "8da5cb5b",
   "renounceOwnership()": "715018a6",
   "transferOwnership(address)": "f2fde38b",
-  "updateERC20Templates((address,address,address,address,address))": "1bb7c6cc",
-  "updateTemplates((address,address,address,address,address))": "d94d6e0a"
+  "updateERC20Templates((address,address,address,address,address,address))": "ceab9410",
+  "updateTemplates((address,address,address,address,address,address))": "e83b0e16"
 }

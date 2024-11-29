@@ -5,16 +5,14 @@ import "./Errors.sol";
 import {Balance, BalanceLib} from "./Balance.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {
-    AccessControlEnumerableUpgradeable
-} from "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
+import {AccessControlEnumerableUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 import {DelegateCallAware} from "../libraries/DelegateCallAware.sol";
 import {IExpressLaneAuction, Bid, InitArgs, Transferor} from "./IExpressLaneAuction.sol";
 import {ELCRound, LatestELCRoundsLib} from "./ELCRound.sol";
 import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
-import {
-    EIP712Upgradeable
-} from "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
+import {EIP712Upgradeable} from
+    "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
 
 /// @title ExpressLaneAuction
 /// @notice The express lane allows a controller to submit undelayed transactions to the sequencer
@@ -76,7 +74,9 @@ contract ExpressLaneAuction is
     mapping(address => Transferor) public transferorOf;
 
     /// @inheritdoc IExpressLaneAuction
-    function initialize(InitArgs calldata args) public initializer onlyDelegated {
+    function initialize(
+        InitArgs calldata args
+    ) public initializer onlyDelegated {
         __AccessControl_init();
         __EIP712_init("ExpressLaneAuction", "1");
 
@@ -108,10 +108,7 @@ contract ExpressLaneAuction is
         // the following roles are expected to be controlled by hot wallets, so we add
         // additional custom admin role for each of them to allow for key rotation management
         setRoleAndAdmin(
-            AUCTIONEER_ROLE,
-            args._auctioneer,
-            AUCTIONEER_ADMIN_ROLE,
-            args._auctioneerAdmin
+            AUCTIONEER_ROLE, args._auctioneer, AUCTIONEER_ADMIN_ROLE, args._auctioneerAdmin
         );
         setRoleAndAdmin(
             RESERVE_SETTER_ROLE,
@@ -146,22 +143,28 @@ contract ExpressLaneAuction is
 
     /// @inheritdoc IExpressLaneAuction
     function isReserveBlackout() external view returns (bool) {
-        (ELCRound storage lastRoundResolved, ) = latestResolvedRounds.latestELCRound();
+        (ELCRound storage lastRoundResolved,) = latestResolvedRounds.latestELCRound();
         return roundTimingInfo.isReserveBlackout(lastRoundResolved.round);
     }
 
     /// @inheritdoc IExpressLaneAuction
-    function roundTimestamps(uint64 round) external view returns (uint64, uint64) {
+    function roundTimestamps(
+        uint64 round
+    ) external view returns (uint64, uint64) {
         return roundTimingInfo.roundTimestamps(round);
     }
 
     /// @inheritdoc IExpressLaneAuction
-    function setBeneficiary(address newBeneficiary) external onlyRole(BENEFICIARY_SETTER_ROLE) {
+    function setBeneficiary(
+        address newBeneficiary
+    ) external onlyRole(BENEFICIARY_SETTER_ROLE) {
         emit SetBeneficiary(beneficiary, newBeneficiary);
         beneficiary = newBeneficiary;
     }
 
-    function _setReservePrice(uint256 newReservePrice) private {
+    function _setReservePrice(
+        uint256 newReservePrice
+    ) private {
         if (newReservePrice < minReservePrice) {
             revert ReservePriceTooLow(newReservePrice, minReservePrice);
         }
@@ -170,7 +173,9 @@ contract ExpressLaneAuction is
         reservePrice = newReservePrice;
     }
 
-    function setRoundTimingInfoInternal(RoundTimingInfo calldata newRoundTimingInfo) internal {
+    function setRoundTimingInfoInternal(
+        RoundTimingInfo calldata newRoundTimingInfo
+    ) internal {
         // auction closing seconds of 0 wouldnt make sense as it would then be impossible to close the round
         // due to the check below this also causes round duration > 0
         if (newRoundTimingInfo.auctionClosingSeconds == 0) {
@@ -186,8 +191,8 @@ contract ExpressLaneAuction is
         // the same check as in initialization - reserve submission and auction closing are non overlapping
         // sub sections of a round, so must fit within it
         if (
-            newRoundTimingInfo.reserveSubmissionSeconds + newRoundTimingInfo.auctionClosingSeconds >
-            newRoundTimingInfo.roundDurationSeconds
+            newRoundTimingInfo.reserveSubmissionSeconds + newRoundTimingInfo.auctionClosingSeconds
+                > newRoundTimingInfo.roundDurationSeconds
         ) {
             revert RoundDurationTooShort();
         }
@@ -203,10 +208,9 @@ contract ExpressLaneAuction is
     }
 
     /// @inheritdoc IExpressLaneAuction
-    function setRoundTimingInfo(RoundTimingInfo calldata newRoundTimingInfo)
-        external
-        onlyRole(ROUND_TIMING_SETTER_ROLE)
-    {
+    function setRoundTimingInfo(
+        RoundTimingInfo calldata newRoundTimingInfo
+    ) external onlyRole(ROUND_TIMING_SETTER_ROLE) {
         RoundTimingInfo memory currentRoundTimingInfo = roundTimingInfo;
         uint64 currentCurrentRound = currentRoundTimingInfo.currentRound();
         uint64 newCurrentRound = newRoundTimingInfo.currentRound();
@@ -216,8 +220,8 @@ contract ExpressLaneAuction is
             revert InvalidNewRound(currentCurrentRound, newCurrentRound);
         }
 
-        (uint64 currentStart, ) = currentRoundTimingInfo.roundTimestamps(currentCurrentRound + 1);
-        (uint64 newStart, ) = newRoundTimingInfo.roundTimestamps(newCurrentRound + 1);
+        (uint64 currentStart,) = currentRoundTimingInfo.roundTimestamps(currentCurrentRound + 1);
+        (uint64 newStart,) = newRoundTimingInfo.roundTimestamps(newCurrentRound + 1);
         // we also ensure that the current round end time/next round start time, will not change
         if (currentStart != newStart) {
             revert InvalidNewStart(currentStart, newStart);
@@ -227,10 +231,9 @@ contract ExpressLaneAuction is
     }
 
     /// @inheritdoc IExpressLaneAuction
-    function setMinReservePrice(uint256 newMinReservePrice)
-        external
-        onlyRole(MIN_RESERVE_SETTER_ROLE)
-    {
+    function setMinReservePrice(
+        uint256 newMinReservePrice
+    ) external onlyRole(MIN_RESERVE_SETTER_ROLE) {
         emit SetMinReservePrice(minReservePrice, newMinReservePrice);
 
         minReservePrice = newMinReservePrice;
@@ -241,8 +244,10 @@ contract ExpressLaneAuction is
     }
 
     /// @inheritdoc IExpressLaneAuction
-    function setReservePrice(uint256 newReservePrice) external onlyRole(RESERVE_SETTER_ROLE) {
-        (ELCRound storage lastRoundResolved, ) = latestResolvedRounds.latestELCRound();
+    function setReservePrice(
+        uint256 newReservePrice
+    ) external onlyRole(RESERVE_SETTER_ROLE) {
+        (ELCRound storage lastRoundResolved,) = latestResolvedRounds.latestELCRound();
         if (roundTimingInfo.isReserveBlackout(lastRoundResolved.round)) {
             revert ReserveBlackout();
         }
@@ -251,7 +256,9 @@ contract ExpressLaneAuction is
     }
 
     /// @inheritdoc IExpressLaneAuction
-    function balanceOf(address account) external view returns (uint256) {
+    function balanceOf(
+        address account
+    ) external view returns (uint256) {
         return _balanceOf[account].balanceAtRound(roundTimingInfo.currentRound());
     }
 
@@ -264,16 +271,17 @@ contract ExpressLaneAuction is
     }
 
     /// @inheritdoc IExpressLaneAuction
-    function withdrawableBalance(address account) external view returns (uint256) {
+    function withdrawableBalance(
+        address account
+    ) external view returns (uint256) {
         return _balanceOf[account].withdrawableBalanceAtRound(roundTimingInfo.currentRound());
     }
 
     /// @inheritdoc IExpressLaneAuction
-    function withdrawableBalanceAtRound(address account, uint64 round)
-        external
-        view
-        returns (uint256)
-    {
+    function withdrawableBalanceAtRound(
+        address account,
+        uint64 round
+    ) external view returns (uint256) {
         if (round < roundTimingInfo.currentRound()) {
             revert RoundTooOld(round, roundTimingInfo.currentRound());
         }
@@ -281,7 +289,9 @@ contract ExpressLaneAuction is
     }
 
     /// @inheritdoc IExpressLaneAuction
-    function deposit(uint256 amount) external {
+    function deposit(
+        uint256 amount
+    ) external {
         _balanceOf[msg.sender].increase(amount);
         biddingToken.safeTransferFrom(msg.sender, address(this), amount);
         emit Deposit(msg.sender, amount);
@@ -300,9 +310,8 @@ contract ExpressLaneAuction is
 
     /// @inheritdoc IExpressLaneAuction
     function finalizeWithdrawal() external {
-        uint256 amountReduced = _balanceOf[msg.sender].finalizeWithdrawal(
-            roundTimingInfo.currentRound()
-        );
+        uint256 amountReduced =
+            _balanceOf[msg.sender].finalizeWithdrawal(roundTimingInfo.currentRound());
         biddingToken.safeTransfer(msg.sender, amountReduced);
         emit WithdrawalFinalized(msg.sender, amountReduced);
     }
@@ -378,21 +387,19 @@ contract ExpressLaneAuction is
         address expressLaneController,
         uint256 amount
     ) public view returns (bytes32) {
-        return
-            _hashTypedDataV4(
-                keccak256(abi.encode(BID_DOMAIN, round, expressLaneController, amount))
-            );
+        return _hashTypedDataV4(
+            keccak256(abi.encode(BID_DOMAIN, round, expressLaneController, amount))
+        );
     }
 
     /// @notice Recover the signing address of the provided bid, and check that that address has enough funds to fulfil that bid
     ///         Returns the signing address and the bid hash that was signed
     /// @param bid The bid to recover the signing address of
     /// @param biddingForRound The round the bid is for the control of
-    function recoverAndCheckBalance(Bid memory bid, uint64 biddingForRound)
-        internal
-        view
-        returns (address, bytes32)
-    {
+    function recoverAndCheckBalance(
+        Bid memory bid,
+        uint64 biddingForRound
+    ) internal view returns (address, bytes32) {
         bytes32 bidHash = getBidHash(biddingForRound, bid.expressLaneController, bid.amount);
         address bidder = bidHash.recover(bid.signature);
         // we are always bidding for in the current round for the next round
@@ -400,9 +407,7 @@ contract ExpressLaneAuction is
         // always check that the bidder has as much as they're claiming
         if (_balanceOf[bidder].balanceAtRound(curRnd) < bid.amount) {
             revert InsufficientBalanceAcc(
-                bidder,
-                bid.amount,
-                _balanceOf[bidder].balanceAtRound(curRnd)
+                bidder, bid.amount, _balanceOf[bidder].balanceAtRound(curRnd)
             );
         }
 
@@ -410,10 +415,9 @@ contract ExpressLaneAuction is
     }
 
     /// @inheritdoc IExpressLaneAuction
-    function resolveSingleBidAuction(Bid calldata firstPriceBid)
-        external
-        onlyRole(AUCTIONEER_ROLE)
-    {
+    function resolveSingleBidAuction(
+        Bid calldata firstPriceBid
+    ) external onlyRole(AUCTIONEER_ROLE) {
         RoundTimingInfo memory info = roundTimingInfo;
         if (!info.isAuctionRoundClosed()) {
             revert AuctionNotClosed();
@@ -425,7 +429,7 @@ contract ExpressLaneAuction is
 
         uint64 biddingInRound = info.currentRound();
         uint64 biddingForRound = biddingInRound + 1;
-        (address firstPriceBidder, ) = recoverAndCheckBalance(firstPriceBid, biddingForRound);
+        (address firstPriceBidder,) = recoverAndCheckBalance(firstPriceBid, biddingForRound);
 
         (uint64 roundStart, uint64 roundEnd) = info.roundTimestamps(biddingForRound);
         resolveAuction(
@@ -440,10 +444,10 @@ contract ExpressLaneAuction is
     }
 
     /// @inheritdoc IExpressLaneAuction
-    function resolveMultiBidAuction(Bid calldata firstPriceBid, Bid calldata secondPriceBid)
-        external
-        onlyRole(AUCTIONEER_ROLE)
-    {
+    function resolveMultiBidAuction(
+        Bid calldata firstPriceBid,
+        Bid calldata secondPriceBid
+    ) external onlyRole(AUCTIONEER_ROLE) {
         RoundTimingInfo memory info = roundTimingInfo;
         if (!info.isAuctionRoundClosed()) {
             revert AuctionNotClosed();
@@ -462,14 +466,10 @@ contract ExpressLaneAuction is
         uint64 biddingForRound = biddingInRound + 1;
         // check the signatures and balances of both bids
         // even the second price bid must have the balance it's claiming
-        (address firstPriceBidder, bytes32 firstBidHash) = recoverAndCheckBalance(
-            firstPriceBid,
-            biddingForRound
-        );
-        (address secondPriceBidder, bytes32 secondBidHash) = recoverAndCheckBalance(
-            secondPriceBid,
-            biddingForRound
-        );
+        (address firstPriceBidder, bytes32 firstBidHash) =
+            recoverAndCheckBalance(firstPriceBid, biddingForRound);
+        (address secondPriceBidder, bytes32 secondBidHash) =
+            recoverAndCheckBalance(secondPriceBid, biddingForRound);
 
         // The bidders must be different so that our balance check isnt fooled into thinking
         // that the same balance is valid for both the first and second bid
@@ -481,9 +481,9 @@ contract ExpressLaneAuction is
         // although we include equality in the check we know this isnt possible due
         // to the check above that ensures the first price bidder and second price bidder are different
         if (
-            firstPriceBid.amount == secondPriceBid.amount &&
-            uint256(keccak256(abi.encodePacked(firstPriceBidder, firstBidHash))) <
-            uint256(keccak256(abi.encodePacked(secondPriceBidder, secondBidHash)))
+            firstPriceBid.amount == secondPriceBid.amount
+                && uint256(keccak256(abi.encodePacked(firstPriceBidder, firstBidHash)))
+                    < uint256(keccak256(abi.encodePacked(secondPriceBidder, secondBidHash)))
         ) {
             revert TieBidsWrongOrder();
         }
@@ -501,12 +501,14 @@ contract ExpressLaneAuction is
     }
 
     /// @inheritdoc IExpressLaneAuction
-    function setTransferor(Transferor calldata transferor) external {
+    function setTransferor(
+        Transferor calldata transferor
+    ) external {
         // if a transferor has already been set, it may be fixed until a future round
         Transferor storage currentTransferor = transferorOf[msg.sender];
         if (
-            currentTransferor.addr != address(0) &&
-            currentTransferor.fixedUntilRound > roundTimingInfo.currentRound()
+            currentTransferor.addr != address(0)
+                && currentTransferor.fixedUntilRound > roundTimingInfo.currentRound()
         ) {
             revert FixedTransferor(currentTransferor.fixedUntilRound);
         }
@@ -517,9 +519,10 @@ contract ExpressLaneAuction is
     }
 
     /// @inheritdoc IExpressLaneAuction
-    function transferExpressLaneController(uint64 round, address newExpressLaneController)
-        external
-    {
+    function transferExpressLaneController(
+        uint64 round,
+        address newExpressLaneController
+    ) external {
         // past rounds cannot be transferred
         RoundTimingInfo memory info = roundTimingInfo;
         uint64 curRnd = info.currentRound();
@@ -557,9 +560,8 @@ contract ExpressLaneAuction is
 
     /// @inheritdoc IExpressLaneAuction
     function resolvedRounds() external view returns (ELCRound memory, ELCRound memory) {
-        return
-            latestResolvedRounds[0].round > latestResolvedRounds[1].round
-                ? (latestResolvedRounds[0], latestResolvedRounds[1])
-                : (latestResolvedRounds[1], latestResolvedRounds[0]);
+        return latestResolvedRounds[0].round > latestResolvedRounds[1].round
+            ? (latestResolvedRounds[0], latestResolvedRounds[1])
+            : (latestResolvedRounds[1], latestResolvedRounds[0]);
     }
 }

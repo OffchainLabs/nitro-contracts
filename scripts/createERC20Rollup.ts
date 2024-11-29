@@ -33,6 +33,10 @@ async function main() {
   if (!rollupCreatorAddress) {
     throw new Error('ROLLUP_CREATOR_ADDRESS not set')
   }
+  const stakeTokenAddress = process.env.STAKE_TOKEN_ADDRESS
+  if (!stakeTokenAddress) {
+    throw new Error('STAKE_TOKEN_ADDRESS not set')
+  }
 
   let feeTokenPricer = process.env.FEE_TOKEN_PRICER_ADDRESS
   if(!feeTokenPricer) {
@@ -45,7 +49,8 @@ async function main() {
     false,
     rollupCreatorAddress,
     customFeeTokenAddress,
-    feeTokenPricer
+    feeTokenPricer,
+    stakeTokenAddress
   )
 }
 
