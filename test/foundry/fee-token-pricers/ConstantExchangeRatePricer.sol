@@ -10,7 +10,9 @@ import {IFeeTokenPricer} from "../../../src/bridge/ISequencerInbox.sol";
 contract ConstantExchangeRatePricer is IFeeTokenPricer {
     uint256 immutable exchangeRate;
 
-    constructor(uint256 _exchangeRate) {
+    constructor(
+        uint256 _exchangeRate
+    ) {
         exchangeRate = _exchangeRate;
     }
 
