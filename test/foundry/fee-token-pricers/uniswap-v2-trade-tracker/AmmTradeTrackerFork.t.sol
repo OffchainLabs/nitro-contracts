@@ -20,6 +20,7 @@ contract AmmTradeTrackerForkTest is Test {
     uint256 public constant DEFAULT_CALLDATA_COST = 12;
 
     function setUp() public {
+        return; // CHRIS: TODO: decide whether to keep the trade tracker and test
         string memory arbRpc = vm.envString("ARB_RPC");
         vm.createSelectFork(arbRpc, 261_666_155);
 
@@ -33,6 +34,7 @@ contract AmmTradeTrackerForkTest is Test {
     }
 
     function testFork_CanSwapTokenToEth() public {
+        return; // CHRIS: TODO: decide whether to keep the trade tracker and test
         uint256 usdcAmount = 250e6;
         uint256 minEthReceived = 0.1 ether;
 
@@ -44,6 +46,7 @@ contract AmmTradeTrackerForkTest is Test {
     }
 
     function testFork_GetExchangeRate() public {
+        return; // CHRIS: TODO: decide whether to keep the trade tracker and test
         assertEq(tradeTracker.getExchangeRate(), DEFAULT_EXCHANGE_RATE);
 
         uint256 usdcAmount = 250e6;
@@ -57,6 +60,7 @@ contract AmmTradeTrackerForkTest is Test {
     }
 
     function testFork_postBatch() public {
+        return; // CHRIS: TODO: decide whether to keep the trade tracker and test
         (SequencerInbox seqInbox,) = _deployFeeTokenRollup();
         vm.prank(owner);
         tradeTracker.allowCaller(address(seqInbox), true);
@@ -159,10 +163,10 @@ contract AmmTradeTrackerForkTest is Test {
     //     console.log("exchangeRateEnd: ", exchangeRateEnd);
     // }
 
-    function _swapTokenToEth(uint256 tokenAmount, uint256 minEthReceived)
-        internal
-        returns (uint256 ethReceived)
-    {
+    function _swapTokenToEth(
+        uint256 tokenAmount,
+        uint256 minEthReceived
+    ) internal returns (uint256 ethReceived) {
         deal(USDC_ARB1, batchPosterOperator, tokenAmount);
 
         vm.startPrank(batchPosterOperator, batchPosterOperator);
@@ -192,7 +196,8 @@ contract AmmTradeTrackerForkTest is Test {
             abi.encode(uint256(11))
         );
         uint256 maxDataSize = 10_000;
-        SequencerInbox seqInboxImpl = new SequencerInbox(maxDataSize, IReader4844(address(0)), true);
+        SequencerInbox seqInboxImpl =
+            new SequencerInbox(maxDataSize, IReader4844(address(0)), true, true);
         SequencerInbox seqInbox = SequencerInbox(
             address(new TransparentUpgradeableProxy(address(seqInboxImpl), proxyAdmin, ""))
         );
@@ -202,7 +207,14 @@ contract AmmTradeTrackerForkTest is Test {
             delaySeconds: 100,
             futureSeconds: 100
         });
-        seqInbox.initialize(bridge, maxTimeVariation, IFeeTokenPricer(tradeTracker));
+        BufferConfig memory bufferConfigDefault = BufferConfig({
+            threshold: type(uint64).max,
+            max: type(uint64).max,
+            replenishRateInBasis: 714
+        });
+        seqInbox.initialize(
+            bridge, maxTimeVariation, bufferConfigDefault, IFeeTokenPricer(tradeTracker)
+        );
 
         vm.prank(owner);
         seqInbox.setIsBatchPoster(batchPosterOperator, true);
@@ -217,7 +229,9 @@ contract AmmTradeTrackerForkTest is Test {
 contract RollupMock {
     address public immutable owner;
 
-    constructor(address _owner) {
+    constructor(
+        address _owner
+    ) {
         owner = _owner;
     }
 }

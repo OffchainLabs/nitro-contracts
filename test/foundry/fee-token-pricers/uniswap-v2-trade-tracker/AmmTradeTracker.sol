@@ -54,10 +54,11 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
         return _getExchangeRate();
     }
 
-    function swapTokenToEth(uint256 tokenAmount, uint256 minEthReceived, uint256 deadline)
-        external
-        returns (uint256 ethReceived)
-    {
+    function swapTokenToEth(
+        uint256 tokenAmount,
+        uint256 minEthReceived,
+        uint256 deadline
+    ) external returns (uint256 ethReceived) {
         IERC20(token).safeTransferFrom(msg.sender, address(this), tokenAmount);
 
         address[] memory path = new address[](2);
@@ -77,10 +78,11 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
         tokenAccumulatorPerSpender[msg.sender] += tokenAmount;
     }
 
-    function onGasSpent(address payable spender, uint256 gasUsed, uint256 calldataSize)
-        external
-        returns (bool)
-    {
+    function onGasSpent(
+        address payable spender,
+        uint256 gasUsed,
+        uint256 calldataSize
+    ) external returns (bool) {
         if (!allowedCallers[msg.sender]) revert CallerNotAllowed(msg.sender);
 
         // update internal state
@@ -115,12 +117,16 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
         return true;
     }
 
-    function setDefaultExchangeRate(uint256 _defaultExchangeRate) external onlyOwner {
+    function setDefaultExchangeRate(
+        uint256 _defaultExchangeRate
+    ) external onlyOwner {
         defaultExchangeRate = _defaultExchangeRate;
         emit DefaultExchangeRateSet(_defaultExchangeRate);
     }
 
-    function setCalldataCost(uint256 _calldataCost) external onlyOwner {
+    function setCalldataCost(
+        uint256 _calldataCost
+    ) external onlyOwner {
         calldataCost = _calldataCost;
         emit CalldataCostSet(_calldataCost);
     }
@@ -140,7 +146,9 @@ contract AmmTradeTracker is IFeeTokenPricer, IGasRefunder, Ownable {
         return (_scaleTo18Decimals(tokenAcc) * 1e18) / ethAcc;
     }
 
-    function _scaleTo18Decimals(uint256 amount) internal view returns (uint256) {
+    function _scaleTo18Decimals(
+        uint256 amount
+    ) internal view returns (uint256) {
         if (tokenDecimals == 18) {
             return amount;
         } else if (tokenDecimals < 18) {

@@ -13,12 +13,16 @@ contract OwnerAdjustableExchangeRatePricer is IFeeTokenPricer, Ownable {
 
     event ExchangeRateSet(uint256 newExchangeRate);
 
-    constructor(uint256 initialExchangeRate) Ownable() {
+    constructor(
+        uint256 initialExchangeRate
+    ) Ownable() {
         exchangeRate = initialExchangeRate;
         emit ExchangeRateSet(initialExchangeRate);
     }
 
-    function setExchangeRate(uint256 _exchangeRate) external onlyOwner {
+    function setExchangeRate(
+        uint256 _exchangeRate
+    ) external onlyOwner {
         exchangeRate = _exchangeRate;
         emit ExchangeRateSet(_exchangeRate);
     }

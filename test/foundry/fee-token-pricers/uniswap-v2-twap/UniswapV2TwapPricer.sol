@@ -66,7 +66,9 @@ contract UniswapV2TwapPricer is IFeeTokenPricer {
         _update(timeElapsed);
     }
 
-    function _update(uint256 timeElapsed) internal {
+    function _update(
+        uint256 timeElapsed
+    ) internal {
         uint32 currentBlockTimestamp = uint32(block.timestamp);
 
         // fetch latest cumulative price accumulators
