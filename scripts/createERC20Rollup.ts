@@ -33,19 +33,30 @@ async function main() {
   if (!rollupCreatorAddress) {
     throw new Error('ROLLUP_CREATOR_ADDRESS not set')
   }
+  const stakeTokenAddress = process.env.STAKE_TOKEN_ADDRESS
+  if (!stakeTokenAddress) {
+    throw new Error('STAKE_TOKEN_ADDRESS not set')
+  }
 
   let feeTokenPricer = process.env.FEE_TOKEN_PRICER_ADDRESS
-  if(!feeTokenPricer) {
+  if (!feeTokenPricer) {
     feeTokenPricer = ethers.constants.AddressZero
   }
 
-  console.log('Creating new rollup with', customFeeTokenAddress, 'as fee token and', feeTokenPricer, 'as fee token pricer')
+  console.log(
+    'Creating new rollup with',
+    customFeeTokenAddress,
+    'as fee token and',
+    feeTokenPricer,
+    'as fee token pricer'
+  )
   await createRollup(
     deployer,
     false,
     rollupCreatorAddress,
     customFeeTokenAddress,
-    feeTokenPricer
+    feeTokenPricer,
+    stakeTokenAddress
   )
 }
 

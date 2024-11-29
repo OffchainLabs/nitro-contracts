@@ -4,7 +4,6 @@
 
 pragma solidity ^0.8.0;
 
-import "../challenge/IChallengeManager.sol";
 import "../libraries/DelegateCallAware.sol";
 import "../libraries/IGasRefunder.sol";
 import "../libraries/GasRefundEnabled.sol";
@@ -33,20 +32,22 @@ contract ValidatorWallet is OwnableUpgradeable, DelegateCallAware, GasRefundEnab
     mapping(address => bool) public allowedExecutorDestinations;
 
     modifier onlyExecutorOrOwner() {
-        if (!executors[_msgSender()] && owner() != _msgSender())
+        if (!executors[_msgSender()] && owner() != _msgSender()) {
             revert NotExecutorOrOwner(_msgSender());
+        }
         _;
     }
 
     event ExecutorUpdated(address indexed executor, bool isExecutor);
 
     /// @dev updates the executor addresses
-    function setExecutor(address[] calldata newExecutors, bool[] calldata isExecutor)
-        external
-        onlyOwner
-    {
-        if (newExecutors.length != isExecutor.length)
+    function setExecutor(
+        address[] calldata newExecutors,
+        bool[] calldata isExecutor
+    ) external onlyOwner {
+        if (newExecutors.length != isExecutor.length) {
             revert BadArrayLength(newExecutors.length, isExecutor.length);
+        }
         unchecked {
             for (uint64 i = 0; i < newExecutors.length; ++i) {
                 executors[newExecutors[i]] = isExecutor[i];
@@ -77,12 +78,13 @@ contract ValidatorWallet is OwnableUpgradeable, DelegateCallAware, GasRefundEnab
     event AllowedExecutorDestinationsUpdated(address indexed destination, bool isSet);
 
     /// @notice updates the destination addresses which executors are allowed to call
-    function setAllowedExecutorDestinations(address[] calldata destinations, bool[] calldata isSet)
-        external
-        onlyOwner
-    {
-        if (destinations.length != isSet.length)
+    function setAllowedExecutorDestinations(
+        address[] calldata destinations,
+        bool[] calldata isSet
+    ) external onlyOwner {
+        if (destinations.length != isSet.length) {
             revert BadArrayLength(destinations.length, isSet.length);
+        }
         unchecked {
             for (uint256 i = 0; i < destinations.length; ++i) {
                 allowedExecutorDestinations[destinations[i]] = isSet[i];
@@ -92,9 +94,12 @@ contract ValidatorWallet is OwnableUpgradeable, DelegateCallAware, GasRefundEnab
     }
 
     /// @dev reverts if the current function can't be called
-    function validateExecuteTransaction(address destination) public view {
-        if (!allowedExecutorDestinations[destination] && owner() != _msgSender())
+    function validateExecuteTransaction(
+        address destination
+    ) public view {
+        if (!allowedExecutorDestinations[destination] && owner() != _msgSender()) {
             revert OnlyOwnerDestination(owner(), _msgSender(), destination);
+        }
     }
 
     function executeTransactions(
@@ -120,7 +125,7 @@ contract ValidatorWallet is OwnableUpgradeable, DelegateCallAware, GasRefundEnab
             validateExecuteTransaction(destination[i]);
             // We use a low level call here to allow for contract and non-contract calls
             // solhint-disable-next-line avoid-low-level-calls
-            (bool success, ) = address(destination[i]).call{value: amount[i]}(data[i]);
+            (bool success,) = address(destination[i]).call{value: amount[i]}(data[i]);
             if (!success) {
                 assembly {
                     let ptr := mload(0x40)
@@ -150,7 +155,7 @@ contract ValidatorWallet is OwnableUpgradeable, DelegateCallAware, GasRefundEnab
         validateExecuteTransaction(destination);
         // We use a low level call here to allow for contract and non-contract calls
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = destination.call{value: amount}(data);
+        (bool success,) = destination.call{value: amount}(data);
         if (!success) {
             assembly {
                 let ptr := mload(0x40)
@@ -161,33 +166,12 @@ contract ValidatorWallet is OwnableUpgradeable, DelegateCallAware, GasRefundEnab
         }
     }
 
-    function timeoutChallenges(IChallengeManager manager, uint64[] calldata challenges) external {
-        timeoutChallengesWithGasRefunder(IGasRefunder(address(0)), manager, challenges);
-    }
-
-    function timeoutChallengesWithGasRefunder(
-        IGasRefunder gasRefunder,
-        IChallengeManager manager,
-        uint64[] calldata challenges
-    ) public onlyExecutorOrOwner refundsGas(gasRefunder, IReader4844(address(0))) {
-        uint256 challengesCount = challenges.length;
-        for (uint256 i = 0; i < challengesCount; i++) {
-            try manager.timeout(challenges[i]) {} catch (bytes memory error) {
-                if (error.length == 0) {
-                    // Assume out of gas
-                    // We need to revert here so gas estimation works
-                    require(false, "GAS");
-                }
-            }
-        }
-    }
-
     receive() external payable {}
 
     /// @dev allows the owner to withdraw eth held by this contract
     function withdrawEth(uint256 amount, address destination) external onlyOwner {
         // solhint-disable-next-line avoid-low-level-calls
-        (bool success, ) = destination.call{value: amount}("");
+        (bool success,) = destination.call{value: amount}("");
         if (!success) revert WithdrawEthFail(destination);
     }
 }

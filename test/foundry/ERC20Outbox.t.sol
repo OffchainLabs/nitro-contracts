@@ -78,10 +78,7 @@ contract ERC20OutboxTest is AbsOutboxTest {
         bytes32 root = outbox.calculateMerkleRoot(proof, index, itemHash);
         // store root
         vm.prank(rollup);
-        outbox.updateSendRoot(
-            root,
-            bytes32(uint256(1))
-        );
+        outbox.updateSendRoot(root, bytes32(uint256(1)));
 
         outbox.executeTransaction({
             proof: proof,
@@ -162,10 +159,7 @@ contract ERC20OutboxTest is AbsOutboxTest {
         bytes32 root = outbox.calculateMerkleRoot(proof, index, itemHash);
         // store root
         vm.prank(rollup);
-        outbox.updateSendRoot(
-            root,
-            bytes32(uint256(1))
-        );
+        outbox.updateSendRoot(root, bytes32(uint256(1)));
 
         vm.expectRevert(abi.encodeWithSelector(CallTargetNotAllowed.selector, invalidTarget));
         outbox.executeTransaction({
@@ -193,7 +187,8 @@ contract ERC20OutboxTest is AbsOutboxTest {
         ERC20 _nativeToken = new ERC20_6Decimals();
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        IERC20Inbox _inbox = IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+        IERC20Inbox _inbox =
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
         ERC20Outbox _outbox = ERC20Outbox(TestUtil.deployProxy(address(new ERC20Outbox())));
 
         // init bridge and inbox
@@ -237,10 +232,7 @@ contract ERC20OutboxTest is AbsOutboxTest {
             bytes32 root = _outbox.calculateMerkleRoot(proof, index, itemHash);
             // store root
             vm.prank(_rollup);
-            _outbox.updateSendRoot(
-                root,
-                bytes32(uint256(1))
-            );
+            _outbox.updateSendRoot(root, bytes32(uint256(1)));
         }
 
         _outbox.executeTransaction({
@@ -301,7 +293,8 @@ contract ERC20OutboxTest is AbsOutboxTest {
         ERC20 _nativeToken = new ERC20_20Decimals();
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        IERC20Inbox _inbox = IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+        IERC20Inbox _inbox =
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
         ERC20Outbox _outbox = ERC20Outbox(TestUtil.deployProxy(address(new ERC20Outbox())));
 
         // init bridge and inbox
@@ -345,10 +338,7 @@ contract ERC20OutboxTest is AbsOutboxTest {
             bytes32 root = _outbox.calculateMerkleRoot(proof, index, itemHash);
             // store root
             vm.prank(_rollup);
-            _outbox.updateSendRoot(
-                root,
-                bytes32(uint256(1))
-            );
+            _outbox.updateSendRoot(root, bytes32(uint256(1)));
         }
 
         _outbox.executeTransaction({
@@ -408,7 +398,8 @@ contract ERC20OutboxTest is AbsOutboxTest {
         ERC20 _nativeToken = new ERC20_36Decimals();
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        IERC20Inbox _inbox = IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+        IERC20Inbox _inbox =
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
         ERC20Outbox _outbox = ERC20Outbox(TestUtil.deployProxy(address(new ERC20Outbox())));
 
         // init bridge and inbox
@@ -448,10 +439,7 @@ contract ERC20OutboxTest is AbsOutboxTest {
             bytes32 root = _outbox.calculateMerkleRoot(proof, index, itemHash);
             // store root
             vm.prank(_rollup);
-            _outbox.updateSendRoot(
-                root,
-                bytes32(uint256(1))
-            );
+            _outbox.updateSendRoot(root, bytes32(uint256(1)));
         }
 
         vm.expectRevert(stdError.arithmeticError); // overflow
@@ -491,7 +479,9 @@ contract ERC20L2ToL1Target {
         withdrawalAmount = ERC20Outbox(outbox).l2ToL1WithdrawalAmount();
     }
 
-    function setOutbox(address _outbox) external {
+    function setOutbox(
+        address _outbox
+    ) external {
         outbox = _outbox;
     }
 }

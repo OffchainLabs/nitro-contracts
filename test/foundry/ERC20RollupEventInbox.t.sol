@@ -9,8 +9,10 @@ import {
     SequencerInbox,
     ISequencerInbox,
     IReader4844,
-    IFeeTokenPricer
+    IFeeTokenPricer,
+    BufferConfig
 } from "../../src/bridge/SequencerInbox.sol";
+import {INITIALIZATION_MSG_TYPE} from "../../src/libraries/MessageTypes.sol";
 import {ERC20PresetMinterPauser} from
     "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 
@@ -113,7 +115,9 @@ contract ERC20RollupEventInboxTest is AbsRollupEventInboxTest {
         rollupEventInbox.rollupInitialized(chainId, chainConfig);
     }
 
-    function testFuzz_rollupInitialized(uint256 exchangeRate) public {
+    function testFuzz_rollupInitialized(
+        uint256 exchangeRate
+    ) public {
         _setSequencerInbox(true);
 
         uint256 chainId = 500;
@@ -173,10 +177,10 @@ contract ERC20RollupEventInboxTest is AbsRollupEventInboxTest {
         rollupEventInbox.rollupInitialized(chainId, chainConfig);
     }
 
-    function _calculateExpectedCurrentDataCost(uint256 exchangeRate, bool isArbHosted)
-        internal
-        returns (uint256)
-    {
+    function _calculateExpectedCurrentDataCost(
+        uint256 exchangeRate,
+        bool isArbHosted
+    ) internal returns (uint256) {
         uint256 l2Fee = L2_BASEFEE;
         vm.fee(l2Fee);
 
@@ -200,7 +204,9 @@ contract ERC20RollupEventInboxTest is AbsRollupEventInboxTest {
         return expectedCurrentDataCost;
     }
 
-    function _setSequencerInbox(bool isArbHosted) internal {
+    function _setSequencerInbox(
+        bool isArbHosted
+    ) internal {
         IReader4844 reader = IReader4844(makeAddr("reader"));
         if (isArbHosted) {
             reader = IReader4844(address(0));
@@ -211,8 +217,15 @@ contract ERC20RollupEventInboxTest is AbsRollupEventInboxTest {
             );
         }
 
-        SequencerInbox si =
-            SequencerInbox(TestUtil.deployProxy(address(new SequencerInbox(10_000, reader, true))));
+        BufferConfig memory bufferConfig = BufferConfig({
+            threshold: type(uint64).max,
+            max: type(uint64).max,
+            replenishRateInBasis: 0
+        });
+
+        SequencerInbox si = SequencerInbox(
+            TestUtil.deployProxy(address(new SequencerInbox(10_000, reader, true, true)))
+        );
         si.initialize(
             bridge,
             ISequencerInbox.MaxTimeVariation({
@@ -221,6 +234,7 @@ contract ERC20RollupEventInboxTest is AbsRollupEventInboxTest {
                 delaySeconds: 100,
                 futureSeconds: 100
             }),
+            bufferConfig,
             IFeeTokenPricer(makeAddr("feeTokenPricer"))
         );
 

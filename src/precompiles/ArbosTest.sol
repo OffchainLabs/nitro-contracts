@@ -10,5 +10,7 @@ pragma solidity >=0.4.21 <0.9.0;
 /// Precompiled contract that exists in every Arbitrum chain at 0x0000000000000000000000000000000000000069.
 interface ArbosTest {
     /// @notice Unproductively burns the amount of L2 ArbGas
-    function burnArbGas(uint256 gasAmount) external pure;
+    function burnArbGas(
+        uint256 gasAmount
+    ) external pure;
 }

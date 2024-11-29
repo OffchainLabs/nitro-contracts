@@ -20,7 +20,9 @@ interface ArbSys {
      * @notice Get Arbitrum block hash (reverts unless currentBlockNum-256 <= arbBlockNum < currentBlockNum)
      * @return block hash
      */
-    function arbBlockHash(uint256 arbBlockNum) external view returns (bytes32);
+    function arbBlockHash(
+        uint256 arbBlockNum
+    ) external view returns (bytes32);
 
     /**
      * @notice Gets the rollup's unique chain identifier
@@ -54,10 +56,10 @@ interface ArbSys {
      * @param unused argument no longer used
      * @return aliased sender address
      */
-    function mapL1SenderContractAddressToL2Alias(address sender, address unused)
-        external
-        pure
-        returns (address);
+    function mapL1SenderContractAddressToL2Alias(
+        address sender,
+        address unused
+    ) external pure returns (address);
 
     /**
      * @notice check if the caller (of this caller of this) is an aliased L1 contract address
@@ -77,7 +79,9 @@ interface ArbSys {
      * @param destination recipient address on L1
      * @return unique identifier for this L2-to-L1 transaction.
      */
-    function withdrawEth(address destination) external payable returns (uint256);
+    function withdrawEth(
+        address destination
+    ) external payable returns (uint256);
 
     /**
      * @notice Send a transaction to L1
@@ -87,10 +91,10 @@ interface ArbSys {
      * @param data (optional) calldata for L1 contract call
      * @return a unique identifier for this L2-to-L1 transaction.
      */
-    function sendTxToL1(address destination, bytes calldata data)
-        external
-        payable
-        returns (uint256);
+    function sendTxToL1(
+        address destination,
+        bytes calldata data
+    ) external payable returns (uint256);
 
     /**
      * @notice Get send Merkle tree state
@@ -101,11 +105,7 @@ interface ArbSys {
     function sendMerkleTreeState()
         external
         view
-        returns (
-            uint256 size,
-            bytes32 root,
-            bytes32[] memory partials
-        );
+        returns (uint256 size, bytes32 root, bytes32[] memory partials);
 
     /**
      * @notice creates a send txn from L2 to L1
@@ -144,9 +144,7 @@ interface ArbSys {
      * @param position = (level << 192) + leaf
      */
     event SendMerkleUpdate(
-        uint256 indexed reserved,
-        bytes32 indexed hash,
-        uint256 indexed position
+        uint256 indexed reserved, bytes32 indexed hash, uint256 indexed position
     );
 
     error InvalidBlockNumber(uint256 requested, uint256 current);
