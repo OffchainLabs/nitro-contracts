@@ -284,6 +284,7 @@ describe('SequencerInbox', async () => {
           futureBlocks: 10,
           futureSeconds: 3000,
         },
+        constants.AddressZero,
         {
           threshold: 0,
           max: 0,

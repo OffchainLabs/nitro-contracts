@@ -118,7 +118,7 @@ contract ExpressLaneBalanceTest is Test {
         if (initialRound <= reduceRound) {
             vm.expectRevert(abi.encodeWithSelector(InsufficientBalance.selector, reduceAmount, 0));
             b.reduce(reduceAmount, reduceRound);
-        } else if (reduceAmount > initialBalance) {
+        } else if (reduceAmount > initialBalance || initialBalance == 0) {
             vm.expectRevert(
                 abi.encodeWithSelector(InsufficientBalance.selector, reduceAmount, initialBalance)
             );

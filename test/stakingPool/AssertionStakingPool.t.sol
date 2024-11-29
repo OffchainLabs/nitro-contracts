@@ -199,7 +199,8 @@ contract AssertionPoolTest is Test {
             deployFactoriesToL2: false,
             maxFeePerGasForRetryables: 0,
             batchPosters: new address[](0),
-            batchPosterManager: address(0)
+            batchPosterManager: address(0),
+            feeTokenPricer: IFeeTokenPricer(address(0))
         });
 
         rollupAddr = rollupCreator.createRollup(param);

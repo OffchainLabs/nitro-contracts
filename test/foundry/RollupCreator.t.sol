@@ -151,7 +151,8 @@ contract RollupCreatorTest is Test {
             nativeToken: address(0),
             deployFactoriesToL2: true,
             maxFeePerGasForRetryables: MAX_FEE_PER_GAS,
-            batchPosterManager: batchPosterManager
+            batchPosterManager: batchPosterManager,
+            feeTokenPricer: IFeeTokenPricer(address(0))
         });
         address rollupAddress =
             rollupCreator.createRollup{value: factoryDeploymentFunds}(deployParams);
@@ -300,6 +301,7 @@ contract RollupCreatorTest is Test {
         validators[0] = makeAddr("validator1");
         validators[1] = makeAddr("validator2");
 
+        IFeeTokenPricer feeTokenPricer = IFeeTokenPricer(makeAddr("feeTokenPricer"));
         RollupCreator.RollupDeploymentParams memory deployParams = RollupCreator
             .RollupDeploymentParams({
             config: config,
@@ -309,8 +311,15 @@ contract RollupCreatorTest is Test {
             nativeToken: nativeToken,
             deployFactoriesToL2: true,
             maxFeePerGasForRetryables: MAX_FEE_PER_GAS,
-            batchPosterManager: batchPosterManager
+            batchPosterManager: batchPosterManager,
+            feeTokenPricer: feeTokenPricer
         });
+
+        vm.mockCall(
+            address(feeTokenPricer),
+            abi.encodeWithSelector(IFeeTokenPricer.getExchangeRate.selector),
+            abi.encode(uint256(16.421e18))
+        );
 
         address rollupAddress = rollupCreator.createRollup(deployParams);
 
@@ -468,7 +477,8 @@ contract RollupCreatorTest is Test {
             nativeToken: address(0),
             deployFactoriesToL2: true,
             maxFeePerGasForRetryables: MAX_FEE_PER_GAS,
-            batchPosterManager: batchPosterManager
+            batchPosterManager: batchPosterManager,
+            feeTokenPricer: IFeeTokenPricer(address(0))
         });
         address rollupAddress =
             rollupCreator.createRollup{value: factoryDeploymentFunds}(deployParams);
