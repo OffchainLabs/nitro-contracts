@@ -134,8 +134,9 @@ contract BridgeCreatorTest is Test {
             max: type(uint64).max,
             replenishRateInBasis: 0
         });
-        BridgeCreator.BridgeContracts memory contracts =
-            creator.createBridge(proxyAdmin, rollup, nativeToken, timeVars, bufferConfig, IFeeTokenPricer(address(0)));
+        BridgeCreator.BridgeContracts memory contracts = creator.createBridge(
+            proxyAdmin, rollup, nativeToken, timeVars, bufferConfig, IFeeTokenPricer(address(0))
+        );
         (
             IBridge bridge,
             ISequencerInbox seqInbox,
@@ -197,19 +198,16 @@ contract BridgeCreatorTest is Test {
             replenishRateInBasis: 0
         });
 
-        BridgeCreator.BridgeContracts memory contracts =
-            creator.createBridge(address(300), rollup, nativeToken, timeVars, bufferConfig, IFeeTokenPricer(feeTokenPricer));
-        (
-            IBridge bridge,
-            IInboxBase inbox,
-            IRollupEventInbox eventInbox,
-            IOutbox outbox
-        ) = (
-            contracts.bridge,
-            contracts.inbox,
-            contracts.rollupEventInbox,
-            contracts.outbox
+        BridgeCreator.BridgeContracts memory contracts = creator.createBridge(
+            address(300),
+            rollup,
+            nativeToken,
+            timeVars,
+            bufferConfig,
+            IFeeTokenPricer(feeTokenPricer)
         );
+        (IBridge bridge, IInboxBase inbox, IRollupEventInbox eventInbox, IOutbox outbox) =
+            (contracts.bridge, contracts.inbox, contracts.rollupEventInbox, contracts.outbox);
 
         // bridge
         assertEq(address(bridge.rollup()), rollup, "Invalid rollup ref");
@@ -229,11 +227,19 @@ contract BridgeCreatorTest is Test {
         assertEq(_futureBlocks, timeVars.futureBlocks, "Invalid futureBlocks");
         assertEq(_delaySeconds, timeVars.delaySeconds, "Invalid delaySeconds");
         assertEq(_futureSeconds, timeVars.futureSeconds, "Invalid futureSeconds");
-        assertEq(address(contracts.sequencerInbox.feeTokenPricer()), feeTokenPricer, "Invalid fee token pricer");
+        assertEq(
+            address(contracts.sequencerInbox.feeTokenPricer()),
+            feeTokenPricer,
+            "Invalid fee token pricer"
+        );
 
         // inbox
         assertEq(address(inbox.bridge()), address(bridge), "Invalid bridge ref");
-        assertEq(address(inbox.sequencerInbox()), address(contracts.sequencerInbox), "Invalid seqInbox ref");
+        assertEq(
+            address(inbox.sequencerInbox()),
+            address(contracts.sequencerInbox),
+            "Invalid seqInbox ref"
+        );
         assertEq(inbox.allowListEnabled(), false, "Invalid allowListEnabled");
         assertEq(AbsInbox(address(inbox)).paused(), false, "Invalid paused status");
 

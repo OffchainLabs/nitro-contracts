@@ -120,7 +120,12 @@ contract SequencerInboxTest is Test {
         SequencerInbox seqInbox = SequencerInbox(
             address(new TransparentUpgradeableProxy(address(seqInboxImpl), proxyAdmin, ""))
         );
-        seqInbox.initialize(bridge, maxTimeVariation, bufferConfigDefault, IFeeTokenPricer(makeAddr("feeTokenPricer")));
+        seqInbox.initialize(
+            bridge,
+            maxTimeVariation,
+            bufferConfigDefault,
+            IFeeTokenPricer(makeAddr("feeTokenPricer"))
+        );
 
         vm.prank(rollupOwner);
         seqInbox.setIsBatchPoster(tx.origin, true);
@@ -297,7 +302,9 @@ contract SequencerInboxTest is Test {
         address seqInboxLogic =
             address(new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false));
         SequencerInbox seqInboxProxy = SequencerInbox(TestUtil.deployProxy(seqInboxLogic));
-        seqInboxProxy.initialize(IBridge(_bridge), maxTimeVariation, bufferConfig, IFeeTokenPricer(address(0)));
+        seqInboxProxy.initialize(
+            IBridge(_bridge), maxTimeVariation, bufferConfig, IFeeTokenPricer(address(0))
+        );
 
         assertEq(seqInboxProxy.isUsingFeeToken(), false, "Invalid isUsingFeeToken");
         assertEq(address(seqInboxProxy.bridge()), address(_bridge), "Invalid bridge");
@@ -323,7 +330,11 @@ contract SequencerInboxTest is Test {
         assertEq(seqInboxProxy.isUsingFeeToken(), true, "Invalid isUsingFeeToken");
         assertEq(address(seqInboxProxy.bridge()), address(_bridge), "Invalid bridge");
         assertEq(address(seqInboxProxy.rollup()), address(_bridge.rollup()), "Invalid rollup");
-        assertEq(address(seqInboxProxy.feeTokenPricer()), address(feeTokenPricer), "Invalid feeTokenPricer");
+        assertEq(
+            address(seqInboxProxy.feeTokenPricer()),
+            address(feeTokenPricer),
+            "Invalid feeTokenPricer"
+        );
     }
 
     function testInitialize_revert_NativeTokenMismatch_EthFeeToken(
@@ -338,7 +349,9 @@ contract SequencerInboxTest is Test {
         SequencerInbox seqInboxProxy = SequencerInbox(TestUtil.deployProxy(seqInboxLogic));
 
         vm.expectRevert(abi.encodeWithSelector(NativeTokenMismatch.selector));
-        seqInboxProxy.initialize(IBridge(_bridge), maxTimeVariation, bufferConfig, IFeeTokenPricer(address(0)));
+        seqInboxProxy.initialize(
+            IBridge(_bridge), maxTimeVariation, bufferConfig, IFeeTokenPricer(address(0))
+        );
     }
 
     function testInitialize_revert_NativeTokenMismatch_FeeTokenEth(
@@ -355,12 +368,18 @@ contract SequencerInboxTest is Test {
         SequencerInbox seqInboxProxy = SequencerInbox(TestUtil.deployProxy(seqInboxLogic));
 
         vm.expectRevert(abi.encodeWithSelector(NativeTokenMismatch.selector));
-        seqInboxProxy.initialize(IBridge(_bridge), maxTimeVariation, bufferConfig, IFeeTokenPricer(makeAddr("feeTokenPricer")));
+        seqInboxProxy.initialize(
+            IBridge(_bridge),
+            maxTimeVariation,
+            bufferConfig,
+            IFeeTokenPricer(makeAddr("feeTokenPricer"))
+        );
     }
 
     function testInitialize_revert_CannotSetFeeTokenPricer() public {
         address bridge = address(new Bridge());
-        address seqInboxLogic = address(new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false));
+        address seqInboxLogic =
+            address(new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false));
         SequencerInbox seqInboxProxy = SequencerInbox(TestUtil.deployProxy(seqInboxLogic));
         IFeeTokenPricer pricer = IFeeTokenPricer(makeAddr("feeTokenPricer"));
         vm.expectRevert(abi.encodeWithSelector(CannotSetFeeTokenPricer.selector));
@@ -540,7 +559,9 @@ contract SequencerInboxTest is Test {
         );
     }
 
-    function testFuzz_addSequencerBatch_FeeToken(uint256 exchangeRate) public {
+    function testFuzz_addSequencerBatch_FeeToken(
+        uint256 exchangeRate
+    ) public {
         exchangeRate = bound(exchangeRate, 0, 100000000e18);
 
         (SequencerInbox seqInbox, ERC20Bridge bridge) = deployFeeTokenBasedRollup();
@@ -576,7 +597,7 @@ contract SequencerInboxTest is Test {
             }
         }
 
-        if(expectedToOverflow) {
+        if (expectedToOverflow) {
             vm.expectRevert(stdError.arithmeticError);
         } else {
             expectEvents(IBridge(address(bridge)), seqInbox, data, true, true, exchangeRate);

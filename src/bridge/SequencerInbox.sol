@@ -205,7 +205,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         if (isDelayBufferable) {
             _setBufferConfig(bufferConfig_);
         }
-        
+
         if (!isUsingFeeToken && feeTokenPricer_ != IFeeTokenPricer(address(0))) {
             revert CannotSetFeeTokenPricer();
         }
@@ -872,7 +872,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     /// @inheritdoc ISequencerInbox
-    function setFeeTokenPricer(IFeeTokenPricer feeTokenPricer_) external onlyRollupOwner {
+    function setFeeTokenPricer(
+        IFeeTokenPricer feeTokenPricer_
+    ) external onlyRollupOwner {
         if (!isUsingFeeToken) {
             revert CannotSetFeeTokenPricer();
         }

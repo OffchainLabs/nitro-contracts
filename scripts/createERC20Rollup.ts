@@ -39,11 +39,17 @@ async function main() {
   }
 
   let feeTokenPricer = process.env.FEE_TOKEN_PRICER_ADDRESS
-  if(!feeTokenPricer) {
+  if (!feeTokenPricer) {
     feeTokenPricer = ethers.constants.AddressZero
   }
 
-  console.log('Creating new rollup with', customFeeTokenAddress, 'as fee token and', feeTokenPricer, 'as fee token pricer')
+  console.log(
+    'Creating new rollup with',
+    customFeeTokenAddress,
+    'as fee token and',
+    feeTokenPricer,
+    'as fee token pricer'
+  )
   await createRollup(
     deployer,
     false,

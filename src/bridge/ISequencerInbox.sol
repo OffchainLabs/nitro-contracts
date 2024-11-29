@@ -335,7 +335,9 @@ interface ISequencerInbox is IDelayedMessageProvider {
      *         chain's fee token and parent chain's fee token in rollups that use a custom fee token.
      * @param newFeeTokenPricer The new fee token pricer to be set
      */
-    function setFeeTokenPricer(IFeeTokenPricer newFeeTokenPricer) external;
+    function setFeeTokenPricer(
+        IFeeTokenPricer newFeeTokenPricer
+    ) external;
 
     /// @notice Allows the rollup owner to sync the rollup address
     function updateRollupAddress() external;

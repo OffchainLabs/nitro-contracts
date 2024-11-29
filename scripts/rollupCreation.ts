@@ -4,7 +4,12 @@ import { run } from 'hardhat'
 import { abi as rollupCreatorAbi } from '../build/contracts/src/rollup/RollupCreator.sol/RollupCreator.json'
 import { config, maxDataSize } from './config'
 import { BigNumber, Event, Signer } from 'ethers'
-import { ERC20, ERC20__factory, IERC20__factory, RollupCreator } from '../build/types'
+import {
+  ERC20,
+  ERC20__factory,
+  IERC20__factory,
+  RollupCreator,
+} from '../build/types'
 import { sleep } from './testSetup'
 import { promises as fs } from 'fs'
 import { _isRunningOnArbitrum, verifyContract } from './deploymentUtils'
@@ -101,7 +106,12 @@ export async function createRollup(
     // Call the createRollup function
     console.log('Calling createRollup to generate a new rollup ...')
     const deployParams = isDevDeployment
-      ? await _getDevRollupConfig(feeToken, feeTokenPricer, validatorWalletCreator, stakeToken)
+      ? await _getDevRollupConfig(
+          feeToken,
+          feeTokenPricer,
+          validatorWalletCreator,
+          stakeToken
+        )
       : {
           config: config.rollupConfig,
           validators: config.validators,
@@ -111,7 +121,7 @@ export async function createRollup(
           maxFeePerGasForRetryables: MAX_FER_PER_GAS,
           batchPosters: config.batchPosters,
           batchPosterManager: config.batchPosterManager,
-          feeTokenPricer: feeTokenPricer
+          feeTokenPricer: feeTokenPricer,
         }
 
     const createRollupTx = await rollupCreator.createRollup(deployParams, {
@@ -333,7 +343,7 @@ async function _getDevRollupConfig(
     maxFeePerGasForRetryables: MAX_FER_PER_GAS,
     batchPosters: batchPosters,
     batchPosterManager: batchPosterManager,
-    feeTokenPricer: feeTokenPricer
+    feeTokenPricer: feeTokenPricer,
   }
 
   function _createValidatorAddress(
