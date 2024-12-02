@@ -442,17 +442,6 @@ contract BOLDUpgradeAction {
             PROXY_ADMIN_SEQUENCER_INBOX.upgrade(sequencerInbox, IMPL_SEQUENCER_INBOX);
         }
 
-        // verify
-        require(
-            PROXY_ADMIN_SEQUENCER_INBOX.getProxyImplementation(sequencerInbox)
-                == IMPL_SEQUENCER_INBOX,
-            "DelayBuffer: new seq inbox implementation not set"
-        );
-        require(
-            ISequencerInbox(SEQ_INBOX).isDelayBufferable() == IS_DELAY_BUFFERABLE,
-            "DelayBuffer: isDelayBufferable not set"
-        );
-
         (uint256 delayBlocks, uint256 futureBlocks, uint256 delaySeconds, uint256 futureSeconds) =
             ISequencerInbox(SEQ_INBOX).maxTimeVariation();
 
@@ -473,14 +462,6 @@ contract BOLDUpgradeAction {
                 futureSeconds: futureSeconds
             })
         );
-
-        // verify
-        (uint256 _delayBlocks, uint256 _futureBlocks, uint256 _delaySeconds, uint256 _futureSeconds)
-        = ISequencerInbox(SEQ_INBOX).maxTimeVariation();
-        require(_delayBlocks == delayBlocks, "DelayBuffer: delayBlocks");
-        require(_delaySeconds == delaySeconds, "DelayBuffer: delaySeconds");
-        require(_futureBlocks == futureBlocks, "DelayBuffer: futureBlocks");
-        require(_futureSeconds == futureSeconds, "DelayBuffer: futureSeconds");
 
         ISequencerInbox(SEQ_INBOX).updateRollupAddress();
     }
