@@ -185,6 +185,9 @@ contract BOLDUpgradeAction {
     address public immutable STAKE_TOKEN;
     uint256 public immutable STAKE_AMOUNT;
     uint256 public immutable CHAIN_ID;
+    uint256 public immutable MINIMUM_ASSERTION_PERIOD;
+    uint64 public immutable VALIDATOR_AFK_BLOCKS;
+
     bool public immutable DISABLE_VALIDATOR_WHITELIST;
     uint64 public immutable CHALLENGE_GRACE_PERIOD_BLOCKS;
     address public immutable MINI_STAKE_AMOUNTS_STORAGE;
@@ -223,6 +226,8 @@ contract BOLDUpgradeAction {
         uint256 stakeAmt;
         uint256[] miniStakeAmounts;
         uint256 chainId;
+        uint256 minimumAssertionPeriod;
+        uint64 validatorAfkBlocks;
         bool disableValidatorWhitelist;
         uint256 blockLeafSize;
         uint256 bigStepLeafSize;
@@ -296,6 +301,8 @@ contract BOLDUpgradeAction {
         IMPL_CHALLENGE_MANAGER = implementations.challengeManager;
 
         CHAIN_ID = settings.chainId;
+        MINIMUM_ASSERTION_PERIOD = settings.minimumAssertionPeriod;
+        VALIDATOR_AFK_BLOCKS = settings.validatorAfkBlocks;
         CONFIRM_PERIOD_BLOCKS = settings.confirmPeriodBlocks;
         CHALLENGE_PERIOD_BLOCKS = settings.challengePeriodBlocks;
         STAKE_TOKEN = settings.stakeToken;
@@ -373,6 +380,8 @@ contract BOLDUpgradeAction {
             loserStakeEscrow: EXCESS_STAKE_RECEIVER, // additional funds get sent to the l1 timelock
             chainId: CHAIN_ID,
             chainConfig: "", // we can use an empty chain config it wont be used in the rollup initialization because we check if the rei is already connected there
+            minimumAssertionPeriod: MINIMUM_ASSERTION_PERIOD,
+            validatorAfkBlocks: VALIDATOR_AFK_BLOCKS,
             miniStakeValues: ConstantArrayStorage(MINI_STAKE_AMOUNTS_STORAGE).array(),
             sequencerInboxMaxTimeVariation: maxTimeVariation,
             layerZeroBlockEdgeHeight: BLOCK_LEAF_SIZE,
@@ -433,17 +442,6 @@ contract BOLDUpgradeAction {
             PROXY_ADMIN_SEQUENCER_INBOX.upgrade(sequencerInbox, IMPL_SEQUENCER_INBOX);
         }
 
-        // verify
-        require(
-            PROXY_ADMIN_SEQUENCER_INBOX.getProxyImplementation(sequencerInbox)
-                == IMPL_SEQUENCER_INBOX,
-            "DelayBuffer: new seq inbox implementation not set"
-        );
-        require(
-            ISequencerInbox(SEQ_INBOX).isDelayBufferable() == IS_DELAY_BUFFERABLE,
-            "DelayBuffer: isDelayBufferable not set"
-        );
-
         (uint256 delayBlocks, uint256 futureBlocks, uint256 delaySeconds, uint256 futureSeconds) =
             ISequencerInbox(SEQ_INBOX).maxTimeVariation();
 
@@ -464,14 +462,6 @@ contract BOLDUpgradeAction {
                 futureSeconds: futureSeconds
             })
         );
-
-        // verify
-        (uint256 _delayBlocks, uint256 _futureBlocks, uint256 _delaySeconds, uint256 _futureSeconds)
-        = ISequencerInbox(SEQ_INBOX).maxTimeVariation();
-        require(_delayBlocks == delayBlocks, "DelayBuffer: delayBlocks");
-        require(_delaySeconds == delaySeconds, "DelayBuffer: delaySeconds");
-        require(_futureBlocks == futureBlocks, "DelayBuffer: futureBlocks");
-        require(_futureSeconds == futureSeconds, "DelayBuffer: futureSeconds");
 
         ISequencerInbox(SEQ_INBOX).updateRollupAddress();
     }

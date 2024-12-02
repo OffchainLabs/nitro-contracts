@@ -154,6 +154,8 @@ contract AssertionPoolTest is Test {
             baseStake: BASE_STAKE,
             chainId: 0,
             chainConfig: "{}",
+            minimumAssertionPeriod: 75,
+            validatorAfkBlocks: 201600,
             confirmPeriodBlocks: uint64(CONFIRM_PERIOD_BLOCKS),
             owner: owner,
             sequencerInboxMaxTimeVariation: ISequencerInbox.MaxTimeVariation({

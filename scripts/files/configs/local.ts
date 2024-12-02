@@ -35,6 +35,8 @@ export const local: Config = {
       parseEther('1'),
     ],
     chainId: 412346,
+    minimumAssertionPeriod: 0,
+    validatorAfkBlocks: 201600,
     disableValidatorWhitelist: true,
     blockLeafSize: 1048576,
     bigStepLeafSize: 512,

@@ -303,6 +303,8 @@ async function _getDevRollupConfig(
       loserStakeEscrow: ethers.constants.AddressZero,
       chainId: JSON.parse(chainConfig)['chainId'],
       chainConfig: chainConfig,
+      minimumAssertionPeriod: 75,
+      validatorAfkBlocks: 201600,
       genesisAssertionState: {}, // AssertionState
       genesisInboxCount: 0,
       miniStakeValues: [
