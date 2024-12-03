@@ -171,4 +171,13 @@ interface NodeInterface {
         external
         view
         returns (uint64 firstBlock, uint64 lastBlock);
+
+    /**
+     * @notice Returns the block number from the parent chain that includes the child-chain block number.
+     * Reverts if the child-chain block isn't posted on the parent chain yet.
+     */
+    function getParentBlockNumThatIncludesChildBlock(uint64 childBlockNum)
+        external
+        view
+        returns (uint64 parentBlockNum);
 }
