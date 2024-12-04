@@ -9,10 +9,10 @@ interface IInteropParent {
 
     struct Agreement {
         address origin;
-        int64 chosen;
+        uint64 chosen;
     }
 
-    function agreements(uint256 index) external view returns (address origin, int64 chosen);
+    function agreements(uint256 index) external view returns (address origin, uint64 chosen);
     function aBids(uint256 agreementId, uint256 bidId)
         external
         view
@@ -30,7 +30,7 @@ interface IInteropParent {
 
     function agree(
         uint256 agreementId,
-        uint256 bidId,
+        uint64 bidId,
         bytes32 meta,
         uint256 condBlocknum,
         bytes32 condHash

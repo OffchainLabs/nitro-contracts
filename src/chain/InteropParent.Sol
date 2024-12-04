@@ -17,7 +17,7 @@ contract InteropParent is IInteropParent {
 
     function create() public returns (uint256) {
         uint256 agreementId = agreements.length;
-        agreements.push(Agreement(msg.sender, -1));
+        agreements.push(Agreement(msg.sender, type(uint64).max));
         return agreementId;
     }
 
@@ -29,27 +29,26 @@ contract InteropParent is IInteropParent {
         bytes32 condHash
     ) public returns (uint256) {
         require(agreements.length > agreementId, "illegal agreement");
-        require(agreements[agreementId].chosen == -1, "closed agreement");
+        require(agreements[agreementId].chosen == type(uint64).max, "closed agreement");
         if (condBlocknum > 0) {
             require(ARB_SYS.arbBlockHash(condBlocknum) == condHash, "condition not met");
         }
 
         uint256 bidId;
         bidId = aBids[agreementId].length;
-        require(bidId < uint64(type(int64).max), "too many bids");
         aBids[agreementId].push(Bid(counter, meta));
         return bidId;
     }
 
     function agree(
         uint256 agreementId,
-        uint256 bidId,
+        uint64 bidId,
         bytes32 meta,
         uint256 condBlocknum,
         bytes32 condHash
     ) public {
         require(agreements.length > agreementId, "illegal agreement");
-        require(agreements[agreementId].chosen == -1, "closed agreement");
+        require(agreements[agreementId].chosen == type(uint64).max, "closed agreement");
         require(agreements[agreementId].origin == msg.sender, "not originator");
         require(aBids[agreementId].length > bidId, "illegal bid");
         require(aBids[agreementId][bidId].meta == meta, "wrong bid meta");
@@ -57,8 +56,7 @@ contract InteropParent is IInteropParent {
         if (condBlocknum > 0) {
             require(ARB_SYS.arbBlockHash(condBlocknum) == condHash, "condition not met");
         }
-        // this cast is safe because bidId is less than int64.max
-        agreements[agreementId].chosen = int64(uint64(bidId));
+        agreements[agreementId].chosen = bidId;
     }
 
     function sendResult(
