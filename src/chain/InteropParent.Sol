@@ -4,71 +4,91 @@
 
 pragma solidity ^0.8.0;
 
+import "./IInteropParent.sol";
 import "../bridge/IInbox.sol";
 import "../precompiles/ArbSys.sol";
 
-contract InteropParent {
+contract InteropParent is IInteropParent {
     ArbSys internal constant ARB_SYS = ArbSys(address(0x64));
 
-    struct Bid {
-        address counter;
-        bytes32 meta;
-    }
-
-    struct Agreement {
-        address origin;
-        int64 chosen;
-        Bid[] bids;
-    }
-
     Agreement[] public agreements;
+    mapping(uint256 => Bid[]) public aBids;
 
     function create() public returns (uint256) {
-        Bid[] memory emptybids;
-        uint256 nextId;
-        nextId = agreements.length;
-        agreements.push(Agreement(msg.sender, -1, emptybids));
-        return nextId;
+        uint256 agreementId = agreements.length;
+        agreements.push(Agreement(msg.sender, -1));
+        return agreementId;
     }
 
-    function bid(uint64 agreement, address counter, bytes32 meta, uint256 cond_blocknum, bytes32 cond_hash) public returns (uint256) {
+    /// @return index of the bid in allBids
+    function bid(
+        uint64 agreement,
+        address counter,
+        bytes32 meta,
+        uint256 condBlocknum,
+        bytes32 condHash
+    ) public returns (uint256) {
         require(agreements.length > agreement, "illegal agreement");
         require(agreements[agreement].chosen == -1, "closed agreement");
-        if (cond_blocknum > 0) {
-            require(ARB_SYS.arbBlockHash(cond_blocknum) == cond_hash, "condition not met");
+        if (condBlocknum > 0) {
+            require(ARB_SYS.arbBlockHash(condBlocknum) == condHash, "condition not met");
         }
-        uint256 nextBid;
-        nextBid = agreements[agreement].bids.length;
-        agreements[agreement].bids.push(Bid(counter, meta));
-        return nextBid;
+
+        uint256 ubidId;
+        ubidId = aBids[agreement].length;
+        aBids[agreement].push(Bid(counter, meta));
+        return ubidId;
     }
 
-    function agree(uint64 agreement, int64 ibid, bytes32 meta, uint256 cond_blocknum, bytes32 cond_hash) public {
+    function agree(
+        uint64 agreement,
+        int64 ibid,
+        bytes32 meta,
+        uint256 condBlocknum,
+        bytes32 condHash
+    ) public {
         require(agreements.length > agreement, "illegal agreement");
         require(agreements[agreement].chosen == -1, "closed agreement");
         require(agreements[agreement].origin == msg.sender, "not originator");
         require(ibid >= 0, "illegal bid");
         uint64 ubid;
         ubid = uint64(ibid);
-        require(agreements[agreement].bids.length > ubid, "illegal bid");
-        require(agreements[agreement].bids[ubid].meta == meta, "wrong bid meta");
+        require(aBids[agreement].length > ubid, "illegal bid");
+        require(aBids[agreement][ubid].meta == meta, "wrong bid meta");
 
-        if (cond_blocknum > 0) {
-            require(ARB_SYS.arbBlockHash(cond_blocknum) == cond_hash, "condition not met");
+        if (condBlocknum > 0) {
+            require(ARB_SYS.arbBlockHash(condBlocknum) == condHash, "condition not met");
         }
         agreements[agreement].chosen = ibid;
     }
 
-    function send_result(uint64 agreement, IInbox dest_chain, address dest_contract, uint256 gasLimit,
-        uint256 maxFeePerGas, address to) {
+    function sendResult(
+        uint64 agreement,
+        address destChain,
+        address destContract,
+        uint256 gasLimit,
+        uint256 maxFeePerGas,
+        uint256 maxSubmissionCost
+    ) external payable {
         require(agreements.length > agreement, "illegal agreement");
         require(agreements[agreement].chosen > 0, "open agreement");
-        uint64 ubid;
-        ubid = uint64(agreements[agreement].chosen);
+        uint64 ubid = uint64(agreements[agreement].chosen);
+        Bid memory _bid = aBids[agreement][ubid]; // workaround stack too deep
 
-        dest_chain.sendL1FundedContractTransaction(gasLimit, maxFeePerGas, dest_contract, msg.value, abi.encodePacked(
-            bytes4(uint32(0x11223344)), // TODO: destfunc
-            abi.encode(agreements[agreement].bids[ubid].counter, agreements[agreement].bids[ubid].meta) 
-        ));        
+        uint256 l2CallValue = msg.value - maxSubmissionCost - maxFeePerGas * gasLimit;
+        IInbox(destChain).createRetryableTicket{value: msg.value}({
+            to: destContract,
+            l2CallValue: l2CallValue,
+            maxSubmissionCost: 0,
+            excessFeeRefundAddress: address(0),
+            callValueRefundAddress: address(0),
+            gasLimit: gasLimit,
+            maxFeePerGas: maxFeePerGas,
+            data: abi.encodeWithSelector(
+                bytes4(uint32(0x11223344)), // TODO: destfunc
+                _bid.counter,
+                _bid.meta
+            )
+        });
     }
 }
