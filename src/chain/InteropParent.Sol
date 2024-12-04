@@ -21,7 +21,6 @@ contract InteropParent is IInteropParent {
         return agreementId;
     }
 
-    /// @return index of the bid in allBids
     function bid(
         uint64 agreement,
         address counter,
@@ -80,13 +79,13 @@ contract InteropParent is IInteropParent {
         IInbox(destChain).createRetryableTicket{value: msg.value}({
             to: destContract,
             l2CallValue: l2CallValue,
-            maxSubmissionCost: 0,
+            maxSubmissionCost: maxSubmissionCost,
             excessFeeRefundAddress: address(0),
             callValueRefundAddress: address(0),
             gasLimit: gasLimit,
             maxFeePerGas: maxFeePerGas,
             data: abi.encodeCall(
-                IInteropChild.receiveResult, // TODO: destfunc
+                IInteropChild.receiveResult,
                 (_bid.counter, _bid.meta)
             )
         });
