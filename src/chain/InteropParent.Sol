@@ -5,6 +5,7 @@
 pragma solidity ^0.8.0;
 
 import "./IInteropParent.sol";
+import "./IInteropChild.sol";
 import "../bridge/IInbox.sol";
 import "../precompiles/ArbSys.sol";
 
@@ -84,10 +85,10 @@ contract InteropParent is IInteropParent {
             callValueRefundAddress: address(0),
             gasLimit: gasLimit,
             maxFeePerGas: maxFeePerGas,
-            data: abi.encodeWithSelector(
-                bytes4(uint32(0x11223344)), // TODO: destfunc
-                _bid.counter,
-                _bid.meta
+            data: abi.encodeCall(
+                IInteropChild.destfunc, // TODO: destfunc
+                (_bid.counter,
+                _bid.meta)
             )
         });
     }
