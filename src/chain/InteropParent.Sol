@@ -65,17 +65,21 @@ contract InteropParent is IInteropParent {
         address destContract,
         uint256 gasLimit,
         uint256 maxFeePerGas,
-        uint256 maxSubmissionCost
+        uint256 maxSubmissionCost,
+        uint256 amount
     ) external payable {
         require(agreements.length > agreementId, "illegal agreement");
         require(agreements[agreementId].chosen > 0, "open agreement");
         uint64 ubid = uint64(agreements[agreementId].chosen);
         Bid memory _bid = aBids[agreementId][ubid]; // workaround stack too deep
 
-        uint256 l2CallValue = msg.value - maxSubmissionCost - maxFeePerGas * gasLimit;
+        require(
+            msg.value - maxSubmissionCost - maxFeePerGas * gasLimit == amount,
+            "insufficient callvalue"
+        );
         IInbox(destChain).createRetryableTicket{value: msg.value}({
             to: destContract,
-            l2CallValue: l2CallValue,
+            l2CallValue: amount,
             maxSubmissionCost: maxSubmissionCost,
             excessFeeRefundAddress: address(0),
             callValueRefundAddress: address(0),

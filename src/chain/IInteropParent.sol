@@ -42,6 +42,7 @@ interface IInteropParent {
         address destContract,
         uint256 gasLimit,
         uint256 maxFeePerGas,
-        uint256 maxSubmissionCost
+        uint256 maxSubmissionCost,
+        uint256 amount
     ) external payable;
 }
