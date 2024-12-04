@@ -86,9 +86,8 @@ contract InteropParent is IInteropParent {
             gasLimit: gasLimit,
             maxFeePerGas: maxFeePerGas,
             data: abi.encodeCall(
-                IInteropChild.destfunc, // TODO: destfunc
-                (_bid.counter,
-                _bid.meta)
+                IInteropChild.receiveResult, // TODO: destfunc
+                (_bid.counter, _bid.meta)
             )
         });
     }
