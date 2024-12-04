@@ -81,7 +81,7 @@ contract InteropParent is IInteropParent {
             to: destContract,
             l2CallValue: amount,
             maxSubmissionCost: maxSubmissionCost,
-            excessFeeRefundAddress: address(0),
+            excessFeeRefundAddress: msg.sender,
             callValueRefundAddress: address(0),
             gasLimit: gasLimit,
             maxFeePerGas: maxFeePerGas,
