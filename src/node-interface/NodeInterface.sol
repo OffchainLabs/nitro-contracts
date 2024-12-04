@@ -179,5 +179,5 @@ interface NodeInterface {
     function getParentBlockNumThatIncludesChildBlock(uint64 childBlockNum)
         external
         view
-        returns (uint64 parentBlockNum, address parentBlockHash);
+        returns (uint64 parentBlockNum, bytes32 parentBlockHash);
 }
