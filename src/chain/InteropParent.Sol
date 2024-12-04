@@ -12,6 +12,7 @@ import "../precompiles/ArbSys.sol";
 contract InteropParent is IInteropParent {
     ArbSys internal constant ARB_SYS = ArbSys(address(0x64));
 
+    // TODO: make aggreement id and bid id reorg safe
     Agreement[] public agreements;
     mapping(uint256 => Bid[]) public aBids;
 
