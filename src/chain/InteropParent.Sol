@@ -22,58 +22,57 @@ contract InteropParent is IInteropParent {
     }
 
     function bid(
-        uint64 agreement,
+        uint256 agreementId,
         address counter,
         bytes32 meta,
         uint256 condBlocknum,
         bytes32 condHash
     ) public returns (uint256) {
-        require(agreements.length > agreement, "illegal agreement");
-        require(agreements[agreement].chosen == -1, "closed agreement");
+        require(agreements.length > agreementId, "illegal agreement");
+        require(agreements[agreementId].chosen == -1, "closed agreement");
         if (condBlocknum > 0) {
             require(ARB_SYS.arbBlockHash(condBlocknum) == condHash, "condition not met");
         }
 
-        uint256 ubidId;
-        ubidId = aBids[agreement].length;
-        aBids[agreement].push(Bid(counter, meta));
-        return ubidId;
+        uint256 bidId;
+        bidId = aBids[agreementId].length;
+        require(bidId < uint64(type(int64).max), "too many bids");
+        aBids[agreementId].push(Bid(counter, meta));
+        return bidId;
     }
 
     function agree(
-        uint64 agreement,
-        int64 ibid,
+        uint256 agreementId,
+        uint256 bidId,
         bytes32 meta,
         uint256 condBlocknum,
         bytes32 condHash
     ) public {
-        require(agreements.length > agreement, "illegal agreement");
-        require(agreements[agreement].chosen == -1, "closed agreement");
-        require(agreements[agreement].origin == msg.sender, "not originator");
-        require(ibid >= 0, "illegal bid");
-        uint64 ubid;
-        ubid = uint64(ibid);
-        require(aBids[agreement].length > ubid, "illegal bid");
-        require(aBids[agreement][ubid].meta == meta, "wrong bid meta");
+        require(agreements.length > agreementId, "illegal agreement");
+        require(agreements[agreementId].chosen == -1, "closed agreement");
+        require(agreements[agreementId].origin == msg.sender, "not originator");
+        require(aBids[agreementId].length > bidId, "illegal bid");
+        require(aBids[agreementId][bidId].meta == meta, "wrong bid meta");
 
         if (condBlocknum > 0) {
             require(ARB_SYS.arbBlockHash(condBlocknum) == condHash, "condition not met");
         }
-        agreements[agreement].chosen = ibid;
+        // this cast is safe because bidId is less than int64.max
+        agreements[agreementId].chosen = int64(uint64(bidId));
     }
 
     function sendResult(
-        uint64 agreement,
+        uint256 agreementId,
         address destChain,
         address destContract,
         uint256 gasLimit,
         uint256 maxFeePerGas,
         uint256 maxSubmissionCost
     ) external payable {
-        require(agreements.length > agreement, "illegal agreement");
-        require(agreements[agreement].chosen > 0, "open agreement");
-        uint64 ubid = uint64(agreements[agreement].chosen);
-        Bid memory _bid = aBids[agreement][ubid]; // workaround stack too deep
+        require(agreements.length > agreementId, "illegal agreement");
+        require(agreements[agreementId].chosen > 0, "open agreement");
+        uint64 ubid = uint64(agreements[agreementId].chosen);
+        Bid memory _bid = aBids[agreementId][ubid]; // workaround stack too deep
 
         uint256 l2CallValue = msg.value - maxSubmissionCost - maxFeePerGas * gasLimit;
         IInbox(destChain).createRetryableTicket{value: msg.value}({
@@ -84,10 +83,7 @@ contract InteropParent is IInteropParent {
             callValueRefundAddress: address(0),
             gasLimit: gasLimit,
             maxFeePerGas: maxFeePerGas,
-            data: abi.encodeCall(
-                IInteropChild.receiveResult,
-                (_bid.counter, _bid.meta)
-            )
+            data: abi.encodeCall(IInteropChild.receiveResult, (_bid.counter, _bid.meta))
         });
     }
 }

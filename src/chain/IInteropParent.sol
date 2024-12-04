@@ -13,7 +13,7 @@ interface IInteropParent {
     }
 
     function agreements(uint256 index) external view returns (address origin, int64 chosen);
-    function aBids(uint256 agreement, uint256 index)
+    function aBids(uint256 agreementId, uint256 bidId)
         external
         view
         returns (address counter, bytes32 meta);
@@ -21,7 +21,7 @@ interface IInteropParent {
     function create() external returns (uint256);
 
     function bid(
-        uint64 agreement,
+        uint256 agreementId,
         address counter,
         bytes32 meta,
         uint256 condBlocknum,
@@ -29,15 +29,15 @@ interface IInteropParent {
     ) external returns (uint256);
 
     function agree(
-        uint64 agreement,
-        int64 ibid,
+        uint256 agreementId,
+        uint256 bidId,
         bytes32 meta,
         uint256 condBlocknum,
         bytes32 condHash
     ) external;
 
     function sendResult(
-        uint64 agreement,
+        uint256 agreementId,
         address destChain,
         address destContract,
         uint256 gasLimit,
