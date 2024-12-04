@@ -14,7 +14,7 @@ contract InteropParent is IInteropParent {
 
     // TODO: make aggreement id and bid id reorg safe
     Agreement[] public agreements;
-    mapping(uint256 => Bid[]) public aBids;
+    mapping(uint256 agreementId => Bid[]) public aBids;
 
     function create() public returns (uint256) {
         uint256 agreementId = agreements.length;
