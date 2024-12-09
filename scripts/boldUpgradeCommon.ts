@@ -34,9 +34,17 @@ export const getConfig = async (
   if (!config) {
     throw new Error('config not found')
   }
-  if (process.env.ROLLUP_ADDRESS) {
-    console.log('Using ROLLUP_ADDRESS from env:', process.env.ROLLUP_ADDRESS)
-    config.contracts.rollup = process.env.ROLLUP_ADDRESS
+  // in testnode mode we allow some config to be overridden from env for easier testing
+  if (process.env.TESTNODE_MODE) {
+    console.log('In testnode mode')
+    if (process.env.ROLLUP_ADDRESS) {
+      console.log('Using ROLLUP_ADDRESS from env:', process.env.ROLLUP_ADDRESS)
+      config.contracts.rollup = process.env.ROLLUP_ADDRESS
+    }
+    if (process.env.STAKE_TOKEN) {
+      console.log('Using STAKE_TOKEN from env:', process.env.STAKE_TOKEN)
+      config.settings.stakeToken = process.env.STAKE_TOKEN
+    }
   }
   await validateConfig(config, l1Rpc)
   return config
@@ -139,6 +147,9 @@ export const validateConfig = async (
   }
   if (config.settings.stakeToken.length === 0) {
     throw new Error('stakeToken address is empty')
+  }
+  if ((await l1Rpc.getCode(config.settings.stakeToken)).length <= 2) {
+    throw new Error('stakeToken address is not a contract')
   }
   if (config.settings.chainId === 0) {
     throw new Error('chainId is 0')
