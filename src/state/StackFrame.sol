@@ -21,32 +21,39 @@ struct StackFrameWindow {
 library StackFrameLib {
     using ValueLib for Value;
 
-    function hash(StackFrame memory frame) internal pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encodePacked(
-                    "Stack frame:",
-                    frame.returnPc.hash(),
-                    frame.localsMerkleRoot,
-                    frame.callerModule,
-                    frame.callerModuleInternals
-                )
-            );
+    function hash(
+        StackFrame memory frame
+    ) internal pure returns (bytes32) {
+        return keccak256(
+            abi.encodePacked(
+                "Stack frame:",
+                frame.returnPc.hash(),
+                frame.localsMerkleRoot,
+                frame.callerModule,
+                frame.callerModuleInternals
+            )
+        );
     }
 
-    function hash(StackFrameWindow memory window) internal pure returns (bytes32 h) {
+    function hash(
+        StackFrameWindow memory window
+    ) internal pure returns (bytes32 h) {
         h = window.remainingHash;
         for (uint256 i = 0; i < window.proved.length; i++) {
             h = keccak256(abi.encodePacked("Stack frame stack:", hash(window.proved[i]), h));
         }
     }
 
-    function peek(StackFrameWindow memory window) internal pure returns (StackFrame memory) {
+    function peek(
+        StackFrameWindow memory window
+    ) internal pure returns (StackFrame memory) {
         require(window.proved.length == 1, "BAD_WINDOW_LENGTH");
         return window.proved[0];
     }
 
-    function pop(StackFrameWindow memory window) internal pure returns (StackFrame memory frame) {
+    function pop(
+        StackFrameWindow memory window
+    ) internal pure returns (StackFrame memory frame) {
         require(window.proved.length == 1, "BAD_WINDOW_LENGTH");
         frame = window.proved[0];
         window.proved = new StackFrame[](0);
