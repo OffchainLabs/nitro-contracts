@@ -27,7 +27,7 @@ contract BridgeCreator is Ownable {
 
     error RollupCodeEmpty();
 
-    struct BridgeContracts {
+    struct BridgeTemplates {
         IBridge bridge;
         ISequencerInbox sequencerInbox;
         ISequencerInbox delayBufferableSequencerInbox;
@@ -69,7 +69,7 @@ contract BridgeCreator is Ownable {
     function _createBridge(
         bytes32 create2Salt,
         address adminProxy,
-        BridgeContracts storage templates,
+        BridgeTemplates storage templates,
         bool isDelayBufferable
     ) internal returns (BridgeContracts memory) {
         BridgeContracts memory frame;
