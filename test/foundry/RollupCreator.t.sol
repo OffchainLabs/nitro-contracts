@@ -342,11 +342,12 @@ contract RollupCreatorTest is Test {
         vm.stopPrank();
 
         _postCreateERC20RollupChecks(
-            rollupAddress, batchPosterManager, nativeToken, validators, batchPosters
+            config, rollupAddress, batchPosterManager, nativeToken, validators, batchPosters
         );
     }
 
     function _postCreateERC20RollupChecks(
+        Config memory config,
         address rollupAddress,
         address batchPosterManager,
         address nativeToken,
