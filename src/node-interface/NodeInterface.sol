@@ -4,7 +4,8 @@
 
 pragma solidity >=0.4.21 <0.9.0;
 
-/** @title Interface for providing gas estimation for retryable auto-redeems and constructing outbox proofs
+/**
+ * @title Interface for providing gas estimation for retryable auto-redeems and constructing outbox proofs
  *  @notice This contract doesn't exist on-chain. Instead it is a virtual interface accessible at
  *  0x00000000000000000000000000000000000000C8
  *  This is a cute trick to allow an Arbitrum node to provide data without us having to implement additional RPCs
@@ -41,14 +42,10 @@ interface NodeInterface {
      * @return root the root of the outbox accumulator
      * @return proof level-by-level branch hashes constituting a proof of the send's membership at the given size
      */
-    function constructOutboxProof(uint64 size, uint64 leaf)
-        external
-        view
-        returns (
-            bytes32 send,
-            bytes32 root,
-            bytes32[] memory proof
-        );
+    function constructOutboxProof(
+        uint64 size,
+        uint64 leaf
+    ) external view returns (bytes32 send, bytes32 root, bytes32[] memory proof);
 
     /**
      * @notice Finds the L1 batch containing a requested L2 block, reverting if none does.
@@ -57,7 +54,9 @@ interface NodeInterface {
      * @param blockNum The L2 block being queried
      * @return batch The sequencer batch number containing the requested L2 block
      */
-    function findBatchContainingBlock(uint64 blockNum) external view returns (uint64 batch);
+    function findBatchContainingBlock(
+        uint64 blockNum
+    ) external view returns (uint64 batch);
 
     /**
      * @notice Gets the number of L1 confirmations of the sequencer batch producing the requested L2 block
@@ -68,7 +67,9 @@ interface NodeInterface {
      * @param blockHash The hash of the L2 block being queried
      * @return confirmations The number of L1 confirmations the sequencer batch has. Returns 0 if block not yet included in an L1 batch.
      */
-    function getL1Confirmations(bytes32 blockHash) external view returns (uint64 confirmations);
+    function getL1Confirmations(
+        bytes32 blockHash
+    ) external view returns (uint64 confirmations);
 
     /**
      * @notice Same as native gas estimation, but with additional info on the l1 costs.
@@ -116,11 +117,7 @@ interface NodeInterface {
     )
         external
         payable
-        returns (
-            uint64 gasEstimateForL1,
-            uint256 baseFee,
-            uint256 l1BaseFeeEstimate
-        );
+        returns (uint64 gasEstimateForL1, uint256 baseFee, uint256 l1BaseFeeEstimate);
 
     /**
      * @notice Returns the proof necessary to redeem a message
@@ -136,7 +133,10 @@ interface NodeInterface {
      * @return amount value in L1 message in wei
      * @return calldataForL1 abi-encoded L1 message data
      */
-    function legacyLookupMessageBatchProof(uint256 batchNum, uint64 index)
+    function legacyLookupMessageBatchProof(
+        uint256 batchNum,
+        uint64 index
+    )
         external
         view
         returns (
@@ -158,7 +158,9 @@ interface NodeInterface {
 
     // @notice Returns the L1 block number of the L2 block
     // @return l1BlockNum The L1 block number
-    function blockL1Num(uint64 l2BlockNum) external view returns (uint64 l1BlockNum);
+    function blockL1Num(
+        uint64 l2BlockNum
+    ) external view returns (uint64 l1BlockNum);
 
     /**
      * @notice Finds the L2 block number range that has the given L1 block number
@@ -167,8 +169,7 @@ interface NodeInterface {
      * @return firstBlock The first L2 block number with the given L1 block number
      * @return lastBlock The last L2 block number with the given L1 block number
      */
-    function l2BlockRangeForL1(uint64 blockNum)
-        external
-        view
-        returns (uint64 firstBlock, uint64 lastBlock);
+    function l2BlockRangeForL1(
+        uint64 blockNum
+    ) external view returns (uint64 firstBlock, uint64 lastBlock);
 }

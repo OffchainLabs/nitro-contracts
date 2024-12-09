@@ -20,11 +20,7 @@ contract CacheManagerTest is Test {
         CacheManager cacheManagerImpl = new CacheManager();
         cacheManager = CacheManager(
             address(
-                new TransparentUpgradeableProxy(
-                    address(cacheManagerImpl),
-                    address(proxyAdmin),
-                    ""
-                )
+                new TransparentUpgradeableProxy(address(cacheManagerImpl), address(proxyAdmin), "")
             )
         );
         uint64 cacheSize = 1_000_000;
@@ -50,7 +46,8 @@ contract CacheManagerTest is Test {
             // Deploy bytes(bytes32(i)) as code to a sample program
             // PUSH32 i PUSH1 0 MSTORE PUSH1 32 PUSH1 0 RETURN
             // at the time of writing this our forge version or config doesn't have PUSH0 support
-            bytes memory bytecode = bytes.concat(hex"7F", abi.encodePacked(i), hex"60005260206000F3");
+            bytes memory bytecode =
+                bytes.concat(hex"7F", abi.encodePacked(i), hex"60005260206000F3");
             address program;
             assembly {
                 program := create(0, add(bytecode, 32), mload(bytecode))
@@ -67,7 +64,9 @@ contract CacheManagerTest is Test {
         for (uint256 epoch = 0; epoch < 4; epoch++) {
             for (uint256 round = 0; round < 512; round++) {
                 // roll one of 256 random programs
-                address program = programs[uint256(keccak256(abi.encodePacked("code", epoch, round))) % programs.length];
+                address program = programs[uint256(
+                    keccak256(abi.encodePacked("code", epoch, round))
+                ) % programs.length];
                 bytes32 codehash = program.codehash;
 
                 vm.warp(block.timestamp + 1); // move time forward to test decay and make bid unique
@@ -136,10 +135,9 @@ contract CacheManagerTest is Test {
 
                 cacheManager.placeBid{value: pay}(program);
 
-                if(mustCache) {
+                if (mustCache) {
                     require(
-                        ARB_WASM_CACHE.codehashIsCached(codehash),
-                        "must cache codehash not cached"
+                        ARB_WASM_CACHE.codehashIsCached(codehash), "must cache codehash not cached"
                     );
                 }
 
@@ -181,7 +179,9 @@ contract ArbOwnerPublicMock {
     }
 
     // pretend all smart contracts are chain owners
-    function isChainOwner(address addr) external view returns (bool) {
+    function isChainOwner(
+        address addr
+    ) external view returns (bool) {
         uint256 codeSize;
         assembly {
             codeSize := extcodesize(addr)
@@ -192,7 +192,9 @@ contract ArbOwnerPublicMock {
 
 contract ArbWasmMock {
     // returns a non-uniform distribution of mock code sizes
-    function codehashAsmSize(bytes32 codehash) external pure returns (uint64) {
+    function codehashAsmSize(
+        bytes32 codehash
+    ) external pure returns (uint64) {
         return uint64(uint256(keccak256(abi.encodePacked(codehash))) % 65_536);
     }
 }
@@ -202,7 +204,9 @@ contract ArbWasmCacheMock {
     uint256 public numCached;
     uint256 public uselessCalls;
 
-    function cacheProgram(address addr) external {
+    function cacheProgram(
+        address addr
+    ) external {
         bytes32 codehash = addr.codehash;
         if (codehashIsCached[codehash]) {
             uselessCalls++;
@@ -212,7 +216,9 @@ contract ArbWasmCacheMock {
         numCached++;
     }
 
-    function evictCodehash(bytes32 codehash) external {
+    function evictCodehash(
+        bytes32 codehash
+    ) external {
         if (!codehashIsCached[codehash]) {
             uselessCalls++;
             return;
