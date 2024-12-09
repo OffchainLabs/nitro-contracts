@@ -69,7 +69,7 @@ contract BridgeCreator is Ownable {
     function _createBridge(
         bytes32 create2Salt,
         address adminProxy,
-        BridgeTemplates storage templates,
+        BridgeTemplates memory templates,
         bool isDelayBufferable
     ) internal returns (BridgeContracts memory) {
         BridgeContracts memory frame;
