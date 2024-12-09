@@ -11,6 +11,7 @@ import "../../src/libraries/AddressAliasHelper.sol";
 import "../../src/libraries/Error.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
+import {NoZeroTransferToken} from "./util/NoZeroTransferToken.sol";
 
 contract ERC20InboxTest is AbsInboxTest {
     IERC20 public nativeToken;
@@ -613,6 +614,63 @@ contract ERC20InboxTest is AbsInboxTest {
             tokenTotalFeeAmount,
             "Invalid user token balance"
         );
+
+        assertEq(_bridge.delayedMessageCount(), 1, "Invalid delayed message count");
+    }
+
+    function test_createRetryableTicket_FromEOA_NoZeroTransferToken() public {
+        ERC20 _nativeToken = new NoZeroTransferToken("Appchain Token", "App", 1_000_000 ether, user);
+
+        IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
+        IERC20Inbox _inbox = IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+
+        // init bridge and inbox
+        address _rollup = makeAddr("_rollup");
+        _bridge.initialize(IOwnable(_rollup), address(_nativeToken));
+        _inbox.initialize(_bridge, ISequencerInbox(makeAddr("_seqInbox")));
+        vm.prank(_rollup);
+        _bridge.setDelayedInbox(address(_inbox), true);
+
+        // retyrable params
+        uint256 l2CallValue = 0;
+        uint256 maxSubmissionCost = 0;
+        uint256 gasLimit = 0;
+        uint256 maxFeePerGas = 0;
+        bytes memory data = abi.encodePacked("some msg");
+
+        {
+            // expect event
+            vm.expectEmit(true, true, true, true);
+            emit InboxMessageDelivered(
+                0,
+                abi.encodePacked(
+                    uint256(uint160(user)),
+                    l2CallValue,
+                    uint256(0),
+                    maxSubmissionCost,
+                    uint256(uint160(user)),
+                    uint256(uint160(user)),
+                    gasLimit,
+                    maxFeePerGas,
+                    data.length,
+                    data
+                )
+            );
+        }
+
+        // create retryable -> tx.origin == msg.sender
+        vm.prank(user, user);
+        _inbox.createRetryableTicket({
+            to: address(user),
+            l2CallValue: l2CallValue,
+            maxSubmissionCost: maxSubmissionCost,
+            excessFeeRefundAddress: user,
+            callValueRefundAddress: user,
+            gasLimit: gasLimit,
+            maxFeePerGas: maxFeePerGas,
+            tokenTotalFeeAmount: 0,
+            data: data
+        });
 
         assertEq(_bridge.delayedMessageCount(), 1, "Invalid delayed message count");
     }
