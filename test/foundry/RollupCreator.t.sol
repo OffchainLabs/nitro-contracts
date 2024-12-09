@@ -112,7 +112,9 @@ contract RollupCreatorTest is Test {
             baseStake: 1000,
             chainId: 1337,
             chainConfig: "abc",
-            confirmPeriodBlocks: 20,
+            minimumAssertionPeriod: 75,
+            validatorAfkBlocks: 1234,
+            confirmPeriodBlocks: 567,
             owner: rollupOwner,
             sequencerInboxMaxTimeVariation: timeVars,
             stakeToken: address(token),
@@ -183,6 +185,12 @@ contract RollupCreatorTest is Test {
             rollup.sequencerInbox().batchPosterManager(),
             batchPosterManager,
             "Invalid batch poster manager"
+        );
+        assertEq(
+            rollup.validatorAfkBlocks(), config.validatorAfkBlocks, "Invalid validatorAfkBlocks"
+        );
+        assertEq(
+            rollup.confirmPeriodBlocks(), config.confirmPeriodBlocks, "Invalid confirmPeriodBlocks"
         );
 
         // check proxy admin for non-rollup contracts
@@ -285,7 +293,9 @@ contract RollupCreatorTest is Test {
             baseStake: 1000,
             chainId: 1337,
             chainConfig: "abc",
-            confirmPeriodBlocks: 20,
+            minimumAssertionPeriod: 75,
+            validatorAfkBlocks: 1234,
+            confirmPeriodBlocks: 567,
             owner: rollupOwner,
             sequencerInboxMaxTimeVariation: timeVars,
             stakeToken: address(token),
@@ -332,11 +342,12 @@ contract RollupCreatorTest is Test {
         vm.stopPrank();
 
         _postCreateERC20RollupChecks(
-            rollupAddress, batchPosterManager, nativeToken, validators, batchPosters
+            config, rollupAddress, batchPosterManager, nativeToken, validators, batchPosters
         );
     }
 
     function _postCreateERC20RollupChecks(
+        Config memory config,
         address rollupAddress,
         address batchPosterManager,
         address nativeToken,
@@ -370,6 +381,12 @@ contract RollupCreatorTest is Test {
             ISequencerInbox(address(rollup.sequencerInbox())).batchPosterManager(),
             batchPosterManager,
             "Invalid batch poster manager"
+        );
+        assertEq(
+            rollup.validatorAfkBlocks(), config.validatorAfkBlocks, "Invalid validatorAfkBlocks"
+        );
+        assertEq(
+            rollup.confirmPeriodBlocks(), config.confirmPeriodBlocks, "Invalid confirmPeriodBlocks"
         );
 
         // native token check
@@ -456,7 +473,9 @@ contract RollupCreatorTest is Test {
             baseStake: 1000,
             chainId: 1337,
             chainConfig: "abc",
-            confirmPeriodBlocks: 20,
+            minimumAssertionPeriod: 75,
+            validatorAfkBlocks: 1234,
+            confirmPeriodBlocks: 567,
             owner: rollupOwner,
             sequencerInboxMaxTimeVariation: timeVars,
             stakeToken: address(token),

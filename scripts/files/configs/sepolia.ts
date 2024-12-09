@@ -28,6 +28,8 @@ export const sepolia: Config = {
     stakeAmt: parseEther('36'), // 1/100th of arb1, same for mini stakes
     miniStakeAmounts: [parseEther('0'), parseEther('5.5'), parseEther('0.79')],
     chainId: 421614,
+    minimumAssertionPeriod: 75,
+    validatorAfkBlocks: 201600,
     disableValidatorWhitelist: false,
     blockLeafSize: 2 ** 26, // leaf sizes same as arb1
     bigStepLeafSize: 2 ** 19,

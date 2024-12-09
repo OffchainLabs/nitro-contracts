@@ -76,6 +76,8 @@ export interface Config {
     stakeAmt: BigNumber
     miniStakeAmounts: BigNumber[]
     chainId: number
+    minimumAssertionPeriod: number
+    validatorAfkBlocks: number
     disableValidatorWhitelist: boolean
     maxDataSize: number
     blockLeafSize: number
