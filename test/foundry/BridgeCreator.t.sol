@@ -260,12 +260,17 @@ contract BridgeCreatorTest is Test {
             address(new ERC20PresetFixedSupply("Appchain Token", "App", 1_000_000, address(this)));
         ISequencerInbox.MaxTimeVariation memory timeVars =
             ISequencerInbox.MaxTimeVariation(10, 20, 30, 40);
+        BufferConfig memory bufferConfig = BufferConfig({
+            threshold: type(uint64).max,
+            max: type(uint64).max,
+            replenishRateInBasis: 0
+        });
 
         // give the proxy admin some code
         vm.etch(proxyAdmin, hex"0123");
 
         // empty rollup should revert
         vm.expectRevert(BridgeCreator.RollupCodeEmpty.selector);
-        creator.createBridge(proxyAdmin, rollup, nativeToken, timeVars);
+        creator.createBridge(proxyAdmin, rollup, nativeToken, timeVars, bufferConfig);
     }
 }
