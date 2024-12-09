@@ -1,5 +1,5 @@
 // Copyright 2021-2022, Offchain Labs, Inc.
-// For license information, see https://github.com/nitro/blob/master/LICENSE
+// For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity ^0.8.4;
@@ -13,7 +13,6 @@ import {
     CallNotAllowed,
     NativeTokenDecimalsTooLarge
 } from "../libraries/Error.sol";
-import {DecimalsConverterHelper} from "../libraries/DecimalsConverterHelper.sol";
 import {MAX_ALLOWED_NATIVE_TOKEN_DECIMALS} from "../libraries/Constants.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -42,7 +41,10 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
     uint8 public nativeTokenDecimals;
 
     /// @inheritdoc IERC20Bridge
-    function initialize(IOwnable rollup_, address nativeToken_) external initializer onlyDelegated {
+    function initialize(
+        IOwnable rollup_,
+        address nativeToken_
+    ) external initializer onlyDelegated {
         if (nativeToken_ == address(0)) revert InvalidTokenSet(nativeToken_);
         nativeToken = nativeToken_;
         _activeOutbox = EMPTY_ACTIVEOUTBOX;
@@ -72,7 +74,9 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
         return _enqueueDelayedMessage(kind, sender, messageDataHash, tokenFeeAmount);
     }
 
-    function _transferFunds(uint256 amount) internal override {
+    function _transferFunds(
+        uint256 amount
+    ) internal override {
         // fetch native token from Inbox
         if (amount > 0) {
             IERC20(nativeToken).safeTransferFrom(msg.sender, address(this), amount);

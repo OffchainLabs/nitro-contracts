@@ -7,5 +7,5 @@ pragma solidity >=0.6.9 <0.9.0;
 
 import "../bridge/IBridge.sol";
 import "../bridge/IOutbox.sol";
-import "../bridge/IInboxBase.sol";
+import "../bridge/IInbox.sol";
 import "../bridge/ISequencerInbox.sol";

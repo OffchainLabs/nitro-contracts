@@ -88,7 +88,8 @@ contract ERC20InboxTest is AbsInboxTest {
         ERC20 _nativeToken = new ERC20_6Decimals();
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        IERC20Inbox _inbox = IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+        IERC20Inbox _inbox =
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -144,7 +145,8 @@ contract ERC20InboxTest is AbsInboxTest {
         ERC20 _nativeToken = new ERC20_20Decimals();
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        IERC20Inbox _inbox = IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+        IERC20Inbox _inbox =
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -199,7 +201,8 @@ contract ERC20InboxTest is AbsInboxTest {
         ERC20 _nativeToken = new ERC20NoDecimals();
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        IERC20Inbox _inbox = IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+        IERC20Inbox _inbox =
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -298,8 +301,7 @@ contract ERC20InboxTest is AbsInboxTest {
         // expect event
         vm.expectEmit(true, true, true, true);
         emit InboxMessageDelivered(
-            0,
-            abi.encodePacked(AddressAliasHelper.applyL1ToL2Alias(user), depositAmount)
+            0, abi.encodePacked(AddressAliasHelper.applyL1ToL2Alias(user), depositAmount)
         );
 
         // deposit tokens -> tx.origin != msg.sender
@@ -330,7 +332,8 @@ contract ERC20InboxTest is AbsInboxTest {
         ERC20 _nativeToken = new ERC20_6Decimals();
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        IERC20Inbox _inbox = IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+        IERC20Inbox _inbox =
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -344,9 +347,7 @@ contract ERC20InboxTest is AbsInboxTest {
 
         uint256 depositAmountTooHigh = type(uint256).max / 10;
 
-        vm.expectRevert(
-            abi.encodeWithSelector(AmountTooLarge.selector, depositAmountTooHigh)
-        );
+        vm.expectRevert(abi.encodeWithSelector(AmountTooLarge.selector, depositAmountTooHigh));
         vm.prank(user, user);
         _inbox.depositERC20(depositAmountTooHigh);
     }
@@ -447,7 +448,8 @@ contract ERC20InboxTest is AbsInboxTest {
         ERC20 _nativeToken = new ERC20_6Decimals();
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        IERC20Inbox _inbox = IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+        IERC20Inbox _inbox =
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -535,7 +537,8 @@ contract ERC20InboxTest is AbsInboxTest {
         ERC20 _nativeToken = new ERC20_20Decimals();
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        IERC20Inbox _inbox = IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+        IERC20Inbox _inbox =
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -622,7 +625,8 @@ contract ERC20InboxTest is AbsInboxTest {
         ERC20 _nativeToken = new NoZeroTransferToken("Appchain Token", "App", 1_000_000 ether, user);
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        IERC20Inbox _inbox = IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+        IERC20Inbox _inbox =
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -817,7 +821,8 @@ contract ERC20InboxTest is AbsInboxTest {
         ERC20 _nativeToken = new ERC20_6Decimals();
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        IERC20Inbox _inbox = IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+        IERC20Inbox _inbox =
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -866,7 +871,8 @@ contract ERC20InboxTest is AbsInboxTest {
         ERC20 _nativeToken = new ERC20_20Decimals();
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        IERC20Inbox _inbox = IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+        IERC20Inbox _inbox =
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -1193,7 +1199,8 @@ contract ERC20InboxTest is AbsInboxTest {
         ERC20 _nativeToken = new ERC20_6Decimals();
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        IERC20Inbox _inbox = IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+        IERC20Inbox _inbox =
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -1243,7 +1250,8 @@ contract ERC20InboxTest is AbsInboxTest {
         ERC20 _nativeToken = new ERC20_20Decimals();
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        IERC20Inbox _inbox = IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+        IERC20Inbox _inbox =
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -1293,7 +1301,8 @@ contract ERC20InboxTest is AbsInboxTest {
         ERC20 _nativeToken = new ERC20_6Decimals();
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        IERC20Inbox _inbox = IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+        IERC20Inbox _inbox =
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -1341,7 +1350,8 @@ contract ERC20InboxTest is AbsInboxTest {
         ERC20 _nativeToken = new ERC20_20Decimals();
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        IERC20Inbox _inbox = IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+        IERC20Inbox _inbox =
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");

@@ -21,14 +21,18 @@ interface IInboxBase is IDelayedMessageProvider {
      * @dev This method is an optimization to avoid having to emit the entirety of the messageData in a log. Instead validators are expected to be able to parse the data from the transaction's input
      * @param messageData Data of the message being sent
      */
-    function sendL2MessageFromOrigin(bytes calldata messageData) external returns (uint256);
+    function sendL2MessageFromOrigin(
+        bytes calldata messageData
+    ) external returns (uint256);
 
     /**
      * @notice Send a generic L2 message to the chain
      * @dev This method can be used to send any type of message that doesn't require L1 validation
      * @param messageData Data of the message being sent
      */
-    function sendL2Message(bytes calldata messageData) external returns (uint256);
+    function sendL2Message(
+        bytes calldata messageData
+    ) external returns (uint256);
 
     function sendUnsignedTransaction(
         uint256 gasLimit,
@@ -54,10 +58,10 @@ interface IInboxBase is IDelayedMessageProvider {
      * @param dataLength The length of the retryable's calldata, in bytes
      * @param baseFee The block basefee when the retryable is included in the chain, if 0 current block.basefee will be used
      */
-    function calculateRetryableSubmissionFee(uint256 dataLength, uint256 baseFee)
-        external
-        view
-        returns (uint256);
+    function calculateRetryableSubmissionFee(
+        uint256 dataLength,
+        uint256 baseFee
+    ) external view returns (uint256);
 
     // ---------- onlyRollupOrOwner functions ----------
 
@@ -71,10 +75,14 @@ interface IInboxBase is IDelayedMessageProvider {
     function setAllowList(address[] memory user, bool[] memory val) external;
 
     /// @notice enable or disable allowList
-    function setAllowListEnabled(bool _allowListEnabled) external;
+    function setAllowListEnabled(
+        bool _allowListEnabled
+    ) external;
 
     /// @notice check if user is in allowList
-    function isAllowed(address user) external view returns (bool);
+    function isAllowed(
+        address user
+    ) external view returns (bool);
 
     /// @notice check if allowList is enabled
     function allowListEnabled() external view returns (bool);

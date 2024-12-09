@@ -16,16 +16,9 @@ contract MessageTester {
         uint256 gasPriceL1,
         bytes32 messageDataHash
     ) public pure returns (bytes32) {
-        return
-            Messages.messageHash(
-                messageType,
-                sender,
-                blockNumber,
-                timestamp,
-                inboxSeqNum,
-                gasPriceL1,
-                messageDataHash
-            );
+        return Messages.messageHash(
+            messageType, sender, blockNumber, timestamp, inboxSeqNum, gasPriceL1, messageDataHash
+        );
     }
 
     function accumulateInboxMessage(bytes32 inbox, bytes32 message) public pure returns (bytes32) {
