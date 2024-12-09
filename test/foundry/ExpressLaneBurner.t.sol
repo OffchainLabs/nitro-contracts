@@ -2,9 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
-import {
-    ERC20BurnableUpgradeable
-} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
+import {ERC20BurnableUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
 import {Burner} from "../../src/express-lane-auction/Burner.sol";
 import "../../src/express-lane-auction/Errors.sol";
 

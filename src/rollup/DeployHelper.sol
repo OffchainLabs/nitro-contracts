@@ -51,10 +51,7 @@ contract DeployHelper {
         address _nativeToken,
         uint256 maxFeePerGas
     ) internal {
-        uint256 submissionCost = IInboxBase(inbox).calculateRetryableSubmissionFee(
-            0,
-            block.basefee
-        );
+        uint256 submissionCost = IInboxBase(inbox).calculateRetryableSubmissionFee(0, block.basefee);
         uint256 feeAmount = _value + submissionCost + GASLIMIT * maxFeePerGas;
 
         // fund the target L2 address
@@ -63,13 +60,13 @@ contract DeployHelper {
             uint256 feeAmountNativeDenominated = feeAmount;
             uint8 decimals = ERC20(_nativeToken).decimals();
             if (decimals < 18) {
-                feeAmountNativeDenominated = feeAmount / (10**(18 - decimals));
+                feeAmountNativeDenominated = feeAmount / (10 ** (18 - decimals));
                 // round up if necessary
-                if (feeAmountNativeDenominated * (10**(18 - decimals)) < feeAmount) {
+                if (feeAmountNativeDenominated * (10 ** (18 - decimals)) < feeAmount) {
                     feeAmountNativeDenominated++;
                 }
             } else if (decimals > 18) {
-                feeAmountNativeDenominated = feeAmount * (10**(decimals - 18));
+                feeAmountNativeDenominated = feeAmount * (10 ** (decimals - 18));
             }
 
             IERC20Inbox(inbox).createRetryableTicket({
@@ -113,12 +110,7 @@ contract DeployHelper {
             _maxFeePerGas
         );
         _fundAndDeploy(
-            _inbox,
-            ERC2470_VALUE,
-            ERC2470_DEPLOYER,
-            ERC2470_PAYLOAD,
-            _nativeToken,
-            _maxFeePerGas
+            _inbox, ERC2470_VALUE, ERC2470_DEPLOYER, ERC2470_PAYLOAD, _nativeToken, _maxFeePerGas
         );
         _fundAndDeploy(
             _inbox,
@@ -129,12 +121,7 @@ contract DeployHelper {
             _maxFeePerGas
         );
         _fundAndDeploy(
-            _inbox,
-            ERC1820_VALUE,
-            ERC1820_DEPLOYER,
-            ERC1820_PAYLOAD,
-            _nativeToken,
-            _maxFeePerGas
+            _inbox, ERC1820_VALUE, ERC1820_DEPLOYER, ERC1820_PAYLOAD, _nativeToken, _maxFeePerGas
         );
 
         // if paying with ETH refund the caller
@@ -143,18 +130,12 @@ contract DeployHelper {
         }
     }
 
-    function getDeploymentTotalCost(IInboxBase inbox, uint256 maxFeePerGas)
-        public
-        view
-        returns (uint256)
-    {
+    function getDeploymentTotalCost(
+        IInboxBase inbox,
+        uint256 maxFeePerGas
+    ) public view returns (uint256) {
         uint256 submissionCost = inbox.calculateRetryableSubmissionFee(0, block.basefee);
-        return
-            NICK_CREATE2_VALUE +
-            ERC2470_VALUE +
-            ZOLTU_VALUE +
-            ERC1820_VALUE +
-            4 *
-            (submissionCost + GASLIMIT * maxFeePerGas);
+        return NICK_CREATE2_VALUE + ERC2470_VALUE + ZOLTU_VALUE + ERC1820_VALUE
+            + 4 * (submissionCost + GASLIMIT * maxFeePerGas);
     }
 }

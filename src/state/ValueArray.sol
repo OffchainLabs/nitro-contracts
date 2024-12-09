@@ -15,15 +15,13 @@ library ValueArrayLib {
         return arr.inner[index];
     }
 
-    function set(
-        ValueArray memory arr,
-        uint256 index,
-        Value memory val
-    ) internal pure {
+    function set(ValueArray memory arr, uint256 index, Value memory val) internal pure {
         arr.inner[index] = val;
     }
 
-    function length(ValueArray memory arr) internal pure returns (uint256) {
+    function length(
+        ValueArray memory arr
+    ) internal pure returns (uint256) {
         return arr.inner.length;
     }
 
@@ -36,7 +34,9 @@ library ValueArrayLib {
         arr.inner = newInner;
     }
 
-    function pop(ValueArray memory arr) internal pure returns (Value memory popped) {
+    function pop(
+        ValueArray memory arr
+    ) internal pure returns (Value memory popped) {
         popped = arr.inner[arr.inner.length - 1];
         Value[] memory newInner = new Value[](arr.inner.length - 1);
         for (uint256 i = 0; i < newInner.length; i++) {

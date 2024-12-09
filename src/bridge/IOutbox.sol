@@ -10,21 +10,24 @@ import "./IBridge.sol";
 interface IOutbox {
     event SendRootUpdated(bytes32 indexed outputRoot, bytes32 indexed l2BlockHash);
     event OutBoxTransactionExecuted(
-        address indexed to,
-        address indexed l2Sender,
-        uint256 indexed zero,
-        uint256 transactionIndex
+        address indexed to, address indexed l2Sender, uint256 indexed zero, uint256 transactionIndex
     );
 
-    function initialize(IBridge _bridge) external;
+    function initialize(
+        IBridge _bridge
+    ) external;
 
     function rollup() external view returns (address); // the rollup contract
 
     function bridge() external view returns (IBridge); // the bridge contract
 
-    function spent(uint256) external view returns (bytes32); // packed spent bitmap
+    function spent(
+        uint256
+    ) external view returns (bytes32); // packed spent bitmap
 
-    function roots(bytes32) external view returns (bytes32); // maps root hashes => L2 block hash
+    function roots(
+        bytes32
+    ) external view returns (bytes32); // maps root hashes => L2 block hash
 
     // solhint-disable-next-line func-name-mixedcase
     function OUTBOX_VERSION() external view returns (uint128); // the outbox version
@@ -104,7 +107,9 @@ interface IOutbox {
      * @param index Merkle path to message
      * @return true if the message has been spent
      */
-    function isSpent(uint256 index) external view returns (bool);
+    function isSpent(
+        uint256 index
+    ) external view returns (bool);
 
     function calculateItemHash(
         address l2Sender,

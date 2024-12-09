@@ -61,10 +61,7 @@ contract OutboxTest is AbsOutboxTest {
         bytes32 root = outbox.calculateMerkleRoot(proof, index, itemHash);
         // store root
         vm.prank(rollup);
-        outbox.updateSendRoot(
-            root,
-            bytes32(uint256(1))
-        );
+        outbox.updateSendRoot(root, bytes32(uint256(1)));
 
         outbox.executeTransaction({
             proof: proof,
@@ -133,7 +130,9 @@ contract L2ToL1Target {
         withdrawalAmount = msg.value;
     }
 
-    function setOutbox(address _outbox) external {
+    function setOutbox(
+        address _outbox
+    ) external {
         outbox = _outbox;
     }
 }

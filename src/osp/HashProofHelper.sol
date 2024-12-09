@@ -30,10 +30,10 @@ contract HashProofHelper {
     uint256 private constant MAX_PART_LENGTH = 32;
     uint256 private constant KECCAK_ROUND_INPUT = 136;
 
-    function proveWithFullPreimage(bytes calldata data, uint64 offset)
-        external
-        returns (bytes32 fullHash)
-    {
+    function proveWithFullPreimage(
+        bytes calldata data,
+        uint64 offset
+    ) external returns (bytes32 fullHash) {
         fullHash = keccak256(data);
         bytes memory part;
         if (data.length > offset) {
@@ -96,11 +96,7 @@ contract HashProofHelper {
         delete keccakStates[msg.sender];
     }
 
-    function keccakUpdate(
-        KeccakState storage state,
-        bytes calldata data,
-        bool isFinal
-    ) internal {
+    function keccakUpdate(KeccakState storage state, bytes calldata data, bool isFinal) internal {
         state.length += data.length;
         while (true) {
             if (data.length == 0 && !isFinal) {
@@ -144,7 +140,10 @@ contract HashProofHelper {
     }
 
     /// Retrieves up to 32 bytes of the preimage of fullHash at the given offset, reverting if it hasn't been proven yet.
-    function getPreimagePart(bytes32 fullHash, uint64 offset) external view returns (bytes memory) {
+    function getPreimagePart(
+        bytes32 fullHash,
+        uint64 offset
+    ) external view returns (bytes memory) {
         PreimagePart storage part = preimageParts[fullHash][offset];
         if (!part.proven) {
             revert NotProven(fullHash, offset);

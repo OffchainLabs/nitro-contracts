@@ -34,11 +34,10 @@ library BalanceLib {
     ///         of this account is returned. Otherwise 0.
     /// @param bal The balance to query
     /// @param round The round to check the withdrawable balance in
-    function withdrawableBalanceAtRound(Balance storage bal, uint64 round)
-        internal
-        view
-        returns (uint256)
-    {
+    function withdrawableBalanceAtRound(
+        Balance storage bal,
+        uint64 round
+    ) internal view returns (uint256) {
         return round >= bal.withdrawalRound ? bal.balance : 0;
     }
 
@@ -72,11 +71,7 @@ library BalanceLib {
     /// @param round The round to check withdrawals against. A withdrawal after this round will be ignored
     ///              and the balance reduced anyway, withdrawals before or on this round will be respected
     ///              and the reduce will revert
-    function reduce(
-        Balance storage bal,
-        uint256 amount,
-        uint64 round
-    ) internal {
+    function reduce(Balance storage bal, uint256 amount, uint64 round) internal {
         uint256 balRnd = balanceAtRound(bal, round);
         // we add a zero check since it's possible for the amount to be zero
         // but even in that case the user must have some balance

@@ -5,6 +5,7 @@ import "./AbsRollupEventInbox.t.sol";
 import {TestUtil} from "./util/TestUtil.sol";
 import {RollupEventInbox, IRollupEventInbox} from "../../src/rollup/RollupEventInbox.sol";
 import {Bridge, IOwnable, IEthBridge} from "../../src/bridge/Bridge.sol";
+import {INITIALIZATION_MSG_TYPE} from "../../src/libraries/MessageTypes.sol";
 import "../../src/libraries/MessageTypes.sol";
 
 contract RollupEventInboxTest is AbsRollupEventInboxTest {

@@ -10,7 +10,9 @@ contract FactoryDeployerHelper {
     address public constant DEPLOY_HELPER = address(0x90D68B056c411015eaE3EC0b98AD94E2C91419F1);
     uint256 public constant MAX_FEE_PER_GAS = 100_000_000;
 
-    function deploy(address inbox) external {
+    function deploy(
+        address inbox
+    ) external {
         deploy(inbox, MAX_FEE_PER_GAS);
     }
 
@@ -25,18 +27,14 @@ contract FactoryDeployerHelper {
 }
 
 interface IERC20 {
-    function transferFrom(
-        address from,
-        address to,
-        uint256 value
-    ) external returns (bool);
+    function transferFrom(address from, address to, uint256 value) external returns (bool);
 }
 
 interface IDeployHelper {
-    function getDeploymentTotalCost(address inbox, uint256 maxFeePerGas)
-        external
-        view
-        returns (uint256);
+    function getDeploymentTotalCost(
+        address inbox,
+        uint256 maxFeePerGas
+    ) external view returns (uint256);
 
     function perform(
         address _inbox,

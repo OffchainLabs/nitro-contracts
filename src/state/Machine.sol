@@ -1,4 +1,4 @@
-// Copyright 2021-2023, Offchain Labs, Inc.
+// Copyright 2021-2022, Offchain Labs, Inc.
 // For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
@@ -12,8 +12,7 @@ import "./StackFrame.sol";
 enum MachineStatus {
     RUNNING,
     FINISHED,
-    ERRORED,
-    TOO_FAR
+    ERRORED
 }
 
 struct Machine {
@@ -38,17 +37,15 @@ library MachineLib {
 
     bytes32 internal constant NO_RECOVERY_PC = ~bytes32(0);
 
-    function hash(Machine memory mach) internal pure returns (bytes32) {
+    function hash(
+        Machine memory mach
+    ) internal pure returns (bytes32) {
         // Warning: the non-running hashes are replicated in Challenge
         if (mach.status == MachineStatus.RUNNING) {
-            bytes32 valueMultiHash = mach.valueMultiStack.hash(
-                mach.valueStack.hash(),
-                mach.recoveryPc != NO_RECOVERY_PC
-            );
-            bytes32 frameMultiHash = mach.frameMultiStack.hash(
-                mach.frameStack.hash(),
-                mach.recoveryPc != NO_RECOVERY_PC
-            );
+            bytes32 valueMultiHash =
+                mach.valueMultiStack.hash(mach.valueStack.hash(), mach.recoveryPc != NO_RECOVERY_PC);
+            bytes32 frameMultiHash =
+                mach.frameMultiStack.hash(mach.frameStack.hash(), mach.recoveryPc != NO_RECOVERY_PC);
             bytes memory preimage = abi.encodePacked(
                 "Machine running:",
                 valueMultiHash,
@@ -65,20 +62,20 @@ library MachineLib {
         } else if (mach.status == MachineStatus.FINISHED) {
             return keccak256(abi.encodePacked("Machine finished:", mach.globalStateHash));
         } else if (mach.status == MachineStatus.ERRORED) {
-            return keccak256(abi.encodePacked("Machine errored:"));
-        } else if (mach.status == MachineStatus.TOO_FAR) {
-            return keccak256(abi.encodePacked("Machine too far:"));
+            return keccak256(abi.encodePacked("Machine errored:", mach.globalStateHash));
         } else {
             revert("BAD_MACH_STATUS");
         }
     }
 
-    function switchCoThreadStacks(Machine memory mach) internal pure {
+    function switchCoThreadStacks(
+        Machine memory mach
+    ) internal pure {
         bytes32 newActiveValue = mach.valueMultiStack.inactiveStackHash;
         bytes32 newActiveFrame = mach.frameMultiStack.inactiveStackHash;
         if (
-            newActiveFrame == MultiStackLib.NO_STACK_HASH ||
-            newActiveValue == MultiStackLib.NO_STACK_HASH
+            newActiveFrame == MultiStackLib.NO_STACK_HASH
+                || newActiveValue == MultiStackLib.NO_STACK_HASH
         ) {
             mach.status = MachineStatus.ERRORED;
             return;
@@ -100,7 +97,9 @@ library MachineLib {
         return true;
     }
 
-    function setPcFromRecovery(Machine memory mach) internal pure returns (bool) {
+    function setPcFromRecovery(
+        Machine memory mach
+    ) internal pure returns (bool) {
         if (!setPcFromData(mach, uint256(mach.recoveryPc))) {
             return false;
         }

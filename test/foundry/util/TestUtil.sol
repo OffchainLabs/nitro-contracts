@@ -5,7 +5,9 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 library TestUtil {
-    function deployProxy(address logic) public returns (address) {
+    function deployProxy(
+        address logic
+    ) public returns (address) {
         ProxyAdmin pa = new ProxyAdmin();
         return address(new TransparentUpgradeableProxy(address(logic), address(pa), ""));
     }
@@ -19,7 +21,9 @@ contract Random {
         return seed;
     }
 
-    function Bytes(uint256 length) public returns (bytes memory) {
+    function Bytes(
+        uint256 length
+    ) public returns (bytes memory) {
         require(length > 0, "Length must be greater than 0");
         bytes memory randomBytes = new bytes(length);
 

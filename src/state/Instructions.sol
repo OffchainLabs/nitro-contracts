@@ -155,14 +155,15 @@ library Instructions {
     uint256 internal constant INBOX_INDEX_SEQUENCER = 0;
     uint256 internal constant INBOX_INDEX_DELAYED = 1;
 
-    function hash(Instruction[] memory code) internal pure returns (bytes32) {
+    function hash(
+        Instruction[] memory code
+    ) internal pure returns (bytes32) {
         // To avoid quadratic expense, we declare a `bytes` early and populate its contents.
         bytes memory data = new bytes(13 + 1 + 34 * code.length);
         assembly {
             // Represents the string "Instructions:", which we place after the length word.
             mstore(
-                add(data, 32),
-                0x496e737472756374696f6e733a00000000000000000000000000000000000000
+                add(data, 32), 0x496e737472756374696f6e733a00000000000000000000000000000000000000
             )
         }
 
