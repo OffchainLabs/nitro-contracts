@@ -256,15 +256,10 @@ contract BridgeCreatorTest is Test {
     function test_emptyRollupShouldRevert() external {
         address proxyAdmin = address(300);
         address rollup = address(301);
-        address nativeToken = address(
-            new ERC20PresetFixedSupply("Appchain Token", "App", 1_000_000, address(this))
-        );
-        ISequencerInbox.MaxTimeVariation memory timeVars = ISequencerInbox.MaxTimeVariation(
-            10,
-            20,
-            30,
-            40
-        );
+        address nativeToken =
+            address(new ERC20PresetFixedSupply("Appchain Token", "App", 1_000_000, address(this)));
+        ISequencerInbox.MaxTimeVariation memory timeVars =
+            ISequencerInbox.MaxTimeVariation(10, 20, 30, 40);
 
         // give the proxy admin some code
         vm.etch(proxyAdmin, hex"0123");

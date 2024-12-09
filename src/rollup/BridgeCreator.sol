@@ -76,9 +76,7 @@ contract BridgeCreator is Ownable {
         frame.bridge = IBridge(
             address(
                 new TransparentUpgradeableProxy{salt: create2Salt}(
-                    address(templates.bridge),
-                    adminProxy,
-                    ""
+                    address(templates.bridge), adminProxy, ""
                 )
             )
         );
@@ -98,27 +96,21 @@ contract BridgeCreator is Ownable {
         frame.inbox = IInboxBase(
             address(
                 new TransparentUpgradeableProxy{salt: create2Salt}(
-                    address(templates.inbox),
-                    adminProxy,
-                    ""
+                    address(templates.inbox), adminProxy, ""
                 )
             )
         );
         frame.rollupEventInbox = IRollupEventInbox(
             address(
                 new TransparentUpgradeableProxy{salt: create2Salt}(
-                    address(templates.rollupEventInbox),
-                    adminProxy,
-                    ""
+                    address(templates.rollupEventInbox), adminProxy, ""
                 )
             )
         );
         frame.outbox = IOutbox(
             address(
                 new TransparentUpgradeableProxy{salt: create2Salt}(
-                    address(templates.outbox),
-                    adminProxy,
-                    ""
+                    address(templates.outbox), adminProxy, ""
                 )
             )
         );
@@ -139,9 +131,8 @@ contract BridgeCreator is Ownable {
         }
 
         // use create2 salt to ensure deterministic addresses
-        bytes32 create2Salt = keccak256(
-            abi.encode(adminProxy, rollup, nativeToken, maxTimeVariation)
-        );
+        bytes32 create2Salt =
+            keccak256(abi.encode(adminProxy, rollup, nativeToken, maxTimeVariation));
         // create delay bufferable sequencer inbox if threshold is non-zero
         bool isDelayBufferable = bufferConfig.threshold != 0;
 

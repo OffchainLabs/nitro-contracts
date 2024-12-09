@@ -185,8 +185,12 @@ contract RollupCreatorTest is Test {
             batchPosterManager,
             "Invalid batch poster manager"
         );
-        assertEq(rollup.validatorAfkBlocks(), config.validatorAfkBlocks, "Invalid validatorAfkBlocks");
-        assertEq(rollup.confirmPeriodBlocks(), config.confirmPeriodBlocks, "Invalid confirmPeriodBlocks");
+        assertEq(
+            rollup.validatorAfkBlocks(), config.validatorAfkBlocks, "Invalid validatorAfkBlocks"
+        );
+        assertEq(
+            rollup.confirmPeriodBlocks(), config.confirmPeriodBlocks, "Invalid confirmPeriodBlocks"
+        );
 
         // check proxy admin for non-rollup contracts
         address proxyAdminExpectedAddress = computeCreateAddress(address(rollupCreator), 1);
@@ -350,8 +354,12 @@ contract RollupCreatorTest is Test {
             batchPosterManager,
             "Invalid batch poster manager"
         );
-        assertEq(rollup.validatorAfkBlocks(), config.validatorAfkBlocks, "Invalid validatorAfkBlocks");
-        assertEq(rollup.confirmPeriodBlocks(), config.confirmPeriodBlocks, "Invalid confirmPeriodBlocks");
+        assertEq(
+            rollup.validatorAfkBlocks(), config.validatorAfkBlocks, "Invalid validatorAfkBlocks"
+        );
+        assertEq(
+            rollup.confirmPeriodBlocks(), config.confirmPeriodBlocks, "Invalid confirmPeriodBlocks"
+        );
 
         // native token check
         IBridge bridge = RollupCore(address(rollupAddress)).bridge();
