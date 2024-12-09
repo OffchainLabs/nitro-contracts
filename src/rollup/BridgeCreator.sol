@@ -131,8 +131,7 @@ contract BridgeCreator is Ownable {
         }
 
         // use create2 salt to ensure deterministic addresses
-        bytes32 create2Salt =
-            keccak256(abi.encode(adminProxy, rollup, nativeToken, maxTimeVariation));
+        bytes32 create2Salt = keccak256(msg.data);
         // create delay bufferable sequencer inbox if threshold is non-zero
         bool isDelayBufferable = bufferConfig.threshold != 0;
 
