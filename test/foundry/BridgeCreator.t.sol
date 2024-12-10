@@ -135,9 +135,6 @@ contract BridgeCreatorTest is Test {
             replenishRateInBasis: 0
         });
 
-        // give the rollup some code, otherwise it will revert
-        vm.etch(rollup, hex"0123");
-
         BridgeCreator.BridgeContracts memory contracts =
             creator.createBridge(proxyAdmin, rollup, nativeToken, timeVars, bufferConfig);
         (
@@ -200,9 +197,6 @@ contract BridgeCreatorTest is Test {
             replenishRateInBasis: 0
         });
 
-        // give the rollup some code, otherwise it will revert
-        vm.etch(rollup, hex"0123");
-
         BridgeCreator.BridgeContracts memory contracts =
             creator.createBridge(proxyAdmin, rollup, nativeToken, timeVars, bufferConfig);
         (
@@ -253,7 +247,7 @@ contract BridgeCreatorTest is Test {
         assertEq(address(outbox.rollup()), rollup, "Invalid rollup ref");
     }
 
-    function test_emptyRollupShouldRevert() external {
+    function test_canOnlyDeployOnce() external {
         address proxyAdmin = address(300);
         address rollup = address(301);
         address nativeToken =
@@ -266,11 +260,14 @@ contract BridgeCreatorTest is Test {
             replenishRateInBasis: 0
         });
 
-        // give the proxy admin some code
-        vm.etch(proxyAdmin, hex"0123");
+        creator.createBridge(proxyAdmin, rollup, nativeToken, timeVars, bufferConfig);
 
-        // empty rollup should revert
-        vm.expectRevert(BridgeCreator.RollupCodeEmpty.selector);
+        // can only deploy once from the same address and config
+        vm.expectRevert();
+        creator.createBridge(proxyAdmin, rollup, nativeToken, timeVars, bufferConfig);
+
+        // can deploy from a different address
+        vm.prank(address(101));
         creator.createBridge(proxyAdmin, rollup, nativeToken, timeVars, bufferConfig);
     }
 }
