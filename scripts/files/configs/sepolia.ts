@@ -36,8 +36,8 @@ export const sepolia: Config = {
     maxDataSize: 117964,
     isDelayBufferable: true,
     bufferConfig: {
-      max: hoursToBlocks(24 * 365), // 365 days, effectively disableing and will be enabled later
-      threshold: hoursToBlocks(24 * 365), // 365 days, effectively disableing and will be enabled later
+      max: 2 ** 32, // effectively disableing and will be enabled later
+      threshold: 2 ** 32, // 365 days, effectively disableing and will be enabled later
       replenishRateInBasis: 500, // 5% replenishment rate
     },
   },
