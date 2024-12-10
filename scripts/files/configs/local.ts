@@ -43,8 +43,8 @@ export const local: Config = {
     maxDataSize: 117964,
     isDelayBufferable: true,
     bufferConfig: {
-      max: 14400,
-      threshold: 300,
+      max: 2 ** 32, // effectively disableing and will be enabled later
+      threshold: 2 ** 32, // effectively disableing and will be enabled later
       replenishRateInBasis: 500,
     },
   },
