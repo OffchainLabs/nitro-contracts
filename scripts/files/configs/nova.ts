@@ -30,6 +30,8 @@ export const nova: Config = {
     stakeAmt: parseEther('1'),
     miniStakeAmounts: [parseEther('0'), parseEther('1'), parseEther('1')],
     chainId: 42170,
+    minimumAssertionPeriod: 75,
+    validatorAfkBlocks: 201600,
     disableValidatorWhitelist: false,
     blockLeafSize: 2 ** 26, // leaf sizes same as arb1
     bigStepLeafSize: 2 ** 19,

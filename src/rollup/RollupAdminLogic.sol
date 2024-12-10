@@ -53,12 +53,12 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
         chainId = config.chainId;
         baseStake = config.baseStake;
         wasmModuleRoot = config.wasmModuleRoot;
-        // A little over 15 minutes
-        minimumAssertionPeriod = 75;
-        // ValidatorAfkBlocks is defaulted to 28 days assuming a 12 seconds block time.
+        // minimumAssertionPeriod was defaulted to 75 which is a little over 15 minutes
+        minimumAssertionPeriod = config.minimumAssertionPeriod;
+        // ValidatorAfkBlocks was defaulted to 201600 which is 28 days assuming a 12 seconds block time.
         // Since it can take 14 days under normal circumstances to confirm an assertion, this means
         // the validators will have been inactive for a further 14 days before the whitelist is removed.
-        validatorAfkBlocks = 201600;
+        validatorAfkBlocks = config.validatorAfkBlocks;
         challengeGracePeriodBlocks = config.challengeGracePeriodBlocks;
 
         // loser stake is now sent directly to loserStakeEscrow, it must not
