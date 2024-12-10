@@ -37,7 +37,7 @@ export const sepolia: Config = {
     isDelayBufferable: true,
     bufferConfig: {
       max: 2 ** 32, // effectively disableing and will be enabled later
-      threshold: 2 ** 32, // 365 days, effectively disableing and will be enabled later
+      threshold: 2 ** 32, // effectively disableing and will be enabled later
       replenishRateInBasis: 500, // 5% replenishment rate
     },
   },
