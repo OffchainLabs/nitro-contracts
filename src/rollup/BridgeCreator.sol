@@ -65,17 +65,22 @@ contract BridgeCreator is Ownable {
     }
 
     function _createBridge(
+        bytes32 create2Salt,
         address adminProxy,
         BridgeTemplates memory templates,
         bool isDelayBufferable
     ) internal returns (BridgeContracts memory) {
         BridgeContracts memory frame;
         frame.bridge = IBridge(
-            address(new TransparentUpgradeableProxy(address(templates.bridge), adminProxy, ""))
+            address(
+                new TransparentUpgradeableProxy{salt: create2Salt}(
+                    address(templates.bridge), adminProxy, ""
+                )
+            )
         );
         frame.sequencerInbox = ISequencerInbox(
             address(
-                new TransparentUpgradeableProxy(
+                new TransparentUpgradeableProxy{salt: create2Salt}(
                     address(
                         isDelayBufferable
                             ? templates.delayBufferableSequencerInbox
@@ -87,15 +92,25 @@ contract BridgeCreator is Ownable {
             )
         );
         frame.inbox = IInboxBase(
-            address(new TransparentUpgradeableProxy(address(templates.inbox), adminProxy, ""))
+            address(
+                new TransparentUpgradeableProxy{salt: create2Salt}(
+                    address(templates.inbox), adminProxy, ""
+                )
+            )
         );
         frame.rollupEventInbox = IRollupEventInbox(
             address(
-                new TransparentUpgradeableProxy(address(templates.rollupEventInbox), adminProxy, "")
+                new TransparentUpgradeableProxy{salt: create2Salt}(
+                    address(templates.rollupEventInbox), adminProxy, ""
+                )
             )
         );
         frame.outbox = IOutbox(
-            address(new TransparentUpgradeableProxy(address(templates.outbox), adminProxy, ""))
+            address(
+                new TransparentUpgradeableProxy{salt: create2Salt}(
+                    address(templates.outbox), adminProxy, ""
+                )
+            )
         );
         return frame;
     }
@@ -107,11 +122,14 @@ contract BridgeCreator is Ownable {
         ISequencerInbox.MaxTimeVariation calldata maxTimeVariation,
         BufferConfig calldata bufferConfig
     ) external returns (BridgeContracts memory) {
+        // use create2 salt to ensure deterministic addresses
+        bytes32 create2Salt = keccak256(abi.encode(msg.data, msg.sender));
         // create delay bufferable sequencer inbox if threshold is non-zero
         bool isDelayBufferable = bufferConfig.threshold != 0;
 
         // create ETH-based bridge if address zero is provided for native token, otherwise create ERC20-based bridge
         BridgeContracts memory frame = _createBridge(
+            create2Salt,
             adminProxy,
             nativeToken == address(0) ? ethBasedTemplates : erc20BasedTemplates,
             isDelayBufferable
