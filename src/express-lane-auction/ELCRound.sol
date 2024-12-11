@@ -19,11 +19,9 @@ library LatestELCRoundsLib {
     /// @param rounds The stored resolved rounds
     /// @return The last resolved elc round
     /// @return The index of that last resolved round within the supplied array
-    function latestELCRound(ELCRound[2] storage rounds)
-        internal
-        view
-        returns (ELCRound storage, uint8)
-    {
+    function latestELCRound(
+        ELCRound[2] storage rounds
+    ) internal view returns (ELCRound storage, uint8) {
         ELCRound storage latestRound = rounds[0];
         uint8 index = 0;
         if (latestRound.round < rounds[1].round) {
@@ -36,11 +34,10 @@ library LatestELCRoundsLib {
     /// @notice Finds the elc round that matches the supplied round. Reverts if no matching round found.
     /// @param latestResolvedRounds The resolved elc rounds
     /// @param round The round number to find a resolved round for
-    function resolvedRound(ELCRound[2] storage latestResolvedRounds, uint64 round)
-        internal
-        view
-        returns (ELCRound storage)
-    {
+    function resolvedRound(
+        ELCRound[2] storage latestResolvedRounds,
+        uint64 round
+    ) internal view returns (ELCRound storage) {
         if (latestResolvedRounds[0].round == round) {
             return latestResolvedRounds[0];
         } else if (latestResolvedRounds[1].round == round) {

@@ -10,18 +10,14 @@ contract RollupMock {
 
     address public owner;
 
-    constructor(address _owner) {
+    constructor(
+        address _owner
+    ) {
         owner = _owner;
     }
 
     function withdrawStakerFunds() external returns (uint256) {
         emit WithdrawTriggered();
         return 0;
-    }
-
-    function removeOldZombies(
-        uint256 /* startIndex */
-    ) external {
-        emit ZombieTriggered();
     }
 }

@@ -9,7 +9,9 @@ library CryptographyPrimitives {
     // WARNING: This function has the keccak state in a weird order.
     // If the normal Keccak state is [0, 1, 2, 3, 4, 5, 6, ..., 24]
     // this function has its state as [0, 5, 10, 15, 20, 1, 6, 11, ..., 24]
-    function keccakF(uint256[25] memory a) internal pure returns (uint256[25] memory) {
+    function keccakF(
+        uint256[25] memory a
+    ) internal pure returns (uint256[25] memory) {
         uint256[5] memory c;
         uint256[5] memory d;
         //uint D_0; uint D_1; uint D_2; uint D_3; uint D_4;
@@ -60,11 +62,11 @@ library CryptographyPrimitives {
                     D[x] = C[(x+4)%5]^((C[(x+1)%5] * 2)&0xffffffffffffffff | (C[(x+1)%5]/(2**63)));
                 }*/
 
-                d[0] = c[4] ^ (((c[1] * 2) & 0xffffffffffffffff) | (c[1] / (2**63)));
-                d[1] = c[0] ^ (((c[2] * 2) & 0xffffffffffffffff) | (c[2] / (2**63)));
-                d[2] = c[1] ^ (((c[3] * 2) & 0xffffffffffffffff) | (c[3] / (2**63)));
-                d[3] = c[2] ^ (((c[4] * 2) & 0xffffffffffffffff) | (c[4] / (2**63)));
-                d[4] = c[3] ^ (((c[0] * 2) & 0xffffffffffffffff) | (c[0] / (2**63)));
+                d[0] = c[4] ^ (((c[1] * 2) & 0xffffffffffffffff) | (c[1] / (2 ** 63)));
+                d[1] = c[0] ^ (((c[2] * 2) & 0xffffffffffffffff) | (c[2] / (2 ** 63)));
+                d[2] = c[1] ^ (((c[3] * 2) & 0xffffffffffffffff) | (c[3] / (2 ** 63)));
+                d[3] = c[2] ^ (((c[4] * 2) & 0xffffffffffffffff) | (c[4] / (2 ** 63)));
+                d[4] = c[3] ^ (((c[0] * 2) & 0xffffffffffffffff) | (c[0] / (2 ** 63)));
 
                 /*
                 for( x = 0 ; x < 5 ; x++ ) {
@@ -101,30 +103,30 @@ library CryptographyPrimitives {
 
                 /*Rho and pi steps*/
                 b[0] = a[0];
-                b[8] = (((a[1] * (2**36)) & 0xffffffffffffffff) | (a[1] / (2**28)));
-                b[11] = (((a[2] * (2**3)) & 0xffffffffffffffff) | (a[2] / (2**61)));
-                b[19] = (((a[3] * (2**41)) & 0xffffffffffffffff) | (a[3] / (2**23)));
-                b[22] = (((a[4] * (2**18)) & 0xffffffffffffffff) | (a[4] / (2**46)));
-                b[2] = (((a[5] * (2**1)) & 0xffffffffffffffff) | (a[5] / (2**63)));
-                b[5] = (((a[6] * (2**44)) & 0xffffffffffffffff) | (a[6] / (2**20)));
-                b[13] = (((a[7] * (2**10)) & 0xffffffffffffffff) | (a[7] / (2**54)));
-                b[16] = (((a[8] * (2**45)) & 0xffffffffffffffff) | (a[8] / (2**19)));
-                b[24] = (((a[9] * (2**2)) & 0xffffffffffffffff) | (a[9] / (2**62)));
-                b[4] = (((a[10] * (2**62)) & 0xffffffffffffffff) | (a[10] / (2**2)));
-                b[7] = (((a[11] * (2**6)) & 0xffffffffffffffff) | (a[11] / (2**58)));
-                b[10] = (((a[12] * (2**43)) & 0xffffffffffffffff) | (a[12] / (2**21)));
-                b[18] = (((a[13] * (2**15)) & 0xffffffffffffffff) | (a[13] / (2**49)));
-                b[21] = (((a[14] * (2**61)) & 0xffffffffffffffff) | (a[14] / (2**3)));
-                b[1] = (((a[15] * (2**28)) & 0xffffffffffffffff) | (a[15] / (2**36)));
-                b[9] = (((a[16] * (2**55)) & 0xffffffffffffffff) | (a[16] / (2**9)));
-                b[12] = (((a[17] * (2**25)) & 0xffffffffffffffff) | (a[17] / (2**39)));
-                b[15] = (((a[18] * (2**21)) & 0xffffffffffffffff) | (a[18] / (2**43)));
-                b[23] = (((a[19] * (2**56)) & 0xffffffffffffffff) | (a[19] / (2**8)));
-                b[3] = (((a[20] * (2**27)) & 0xffffffffffffffff) | (a[20] / (2**37)));
-                b[6] = (((a[21] * (2**20)) & 0xffffffffffffffff) | (a[21] / (2**44)));
-                b[14] = (((a[22] * (2**39)) & 0xffffffffffffffff) | (a[22] / (2**25)));
-                b[17] = (((a[23] * (2**8)) & 0xffffffffffffffff) | (a[23] / (2**56)));
-                b[20] = (((a[24] * (2**14)) & 0xffffffffffffffff) | (a[24] / (2**50)));
+                b[8] = (((a[1] * (2 ** 36)) & 0xffffffffffffffff) | (a[1] / (2 ** 28)));
+                b[11] = (((a[2] * (2 ** 3)) & 0xffffffffffffffff) | (a[2] / (2 ** 61)));
+                b[19] = (((a[3] * (2 ** 41)) & 0xffffffffffffffff) | (a[3] / (2 ** 23)));
+                b[22] = (((a[4] * (2 ** 18)) & 0xffffffffffffffff) | (a[4] / (2 ** 46)));
+                b[2] = (((a[5] * (2 ** 1)) & 0xffffffffffffffff) | (a[5] / (2 ** 63)));
+                b[5] = (((a[6] * (2 ** 44)) & 0xffffffffffffffff) | (a[6] / (2 ** 20)));
+                b[13] = (((a[7] * (2 ** 10)) & 0xffffffffffffffff) | (a[7] / (2 ** 54)));
+                b[16] = (((a[8] * (2 ** 45)) & 0xffffffffffffffff) | (a[8] / (2 ** 19)));
+                b[24] = (((a[9] * (2 ** 2)) & 0xffffffffffffffff) | (a[9] / (2 ** 62)));
+                b[4] = (((a[10] * (2 ** 62)) & 0xffffffffffffffff) | (a[10] / (2 ** 2)));
+                b[7] = (((a[11] * (2 ** 6)) & 0xffffffffffffffff) | (a[11] / (2 ** 58)));
+                b[10] = (((a[12] * (2 ** 43)) & 0xffffffffffffffff) | (a[12] / (2 ** 21)));
+                b[18] = (((a[13] * (2 ** 15)) & 0xffffffffffffffff) | (a[13] / (2 ** 49)));
+                b[21] = (((a[14] * (2 ** 61)) & 0xffffffffffffffff) | (a[14] / (2 ** 3)));
+                b[1] = (((a[15] * (2 ** 28)) & 0xffffffffffffffff) | (a[15] / (2 ** 36)));
+                b[9] = (((a[16] * (2 ** 55)) & 0xffffffffffffffff) | (a[16] / (2 ** 9)));
+                b[12] = (((a[17] * (2 ** 25)) & 0xffffffffffffffff) | (a[17] / (2 ** 39)));
+                b[15] = (((a[18] * (2 ** 21)) & 0xffffffffffffffff) | (a[18] / (2 ** 43)));
+                b[23] = (((a[19] * (2 ** 56)) & 0xffffffffffffffff) | (a[19] / (2 ** 8)));
+                b[3] = (((a[20] * (2 ** 27)) & 0xffffffffffffffff) | (a[20] / (2 ** 37)));
+                b[6] = (((a[21] * (2 ** 20)) & 0xffffffffffffffff) | (a[21] / (2 ** 44)));
+                b[14] = (((a[22] * (2 ** 39)) & 0xffffffffffffffff) | (a[22] / (2 ** 25)));
+                b[17] = (((a[23] * (2 ** 8)) & 0xffffffffffffffff) | (a[23] / (2 ** 56)));
+                b[20] = (((a[24] * (2 ** 14)) & 0xffffffffffffffff) | (a[24] / (2 ** 50)));
 
                 /*Xi state*/
                 /*
@@ -172,11 +174,7 @@ library CryptographyPrimitives {
         return ((x) >> (n)) | ((x) << (32 - (n)));
     }
 
-    function ch(
-        uint32 e,
-        uint32 f,
-        uint32 g
-    ) internal pure returns (uint32) {
+    function ch(uint32 e, uint32 f, uint32 g) internal pure returns (uint32) {
         return ((e & f) ^ ((~e) & g));
     }
 
@@ -184,11 +182,10 @@ library CryptographyPrimitives {
     // Note that the input must be padded by the caller
     // For the initial chunk, the initial values from the SHA256 spec should be passed in as hashState
     // For subsequent rounds, hashState is the output from the previous round
-    function sha256Block(uint256[2] memory inputChunk, uint256 hashState)
-        internal
-        pure
-        returns (uint256)
-    {
+    function sha256Block(
+        uint256[2] memory inputChunk,
+        uint256 hashState
+    ) internal pure returns (uint256) {
         unchecked {
             uint32[64] memory k = [
                 0x428a2f98,
@@ -285,14 +282,10 @@ library CryptographyPrimitives {
 
             for (i = 0; i < 64; i++) {
                 s1 =
-                    rightRotate(state[4], 6) ^
-                    rightRotate(state[4], 11) ^
-                    rightRotate(state[4], 25);
+                    rightRotate(state[4], 6) ^ rightRotate(state[4], 11) ^ rightRotate(state[4], 25);
                 temp1 = state[7] + s1 + ch(state[4], state[5], state[6]) + k[i] + w[i];
                 s0 =
-                    rightRotate(state[0], 2) ^
-                    rightRotate(state[0], 13) ^
-                    rightRotate(state[0], 22);
+                    rightRotate(state[0], 2) ^ rightRotate(state[0], 13) ^ rightRotate(state[0], 22);
 
                 maj = (state[0] & (state[1] ^ state[2])) ^ (state[1] & state[2]);
                 temp2 = s0 + maj;

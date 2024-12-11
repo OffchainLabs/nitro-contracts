@@ -11,8 +11,6 @@ import "./IEthBridge.sol";
 import "./Messages.sol";
 import "../libraries/DelegateCallAware.sol";
 
-import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
-
 /**
  * @title Staging ground for incoming and outgoing messages
  * @notice It is also the ETH escrow for value sent with these messages.
@@ -21,7 +19,9 @@ contract Bridge is AbsBridge, IEthBridge {
     using AddressUpgradeable for address;
 
     /// @inheritdoc IEthBridge
-    function initialize(IOwnable rollup_) external initializer onlyDelegated {
+    function initialize(
+        IOwnable rollup_
+    ) external initializer onlyDelegated {
         _activeOutbox = EMPTY_ACTIVEOUTBOX;
         rollup = rollup_;
     }
@@ -35,7 +35,9 @@ contract Bridge is AbsBridge, IEthBridge {
         return _enqueueDelayedMessage(kind, sender, messageDataHash, msg.value);
     }
 
-    function _transferFunds(uint256) internal override {
+    function _transferFunds(
+        uint256
+    ) internal override {
         // do nothing as Eth transfer is part of TX execution
     }
 

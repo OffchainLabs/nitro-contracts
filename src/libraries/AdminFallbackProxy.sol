@@ -34,7 +34,9 @@ abstract contract DoubleLogicERC1967Upgrade is ERC1967Upgrade {
     /**
      * @dev Stores a new address in the EIP1967 implementation slot.
      */
-    function _setSecondaryImplementation(address newImplementation) private {
+    function _setSecondaryImplementation(
+        address newImplementation
+    ) private {
         require(
             Address.isContract(newImplementation),
             "ERC1967: new secondary implementation is not a contract"
@@ -47,7 +49,9 @@ abstract contract DoubleLogicERC1967Upgrade is ERC1967Upgrade {
      *
      * Emits an {UpgradedSecondary} event.
      */
-    function _upgradeSecondaryTo(address newImplementation) internal {
+    function _upgradeSecondaryTo(
+        address newImplementation
+    ) internal {
         _setSecondaryImplementation(newImplementation);
         emit UpgradedSecondary(newImplementation);
     }
@@ -119,8 +123,8 @@ contract AdminFallbackProxy is Proxy, DoubleLogicERC1967Upgrade {
             _IMPLEMENTATION_SLOT == bytes32(uint256(keccak256("eip1967.proxy.implementation")) - 1)
         );
         assert(
-            _IMPLEMENTATION_SECONDARY_SLOT ==
-                bytes32(uint256(keccak256("eip1967.proxy.implementation.secondary")) - 1)
+            _IMPLEMENTATION_SECONDARY_SLOT
+                == bytes32(uint256(keccak256("eip1967.proxy.implementation.secondary")) - 1)
         );
         _changeAdmin(adminAddr);
         _upgradeToAndCall(adminLogic, adminData, false);

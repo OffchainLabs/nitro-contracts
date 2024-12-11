@@ -5,6 +5,7 @@ import "./AbsRollupEventInbox.t.sol";
 import {TestUtil} from "./util/TestUtil.sol";
 import {ERC20RollupEventInbox} from "../../src/rollup/ERC20RollupEventInbox.sol";
 import {ERC20Bridge, IERC20Bridge, IOwnable} from "../../src/bridge/ERC20Bridge.sol";
+import {INITIALIZATION_MSG_TYPE} from "../../src/libraries/MessageTypes.sol";
 import {ERC20PresetMinterPauser} from
     "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 
