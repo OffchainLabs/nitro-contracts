@@ -5,9 +5,9 @@ It includes the rollup and fraud proof smart contracts, as well as interfaces fo
 
 For more information see https://developer.arbitrum.io/intro
 
-For the deployed addresses of these contracts for Arbitrum chains see https://developer.arbitrum.io/useful-addresses
+For the deployed addresses of these contracts for Arbitrum chains see [https://docs.arbitrum.io/for-devs/dev-tools-and-resources/chain-info#core-contracts](https://docs.arbitrum.io/for-devs/dev-tools-and-resources/chain-info#core-contracts)
 
-For the token bridge contracts see https://github.com/OffchainLabs/token-bridge-contracts
+For the token bridge contracts see [https://github.com/OffchainLabs/token-bridge-contracts](https://github.com/OffchainLabs/token-bridge-contracts)
 
 Compile these contracts locally by running
 
