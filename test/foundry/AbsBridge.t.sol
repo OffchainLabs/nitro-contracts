@@ -457,6 +457,12 @@ abstract contract AbsBridgeTest is Test {
         AbsBridge(address(bridge)).setSequencerReportedSubMessageCount(123);
     }
 
+    function test_updateRollupAddress() public {
+        vm.prank(rollup);
+        bridge.updateRollupAddress(IOwnable(address(1337)));
+        assertEq(address(bridge.rollup()), address(1337), "Invalid rollup");
+    }
+
     /**
      *
      * Event declarations
