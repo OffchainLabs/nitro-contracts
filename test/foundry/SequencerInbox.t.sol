@@ -644,4 +644,32 @@ contract SequencerInboxTest is Test {
             })
         );
     }
+
+    function test_updateRollupAddress() public {
+        (SequencerInbox seqInbox, Bridge bridge) = deployRollup(false, true, bufferConfigDefault);
+        address rollup = address(bridge.rollup());
+        vm.prank(rollup);
+        bridge.updateRollupAddress(IOwnable(address(1337)));
+        vm.mockCall(
+            address(rollup),
+            0,
+            abi.encodeWithSelector(IOwnable.owner.selector),
+            abi.encode(address(this))
+        );
+        seqInbox.updateRollupAddress();
+        assertEq(address(seqInbox.rollup()), address(1337), "Invalid rollup");
+    }
+
+    function test_updateRollupAddress_revert_NotOwner() public {
+        (SequencerInbox seqInbox, Bridge bridge) = deployRollup(false, true, bufferConfigDefault);
+        address rollup = address(bridge.rollup());
+        vm.mockCall(
+            address(rollup),
+            0,
+            abi.encodeWithSelector(IOwnable.owner.selector),
+            abi.encode(address(1337))
+        );
+        vm.expectRevert(abi.encodeWithSelector(NotOwner.selector, address(this), address(1337)));
+        seqInbox.updateRollupAddress();
+    }
 }
