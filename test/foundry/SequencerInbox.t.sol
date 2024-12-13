@@ -628,11 +628,13 @@ contract SequencerInboxTest is Test {
         uint256 futureSeconds
     ) public {
         (SequencerInbox seqInbox,) = deployRollup(false, false, bufferConfigDefault);
+        bool checkValue = true;
         if (
             delayBlocks > uint256(type(uint64).max) || futureBlocks > uint256(type(uint64).max)
                 || delaySeconds > uint256(type(uint64).max) || futureSeconds > uint256(type(uint64).max)
         ) {
             vm.expectRevert(abi.encodeWithSelector(BadMaxTimeVariation.selector));
+            checkValue = false;
         }
         vm.prank(rollupOwner);
         seqInbox.setMaxTimeVariation(
@@ -643,6 +645,14 @@ contract SequencerInboxTest is Test {
                 futureSeconds: futureSeconds
             })
         );
+        (uint256 _delayBlocks, uint256 _futureBlocks, uint256 _delaySeconds, uint256 _futureSeconds)
+        = seqInbox.maxTimeVariation();
+        if (checkValue) {
+            assertEq(_delayBlocks, delayBlocks);
+            assertEq(_futureBlocks, futureBlocks);
+            assertEq(_delaySeconds, delaySeconds);
+            assertEq(_futureSeconds, futureSeconds);
+        }
     }
 
     function test_updateRollupAddress() public {
