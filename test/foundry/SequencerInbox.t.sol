@@ -621,18 +621,19 @@ contract SequencerInboxTest is Test {
         seqInbox.setBufferConfig(bufferConfigInvalid);
     }
 
-    function testSetMaxTimeVariationOverflow(
+    function testSetMaxTimeVariation(
         uint256 delayBlocks,
         uint256 futureBlocks,
         uint256 delaySeconds,
         uint256 futureSeconds
     ) public {
-        vm.assume(delayBlocks > uint256(type(uint64).max));
-        vm.assume(futureBlocks > uint256(type(uint64).max));
-        vm.assume(delaySeconds > uint256(type(uint64).max));
-        vm.assume(futureSeconds > uint256(type(uint64).max));
         (SequencerInbox seqInbox,) = deployRollup(false, false, bufferConfigDefault);
-        vm.expectRevert(abi.encodeWithSelector(BadMaxTimeVariation.selector));
+        if (
+            delayBlocks > uint256(type(uint64).max) || futureBlocks > uint256(type(uint64).max)
+                || delaySeconds > uint256(type(uint64).max) || futureSeconds > uint256(type(uint64).max)
+        ) {
+            vm.expectRevert(abi.encodeWithSelector(BadMaxTimeVariation.selector));
+        }
         vm.prank(rollupOwner);
         seqInbox.setMaxTimeVariation(
             ISequencerInbox.MaxTimeVariation({
