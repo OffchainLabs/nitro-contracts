@@ -66,7 +66,7 @@ contract SequencerInboxTest is Test {
         bool isArbHosted,
         bool isDelayBufferable,
         BufferConfig memory bufferConfig
-    ) internal returns (SequencerInbox, Bridge) {
+    ) internal returns (SequencerInbox, Bridge, address) {
         RollupMock rollupMock = new RollupMock(rollupOwner);
         Bridge bridgeImpl = new Bridge();
         Bridge bridge =
@@ -93,7 +93,7 @@ contract SequencerInboxTest is Test {
         vm.prank(rollupOwner);
         bridge.setSequencerInbox(address(seqInbox));
 
-        return (seqInbox, bridge);
+        return (seqInbox, bridge, address(seqInboxImpl));
     }
 
     function deployFeeTokenBasedRollup() internal returns (SequencerInbox, ERC20Bridge) {
@@ -227,7 +227,7 @@ contract SequencerInboxTest is Test {
     function testAddSequencerL2BatchFromOrigin(
         BufferConfig memory bufferConfig
     ) public {
-        (SequencerInbox seqInbox, Bridge bridge) = deployRollup(false, false, bufferConfig);
+        (SequencerInbox seqInbox, Bridge bridge,) = deployRollup(false, false, bufferConfig);
         address delayedInboxSender = address(140);
         uint8 delayedInboxKind = 3;
         bytes32 messageDataHash = RAND.Bytes32();
@@ -355,7 +355,7 @@ contract SequencerInboxTest is Test {
             abi.encodeWithSelector(ArbSys.arbOSVersion.selector),
             abi.encode(uint256(11))
         );
-        (SequencerInbox seqInbox, Bridge bridge) = deployRollup(true, false, bufferConfig);
+        (SequencerInbox seqInbox, Bridge bridge,) = deployRollup(true, false, bufferConfig);
 
         address delayedInboxSender = address(140);
         uint8 delayedInboxKind = 3;
@@ -414,7 +414,7 @@ contract SequencerInboxTest is Test {
     }
 
     function testAddSequencerL2BatchFromOriginReverts() public {
-        (SequencerInbox seqInbox, Bridge bridge) = deployRollup(false, false, bufferConfigDefault);
+        (SequencerInbox seqInbox, Bridge bridge,) = deployRollup(false, false, bufferConfigDefault);
         address delayedInboxSender = address(140);
         uint8 delayedInboxKind = 3;
         bytes32 messageDataHash = RAND.Bytes32();
@@ -517,7 +517,7 @@ contract SequencerInboxTest is Test {
         BufferConfig memory bufferConfig
     ) public returns (SequencerInbox, SequencerInbox) {
         vm.assume(DelayBuffer.isValidBufferConfig(bufferConfig));
-        (SequencerInbox seqInbox,) = deployRollup(false, false, bufferConfigDefault);
+        (SequencerInbox seqInbox,,) = deployRollup(false, false, bufferConfigDefault);
         SequencerInbox seqInboxImpl = new SequencerInbox(maxDataSize, dummyReader4844, false, true);
         vm.prank(proxyAdmin);
         TransparentUpgradeableProxy(payable(address(seqInbox))).upgradeToAndCall(
@@ -606,7 +606,7 @@ contract SequencerInboxTest is Test {
         BufferConfig memory bufferConfig
     ) public {
         vm.assume(DelayBuffer.isValidBufferConfig(bufferConfig));
-        (SequencerInbox seqInbox,) = deployRollup(false, true, bufferConfig);
+        (SequencerInbox seqInbox,,) = deployRollup(false, true, bufferConfig);
         vm.prank(rollupOwner);
         seqInbox.setBufferConfig(bufferConfig);
     }
@@ -615,7 +615,7 @@ contract SequencerInboxTest is Test {
         BufferConfig memory bufferConfigInvalid
     ) public {
         vm.assume(!DelayBuffer.isValidBufferConfig(bufferConfigInvalid));
-        (SequencerInbox seqInbox,) = deployRollup(false, true, bufferConfigDefault);
+        (SequencerInbox seqInbox,,) = deployRollup(false, true, bufferConfigDefault);
         vm.expectRevert(abi.encodeWithSelector(BadBufferConfig.selector));
         vm.prank(rollupOwner);
         seqInbox.setBufferConfig(bufferConfigInvalid);
@@ -627,7 +627,7 @@ contract SequencerInboxTest is Test {
         uint256 delaySeconds,
         uint256 futureSeconds
     ) public {
-        (SequencerInbox seqInbox,) = deployRollup(false, false, bufferConfigDefault);
+        (SequencerInbox seqInbox,,) = deployRollup(false, false, bufferConfigDefault);
         bool checkValue = true;
         if (
             delayBlocks > uint256(type(uint64).max) || futureBlocks > uint256(type(uint64).max)
@@ -656,7 +656,7 @@ contract SequencerInboxTest is Test {
     }
 
     function test_updateRollupAddress() public {
-        (SequencerInbox seqInbox, Bridge bridge) = deployRollup(false, true, bufferConfigDefault);
+        (SequencerInbox seqInbox, Bridge bridge,) = deployRollup(false, true, bufferConfigDefault);
         address rollup = address(bridge.rollup());
         vm.prank(rollup);
         bridge.updateRollupAddress(IOwnable(address(1337)));
@@ -671,7 +671,7 @@ contract SequencerInboxTest is Test {
     }
 
     function test_updateRollupAddress_revert_NotOwner() public {
-        (SequencerInbox seqInbox, Bridge bridge) = deployRollup(false, true, bufferConfigDefault);
+        (SequencerInbox seqInbox, Bridge bridge,) = deployRollup(false, true, bufferConfigDefault);
         address rollup = address(bridge.rollup());
         vm.mockCall(
             address(rollup),
@@ -681,5 +681,27 @@ contract SequencerInboxTest is Test {
         );
         vm.expectRevert(abi.encodeWithSelector(NotOwner.selector, address(this), address(1337)));
         seqInbox.updateRollupAddress();
+    }
+
+    function test_postUpgradeInit_revert_NotDelayBufferable() public {
+        (SequencerInbox seqInbox,, address seqInboxImpl) =
+            deployRollup(false, false, bufferConfigDefault);
+        vm.expectRevert(abi.encodeWithSelector(NotDelayBufferable.selector));
+        vm.prank(proxyAdmin);
+        TransparentUpgradeableProxy(payable(address(seqInbox))).upgradeToAndCall(
+            address(seqInboxImpl),
+            abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector, bufferConfigDefault)
+        );
+    }
+
+    function test_postUpgradeInit_revert_AlreadyInit() public {
+        (SequencerInbox seqInbox,, address seqInboxImpl) =
+            deployRollup(false, true, bufferConfigDefault);
+        vm.expectRevert(abi.encodeWithSelector(AlreadyInit.selector));
+        vm.prank(proxyAdmin);
+        TransparentUpgradeableProxy(payable(address(seqInbox))).upgradeToAndCall(
+            address(seqInboxImpl),
+            abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector, bufferConfigDefault)
+        );
     }
 }
