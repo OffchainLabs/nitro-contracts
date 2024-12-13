@@ -25,4 +25,17 @@ abstract contract AbsOutboxTest is Test {
         assertEq(outbox.l2ToL1Timestamp(), 0, "Invalid l2ToL1Timestamp");
         assertEq(outbox.l2ToL1OutputId(), bytes32(0), "Invalid l2ToL1OutputId");
     }
+
+    function test_updateRollupAddress() public {
+        vm.prank(rollup);
+        bridge.updateRollupAddress(IOwnable(address(1337)));
+        vm.mockCall(
+            address(rollup),
+            0,
+            abi.encodeWithSelector(IOwnable.owner.selector),
+            abi.encode(address(this))
+        );
+        outbox.updateRollupAddress();
+        assertEq(address(outbox.rollup()), address(1337), "Invalid rollup");
+    }
 }
