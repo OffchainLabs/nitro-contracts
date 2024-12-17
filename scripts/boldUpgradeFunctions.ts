@@ -31,97 +31,104 @@ export const deployDependencies = async (
   log: boolean = false,
   verify: boolean = true
 ): Promise<Omit<DeployedContracts, 'boldAction' | 'preImageHashLookup'>> => {
-  const bridgeFac = new Bridge__factory(signer)
-  const bridge = await bridgeFac.deploy()
+  // const bridgeFac = new Bridge__factory(signer)
+  // const bridge = await bridgeFac.deploy()
+  const bridge = Bridge__factory.connect('0x93e8f92327bFa8096F5F6ee5f2a49183D3B3b898', signer)
   await bridge.deployed()
   if (log) {
     console.log(`Bridge implementation deployed at: ${bridge.address}`)
   }
-  if (verify) {
-    await bridge.deployTransaction.wait(5)
-    await verifyContract(
-      'Bridge',
-      bridge.address,
-      [],
-      'src/bridge/Bridge.sol:Bridge'
-    )
-  }
+  // if (verify) {
+  //   await bridge.deployTransaction.wait(5)
+  //   await verifyContract(
+  //     'Bridge',
+  //     bridge.address,
+  //     [],
+  //     'src/bridge/Bridge.sol:Bridge'
+  //   )
+  // }
 
-  const contractFactory = new ContractFactory(
-    IReader4844__factory.abi,
-    Reader4844Bytecode,
-    signer
-  )
-  const reader4844 = await contractFactory.deploy()
+  // const contractFactory = new ContractFactory(
+  //   IReader4844__factory.abi,
+  //   Reader4844Bytecode,
+  //   signer
+  // )
+  // const reader4844 = await contractFactory.deploy()
+  const reader4844 = IReader4844__factory.connect('0x15b25E3fb8419dA4848a6f193bb9b43519D0d4ca', signer)
   await reader4844.deployed()
   console.log(`Reader4844 deployed at ${reader4844.address}`)
 
-  const seqInboxFac = new SequencerInbox__factory(signer)
-  const seqInbox = await seqInboxFac.deploy(
-    maxDataSize,
-    reader4844.address,
-    isUsingFeeToken,
-    isDelayBufferable
-  )
+  // const seqInboxFac = new SequencerInbox__factory(signer)
+  // const seqInbox = await seqInboxFac.deploy(
+  //   maxDataSize,
+  //   reader4844.address,
+  //   isUsingFeeToken,
+  //   isDelayBufferable
+  // )
+  const seqInbox = SequencerInbox__factory.connect('0x98a58ADAb0f8A66A1BF4544d804bc0475dff32c7', signer)
   await seqInbox.deployed()
   if (log) {
     console.log(
       `Sequencer inbox implementation deployed at: ${seqInbox.address}`
     )
   }
-  if (verify) {
-    await seqInbox.deployTransaction.wait(5)
-    await verifyContract('SequencerInbox', seqInbox.address, [
-      maxDataSize,
-      reader4844.address,
-      isUsingFeeToken,
-      isDelayBufferable,
-    ])
-  }
+  // if (verify) {
+  //   await seqInbox.deployTransaction.wait(5)
+  //   await verifyContract('SequencerInbox', seqInbox.address, [
+  //     maxDataSize,
+  //     reader4844.address,
+  //     isUsingFeeToken,
+  //     isDelayBufferable,
+  //   ])
+  // }
 
-  const reiFac = new RollupEventInbox__factory(signer)
-  const rei = await reiFac.deploy()
+  // const reiFac = new RollupEventInbox__factory(signer)
+  // const rei = await reiFac.deploy()
+  const rei = RollupEventInbox__factory.connect('0x6D576E220Cb44C3E8eF75D0EfBeb1Ff041e2E4A5', signer)
   await rei.deployed()
   if (log) {
     console.log(`Rollup event inbox implementation deployed at: ${rei.address}`)
   }
-  if (verify) {
-    await rei.deployTransaction.wait(5)
-    await verifyContract('RollupEventInbox', rei.address, [])
-  }
+  // if (verify) {
+  //   await rei.deployTransaction.wait(5)
+  //   await verifyContract('RollupEventInbox', rei.address, [])
+  // }
 
-  const outboxFac = new Outbox__factory(signer)
-  const outbox = await outboxFac.deploy()
+  // const outboxFac = new Outbox__factory(signer)
+  // const outbox = await outboxFac.deploy()
+  const outbox = Outbox__factory.connect('0x3FFf9BdC3ce99d3D587b0d06Aa7C4a10075193b4', signer)
   await outbox.deployed()
   if (log) {
     console.log(`Outbox implementation deployed at: ${outbox.address}`)
   }
-  if (verify) {
-    await outbox.deployTransaction.wait(5)
-    await verifyContract('Outbox', outbox.address, [])
-  }
+  // if (verify) {
+  //   await outbox.deployTransaction.wait(5)
+  //   await verifyContract('Outbox', outbox.address, [])
+  // }
 
-  const inboxFac = new Inbox__factory(signer)
-  const inbox = await inboxFac.deploy(maxDataSize)
+  // const inboxFac = new Inbox__factory(signer)
+  // const inbox = await inboxFac.deploy(maxDataSize)
+  const inbox = Inbox__factory.connect('0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10', signer)
   await inbox.deployed()
   if (log) {
     console.log(`Inbox implementation deployed at: ${inbox.address}`)
   }
-  if (verify) {
-    await inbox.deployTransaction.wait(5)
-    await verifyContract('Inbox', inbox.address, [maxDataSize])
-  }
+  // if (verify) {
+  //   await inbox.deployTransaction.wait(5)
+  //   await verifyContract('Inbox', inbox.address, [maxDataSize])
+  // }
 
-  const newRollupUserFac = new RollupUserLogic__factory(signer)
-  const newRollupUser = await newRollupUserFac.deploy()
+  // const newRollupUserFac = new RollupUserLogic__factory(signer)
+  // const newRollupUser = await newRollupUserFac.deploy()
+  const newRollupUser = RollupUserLogic__factory.connect('0x6490bA0a60Cc7d3a59C9eeE135D9eeD24553a60d', signer)
   await newRollupUser.deployed()
   if (log) {
     console.log(`New rollup user logic deployed at: ${newRollupUser.address}`)
   }
-  if (verify) {
-    await newRollupUser.deployTransaction.wait(5)
-    await verifyContract('RollupUserLogic', newRollupUser.address, [])
-  }
+  // if (verify) {
+  //   await newRollupUser.deployTransaction.wait(5)
+  //   await verifyContract('RollupUserLogic', newRollupUser.address, [])
+  // }
 
   const newRollupAdminFac = new RollupAdminLogic__factory(signer)
   const newRollupAdmin = await newRollupAdminFac.deploy()
