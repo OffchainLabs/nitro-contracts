@@ -33,7 +33,10 @@ export const deployDependencies = async (
 ): Promise<Omit<DeployedContracts, 'boldAction' | 'preImageHashLookup'>> => {
   // const bridgeFac = new Bridge__factory(signer)
   // const bridge = await bridgeFac.deploy()
-  const bridge = Bridge__factory.connect('0x93e8f92327bFa8096F5F6ee5f2a49183D3B3b898', signer)
+  const bridge = Bridge__factory.connect(
+    '0x93e8f92327bFa8096F5F6ee5f2a49183D3B3b898',
+    signer
+  )
   await bridge.deployed()
   if (log) {
     console.log(`Bridge implementation deployed at: ${bridge.address}`)
@@ -54,7 +57,10 @@ export const deployDependencies = async (
   //   signer
   // )
   // const reader4844 = await contractFactory.deploy()
-  const reader4844 = IReader4844__factory.connect('0x15b25E3fb8419dA4848a6f193bb9b43519D0d4ca', signer)
+  const reader4844 = IReader4844__factory.connect(
+    '0x15b25E3fb8419dA4848a6f193bb9b43519D0d4ca',
+    signer
+  )
   await reader4844.deployed()
   console.log(`Reader4844 deployed at ${reader4844.address}`)
 
@@ -65,7 +71,10 @@ export const deployDependencies = async (
   //   isUsingFeeToken,
   //   isDelayBufferable
   // )
-  const seqInbox = SequencerInbox__factory.connect('0x98a58ADAb0f8A66A1BF4544d804bc0475dff32c7', signer)
+  const seqInbox = SequencerInbox__factory.connect(
+    '0x98a58ADAb0f8A66A1BF4544d804bc0475dff32c7',
+    signer
+  )
   await seqInbox.deployed()
   if (log) {
     console.log(
@@ -84,7 +93,10 @@ export const deployDependencies = async (
 
   // const reiFac = new RollupEventInbox__factory(signer)
   // const rei = await reiFac.deploy()
-  const rei = RollupEventInbox__factory.connect('0x6D576E220Cb44C3E8eF75D0EfBeb1Ff041e2E4A5', signer)
+  const rei = RollupEventInbox__factory.connect(
+    '0x6D576E220Cb44C3E8eF75D0EfBeb1Ff041e2E4A5',
+    signer
+  )
   await rei.deployed()
   if (log) {
     console.log(`Rollup event inbox implementation deployed at: ${rei.address}`)
@@ -96,7 +108,10 @@ export const deployDependencies = async (
 
   // const outboxFac = new Outbox__factory(signer)
   // const outbox = await outboxFac.deploy()
-  const outbox = Outbox__factory.connect('0x3FFf9BdC3ce99d3D587b0d06Aa7C4a10075193b4', signer)
+  const outbox = Outbox__factory.connect(
+    '0x3FFf9BdC3ce99d3D587b0d06Aa7C4a10075193b4',
+    signer
+  )
   await outbox.deployed()
   if (log) {
     console.log(`Outbox implementation deployed at: ${outbox.address}`)
@@ -108,7 +123,10 @@ export const deployDependencies = async (
 
   // const inboxFac = new Inbox__factory(signer)
   // const inbox = await inboxFac.deploy(maxDataSize)
-  const inbox = Inbox__factory.connect('0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10', signer)
+  const inbox = Inbox__factory.connect(
+    '0x7C058ad1D0Ee415f7e7f30e62DB1BCf568470a10',
+    signer
+  )
   await inbox.deployed()
   if (log) {
     console.log(`Inbox implementation deployed at: ${inbox.address}`)
@@ -120,7 +138,10 @@ export const deployDependencies = async (
 
   // const newRollupUserFac = new RollupUserLogic__factory(signer)
   // const newRollupUser = await newRollupUserFac.deploy()
-  const newRollupUser = RollupUserLogic__factory.connect('0x6490bA0a60Cc7d3a59C9eeE135D9eeD24553a60d', signer)
+  const newRollupUser = RollupUserLogic__factory.connect(
+    '0x6490bA0a60Cc7d3a59C9eeE135D9eeD24553a60d',
+    signer
+  )
   await newRollupUser.deployed()
   if (log) {
     console.log(`New rollup user logic deployed at: ${newRollupUser.address}`)
@@ -132,7 +153,10 @@ export const deployDependencies = async (
 
   // const newRollupAdminFac = new RollupAdminLogic__factory(signer)
   // const newRollupAdmin = await newRollupAdminFac.deploy()
-  const newRollupAdmin = RollupAdminLogic__factory.connect('0x7FC126FF51183a78C5E0437467f325f661D8Df17', signer)
+  const newRollupAdmin = RollupAdminLogic__factory.connect(
+    '0x7FC126FF51183a78C5E0437467f325f661D8Df17',
+    signer
+  )
   await newRollupAdmin.deployed()
   if (log) {
     console.log(`New rollup admin logic deployed at: ${newRollupAdmin.address}`)
@@ -144,7 +168,10 @@ export const deployDependencies = async (
 
   // const challengeManagerFac = new EdgeChallengeManager__factory(signer)
   // const challengeManager = await challengeManagerFac.deploy()
-  const challengeManager = EdgeChallengeManager__factory.connect('0x058E1cBb62096189Bc7Cc1FE08A0859905d969Ea', signer)
+  const challengeManager = EdgeChallengeManager__factory.connect(
+    '0x058E1cBb62096189Bc7Cc1FE08A0859905d969Ea',
+    signer
+  )
   await challengeManager.deployed()
   if (log) {
     console.log(`Challenge manager deployed at: ${challengeManager.address}`)
@@ -156,7 +183,10 @@ export const deployDependencies = async (
 
   // const prover0Fac = new OneStepProver0__factory(signer)
   // const prover0 = await prover0Fac.deploy()
-  const prover0 = OneStepProver0__factory.connect('0x35FBC5F03d86E88973B06Fb9C5a913D54AbdF731', signer)
+  const prover0 = OneStepProver0__factory.connect(
+    '0x35FBC5F03d86E88973B06Fb9C5a913D54AbdF731',
+    signer
+  )
   await prover0.deployed()
   if (log) {
     console.log(`Prover0 deployed at: ${prover0.address}`)
@@ -168,7 +198,10 @@ export const deployDependencies = async (
 
   // const proverMemFac = new OneStepProverMemory__factory(signer)
   // const proverMem = await proverMemFac.deploy()
-  const proverMem = OneStepProverMemory__factory.connect('0xe0ba77e0E24de5369e3B268Ea79fDe716e2EC48b', signer)
+  const proverMem = OneStepProverMemory__factory.connect(
+    '0xe0ba77e0E24de5369e3B268Ea79fDe716e2EC48b',
+    signer
+  )
   await proverMem.deployed()
   if (log) {
     console.log(`Prover mem deployed at: ${proverMem.address}`)
@@ -180,7 +213,10 @@ export const deployDependencies = async (
 
   // const proverMathFac = new OneStepProverMath__factory(signer)
   // const proverMath = await proverMathFac.deploy()
-  const proverMath = OneStepProverMath__factory.connect('0xaB9596a0aaF28bc798c453434EC2DC0F8F0bF921', signer)
+  const proverMath = OneStepProverMath__factory.connect(
+    '0xaB9596a0aaF28bc798c453434EC2DC0F8F0bF921',
+    signer
+  )
   await proverMath.deployed()
   if (log) {
     console.log(`Prover math deployed at: ${proverMath.address}`)
@@ -192,7 +228,10 @@ export const deployDependencies = async (
 
   // const proverHostIoFac = new OneStepProverHostIo__factory(signer)
   // const proverHostIo = await proverHostIoFac.deploy()
-  const proverHostIo = OneStepProverHostIo__factory.connect('0xa07cD154340CC74EcF156FFB9fb378Ee29Ca71Cf', signer)
+  const proverHostIo = OneStepProverHostIo__factory.connect(
+    '0xa07cD154340CC74EcF156FFB9fb378Ee29Ca71Cf',
+    signer
+  )
   await proverHostIo.deployed()
   if (log) {
     console.log(`Prover host io deployed at: ${proverHostIo.address}`)
@@ -209,7 +248,10 @@ export const deployDependencies = async (
   //   proverMath.address,
   //   proverHostIo.address
   // )
-  const proofEntry = OneStepProofEntry__factory.connect('0x4397fE1E959Ba81B9D5f1A9679Ddd891955A42d6', signer)
+  const proofEntry = OneStepProofEntry__factory.connect(
+    '0x4397fE1E959Ba81B9D5f1A9679Ddd891955A42d6',
+    signer
+  )
   await proofEntry.deployed()
   if (log) {
     console.log(`Proof entry deployed at: ${proofEntry.address}`)
