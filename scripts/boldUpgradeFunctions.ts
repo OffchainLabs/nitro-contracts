@@ -130,92 +130,99 @@ export const deployDependencies = async (
   //   await verifyContract('RollupUserLogic', newRollupUser.address, [])
   // }
 
-  const newRollupAdminFac = new RollupAdminLogic__factory(signer)
-  const newRollupAdmin = await newRollupAdminFac.deploy()
+  // const newRollupAdminFac = new RollupAdminLogic__factory(signer)
+  // const newRollupAdmin = await newRollupAdminFac.deploy()
+  const newRollupAdmin = RollupAdminLogic__factory.connect('0x7FC126FF51183a78C5E0437467f325f661D8Df17', signer)
   await newRollupAdmin.deployed()
   if (log) {
     console.log(`New rollup admin logic deployed at: ${newRollupAdmin.address}`)
   }
-  if (verify) {
-    await newRollupAdmin.deployTransaction.wait(5)
-    await verifyContract('RollupAdminLogic', newRollupAdmin.address, [])
-  }
+  // if (verify) {
+  //   await newRollupAdmin.deployTransaction.wait(5)
+  //   await verifyContract('RollupAdminLogic', newRollupAdmin.address, [])
+  // }
 
-  const challengeManagerFac = new EdgeChallengeManager__factory(signer)
-  const challengeManager = await challengeManagerFac.deploy()
+  // const challengeManagerFac = new EdgeChallengeManager__factory(signer)
+  // const challengeManager = await challengeManagerFac.deploy()
+  const challengeManager = EdgeChallengeManager__factory.connect('0x058E1cBb62096189Bc7Cc1FE08A0859905d969Ea', signer)
   await challengeManager.deployed()
   if (log) {
     console.log(`Challenge manager deployed at: ${challengeManager.address}`)
   }
-  if (verify) {
-    await challengeManager.deployTransaction.wait(5)
-    await verifyContract('EdgeChallengeManager', challengeManager.address, [])
-  }
+  // if (verify) {
+  //   await challengeManager.deployTransaction.wait(5)
+  //   await verifyContract('EdgeChallengeManager', challengeManager.address, [])
+  // }
 
-  const prover0Fac = new OneStepProver0__factory(signer)
-  const prover0 = await prover0Fac.deploy()
+  // const prover0Fac = new OneStepProver0__factory(signer)
+  // const prover0 = await prover0Fac.deploy()
+  const prover0 = OneStepProver0__factory.connect('0x35FBC5F03d86E88973B06Fb9C5a913D54AbdF731', signer)
   await prover0.deployed()
   if (log) {
     console.log(`Prover0 deployed at: ${prover0.address}`)
   }
-  if (verify) {
-    await prover0.deployTransaction.wait(5)
-    await verifyContract('OneStepProver0', prover0.address, [])
-  }
+  // if (verify) {
+  //   await prover0.deployTransaction.wait(5)
+  //   await verifyContract('OneStepProver0', prover0.address, [])
+  // }
 
-  const proverMemFac = new OneStepProverMemory__factory(signer)
-  const proverMem = await proverMemFac.deploy()
+  // const proverMemFac = new OneStepProverMemory__factory(signer)
+  // const proverMem = await proverMemFac.deploy()
+  const proverMem = OneStepProverMemory__factory.connect('0xe0ba77e0E24de5369e3B268Ea79fDe716e2EC48b', signer)
   await proverMem.deployed()
   if (log) {
     console.log(`Prover mem deployed at: ${proverMem.address}`)
   }
-  if (verify) {
-    await proverMem.deployTransaction.wait(5)
-    await verifyContract('OneStepProverMemory', proverMem.address, [])
-  }
+  // if (verify) {
+  //   await proverMem.deployTransaction.wait(5)
+  //   await verifyContract('OneStepProverMemory', proverMem.address, [])
+  // }
 
-  const proverMathFac = new OneStepProverMath__factory(signer)
-  const proverMath = await proverMathFac.deploy()
+  // const proverMathFac = new OneStepProverMath__factory(signer)
+  // const proverMath = await proverMathFac.deploy()
+  const proverMath = OneStepProverMath__factory.connect('0xaB9596a0aaF28bc798c453434EC2DC0F8F0bF921', signer)
   await proverMath.deployed()
   if (log) {
     console.log(`Prover math deployed at: ${proverMath.address}`)
   }
-  if (verify) {
-    await proverMath.deployTransaction.wait(5)
-    await verifyContract('OneStepProverMath', proverMath.address, [])
-  }
+  // if (verify) {
+  //   await proverMath.deployTransaction.wait(5)
+  //   await verifyContract('OneStepProverMath', proverMath.address, [])
+  // }
 
-  const proverHostIoFac = new OneStepProverHostIo__factory(signer)
-  const proverHostIo = await proverHostIoFac.deploy()
+  // const proverHostIoFac = new OneStepProverHostIo__factory(signer)
+  // const proverHostIo = await proverHostIoFac.deploy()
+  const proverHostIo = OneStepProverHostIo__factory.connect('0xa07cD154340CC74EcF156FFB9fb378Ee29Ca71Cf', signer)
   await proverHostIo.deployed()
   if (log) {
     console.log(`Prover host io deployed at: ${proverHostIo.address}`)
   }
-  if (verify) {
-    await proverHostIo.deployTransaction.wait(5)
-    await verifyContract('OneStepProverHostIo', proverHostIo.address, [])
-  }
+  // if (verify) {
+  //   await proverHostIo.deployTransaction.wait(5)
+  //   await verifyContract('OneStepProverHostIo', proverHostIo.address, [])
+  // }
 
-  const proofEntryFac = new OneStepProofEntry__factory(signer)
-  const proofEntry = await proofEntryFac.deploy(
-    prover0.address,
-    proverMem.address,
-    proverMath.address,
-    proverHostIo.address
-  )
+  // const proofEntryFac = new OneStepProofEntry__factory(signer)
+  // const proofEntry = await proofEntryFac.deploy(
+  //   prover0.address,
+  //   proverMem.address,
+  //   proverMath.address,
+  //   proverHostIo.address
+  // )
+  const proofEntry = OneStepProofEntry__factory.connect('0x4397fE1E959Ba81B9D5f1A9679Ddd891955A42d6', signer)
   await proofEntry.deployed()
   if (log) {
     console.log(`Proof entry deployed at: ${proofEntry.address}`)
   }
-  if (verify) {
-    await proofEntry.deployTransaction.wait(5)
-    await verifyContract('OneStepProofEntry', proofEntry.address, [
-      prover0.address,
-      proverMem.address,
-      proverMath.address,
-      proverHostIo.address,
-    ])
-  }
+  // if (verify) {
+  //   await proofEntry.deployTransaction.wait(5)
+  //   await verifyContract('OneStepProofEntry', proofEntry.address, [
+  //     prover0.address,
+  //     proverMem.address,
+  //     proverMath.address,
+  //     proverHostIo.address,
+  //   ])
+  // }
 
   return {
     bridge: bridge.address,
