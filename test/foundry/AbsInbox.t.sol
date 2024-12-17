@@ -255,6 +255,14 @@ abstract contract AbsInboxTest is Test {
         inbox.sendL2Message(abi.encodePacked("some msg"));
     }
 
+    function test_sendL2Message_revert_DataTooLarge() public {
+        uint256 maxDataSize = inbox.maxDataSize();
+        bytes memory data = new bytes(maxDataSize + 1);
+        vm.expectRevert(abi.encodeWithSelector(DataTooLarge.selector, maxDataSize + 1, maxDataSize));
+        vm.prank(user);
+        inbox.sendL2Message(data);
+    }
+
     function test_sendL2Message_revert_NotAllowed() public {
         vm.prank(rollup);
         inbox.setAllowListEnabled(true);

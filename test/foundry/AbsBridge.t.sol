@@ -457,6 +457,27 @@ abstract contract AbsBridgeTest is Test {
         AbsBridge(address(bridge)).setSequencerReportedSubMessageCount(123);
     }
 
+    function test_updateRollupAddress() public {
+        vm.prank(rollup);
+        bridge.updateRollupAddress(IOwnable(address(1337)));
+        assertEq(address(bridge.rollup()), address(1337), "Invalid rollup");
+    }
+
+    function test_updateRollupAddress_revert_NotOwner() public {
+        vm.mockCall(
+            address(rollup),
+            0,
+            abi.encodeWithSelector(IOwnable.owner.selector),
+            abi.encode(address(1337))
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                NotRollupOrOwner.selector, address(this), address(rollup), address(1337)
+            )
+        );
+        bridge.updateRollupAddress(IOwnable(address(1234)));
+    }
+
     /**
      *
      * Event declarations
