@@ -66,7 +66,7 @@ contract SequencerInboxTest is Test {
         bool isArbHosted,
         bool isDelayBufferable,
         BufferConfig memory bufferConfig
-    ) internal returns (SequencerInbox, Bridge) {
+    ) internal returns (SequencerInbox, Bridge, address) {
         RollupMock rollupMock = new RollupMock(rollupOwner);
         Bridge bridgeImpl = new Bridge();
         Bridge bridge =
@@ -93,7 +93,7 @@ contract SequencerInboxTest is Test {
         vm.prank(rollupOwner);
         bridge.setSequencerInbox(address(seqInbox));
 
-        return (seqInbox, bridge);
+        return (seqInbox, bridge, address(seqInboxImpl));
     }
 
     function deployFeeTokenBasedRollup() internal returns (SequencerInbox, ERC20Bridge) {
@@ -227,7 +227,7 @@ contract SequencerInboxTest is Test {
     function testAddSequencerL2BatchFromOrigin(
         BufferConfig memory bufferConfig
     ) public {
-        (SequencerInbox seqInbox, Bridge bridge) = deployRollup(false, false, bufferConfig);
+        (SequencerInbox seqInbox, Bridge bridge,) = deployRollup(false, false, bufferConfig);
         address delayedInboxSender = address(140);
         uint8 delayedInboxKind = 3;
         bytes32 messageDataHash = RAND.Bytes32();
@@ -355,7 +355,7 @@ contract SequencerInboxTest is Test {
             abi.encodeWithSelector(ArbSys.arbOSVersion.selector),
             abi.encode(uint256(11))
         );
-        (SequencerInbox seqInbox, Bridge bridge) = deployRollup(true, false, bufferConfig);
+        (SequencerInbox seqInbox, Bridge bridge,) = deployRollup(true, false, bufferConfig);
 
         address delayedInboxSender = address(140);
         uint8 delayedInboxKind = 3;
@@ -414,7 +414,7 @@ contract SequencerInboxTest is Test {
     }
 
     function testAddSequencerL2BatchFromOriginReverts() public {
-        (SequencerInbox seqInbox, Bridge bridge) = deployRollup(false, false, bufferConfigDefault);
+        (SequencerInbox seqInbox, Bridge bridge,) = deployRollup(false, false, bufferConfigDefault);
         address delayedInboxSender = address(140);
         uint8 delayedInboxKind = 3;
         bytes32 messageDataHash = RAND.Bytes32();
@@ -517,7 +517,7 @@ contract SequencerInboxTest is Test {
         BufferConfig memory bufferConfig
     ) public returns (SequencerInbox, SequencerInbox) {
         vm.assume(DelayBuffer.isValidBufferConfig(bufferConfig));
-        (SequencerInbox seqInbox,) = deployRollup(false, false, bufferConfigDefault);
+        (SequencerInbox seqInbox,,) = deployRollup(false, false, bufferConfigDefault);
         SequencerInbox seqInboxImpl = new SequencerInbox(maxDataSize, dummyReader4844, false, true);
         vm.prank(proxyAdmin);
         TransparentUpgradeableProxy(payable(address(seqInbox))).upgradeToAndCall(
@@ -606,7 +606,7 @@ contract SequencerInboxTest is Test {
         BufferConfig memory bufferConfig
     ) public {
         vm.assume(DelayBuffer.isValidBufferConfig(bufferConfig));
-        (SequencerInbox seqInbox,) = deployRollup(false, true, bufferConfig);
+        (SequencerInbox seqInbox,,) = deployRollup(false, true, bufferConfig);
         vm.prank(rollupOwner);
         seqInbox.setBufferConfig(bufferConfig);
     }
@@ -615,24 +615,27 @@ contract SequencerInboxTest is Test {
         BufferConfig memory bufferConfigInvalid
     ) public {
         vm.assume(!DelayBuffer.isValidBufferConfig(bufferConfigInvalid));
-        (SequencerInbox seqInbox,) = deployRollup(false, true, bufferConfigDefault);
+        (SequencerInbox seqInbox,,) = deployRollup(false, true, bufferConfigDefault);
         vm.expectRevert(abi.encodeWithSelector(BadBufferConfig.selector));
         vm.prank(rollupOwner);
         seqInbox.setBufferConfig(bufferConfigInvalid);
     }
 
-    function testSetMaxTimeVariationOverflow(
+    function testSetMaxTimeVariation(
         uint256 delayBlocks,
         uint256 futureBlocks,
         uint256 delaySeconds,
         uint256 futureSeconds
     ) public {
-        vm.assume(delayBlocks > uint256(type(uint64).max));
-        vm.assume(futureBlocks > uint256(type(uint64).max));
-        vm.assume(delaySeconds > uint256(type(uint64).max));
-        vm.assume(futureSeconds > uint256(type(uint64).max));
-        (SequencerInbox seqInbox,) = deployRollup(false, false, bufferConfigDefault);
-        vm.expectRevert(abi.encodeWithSelector(BadMaxTimeVariation.selector));
+        (SequencerInbox seqInbox,,) = deployRollup(false, false, bufferConfigDefault);
+        bool checkValue = true;
+        if (
+            delayBlocks > uint256(type(uint64).max) || futureBlocks > uint256(type(uint64).max)
+                || delaySeconds > uint256(type(uint64).max) || futureSeconds > uint256(type(uint64).max)
+        ) {
+            vm.expectRevert(abi.encodeWithSelector(BadMaxTimeVariation.selector));
+            checkValue = false;
+        }
         vm.prank(rollupOwner);
         seqInbox.setMaxTimeVariation(
             ISequencerInbox.MaxTimeVariation({
@@ -641,6 +644,64 @@ contract SequencerInboxTest is Test {
                 delaySeconds: delaySeconds,
                 futureSeconds: futureSeconds
             })
+        );
+        (uint256 _delayBlocks, uint256 _futureBlocks, uint256 _delaySeconds, uint256 _futureSeconds)
+        = seqInbox.maxTimeVariation();
+        if (checkValue) {
+            assertEq(_delayBlocks, delayBlocks);
+            assertEq(_futureBlocks, futureBlocks);
+            assertEq(_delaySeconds, delaySeconds);
+            assertEq(_futureSeconds, futureSeconds);
+        }
+    }
+
+    function test_updateRollupAddress() public {
+        (SequencerInbox seqInbox, Bridge bridge,) = deployRollup(false, true, bufferConfigDefault);
+        address rollup = address(bridge.rollup());
+        vm.prank(rollup);
+        bridge.updateRollupAddress(IOwnable(address(1337)));
+        vm.mockCall(
+            address(rollup),
+            0,
+            abi.encodeWithSelector(IOwnable.owner.selector),
+            abi.encode(address(this))
+        );
+        seqInbox.updateRollupAddress();
+        assertEq(address(seqInbox.rollup()), address(1337), "Invalid rollup");
+    }
+
+    function test_updateRollupAddress_revert_NotOwner() public {
+        (SequencerInbox seqInbox, Bridge bridge,) = deployRollup(false, true, bufferConfigDefault);
+        address rollup = address(bridge.rollup());
+        vm.mockCall(
+            address(rollup),
+            0,
+            abi.encodeWithSelector(IOwnable.owner.selector),
+            abi.encode(address(1337))
+        );
+        vm.expectRevert(abi.encodeWithSelector(NotOwner.selector, address(this), address(1337)));
+        seqInbox.updateRollupAddress();
+    }
+
+    function test_postUpgradeInit_revert_NotDelayBufferable() public {
+        (SequencerInbox seqInbox,, address seqInboxImpl) =
+            deployRollup(false, false, bufferConfigDefault);
+        vm.expectRevert(abi.encodeWithSelector(NotDelayBufferable.selector));
+        vm.prank(proxyAdmin);
+        TransparentUpgradeableProxy(payable(address(seqInbox))).upgradeToAndCall(
+            address(seqInboxImpl),
+            abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector, bufferConfigDefault)
+        );
+    }
+
+    function test_postUpgradeInit_revert_AlreadyInit() public {
+        (SequencerInbox seqInbox,, address seqInboxImpl) =
+            deployRollup(false, true, bufferConfigDefault);
+        vm.expectRevert(abi.encodeWithSelector(AlreadyInit.selector));
+        vm.prank(proxyAdmin);
+        TransparentUpgradeableProxy(payable(address(seqInbox))).upgradeToAndCall(
+            address(seqInboxImpl),
+            abi.encodeWithSelector(SequencerInbox.postUpgradeInit.selector, bufferConfigDefault)
         );
     }
 }
