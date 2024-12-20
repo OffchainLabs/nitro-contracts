@@ -35,6 +35,8 @@ export const local: Config = {
       parseEther('1'),
     ],
     chainId: 412346,
+    minimumAssertionPeriod: 0,
+    validatorAfkBlocks: 201600,
     disableValidatorWhitelist: true,
     blockLeafSize: 1048576,
     bigStepLeafSize: 512,
@@ -43,8 +45,8 @@ export const local: Config = {
     maxDataSize: 117964,
     isDelayBufferable: true,
     bufferConfig: {
-      max: 14400,
-      threshold: 300,
+      max: 2 ** 32, // effectively disableing and will be enabled later
+      threshold: 2 ** 32, // effectively disableing and will be enabled later
       replenishRateInBasis: 500,
     },
   },

@@ -19,6 +19,7 @@ import "../../src/mocks/TestWETH9.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
+import {NoZeroTransferToken} from "./util/NoZeroTransferToken.sol";
 
 contract RollupCreatorTest is Test {
     RollupCreator public rollupCreator;
@@ -111,7 +112,9 @@ contract RollupCreatorTest is Test {
             baseStake: 1000,
             chainId: 1337,
             chainConfig: "abc",
-            confirmPeriodBlocks: 20,
+            minimumAssertionPeriod: 75,
+            validatorAfkBlocks: 1234,
+            confirmPeriodBlocks: 567,
             owner: rollupOwner,
             sequencerInboxMaxTimeVariation: timeVars,
             stakeToken: address(token),
@@ -184,6 +187,12 @@ contract RollupCreatorTest is Test {
             batchPosterManager,
             "Invalid batch poster manager"
         );
+        assertEq(
+            rollup.validatorAfkBlocks(), config.validatorAfkBlocks, "Invalid validatorAfkBlocks"
+        );
+        assertEq(
+            rollup.confirmPeriodBlocks(), config.confirmPeriodBlocks, "Invalid confirmPeriodBlocks"
+        );
 
         // check proxy admin for non-rollup contracts
         address proxyAdminExpectedAddress = computeCreateAddress(address(rollupCreator), 1);
@@ -251,9 +260,23 @@ contract RollupCreatorTest is Test {
     }
 
     function test_createErc20Rollup() public {
-        vm.startPrank(deployer);
         address nativeToken =
             address(new ERC20PresetFixedSupply("Appchain Token", "App", 1_000_000 ether, deployer));
+
+        _createERC20Rollup(nativeToken);
+    }
+
+    function test_createErc20RollupNoZeroTransfer() public {
+        address nativeToken =
+            address(new NoZeroTransferToken("Appchain Token", "App", 1_000_000 ether, deployer));
+
+        _createERC20Rollup(nativeToken);
+    }
+
+    function _createERC20Rollup(
+        address nativeToken
+    ) internal {
+        vm.startPrank(deployer);
 
         // deployment params
         ISequencerInbox.MaxTimeVariation memory timeVars =
@@ -271,7 +294,9 @@ contract RollupCreatorTest is Test {
             baseStake: 1000,
             chainId: 1337,
             chainConfig: "abc",
-            confirmPeriodBlocks: 20,
+            minimumAssertionPeriod: 75,
+            validatorAfkBlocks: 1234,
+            confirmPeriodBlocks: 567,
             owner: rollupOwner,
             sequencerInboxMaxTimeVariation: timeVars,
             stakeToken: address(token),
@@ -325,6 +350,19 @@ contract RollupCreatorTest is Test {
 
         vm.stopPrank();
 
+        _postCreateERC20RollupChecks(
+            config, rollupAddress, batchPosterManager, nativeToken, validators, batchPosters
+        );
+    }
+
+    function _postCreateERC20RollupChecks(
+        Config memory config,
+        address rollupAddress,
+        address batchPosterManager,
+        address nativeToken,
+        address[] memory validators,
+        address[] memory batchPosters
+    ) internal {
         /// common checks
 
         /// rollup creator
@@ -352,6 +390,12 @@ contract RollupCreatorTest is Test {
             ISequencerInbox(address(rollup.sequencerInbox())).batchPosterManager(),
             batchPosterManager,
             "Invalid batch poster manager"
+        );
+        assertEq(
+            rollup.validatorAfkBlocks(), config.validatorAfkBlocks, "Invalid validatorAfkBlocks"
+        );
+        assertEq(
+            rollup.confirmPeriodBlocks(), config.confirmPeriodBlocks, "Invalid confirmPeriodBlocks"
         );
 
         // native token check
@@ -438,7 +482,9 @@ contract RollupCreatorTest is Test {
             baseStake: 1000,
             chainId: 1337,
             chainConfig: "abc",
-            confirmPeriodBlocks: 20,
+            minimumAssertionPeriod: 75,
+            validatorAfkBlocks: 1234,
+            confirmPeriodBlocks: 567,
             owner: rollupOwner,
             sequencerInboxMaxTimeVariation: timeVars,
             stakeToken: address(token),
