@@ -135,8 +135,9 @@ contract BridgeCreatorTest is Test {
             replenishRateInBasis: 0
         });
 
-        BridgeCreator.BridgeContracts memory contracts =
-            creator.createBridge(proxyAdmin, rollup, nativeToken, timeVars, bufferConfig, IFeeTokenPricer(address(0)));
+        BridgeCreator.BridgeContracts memory contracts = creator.createBridge(
+            proxyAdmin, rollup, nativeToken, timeVars, bufferConfig, IFeeTokenPricer(address(0))
+        );
         (
             IBridge bridge,
             ISequencerInbox seqInbox,
@@ -265,14 +266,20 @@ contract BridgeCreatorTest is Test {
             replenishRateInBasis: 0
         });
 
-        creator.createBridge(proxyAdmin, rollup, nativeToken, timeVars, bufferConfig, IFeeTokenPricer(address(0)));
+        creator.createBridge(
+            proxyAdmin, rollup, nativeToken, timeVars, bufferConfig, IFeeTokenPricer(address(0))
+        );
 
         // can only deploy once from the same address and config
         vm.expectRevert();
-        creator.createBridge(proxyAdmin, rollup, nativeToken, timeVars, bufferConfig, IFeeTokenPricer(address(0)));
+        creator.createBridge(
+            proxyAdmin, rollup, nativeToken, timeVars, bufferConfig, IFeeTokenPricer(address(0))
+        );
 
         // can deploy from a different address
         vm.prank(address(101));
-        creator.createBridge(proxyAdmin, rollup, nativeToken, timeVars, bufferConfig, IFeeTokenPricer(address(0)));
+        creator.createBridge(
+            proxyAdmin, rollup, nativeToken, timeVars, bufferConfig, IFeeTokenPricer(address(0))
+        );
     }
 }
