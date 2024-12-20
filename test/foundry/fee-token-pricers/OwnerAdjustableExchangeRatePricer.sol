@@ -4,10 +4,9 @@ pragma solidity ^0.8.0;
 import {IFeeTokenPricer} from "../../../src/bridge/ISequencerInbox.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-/**
- * @title Test implementation of a fee token pricer that returns an exchange rate set by the owner
- * @notice Exchange rate can be changed by the owner at any time, without any restrictions
- */
+/// @title A uniswap twap pricer
+/// @notice An example of a type 1 fee token pricer. The owner can adjust the exchange rate at any time
+///         to ensure the batch poster is reimbursed an appropriate amount on the child chain
 contract OwnerAdjustableExchangeRatePricer is IFeeTokenPricer, Ownable {
     uint256 public exchangeRate;
 

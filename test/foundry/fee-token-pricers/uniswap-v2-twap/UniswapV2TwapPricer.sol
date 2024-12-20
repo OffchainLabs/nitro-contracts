@@ -5,9 +5,9 @@ import {IFeeTokenPricer} from "../../../../src/bridge/ISequencerInbox.sol";
 import {FixedPoint} from "./FixedPoint.sol";
 import {IUniswapV2Pair} from "@uniswap/v2-core/interfaces/IUniswapV2Pair.sol";
 
-/**
- * @title Test implementation of a fee token pricer that uses Uniswap V2 TWAP
- */
+/// @title A uniswap twap pricer
+/// @notice An example of a type 2 fee token pricer. It uses an oracle to get the fee token price at
+///         at the time the batch is posted
 contract UniswapV2TwapPricer is IFeeTokenPricer {
     using FixedPoint for *;
 
