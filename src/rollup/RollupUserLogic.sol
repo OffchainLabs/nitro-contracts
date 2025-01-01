@@ -289,7 +289,7 @@ abstract contract AbsRollupUserLogic is
     }
 
     /**
-     * @notice Reduce the amount staked for the sender (difference between initial amount staked and target is creditted back to the sender).
+     * @notice Reduce the amount staked for the sender (difference between initial amount staked and target is credited back to the sender).
      * @param target Target amount of stake for the staker. If this is below the current minimum, it will be set to minimum instead
      */
     function reduceDeposit(uint256 target) external onlyValidator whenNotPausedOrDeprecated {
