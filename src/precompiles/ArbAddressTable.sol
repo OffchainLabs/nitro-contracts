@@ -14,14 +14,18 @@ interface ArbAddressTable {
      * @param addr address to check for presence in table
      * @return true if address is in table
      */
-    function addressExists(address addr) external view returns (bool);
+    function addressExists(
+        address addr
+    ) external view returns (bool);
 
     /**
      * @notice compress an address and return the result
      * @param addr address to compress
      * @return compressed address bytes
      */
-    function compress(address addr) external returns (bytes memory);
+    function compress(
+        address addr
+    ) external returns (bytes memory);
 
     /**
      * @notice read a compressed address from a bytes buffer
@@ -29,29 +33,35 @@ interface ArbAddressTable {
      * @param offset offset of target address
      * @return resulting address and updated offset into the buffer (revert if buffer is too short)
      */
-    function decompress(bytes calldata buf, uint256 offset)
-        external
-        view
-        returns (address, uint256);
+    function decompress(
+        bytes calldata buf,
+        uint256 offset
+    ) external view returns (address, uint256);
 
     /**
      * @param addr address to lookup
      * @return index of an address in the address table (revert if address isn't in the table)
      */
-    function lookup(address addr) external view returns (uint256);
+    function lookup(
+        address addr
+    ) external view returns (uint256);
 
     /**
      * @param index index to lookup address
      * @return address at a given index in address table (revert if index is beyond end of table)
      */
-    function lookupIndex(uint256 index) external view returns (address);
+    function lookupIndex(
+        uint256 index
+    ) external view returns (address);
 
     /**
      * @notice Register an address in the address table
      * @param addr address to register
      * @return index of the address (existing index, or newly created index if not already registered)
      */
-    function register(address addr) external returns (uint256);
+    function register(
+        address addr
+    ) external returns (uint256);
 
     /**
      * @return size of address table (= first unused index)

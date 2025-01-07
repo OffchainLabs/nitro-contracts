@@ -10,21 +10,29 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 contract BalanceImp {
     using BalanceLib for Balance;
 
-    constructor(Balance memory _bal) {
+    constructor(
+        Balance memory _bal
+    ) {
         bal = _bal;
     }
 
     Balance public bal;
 
-    function balanceAtRound(uint64 round) external view returns (uint256) {
+    function balanceAtRound(
+        uint64 round
+    ) external view returns (uint256) {
         return bal.balanceAtRound(round);
     }
 
-    function withdrawableBalanceAtRound(uint64 round) external view returns (uint256) {
+    function withdrawableBalanceAtRound(
+        uint64 round
+    ) external view returns (uint256) {
         return bal.withdrawableBalanceAtRound(round);
     }
 
-    function increase(uint256 amount) external {
+    function increase(
+        uint256 amount
+    ) external {
         return bal.increase(amount);
     }
 
@@ -32,11 +40,15 @@ contract BalanceImp {
         return bal.reduce(amount, round);
     }
 
-    function initiateWithdrawal(uint64 round) external {
+    function initiateWithdrawal(
+        uint64 round
+    ) external {
         return bal.initiateWithdrawal(round);
     }
 
-    function finalizeWithdrawal(uint64 round) external returns (uint256) {
+    function finalizeWithdrawal(
+        uint64 round
+    ) external returns (uint256) {
         return bal.finalizeWithdrawal(round);
     }
 }
@@ -106,7 +118,7 @@ contract ExpressLaneBalanceTest is Test {
         if (initialRound <= reduceRound) {
             vm.expectRevert(abi.encodeWithSelector(InsufficientBalance.selector, reduceAmount, 0));
             b.reduce(reduceAmount, reduceRound);
-        } else if (reduceAmount > initialBalance) {
+        } else if (reduceAmount > initialBalance || initialBalance == 0) {
             vm.expectRevert(
                 abi.encodeWithSelector(InsufficientBalance.selector, reduceAmount, initialBalance)
             );
@@ -208,10 +220,9 @@ contract InvariantBalance is Test {
     }
 
     function invariantBalanceWithdrawableSum() public {
-        uint64 randRound = uint64(
-            uint256(keccak256(abi.encode(msg.sender, block.timestamp, "round")))
-        );
-        (uint256 bal, ) = balanceImp.bal();
+        uint64 randRound =
+            uint64(uint256(keccak256(abi.encode(msg.sender, block.timestamp, "round"))));
+        (uint256 bal,) = balanceImp.bal();
         // withdrawable balance + available balance should always equal internal balance
         assertEq(
             balanceImp.balanceAtRound(randRound) + balanceImp.withdrawableBalanceAtRound(randRound),

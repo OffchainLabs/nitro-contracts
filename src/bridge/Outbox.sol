@@ -15,12 +15,16 @@ contract Outbox is AbsOutbox {
     }
 
     /// @inheritdoc AbsOutbox
-    function _getAmountToUnlock(uint256 value) internal pure override returns (uint256) {
+    function _getAmountToUnlock(
+        uint256 value
+    ) internal pure override returns (uint256) {
         return value;
     }
 
     /// @inheritdoc AbsOutbox
-    function _amountToSetInContext(uint256) internal pure override returns (uint256) {
+    function _amountToSetInContext(
+        uint256
+    ) internal pure override returns (uint256) {
         // In ETH-based chains withdrawal amount can be read from msg.value. For that reason
         // amount slot in context will never be accessed, we keep it as 0 all the time
         return 0;

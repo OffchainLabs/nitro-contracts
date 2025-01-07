@@ -25,6 +25,30 @@ abstract contract AbsRollupEventInboxTest is Test {
         rollupEventInbox.initialize(bridge);
     }
 
+    function test_updateRollupAddress() public {
+        vm.prank(rollup);
+        bridge.updateRollupAddress(IOwnable(address(1337)));
+        vm.mockCall(
+            address(rollup),
+            0,
+            abi.encodeWithSelector(IOwnable.owner.selector),
+            abi.encode(address(this))
+        );
+        rollupEventInbox.updateRollupAddress();
+        assertEq(address(rollupEventInbox.rollup()), address(1337), "Invalid rollup");
+    }
+
+    function test_updateRollupAddress_revert_NotOwner() public {
+        vm.mockCall(
+            address(rollup),
+            0,
+            abi.encodeWithSelector(IOwnable.owner.selector),
+            abi.encode(address(1337))
+        );
+        vm.expectRevert(abi.encodeWithSelector(NotOwner.selector, address(this), address(1337)));
+        rollupEventInbox.updateRollupAddress();
+    }
+
     /**
      *
      * Event declarations

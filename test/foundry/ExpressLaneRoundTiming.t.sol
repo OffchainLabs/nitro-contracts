@@ -9,7 +9,9 @@ contract RoundTimingInfoImp {
 
     RoundTimingInfo public timingInfo;
 
-    constructor(RoundTimingInfo memory r) {
+    constructor(
+        RoundTimingInfo memory r
+    ) {
         timingInfo = r;
     }
 
@@ -21,39 +23,40 @@ contract RoundTimingInfoImp {
         return timingInfo.isAuctionRoundClosed();
     }
 
-    function isReserveBlackout(uint64 latestResolvedRound) public view returns (bool) {
+    function isReserveBlackout(
+        uint64 latestResolvedRound
+    ) public view returns (bool) {
         return timingInfo.isReserveBlackout(latestResolvedRound);
     }
 
-    function roundTimestamps(uint64 round) public view returns (uint64, uint64) {
+    function roundTimestamps(
+        uint64 round
+    ) public view returns (uint64, uint64) {
         return timingInfo.roundTimestamps(round);
     }
 }
 
 contract ExpressLaneRoundTimingTest is Test {
-    RoundTimingInfo info =
-        RoundTimingInfo({
-            offsetTimestamp: 1000,
-            roundDurationSeconds: 100,
-            auctionClosingSeconds: 25,
-            reserveSubmissionSeconds: 20
-        });
+    RoundTimingInfo info = RoundTimingInfo({
+        offsetTimestamp: 1000,
+        roundDurationSeconds: 100,
+        auctionClosingSeconds: 25,
+        reserveSubmissionSeconds: 20
+    });
 
-    RoundTimingInfo matchInfo =
-        RoundTimingInfo({
-            offsetTimestamp: 1000,
-            roundDurationSeconds: 100,
-            auctionClosingSeconds: 25,
-            reserveSubmissionSeconds: 75
-        });
+    RoundTimingInfo matchInfo = RoundTimingInfo({
+        offsetTimestamp: 1000,
+        roundDurationSeconds: 100,
+        auctionClosingSeconds: 25,
+        reserveSubmissionSeconds: 75
+    });
 
-    RoundTimingInfo negativeInfo =
-        RoundTimingInfo({
-            offsetTimestamp: -1000,
-            roundDurationSeconds: 100,
-            auctionClosingSeconds: 25,
-            reserveSubmissionSeconds: 20
-        });
+    RoundTimingInfo negativeInfo = RoundTimingInfo({
+        offsetTimestamp: -1000,
+        roundDurationSeconds: 100,
+        auctionClosingSeconds: 25,
+        reserveSubmissionSeconds: 20
+    });
 
     function testCurrentRound() public {
         RoundTimingInfoImp ri = new RoundTimingInfoImp(info);
@@ -164,30 +167,22 @@ contract ExpressLaneRoundTimingTest is Test {
         assertFalse(ri.isReserveBlackout(1), "At offset");
         assertFalse(ri.isReserveBlackout(2), "At offset");
         vm.warp(
-            offset +
-                info.roundDurationSeconds -
-                info.auctionClosingSeconds -
-                info.reserveSubmissionSeconds -
-                1
+            offset + info.roundDurationSeconds - info.auctionClosingSeconds
+                - info.reserveSubmissionSeconds - 1
         );
         assertFalse(ri.isReserveBlackout(0), "Before blackout");
         assertFalse(ri.isReserveBlackout(1), "Before blackout");
         assertFalse(ri.isReserveBlackout(2), "Before blackout");
         vm.warp(
-            offset +
-                info.roundDurationSeconds -
-                info.auctionClosingSeconds -
-                info.reserveSubmissionSeconds
+            offset + info.roundDurationSeconds - info.auctionClosingSeconds
+                - info.reserveSubmissionSeconds
         );
         assertTrue(ri.isReserveBlackout(0), "At blackout 0");
         assertFalse(ri.isReserveBlackout(1), "At blackout 1");
         assertFalse(ri.isReserveBlackout(2), "At blackout 2");
         vm.warp(
-            offset +
-                info.roundDurationSeconds -
-                info.auctionClosingSeconds -
-                info.reserveSubmissionSeconds +
-                1
+            offset + info.roundDurationSeconds - info.auctionClosingSeconds
+                - info.reserveSubmissionSeconds + 1
         );
         assertTrue(ri.isReserveBlackout(0), "After blackout");
         assertFalse(ri.isReserveBlackout(1), "After blackout");
@@ -201,11 +196,8 @@ contract ExpressLaneRoundTimingTest is Test {
         assertFalse(ri.isReserveBlackout(1), "At next round");
         assertFalse(ri.isReserveBlackout(2), "At next round");
         vm.warp(
-            offset +
-                2 *
-                info.roundDurationSeconds -
-                info.auctionClosingSeconds -
-                info.reserveSubmissionSeconds
+            offset + 2 * info.roundDurationSeconds - info.auctionClosingSeconds
+                - info.reserveSubmissionSeconds
         );
         assertTrue(ri.isReserveBlackout(0), "At next reserve submission deadline");
         assertTrue(ri.isReserveBlackout(1), "At next reserve submission deadline");
@@ -229,30 +221,22 @@ contract ExpressLaneRoundTimingTest is Test {
         assertFalse(nri.isReserveBlackout(20), "At offset");
         assertFalse(nri.isReserveBlackout(21), "At offset");
         vm.warp(
-            negativeOffset +
-                info.roundDurationSeconds -
-                info.auctionClosingSeconds -
-                info.reserveSubmissionSeconds -
-                1
+            negativeOffset + info.roundDurationSeconds - info.auctionClosingSeconds
+                - info.reserveSubmissionSeconds - 1
         );
         assertFalse(nri.isReserveBlackout(19), "Before blackout");
         assertFalse(nri.isReserveBlackout(20), "Before blackout");
         assertFalse(nri.isReserveBlackout(21), "Before blackout");
         vm.warp(
-            negativeOffset +
-                info.roundDurationSeconds -
-                info.auctionClosingSeconds -
-                info.reserveSubmissionSeconds
+            negativeOffset + info.roundDurationSeconds - info.auctionClosingSeconds
+                - info.reserveSubmissionSeconds
         );
         assertTrue(nri.isReserveBlackout(19), "At blackout 19");
         assertTrue(nri.isReserveBlackout(20), "At blackout 20");
         assertFalse(nri.isReserveBlackout(21), "At blackout 21");
         vm.warp(
-            negativeOffset +
-                info.roundDurationSeconds -
-                info.auctionClosingSeconds -
-                info.reserveSubmissionSeconds +
-                1
+            negativeOffset + info.roundDurationSeconds - info.auctionClosingSeconds
+                - info.reserveSubmissionSeconds + 1
         );
         assertTrue(nri.isReserveBlackout(19), "After blackout");
         assertTrue(nri.isReserveBlackout(20), "After blackout");
@@ -278,11 +262,8 @@ contract ExpressLaneRoundTimingTest is Test {
         assertFalse(nri.isReserveBlackout(20), "At next round");
         assertFalse(nri.isReserveBlackout(21), "At next round");
         vm.warp(
-            negativeOffset +
-                2 *
-                info.roundDurationSeconds -
-                info.auctionClosingSeconds -
-                info.reserveSubmissionSeconds
+            negativeOffset + 2 * info.roundDurationSeconds - info.auctionClosingSeconds
+                - info.reserveSubmissionSeconds
         );
         assertTrue(nri.isReserveBlackout(19), "At next reserve submission deadline");
         assertTrue(nri.isReserveBlackout(20), "At next reserve submission deadline");
