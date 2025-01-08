@@ -23,7 +23,7 @@ async function main() {
     'RollupProxy',
     'RollupAdminLogic',
     'RollupUserLogic',
-    'ChallengeManager',
+    'EdgeChallengeManager',
   ]
 
   // Print the current git tag
