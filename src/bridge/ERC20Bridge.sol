@@ -62,6 +62,14 @@ contract ERC20Bridge is AbsBridge, IERC20Bridge {
         }
     }
 
+    /// @notice When upgrading from v1.x.x to v2.1.1, nativeTokenDecimals must be set to 18.
+    ///         This is because v1.x.x contracts assume 18 decimals, but do not have the decimals set in storage.
+    function postUpgradeInit() external onlyDelegated onlyProxyOwner {
+        // todo: consider require(nativeToken.decimals() == 18)
+        // or maybe renaming the postUpgradeInit function to make it harder to accidentally call
+        nativeTokenDecimals = 18;
+    }
+
     /// @inheritdoc IERC20Bridge
     function enqueueDelayedMessage(
         uint8 kind,
