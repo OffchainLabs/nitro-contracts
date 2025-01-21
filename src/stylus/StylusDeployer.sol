@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-// CHRIS: TODO: fix the sol version
+// CHRIS: TODO: fix to a specific sol version
 import { ArbWasm } from "../precompiles/ArbWasm.sol";
 
 // 0. scrub useless comments
@@ -10,8 +10,12 @@ import { ArbWasm } from "../precompiles/ArbWasm.sol";
 //    even bother with create1? people can choose a random nonce if they dont care - let them inject a salt, or just use the current account nonce
 //    maybe create2 doesnt make sense for this use case since all have empty constructors? can we use the init code as a salt? yes + a user salt + the value
 
-// CHRIS: TODO: should we add caching to this contract? caching can be done by anyone at any time. It's not necessary
-contract CargoStylusFactory {
+// CHRIS: TODO: add create2 util getter
+// CHRIS: TODO: get the init return data - either bubble it up in revert if fail or log and return if success
+// CHRIS: TODO: decide whether to add full data to the event: initData, initValue, salt, msg.sender, initReturnVal, whether init occurred
+// CHRIS: TODO: public helper for the salt?
+
+contract StylusDeployer {
     ArbWasm constant ARB_WASM = ArbWasm(0x0000000000000000000000000000000000000071);
 
     // CHRIS: TODO: check all events and errors for usage
@@ -23,30 +27,6 @@ contract CargoStylusFactory {
     error EmptyBytecode();
     error InitValueButNotInitData();
 
-
-    // CHRIS: TODO: consider breaking out the deploy func, it's got quite big now
-    
-    // if they dont need to activate, then whats the cost?
-    // if they supply 0 activation value then we'll skip the step - they'll error out anyway 
-
-    // CHRIS: TODO: document that this is the way to use this function:
-    // 1. calculate code hash - how do? easy
-    // 2. check if it's activated. easy
-    // 3. estimate activation cost. 
-    // 4. estimate deploy costs
-
-    // CHRIS: TODO: include some of the following comments in the public dev docs
-    // to deploy currently
-    // 1. deploy the contract
-    // 2. check activation, if not there, then estimate activation and activate
-    // 3. init
-    // we need to activate in order to init - therefore we have to do it here if we want it all together
-    // caching is not the same - we can do that separately if we want to
-    // ok, so here we can check activation but the user should have done that already
-    // so we're just saving them some gas in the case of multiple deploys
-    // CHRIS: TODO: document the behaviour of supplying enough value to activate
-    //            : we would get a failure otherwise right? we want it to give the correct val, or fail
-
     /// @notice Deploy, activate and initialize a stylus contract
     ///         In order to call a stylus contract, and therefore initialize it, it must first be activated.
     ///         This contract provides an atomic way of deploying, activating and initializing a stylus contract.
@@ -54,20 +34,31 @@ contract CargoStylusFactory {
     ///         Initialisation will be called if initData is supplied, other initialization is skipped
     ///         Activation is not always necessary. If a contract has the same code has as another recently activated
     ///         contract then activation will be skipped.
+    ///         If additional value remains in the contract after activation it will be transferred to the msg.sender
+    ///         to that end the caller must ensure that they can receive eth.
     ///
     ///         The caller should do the following before calling this contract:
-    ///         1. Calculate the code hash that the deployed contract will have
-    ///         2. Check if that code hash will require activation by calling ARB_WASM.codehashVersion and comparing with
-    ///            the current ARB_WASM.stylusVersion
-    ///         3. If activation is required then estimate the data fee of activation. Do this by spoofing the code at an address
-    ///            then calling the ArbWasm.activateProgram and observing the returned dataFee
-    ///         4. Next this deploy function can be called. The value of the call must be set to the previously ascertained dataFee + initValue
+    ///         1. Check whether the contract will require activation, and if so what the cost will be.
+    ///            This can be done by spoofing an address with the contract code, then calling ArbWasm.programVersion to compare the
+    ///             the returned result against ArbWasm.stylusVersion. If activation is required ArbWasm.activateProgram can then be called
+    ///             to find the returned dataFee.
+    ///         2. Next this deploy function can be called. The value of the call must be set to the previously ascertained dataFee + initValue
     ///            If activation is not require, the value of the call should be set to initValue
+    ///         
+    ///         Note: Caching is not done by the deployer, and will have to be done separately after deployment.
+    ///         See https://docs.arbitrum.io/stylus/how-tos/caching-contracts for more details on caching
     /// @dev CHRIS: TODO
-    /// @param bytecode CHRIS: TODO
-    /// @param initData CHRIS: TODO
-    /// @param initValue CHRIS: TODO
-    /// @param salt CHRIS: TODO
+    /// @param bytecode The bytecode of the stylus contract to be deployed
+    /// @param initData Initialisation call data. After deployment the contract will be called with this data
+    ///                 If no initialisation data is provided then the newly deployed contract will not be called.
+    ///                 This means that the fallback function cannot be called from this contract, only named functions can be.
+    /// @param initValue Initialisation value. After deployment, the contract will be called with the init data and this value.
+    ///                  At least as much eth as init value must be provided with this call. Init value is specified here separately
+    ///                  rather than using the msg.value since the msg.value may need to be greater than the init value to accomodate activation data fee.
+    ///                  See the @notice block above for more details.
+    /// @param salt If a non zero salt is provided the contract will be created using CREATE2 instead of CREATE
+    ///             The supplied salt will be hashed with the initData and the initValue so that wherever the address is observed
+    ///             it was initialised with the same variables.
     /// @return The address of the deployed conract
     function deploy(
         bytes calldata bytecode,
@@ -76,24 +67,27 @@ contract CargoStylusFactory {
         bytes32 salt
     ) public payable returns (address) {
         if(salt != 0) {
-            // CHRIS: TODO: put this somewhere nicer?
-            // hash the salt with init value and init data to guarantee that anywhere the address of this 
-            // contract is seen the same init data and value were used
+            // if a salt was supplied, hash the salt with init value and init data. This guarantees that 
+            // anywhere the address of this contract is seen the same init data and value were used.
             salt = keccak256(abi.encodePacked(initValue, initData, salt));
         }
+
         address newContractAddress = deployContract(bytecode, salt);
         bool shouldActivate = requiresActivation(newContractAddress);
         if(shouldActivate) {
-            // ensure there will be enough left over to call init with
+            // ensure there will be enough left over for init
             uint256 activationValue = msg.value - initValue;
             ARB_WASM.activateProgram{value: activationValue}(
                 newContractAddress
             );
         }
-        // initialize - this will fail if the program was activated by this point
-        // CHRIS: TODO: test the above comment - and should we give a kinder error for that case?
+
+        // initialize - this will fail if the program wasn't activated by this point
+        // we check if initData exists to avoid calling contracts unnecessarily
+        // CHRIS: TODO: test the above comment - and should we give a kinder error for that case? should be a nice one
         // CHRIS: TODO: test what happens when a stylus contract is called with a empty data - we hit the fallback i guess?
         //            : we're not gonna support that here, so that needs to be documented
+        // CHRIS: TODO: should we just call everytime?
         if(initData.length != 0) {
             (bool success, ) = address(newContractAddress).call{value: initValue}(initData);
             if (!success) {
@@ -105,8 +99,8 @@ contract CargoStylusFactory {
         }
         
         // refund any remaining value - activation can return some to this contract
-        // CHRIS: TODO: should we only do this if the contract was actually activated?
         if(shouldActivate) {
+            // CHRIS: TODO: balance or just the expected amount - someone could force a refund this way otherwise
             uint256 bal = address(this).balance;
             if(bal != 0) {
                 (bool sent, ) = payable(msg.sender).call{value: bal}("");
@@ -143,15 +137,15 @@ contract CargoStylusFactory {
         return codeHashVersion != ARB_WASM.stylusVersion();
     }
 
+    /// @notice Deploy the a contract with the supplied bytecode. 
+    ///         Will create2 if the supplied salt is non zero
     function deployContract(bytes memory bytecode, bytes32 salt) internal returns (address) {
         if(bytecode.length == 0) {
             revert EmptyBytecode();
         }
 
         address newContractAddress;
-
         if(salt != 0) {
-            // CHRIS: TODO: use OZ for this?
             assembly {
                 newContractAddress := create2(0, add(bytecode, 0x20), mload(bytecode), salt)
                 // bubble up the revert if there was one
@@ -179,9 +173,4 @@ contract CargoStylusFactory {
 
         return newContractAddress;
     }
-
-    // CHRIS: TODO: add create2 util getter
-    // CHRIS: TODO: get the init return data - either bubble it up in revert if fail or log and return if success
-    // CHRIS: TODO: decide whether to add full data to the event: initData, initValue, salt, msg.sender, initReturnVal, whether init occurred
-    // CHRIS: TODO: public helper for the salt?
 }
