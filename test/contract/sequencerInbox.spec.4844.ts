@@ -49,7 +49,7 @@ import {
 import { Toolkit4844 } from './toolkit4844'
 import { SequencerInbox } from '../../build/types/src/bridge/SequencerInbox'
 import { InboxMessageDeliveredEvent } from '../../build/types/src/bridge/AbsInbox'
-import { SequencerBatchDeliveredEvent } from '../../build/types/src/bridge/ISequencerInbox'
+import { SequencerBatchDeliveredEvent } from '../../build/types/src/bridge/ISequencerInbox.sol/ISequencerInbox'
 
 describe('SequencerInbox', async () => {
   const findMatchingLogs = <TInterface extends Interface, TEvent extends Event>(
@@ -284,12 +284,12 @@ describe('SequencerInbox', async () => {
           futureBlocks: 10,
           futureSeconds: 3000,
         },
-        constants.AddressZero,
         {
           threshold: 0,
           max: 0,
           replenishRateInBasis: 0,
-        }
+        },
+        constants.AddressZero
       )
     ).wait()
 
