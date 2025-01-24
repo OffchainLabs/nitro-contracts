@@ -118,6 +118,7 @@ contract Inbox is AbsInbox, IInbox {
         if (!_chainIdChanged()) revert NotForked();
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
+        // no code size check required because we only want to know if msg.sender is an EOA to undo alias
         // arbos will discard unsigned tx with gas limit too large
         if (gasLimit > type(uint64).max) {
             revert GasLimitTooLarge();
@@ -152,6 +153,7 @@ contract Inbox is AbsInbox, IInbox {
         if (!_chainIdChanged()) revert NotForked();
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
+        // no code size check required because we only want to know if msg.sender is an EOA to undo alias
         // arbos will discard unsigned tx with gas limit too large
         if (gasLimit > type(uint64).max) {
             revert GasLimitTooLarge();
@@ -185,6 +187,7 @@ contract Inbox is AbsInbox, IInbox {
         if (!_chainIdChanged()) revert NotForked();
         // solhint-disable-next-line avoid-tx-origin
         if (msg.sender != tx.origin) revert NotOrigin();
+        // no code size check required because we only want to know if msg.sender is an EOA to undo alias
         // arbos will discard unsigned tx with gas limit too large
         if (gasLimit > type(uint64).max) {
             revert GasLimitTooLarge();

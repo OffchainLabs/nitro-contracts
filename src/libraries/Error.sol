@@ -13,6 +13,9 @@ error HadZeroInit();
 /// @dev Thrown when post upgrade init validation fails
 error BadPostUpgradeInit();
 
+/// @dev Thrown when the caller is not a codeless origin
+error NotCodelessOrigin();
+
 /// @dev Thrown when non owner tries to access an only-owner function
 /// @param sender The msg.sender who is not the owner
 /// @param owner The owner address

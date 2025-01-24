@@ -7,6 +7,7 @@ pragma solidity ^0.8.0;
 
 import "./IReader4844.sol";
 import "./IGasRefunder.sol";
+import "../libraries/CallerChecker.sol";
 
 abstract contract GasRefundEnabled {
     uint256 internal immutable gasPerBlob = 2**17;
@@ -24,8 +25,7 @@ abstract contract GasRefundEnabled {
             startGasLeft += calldataWords * 6 + (calldataWords**2) / 512;
             // if triggered in a contract call, the spender may be overrefunded by appending dummy data to the call
             // so we check if it is a top level call, which would mean the sender paid calldata as part of tx.input
-            // solhint-disable-next-line avoid-tx-origin
-            if (msg.sender != tx.origin) {
+            if (!CallerChecker.isCallerCodelessOrigin()) {
                 // We can't be sure if this calldata came from the top level tx,
                 // so to be safe we tell the gas refunder there was no calldata.
                 calldataSize = 0;
