@@ -48,7 +48,7 @@ contract Simple {
     function redeemAll(bytes32[] calldata ticketIds) external {
         for (uint256 i = 0; i < ticketIds.length; i++) {
             // Attempt to redeem each retryable ticket
-            try ArbRetryableTx(address(110)).redeem(ticketIds[i]) {
+            try ArbRetryableTx(address(110)).redeem{gas: 100000}(ticketIds[i]) {
                 // Ticket redeemed successfully
 								counter++;
             } catch {
