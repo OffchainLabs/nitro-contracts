@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
+
 import {ArbWasm} from "../precompiles/ArbWasm.sol";
 
 /// @title A Stylus contract deployer, activator and initializer
@@ -74,7 +75,7 @@ contract StylusDeployer {
         // initialize - this will fail if the program wasn't activated by this point
         // we check if initData exists to avoid calling contracts unnecessarily
         if (initData.length != 0) {
-            (bool success, ) = address(newContractAddress).call{value: initValue}(initData);
+            (bool success,) = address(newContractAddress).call{value: initValue}(initData);
             if (!success) {
                 revert ContractInitializationError(newContractAddress);
             }
@@ -91,7 +92,7 @@ contract StylusDeployer {
             if (bal != 0) {
                 // the caller must be payable, even if they dont expect to receive any balance since it value can be forced into
                 // this contract via selfdestruct
-                (bool sent, ) = payable(msg.sender).call{value: bal}("");
+                (bool sent,) = payable(msg.sender).call{value: bal}("");
                 if (!sent) {
                     revert RefundExcessValueError(bal);
                 }
@@ -119,7 +120,9 @@ contract StylusDeployer {
     }
 
     /// @notice Checks whether a contract requires activation
-    function requiresActivation(address addr) public view returns (bool) {
+    function requiresActivation(
+        address addr
+    ) public view returns (bool) {
         // currently codeHashVersion returns an error when codeHashVersion != stylus version
         // so we do a try/catch to to check it
         uint16 codeHashVersion;
