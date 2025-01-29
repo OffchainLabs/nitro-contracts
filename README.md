@@ -5,9 +5,9 @@ It includes the rollup and fraud proof smart contracts, as well as interfaces fo
 
 For more information see https://developer.arbitrum.io/intro
 
-For the deployed addresses of these contracts for Arbitrum chains see https://developer.arbitrum.io/useful-addresses
+For the deployed addresses of these contracts for Arbitrum chains see [https://docs.arbitrum.io/for-devs/dev-tools-and-resources/chain-info#core-contracts](https://docs.arbitrum.io/for-devs/dev-tools-and-resources/chain-info#core-contracts)
 
-For the token bridge contracts see https://github.com/OffchainLabs/token-bridge-contracts
+For the token bridge contracts see [https://github.com/OffchainLabs/token-bridge-contracts](https://github.com/OffchainLabs/token-bridge-contracts)
 
 Compile these contracts locally by running
 
@@ -24,7 +24,7 @@ Nitro is currently licensed under a [Business Source License](./LICENSE.md), sim
 
 The Additional Use Grant also permits the deployment of the Nitro software, in a permissionless fashion and without cost, as a new blockchain provided that the chain settles to either Arbitrum One or Arbitrum Nova.
 
-For those that prefer to deploy the Nitro software either directly on Ethereum (i.e. an L2) or have it settle to another Layer-2 on top of Ethereum, the [Arbitrum Expansion Program (the "AEP")](https://docs.arbitrum.foundation/assets/files/Arbitrum%20Expansion%20Program%20Jan182024-4f08b0c2cb476a55dc153380fa3e64b0.pdf) was recently established. The AEP allows for the permissionless deployment in the aforementioned fashion provided that 10% of net revenue is contributed back to the Arbitrum community in accordance with the requirements of the AEP.
+For those that prefer to deploy the Nitro software either directly on Ethereum (i.e. an L2) or have it settle to another Layer-2 on top of Ethereum, the [Arbitrum Expansion Program (the "AEP")](https://docs.arbitrum.foundation/aep/ArbitrumExpansionProgramTerms.pdf) was recently established. The AEP allows for the permissionless deployment in the aforementioned fashion provided that 10% of net revenue is contributed back to the Arbitrum community in accordance with the requirements of the AEP.
 
 ## Contact
 
