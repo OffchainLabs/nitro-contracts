@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 // CHRIS: TODO: fix to a specific sol version
-import { ArbWasm } from "../precompiles/ArbWasm.sol";
+import {ArbWasm} from "../precompiles/ArbWasm.sol";
 
 // 0. scrub useless comments
 // 1. docs and tests - how can we do that? fork test? nope, that wont work either? e2e test with the testnode
@@ -40,12 +40,12 @@ contract StylusDeployer {
     ///         The caller should do the following before calling this contract:
     ///         1. Check whether the contract will require activation, and if so what the cost will be.
     ///            This can be done by spoofing an address with the contract code, then calling ArbWasm.programVersion to compare the
-    ///             the returned result against ArbWasm.stylusVersion. If activation is required ArbWasm.activateProgram can then be called
-    ///             to find the returned dataFee.
+    ///            the returned result against ArbWasm.stylusVersion. If activation is required ArbWasm.activateProgram can then be called
+    ///            to find the returned dataFee.
     ///         2. Next this deploy function can be called. The value of the call must be set to the previously ascertained dataFee + initValue
     ///            If activation is not require, the value of the call should be set to initValue
-    ///         
-    ///         Note: Caching is not done by the deployer, and will have to be done separately after deployment.
+    ///
+    ///         Note: Stylus contract caching is not done by the deployer, and will have to be done separately after deployment.
     ///         See https://docs.arbitrum.io/stylus/how-tos/caching-contracts for more details on caching
     /// @dev CHRIS: TODO
     /// @param bytecode The bytecode of the stylus contract to be deployed
@@ -66,20 +66,18 @@ contract StylusDeployer {
         uint256 initValue,
         bytes32 salt
     ) public payable returns (address) {
-        if(salt != 0) {
-            // if a salt was supplied, hash the salt with init value and init data. This guarantees that 
+        if (salt != 0) {
+            // if a salt was supplied, hash the salt with init value and init data. This guarantees that
             // anywhere the address of this contract is seen the same init data and value were used.
-            salt = keccak256(abi.encodePacked(initValue, initData, salt));
+            salt = initSalt(salt, initData, initValue);
         }
 
         address newContractAddress = deployContract(bytecode, salt);
         bool shouldActivate = requiresActivation(newContractAddress);
-        if(shouldActivate) {
+        if (shouldActivate) {
             // ensure there will be enough left over for init
             uint256 activationValue = msg.value - initValue;
-            ARB_WASM.activateProgram{value: activationValue}(
-                newContractAddress
-            );
+            ARB_WASM.activateProgram{value: activationValue}(newContractAddress);
         }
 
         // initialize - this will fail if the program wasn't activated by this point
@@ -88,21 +86,23 @@ contract StylusDeployer {
         // CHRIS: TODO: test what happens when a stylus contract is called with a empty data - we hit the fallback i guess?
         //            : we're not gonna support that here, so that needs to be documented
         // CHRIS: TODO: should we just call everytime?
-        if(initData.length != 0) {
+        if (initData.length != 0) {
             (bool success, ) = address(newContractAddress).call{value: initValue}(initData);
             if (!success) {
                 revert ContractInitializationError(newContractAddress);
             }
-        } else if(initValue != 0) {
+        } else if (initValue != 0) {
             // if initValue exists init data should too
             revert InitValueButNotInitData();
         }
-        
-        // refund any remaining value - activation can return some to this contract
-        if(shouldActivate) {
+
+        // refund any remaining value if:
+        // - activation can return some to this contract
+        // - some activation value was supplied but not used
+        if (shouldActivate || msg.value != initValue) {
             // CHRIS: TODO: balance or just the expected amount - someone could force a refund this way otherwise
             uint256 bal = address(this).balance;
-            if(bal != 0) {
+            if (bal != 0) {
                 (bool sent, ) = payable(msg.sender).call{value: bal}("");
                 // CHRIS: TODO: if we keep this we need to add it to the docs that the caller must be payable
                 // CHRIS: TODO: someone can put funds into the here and cause a revert. Maybe we should calculate instead of using balance
@@ -112,14 +112,23 @@ contract StylusDeployer {
             }
         }
 
-        // activation already emits the following event: 
+        // activation already emits the following event:
         // event ProgramActivated(bytes32 indexed codehash, bytes32 moduleHash, address program, uint256 dataFee, uint16 version);
         emit ContractDeployed(newContractAddress);
 
         return newContractAddress;
     }
 
-    function requiresActivation(address addr) public view returns(bool) {
+    // CHRIS: TODO: natspec
+    function initSalt(
+        bytes32 salt,
+        bytes calldata initData,
+        uint256 initValue
+    ) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(salt, initData, initValue));
+    }
+
+    function requiresActivation(address addr) public view returns (bool) {
         // currently codeHashVersion returns an error when codeHashVersion != stylus version
         // so we do a try/catch to to check it
         uint16 codeHashVersion;
@@ -131,21 +140,21 @@ contract StylusDeployer {
         }
 
         // CHRIS: TODO: decide whether we make this forward compatible or not - arguably not, then we can get rid of the below check and just return != 0
-        
+
         // due to the bug in ARB_WASM.codeHashVersion we know that codeHashVersion will either be 0 or the current
         // version. We still check that is not equal to the stylusVersion
         return codeHashVersion != ARB_WASM.stylusVersion();
     }
 
-    /// @notice Deploy the a contract with the supplied bytecode. 
+    /// @notice Deploy the a contract with the supplied bytecode.
     ///         Will create2 if the supplied salt is non zero
     function deployContract(bytes memory bytecode, bytes32 salt) internal returns (address) {
-        if(bytecode.length == 0) {
+        if (bytecode.length == 0) {
             revert EmptyBytecode();
         }
 
         address newContractAddress;
-        if(salt != 0) {
+        if (salt != 0) {
             assembly {
                 newContractAddress := create2(0, add(bytecode, 0x20), mload(bytecode), salt)
                 // bubble up the revert if there was one
