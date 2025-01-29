@@ -46,7 +46,6 @@ describe('Custom fee token orbit rollup', () => {
     } catch {
       feeToken = ethers.constants.AddressZero
     }
-
     return feeToken
   }
 
