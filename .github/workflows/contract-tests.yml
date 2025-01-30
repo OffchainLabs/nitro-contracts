@@ -130,7 +130,7 @@ jobs:
         with:
           version: stable
 
-      - uses: OffchainLabs/actions/run-nitro-test-node@testnode-timeout
+      - uses: OffchainLabs/actions/run-nitro-test-node@main
         with:
           args: --pos
           no-token-bridge: true
