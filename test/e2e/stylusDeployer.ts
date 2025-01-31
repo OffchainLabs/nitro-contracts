@@ -169,18 +169,17 @@ const deploy = async (args: {
       throw err
     }
   }
-
+  
   if (args.expectRevert === true && errorOccurred === false) {
     throw new Error('Expected revert but not found')
   }
-
+  
   expect(rec.events?.length, 'Deploy events').eq(args.expectActivation ? 2 : 1)
   const contractDeployed = getContractDeployedEvent(rec, args.deployer)
   if (args.salt !== constants.HashZero) {
     const initSalt = await args.deployer.callStatic.initSalt(
       args.salt,
-      args.initData,
-      args.initVal
+      args.initData
     )
     // calculate the epected address
     const address = ethers.utils.getCreate2Address(
@@ -284,20 +283,6 @@ describe('Stylus deployer', () => {
       salt: keccak256('0x21'),
     })
 
-    // deploy again with different val
-    await deploy({
-      wallet: wall,
-      bytecode,
-      deployer,
-      expectActivation: false,
-      initData: counterInterface.encodeFunctionData('setNumber', [
-        BigNumber.from(12),
-      ]),
-      initVal: BigNumber.from(parseEther('0.0132')),
-      expectedInitCounter: BigNumber.from(12),
-      salt: keccak256('0x20'),
-    })
-
     // deploy again with different init data
     await deploy({
       wallet: wall,
@@ -342,7 +327,7 @@ describe('Stylus deployer', () => {
   it('create1 deploy, activate, init', async function () {
     const wall = await getConnectedL2Wallet()
     const deployer = await new StylusDeployer__factory(wall).deploy()
-    const bytecode = getBytecode(2)
+    const bytecode = getBytecode(5)
 
     await deploy({
       wallet: wall,
@@ -437,7 +422,7 @@ describe('Stylus deployer', () => {
   it('refund checks', async () => {
     const wall = await getConnectedL2Wallet()
     const deployer = await new StylusDeployer__factory(wall).deploy()
-    const bytecode = getBytecode(4)
+    const bytecode = getBytecode(8)
     const forwarder1 = await new ReceivingForwarder__factory(wall).deploy()
     const forwarder2 = await new ReceivingForwarder__factory(wall).deploy()
 

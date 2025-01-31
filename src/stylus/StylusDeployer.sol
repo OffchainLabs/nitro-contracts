@@ -26,9 +26,7 @@ contract StylusDeployer {
     ///         Activation is not always necessary. If a contract has the same code has as another recently activated
     ///         contract then activation will be skipped.
     ///         If additional value remains in the contract after activation it will be transferred to the msg.sender
-    ///         to that end the caller must ensure that they can receive eth. Even if they do not expect to receive any value
-    ///         they should still use a payable caller, since value could get forced into the contract using a methods like self destruct
-    ///         or retryable transactions.
+    ///         to that end the caller must ensure that they can receive eth.
     ///
     ///         The caller should do the following before calling this contract:
     ///         1. Check whether the contract will require activation, and if so what the cost will be.
@@ -49,7 +47,7 @@ contract StylusDeployer {
     ///                  rather than using the msg.value since the msg.value may need to be greater than the init value to accomodate activation data fee.
     ///                  See the @notice block above for more details.
     /// @param salt If a non zero salt is provided the contract will be created using CREATE2 instead of CREATE
-    ///             The supplied salt will be hashed with the initData and the initValue so that wherever the address is observed
+    ///             The supplied salt will be hashed with the initData so that wherever the address is observed
     ///             it was initialised with the same variables.
     /// @return The address of the deployed conract
     function deploy(
@@ -59,17 +57,18 @@ contract StylusDeployer {
         bytes32 salt
     ) public payable returns (address) {
         if (salt != 0) {
-            // if a salt was supplied, hash the salt with init value and init data. This guarantees that
-            // anywhere the address of this contract is seen the same init data and value were used.
-            salt = initSalt(salt, initData, initValue);
+            // if a salt was supplied, hash the salt with the init data. This guarantees that
+            // anywhere the address of this contract is seen the same init data was used
+            salt = initSalt(salt, initData);
         }
 
         address newContractAddress = deployContract(bytecode, salt);
         bool shouldActivate = requiresActivation(newContractAddress);
+        uint256 dataFee;
         if (shouldActivate) {
             // ensure there will be enough left over for init
             uint256 activationValue = msg.value - initValue;
-            ARB_WASM.activateProgram{value: activationValue}(newContractAddress);
+            (,dataFee) = ARB_WASM.activateProgram{value: activationValue}(newContractAddress);
         }
 
         // initialize - this will fail if the program wasn't activated by this point
@@ -84,20 +83,16 @@ contract StylusDeployer {
             revert InitValueButNotInitData();
         }
 
-        // refund any remaining value if:
-        // - activation can return some to this contract
-        // - some activation value was supplied but not used
-        if (shouldActivate || msg.value != initValue) {
-            uint256 bal = address(this).balance;
-            if (bal != 0) {
-                // the caller must be payable, even if they dont expect to receive any balance since it value can be forced into
-                // this contract via selfdestruct
-                (bool sent,) = payable(msg.sender).call{value: bal}("");
-                if (!sent) {
-                    revert RefundExcessValueError(bal);
-                }
+        // refund any remaining value
+        uint256 bal = msg.value - dataFee - initValue;
+        if (bal != 0) {
+            // the caller must be payable
+            (bool sent,) = payable(msg.sender).call{value: bal}("");
+            if (!sent) {
+                revert RefundExcessValueError(bal);
             }
         }
+        
 
         // activation already emits the following event:
         // event ProgramActivated(bytes32 indexed codehash, bytes32 moduleHash, address program, uint256 dataFee, uint16 version);
@@ -110,13 +105,11 @@ contract StylusDeployer {
     ///         can be sure that wherever they encourter this address it was initialized with the same data and value
     /// @param salt A user supplied salt
     /// @param initData The init data that will be used to init the deployed contract
-    /// @param initValue The init value that will be used to init the deployed contract
     function initSalt(
         bytes32 salt,
-        bytes calldata initData,
-        uint256 initValue
+        bytes calldata initData
     ) public pure returns (bytes32) {
-        return keccak256(abi.encodePacked(salt, initData, initValue));
+        return keccak256(abi.encodePacked(salt, initData));
     }
 
     /// @notice Checks whether a contract requires activation
