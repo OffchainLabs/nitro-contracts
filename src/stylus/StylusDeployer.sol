@@ -43,7 +43,7 @@ contract StylusDeployer {
     /// @param bytecode The bytecode of the stylus contract to be deployed
     /// @param initData Initialisation call data. After deployment the contract will be called with this data
     ///                 If no initialisation data is provided then the newly deployed contract will not be called.
-    ///                 This means that the fallback function cannot be called from this contract, only named functions can be.
+    ///                 This means that the receive or dataless fallback function cannot be called from this contract.
     /// @param initValue Initialisation value. After deployment, the contract will be called with the init data and this value.
     ///                  At least as much eth as init value must be provided with this call. Init value is specified here separately
     ///                  rather than using the msg.value since the msg.value may need to be greater than the init value to accomodate activation data fee.
