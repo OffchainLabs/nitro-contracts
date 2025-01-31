@@ -68,6 +68,7 @@ contract StylusDeployer {
         bool shouldActivate = requiresActivation(newContractAddress);
         if (shouldActivate) {
             // ensure there will be enough left over for init
+            // activateProgram will return unused value back to this contract without an EVM call
             uint256 activationValue = msg.value - initValue;
             ARB_WASM.activateProgram{value: activationValue}(newContractAddress);
         }
