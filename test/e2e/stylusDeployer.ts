@@ -169,11 +169,11 @@ const deploy = async (args: {
       throw err
     }
   }
-  
+
   if (args.expectRevert === true && errorOccurred === false) {
     throw new Error('Expected revert but not found')
   }
-  
+
   expect(rec.events?.length, 'Deploy events').eq(args.expectActivation ? 2 : 1)
   const contractDeployed = getContractDeployedEvent(rec, args.deployer)
   if (args.salt !== constants.HashZero) {

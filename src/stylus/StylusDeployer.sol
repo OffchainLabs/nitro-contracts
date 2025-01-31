@@ -69,7 +69,7 @@ contract StylusDeployer {
             // ensure there will be enough left over for init
             // activateProgram will return unused value back to this contract without an EVM call
             uint256 activationValue = msg.value - initValue;
-            (,dataFee) = ARB_WASM.activateProgram{value: activationValue}(newContractAddress);
+            (, dataFee) = ARB_WASM.activateProgram{value: activationValue}(newContractAddress);
         }
 
         // initialize - this will fail if the program wasn't activated by this point
@@ -93,7 +93,6 @@ contract StylusDeployer {
                 revert RefundExcessValueError(bal);
             }
         }
-        
 
         // activation already emits the following event:
         // event ProgramActivated(bytes32 indexed codehash, bytes32 moduleHash, address program, uint256 dataFee, uint16 version);
@@ -106,10 +105,7 @@ contract StylusDeployer {
     ///         can be sure that wherever they encourter this address it was initialized with the same data and value
     /// @param salt A user supplied salt
     /// @param initData The init data that will be used to init the deployed contract
-    function initSalt(
-        bytes32 salt,
-        bytes calldata initData
-    ) public pure returns (bytes32) {
+    function initSalt(bytes32 salt, bytes calldata initData) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(salt, initData));
     }
 
