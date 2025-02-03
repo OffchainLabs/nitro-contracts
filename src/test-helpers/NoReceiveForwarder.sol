@@ -32,9 +32,7 @@ contract ConstructorFine {
         require(true, "test error in constructor");
     }
 
-    function number() public pure returns(uint256) {
+    function number() public pure returns (uint256) {
         return 0;
     }
 }
-
-

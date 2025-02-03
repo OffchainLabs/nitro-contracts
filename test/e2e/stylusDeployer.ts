@@ -3,7 +3,6 @@ import { expect } from 'chai'
 import {
   ArbWasm__factory,
   ConstructorError__factory,
-  ConstructorFine__factory,
   NoReceiveForwarder__factory,
   ReceivingForwarder__factory,
   StylusDeployer,
@@ -125,8 +124,8 @@ const deploy = async (args: {
   forwarder?: ethers.Contract
   overrideValue?: BigNumber
 }) => {
-  let activationFee = BigNumber.from(0);
-  if(args.expectActivation) {
+  let activationFee = BigNumber.from(0)
+  if (args.expectActivation) {
     activationFee = await estimateActivationCost(args.bytecode, args.wallet)
     expect(
       args.expectActivation ? !activationFee.eq(0) : activationFee.eq(0),
@@ -381,8 +380,8 @@ describe('Stylus deployer', () => {
     const noReceiveForwarder = await new NoReceiveForwarder__factory(
       wall
     ).deploy()
-    const constructorErrorBytecode = new ConstructorError__factory().bytecode;
-    
+    const constructorErrorBytecode = new ConstructorError__factory().bytecode
+
     // deploy a contract that will error upon construction
     await deploy({
       wallet: wall,
@@ -393,7 +392,7 @@ describe('Stylus deployer', () => {
       initVal: BigNumber.from(0),
       expectedInitCounter: BigNumber.from(0),
       salt: constants.HashZero,
-      expectRevert: true
+      expectRevert: true,
     })
     await deploy({
       wallet: wall,
@@ -403,8 +402,8 @@ describe('Stylus deployer', () => {
       initData: '0x',
       initVal: BigNumber.from(0),
       expectedInitCounter: BigNumber.from(0),
-      salt: keccak256("0x56"),
-      expectRevert: true
+      salt: keccak256('0x56'),
+      expectRevert: true,
     })
 
     // init value without init data

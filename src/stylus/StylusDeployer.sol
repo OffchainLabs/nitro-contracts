@@ -142,7 +142,7 @@ contract StylusDeployer {
             }
         } else {
             assembly {
-                newContractAddress := create(0, add(bytecode, 0x20), mload(bytecode))   
+                newContractAddress := create(0, add(bytecode, 0x20), mload(bytecode))
             }
         }
 
