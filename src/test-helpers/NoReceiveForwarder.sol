@@ -18,3 +18,23 @@ contract ReceivingForwarder {
 
     receive() external payable {}
 }
+
+/// @notice Errors upon construction
+contract ConstructorError {
+    constructor() {
+        require(false, "test error in constructor");
+    }
+}
+
+/// @notice Errors upon construction
+contract ConstructorFine {
+    constructor() {
+        require(true, "test error in constructor");
+    }
+
+    function number() public pure returns(uint256) {
+        return 0;
+    }
+}
+
+

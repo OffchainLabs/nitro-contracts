@@ -64,7 +64,7 @@ contract StylusDeployer {
 
         address newContractAddress = deployContract(bytecode, salt);
         bool shouldActivate = requiresActivation(newContractAddress);
-        uint256 dataFee;
+        uint256 dataFee = 0;
         if (shouldActivate) {
             // ensure there will be enough left over for init
             // activateProgram will return unused value back to this contract without an EVM call
@@ -139,22 +139,19 @@ contract StylusDeployer {
         if (salt != 0) {
             assembly {
                 newContractAddress := create2(0, add(bytecode, 0x20), mload(bytecode), salt)
-                // bubble up the revert if there was one
-                if and(iszero(newContractAddress), not(iszero(returndatasize()))) {
-                    let p := mload(0x40)
-                    returndatacopy(p, 0, returndatasize())
-                    revert(p, returndatasize())
-                }
             }
         } else {
             assembly {
-                newContractAddress := create(0, add(bytecode, 0x20), mload(bytecode))
-                // bubble up the revert if there was one
-                if and(iszero(newContractAddress), not(iszero(returndatasize()))) {
-                    let p := mload(0x40)
-                    returndatacopy(p, 0, returndatasize())
-                    revert(p, returndatasize())
-                }
+                newContractAddress := create(0, add(bytecode, 0x20), mload(bytecode))   
+            }
+        }
+
+        // bubble up the revert if there was one
+        assembly {
+            if and(iszero(newContractAddress), not(iszero(returndatasize()))) {
+                let p := mload(0x40)
+                returndatacopy(p, 0, returndatasize())
+                revert(p, returndatasize())
             }
         }
 
