@@ -17,6 +17,9 @@ import {
   StateHashPreImageLookup__factory,
   IReader4844__factory,
   IOldRollup__factory,
+  ERC20Bridge__factory,
+  ERC20Outbox__factory,
+  ERC20Inbox__factory,
 } from '../build/types'
 import { bytecode as Reader4844Bytecode } from '../out/yul/Reader4844.yul/Reader4844.json'
 import { DeployedContracts, Config } from './boldUpgradeCommon'
@@ -31,7 +34,9 @@ export const deployDependencies = async (
   log: boolean = false,
   verify: boolean = true
 ): Promise<Omit<DeployedContracts, 'boldAction' | 'preImageHashLookup'>> => {
-  const bridgeFac = new Bridge__factory(signer)
+  const bridgeFac = isUsingFeeToken
+    ? new ERC20Bridge__factory(signer)
+    : new Bridge__factory(signer)
   const bridge = await bridgeFac.deploy()
   await bridge.deployed()
   if (log) {
@@ -40,10 +45,10 @@ export const deployDependencies = async (
   if (verify) {
     await bridge.deployTransaction.wait(5)
     await verifyContract(
-      'Bridge',
+      isUsingFeeToken ? 'ERC20Bridge' : 'Bridge',
       bridge.address,
       [],
-      'src/bridge/Bridge.sol:Bridge'
+      isUsingFeeToken ? 'src/bridge/ERC20Bridge.sol:ERC20Bridge' : 'src/bridge/Bridge.sol:Bridge'
     )
   }
 
@@ -90,7 +95,9 @@ export const deployDependencies = async (
     await verifyContract('RollupEventInbox', rei.address, [])
   }
 
-  const outboxFac = new Outbox__factory(signer)
+  const outboxFac = isUsingFeeToken 
+    ? new ERC20Outbox__factory(signer)
+    : new Outbox__factory(signer)
   const outbox = await outboxFac.deploy()
   await outbox.deployed()
   if (log) {
@@ -98,10 +105,12 @@ export const deployDependencies = async (
   }
   if (verify) {
     await outbox.deployTransaction.wait(5)
-    await verifyContract('Outbox', outbox.address, [])
+    await verifyContract(isUsingFeeToken ? 'ERC20Outbox' : 'Outbox', outbox.address, [])
   }
 
-  const inboxFac = new Inbox__factory(signer)
+  const inboxFac = isUsingFeeToken
+    ? new ERC20Inbox__factory(signer)
+    : new Inbox__factory(signer)
   const inbox = await inboxFac.deploy(maxDataSize)
   await inbox.deployed()
   if (log) {
