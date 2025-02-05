@@ -409,7 +409,7 @@ contract SequencerInboxTest is Test {
         uint256 sequenceNumber = bridge.sequencerMessageCount();
         uint256 delayedMessagesRead = bridge.delayedMessageCount();
 
-        vm.expectRevert(abi.encodeWithSelector(NotOrigin.selector));
+        vm.expectRevert(abi.encodeWithSelector(NotCodelessOrigin.selector));
         seqInbox.addSequencerL2BatchFromOrigin(
             sequenceNumber,
             data,
@@ -418,6 +418,20 @@ contract SequencerInboxTest is Test {
             subMessageCount,
             subMessageCount + 1
         );
+
+        assertEq(rollupOwner.code.length, 0, "rollupOwner is codeless");
+        vm.etch(rollupOwner, bytes("some code"));
+        vm.prank(rollupOwner, rollupOwner);
+        vm.expectRevert(abi.encodeWithSelector(NotCodelessOrigin.selector));
+        seqInbox.addSequencerL2BatchFromOrigin(
+            sequenceNumber,
+            data,
+            delayedMessagesRead,
+            IGasRefunder(address(0)),
+            subMessageCount,
+            subMessageCount + 1
+        );
+        vm.etch(rollupOwner, bytes(""));
 
         vm.prank(rollupOwner);
         seqInbox.setIsBatchPoster(tx.origin, false);
