@@ -31,6 +31,7 @@ export const deployDependencies = async (
   maxDataSize: number,
   isUsingFeeToken: boolean,
   isDelayBufferable: boolean,
+  isUsing4844Reader: boolean,
   log: boolean = false,
   verify: boolean = true
 ): Promise<Omit<DeployedContracts, 'boldAction' | 'preImageHashLookup'>> => {
@@ -57,14 +58,18 @@ export const deployDependencies = async (
     Reader4844Bytecode,
     signer
   )
-  const reader4844 = await contractFactory.deploy()
-  await reader4844.deployed()
-  console.log(`Reader4844 deployed at ${reader4844.address}`)
 
+  let reader4844Addr = ethers.constants.AddressZero;
+  if (isUsing4844Reader) {
+    const reader4844 = await contractFactory.deploy()
+    await reader4844.deployed()
+    reader4844Addr = reader4844.address
+    console.log(`Reader4844 deployed at ${reader4844Addr}`)
+  }
   const seqInboxFac = new SequencerInbox__factory(signer)
   const seqInbox = await seqInboxFac.deploy(
     maxDataSize,
-    reader4844.address,
+    reader4844Addr,
     isUsingFeeToken,
     isDelayBufferable
   )
@@ -78,7 +83,7 @@ export const deployDependencies = async (
     await seqInbox.deployTransaction.wait(5)
     await verifyContract('SequencerInbox', seqInbox.address, [
       maxDataSize,
-      reader4844.address,
+      reader4844Addr,
       isUsingFeeToken,
       isDelayBufferable,
     ])
@@ -247,11 +252,13 @@ export const deployBoldUpgrade = async (
     wallet
   )
   const isUsingFeeToken = await sequencerInbox.isUsingFeeToken()
+  const has4844Reader = await sequencerInbox.reader4844() != ethers.constants.AddressZero
   const deployed = await deployDependencies(
     wallet,
     config.settings.maxDataSize,
     isUsingFeeToken,
     config.settings.isDelayBufferable,
+    has4844Reader,
     log,
     verify
   )
