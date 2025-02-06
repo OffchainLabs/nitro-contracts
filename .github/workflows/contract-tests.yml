@@ -289,12 +289,12 @@ jobs:
 
       - uses: OffchainLabs/actions/run-nitro-test-node@main
         with:
-          args: --pos
-          no-token-bridge: true
-          # args:
-          # l3-node: true
-          # args: --l3-fee-token --l3-fee-token-pricer
+          # args: --pos
           # no-token-bridge: true
+          args: --pos
+          l3-node: true
+          # args: --l3-fee-token --l3-fee-token-pricer
+          no-token-bridge: true
           # no-l3-token-bridge: true
           # nitro-testnode-ref: fee-token-pricer
           # nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
