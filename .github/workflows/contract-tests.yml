@@ -328,7 +328,7 @@ jobs:
       - uses: OffchainLabs/actions/run-nitro-test-node@main
         with:
           l3-node: true
-          args: --l3-fee-token --l3-fee-token-pricer --l3-fee-token-decimals 6
+          args: --pos --l3-fee-token --l3-fee-token-pricer --l3-fee-token-decimals 6
           no-token-bridge: true
           no-l3-token-bridge: true
           nitro-testnode-ref: fee-token-pricer
