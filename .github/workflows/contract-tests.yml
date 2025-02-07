@@ -22,6 +22,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
+          cache: false
 
       - name: Setup node/yarn
         uses: actions/setup-node@v3
