@@ -93,7 +93,7 @@ async function main() {
   )
 
   if (!result) {
-    throw new Error('Rollup creation failed')
+    throw new Error('Rollup creation failed 2')
   }
 
   const { rollupCreationResult, chainInfo } = result
