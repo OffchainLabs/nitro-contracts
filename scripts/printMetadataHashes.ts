@@ -16,14 +16,16 @@ async function main() {
     'Outbox',
     'SequencerInbox',
     'Bridge',
+    'RollupEventInbox',
     'ERC20Inbox',
     'ERC20Outbox',
     'SequencerInbox',
     'ERC20Bridge',
+    'ERC20RollupEventInbox',
     'RollupProxy',
     'RollupAdminLogic',
     'RollupUserLogic',
-    'ChallengeManager',
+    'EdgeChallengeManager',
   ]
 
   // Print the current git tag
