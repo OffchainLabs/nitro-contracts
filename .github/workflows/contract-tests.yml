@@ -287,7 +287,7 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: OffchainLabs/actions/run-nitro-test-node@main
+      - uses: OffchainLabs/actions/run-nitro-test-node@testnode-timeout
         with:
           args: --pos  --l3-fee-token --l3-fee-token-pricer
           l3-node: true
