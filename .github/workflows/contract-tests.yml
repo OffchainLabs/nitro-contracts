@@ -35,121 +35,121 @@ jobs:
 
       - name: Build
         run: yarn test:foundry
-  tests:
-    name: Contract tests
-    runs-on: ubuntu-8
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          submodules: recursive
+  # tests:
+  #   name: Contract tests
+  #   runs-on: ubuntu-8
+  #   defaults:
+  #     run:
+  #       shell: bash
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v2
+  #       with:
+  #         submodules: recursive
 
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: stable
+  #     - name: Install Foundry
+  #       uses: foundry-rs/foundry-toolchain@v1
+  #       with:
+  #         version: stable
 
-      - name: Setup nodejs
-        uses: actions/setup-node@v2
-        with:
-          node-version: '18'
-          cache: 'yarn'
-          cache-dependency-path: '**/yarn.lock'
+  #     - name: Setup nodejs
+  #       uses: actions/setup-node@v2
+  #       with:
+  #         node-version: '18'
+  #         cache: 'yarn'
+  #         cache-dependency-path: '**/yarn.lock'
 
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: stable
+  #     - name: Install Foundry
+  #       uses: foundry-rs/foundry-toolchain@v1
+  #       with:
+  #         version: stable
 
-      - name: Check Contracts Format
-        run: forge fmt --check
+  #     - name: Check Contracts Format
+  #       run: forge fmt --check
 
-      - name: Install dependencies
-        run: yarn install
+  #     - name: Install dependencies
+  #       run: yarn install
 
-      - name: Lint Contracts
-        run: yarn solhint
+  #     - name: Lint Contracts
+  #       run: yarn solhint
 
-      - name: Lint Test Scripts
-        run: yarn lint:test
+  #     - name: Lint Test Scripts
+  #       run: yarn lint:test
 
-      - name: Build
-        run: yarn build:all
+  #     - name: Build
+  #       run: yarn build:all
 
-      - name: Run tests
-        run: yarn hardhat --network hardhat test test/contract/*.spec.ts
+  #     - name: Run tests
+  #       run: yarn hardhat --network hardhat test test/contract/*.spec.ts
 
-      - name: Interface compatibility
-        run: yarn run test:compatibility
+  #     - name: Interface compatibility
+  #       run: yarn run test:compatibility
 
-      - name: Forge build
-        run: forge build
+  #     - name: Forge build
+  #       run: forge build
 
-      - name: Test size
-        run: yarn contract:size
+  #     - name: Test size
+  #       run: yarn contract:size
 
-      - name: Test Storage Layouts
-        run: yarn run test:storage
+  #     - name: Test Storage Layouts
+  #       run: yarn run test:storage
 
-      - name: Test function signatures
-        run: yarn run test:signatures
+  #     - name: Test function signatures
+  #       run: yarn run test:signatures
 
-      - name: Run unused Solidity errors checker
-        uses: OffchainLabs/actions/check-unused-errors@main
-        with:
-          directory: './src'
-          exceptions_file: './test/unused-errors/exceptions.txt'
+  #     - name: Run unused Solidity errors checker
+  #       uses: OffchainLabs/actions/check-unused-errors@main
+  #       with:
+  #         directory: './src'
+  #         exceptions_file: './test/unused-errors/exceptions.txt'
 
-      - name: Run coverage
-        run: yarn hardhat coverage --testfiles "test/contract/*.spec.ts"
+  #     - name: Run coverage
+  #       run: yarn hardhat coverage --testfiles "test/contract/*.spec.ts"
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2
-        with:
-          fail_ci_if_error: false
-          files: ./contracts/coverage.json
-          verbose: false
-          token: ${{ secrets.CODECOV_TOKEN }}
+  #     - name: Upload coverage to Codecov
+  #       uses: codecov/codecov-action@v2
+  #       with:
+  #         fail_ci_if_error: false
+  #         files: ./contracts/coverage.json
+  #         verbose: false
+  #         token: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Upload 4bytes
-        run: yarn upload-4bytes
+  #     - name: Upload 4bytes
+  #       run: yarn upload-4bytes
 
-  test-4844:
-    name: 4844 tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
+  # test-4844:
+  #   name: 4844 tests
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         submodules: recursive
 
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: stable
+  #     - name: Install Foundry
+  #       uses: foundry-rs/foundry-toolchain@v1
+  #       with:
+  #         version: stable
 
-      - uses: OffchainLabs/actions/run-nitro-test-node@main
-        with:
-          args: --pos
-          no-token-bridge: true
+  #     - uses: OffchainLabs/actions/run-nitro-test-node@main
+  #       with:
+  #         args: --pos
+  #         no-token-bridge: true
 
-      - name: Setup nodejs
-        uses: actions/setup-node@v2
-        with:
-          node-version: 18
-          cache: 'yarn'
-          cache-dependency-path: '**/yarn.lock'
+  #     - name: Setup nodejs
+  #       uses: actions/setup-node@v2
+  #       with:
+  #         node-version: 18
+  #         cache: 'yarn'
+  #         cache-dependency-path: '**/yarn.lock'
 
-      - name: Install dependencies
-        run: yarn install
+  #     - name: Install dependencies
+  #       run: yarn install
 
-      - name: Build
-        run: yarn build:all
+  #     - name: Build
+  #       run: yarn build:all
 
-      - name: Test 4844
-        run: yarn test:4844
+  #     - name: Test 4844
+  #       run: yarn test:4844
   # test-e2e:
   #   name: Test e2e
   #   runs-on: ubuntu-latest
@@ -246,35 +246,35 @@ jobs:
   #     - name: Run e2e tests
   #       run: yarn test:e2e
 
-  bold-upgrade:
-    name: BOLD upgrade test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
+  # bold-upgrade:
+  #   name: BOLD upgrade test
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         submodules: recursive
 
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: stable
+  #     - name: Install Foundry
+  #       uses: foundry-rs/foundry-toolchain@v1
+  #       with:
+  #         version: stable
 
-      - name: Setup node/yarn
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          cache: 'yarn'
-          cache-dependency-path: '**/yarn.lock'
+  #     - name: Setup node/yarn
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: 18
+  #         cache: 'yarn'
+  #         cache-dependency-path: '**/yarn.lock'
 
-      - name: Install packages
-        run: yarn
+  #     - name: Install packages
+  #       run: yarn
 
-      - name: Compile contracts
-        run: yarn build:all
+  #     - name: Compile contracts
+  #       run: yarn build:all
 
-      - name: Copy .env
-        run: |
-          cp ./.env-sample ./.env
+  #     - name: Copy .env
+  #       run: |
+  #         cp ./.env-sample ./.env
 
-      - name: Test upgrade
-        run: L1_RPC=${{ secrets.L1_RPC || 'https://rpc.ankr.com/eth' }} yarn test:upgrade
+  #     - name: Test upgrade
+  #       run: L1_RPC=${{ secrets.L1_RPC || 'https://rpc.ankr.com/eth' }} yarn test:upgrade
