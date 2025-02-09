@@ -322,7 +322,7 @@ async function _getDevRollupConfig(
     baseStake: ethers.utils.parseEther('1'),
     wasmModuleRoot: wasmModuleRoot,
     owner: ownerAddress,
-    loserStakeEscrow: ethers.constants.AddressZero,
+    loserStakeEscrow: ownerAddress,
     chainId: JSON.parse(chainConfig)['chainId'],
     chainConfig: chainConfig,
     minimumAssertionPeriod: 75,
