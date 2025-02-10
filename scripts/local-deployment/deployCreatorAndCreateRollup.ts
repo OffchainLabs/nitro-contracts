@@ -49,6 +49,7 @@ async function main() {
     const wethFactory = await ethers.getContractFactory('TestWETH9')
     const weth = await wethFactory.deploy('Wrapped Ether', 'WETH')
     await weth.deployTransaction.wait()
+    await weth.deployed()
     stakeToken = weth.address
     console.log('WETH deployed at', stakeToken)
   }
