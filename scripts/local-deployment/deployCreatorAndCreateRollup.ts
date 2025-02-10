@@ -50,6 +50,7 @@ async function main() {
     const weth = await wethFactory.deploy('Wrapped Ether', 'WETH')
     await weth.deployTransaction.wait()
     stakeToken = weth.address
+    console.log('WETH deployed at', stakeToken)
   }
 
   /// deploy templates and rollup creator
