@@ -46,7 +46,7 @@ async function main() {
   let stakeToken = process.env.STAKE_TOKEN_ADDRESS as string
   if (!stakeToken) {
     console.log('Deploying WETH')
-    const wethFactory = await ethers.getContractFactory('TestWETH9')
+    const wethFactory = (await ethers.getContractFactory('TestWETH9')).connect(deployerWallet)
     const weth = await wethFactory.deploy('Wrapped Ether', 'WETH')
     await weth.deployTransaction.wait()
     await weth.deployed()
