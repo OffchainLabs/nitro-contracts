@@ -40,6 +40,7 @@ interface RollupCreationResult {
   'native-token': string
   'upgrade-executor': string
   'validator-wallet-creator': string
+  'stake-token': string
 }
 
 interface ChainInfo {
@@ -187,6 +188,7 @@ export async function createRollup(
         'native-token': nativeToken,
         'upgrade-executor': upgradeExecutor,
         'validator-wallet-creator': validatorWalletCreator,
+        'stake-token': stakeToken,
       }
 
       const chainInfo: ChainInfo = {
