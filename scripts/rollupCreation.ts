@@ -241,6 +241,7 @@ async function _getDevRollupConfig(
   for (let i = 1; i <= authorizeValidators; i++) {
     validators.push(_createValidatorAddress(validatorWalletCreator, i))
   }
+  validators.push('0x6A568afe0f82d34759347bb36F14A6bB171d2CBe') // testnode validator signer
 
   // get chain config
   const childChainConfigPath =
