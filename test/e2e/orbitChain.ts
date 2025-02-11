@@ -824,6 +824,8 @@ describe('Orbit Chain', () => {
       endHistoryRoot: ethers.constants.HashZero,
     }
 
+    // CHRIS: TODO: have the testnode rebuild the utils for one of it's ci runs - the one with everything turned on
+
     /// deploy params
     const ownerAddr = '0x72f7EEedF02C522242a4D3Bdc8aE6A8583aD7c5e';
     const config: ConfigStruct = {
@@ -882,6 +884,7 @@ describe('Orbit Chain', () => {
       feeTokenPricer: ethers.constants.AddressZero
     }
 
+    // CHRIS: TODO: remove below
     console.log("creating", (await userL1Wallet.getBalance()).toString())
     const r1 = await userL1Wallet.sendTransaction({to: ethers.constants.AddressZero, value: 10})
     console.log("created", rollupCreator.address)
