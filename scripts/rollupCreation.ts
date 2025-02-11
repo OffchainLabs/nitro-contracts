@@ -307,7 +307,7 @@ async function _getDevRollupConfig(
   const config: ConfigStruct = {
     confirmPeriodBlocks: ethers.BigNumber.from('20'),
     stakeToken: stakeToken,
-    baseStake: ethers.utils.parseEther('1'),
+    baseStake: 8,
     wasmModuleRoot: wasmModuleRoot,
     owner: ownerAddress,
     loserStakeEscrow: ownerAddress,
@@ -318,9 +318,9 @@ async function _getDevRollupConfig(
     genesisAssertionState: genesisAssertionState,
     genesisInboxCount: 0,
     miniStakeValues: [
-      ethers.utils.parseEther('1'),
-      ethers.utils.parseEther('1'),
-      ethers.utils.parseEther('1'),
+      4,
+      2,
+      1,
     ],
     layerZeroBlockEdgeHeight: 2 ** 5,
     layerZeroBigStepEdgeHeight: 2 ** 5,
