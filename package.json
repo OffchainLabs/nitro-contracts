@@ -1,6 +1,6 @@
 {
   "name": "@arbitrum/nitro-contracts",
-  "version": "3.0.0",
+  "version": "3.0.1-beta.0",
   "description": "Layer 2 precompiles and rollup for Arbitrum Nitro",
   "author": "Offchain Labs, Inc.",
   "license": "BUSL-1.1",
@@ -42,6 +42,7 @@
     "test:e2e:orbit": "hardhat test test/e2e/orbitChain.ts",
     "test:e2e:orbit-fee-token-rollup": "hardhat test test/e2e/customFeeRollup.ts",
     "test:e2e": "hardhat test test/e2e/*.ts",
+    "test:e2e:stylus": "hardhat test test/e2e/stylusDeployer.ts",
     "test:upgrade": "./scripts/testUpgrade.bash",
     "test:foundry": "forge test --gas-limit 10000000000",
     "test:update": "yarn run test:signatures || yarn run test:storage",
