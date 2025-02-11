@@ -287,16 +287,15 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: OffchainLabs/actions/run-nitro-test-node@testnode-timeout
+      - uses: OffchainLabs/actions/run-nitro-test-node@main
         with:
           args: --pos  --l3-fee-token --l3-fee-token-pricer
           l3-node: true
           no-token-bridge: true
           no-l3-token-bridge: true
           nitro-testnode-ref: fee-token-pricer
-          nitro-contracts-branch: 'custom-fee-rollup'
-          # 
-          # nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
+          # nitro-contracts-branch: 'custom-fee-rollup'
+          nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
 
       - name: Setup node/yarn
         uses: actions/setup-node@v3
@@ -331,7 +330,8 @@ jobs:
           no-token-bridge: true
           no-l3-token-bridge: true
           nitro-testnode-ref: fee-token-pricer
-          nitro-contracts-branch: 'custom-fee-rollup'
+          # nitro-contracts-branch: 'custom-fee-rollup'
+          nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
 
       - name: Setup node/yarn
         uses: actions/setup-node@v3

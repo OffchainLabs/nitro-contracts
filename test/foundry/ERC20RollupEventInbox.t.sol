@@ -57,7 +57,7 @@ contract ERC20RollupEventInboxTest is AbsRollupEventInboxTest {
         bytes memory expectedInitMsg =
             abi.encodePacked(chainId, expectedInitMsgVersion, expectedCurrentDataCost, chainConfig);
 
-        /// expect event
+        // expect event
         vm.expectEmit(true, true, true, true);
         emit MessageDelivered(
             0,

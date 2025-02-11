@@ -742,7 +742,6 @@ describe('Orbit Chain', () => {
   })
 
   it('can deploy deterministic factories to L2 through RollupCreator', async function () {
-    // CHRIS: TODO: remove the console logs added
     const rollupCreator = RollupCreator__factory.connect(
       await _getRollupCreatorFromLogs(l1Provider),
       l1Provider
@@ -823,9 +822,7 @@ describe('Orbit Chain', () => {
       machineStatus: 0,
       endHistoryRoot: ethers.constants.HashZero,
     }
-
-    // CHRIS: TODO: have the testnode rebuild the utils for one of it's ci runs - the one with everything turned on
-
+    
     /// deploy params
     const ownerAddr = '0x72f7EEedF02C522242a4D3Bdc8aE6A8583aD7c5e';
     const config: ConfigStruct = {
@@ -881,22 +878,9 @@ describe('Orbit Chain', () => {
       nativeToken: nativeTokenAddress,
       deployFactoriesToL2,
       maxFeePerGasForRetryables,
-      feeTokenPricer: ethers.constants.AddressZero
+      feeTokenPricer: ethers.constants.AddressZero,
     }
 
-    // CHRIS: TODO: remove below
-    console.log("creating", (await userL1Wallet.getBalance()).toString())
-    const r1 = await userL1Wallet.sendTransaction({to: ethers.constants.AddressZero, value: 10})
-    console.log("created", rollupCreator.address)
-    console.log((await userL1Wallet.provider.getCode(rollupCreator.address)).length)
-    await rollupCreator.connect(userL1Wallet).callStatic.createRollup(
-        deployParams, 
-        // {
-        // value: nativeToken ? BigNumber.from(0) : fee,
-      // }
-    )
-
-    
     /// deploy it
     const receipt = await (
       await rollupCreator.connect(userL1Wallet).createRollup(deployParams, {
