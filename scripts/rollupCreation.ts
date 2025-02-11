@@ -13,7 +13,10 @@ import {
 import { sleep } from './testSetup'
 import { promises as fs } from 'fs'
 import { _isRunningOnArbitrum, verifyContract } from './deploymentUtils'
-import { AssertionStateStruct, ConfigStruct } from '../build/types/src/rollup/RollupCreator'
+import {
+  AssertionStateStruct,
+  ConfigStruct,
+} from '../build/types/src/rollup/RollupCreator'
 import { constants } from 'buffer'
 
 // 1 gwei
@@ -308,13 +311,13 @@ async function _getDevRollupConfig(
   }
 
   const genesisAssertionState: AssertionStateStruct = {
-      globalState: {
-        bytes32Vals: [ethers.constants.HashZero, ethers.constants.HashZero],
-        u64Vals: [ethers.BigNumber.from('0'), ethers.BigNumber.from('0')],
-      },
-      machineStatus: 0,
-      endHistoryRoot: ethers.constants.HashZero,
-    }
+    globalState: {
+      bytes32Vals: [ethers.constants.HashZero, ethers.constants.HashZero],
+      u64Vals: [ethers.BigNumber.from('0'), ethers.BigNumber.from('0')],
+    },
+    machineStatus: 0,
+    endHistoryRoot: ethers.constants.HashZero,
+  }
 
   const config: ConfigStruct = {
     confirmPeriodBlocks: ethers.BigNumber.from('20'),
@@ -346,7 +349,7 @@ async function _getDevRollupConfig(
       delaySeconds: ethers.BigNumber.from('86400'),
       futureSeconds: ethers.BigNumber.from('3600'),
     },
-    anyTrustFastConfirmer: ethers.constants.AddressZero
+    anyTrustFastConfirmer: ethers.constants.AddressZero,
   }
 
   return {
