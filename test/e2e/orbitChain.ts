@@ -822,9 +822,9 @@ describe('Orbit Chain', () => {
       machineStatus: 0,
       endHistoryRoot: ethers.constants.HashZero,
     }
-    
+
     /// deploy params
-    const ownerAddr = '0x72f7EEedF02C522242a4D3Bdc8aE6A8583aD7c5e';
+    const ownerAddr = '0x72f7EEedF02C522242a4D3Bdc8aE6A8583aD7c5e'
     const config: ConfigStruct = {
       confirmPeriodBlocks: ethers.BigNumber.from('150'),
       stakeToken: ethers.constants.AddressZero,
