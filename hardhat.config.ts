@@ -7,7 +7,6 @@ import 'solidity-coverage'
 import 'hardhat-gas-reporter'
 import 'hardhat-contract-sizer'
 import 'hardhat-ignore-warnings'
-// import '@tovarishfin/hardhat-yul';
 import dotenv from 'dotenv'
 
 dotenv.config()
