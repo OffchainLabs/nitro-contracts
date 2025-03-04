@@ -18,16 +18,12 @@
     "GHSA-9vx6-7xxf-x967",
     // semver vulnerable to Regular Expression Denial of Service
     "GHSA-c2qf-rxjj-qqgw",
-    // ws affected by a DoS when handling a request with many HTTP headers
-    "GHSA-3h5v-q93c-6h6q",
     // Server-Side Request Forgery in axios
     "GHSA-8hc4-vh64-cxmj",
     // Regular Expression Denial of Service (ReDoS) in micromatch
     "GHSA-952p-6rrq-rcjv",
     // cookie accepts cookie name, path, and domain with out of bounds characters
     "GHSA-pxg6-pf52-xh8x",
-    // secp256k1-node allows private key extraction over ECDH
-    "GHSA-584q-6j8j-r5pm",
     // Regular Expression Denial of Service (ReDoS) in cross-spawn
     "GHSA-3xgq-45jj-v275"
   ]
