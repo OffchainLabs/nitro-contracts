@@ -10,3 +10,6 @@ scripts/config.ts
 forge-cache/
 out/
 .env
+.DS_Store
+lcov.info
+output_directory

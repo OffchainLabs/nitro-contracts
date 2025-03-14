@@ -13,15 +13,13 @@ library PcArrayLib {
         return arr.inner[index];
     }
 
-    function set(
-        PcArray memory arr,
-        uint256 index,
-        uint32 val
-    ) internal pure {
+    function set(PcArray memory arr, uint256 index, uint32 val) internal pure {
         arr.inner[index] = val;
     }
 
-    function length(PcArray memory arr) internal pure returns (uint256) {
+    function length(
+        PcArray memory arr
+    ) internal pure returns (uint256) {
         return arr.inner.length;
     }
 
@@ -34,7 +32,9 @@ library PcArrayLib {
         arr.inner = newInner;
     }
 
-    function pop(PcArray memory arr) internal pure returns (uint32 popped) {
+    function pop(
+        PcArray memory arr
+    ) internal pure returns (uint32 popped) {
         popped = arr.inner[arr.inner.length - 1];
         uint32[] memory newInner = new uint32[](arr.inner.length - 1);
         for (uint256 i = 0; i < newInner.length; i++) {

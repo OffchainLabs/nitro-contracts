@@ -23,7 +23,7 @@ abstract contract AbsInboxTest is Test {
 
     /* solhint-disable func-name-mixedcase */
     function test_getProxyAdmin() public {
-        assertNotEq(inbox.getProxyAdmin(), address(0), "Invalid proxy admin");
+        assertFalse(inbox.getProxyAdmin() == address(0), "Invalid proxy admin");
     }
 
     function test_setAllowList() public {
@@ -63,18 +63,13 @@ abstract contract AbsInboxTest is Test {
         // mock the owner() call on rollup
         address mockRollupOwner = address(10_000);
         vm.mockCall(
-            rollup,
-            abi.encodeWithSelector(IOwnable.owner.selector),
-            abi.encode(mockRollupOwner)
+            rollup, abi.encodeWithSelector(IOwnable.owner.selector), abi.encode(mockRollupOwner)
         );
 
         // setAllowList shall revert
         vm.expectRevert(
             abi.encodeWithSelector(
-                NotRollupOrOwner.selector,
-                address(this),
-                rollup,
-                mockRollupOwner
+                NotRollupOrOwner.selector, address(this), rollup, mockRollupOwner
             )
         );
 
@@ -131,18 +126,13 @@ abstract contract AbsInboxTest is Test {
         // mock the owner() call on rollup
         address mockRollupOwner = address(10_000);
         vm.mockCall(
-            rollup,
-            abi.encodeWithSelector(IOwnable.owner.selector),
-            abi.encode(mockRollupOwner)
+            rollup, abi.encodeWithSelector(IOwnable.owner.selector), abi.encode(mockRollupOwner)
         );
 
         // setAllowListEnabled shall revert
         vm.expectRevert(
             abi.encodeWithSelector(
-                NotRollupOrOwner.selector,
-                address(this),
-                rollup,
-                mockRollupOwner
+                NotRollupOrOwner.selector, address(this), rollup, mockRollupOwner
             )
         );
 
@@ -151,9 +141,7 @@ abstract contract AbsInboxTest is Test {
 
     function test_pause() public {
         assertEq(
-            (PausableUpgradeable(address(inbox))).paused(),
-            false,
-            "Invalid initial paused state"
+            (PausableUpgradeable(address(inbox))).paused(), false, "Invalid initial paused state"
         );
 
         vm.prank(rollup);
@@ -166,9 +154,7 @@ abstract contract AbsInboxTest is Test {
         vm.prank(rollup);
         inbox.pause();
         assertEq(
-            (PausableUpgradeable(address(inbox))).paused(),
-            true,
-            "Invalid initial paused state"
+            (PausableUpgradeable(address(inbox))).paused(), true, "Invalid initial paused state"
         );
         vm.prank(rollup);
         inbox.unpause();
@@ -230,8 +216,17 @@ abstract contract AbsInboxTest is Test {
     }
 
     function test_sendL2MessageFromOrigin_revert_NotOrigin() public {
-        vm.expectRevert(abi.encodeWithSelector(NotOrigin.selector));
+        vm.expectRevert(abi.encodeWithSelector(NotCodelessOrigin.selector));
         inbox.sendL2MessageFromOrigin(abi.encodePacked("some msg"));
+    }
+
+    function test_sendL2MessageFromOrigin_revert_NotCodeless() public {
+        assertEq(user.code.length, 0, "user is codeless");
+        vm.etch(user, bytes("some code"));
+        vm.prank(user, user);
+        vm.expectRevert(abi.encodeWithSelector(NotCodelessOrigin.selector));
+        inbox.sendL2MessageFromOrigin(abi.encodePacked("some msg"));
+        vm.etch(user, bytes(""));
     }
 
     function test_sendL2Message() public {
@@ -258,6 +253,14 @@ abstract contract AbsInboxTest is Test {
         vm.expectRevert("Pausable: paused");
         vm.prank(user);
         inbox.sendL2Message(abi.encodePacked("some msg"));
+    }
+
+    function test_sendL2Message_revert_DataTooLarge() public {
+        uint256 maxDataSize = inbox.maxDataSize();
+        bytes memory data = new bytes(maxDataSize + 1);
+        vm.expectRevert(abi.encodeWithSelector(DataTooLarge.selector, maxDataSize + 1, maxDataSize));
+        vm.prank(user);
+        inbox.sendL2Message(data);
     }
 
     function test_sendL2Message_revert_NotAllowed() public {
@@ -301,14 +304,8 @@ abstract contract AbsInboxTest is Test {
 
         // send TX
         vm.prank(user, user);
-        uint256 msgNum = inbox.sendUnsignedTransaction(
-            gasLimit,
-            maxFeePerGas,
-            nonce,
-            user,
-            value,
-            data
-        );
+        uint256 msgNum =
+            inbox.sendUnsignedTransaction(gasLimit, maxFeePerGas, nonce, user, value, data);
 
         //// checks
         assertEq(msgNum, 0, "Invalid msgNum");
@@ -401,7 +398,6 @@ abstract contract AbsInboxTest is Test {
      * Event declarations
      *
      */
-
     event AllowListAddressSet(address indexed user, bool val);
     event AllowListEnabledUpdated(bool isEnabled);
     event InboxMessageDelivered(uint256 indexed messageNum, bytes data);
