@@ -135,6 +135,12 @@ interface ArbOwner {
     /// @notice Sets serialized chain config in ArbOS state
     function setChainConfig(string calldata chainConfig) external;
 
+    /// @notice Sets the increased calldata price feature on or off (EIP-7623)
+    function setCalldataPriceIncrease(bool enable) external;
+
+    /// @notice Checks if the increased calldata price feature (EIP-7623) is enabled
+    function isCalldataPriceIncreaseEnabled() external returns (bool);
+
     /// Emitted when a successful call is made to this precompile
     event OwnerActs(bytes4 indexed method, address indexed owner, bytes data);
 }
