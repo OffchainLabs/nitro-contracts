@@ -25,6 +25,8 @@
     // cookie accepts cookie name, path, and domain with out of bounds characters
     "GHSA-pxg6-pf52-xh8x",
     // Regular Expression Denial of Service (ReDoS) in cross-spawn
-    "GHSA-3xgq-45jj-v275"
+    "GHSA-3xgq-45jj-v275",
+    // axios Requests Vulnerable To Possible SSRF and Credential Leakage via Absolute URL
+    "GHSA-jr5f-v2jv-69x6"
   ]
 }
