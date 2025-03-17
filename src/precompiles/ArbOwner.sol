@@ -203,7 +203,9 @@ interface ArbOwner {
     ) external;
 
     /// @notice Sets the increased calldata price feature on or off (EIP-7623)
-    function setCalldataPriceIncrease(bool enable) external;
+    function setCalldataPriceIncrease(
+        bool enable
+    ) external;
 
     /// @notice Checks if the increased calldata price feature (EIP-7623) is enabled
     function isCalldataPriceIncreaseEnabled() external returns (bool);
