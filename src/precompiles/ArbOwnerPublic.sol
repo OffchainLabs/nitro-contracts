@@ -45,7 +45,7 @@ interface ArbOwnerPublic {
      * @notice Checks if the increased calldata price feature (EIP-7623) is enabled
      * Available in ArbOS version 40 with default as false
      */
-    function isCalldataPriceIncreaseEnabled() external returns (bool);
+    function isCalldataPriceIncreaseEnabled() external view returns (bool);
 
     event ChainOwnerRectified(address rectifiedOwner);
 }
