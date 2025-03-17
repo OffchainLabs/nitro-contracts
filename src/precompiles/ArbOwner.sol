@@ -202,12 +202,18 @@ interface ArbOwner {
         string calldata chainConfig
     ) external;
 
-    /// @notice Sets the increased calldata price feature on or off (EIP-7623)
+    /**
+     * @notice Sets the increased calldata price feature on or off (EIP-7623)
+     * Available in ArbOS version 40 with default as false
+     */
     function setCalldataPriceIncrease(
         bool enable
     ) external;
 
-    /// @notice Checks if the increased calldata price feature (EIP-7623) is enabled
+    /**
+     * @notice Checks if the increased calldata price feature (EIP-7623) is enabled
+     * Available in ArbOS version 40 with default as false
+     */
     function isCalldataPriceIncreaseEnabled() external returns (bool);
 
     /// Emitted when a successful call is made to this precompile
