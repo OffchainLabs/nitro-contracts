@@ -210,12 +210,6 @@ interface ArbOwner {
         bool enable
     ) external;
 
-    /**
-     * @notice Checks if the increased calldata price feature (EIP-7623) is enabled
-     * Available in ArbOS version 40 with default as false
-     */
-    function isCalldataPriceIncreaseEnabled() external returns (bool);
-
     /// Emitted when a successful call is made to this precompile
     event OwnerActs(bytes4 indexed method, address indexed owner, bytes data);
 }
