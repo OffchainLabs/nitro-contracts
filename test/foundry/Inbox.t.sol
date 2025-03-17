@@ -9,6 +9,7 @@ import "../../src/bridge/Bridge.sol";
 import "../../src/bridge/ISequencerInbox.sol";
 import "../../src/libraries/AddressAliasHelper.sol";
 
+/// forge-config: default.allow_internal_expect_revert = true
 contract InboxTest is AbsInboxTest {
     IInbox public ethInbox;
 

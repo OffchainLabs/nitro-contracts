@@ -2,18 +2,8 @@
   "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
   "low": true,
   "allowlist": [
-    // OpenZeppelin Contracts's SignatureChecker may revert on invalid EIP-1271 signers
-    "GHSA-4g63-c64m-25w9",
     // OpenZeppelin Contracts's GovernorVotesQuorumFraction updates to quorum may affect past defeated proposals
-    "GHSA-xrc4-737v-9q75",
-    // OpenZeppelin Contracts's ERC165Checker may revert instead of returning false
-    "GHSA-qh9x-gcfh-pcrw",
-    // OpenZeppelin Contracts vulnerable to ECDSA signature malleability. Only an issue for the functions that take a single `bytes` argument, and not the functions that take `r, v, s` or `r, vs` as separate arguments.
-    "GHSA-4h98-2769-gh6h",
-    // GovernorCompatibilityBravo may trim proposal calldata
     "GHSA-93hq-5wgc-jc82",
-    // OpenZeppelin Contracts ERC165Checker unbounded gas consumption
-    "GHSA-7grf-83vw-6f5x",
     // OpenZeppelin: Using ERC2771Context with a custom forwarder can yield address(0)
     "GHSA-g4vp-m682-qqmp",
     // OpenZeppelin Contracts TransparentUpgradeableProxy clashing selector calls may not be delegated
@@ -22,59 +12,21 @@
     "GHSA-5h3x-9wvq-w4m2",
     // axios cookies data-privacy issue; used only in hardhat-deploy and sol2uml (dev deps)
     "GHSA-wf5p-g6vw-rhxx",
-    // flat vulnerable to Prototype Pollution
-    "GHSA-2j2x-2gpw-g8fm",
-    // regular expression DoS in debug
-    "GHSA-gxpj-cx7g-858c",
-    // tough-cookie Prototype Pollution vulnerability; used only via eth-gas-reporter
-    "GHSA-72xf-g2v4-qvf3",
-    // minimatch ReDoS vulnerability
-    "GHSA-f8q6-p94x-37v3",
-    // Server-Side Request Forgery in Request
-    "GHSA-p8p7-x288-28g6",
     //  OpenZeppelin Contracts using MerkleProof multiproofs may allow proving arbitrary leaves for specific trees; unused
     "GHSA-wprv-93r4-jj2p",
-    //  follow-redirects improperly handles URLs in the url.parse() function
-    "GHSA-jchw-25xp-jwwc",
-    // yargs-parser Vulnerable to Prototype Pollution
-    "GHSA-p9pc-299p-vxgp",
-    // Axios vulnerable to Server-Side Request Forgery
-    "GHSA-4w2v-q235-vp99",
-    // axios Inefficient Regular Expression Complexity vulnerability
-    "GHSA-cph5-m8f7-6c5x",
-    // Exposure of Sensitive Information to an Unauthorized Actor in follow-redirects
-    "GHSA-pw2r-vq6v-hr8c",
-    // Exposure of sensitive information in follow-redirects
-    "GHSA-74fj-2j2h-c42q",
     // Open Zeppelin: Base64 encoding may read from potentially dirty memory
     "GHSA-9vx6-7xxf-x967",
     // semver vulnerable to Regular Expression Denial of Service
     "GHSA-c2qf-rxjj-qqgw",
-    // follow-redirects' Proxy-Authorization header kept across hosts
-    "GHSA-cxjh-pqwp-8mfp",
-    // Prototype Pollution in async
-    "GHSA-fwr7-v2mv-hh25",
-    // ws affected by a DoS when handling a request with many HTTP headers
-    "GHSA-3h5v-q93c-6h6q",
-    // Elliptic allows BER-encoded signatures - only used in dev
-    "GHSA-49q7-c7j4-3p7m",
-    // Elliptic's EDDSA missing signature length check - only used in dev
-    "GHSA-f7q4-pwc6-w24p",
-    // Elliptic's ECDSA missing check for whether leading bit of r and s is zero - only used in dev
-    "GHSA-977x-g7h5-7qgw",
     // Server-Side Request Forgery in axios
     "GHSA-8hc4-vh64-cxmj",
     // Regular Expression Denial of Service (ReDoS) in micromatch
     "GHSA-952p-6rrq-rcjv",
     // cookie accepts cookie name, path, and domain with out of bounds characters
     "GHSA-pxg6-pf52-xh8x",
-    // Elliptic's verify function omits uniqueness validation
-    "GHSA-434g-2637-qmqr",
-    // Valid ECDSA signatures erroneously rejected in Elliptic
-    "GHSA-fc9h-whq2-v747",
-    // secp256k1-node allows private key extraction over ECDH
-    "GHSA-584q-6j8j-r5pm",
     // Regular Expression Denial of Service (ReDoS) in cross-spawn
-    "GHSA-3xgq-45jj-v275"
+    "GHSA-3xgq-45jj-v275",
+    // axios Requests Vulnerable To Possible SSRF and Credential Leakage via Absolute URL
+    "GHSA-jr5f-v2jv-69x6"
   ]
 }
