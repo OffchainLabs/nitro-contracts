@@ -41,7 +41,7 @@ contract Simple {
         emit RedeemedEvent(msg.sender, ArbRetryableTx(address(110)).getCurrentRedeemer());
     }
 
-		/**
+    /**
      * @notice Redeems a list of retryable tickets.
      * @param ticketIds The array of retryable ticket identifiers (ticket hashes).
      */
@@ -50,7 +50,7 @@ contract Simple {
             // Attempt to redeem each retryable ticket
             try ArbRetryableTx(address(110)).redeem{gas: 100000}(ticketIds[i]) {
                 // Ticket redeemed successfully
-								counter++;
+                counter++;
             } catch {
                 revert("Failed to redeem one or more tickets");
             }
