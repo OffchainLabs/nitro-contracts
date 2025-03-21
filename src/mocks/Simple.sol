@@ -45,7 +45,10 @@ contract Simple {
      * @notice Redeems a list of retryable tickets.
      * @param ticketIds The array of retryable ticket identifiers (ticket hashes).
      */
-    function redeemAllAndCreateAddresses(bytes32[] calldata ticketIds, address payable[] calldata addresses) external payable {
+    function redeemAllAndCreateAddresses(
+        bytes32[] calldata ticketIds,
+        address payable[] calldata addresses
+    ) external payable {
         for (uint256 i = 0; i < ticketIds.length; i++) {
             // Attempt to redeem each retryable ticket
             try ArbRetryableTx(address(110)).redeem{gas: 100000}(ticketIds[i]) {
