@@ -105,6 +105,7 @@ contract InboxTest is AbsInboxTest {
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
     }
 
+    /// forge-config: default.allow_internal_expect_revert = true
     function test_depositEth_revert_EthTransferFails() public {
         uint256 bridgeEthBalanceBefore = address(bridge).balance;
         uint256 userEthBalanceBefore = address(user).balance;
