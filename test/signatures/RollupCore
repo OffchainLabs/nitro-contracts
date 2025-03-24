@@ -1,45 +1,91 @@
-{
-  "_stakerMap(address)": "e8bd4922",
-  "amountStaked(address)": "ef40a670",
-  "anyTrustFastConfirmer()": "55840a58",
-  "baseStake()": "76e7e23b",
-  "bridge()": "e78cea92",
-  "chainId()": "9a8a0592",
-  "challengeManager()": "023a96fe",
-  "confirmPeriodBlocks()": "2e7acfa6",
-  "currentChallenge(address)": "69fd251c",
-  "extraChallengeTimeBlocks()": "771b2f97",
-  "firstUnresolvedNode()": "d735e21d",
-  "getNode(uint64)": "92c8134c",
-  "getNodeCreationBlockForLogLookup(uint64)": "f63a434a",
-  "getStaker(address)": "a23c44b1",
-  "getStakerAddress(uint64)": "6ddd3744",
-  "inbox()": "fb0e722b",
-  "isStaked(address)": "6177fd18",
-  "isStakedOnLatestConfirmed(address)": "dcd030aa",
-  "isValidator(address)": "facd743b",
-  "isZombie(address)": "91c657e8",
-  "lastStakeBlock()": "8640ce5f",
-  "latestConfirmed()": "65f7f80d",
-  "latestNodeCreated()": "7ba9534a",
-  "latestStakedNode(address)": "3e96576e",
-  "loserStakeEscrow()": "f065de3f",
-  "minimumAssertionPeriod()": "45e38b64",
-  "nodeHasStaker(uint64,address)": "aa65af48",
-  "outbox()": "ce11e6ab",
-  "paused()": "5c975abb",
-  "rollupDeploymentBlock()": "1b1689e9",
-  "rollupEventInbox()": "aa38a6e7",
-  "sequencerInbox()": "ee35f327",
-  "stakeToken()": "51ed6a30",
-  "stakerCount()": "dff69787",
-  "totalWithdrawableFunds()": "71ef232c",
-  "validatorUtils()": "014cc92c",
-  "validatorWalletCreator()": "bc45e0ae",
-  "validatorWhitelistDisabled()": "12ab3d3b",
-  "wasmModuleRoot()": "8ee1a126",
-  "withdrawableFunds(address)": "2f30cabd",
-  "zombieAddress(uint256)": "d01e6602",
-  "zombieCount()": "63721d6b",
-  "zombieLatestStakedNode(uint256)": "f33e1fac"
-}
+
+╭------------------------------------------+------------╮
+| Method                                   | Identifier |
++=======================================================+
+| _stakerMap(address)                      | e8bd4922   |
+|------------------------------------------+------------|
+| amountStaked(address)                    | ef40a670   |
+|------------------------------------------+------------|
+| anyTrustFastConfirmer()                  | 55840a58   |
+|------------------------------------------+------------|
+| baseStake()                              | 76e7e23b   |
+|------------------------------------------+------------|
+| bridge()                                 | e78cea92   |
+|------------------------------------------+------------|
+| chainId()                                | 9a8a0592   |
+|------------------------------------------+------------|
+| challengeManager()                       | 023a96fe   |
+|------------------------------------------+------------|
+| confirmPeriodBlocks()                    | 2e7acfa6   |
+|------------------------------------------+------------|
+| currentChallenge(address)                | 69fd251c   |
+|------------------------------------------+------------|
+| extraChallengeTimeBlocks()               | 771b2f97   |
+|------------------------------------------+------------|
+| firstUnresolvedNode()                    | d735e21d   |
+|------------------------------------------+------------|
+| getNode(uint64)                          | 92c8134c   |
+|------------------------------------------+------------|
+| getNodeCreationBlockForLogLookup(uint64) | f63a434a   |
+|------------------------------------------+------------|
+| getStaker(address)                       | a23c44b1   |
+|------------------------------------------+------------|
+| getStakerAddress(uint64)                 | 6ddd3744   |
+|------------------------------------------+------------|
+| inbox()                                  | fb0e722b   |
+|------------------------------------------+------------|
+| isStaked(address)                        | 6177fd18   |
+|------------------------------------------+------------|
+| isStakedOnLatestConfirmed(address)       | dcd030aa   |
+|------------------------------------------+------------|
+| isValidator(address)                     | facd743b   |
+|------------------------------------------+------------|
+| isZombie(address)                        | 91c657e8   |
+|------------------------------------------+------------|
+| lastStakeBlock()                         | 8640ce5f   |
+|------------------------------------------+------------|
+| latestConfirmed()                        | 65f7f80d   |
+|------------------------------------------+------------|
+| latestNodeCreated()                      | 7ba9534a   |
+|------------------------------------------+------------|
+| latestStakedNode(address)                | 3e96576e   |
+|------------------------------------------+------------|
+| loserStakeEscrow()                       | f065de3f   |
+|------------------------------------------+------------|
+| minimumAssertionPeriod()                 | 45e38b64   |
+|------------------------------------------+------------|
+| nodeHasStaker(uint64,address)            | aa65af48   |
+|------------------------------------------+------------|
+| outbox()                                 | ce11e6ab   |
+|------------------------------------------+------------|
+| paused()                                 | 5c975abb   |
+|------------------------------------------+------------|
+| rollupDeploymentBlock()                  | 1b1689e9   |
+|------------------------------------------+------------|
+| rollupEventInbox()                       | aa38a6e7   |
+|------------------------------------------+------------|
+| sequencerInbox()                         | ee35f327   |
+|------------------------------------------+------------|
+| stakeToken()                             | 51ed6a30   |
+|------------------------------------------+------------|
+| stakerCount()                            | dff69787   |
+|------------------------------------------+------------|
+| totalWithdrawableFunds()                 | 71ef232c   |
+|------------------------------------------+------------|
+| validatorUtils()                         | 014cc92c   |
+|------------------------------------------+------------|
+| validatorWalletCreator()                 | bc45e0ae   |
+|------------------------------------------+------------|
+| validatorWhitelistDisabled()             | 12ab3d3b   |
+|------------------------------------------+------------|
+| wasmModuleRoot()                         | 8ee1a126   |
+|------------------------------------------+------------|
+| withdrawableFunds(address)               | 2f30cabd   |
+|------------------------------------------+------------|
+| zombieAddress(uint256)                   | d01e6602   |
+|------------------------------------------+------------|
+| zombieCount()                            | 63721d6b   |
+|------------------------------------------+------------|
+| zombieLatestStakedNode(uint256)          | f33e1fac   |
+╰------------------------------------------+------------╯
+
