@@ -161,8 +161,8 @@ interface ArbOwner {
         uint16 limit
     ) external;
 
-		/// @notice Sets the maximum size of the uncompressed wasm code in bytes
-		function setWasmMaxSize(uint32 size) external;
+    /// @notice Sets the maximum size of the uncompressed wasm code in bytes
+    function setWasmMaxSize(uint32 size) external;
 
     /// @notice Sets the minimum costs to invoke a program
     /// @param gas amount of gas paid in increments of 256 when not the program is not cached
