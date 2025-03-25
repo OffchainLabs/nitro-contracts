@@ -39,7 +39,7 @@ export const custom: Config = {
     isDelayBufferable: true, // whether to enable the delay buffer feature
     bufferConfig: {
       max: hoursToBlocks(48), // 2 days
-      threshold: hoursToBlocks(0.5), // keep above typical posting frequency
+      threshold: 2 ** 32 - 1, // keep above typical posting frequency. set artificially high to disable
       replenishRateInBasis: 500, // 5% replenishment rate
     },
   },
