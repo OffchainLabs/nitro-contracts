@@ -314,7 +314,7 @@ async function _getDevRollupConfig(
     loserStakeEscrow: ownerAddress,
     chainId: JSON.parse(chainConfig)['chainId'],
     chainConfig: chainConfig,
-    minimumAssertionPeriod: 75,
+    minimumAssertionPeriod: 5,
     validatorAfkBlocks: 201600,
     genesisAssertionState: genesisAssertionState,
     genesisInboxCount: 0,
