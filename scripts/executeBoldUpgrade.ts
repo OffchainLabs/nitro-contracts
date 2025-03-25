@@ -742,9 +742,7 @@ async function main() {
   if (!l1RpcVal) {
     throw new Error('L1_RPC_URL env variable not set')
   }
-  const l1Rpc = new ethers.providers.JsonRpcProvider(
-    l1RpcVal
-  ) as JsonRpcProvider
+  const l1Rpc = ethers.provider
 
   const configNetworkName = process.env.CONFIG_NETWORK_NAME
   if (!configNetworkName) {

@@ -1,4 +1,5 @@
-import { ethers, Wallet } from 'ethers'
+import { ethers } from 'hardhat'
+import { Wallet } from 'ethers'
 import { DeployedContracts, getConfig, getJsonFile } from './boldUpgradeCommon'
 import { populateLookup } from './boldUpgradeFunctions'
 import dotenv from 'dotenv'
@@ -11,7 +12,7 @@ async function main() {
   if (!l1RpcVal) {
     throw new Error('L1_RPC_URL env variable not set')
   }
-  const l1Rpc = new ethers.providers.JsonRpcProvider(l1RpcVal)
+  const l1Rpc = ethers.provider
 
   const l1PrivKey = process.env.L1_PRIV_KEY
   if (!l1PrivKey) {

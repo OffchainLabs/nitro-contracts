@@ -204,6 +204,9 @@ module.exports = {
         ? [process.env['DEVNET_PRIVKEY']]
         : [],
     },
+    custom: {
+      url: process.env['CUSTOM_RPC_URL']
+    },
     geth: {
       url: 'http://localhost:8545',
     },
@@ -218,6 +221,7 @@ module.exports = {
       arbSepolia: process.env['ARBISCAN_API_KEY'],
       base: process.env['BASESCAN_API_KEY'],
       baseSepolia: process.env['BASESCAN_API_KEY'],
+      custom: process.env['CUSTOM_ETHERSCAN_API_KEY'],
     },
     customChains: [
       {
@@ -236,6 +240,14 @@ module.exports = {
           browserURL: 'https://sepolia.arbiscan.io/',
         },
       },
+      {
+        network: 'custom',
+        chainId: process.env['CUSTOM_CHAINID'],
+        urls: {
+          apiURL: process.env['CUSTOM_ETHERSCAN_API_URL'],
+          browserURL: process.env['CUSTOM_ETHERSCAN_BROWSER_URL'],
+        }
+      }
     ],
   },
   mocha: {
