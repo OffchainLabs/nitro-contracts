@@ -30,7 +30,7 @@ export const custom: Config = {
     chainId: 42161, // child chain id
     minimumAssertionPeriod: 75, // minimum number of blocks between assertions
     validatorAfkBlocks: 201600, // number of blocks before validator whitelist is dropped due to inactivity
-    disableValidatorWhitelist: true, // keep or disable validator whitelist
+    disableValidatorWhitelist: false, // keep or disable validator whitelist
     blockLeafSize: 2 ** 26, // do not change unless you know what you're doing
     bigStepLeafSize: 2 ** 19, // do not change unless you know what you're doing
     smallStepLeafSize: 2 ** 23, // do not change unless you know what you're doing
@@ -44,5 +44,5 @@ export const custom: Config = {
     },
   },
   // validators to be whitelisted on the new rollup
-  validators: [],
+  validators: ['0x6A568afe0f82d34759347bb36F14A6bB171d2CBe'],
 }
