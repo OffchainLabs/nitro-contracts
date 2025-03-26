@@ -36,7 +36,7 @@ export const custom: Config = {
     smallStepLeafSize: 2 ** 23, // do not change unless you know what you're doing
     numBigStepLevel: 1, // do not change unless you know what you're doing
     maxDataSize: 117964, // if you're an L3, this should be set to 104857
-    isDelayBufferable: true, // it is not recommended to keep this as true, even if you don't use the feature
+    isDelayBufferable: true, // it is recommended to keep this as true, even if you don't use the feature
     bufferConfig: {
       max: 2 ** 32 - 1, // maximum buffer size, set artificially high to disable
       threshold: 2 ** 32 - 1, // keep above typical posting frequency. set artificially high to disable
