@@ -18,6 +18,9 @@ import {
   Bridge__factory,
   EdgeChallengeManager,
   EdgeChallengeManager__factory,
+  ERC20Outbox__factory,
+  IERC20Bridge__factory,
+  IERC20Inbox__factory,
   IOldRollup__factory,
   Outbox__factory,
   RollupEventInbox__factory,
@@ -59,6 +62,16 @@ async function getPreUpgradeState(l1Rpc: JsonRpcProvider, config: Config) {
     l1Rpc
   )
 
+  const seqInbox = SequencerInbox__factory.connect(
+    config.contracts.sequencerInbox,
+    l1Rpc
+  )
+
+  const bridge = IERC20Bridge__factory.connect(
+    config.contracts.bridge,
+    l1Rpc
+  )
+
   const stakerCount = await oldRollupContract.stakerCount()
 
   const stakers: string[] = []
@@ -72,10 +85,13 @@ async function getPreUpgradeState(l1Rpc: JsonRpcProvider, config: Config) {
 
   const wasmModuleRoot = await oldRollupContract.wasmModuleRoot()
 
+  const feeToken = await seqInbox.isUsingFeeToken() ? await bridge.nativeToken() : null
+
   return {
     stakers,
     wasmModuleRoot,
     ...boxes,
+    feeToken
   }
 }
 
@@ -255,12 +271,19 @@ async function checkSequencerInbox(
   params: VerificationParams,
   newRollup: RollupUserLogic
 ) {
-  const { l1Rpc, config, deployedContracts } = params
+  const { l1Rpc, config, deployedContracts, preUpgradeState } = params
 
   const seqInboxContract = SequencerInbox__factory.connect(
     config.contracts.sequencerInbox,
     l1Rpc
   )
+
+  // make sure fee token-ness is correct
+  if (
+    await seqInboxContract.isUsingFeeToken() !== (preUpgradeState.feeToken !== null)
+  ) {
+    throw new Error('SequencerInbox isUsingFeeToken does not match')
+  }
 
   // make sure the impl was updated
   if (
@@ -297,7 +320,20 @@ async function checkSequencerInbox(
 }
 
 async function checkInbox(params: VerificationParams) {
-  const { l1Rpc, config, deployedContracts } = params
+  const { l1Rpc, config, deployedContracts, preUpgradeState } = params
+
+  // make sure it's an ERC20Inbox if we're using a fee token
+  const inboxContract = IERC20Inbox__factory.connect(
+    config.contracts.inbox,
+    l1Rpc
+  )
+  const submissionFee = await inboxContract.calculateRetryableSubmissionFee(100, 100)
+  if (preUpgradeState.feeToken && !submissionFee.eq(0)) {
+    throw new Error('Inbox is not an ERC20Inbox')
+  }
+  if (!preUpgradeState.feeToken && submissionFee.eq(0)) {
+    throw new Error('Inbox is an ERC20Inbox')
+  }
 
   // make sure the impl was updated
   if (
@@ -337,9 +373,29 @@ async function checkOutbox(
   params: VerificationParams,
   newRollup: RollupUserLogic
 ) {
-  const { l1Rpc, config, deployedContracts } = params
+  const { l1Rpc, config, deployedContracts, preUpgradeState } = params
 
   const outboxContract = Outbox__factory.connect(config.contracts.outbox, l1Rpc)
+
+  // make sure it's an ERC20Outbox if we're using a fee token
+  let feeTokenValid = true
+  try {
+    const erc20Outbox = ERC20Outbox__factory.connect(
+      config.contracts.outbox,
+      l1Rpc
+    )
+    // will revert if not an ERC20Outbox
+    const withdrawalAmt = await erc20Outbox.l2ToL1WithdrawalAmount()
+    feeTokenValid = preUpgradeState.feeToken !== null
+  }
+  catch (e: any) {
+    if (e.code !== 'CALL_EXCEPTION') throw e
+    feeTokenValid = preUpgradeState.feeToken === null
+  }
+
+  if (!feeTokenValid) {
+    throw new Error('Outbox fee token does not match')
+  }
 
   // make sure the impl was updated
   if (
@@ -361,6 +417,27 @@ async function checkBridge(
 ) {
   const { l1Rpc, config, deployedContracts, preUpgradeState } = params
   const bridgeContract = Bridge__factory.connect(config.contracts.bridge, l1Rpc)
+
+  // make sure the fee token was preserved
+  let feeTokenValid = true
+  try {
+    const erc20Bridge = IERC20Bridge__factory.connect(
+      config.contracts.bridge,
+      l1Rpc
+    )
+    const feeToken = await erc20Bridge.nativeToken()
+    if (feeToken !== preUpgradeState.feeToken) {
+      feeTokenValid = false
+    }
+  }
+  catch (e: any) {
+    if (e.code !== 'CALL_EXCEPTION') throw e
+    feeTokenValid = preUpgradeState.feeToken === null
+  }
+
+  if (!feeTokenValid) {
+    throw new Error('Bridge fee token does not match')
+  }
 
   // make sure the impl was updated
   if (
