@@ -44,5 +44,5 @@ export const custom: Config = {
     },
   },
   // validators to be whitelisted on the new rollup
-  validators: ['0x6A568afe0f82d34759347bb36F14A6bB171d2CBe'],
+  validators: [],
 }
