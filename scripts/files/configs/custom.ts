@@ -22,11 +22,11 @@ export const custom: Config = {
   },
   settings: {
     challengeGracePeriodBlocks: hoursToBlocks(48), // 2 days for the chain owner to intervene in case of challenge
-    confirmPeriodBlocks: 45818, // ~6.4 days
-    challengePeriodBlocks: 45818, // same as confirm period
+    confirmPeriodBlocks: 50400, // 7 days in terms of the parent chain's block.number timing
+    challengePeriodBlocks: 50400, // same as confirm period
     stakeToken: '', // rollup stake token
-    stakeAmt: parseEther('3600'), // assertion stake amount
-    miniStakeAmounts: [parseEther('0'), parseEther('555'), parseEther('79')], // subchallenge stake amounts (0 first level recommended)
+    stakeAmt: parseEther('1'), // assertion stake amount
+    miniStakeAmounts: [parseEther('0'), parseEther('1'), parseEther('1')], // subchallenge stake amounts (0 first level recommended)
     chainId: 42161, // child chain id
     minimumAssertionPeriod: 75, // minimum number of blocks between assertions
     validatorAfkBlocks: 201600, // number of blocks before validator whitelist is dropped due to inactivity
@@ -35,8 +35,8 @@ export const custom: Config = {
     bigStepLeafSize: 2 ** 19, // do not change unless you know what you're doing
     smallStepLeafSize: 2 ** 23, // do not change unless you know what you're doing
     numBigStepLevel: 1, // do not change unless you know what you're doing
-    maxDataSize: 117964, // do not change unless you know what you're doing
-    isDelayBufferable: true, // whether to enable the delay buffer feature
+    maxDataSize: 117964, // if you're an L3, this should be set to 104857
+    isDelayBufferable: true, // it is not recommended to keep this as true, even if you don't use the feature
     bufferConfig: {
       max: hoursToBlocks(48), // 2 days
       threshold: 2 ** 32 - 1, // keep above typical posting frequency. set artificially high to disable
