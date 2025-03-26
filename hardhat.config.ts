@@ -205,7 +205,7 @@ module.exports = {
         : [],
     },
     custom: {
-      url: process.env['CUSTOM_RPC_URL']
+      url: process.env['CUSTOM_RPC_URL'] || 'N/A'
     },
     geth: {
       url: 'http://localhost:8545',
