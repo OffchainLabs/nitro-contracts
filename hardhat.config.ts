@@ -1,4 +1,4 @@
-import '@nomiclabs/hardhat-waffle'
+import '@nomicfoundation/hardhat-chai-matchers'
 import 'hardhat-deploy'
 import '@nomiclabs/hardhat-ethers'
 import '@nomicfoundation/hardhat-verify'
@@ -7,7 +7,6 @@ import 'solidity-coverage'
 import 'hardhat-gas-reporter'
 import 'hardhat-contract-sizer'
 import 'hardhat-ignore-warnings'
-// import '@tovarishfin/hardhat-yul';
 import dotenv from 'dotenv'
 
 dotenv.config()
