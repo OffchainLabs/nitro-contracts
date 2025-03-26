@@ -38,7 +38,7 @@ export const custom: Config = {
     maxDataSize: 117964, // if you're an L3, this should be set to 104857
     isDelayBufferable: true, // it is not recommended to keep this as true, even if you don't use the feature
     bufferConfig: {
-      max: hoursToBlocks(48), // 2 days
+      max: 2 ** 32 - 1, // maximum buffer size, set artificially high to disable
       threshold: 2 ** 32 - 1, // keep above typical posting frequency. set artificially high to disable
       replenishRateInBasis: 500, // 5% replenishment rate
     },
