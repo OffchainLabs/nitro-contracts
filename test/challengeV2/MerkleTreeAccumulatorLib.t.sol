@@ -9,6 +9,7 @@ import "../../src/challengeV2/libraries/MerkleTreeAccumulatorLib.sol";
 import "../../src/libraries/MerkleLib.sol";
 import "./Utils.sol";
 
+/// forge-config: default.allow_internal_expect_revert = true
 contract MerkleTreeAccumulatorLibTest is Test {
     Random random = new Random();
 
@@ -205,6 +206,7 @@ contract MerkleTreeAccumulatorLibTest is Test {
         MerkleTreeAccumulatorLib.root(expansion);
     }
 
+    /// forge-config: default.allow_internal_expect_revert = true
     function testAppendCS(
         uint256 treeSize
     ) public {
