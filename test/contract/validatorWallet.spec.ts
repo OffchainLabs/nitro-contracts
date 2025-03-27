@@ -5,6 +5,7 @@ import {
   ValidatorWalletCreator__factory,
   ValidatorWallet,
   RollupMock,
+  ValidatorWallet__factory,
 } from '../../build/types'
 import { initializeAccounts } from './utils'
 
@@ -96,7 +97,10 @@ describe('Validator Wallet', () => {
 
     await expect(
       wallet.connect(executor).executeTransaction(data, rollupMock1.address, 0)
-    ).to.be.revertedWith(`OnlyOwnerDestination`)
+    ).to.be.revertedWithCustomError(
+      { interface: ValidatorWallet__factory.createInterface() },
+      `OnlyOwnerDestination`
+    )
     await expect(
       wallet.connect(owner).executeTransaction(data, rollupMock1.address, 0)
     ).to.emit(rollupMock1, 'WithdrawTriggered')
@@ -126,6 +130,9 @@ describe('Validator Wallet', () => {
           [rollupMock1.address, rollupMock2.address],
           [0, 0]
         )
-    ).to.be.revertedWith(`OnlyOwnerDestination`)
+    ).to.be.revertedWithCustomError(
+      { interface: ValidatorWallet__factory.createInterface() },
+      `OnlyOwnerDestination`
+    )
   })
 })
