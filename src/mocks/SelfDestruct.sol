@@ -11,9 +11,7 @@ contract SelfDestructInConstructorWithoutDestination {
 }
 
 contract SelfDestructInConstructorWithDestination {
-    constructor(
-        address payable destination
-    ) public payable {
+    constructor(address payable destination) public payable {
         selfdestruct(destination);
     }
 }
@@ -21,9 +19,7 @@ contract SelfDestructInConstructorWithDestination {
 contract SelfDestructOutsideConstructor {
     constructor() public payable {}
 
-    function selfDestructWithDestination(
-        address payable destination
-    ) public {
+    function selfDestructWithDestination(address payable destination) public {
         selfdestruct(destination);
     }
 
