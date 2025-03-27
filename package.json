@@ -54,7 +54,8 @@
     "script:bold-prepare": "hardhat run ./scripts/prepareBoldUpgrade.ts",
     "script:bold-populate-lookup": "hardhat run ./scripts/populateLookup.ts",
     "script:bold-local-execute": "hardhat run ./scripts/executeBoldUpgrade.ts",
-    "deploy-cachemanager-testnode": "hardhat run scripts/local-deployment/deployCacheManager.ts"
+    "deploy-cachemanager-testnode": "hardhat run scripts/local-deployment/deployCacheManager.ts",
+    "deploy-stylusdeployer-testnode": "hardhat run scripts/local-deployment/deployStylusDeployer.ts"
   },
   "dependencies": {
     "@offchainlabs/upgrade-executor": "1.1.0-beta.0",
