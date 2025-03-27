@@ -41,6 +41,28 @@ contract Simple {
         emit RedeemedEvent(msg.sender, ArbRetryableTx(address(110)).getCurrentRedeemer());
     }
 
+    /**
+     * @notice Redeems a list of retryable tickets.
+     * @param ticketIds The array of retryable ticket identifiers (ticket hashes).
+     */
+    function redeemAllAndCreateAddresses(
+        bytes32[] calldata ticketIds,
+        address payable[] calldata addresses
+    ) external payable {
+        for (uint256 i = 0; i < ticketIds.length; i++) {
+            // Attempt to redeem each retryable ticket
+            try ArbRetryableTx(address(110)).redeem{gas: 100000}(ticketIds[i]) {
+                // Ticket redeemed successfully
+                counter++;
+            } catch {
+                revert("Failed to redeem one or more tickets");
+            }
+        }
+        for (uint256 i = 0; i < addresses.length; i++) {
+            addresses[i].transfer(1);
+        }
+    }
+
     function emitNullEvent() external {
         emit NullEvent();
     }
