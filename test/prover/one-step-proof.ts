@@ -6,8 +6,6 @@ import readline from 'readline'
 const PARALLEL = 128
 
 async function sendTestMessages() {
-  const { deployer } = await getNamedAccounts()
-
   const inbox = await ethers.getContractAt(
     'InboxStub',
     (
