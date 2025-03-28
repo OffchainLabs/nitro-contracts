@@ -18,6 +18,9 @@ import {
   Bridge__factory,
   EdgeChallengeManager,
   EdgeChallengeManager__factory,
+  ERC20Outbox__factory,
+  IERC20Bridge__factory,
+  IERC20Inbox__factory,
   IOldRollup__factory,
   Outbox__factory,
   RollupEventInbox__factory,
@@ -59,6 +62,13 @@ async function getPreUpgradeState(l1Rpc: JsonRpcProvider, config: Config) {
     l1Rpc
   )
 
+  const seqInbox = SequencerInbox__factory.connect(
+    config.contracts.sequencerInbox,
+    l1Rpc
+  )
+
+  const bridge = IERC20Bridge__factory.connect(config.contracts.bridge, l1Rpc)
+
   const stakerCount = await oldRollupContract.stakerCount()
 
   const stakers: string[] = []
@@ -72,10 +82,15 @@ async function getPreUpgradeState(l1Rpc: JsonRpcProvider, config: Config) {
 
   const wasmModuleRoot = await oldRollupContract.wasmModuleRoot()
 
+  const feeToken = (await seqInbox.isUsingFeeToken())
+    ? await bridge.nativeToken()
+    : null
+
   return {
     stakers,
     wasmModuleRoot,
     ...boxes,
+    feeToken,
   }
 }
 
@@ -84,19 +99,18 @@ async function perform(
   config: Config,
   deployedContracts: DeployedContracts
 ) {
-  const executor = executors[process.env.CONFIG_NETWORK_NAME!]
-  if (!executor) {
-    throw new Error(
-      'no executor found for CONFIG_NETWORK_NAME or CONFIG_NETWORK_NAME not set'
-    )
-  }
-
   const l1PrivKey = process.env.L1_PRIV_KEY
   if (!l1PrivKey) {
     throw new Error('L1_PRIV_KEY env variable not set')
   }
   let timelockSigner = new Wallet(l1PrivKey, l1Rpc) as unknown as JsonRpcSigner
   if (process.env.ANVILFORK === 'true') {
+    const executor = executors[process.env.CONFIG_NETWORK_NAME!]
+    if (!executor) {
+      throw new Error(
+        'no executor found for CONFIG_NETWORK_NAME or CONFIG_NETWORK_NAME not set'
+      )
+    }
     timelockSigner = await l1Rpc.getSigner(executor)
     await l1Rpc.send('hardhat_impersonateAccount', [executor])
     await l1Rpc.send('hardhat_setBalance', [executor, '0x1000000000000000'])
@@ -123,9 +137,17 @@ async function perform(
     boldActionPerformData,
   ])
 
-  console.log('eoa with executor role:', executor)
+  const signerCanExecute = await upExec.hasRole(
+    '0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63',
+    await timelockSigner.getAddress()
+  )
+
   console.log('upgrade executor:', config.contracts.upgradeExecutor)
   console.log('execute(...) call to upgrade executor:', performCallData)
+
+  if (!signerCanExecute) {
+    process.exit(0)
+  }
 
   console.log('executing the upgrade...')
   const receipt = (await (
@@ -251,12 +273,20 @@ async function checkSequencerInbox(
   params: VerificationParams,
   newRollup: RollupUserLogic
 ) {
-  const { l1Rpc, config, deployedContracts } = params
+  const { l1Rpc, config, deployedContracts, preUpgradeState } = params
 
   const seqInboxContract = SequencerInbox__factory.connect(
     config.contracts.sequencerInbox,
     l1Rpc
   )
+
+  // make sure fee token-ness is correct
+  if (
+    (await seqInboxContract.isUsingFeeToken()) !==
+    (preUpgradeState.feeToken !== null)
+  ) {
+    throw new Error('SequencerInbox isUsingFeeToken does not match')
+  }
 
   // make sure the impl was updated
   if (
@@ -293,7 +323,23 @@ async function checkSequencerInbox(
 }
 
 async function checkInbox(params: VerificationParams) {
-  const { l1Rpc, config, deployedContracts } = params
+  const { l1Rpc, config, deployedContracts, preUpgradeState } = params
+
+  // make sure it's an ERC20Inbox if we're using a fee token
+  const inboxContract = IERC20Inbox__factory.connect(
+    config.contracts.inbox,
+    l1Rpc
+  )
+  const submissionFee = await inboxContract.calculateRetryableSubmissionFee(
+    100,
+    100
+  )
+  if (preUpgradeState.feeToken && !submissionFee.eq(0)) {
+    throw new Error('Inbox is not an ERC20Inbox')
+  }
+  if (!preUpgradeState.feeToken && submissionFee.eq(0)) {
+    throw new Error('Inbox is an ERC20Inbox')
+  }
 
   // make sure the impl was updated
   if (
@@ -333,9 +379,28 @@ async function checkOutbox(
   params: VerificationParams,
   newRollup: RollupUserLogic
 ) {
-  const { l1Rpc, config, deployedContracts } = params
+  const { l1Rpc, config, deployedContracts, preUpgradeState } = params
 
   const outboxContract = Outbox__factory.connect(config.contracts.outbox, l1Rpc)
+
+  // make sure it's an ERC20Outbox if we're using a fee token
+  let feeTokenValid = true
+  try {
+    const erc20Outbox = ERC20Outbox__factory.connect(
+      config.contracts.outbox,
+      l1Rpc
+    )
+    // will revert if not an ERC20Outbox
+    const withdrawalAmt = await erc20Outbox.l2ToL1WithdrawalAmount()
+    feeTokenValid = preUpgradeState.feeToken !== null
+  } catch (e: any) {
+    if (e.code !== 'CALL_EXCEPTION') throw e
+    feeTokenValid = preUpgradeState.feeToken === null
+  }
+
+  if (!feeTokenValid) {
+    throw new Error('Outbox fee token does not match')
+  }
 
   // make sure the impl was updated
   if (
@@ -357,6 +422,26 @@ async function checkBridge(
 ) {
   const { l1Rpc, config, deployedContracts, preUpgradeState } = params
   const bridgeContract = Bridge__factory.connect(config.contracts.bridge, l1Rpc)
+
+  // make sure the fee token was preserved
+  let feeTokenValid = true
+  try {
+    const erc20Bridge = IERC20Bridge__factory.connect(
+      config.contracts.bridge,
+      l1Rpc
+    )
+    const feeToken = await erc20Bridge.nativeToken()
+    if (feeToken !== preUpgradeState.feeToken) {
+      feeTokenValid = false
+    }
+  } catch (e: any) {
+    if (e.code !== 'CALL_EXCEPTION') throw e
+    feeTokenValid = preUpgradeState.feeToken === null
+  }
+
+  if (!feeTokenValid) {
+    throw new Error('Bridge fee token does not match')
+  }
 
   // make sure the impl was updated
   if (
@@ -734,13 +819,7 @@ async function getAllowedInboxesOutboxesFromBridge(bridge: Bridge) {
 }
 
 async function main() {
-  const l1RpcVal = process.env.L1_RPC_URL
-  if (!l1RpcVal) {
-    throw new Error('L1_RPC_URL env variable not set')
-  }
-  const l1Rpc = new ethers.providers.JsonRpcProvider(
-    l1RpcVal
-  ) as JsonRpcProvider
+  const l1Rpc = ethers.provider
 
   const configNetworkName = process.env.CONFIG_NETWORK_NAME
   if (!configNetworkName) {

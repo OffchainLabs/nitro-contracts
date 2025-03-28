@@ -53,7 +53,7 @@ abstract contract AbsOutboxTest is Test {
     function test_executeTransactionSimulation(
         address from
     ) public {
-        vm.assume(from != address(0));
+        vm.assume(from != address(0) && from != address(this));
         vm.prank(from);
         vm.expectRevert(SimulationOnlyEntrypoint.selector);
         outbox.executeTransactionSimulation(
