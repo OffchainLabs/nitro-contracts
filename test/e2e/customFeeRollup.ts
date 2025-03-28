@@ -212,7 +212,7 @@ describe('Custom fee token orbit rollup', () => {
     ).data
     const batchtxData = seqInbox.interface.decodeFunctionData(
       seqInbox.interface.functions[
-        'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256)'
+        'addSequencerL2BatchFromOriginDelayProof(uint256,bytes,uint256,address,uint256,uint256,(bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32)))'
       ],
       txData
     )
