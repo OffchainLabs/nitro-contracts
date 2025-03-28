@@ -100,6 +100,10 @@ describe('Custom fee token orbit rollup', () => {
       l2Network.ethBridge.inbox,
       l2Provider
     )
+    if (nativeTokenAddress === ethers.constants.AddressZero) {
+      // skip test
+      this.skip()
+    }
     nativeToken =
       nativeTokenAddress === ethers.constants.AddressZero
         ? undefined
