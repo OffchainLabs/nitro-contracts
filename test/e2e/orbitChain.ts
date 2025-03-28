@@ -58,6 +58,7 @@ describe('Orbit Chain', () => {
     )
     l2Network = {
       ...coreL2Network,
+      isBold: true,
       tokenBridge: {
         l1CustomGateway: '',
         l1ERC20Gateway: '',
