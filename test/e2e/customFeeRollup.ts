@@ -302,6 +302,16 @@ describe('Custom fee token orbit rollup', () => {
   }
 
   it('batch poster can get refunded on L2', async function () {
+    // skip test if the fee token pricer is not set
+    const seqInbox = SequencerInbox__factory.connect(
+      l2Network.ethBridge.sequencerInbox,
+      l2Provider
+    )
+    const feeTokenPricerAddr = await seqInbox.callStatic.feeTokenPricer()
+    if (feeTokenPricerAddr === ethers.constants.AddressZero) {
+      this.skip()
+    }
+
     await prepareBatchPostingTest()
 
     // send 1 tx. We start out with a small negative surpluss, which will cause an over-refund
