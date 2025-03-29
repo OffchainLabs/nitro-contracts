@@ -1,11 +1,16 @@
 import { assert } from 'chai'
-import { ethers, run } from 'hardhat'
+import { ethers, run, deployments } from 'hardhat'
 
 describe('HashProofHelper', function () {
   it('Should produce valid proofs from full preimages', async function () {
     await run('deploy', { tags: 'HashProofHelper' })
 
-    const hashProofHelper = await ethers.getContract('HashProofHelper')
+    const hashProofHelper = await ethers.getContractAt(
+      'HashProofHelper',
+      (
+        await deployments.get('HashProofHelper')
+      ).address
+    )
 
     for (let i = 0; i < 16; i += 1) {
       const len = Math.floor(Math.random() * 256)
@@ -33,7 +38,12 @@ describe('HashProofHelper', function () {
   it('Should produce valid proofs from split preimages', async function () {
     await run('deploy', { tags: 'HashProofHelper' })
 
-    const hashProofHelper = await ethers.getContract('HashProofHelper')
+    const hashProofHelper = await ethers.getContractAt(
+      'HashProofHelper',
+      (
+        await deployments.get('HashProofHelper')
+      ).address
+    )
 
     for (let i = 0; i < 16; i += 1) {
       const len = Math.floor(Math.random() * 1024)
