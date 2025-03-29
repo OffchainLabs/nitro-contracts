@@ -828,7 +828,7 @@ describe('Orbit Chain', () => {
     const ownerAddr = '0x72f7EEedF02C522242a4D3Bdc8aE6A8583aD7c5e'
     const config: ConfigStruct = {
       confirmPeriodBlocks: ethers.BigNumber.from('150'),
-      stakeToken: ethers.constants.AddressZero,
+      stakeToken: '0x000000000000000000000000000000000000dead',
       baseStake: ethers.utils.parseEther('1'),
       wasmModuleRoot:
         '0xda4e3ad5e7feacb817c21c8d0220da7650fe9051ece68a3f0b1c5d38bbb27b21',
