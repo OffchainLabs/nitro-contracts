@@ -235,7 +235,6 @@ jobs:
           no-token-bridge: true
           no-l3-token-bridge: true
           nitro-testnode-ref: v3-support
-          # nitro-contracts-branch: 'custom-fee-rollup'
           nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
 
       - name: Setup node/yarn
@@ -252,10 +251,7 @@ jobs:
         run: yarn build
 
       - name: Run e2e tests
-        run: yarn test:e2e:orbit
-
-      - name: Run e2e orbit custom fee token rollup tests
-        run: yarn test:e2e:orbit-fee-token-rollup
+        run: yarn test:e2e
 
   # bold-upgrade:
   #   name: BOLD upgrade test
