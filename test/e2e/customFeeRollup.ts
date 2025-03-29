@@ -132,8 +132,7 @@ describe('Custom fee token orbit rollup', () => {
     ).wait()
 
     // wait for the batch poster to send their tx, we wait for their nonce to increase
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
+    for (let i = 0; i < 300; i++) {
       const currentNonce = await l2Provider.getTransactionCount(
         batchPosterAddr,
         'latest'
@@ -145,10 +144,9 @@ describe('Custom fee token orbit rollup', () => {
     }
 
     // batch submission reports occur via delayed messages
-    // wait until we see a change in the batch poster balance
+    // wait until we see a change in the batch poster balance, or 5 minutes
     let batchPosterL3BalanceAfter = BigNumber.from('0')
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
+    for (let i = 0; i < 300; i++) {
       batchPosterL3BalanceAfter = await l3Provider.getBalance(batchPosterAddr)
       if (!batchPosterL3BalanceAfter.eq(batchPosterL3BalanceBefore)) {
         break
