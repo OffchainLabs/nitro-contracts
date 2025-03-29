@@ -331,7 +331,7 @@ describe('Stylus deployer', () => {
   it('create1 deploy, activate, init', async function () {
     const wall = await getConnectedL2Wallet()
     const deployer = await new StylusDeployer__factory(wall).deploy()
-    const bytecode = getBytecode(5)
+    const bytecode = getBytecode(2)
 
     await deploy({
       wallet: wall,
@@ -451,7 +451,7 @@ describe('Stylus deployer', () => {
   it('refund checks', async () => {
     const wall = await getConnectedL2Wallet()
     const deployer = await new StylusDeployer__factory(wall).deploy()
-    const bytecode = getBytecode(8)
+    const bytecode = getBytecode(4)
     const forwarder1 = await new ReceivingForwarder__factory(wall).deploy()
     const forwarder2 = await new ReceivingForwarder__factory(wall).deploy()
 
