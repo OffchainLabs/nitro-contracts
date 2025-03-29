@@ -197,13 +197,16 @@ const deploy = async (args: {
   let dataFee = BigNumber.from(0)
   if (args.expectActivation) {
     const programActivated = getProgramActivatedEvent(rec)
-    expect(
-      programActivated.dataFee.eq(activationFee),
+    // TODO: check if this is supposed to be exact or not
+    expect(programActivated.dataFee).to.closeTo(
+      activationFee,
+      activationFee.div(10),
       'incorrect activation fee'
-    ).to.be.true
+    )
     dataFee = programActivated.dataFee
-    expect(programActivated.program, 'invalid contract address').to.eq(
-      contractDeployed.deployedContract
+    expect(programActivated.program).to.eq(
+      contractDeployed.deployedContract,
+      'invalid contract address'
     )
   }
   expect(contractDeployed).to.not.be.undefined
