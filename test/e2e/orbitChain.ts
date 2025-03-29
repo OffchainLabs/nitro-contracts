@@ -1200,7 +1200,7 @@ async function _getRollupCreatorFromLogs(
   const filter: Filter = {
     topics: [
       ethers.utils.id(
-        'RollupCreated(address,address,address,address,address,address,address,address,address,address,address,address)'
+        'RollupCreated(address,address,address,address,address,address,address,address,address,address,address)'
       ),
     ],
   }
