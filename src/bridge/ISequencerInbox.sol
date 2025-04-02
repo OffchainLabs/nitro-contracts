@@ -69,6 +69,9 @@ interface ISequencerInbox is IDelayedMessageProvider {
     /// @dev Owner set the buffer config.
     event BufferConfigSet(BufferConfig bufferConfig);
 
+    /// @dev Owner set the fee token pricer.
+    event FeeTokenPricerSet(address feeTokenPricer);
+
     function totalDelayedMessagesRead() external view returns (uint256);
 
     function bridge() external view returns (IBridge);

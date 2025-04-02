@@ -880,6 +880,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         }
 
         feeTokenPricer = feeTokenPricer_;
+        emit FeeTokenPricerSet(address(feeTokenPricer_));
         emit OwnerFunctionCalled(6);
     }
 
