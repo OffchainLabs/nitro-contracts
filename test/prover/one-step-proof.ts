@@ -1,4 +1,4 @@
-import { ethers, run, getNamedAccounts, deployments } from 'hardhat'
+import { ethers, run, deployments } from 'hardhat'
 import fs from 'fs'
 import assert from 'assert'
 import readline from 'readline'
