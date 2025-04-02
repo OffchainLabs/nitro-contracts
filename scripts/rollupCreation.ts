@@ -310,7 +310,7 @@ async function _getDevRollupConfig(
   }
 
   const config: ConfigStruct = {
-    confirmPeriodBlocks: ethers.BigNumber.from('20'),
+    confirmPeriodBlocks: ethers.BigNumber.from('1'), // was 20
     stakeToken: stakeToken,
     baseStake: 8,
     wasmModuleRoot: wasmModuleRoot,
@@ -318,7 +318,7 @@ async function _getDevRollupConfig(
     loserStakeEscrow: ownerAddress,
     chainId: JSON.parse(chainConfig)['chainId'],
     chainConfig: chainConfig,
-    minimumAssertionPeriod: 5,
+    minimumAssertionPeriod: 1, // was 5
     validatorAfkBlocks: 201600,
     genesisAssertionState: genesisAssertionState,
     genesisInboxCount: 0,
