@@ -672,11 +672,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     ) internal {
         // When using a fee token the batch poster needs to be reimbursed on the child chain in units of the child chain fee token.
         // We need to get the exchange rate between the child chain fee token and the parent chain fee token using the pricer.
-        // If the pricer is not set, then we do not send batch reports and batch poster never gets reimbursed
         IFeeTokenPricer _feeTokenPricer = feeTokenPricer;
-        if (isUsingFeeToken && address(_feeTokenPricer) == address(0)) {
-            return;
-        }
 
         // report the account who paid the gas (tx.origin) for the tx as batch poster
         // if msg.sender is used and is a contract, it might not be able to spend the refund on l2
@@ -690,12 +686,17 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         }
         if (extraGas > type(uint64).max) revert ExtraGasNotUint64();
 
-        if (isUsingFeeToken && address(_feeTokenPricer) != address(0)) {
-            // gasPrice is originally denominated in parent chain's native token and we want to scale it to the child
-            // chain's fee token. For that we need the exchange rate which tells us how many child chain fee tokens
-            // we get for 1 parent chain fee token. Exchange rate is denominated in 18 decimals.
-            uint256 exchangeRate = _feeTokenPricer.getExchangeRate();
-            gasPrice = (gasPrice * exchangeRate) / 1e18;
+        if (isUsingFeeToken) {
+            if (address(_feeTokenPricer) != address(0)) {
+                // gasPrice is originally denominated in parent chain's native token and we want to scale it to the child
+                // chain's fee token. For that we need the exchange rate which tells us how many child chain fee tokens
+                // we get for 1 parent chain fee token. Exchange rate is denominated in 18 decimals.
+                uint256 exchangeRate = _feeTokenPricer.getExchangeRate();
+                gasPrice = (gasPrice * exchangeRate) / 1e18;
+            } else {
+                // If the pricer is not set, we mimick the behavior of a pricer that return 0
+                gasPrice = 0;
+            }
         }
 
         // this msg isn't included in the current sequencer batch, but instead added to
