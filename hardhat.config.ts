@@ -204,7 +204,7 @@ module.exports = {
         : [],
     },
     custom: {
-      url: process.env['CUSTOM_RPC_URL'] || 'N/A'
+      url: process.env['CUSTOM_RPC_URL'] || 'N/A',
     },
     geth: {
       url: 'http://localhost:8545',
@@ -245,8 +245,8 @@ module.exports = {
         urls: {
           apiURL: process.env['CUSTOM_ETHERSCAN_API_URL'],
           browserURL: process.env['CUSTOM_ETHERSCAN_BROWSER_URL'],
-        }
-      }
+        },
+      },
     ],
   },
   mocha: {

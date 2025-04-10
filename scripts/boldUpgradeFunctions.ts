@@ -49,7 +49,9 @@ export const deployDependencies = async (
       isUsingFeeToken ? 'ERC20Bridge' : 'Bridge',
       bridge.address,
       [],
-      isUsingFeeToken ? 'src/bridge/ERC20Bridge.sol:ERC20Bridge' : 'src/bridge/Bridge.sol:Bridge'
+      isUsingFeeToken
+        ? 'src/bridge/ERC20Bridge.sol:ERC20Bridge'
+        : 'src/bridge/Bridge.sol:Bridge'
     )
   }
 
@@ -59,7 +61,7 @@ export const deployDependencies = async (
     signer
   )
 
-  let reader4844Addr = ethers.constants.AddressZero;
+  let reader4844Addr = ethers.constants.AddressZero
   if (isUsing4844Reader) {
     const reader4844 = await contractFactory.deploy()
     await reader4844.deployed()
@@ -100,7 +102,7 @@ export const deployDependencies = async (
     await verifyContract('RollupEventInbox', rei.address, [])
   }
 
-  const outboxFac = isUsingFeeToken 
+  const outboxFac = isUsingFeeToken
     ? new ERC20Outbox__factory(signer)
     : new Outbox__factory(signer)
   const outbox = await outboxFac.deploy()
@@ -110,7 +112,11 @@ export const deployDependencies = async (
   }
   if (verify) {
     await outbox.deployTransaction.wait(5)
-    await verifyContract(isUsingFeeToken ? 'ERC20Outbox' : 'Outbox', outbox.address, [])
+    await verifyContract(
+      isUsingFeeToken ? 'ERC20Outbox' : 'Outbox',
+      outbox.address,
+      []
+    )
   }
 
   const inboxFac = isUsingFeeToken
@@ -252,7 +258,8 @@ export const deployBoldUpgrade = async (
     wallet
   )
   const isUsingFeeToken = await sequencerInbox.isUsingFeeToken()
-  const has4844Reader = await sequencerInbox.reader4844() != ethers.constants.AddressZero
+  const has4844Reader =
+    (await sequencerInbox.reader4844()) != ethers.constants.AddressZero
   const deployed = await deployDependencies(
     wallet,
     config.settings.maxDataSize,

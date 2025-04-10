@@ -8,7 +8,11 @@ import { ERC20, ERC20__factory, IERC20__factory } from '../build/types'
 import { sleep } from './testSetup'
 import { promises as fs } from 'fs'
 import { _isRunningOnArbitrum, verifyContract } from './deploymentUtils'
-import { AssertionStateStruct, ConfigStruct, RollupCreator } from '../build/types/src/rollup/RollupCreator'
+import {
+  AssertionStateStruct,
+  ConfigStruct,
+  RollupCreator,
+} from '../build/types/src/rollup/RollupCreator'
 
 // 1 gwei
 const MAX_FER_PER_GAS = BigNumber.from('1000000000')
@@ -306,7 +310,7 @@ async function _getDevRollupConfig(
   }
 
   const config: ConfigStruct = {
-    confirmPeriodBlocks: ethers.BigNumber.from('20'),
+    confirmPeriodBlocks: ethers.BigNumber.from('1'), // was 20
     stakeToken: stakeToken,
     baseStake: 8,
     wasmModuleRoot: wasmModuleRoot,
@@ -314,15 +318,11 @@ async function _getDevRollupConfig(
     loserStakeEscrow: ownerAddress,
     chainId: JSON.parse(chainConfig)['chainId'],
     chainConfig: chainConfig,
-    minimumAssertionPeriod: 5,
+    minimumAssertionPeriod: 1, // was 5
     validatorAfkBlocks: 201600,
     genesisAssertionState: genesisAssertionState,
     genesisInboxCount: 0,
-    miniStakeValues: [
-      4,
-      2,
-      1,
-    ],
+    miniStakeValues: [4, 2, 1],
     layerZeroBlockEdgeHeight: 2 ** 26,
     layerZeroBigStepEdgeHeight: 2 ** 19,
     layerZeroSmallStepEdgeHeight: 2 ** 23,
@@ -335,7 +335,7 @@ async function _getDevRollupConfig(
       delaySeconds: ethers.BigNumber.from('86400'),
       futureSeconds: ethers.BigNumber.from('3600'),
     },
-    anyTrustFastConfirmer: ethers.constants.AddressZero
+    anyTrustFastConfirmer: ethers.constants.AddressZero,
   }
 
   return {
