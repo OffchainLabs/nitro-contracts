@@ -154,101 +154,104 @@ jobs:
 
       - name: Test 4844
         run: yarn test:4844
-  # test-e2e:
-  #   name: Test e2e
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #       with:
-  #         submodules: recursive
 
-  #     - uses: OffchainLabs/actions/run-nitro-test-node@main
-  #       with:
-  #         l3-node: true
-  #         no-token-bridge: true
-  #         no-l3-token-bridge: true
-  #         nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
-  #         nitro-testnode-ref: node-18
+  test-e2e:
+    name: Test e2e
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
-  #     - name: Setup node/yarn
-  #       uses: actions/setup-node@v3
-  #       with:
-  #         node-version: 18
-  #         cache: 'yarn'
-  #         cache-dependency-path: '**/yarn.lock'
+      - uses: OffchainLabs/actions/run-nitro-test-node@main
+        with:
+          l3-node: true
+          no-token-bridge: true
+          no-l3-token-bridge: true
+          nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
+          nitro-testnode-ref: v3-support
 
-  #     - name: Install packages
-  #       run: yarn
+      - name: Setup node/yarn
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'yarn'
+          cache-dependency-path: '**/yarn.lock'
 
-  #     - name: Compile contracts
-  #       run: yarn build
+      - name: Install packages
+        run: yarn
 
-  #     - name: Run e2e tests
-  #       run: yarn test:e2e
-  # test-e2e-custom-fee-token:
-  #   name: Test e2e custom fee token
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #       with:
-  #         submodules: recursive
+      - name: Compile contracts
+        run: yarn build
 
-  #     - uses: OffchainLabs/actions/run-nitro-test-node@main
-  #       with:
-  #         l3-node: true
-  #         args: --l3-fee-token
-  #         no-token-bridge: true
-  #         no-l3-token-bridge: true
-  #         nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
-  #         nitro-testnode-ref: node-18
+      - name: Run e2e tests
+        run: yarn test:e2e
 
-  #     - name: Setup node/yarn
-  #       uses: actions/setup-node@v3
-  #       with:
-  #         node-version: 18
-  #         cache: 'yarn'
-  #         cache-dependency-path: '**/yarn.lock'
+  test-e2e-custom-fee-token:
+    name: Test e2e custom fee token
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
-  #     - name: Install packages
-  #       run: yarn
+      - uses: OffchainLabs/actions/run-nitro-test-node@main
+        with:
+          l3-node: true
+          args: --l3-fee-token
+          no-token-bridge: true
+          no-l3-token-bridge: true
+          nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
+          nitro-testnode-ref: v3-support
 
-  #     - name: Compile contracts
-  #       run: yarn build
+      - name: Setup node/yarn
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'yarn'
+          cache-dependency-path: '**/yarn.lock'
 
-  #     - name: Run e2e tests
-  #       run: yarn test:e2e
-  # test-e2e-fee-token-6-decimals:
-  #   name: Test e2e fee token with 6 decimals
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #       with:
-  #         submodules: recursive
+      - name: Install packages
+        run: yarn
 
-  #     - uses: OffchainLabs/actions/run-nitro-test-node@main
-  #       with:
-  #         l3-node: true
-  #         args: --l3-fee-token --l3-fee-token-decimals 6
-  #         no-token-bridge: true
-  #         no-l3-token-bridge: true
-  #         nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
-  #         nitro-testnode-ref: 'non18-decimal-token-node-18'
+      - name: Compile contracts
+        run: yarn build
 
-  #     - name: Setup node/yarn
-  #       uses: actions/setup-node@v3
-  #       with:
-  #         node-version: 18
-  #         cache: 'yarn'
-  #         cache-dependency-path: '**/yarn.lock'
+      - name: Run e2e tests
+        run: yarn test:e2e
 
-  #     - name: Install packages
-  #       run: yarn
+  test-e2e-fee-token-6-decimals:
+    name: Test e2e fee token with 6 decimals and pricer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
-  #     - name: Compile contracts
-  #       run: yarn build
+      - uses: OffchainLabs/actions/run-nitro-test-node@main
+        with:
+          l3-node: true
+          args: --l3-fee-token --l3-fee-token-pricer --l3-fee-token-decimals 6
+          no-token-bridge: true
+          no-l3-token-bridge: true
+          nitro-testnode-ref: v3-support
+          nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
 
-  #     - name: Run e2e tests
-  #       run: yarn test:e2e
+      - name: Setup node/yarn
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'yarn'
+          cache-dependency-path: '**/yarn.lock'
+
+      - name: Install packages
+        run: yarn
+
+      - name: Compile contracts
+        run: yarn build
+
+      - name: Run e2e tests
+        run: yarn test:e2e
 
   # bold-upgrade:
   #   name: BOLD upgrade test
