@@ -53,7 +53,17 @@ abstract contract AbsOutboxTest is Test {
     function test_executeTransactionSimulation(
         address from
     ) public {
-        vm.assume(from != address(0));
+        address outboxProxyAdmin = address(
+            uint160(
+                uint256(
+                    vm.load(
+                        address(outbox),
+                        0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103
+                    )
+                )
+            )
+        );
+        vm.assume(from != address(0) && from != address(this) && from != outboxProxyAdmin);
         vm.prank(from);
         vm.expectRevert(SimulationOnlyEntrypoint.selector);
         outbox.executeTransactionSimulation(

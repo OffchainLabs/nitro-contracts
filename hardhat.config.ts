@@ -1,4 +1,4 @@
-import '@nomiclabs/hardhat-waffle'
+import '@nomicfoundation/hardhat-chai-matchers'
 import 'hardhat-deploy'
 import '@nomiclabs/hardhat-ethers'
 import '@nomicfoundation/hardhat-verify'
@@ -7,7 +7,6 @@ import 'solidity-coverage'
 import 'hardhat-gas-reporter'
 import 'hardhat-contract-sizer'
 import 'hardhat-ignore-warnings'
-// import '@tovarishfin/hardhat-yul';
 import dotenv from 'dotenv'
 
 dotenv.config()
@@ -53,6 +52,16 @@ const solidity = {
         evmVersion: 'cancun',
       },
     },
+    'src/mocks/ArbOS11To32UpgradeTest.sol': {
+      version: '0.8.24',
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 100,
+        },
+        evmVersion: 'cancun',
+      },
+    },
   },
 }
 
@@ -80,6 +89,16 @@ if (process.env['INTERFACE_TESTER_SOLC_VERSION']) {
       },
     },
     'src/mocks/HostioTest.sol': {
+      version: '0.8.24',
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 100,
+        },
+        evmVersion: 'cancun',
+      },
+    },
+    'src/mocks/ArbOS11To32UpgradeTest.sol': {
       version: '0.8.24',
       settings: {
         optimizer: {
@@ -184,6 +203,9 @@ module.exports = {
         ? [process.env['DEVNET_PRIVKEY']]
         : [],
     },
+    custom: {
+      url: process.env['CUSTOM_RPC_URL'] || 'N/A',
+    },
     geth: {
       url: 'http://localhost:8545',
     },
@@ -198,6 +220,7 @@ module.exports = {
       arbSepolia: process.env['ARBISCAN_API_KEY'],
       base: process.env['BASESCAN_API_KEY'],
       baseSepolia: process.env['BASESCAN_API_KEY'],
+      custom: process.env['CUSTOM_ETHERSCAN_API_KEY'],
     },
     customChains: [
       {
@@ -214,6 +237,14 @@ module.exports = {
         urls: {
           apiURL: 'https://api-sepolia.arbiscan.io/api',
           browserURL: 'https://sepolia.arbiscan.io/',
+        },
+      },
+      {
+        network: 'custom',
+        chainId: process.env['CUSTOM_CHAINID'],
+        urls: {
+          apiURL: process.env['CUSTOM_ETHERSCAN_API_URL'],
+          browserURL: process.env['CUSTOM_ETHERSCAN_BROWSER_URL'],
         },
       },
     ],
