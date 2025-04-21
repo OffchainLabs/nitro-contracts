@@ -210,7 +210,7 @@ describe('Custom fee token orbit rollup', () => {
     ).data
     let batchtxData
     // TODO: disable delay buffer here or use 4 bytes to determine if delay proof is used
-    try{
+    try {
       batchtxData = seqInbox.interface.decodeFunctionData(
         seqInbox.interface.functions[
           'addSequencerL2BatchFromOriginDelayProof(uint256,bytes,uint256,address,uint256,uint256,(bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32)))'
