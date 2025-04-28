@@ -28,29 +28,33 @@ export const deployBoldUpgrade = async (
   const rollupCreator = RollupCreator__factory.connect(
     rollupCreatorAddress,
     wallet
-  );
-  const bridgeCreatorAddress = await rollupCreator.bridgeCreator();
+  )
+  const bridgeCreatorAddress = await rollupCreator.bridgeCreator()
   const bridgeCreator = BridgeCreator__factory.connect(
     bridgeCreatorAddress,
     wallet
-  );
+  )
 
   // Bridge, SequencerInbox, DelayBufferableSequencerInbox, Inbox, RollupEventInbox, Outbox
   const bridgeContractTemplates = isUsingFeeToken
     ? await bridgeCreator.erc20BasedTemplates()
-    : await bridgeCreator.ethBasedTemplates();
-  
+    : await bridgeCreator.ethBasedTemplates()
+
   // RollupUserLogic and RollupAdminLogic
-  const rollupUserLogicTemplate = await rollupCreator.rollupUserLogic();
-  const rollupAdminLogicTemplate = await rollupCreator.rollupAdminLogic();
+  const rollupUserLogicTemplate = await rollupCreator.rollupUserLogic()
+  const rollupAdminLogicTemplate = await rollupCreator.rollupAdminLogic()
 
   // ChallengeManager
-  const challengeManagerTemplate = await rollupCreator.challengeManagerTemplate();
+  const challengeManagerTemplate =
+    await rollupCreator.challengeManagerTemplate()
 
   // OneStepProofEntry (OSP)
-  const ospTemplate = await rollupCreator.osp();
+  const ospTemplate = await rollupCreator.osp()
 
-  const templates: Omit<DeployedContracts, 'boldAction' | 'preImageHashLookup'> = {
+  const templates: Omit<
+    DeployedContracts,
+    'boldAction' | 'preImageHashLookup'
+  > = {
     bridge: bridgeContractTemplates.bridge,
     seqInbox: bridgeContractTemplates.sequencerInbox,
     rei: bridgeContractTemplates.rollupEventInbox,
@@ -61,7 +65,7 @@ export const deployBoldUpgrade = async (
     challengeManager: challengeManagerTemplate,
     osp: ospTemplate,
   }
-  
+
   // Deploying BoLDUpgradeAction
   const fac = new BOLDUpgradeAction__factory(wallet)
   const boldUpgradeAction = await fac.deploy(

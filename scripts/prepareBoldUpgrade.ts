@@ -51,11 +51,7 @@ async function main() {
   console.log(`Deployed contracts written to: ${deployedContractsLocation}`)
   fs.writeFileSync(
     deployedContractsLocation,
-    JSON.stringify(
-      { ...deployedAndBold },
-      null,
-      2
-    )
+    JSON.stringify({ ...deployedAndBold }, null, 2)
   )
 }
 
