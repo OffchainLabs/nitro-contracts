@@ -208,6 +208,18 @@ interface ArbOwner {
     ) external;
 
     /**
+     * @notice Mints some amount of the native gas token for this chain to the
+     * given address.
+     */
+    function mintNativeToken(address to, uint64 amount) external;
+
+    /**
+     * @notice Burns some amount of the native gas token for this chain from the
+     * given address.
+     */
+    function burnNativeToken(address from, uint64 amount) external;
+
+    /**
      * @notice Sets the increased calldata price feature on or off (EIP-7623)
      * Available in ArbOS version 40 with default as false
      */
