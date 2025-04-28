@@ -1,7 +1,7 @@
 import { ethers } from 'hardhat'
 import { Wallet } from 'ethers'
 import fs from 'fs'
-import { DeployedContracts, getConfig, getJsonFile } from './boldUpgradeCommon'
+import { getConfig, rollupCreators } from './boldUpgradeCommon'
 import { deployBoldUpgrade } from './boldUpgradeFunctions'
 import dotenv from 'dotenv'
 import path from 'path'
@@ -32,19 +32,18 @@ async function main() {
     configNetworkName + 'DeployedContracts.json'
   )
 
-  // if the deployed contracts exists then we load it and combine
-  // if not, then we just use the newly created item
-  let existingDeployedContracts = {}
-  try {
-    existingDeployedContracts = getJsonFile(
-      deployedContractsLocation
-    ) as DeployedContracts
-  } catch (err) {}
+  // Needed to get the addresses of the logic contracts to update
+  const { chainId } = await l1Rpc.getNetwork()
+  if (!rollupCreators[chainId]) {
+    throw new Error(`Chain id ${chainId} not supported`)
+  }
+  const rollupCreatorAddress = rollupCreators[chainId]
 
   const disableVerification = process.env.DISABLE_VERIFICATION === 'true'
   const deployedAndBold = await deployBoldUpgrade(
     wallet,
     config,
+    rollupCreatorAddress,
     true,
     !disableVerification
   )
@@ -53,7 +52,7 @@ async function main() {
   fs.writeFileSync(
     deployedContractsLocation,
     JSON.stringify(
-      { ...existingDeployedContracts, ...deployedAndBold },
+      { ...deployedAndBold },
       null,
       2
     )

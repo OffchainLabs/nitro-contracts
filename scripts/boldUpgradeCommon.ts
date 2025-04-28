@@ -15,11 +15,24 @@ export interface DeployedContracts {
   challengeManager: string
   boldAction: string
   preImageHashLookup: string
-  prover0: string
-  proverMem: string
-  proverMath: string
-  proverHostIo: string
   osp: string
+}
+
+// Chain id => RollupCreator contract
+// Needed to obtain the updated v3.1.0 logic contracts in the preparation phase
+export const rollupCreators: { [key: number]: string } = {
+  // L1
+  1: '0x43698080f40dB54DEE6871540037b8AB8fD0AB44',
+  11155111: '0x687Bc1D23390875a868Db158DA1cDC8998E31640',
+
+  // Arbitrum chains
+  42161: '',
+  42170: '',
+  421614: '0x5F45675AC8DDF7d45713b2c7D191B287475C16cF',
+
+  // Other chains
+  8453: '',
+  84532: '',
 }
 
 export const getJsonFile = (fileLocation: string) => {
