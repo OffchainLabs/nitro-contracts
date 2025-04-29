@@ -16,8 +16,8 @@ import "../precompiles/ArbOwner.sol";
  */
 contract MinterBurnerForwarder is IMinterBurnerForwarder, AccessControlEnumerable {
     // Roles
-    bytes32 public constant MINTER_ROLE = keccak256("MINTER");
-    bytes32 public constant BURNER_ROLE = keccak256("BURNER");
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
 
     // ArbOwner precompile
     ArbOwner constant ARB_OWNER = ArbOwner(address(112));
@@ -40,16 +40,12 @@ contract MinterBurnerForwarder is IMinterBurnerForwarder, AccessControlEnumerabl
     }
 
     /// @inheritdoc IMinterBurnerForwarder
-    function mintNativeToken(
-        uint256 amount
-    ) external onlyRole(MINTER_ROLE) {
-        ARB_OWNER.mintNativeToken(msg.sender, amount);
+    function mintNativeToken(address to, uint256 amount) external onlyRole(MINTER_ROLE) {
+        ARB_OWNER.mintNativeToken(to, amount);
     }
 
     /// @inheritdoc IMinterBurnerForwarder
-    function burnNativeToken(
-        uint256 amount
-    ) external onlyRole(BURNER_ROLE) {
-        ARB_OWNER.burnNativeToken(msg.sender, amount);
+    function burnNativeToken(address from, uint256 amount) external onlyRole(BURNER_ROLE) {
+        ARB_OWNER.burnNativeToken(from, amount);
     }
 }
