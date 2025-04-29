@@ -211,13 +211,13 @@ interface ArbOwner {
      * @notice Mints some amount of the native gas token for this chain to the
      * given address.
      */
-    function mintNativeToken(address to, uint64 amount) external;
+    function mintNativeToken(address to, uint256 amount) external;
 
     /**
      * @notice Burns some amount of the native gas token for this chain from the
      * given address.
      */
-    function burnNativeToken(address from, uint64 amount) external;
+    function burnNativeToken(address from, uint256 amount) external;
 
     /**
      * @notice Sets the increased calldata price feature on or off (EIP-7623)
