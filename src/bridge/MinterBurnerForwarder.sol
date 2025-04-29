@@ -4,8 +4,8 @@
 
 pragma solidity ^0.8.0;
 
-import '@openzeppelin/contracts/access/AccessControlEnumerable.sol';
-import '../precompiles/ArbOwner.sol';
+import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
+import "../precompiles/ArbOwner.sol";
 
 /**
  * @title MinterBurnerForwarder
@@ -15,8 +15,8 @@ import '../precompiles/ArbOwner.sol';
  */
 contract MinterBurnerForwarder is AccessControlEnumerable {
     // Roles
-    bytes32 public constant MINTER_ROLE = keccak256('MINTER');
-    bytes32 public constant BURNER_ROLE = keccak256('BURNER');
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER");
+    bytes32 public constant BURNER_ROLE = keccak256("BURNER");
 
     // ArbOwner precompile
     ArbOwner constant ARB_OWNER = ArbOwner(address(112));
@@ -26,7 +26,7 @@ contract MinterBurnerForwarder is AccessControlEnumerable {
         for (uint256 i = 0; i < admins.length; i++) {
             _grantRole(DEFAULT_ADMIN_ROLE, admins[i]);
         }
-        
+
         // Grant MINTER role to minters
         for (uint256 i = 0; i < minters.length; i++) {
             _grantRole(MINTER_ROLE, minters[i]);
@@ -44,7 +44,9 @@ contract MinterBurnerForwarder is AccessControlEnumerable {
      *      No events are emitted in this function, since the ArbOwner precompile already emits OwnerActs()
      * @param amount The amount of native gas token to mint
      */
-    function mintNativeToken(uint256 amount) external onlyRole(MINTER_ROLE) {
+    function mintNativeToken(
+        uint256 amount
+    ) external onlyRole(MINTER_ROLE) {
         ARB_OWNER.mintNativeToken(msg.sender, amount);
     }
 
@@ -54,7 +56,9 @@ contract MinterBurnerForwarder is AccessControlEnumerable {
      *      No events are emitted in this function, since the ArbOwner precompile already emits OwnerActs()
      * @param amount The amount of native gas token to burn
      */
-    function burnNativeToken(uint256 amount) external onlyRole(BURNER_ROLE) {
+    function burnNativeToken(
+        uint256 amount
+    ) external onlyRole(BURNER_ROLE) {
         ARB_OWNER.burnNativeToken(msg.sender, amount);
     }
 }
