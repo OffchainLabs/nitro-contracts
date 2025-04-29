@@ -5,6 +5,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
+import "./IMinterBurnerForwarder.sol";
 import "../precompiles/ArbOwner.sol";
 
 /**
@@ -13,7 +14,7 @@ import "../precompiles/ArbOwner.sol";
  *          Minting and burning will be done by using the ArbOwner functions mintNativeToken and burnNativeToken.
  *          This contract must be set as a chain owner of the chain to be able to call ArbOwner functions
  */
-contract MinterBurnerForwarder is AccessControlEnumerable {
+contract MinterBurnerForwarder is IMinterBurnerForwarder, AccessControlEnumerable {
     // Roles
     bytes32 public constant MINTER_ROLE = keccak256("MINTER");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER");
@@ -38,24 +39,14 @@ contract MinterBurnerForwarder is AccessControlEnumerable {
         }
     }
 
-    /**
-     * @notice Mints some amount of the native gas token for this chain to the calling address.
-     * @dev This function calls mintNativeToken in the ArbOwner precompile, so this contract must also be a chain owner.
-     *      No events are emitted in this function, since the ArbOwner precompile already emits OwnerActs()
-     * @param amount The amount of native gas token to mint
-     */
+    /// @inheritdoc IMinterBurnerForwarder
     function mintNativeToken(
         uint256 amount
     ) external onlyRole(MINTER_ROLE) {
         ARB_OWNER.mintNativeToken(msg.sender, amount);
     }
 
-    /**
-     * @notice Burns some amount of the native gas token for this chain from the given address.
-     * @dev This function calls burnNativeToken in the ArbOwner precompile, so this contract must also be a chain owner.
-     *      No events are emitted in this function, since the ArbOwner precompile already emits OwnerActs()
-     * @param amount The amount of native gas token to burn
-     */
+    /// @inheritdoc IMinterBurnerForwarder
     function burnNativeToken(
         uint256 amount
     ) external onlyRole(BURNER_ROLE) {
