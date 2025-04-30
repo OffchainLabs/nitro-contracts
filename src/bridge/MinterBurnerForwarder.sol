@@ -22,21 +22,33 @@ contract MinterBurnerForwarder is IMinterBurnerForwarder, AccessControlEnumerabl
     // ArbOwner precompile
     ArbOwner constant ARB_OWNER = ArbOwner(address(112));
 
-    constructor(address[] memory admins, address[] memory minters, address[] memory burners) {
-        // Grant ADMIN role to admins
-        for (uint256 i = 0; i < admins.length; i++) {
-            _grantRole(DEFAULT_ADMIN_ROLE, admins[i]);
-        }
-
-        // Grant MINTER role to minters
+    /// @param minters Addresses to grant the MINTER_ROLE
+    /// @param burners Addresses to grant the BURNER_ROLE
+    constructor(address[] memory minters, address[] memory burners) {
+        // Grant MINTER_ROLE role to minters
         for (uint256 i = 0; i < minters.length; i++) {
             _grantRole(MINTER_ROLE, minters[i]);
         }
 
-        // Grant BURNER role to burners
+        // Grant BURNER_ROLE role to burners
         for (uint256 i = 0; i < burners.length; i++) {
             _grantRole(BURNER_ROLE, burners[i]);
         }
+    }
+
+    /**
+     * @dev Returns `true` if:
+     *      - we are checking for the admin role, and `account` is a chain owner
+     *      - we are checking for a different role and `account` has been granted `role`.
+     */
+    function hasRole(
+        bytes32 role,
+        address account
+    ) public view override(AccessControl, IAccessControl) returns (bool) {
+        if (role == DEFAULT_ADMIN_ROLE) {
+            return ARB_OWNER.isChainOwner(account);
+        }
+        return super.hasRole(role, account);
     }
 
     /// @inheritdoc IMinterBurnerForwarder
