@@ -13,11 +13,15 @@ interface ArbNativeToken {
      * @notice In case the caller is authorized,
      * mints some amount of the native gas token for this chain to the caller.
      */
-    function mintNativeToken(uint256 amount) external;
+    function mintNativeToken(
+        uint256 amount
+    ) external;
 
     /**
      * @notice In case the caller is authorized,
      * burns some amount of the native gas token for this chain from the caller.
      */
-    function burnNativeToken(uint256 amount) external;
+    function burnNativeToken(
+        uint256 amount
+    ) external;
 }
