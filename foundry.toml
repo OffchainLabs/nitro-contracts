@@ -16,7 +16,6 @@ remappings = ['ds-test/=lib/forge-std/lib/ds-test/src/',
               '@uniswap/v2-core/=node_modules/@uniswap/v2-core/contracts',
               '@uniswap/lib/=node_modules/@uniswap/lib/contracts']
 fs_permissions = [{ access = "read", path = "./"}]
-solc = "0.8.24"
 
 [profile.yul]
 src = 'yul'
@@ -44,12 +43,5 @@ sort_imports = false
 
 [fuzz]
 runs = 1000
-
-[rpc_endpoints]
-base = "https://mainnet.base.org"
-
-
-[profile.fork]
-eth_chain_id = 8453
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
