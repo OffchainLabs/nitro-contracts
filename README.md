@@ -3,7 +3,7 @@
 This is the package with the smart contract code that powers Arbitrum Nitro.
 It includes the rollup and fraud proof smart contracts, as well as interfaces for interacting with precompiles.
 
-For more information see https://developer.arbitrum.io/intro
+For more information see https://docs.arbitrum.io/intro
 
 For the deployed addresses of these contracts for Arbitrum chains see [https://docs.arbitrum.io/for-devs/dev-tools-and-resources/chain-info#core-contracts](https://docs.arbitrum.io/for-devs/dev-tools-and-resources/chain-info#core-contracts)
 
