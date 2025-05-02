@@ -1,8 +1,9 @@
 import { BigNumber, providers } from 'ethers'
-import { parseEther } from 'ethers/lib/utils'
+import { isAddress, parseUnits } from 'ethers/lib/utils'
 import fs from 'fs'
 
 import { configs } from './files/configs'
+import { ERC20__factory } from '../build/types'
 
 export interface DeployedContracts {
   bridge: string
@@ -118,6 +119,7 @@ export const validateConfig = async (
   config: Config,
   l1Rpc: providers.Provider
 ) => {
+  // check all config.contracts
   if ((await l1Rpc.getCode(config.contracts.rollup)).length <= 2) {
     throw new Error('rollup address is not a contract')
   }
@@ -139,10 +141,16 @@ export const validateConfig = async (
   if ((await l1Rpc.getCode(config.contracts.upgradeExecutor)).length <= 2) {
     throw new Error('upgradeExecutor address is not a contract')
   }
+  if (!isAddress(config.contracts.excessStakeReceiver)) {
+    throw new Error('excessStakeReceiver is not a valid address')
+  }
 
   // check all the config.proxyAdmins exist
   if ((await l1Rpc.getCode(config.proxyAdmins.outbox)).length <= 2) {
     throw new Error('outbox proxy admin address is not a contract')
+  }
+  if ((await l1Rpc.getCode(config.proxyAdmins.inbox)).length <= 2) {
+    throw new Error('inbox proxy admin address is not a contract')
   }
   if ((await l1Rpc.getCode(config.proxyAdmins.bridge)).length <= 2) {
     throw new Error('bridge proxy admin address is not a contract')
@@ -155,17 +163,26 @@ export const validateConfig = async (
   }
 
   // check all the settings exist
+  if (config.settings.challengeGracePeriodBlocks === 0) {
+    throw new Error('challengeGracePeriodBlocks is 0')
+  }
   if (config.settings.confirmPeriodBlocks === 0) {
     throw new Error('confirmPeriodBlocks is 0')
   }
-  if (config.settings.stakeToken.length === 0) {
-    throw new Error('stakeToken address is empty')
+  if (config.settings.challengePeriodBlocks === 0) {
+    throw new Error('challengePeriodBlocks is 0')
   }
   if ((await l1Rpc.getCode(config.settings.stakeToken)).length <= 2) {
     throw new Error('stakeToken address is not a contract')
   }
   if (config.settings.chainId === 0) {
     throw new Error('chainId is 0')
+  }
+  if (config.settings.minimumAssertionPeriod === 0) {
+    throw new Error('minimumAssertionPeriod is 0')
+  }
+  if (config.settings.validatorAfkBlocks === 0) {
+    throw new Error('validatorAfkBlocks is 0')
   }
   if (config.settings.blockLeafSize === 0) {
     throw new Error('blockLeafSize is 0')
@@ -179,22 +196,48 @@ export const validateConfig = async (
   if (config.settings.numBigStepLevel === 0) {
     throw new Error('numBigStepLevel is 0')
   }
+  if (config.settings.maxDataSize === 0) {
+    throw new Error('maxDataSize is 0')
+  }
 
+  // check stake token amount
+  // (we expect stakeAmt to be at least 1 whole unit of the token)
   const stakeAmount = BigNumber.from(config.settings.stakeAmt)
-  // check it's more than 1 eth
-  if (stakeAmount.lt(parseEther('1'))) {
+  const stakeToken = ERC20__factory.connect(config.settings.stakeToken, l1Rpc)
+  const decimals = await stakeToken.decimals()
+  if (stakeAmount.lt(parseUnits('1', decimals))) {
     throw new Error('stakeAmt is less than 1 eth')
   }
-  const miniStakeAmounts = config.settings.miniStakeAmounts.map(BigNumber.from)
 
+  // check mini stakes
+  const miniStakeAmounts = config.settings.miniStakeAmounts.map(BigNumber.from)
   if (miniStakeAmounts.length !== config.settings.numBigStepLevel + 2) {
     throw new Error('miniStakeAmts length is not numBigStepLevel + 2')
   }
 
-  if (
-    !config.settings.disableValidatorWhitelist &&
-    config.validators.length === 0
-  ) {
-    throw new Error('no validators')
+  // check validators and whitelist
+  if (!config.settings.disableValidatorWhitelist) {
+    if (config.validators.length === 0) {
+      throw new Error('no validators')
+    }
+
+    for (let i = 0; i < config.validators.length; i++) {
+      if (!isAddress(config.validators[i])) {
+        throw new Error(`Invalid address for validator ${i}`)
+      }
+    }
+  }
+
+  // check delaybuffer settings
+  if (config.settings.isDelayBufferable) {
+    if (config.settings.bufferConfig.max === 0) {
+      throw new Error('bufferConfig.max is 0')
+    }
+    if (config.settings.bufferConfig.threshold === 0) {
+      throw new Error('bufferConfig.threshold is 0')
+    }
+    if (config.settings.bufferConfig.replenishRateInBasis === 0) {
+      throw new Error('bufferConfig.replenishRateInBasis is 0')
+    }
   }
 }

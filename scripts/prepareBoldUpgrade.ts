@@ -33,11 +33,20 @@ async function main() {
   )
 
   // Needed to get the addresses of the logic contracts to update
-  const { chainId } = await l1Rpc.getNetwork()
-  if (!rollupCreators[chainId]) {
-    throw new Error(`Chain id ${chainId} not supported`)
+  let rollupCreatorAddress
+  if (process.env.TESTNODE_MODE && process.env.ROLLUP_CREATOR_ADDRESS) {
+    console.log(
+      'Using ROLLUP_CREATOR_ADDRESS from env:',
+      process.env.ROLLUP_CREATOR_ADDRESS
+    )
+    rollupCreatorAddress = process.env.ROLLUP_CREATOR_ADDRESS
+  } else {
+    const { chainId } = await l1Rpc.getNetwork()
+    if (!rollupCreators[chainId]) {
+      throw new Error(`Chain id ${chainId} not supported`)
+    }
+    rollupCreatorAddress = rollupCreators[chainId]
   }
-  const rollupCreatorAddress = rollupCreators[chainId]
 
   const disableVerification = process.env.DISABLE_VERIFICATION === 'true'
   const deployedAndBold = await deployBoldUpgrade(
