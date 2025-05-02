@@ -75,7 +75,7 @@ contract StylusDeployer {
         // initialize - this will fail if the program wasn't activated by this point
         // we check if initData exists to avoid calling contracts unnecessarily
         if (initData.length != 0) {
-            (bool success, bytes32 memory data) =
+            (bool success, bytes memory data) =
                 address(newContractAddress).call{value: initValue}(initData);
             if (!success) {
                 if (data.length > 0) {
