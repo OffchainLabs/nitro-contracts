@@ -26,13 +26,13 @@ export const rollupCreators: { [key: number]: string } = {
   11155111: '0x687Bc1D23390875a868Db158DA1cDC8998E31640',
 
   // Arbitrum chains
-  42161: '',
-  42170: '',
+  42161: '0xB90e53fd945Cd28Ec4728cBfB566981dD571eB8b',
+  42170: '0xF916Bfe431B7A7AaE083273F5b862e00a15d60F4',
   421614: '0x5F45675AC8DDF7d45713b2c7D191B287475C16cF',
 
   // Other chains
-  8453: '',
-  84532: '',
+  8453: '0xDbe3e840569a0446CDfEbc65D7d429c5Da5537b7',
+  84532: '0x70cA29dA3B116A2c4A267c549bf7947d47f41e22',
 }
 
 export const getJsonFile = (fileLocation: string) => {
