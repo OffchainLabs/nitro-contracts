@@ -4,17 +4,16 @@ import {
   SequencerInbox__factory,
   StateHashPreImageLookup__factory,
   IOldRollup__factory,
-  RollupCreator__factory,
-  BridgeCreator__factory,
 } from '../build/types'
 import { DeployedContracts, Config } from './boldUpgradeCommon'
 import { AssertionStateStruct } from '../build/types/src/challengeV2/IAssertionChain'
 import { verifyContract } from './deploymentUtils'
+import { CreatorTemplates } from './files/templatesV3.1'
 
 export const deployBoldUpgrade = async (
   wallet: Signer,
   config: Config,
-  rollupCreatorAddress: string,
+  contractTemplates: CreatorTemplates,
   log: boolean = false,
   verify: boolean = true
 ): Promise<DeployedContracts> => {
@@ -24,46 +23,24 @@ export const deployBoldUpgrade = async (
   )
   const isUsingFeeToken = await sequencerInbox.isUsingFeeToken()
 
-  // Get logic contracts from the RollupCreator
-  const rollupCreator = RollupCreator__factory.connect(
-    rollupCreatorAddress,
-    wallet
-  )
-  const bridgeCreatorAddress = await rollupCreator.bridgeCreator()
-  const bridgeCreator = BridgeCreator__factory.connect(
-    bridgeCreatorAddress,
-    wallet
-  )
-
   // Bridge, SequencerInbox, DelayBufferableSequencerInbox, Inbox, RollupEventInbox, Outbox
   const bridgeContractTemplates = isUsingFeeToken
-    ? await bridgeCreator.erc20BasedTemplates()
-    : await bridgeCreator.ethBasedTemplates()
-
-  // RollupUserLogic and RollupAdminLogic
-  const rollupUserLogicTemplate = await rollupCreator.rollupUserLogic()
-  const rollupAdminLogicTemplate = await rollupCreator.rollupAdminLogic()
-
-  // ChallengeManager
-  const challengeManagerTemplate =
-    await rollupCreator.challengeManagerTemplate()
-
-  // OneStepProofEntry (OSP)
-  const ospTemplate = await rollupCreator.osp()
+    ? contractTemplates.erc20
+    : contractTemplates.eth
 
   const templates: Omit<
     DeployedContracts,
     'boldAction' | 'preImageHashLookup'
   > = {
     bridge: bridgeContractTemplates.bridge,
-    seqInbox: bridgeContractTemplates.sequencerInbox,
+    seqInbox: config.settings.isDelayBufferable ? bridgeContractTemplates.delayBufferableSequencerInbox : bridgeContractTemplates.sequencerInbox,
     rei: bridgeContractTemplates.rollupEventInbox,
     outbox: bridgeContractTemplates.outbox,
     inbox: bridgeContractTemplates.inbox,
-    newRollupUser: rollupUserLogicTemplate,
-    newRollupAdmin: rollupAdminLogicTemplate,
-    challengeManager: challengeManagerTemplate,
-    osp: ospTemplate,
+    newRollupUser: contractTemplates.rollupUserLogic,
+    newRollupAdmin: contractTemplates.rollupAdminLogic,
+    challengeManager: contractTemplates.challengeManagerTemplate,
+    osp: contractTemplates.osp,
   }
 
   // Deploying BoLDUpgradeAction

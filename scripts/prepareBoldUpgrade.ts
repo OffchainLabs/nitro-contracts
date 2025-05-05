@@ -1,7 +1,8 @@
 import { ethers } from 'hardhat'
 import { Wallet } from 'ethers'
 import fs from 'fs'
-import { getConfig, rollupCreators } from './boldUpgradeCommon'
+import { getConfig } from './boldUpgradeCommon'
+import { templates } from './files/templatesV3.1'
 import { deployBoldUpgrade } from './boldUpgradeFunctions'
 import dotenv from 'dotenv'
 import path from 'path'
@@ -31,28 +32,19 @@ async function main() {
     deployedContractsDir,
     configNetworkName + 'DeployedContracts.json'
   )
-
-  // Needed to get the addresses of the logic contracts to update
-  let rollupCreatorAddress
-  if (process.env.TESTNODE_MODE && process.env.ROLLUP_CREATOR_ADDRESS) {
-    console.log(
-      'Using ROLLUP_CREATOR_ADDRESS from env:',
-      process.env.ROLLUP_CREATOR_ADDRESS
-    )
-    rollupCreatorAddress = process.env.ROLLUP_CREATOR_ADDRESS
-  } else {
-    const { chainId } = await l1Rpc.getNetwork()
-    if (!rollupCreators[chainId]) {
-      throw new Error(`Chain id ${chainId} not supported`)
-    }
-    rollupCreatorAddress = rollupCreators[chainId]
+  
+  // Get the chain id to get the templates to update to
+  const { chainId } = await l1Rpc.getNetwork()
+  if (!templates[chainId]) {
+    throw new Error(`Parent chain id ${chainId} not supported`)
   }
+  const contractTemplates = templates[chainId]
 
   const disableVerification = process.env.DISABLE_VERIFICATION === 'true'
   const deployedAndBold = await deployBoldUpgrade(
     wallet,
     config,
-    rollupCreatorAddress,
+    contractTemplates,
     true,
     !disableVerification
   )
