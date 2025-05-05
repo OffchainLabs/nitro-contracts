@@ -10,8 +10,8 @@ async function main() {
 
   const maxDataSizeUsed =
     process.env.MAX_DATA_SIZE !== undefined
-      ? ethers.BigNumber.from(process.env.MAX_DATA_SIZE)
-      : ethers.BigNumber.from(maxDataSize)
+      ? process.env.MAX_DATA_SIZE
+      : maxDataSize
 
   console.log('Deploying contracts with maxDataSize:', maxDataSizeUsed)
   if (process.env['IGNORE_MAX_DATA_SIZE_WARNING'] !== 'true') {
