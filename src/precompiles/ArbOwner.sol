@@ -34,21 +34,25 @@ interface ArbOwner {
     function getAllChainOwners() external view returns (address[] memory);
 
     /// @notice Add account as a native token owner
+    /// Available in ArbOS version 41
     function addNativeTokenOwner(
         address newOwner
     ) external;
 
     /// @notice Remove account from the list of native token owners
+    /// Available in ArbOS version 41
     function removeNativeTokenOwner(
         address ownerToRemove
     ) external;
 
     /// @notice See if the user is a native token owner
+    /// Available in ArbOS version 41
     function isNativeTokenOwner(
         address addr
     ) external view returns (bool);
 
     /// @notice Retrieves the list of native token owners
+    /// Available in ArbOS version 41
     function getAllNativeTokenOwners() external view returns (address[] memory);
 
     /// @notice Set how slowly ArbOS updates its estimate of the L1 basefee
