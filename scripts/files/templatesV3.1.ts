@@ -1,26 +1,26 @@
 export type CreatorTemplates = {
   eth: {
-    bridge: string;
-    sequencerInbox: string;
-    delayBufferableSequencerInbox: string;
-    inbox: string;
-    rollupEventInbox: string;
-    outbox: string;
-  },
+    bridge: string
+    sequencerInbox: string
+    delayBufferableSequencerInbox: string
+    inbox: string
+    rollupEventInbox: string
+    outbox: string
+  }
   erc20: {
-    bridge: string;
-    sequencerInbox: string;
-    delayBufferableSequencerInbox: string;
-    inbox: string;
-    rollupEventInbox: string;
-    outbox: string;
-  },
-  rollupUserLogic: string;
-  rollupAdminLogic: string;
-  challengeManagerTemplate: string;
-  osp: string;
-  rollupCreator: string;
-};
+    bridge: string
+    sequencerInbox: string
+    delayBufferableSequencerInbox: string
+    inbox: string
+    rollupEventInbox: string
+    outbox: string
+  }
+  rollupUserLogic: string
+  rollupAdminLogic: string
+  challengeManagerTemplate: string
+  osp: string
+  rollupCreator: string
+}
 
 export const templates: {
   [key: number]: CreatorTemplates

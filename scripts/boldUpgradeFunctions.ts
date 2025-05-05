@@ -33,7 +33,9 @@ export const deployBoldUpgrade = async (
     'boldAction' | 'preImageHashLookup'
   > = {
     bridge: bridgeContractTemplates.bridge,
-    seqInbox: config.settings.isDelayBufferable ? bridgeContractTemplates.delayBufferableSequencerInbox : bridgeContractTemplates.sequencerInbox,
+    seqInbox: config.settings.isDelayBufferable
+      ? bridgeContractTemplates.delayBufferableSequencerInbox
+      : bridgeContractTemplates.sequencerInbox,
     rei: bridgeContractTemplates.rollupEventInbox,
     outbox: bridgeContractTemplates.outbox,
     inbox: bridgeContractTemplates.inbox,

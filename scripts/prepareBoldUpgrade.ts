@@ -32,7 +32,7 @@ async function main() {
     deployedContractsDir,
     configNetworkName + 'DeployedContracts.json'
   )
-  
+
   // Get the chain id to get the templates to update to
   const { chainId } = await l1Rpc.getNetwork()
   if (!templates[chainId]) {
