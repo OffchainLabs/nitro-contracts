@@ -8,14 +8,19 @@ import { ArbSys__factory } from '../build/types'
 async function main() {
   const [signer] = await ethers.getSigners()
 
-  console.log('Deploying contracts with maxDataSize:', maxDataSize)
+  const maxDataSizeUsed =
+    process.env.MAX_DATA_SIZE !== undefined
+      ? ethers.BigNumber.from(process.env.MAX_DATA_SIZE)
+      : ethers.BigNumber.from(maxDataSize)
+
+  console.log('Deploying contracts with maxDataSize:', maxDataSizeUsed)
   if (process.env['IGNORE_MAX_DATA_SIZE_WARNING'] !== 'true') {
     let isArbitrum = await _isRunningOnArbitrum(signer)
-    if (isArbitrum && (maxDataSize as any) !== 104857) {
+    if (isArbitrum && (maxDataSizeUsed as any) !== 104857) {
       throw new Error(
         'maxDataSize should be 104857 when the parent chain is Arbitrum (set IGNORE_MAX_DATA_SIZE_WARNING to ignore)'
       )
-    } else if (!isArbitrum && (maxDataSize as any) !== 117964) {
+    } else if (!isArbitrum && (maxDataSizeUsed as any) !== 117964) {
       throw new Error(
         'maxDataSize should be 117964 when the parent chain is not Arbitrum (set IGNORE_MAX_DATA_SIZE_WARNING to ignore)'
       )
@@ -28,7 +33,7 @@ async function main() {
     // Deploying all contracts
     const contracts = await deployAllContracts(
       signer,
-      ethers.BigNumber.from(maxDataSize),
+      ethers.BigNumber.from(maxDataSizeUsed),
       true
     )
 
