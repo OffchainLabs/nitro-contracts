@@ -21,11 +21,11 @@ async function main() {
   console.log('Deploying contracts with maxDataSize:', maxDataSize)
   if (process.env['IGNORE_MAX_DATA_SIZE_WARNING'] !== 'true') {
     let isArbitrum = await _isRunningOnArbitrum(signer)
-    if (isArbitrum && (maxDataSize as any) !== 104857) {
+    if (isArbitrum && (maxDataSize as number) !== 104857) {
       throw new Error(
         'maxDataSize should be 104857 when the parent chain is Arbitrum (set IGNORE_MAX_DATA_SIZE_WARNING to ignore)'
       )
-    } else if (!isArbitrum && (maxDataSize as any) !== 117964) {
+    } else if (!isArbitrum && (maxDataSize as number) !== 117964) {
       throw new Error(
         'maxDataSize should be 117964 when the parent chain is not Arbitrum (set IGNORE_MAX_DATA_SIZE_WARNING to ignore)'
       )
