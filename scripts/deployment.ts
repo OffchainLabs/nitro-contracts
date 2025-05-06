@@ -10,11 +10,10 @@ async function main() {
 
   const maxDataSize =
     process.env.MAX_DATA_SIZE !== undefined
-      ? process.env.MAX_DATA_SIZE
+      ? Number(process.env.MAX_DATA_SIZE)
       : defaultMaxDataSize
     
   console.log(`Max data size (env): ${process.env.MAX_DATA_SIZE}`)
-  console.log(`Also (env): ${process.env['MAX_DATA_SIZE']}`)
   console.log(`Default: ${defaultMaxDataSize}`)
   console.log(`Final: ${maxDataSize}`)
 
