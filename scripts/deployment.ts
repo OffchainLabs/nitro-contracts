@@ -6,16 +6,20 @@ import { maxDataSize as defaultMaxDataSize } from './config'
 import { ArbSys__factory } from '../build/types'
 
 async function main() {
-  const [signer] = await ethers.getSigners()
+  let signer;
+  if (process.env.DEPLOYER_PRIVKEY !== undefined) {
+    signer = new ethers.Wallet(
+      process.env.DEPLOYER_PRIVKEY as string,
+      ethers.provider
+    )
+  } else {
+    [signer] = await ethers.getSigners()
+  }
 
   const maxDataSize =
     process.env.MAX_DATA_SIZE !== undefined
       ? Number(process.env.MAX_DATA_SIZE)
       : defaultMaxDataSize
-    
-  console.log(`Max data size (env): ${process.env.MAX_DATA_SIZE}`)
-  console.log(`Default: ${defaultMaxDataSize}`)
-  console.log(`Final: ${maxDataSize}`)
 
   console.log('Deploying contracts with maxDataSize:', maxDataSize)
   if (process.env['IGNORE_MAX_DATA_SIZE_WARNING'] !== 'true') {
