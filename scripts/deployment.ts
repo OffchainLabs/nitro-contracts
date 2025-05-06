@@ -6,14 +6,15 @@ import { maxDataSize as defaultMaxDataSize } from './config'
 import { ArbSys__factory } from '../build/types'
 
 async function main() {
-  let signer;
+  let signer
   if (process.env.DEPLOYER_PRIVKEY !== undefined) {
     signer = new ethers.Wallet(
       process.env.DEPLOYER_PRIVKEY as string,
       ethers.provider
     )
   } else {
-    [signer] = await ethers.getSigners()
+    const signers = await ethers.getSigners()
+    signer = signers[0]
   }
 
   const maxDataSize =
