@@ -213,4 +213,31 @@ export const templates: {
     osp: '0x71f1904d9018087722fbF8EBB03be149A59405E2',
     rollupCreator: '0x70cA29dA3B116A2c4A267c549bf7947d47f41e22',
   },
+
+  // Nitro testnode
+  1337: {
+    eth: {
+      bridge: '0x43202b1afae6c0c2B2a04dA9030434D73579A0FF',
+      sequencerInbox: '0x773D62Ce1794b11788907b32F793e647A4f9A1F7',
+      delayBufferableSequencerInbox:
+        '0x571fa696c2c66A85D0801C703E0ce4666B66D2af',
+      inbox: '0x47821a1c6eF6f804753109057b89ea4Ec5d60516',
+      rollupEventInbox: '0x7e8C3fcDF91a606b71b77c6502b8E4A58559D20A',
+      outbox: '0x56001107D68A55A0Dc321821b22C8d657A6ce74b',
+    },
+    erc20: {
+      bridge: '0xb3Dc60073a2A4F74b1575CeCa6c368D1d906c43E',
+      sequencerInbox: '0x14820E92B664D771bc6c787481B7c088a9dA7760',
+      delayBufferableSequencerInbox:
+        '0x2766e96f90f9F027835E0c00c04C8119c635Ce02',
+      inbox: '0x037B11bB930dBB7c875ce459eeFf69FC2E9FD40d',
+      rollupEventInbox: '0xb034A5B82f12023017285b36a3d831698caA064f',
+      outbox: '0x6Ca66235758bCCd08a4D1612662482F08Fab9347',
+    },
+    rollupUserLogic: '0xE927E260Eb017552b047786837bab40ff515FfD8',
+    rollupAdminLogic: '0x479d0Fb5fd2902d6f9a4Fba18311854f8c4C6044',
+    challengeManagerTemplate: '0xFf579b0AF1B69382BbF3e656bAE39A067AeE700a',
+    osp: '0x8569CADe473FD633310d7899c0F5025e1F21f664',
+    rollupCreator: '0xfB83e25003b4193060bA988bA0277122B6D8337C',
+  },
 }
