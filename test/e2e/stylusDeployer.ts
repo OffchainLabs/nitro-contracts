@@ -185,7 +185,7 @@ const deploy = async (args: {
       args.salt,
       args.initData
     )
-    // calculate the epected address
+    // calculate the expected address
     const address = ethers.utils.getCreate2Address(
       args.deployer.address,
       initSalt,
@@ -422,7 +422,7 @@ describe('Stylus deployer', () => {
       expectRevert: true,
     })
 
-    // insufficent activatin value
+    // insufficient activation value
     await deploy({
       wallet: wall,
       bytecode,
