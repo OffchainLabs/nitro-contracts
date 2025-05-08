@@ -297,23 +297,25 @@ async function checkSequencerInbox(
   }
 
   // check delay buffer parameters
-  const buffer = await seqInboxContract.buffer()
+  if (config.settings.isDelayBufferable) {
+    const buffer = await seqInboxContract.buffer()
 
-  if (!buffer.bufferBlocks.eq(config.settings.bufferConfig.max)) {
-    throw new Error('bufferBlocks does not match')
-  }
-  if (!buffer.max.eq(config.settings.bufferConfig.max)) {
-    throw new Error('max does not match')
-  }
-  if (!buffer.threshold.eq(config.settings.bufferConfig.threshold)) {
-    throw new Error('threshold does not match')
-  }
-  if (
-    !buffer.replenishRateInBasis.eq(
-      config.settings.bufferConfig.replenishRateInBasis
-    )
-  ) {
-    throw new Error('replenishRateInBasis does not match')
+    if (!buffer.bufferBlocks.eq(config.settings.bufferConfig.max)) {
+      throw new Error('bufferBlocks does not match')
+    }
+    if (!buffer.max.eq(config.settings.bufferConfig.max)) {
+      throw new Error('max does not match')
+    }
+    if (!buffer.threshold.eq(config.settings.bufferConfig.threshold)) {
+      throw new Error('threshold does not match')
+    }
+    if (
+      !buffer.replenishRateInBasis.eq(
+        config.settings.bufferConfig.replenishRateInBasis
+      )
+    ) {
+      throw new Error('replenishRateInBasis does not match')
+    }
   }
 
   // check rollup was set
@@ -556,7 +558,7 @@ async function checkNewRollup(
   newEdgeChallengeManager: EdgeChallengeManager,
   currentInboxCount: BigNumberish
 ) {
-  const { config, deployedContracts, preUpgradeState } = params
+  const { config, l1Rpc, preUpgradeState } = params
 
   // check bridge
   if (
@@ -668,12 +670,30 @@ async function checkNewRollup(
     throw new Error('Base stake does not match')
   }
 
-  // check fast confirmer (must be 0 for the local chain)
-  if (
-    getAddress(await newRollup.anyTrustFastConfirmer()) !==
-    ethers.constants.AddressZero
-  ) {
-    throw new Error('Any trust fast confirmer does not match')
+  // check fast confirmer with value in old rollup (must be 0 for the local chain)
+  const oldRollup = IOldRollup__factory.connect(config.contracts.rollup, l1Rpc)
+
+  try {
+    const oldFastConfirmer = getAddress(await oldRollup.anyTrustFastConfirmer())
+    if (
+      getAddress(await newRollup.anyTrustFastConfirmer()) !== oldFastConfirmer
+    ) {
+      throw new Error('Any trust fast confirmer does not match')
+    }
+  } catch (e: any) {
+    // Old rollup was on an older version that didn't have anyTrustFastConfirmer
+    if (e.code !== 'CALL_EXCEPTION') {
+      throw e
+    }
+
+    if (
+      getAddress(await newRollup.anyTrustFastConfirmer()) !==
+      ethers.constants.AddressZero
+    ) {
+      throw new Error(
+        'Any trust fast confirmer was not set in the old rollup and is non-zero in the new rollup'
+      )
+    }
   }
 }
 
