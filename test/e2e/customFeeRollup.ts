@@ -208,12 +208,23 @@ describe('Custom fee token orbit rollup', () => {
     const txData = (
       await l2Provider.getTransaction(batchSpendingReportEvent.transactionHash)
     ).data
-    const batchtxData = seqInbox.interface.decodeFunctionData(
-      seqInbox.interface.functions[
-        'addSequencerL2BatchFromOriginDelayProof(uint256,bytes,uint256,address,uint256,uint256,(bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32)))'
-      ],
-      txData
-    )
+    let batchtxData
+    // TODO: disable delay buffer here or use 4 bytes to determine if delay proof is used
+    try {
+      batchtxData = seqInbox.interface.decodeFunctionData(
+        seqInbox.interface.functions[
+          'addSequencerL2BatchFromOriginDelayProof(uint256,bytes,uint256,address,uint256,uint256,(bytes32,(uint8,address,uint64,uint64,uint256,uint256,bytes32)))'
+        ],
+        txData
+      )
+    } catch (e) {
+      batchtxData = seqInbox.interface.decodeFunctionData(
+        seqInbox.interface.functions[
+          'addSequencerL2BatchFromOrigin(uint256,bytes,uint256,address,uint256,uint256)'
+        ],
+        txData
+      )
+    }
     const computeBatchCost = (batchData: string) => {
       const zeroBytes = batchData
         .substring(2)

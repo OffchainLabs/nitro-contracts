@@ -106,24 +106,25 @@ export async function createRollup(
 
     // Call the createRollup function
     console.log('Calling createRollup to generate a new rollup ...')
-    const deployParams = isDevDeployment
-      ? await _getDevRollupConfig(
-          feeToken,
-          feeTokenPricer,
-          validatorWalletCreator,
-          stakeToken
-        )
-      : {
-          config: config.rollupConfig,
-          validators: config.validators,
-          maxDataSize: ethers.BigNumber.from(maxDataSize),
-          nativeToken: feeToken,
-          deployFactoriesToL2: true,
-          maxFeePerGasForRetryables: MAX_FER_PER_GAS,
-          batchPosters: config.batchPosters,
-          batchPosterManager: config.batchPosterManager,
-          feeTokenPricer: feeTokenPricer,
-        }
+    const deployParams: RollupCreator.RollupDeploymentParamsStruct =
+      isDevDeployment
+        ? await _getDevRollupConfig(
+            feeToken,
+            feeTokenPricer,
+            validatorWalletCreator,
+            stakeToken
+          )
+        : {
+            config: config.config,
+            validators: config.validators,
+            maxDataSize: ethers.BigNumber.from(maxDataSize),
+            nativeToken: feeToken,
+            deployFactoriesToL2: true,
+            maxFeePerGasForRetryables: MAX_FER_PER_GAS,
+            batchPosters: config.batchPosters,
+            batchPosterManager: config.batchPosterManager,
+            feeTokenPricer: feeTokenPricer,
+          }
 
     const createRollupTx = await rollupCreator.createRollup(deployParams, {
       value: feeCost,
@@ -212,7 +213,7 @@ export async function createRollup(
         'secondary-feed-url': '',
         'das-index-url': '',
         'has-genesis-state': false,
-        'chain-config': JSON.parse(deployParams.config.chainConfig),
+        'chain-config': JSON.parse(await deployParams.config.chainConfig),
         rollup: rollupCreationResult,
       }
 
