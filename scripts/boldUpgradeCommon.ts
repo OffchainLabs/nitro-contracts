@@ -184,12 +184,9 @@ export const validateConfig = async (
   }
 
   // check stake token amount
-  // (we expect stakeAmt to be at least 1 whole unit of the token)
   const stakeAmount = BigNumber.from(config.settings.stakeAmt)
-  const stakeToken = ERC20__factory.connect(config.settings.stakeToken, l1Rpc)
-  const decimals = await stakeToken.decimals()
-  if (stakeAmount.lt(parseUnits('1', decimals))) {
-    throw new Error('stakeAmt is less than 1 eth')
+  if (stakeAmount.eq(0)) {
+    throw new Error('stakeAmt is 0')
   }
 
   // check mini stakes
