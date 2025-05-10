@@ -9,7 +9,7 @@ pragma solidity >=0.4.21 <0.9.0;
  * @notice Authorized callers are added/removed through ArbOwner precompile.
  * Available in ArbOS version 41
  */
-interface ArbNativeToken {
+interface ArbNativeTokenManager {
     /**
      * @notice In case the caller is authorized,
      * mints some amount of the native gas token for this chain to the caller.
