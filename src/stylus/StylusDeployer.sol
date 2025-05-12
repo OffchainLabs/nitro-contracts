@@ -13,7 +13,7 @@ contract StylusDeployer {
     event ContractDeployed(address deployedContract);
 
     error ContractDeploymentError(bytes bytecode);
-    error ContractInitializationError(address newContract);
+    error ContractInitializationError(address newContract, bytes data);
     error RefundExcessValueError(uint256 excessValue);
     error EmptyBytecode();
     error InitValueButNotInitData();
@@ -78,13 +78,7 @@ contract StylusDeployer {
             (bool success, bytes memory data) =
                 address(newContractAddress).call{value: initValue}(initData);
             if (!success) {
-                if (data.length > 0) {
-                    assembly {
-                        revert(add(data, 32), mload(data))
-                    }
-                } else {
-                    revert ContractInitializationError(newContractAddress);
-                }
+                revert ContractInitializationError(newContractAddress, data);
             }
         } else if (initValue != 0) {
             // if initValue exists init data should too
