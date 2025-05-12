@@ -1,7 +1,8 @@
 import { ethers } from 'hardhat'
 import { Wallet } from 'ethers'
 import fs from 'fs'
-import { DeployedContracts, getConfig, getJsonFile } from './boldUpgradeCommon'
+import { getConfig } from './boldUpgradeCommon'
+import { templates, verifyCreatorTemplates } from './files/templatesV3.1'
 import { deployBoldUpgrade } from './boldUpgradeFunctions'
 import dotenv from 'dotenv'
 import path from 'path'
@@ -32,19 +33,19 @@ async function main() {
     configNetworkName + 'DeployedContracts.json'
   )
 
-  // if the deployed contracts exists then we load it and combine
-  // if not, then we just use the newly created item
-  let existingDeployedContracts = {}
-  try {
-    existingDeployedContracts = getJsonFile(
-      deployedContractsLocation
-    ) as DeployedContracts
-  } catch (err) {}
+  // Get the chain id to get the templates to update to
+  const { chainId } = await l1Rpc.getNetwork()
+  if (!templates[chainId]) {
+    throw new Error(`Parent chain id ${chainId} not supported`)
+  }
+  const contractTemplates = templates[chainId]
+  await verifyCreatorTemplates(l1Rpc, contractTemplates)
 
   const disableVerification = process.env.DISABLE_VERIFICATION === 'true'
   const deployedAndBold = await deployBoldUpgrade(
     wallet,
     config,
+    contractTemplates,
     true,
     !disableVerification
   )
@@ -52,11 +53,7 @@ async function main() {
   console.log(`Deployed contracts written to: ${deployedContractsLocation}`)
   fs.writeFileSync(
     deployedContractsLocation,
-    JSON.stringify(
-      { ...existingDeployedContracts, ...deployedAndBold },
-      null,
-      2
-    )
+    JSON.stringify({ ...deployedAndBold }, null, 2)
   )
 }
 
