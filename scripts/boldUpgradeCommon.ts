@@ -146,9 +146,7 @@ export const validateConfig = async (
   }
 
   // check all the settings exist
-  if (config.settings.challengeGracePeriodBlocks === 0) {
-    throw new Error('challengeGracePeriodBlocks is 0')
-  }
+  // Note: `challengeGracePeriodBlocks` and `validatorAfkBlocks` can both be 0
   if (config.settings.confirmPeriodBlocks === 0) {
     throw new Error('confirmPeriodBlocks is 0')
   }
@@ -163,9 +161,6 @@ export const validateConfig = async (
   }
   if (config.settings.minimumAssertionPeriod === 0) {
     throw new Error('minimumAssertionPeriod is 0')
-  }
-  if (config.settings.validatorAfkBlocks === 0) {
-    throw new Error('validatorAfkBlocks is 0')
   }
   if (config.settings.blockLeafSize === 0) {
     throw new Error('blockLeafSize is 0')

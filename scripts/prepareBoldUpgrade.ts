@@ -2,7 +2,7 @@ import { ethers } from 'hardhat'
 import { Wallet } from 'ethers'
 import fs from 'fs'
 import { getConfig } from './boldUpgradeCommon'
-import { templates } from './files/templatesV3.1'
+import { templates, verifyCreatorTemplates } from './files/templatesV3.1'
 import { deployBoldUpgrade } from './boldUpgradeFunctions'
 import dotenv from 'dotenv'
 import path from 'path'
@@ -39,6 +39,7 @@ async function main() {
     throw new Error(`Parent chain id ${chainId} not supported`)
   }
   const contractTemplates = templates[chainId]
+  await verifyCreatorTemplates(l1Rpc, contractTemplates)
 
   const disableVerification = process.env.DISABLE_VERIFICATION === 'true'
   const deployedAndBold = await deployBoldUpgrade(

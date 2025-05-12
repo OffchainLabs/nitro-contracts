@@ -1,3 +1,5 @@
+import { JsonRpcProvider } from '@ethersproject/providers'
+
 export type CreatorTemplates = {
   eth: {
     bridge: string
@@ -240,4 +242,25 @@ export const templates: {
     osp: '0x8569CADe473FD633310d7899c0F5025e1F21f664',
     rollupCreator: '0xfB83e25003b4193060bA988bA0277122B6D8337C',
   },
+}
+
+export async function verifyCreatorTemplates(
+  l1Rpc: JsonRpcProvider,
+  templates: CreatorTemplates
+) {
+  const checkAddress = async (name: string, address: string) => {
+    if ((await l1Rpc.getCode(address)).length <= 2) {
+      throw new Error(`No code found for template ${name} at ${address}`)
+    }
+  }
+
+  for (const [key, value] of Object.entries(templates)) {
+    if (typeof value === 'string') {
+      await checkAddress(key, value)
+    } else {
+      for (const [subkey, subvalue] of Object.entries(value)) {
+        await checkAddress(`${key}.${subkey}`, subvalue)
+      }
+    }
+  }
 }
