@@ -484,7 +484,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
                 require(afterGS.comparePositions(beforeGS) > 0, "OVERFLOW_STANDSTILL");
             }
             // Inbox position at the time of this assertion being created
-            uint256 currentInboxPosition = bridge.sequencerMessageCount();
+            uint256 currentInboxPosition = bridge.delayedMessageCount();
             // Cannot read more messages than currently exist in the inbox
             require(
                 afterGS.comparePositionsAgainstStartOfBatch(currentInboxPosition) <= 0,
@@ -523,7 +523,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
             // Fetch the inbox accumulator for this message count. Fetching this and checking against it
             // allows the assertion creator to ensure they're creating an assertion against the expected
             // inbox messages
-            sequencerBatchAcc = bridge.sequencerInboxAccs(afterInboxPosition - 1);
+            sequencerBatchAcc = bridge.delayedInboxAccs(afterInboxPosition - 1);
         }
 
         newAssertionHash =
