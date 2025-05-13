@@ -21,7 +21,7 @@ contract ERC20InboxTest is AbsInboxTest {
         // deploy token, bridge and inbox
         nativeToken = new ERC20PresetMinterPauser("Appchain Token", "App");
         bridge = IBridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        inbox = IInboxBase(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+        inbox = IInboxBase(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE,DISABLE_MESSAGE_FROM_ORIGIN_EVENT))));
         erc20Inbox = IERC20Inbox(address(inbox));
 
         // init bridge and inbox
@@ -89,7 +89,7 @@ contract ERC20InboxTest is AbsInboxTest {
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
         IERC20Inbox _inbox =
-            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE,DISABLE_MESSAGE_FROM_ORIGIN_EVENT))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -146,7 +146,7 @@ contract ERC20InboxTest is AbsInboxTest {
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
         IERC20Inbox _inbox =
-            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE,DISABLE_MESSAGE_FROM_ORIGIN_EVENT))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -202,7 +202,7 @@ contract ERC20InboxTest is AbsInboxTest {
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
         IERC20Inbox _inbox =
-            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE,DISABLE_MESSAGE_FROM_ORIGIN_EVENT))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -333,7 +333,7 @@ contract ERC20InboxTest is AbsInboxTest {
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
         IERC20Inbox _inbox =
-            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE,DISABLE_MESSAGE_FROM_ORIGIN_EVENT))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -449,7 +449,7 @@ contract ERC20InboxTest is AbsInboxTest {
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
         IERC20Inbox _inbox =
-            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE,DISABLE_MESSAGE_FROM_ORIGIN_EVENT))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -538,7 +538,7 @@ contract ERC20InboxTest is AbsInboxTest {
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
         IERC20Inbox _inbox =
-            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE,DISABLE_MESSAGE_FROM_ORIGIN_EVENT))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -626,7 +626,7 @@ contract ERC20InboxTest is AbsInboxTest {
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
         IERC20Inbox _inbox =
-            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE,DISABLE_MESSAGE_FROM_ORIGIN_EVENT))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -822,7 +822,7 @@ contract ERC20InboxTest is AbsInboxTest {
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
         IERC20Inbox _inbox =
-            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE,DISABLE_MESSAGE_FROM_ORIGIN_EVENT))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -872,7 +872,7 @@ contract ERC20InboxTest is AbsInboxTest {
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
         IERC20Inbox _inbox =
-            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE,DISABLE_MESSAGE_FROM_ORIGIN_EVENT))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -1200,7 +1200,7 @@ contract ERC20InboxTest is AbsInboxTest {
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
         IERC20Inbox _inbox =
-            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE,DISABLE_MESSAGE_FROM_ORIGIN_EVENT))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -1251,7 +1251,7 @@ contract ERC20InboxTest is AbsInboxTest {
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
         IERC20Inbox _inbox =
-            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE,DISABLE_MESSAGE_FROM_ORIGIN_EVENT))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -1302,7 +1302,7 @@ contract ERC20InboxTest is AbsInboxTest {
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
         IERC20Inbox _inbox =
-            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE,DISABLE_MESSAGE_FROM_ORIGIN_EVENT))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");
@@ -1351,7 +1351,7 @@ contract ERC20InboxTest is AbsInboxTest {
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
         IERC20Inbox _inbox =
-            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE,DISABLE_MESSAGE_FROM_ORIGIN_EVENT))));
 
         // init bridge and inbox
         address _rollup = makeAddr("_rollup");

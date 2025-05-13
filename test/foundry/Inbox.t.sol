@@ -16,7 +16,7 @@ contract InboxTest is AbsInboxTest {
     function setUp() public {
         // deploy token, bridge and inbox
         bridge = IBridge(TestUtil.deployProxy(address(new Bridge())));
-        inbox = IInboxBase(TestUtil.deployProxy(address(new Inbox(MAX_DATA_SIZE))));
+        inbox = IInboxBase(TestUtil.deployProxy(address(new Inbox(MAX_DATA_SIZE, DISABLE_MESSAGE_FROM_ORIGIN_EVENT))));
         ethInbox = IInbox(address(inbox));
 
         // init bridge and inbox

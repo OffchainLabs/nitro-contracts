@@ -98,7 +98,7 @@ contract AssertionPoolTest is Test {
         bridge: new Bridge(),
         sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false),
         delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, true),
-        inbox: new Inbox(MAX_DATA_SIZE),
+        inbox: new Inbox(MAX_DATA_SIZEE, DISABLE_MESSAGE_FROM_ORIGIN_EVENT,
         rollupEventInbox: new RollupEventInbox(),
         outbox: new Outbox()
     });
@@ -106,7 +106,7 @@ contract AssertionPoolTest is Test {
         bridge: new ERC20Bridge(),
         sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
         delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
-        inbox: new ERC20Inbox(MAX_DATA_SIZE),
+        inbox: new ERC20Inbox(MAX_DATA_SIZEE, DISABLE_MESSAGE_FROM_ORIGIN_EVENT,
         rollupEventInbox: new ERC20RollupEventInbox(),
         outbox: new ERC20Outbox()
     });
