@@ -125,6 +125,77 @@ contract OneStepProverHostIo is IOneStepProver {
         return uint256(bytes32(modExpOutput));
     }
 
+    function executeValidatePreimage(
+        ExecutionContext calldata,
+        Machine memory mach,
+        Module memory mod,
+        Instruction calldata,
+        bytes calldata proof
+    ) internal view {
+        uint256 hashPtr = mach.valueStack.pop().assumeI32();
+        uint256 preimageType = mach.valueStack.pop().assumeI32();
+
+        // Check for valid memory access
+        if (hashPtr + 32 > mod.moduleMemory.size || hashPtr % LEAF_SIZE != 0) {
+            mach.status = MachineStatus.ERRORED;
+            return;
+        }
+
+        uint256 leafIdx = hashPtr / LEAF_SIZE;
+        uint256 proofOffset = 0;
+        bytes32 hash;
+        MerkleProof memory merkleProof;
+        (hash, proofOffset, merkleProof) =
+            mod.moduleMemory.proveLeaf(leafIdx, proof, proofOffset);
+
+        // For types 0-2 (existing preimage types), validation is always successful
+        if (preimageType < 3) {
+            mach.valueStack.push(ValueLib.newI32(1)); // Return true (1)
+            return;
+        }
+
+        // For type 3 (CustomDA), we need to validate the proof
+        if (preimageType == 3) {
+            // Read proof type
+            require(proof.length > proofOffset, "INVALID_CUSTOMDA_PROOF");
+            uint8 proofType = uint8(proof[proofOffset]);
+            proofOffset++;
+
+            bool valid = false;
+
+            if (proofType == 0) {
+                // Simple proof - direct hash check
+                // Just verify that the hash is valid (exists in the proof)
+                bytes calldata preimage = proof[proofOffset:];
+                valid = keccak256(preimage) == hash;
+            } else if (proofType == 1) {
+                // Custom validator contract proof
+                // Format: [validatorAddress (20 bytes)][proof data]
+                require(proof.length >= proofOffset + 20, "INVALID_CUSTOMDA_PROOF");
+                address validatorAddress = address(bytes20(proof[proofOffset:proofOffset+20]));
+                bytes calldata customProof = proof[proofOffset+20:];
+
+                // Call the validator contract
+                (bool success, bytes memory validationResult) = validatorAddress.staticcall(
+                    abi.encodeWithSignature(
+                        "validateCustomDAProof(bytes32,bytes)",
+                        hash,
+                        customProof
+                    )
+                );
+
+                valid = success && validationResult.length >= 32 &&
+                       abi.decode(validationResult, (bool));
+            }
+
+            mach.valueStack.push(ValueLib.newI32(valid ? 1 : 0));
+            return;
+        }
+
+        // For any other type, return false (0)
+        mach.valueStack.push(ValueLib.newI32(0));
+    }
+
     function executeReadPreImage(
         ExecutionContext calldata,
         Machine memory mach,
@@ -235,6 +306,52 @@ contract OneStepProverHostIo is IOneStepProver {
                 require(bytes32(kzgProof[32:64]) == bytes32(z), "KZG_PROOF_WRONG_Z");
 
                 extracted = kzgProof[64:96];
+            }
+        } else if (inst.argumentData == 3) {
+            // The machine is asking for a CustomDA preimage
+
+            if (proofType == 0) {
+                // Simple preimage proof format
+                bytes calldata preimage = proof[proofOffset:];
+                require(keccak256(preimage) == leafContents, "BAD_PREIMAGE");
+
+                uint256 preimageEnd = preimageOffset + 32;
+                if (preimageEnd > preimage.length) {
+                    preimageEnd = preimage.length;
+                }
+                extracted = preimage[preimageOffset:preimageEnd];
+            } else if (proofType == 1) {
+                // Custom DA proof format that delegates to a custom validator contract
+                // Format: [validatorAddress (20 bytes)][proof data]
+                require(proof.length >= proofOffset + 20, "INVALID_CUSTOMDA_PROOF");
+                address validatorAddress = address(bytes20(proof[proofOffset:proofOffset+20]));
+                bytes calldata customProof = proof[proofOffset+20:];
+
+                // Call the validator contract to verify the proof
+                (bool success, bytes memory validationResult) = validatorAddress.staticcall(
+                    abi.encodeWithSignature(
+                        "validateCustomDAProof(bytes32,uint256,bytes)",
+                        leafContents,
+                        preimageOffset,
+                        customProof
+                    )
+                );
+                require(success && validationResult.length >= 32, "CUSTOMDA_VALIDATION_FAILED");
+                require(abi.decode(validationResult, (bool)), "INVALID_CUSTOMDA_PROOF");
+
+                // Extract the data from the proof
+                (success, validationResult) = validatorAddress.staticcall(
+                    abi.encodeWithSignature(
+                        "extractCustomDAData(bytes32,uint256,bytes)",
+                        leafContents,
+                        preimageOffset,
+                        customProof
+                    )
+                );
+                require(success, "CUSTOMDA_EXTRACTION_FAILED");
+                extracted = validationResult;
+            } else {
+                revert("UNKNOWN_CUSTOMDA_PROOF_TYPE");
             }
         } else {
             revert("UNKNOWN_PREIMAGE_TYPE");
@@ -624,6 +741,8 @@ contract OneStepProverHostIo is IOneStepProver {
             opcode <= Instructions.SET_GLOBAL_STATE_U64
         ) {
             impl = executeGlobalStateAccess;
+        } else if (opcode == Instructions.VALIDATE_PREIMAGE) {
+            impl = executeValidatePreimage;
         } else if (opcode == Instructions.READ_PRE_IMAGE) {
             impl = executeReadPreImage;
         } else if (opcode == Instructions.READ_INBOX_MESSAGE) {
