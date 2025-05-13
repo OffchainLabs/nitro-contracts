@@ -47,6 +47,7 @@ contract RollupTest is Test {
     uint256 constant MINI_STAKE_VALUE = 2;
     uint64 constant CONFIRM_PERIOD_BLOCKS = 100;
     uint256 constant MAX_DATA_SIZE = 117964;
+    bool constant DISABLE_MESSAGE_FROM_ORIGIN_EVENT = false;
     uint64 constant CHALLENGE_GRACE_PERIOD_BLOCKS = 10;
 
     bytes32 constant FIRST_ASSERTION_BLOCKHASH = keccak256("FIRST_ASSERTION_BLOCKHASH");
@@ -94,7 +95,7 @@ contract RollupTest is Test {
         bridge: new Bridge(),
         sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false),
         delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, true),
-        inbox: new Inbox(MAX_DATA_SIZE),
+        inbox: new Inbox(MAX_DATA_SIZE, DISABLE_MESSAGE_FROM_ORIGIN_EVENT),
         rollupEventInbox: new RollupEventInbox(),
         outbox: new Outbox()
     });
@@ -102,7 +103,7 @@ contract RollupTest is Test {
         bridge: new ERC20Bridge(),
         sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
         delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, true),
-        inbox: new ERC20Inbox(MAX_DATA_SIZE),
+        inbox: new ERC20Inbox(MAX_DATA_SIZE, DISABLE_MESSAGE_FROM_ORIGIN_EVENT),
         rollupEventInbox: new ERC20RollupEventInbox(),
         outbox: new ERC20Outbox()
     });

@@ -102,12 +102,16 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
 
     // On L1 this should be set to 117964: 90% of Geth's 128KB tx size limit, leaving ~13KB for proving
     uint256 public immutable maxDataSize;
+    // If disableMessageFromOriginEvent is true, an InboxMessageDelivered event will be emitted instead of InboxMessageDeliveredFromOrigin
+    bool public immutable disableMessageFromOriginEvent;
     uint256 internal immutable deployTimeChainId = block.chainid;
 
     constructor(
-        uint256 _maxDataSize
+        uint256 _maxDataSize,
+        bool _disableMessageFromOriginEvent
     ) {
         maxDataSize = _maxDataSize;
+        disableMessageFromOriginEvent = _disableMessageFromOriginEvent;
     }
 
     function _chainIdChanged() internal view returns (bool) {
@@ -143,6 +147,10 @@ abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase
         if (!CallerChecker.isCallerCodelessOrigin()) revert NotCodelessOrigin();
         if (messageData.length > maxDataSize) revert DataTooLarge(messageData.length, maxDataSize);
         uint256 msgNum = _deliverToBridge(L2_MSG, msg.sender, keccak256(messageData), 0);
+        if (disableMessageFromOriginEvent) {
+            emit InboxMessageDelivered(msgNum, messageData);
+            return msgNum;
+        }
         emit InboxMessageDeliveredFromOrigin(msgNum);
         return msgNum;
     }

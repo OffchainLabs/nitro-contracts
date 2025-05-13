@@ -14,6 +14,7 @@ contract ERC20OutboxTest is AbsOutboxTest {
     IERC20 public nativeToken;
 
     uint256 public constant MAX_DATA_SIZE = 117_964;
+    bool public constant DISABLE_MESSAGE_FROM_ORIGIN_EVENT = false;
 
     function setUp() public {
         // deploy token, bridge and outbox
@@ -112,7 +113,7 @@ contract ERC20OutboxTest is AbsOutboxTest {
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
         IERC20Inbox _inbox =
-            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE,DISABLE_MESSAGE_FROM_ORIGIN_EVENT))));
         ERC20Outbox _outbox = ERC20Outbox(TestUtil.deployProxy(address(new ERC20Outbox())));
 
         // init bridge and inbox
@@ -218,7 +219,7 @@ contract ERC20OutboxTest is AbsOutboxTest {
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
         IERC20Inbox _inbox =
-            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE,DISABLE_MESSAGE_FROM_ORIGIN_EVENT))));
         ERC20Outbox _outbox = ERC20Outbox(TestUtil.deployProxy(address(new ERC20Outbox())));
 
         // init bridge and inbox
@@ -323,7 +324,7 @@ contract ERC20OutboxTest is AbsOutboxTest {
 
         IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
         IERC20Inbox _inbox =
-            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE,DISABLE_MESSAGE_FROM_ORIGIN_EVENT))));
         ERC20Outbox _outbox = ERC20Outbox(TestUtil.deployProxy(address(new ERC20Outbox())));
 
         // init bridge and inbox

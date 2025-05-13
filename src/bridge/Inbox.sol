@@ -28,8 +28,9 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
  */
 contract Inbox is AbsInbox, IInbox {
     constructor(
-        uint256 _maxDataSize
-    ) AbsInbox(_maxDataSize) {}
+        uint256 _maxDataSize,
+        bool _disableMessageFromOriginEvent
+    ) AbsInbox(_maxDataSize, _disableMessageFromOriginEvent) {}
 
     /// @inheritdoc IInboxBase
     function initialize(

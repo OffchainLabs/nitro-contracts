@@ -34,12 +34,13 @@ contract RollupCreatorTest is Test {
     // 1 gwei
     uint256 public constant MAX_FEE_PER_GAS = 1_000_000_000;
     uint256 public constant MAX_DATA_SIZE = 117_964;
+    bool public constant DISABLE_MESSAGE_FROM_ORIGIN_EVENT = false;
 
     BridgeCreator.BridgeTemplates public ethBasedTemplates = BridgeCreator.BridgeTemplates({
         bridge: new Bridge(),
         sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false),
         delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, true),
-        inbox: new Inbox(MAX_DATA_SIZE),
+        inbox: new Inbox(MAX_DATA_SIZE, DISABLE_MESSAGE_FROM_ORIGIN_EVENT),
         rollupEventInbox: new RollupEventInbox(),
         outbox: new Outbox()
     });
@@ -47,7 +48,7 @@ contract RollupCreatorTest is Test {
         bridge: new ERC20Bridge(),
         sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
         delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, true),
-        inbox: new ERC20Inbox(MAX_DATA_SIZE),
+        inbox: new ERC20Inbox(MAX_DATA_SIZE, DISABLE_MESSAGE_FROM_ORIGIN_EVENT),
         rollupEventInbox: new ERC20RollupEventInbox(),
         outbox: new ERC20Outbox()
     });

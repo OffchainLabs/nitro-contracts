@@ -1,7 +1,7 @@
 import { ethers } from 'hardhat'
 import '@nomiclabs/hardhat-ethers'
 import { deployAllContracts, _isRunningOnArbitrum } from './deploymentUtils'
-import { maxDataSize } from './config'
+import { maxDataSize, disableMessageFromOriginEvent } from './config'
 
 import { ArbSys__factory } from '../build/types'
 
@@ -26,10 +26,12 @@ async function main() {
 
   try {
     // Deploying all contracts
+    const verify = false;
     const contracts = await deployAllContracts(
       signer,
       ethers.BigNumber.from(maxDataSize),
-      true
+      disableMessageFromOriginEvent,
+      verify
     )
 
     // Call setTemplates with the deployed contract addresses

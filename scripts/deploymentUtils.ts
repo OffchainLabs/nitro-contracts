@@ -117,6 +117,7 @@ export async function deployUpgradeExecutor(signer: any): Promise<Contract> {
 export async function deployAllContracts(
   signer: any,
   maxDataSize: BigNumber,
+  disableMessageFromOriginEvent: boolean,
   verify: boolean = true
 ): Promise<Record<string, Contract>> {
   const isOnArb = await _isRunningOnArbitrum(signer)
@@ -139,7 +140,7 @@ export async function deployAllContracts(
     verify
   )
 
-  const ethInbox = await deployContract('Inbox', signer, [maxDataSize], verify)
+  const ethInbox = await deployContract('Inbox', signer, [maxDataSize, disableMessageFromOriginEvent], verify)
   const ethRollupEventInbox = await deployContract(
     'RollupEventInbox',
     signer,
@@ -164,7 +165,7 @@ export async function deployAllContracts(
   const erc20Inbox = await deployContract(
     'ERC20Inbox',
     signer,
-    [maxDataSize],
+    [maxDataSize, disableMessageFromOriginEvent],
     verify
   )
   const erc20RollupEventInbox = await deployContract(

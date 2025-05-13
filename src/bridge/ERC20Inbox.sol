@@ -27,8 +27,9 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
     using SafeERC20 for IERC20;
 
     constructor(
-        uint256 _maxDataSize
-    ) AbsInbox(_maxDataSize) {}
+        uint256 _maxDataSize,
+        bool _disableMessageFromOriginEvent
+    ) AbsInbox(_maxDataSize, _disableMessageFromOriginEvent) {}
 
     /// @inheritdoc IInboxBase
     function initialize(

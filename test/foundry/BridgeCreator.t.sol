@@ -13,13 +13,14 @@ contract BridgeCreatorTest is Test {
     BridgeCreator public creator;
     address public owner = address(100);
     uint256 public constant MAX_DATA_SIZE = 117_964;
+    bool public constant DISABLE_MESSAGE_FROM_ORIGIN_EVENT = false;
     IReader4844 dummyReader4844 = IReader4844(address(137));
 
     BridgeCreator.BridgeTemplates ethBasedTemplates = BridgeCreator.BridgeTemplates({
         bridge: new Bridge(),
         sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false),
         delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, true),
-        inbox: new Inbox(MAX_DATA_SIZE),
+        inbox: new Inbox(MAX_DATA_SIZE, DISABLE_MESSAGE_FROM_ORIGIN_EVENT),
         rollupEventInbox: new RollupEventInbox(),
         outbox: new Outbox()
     });
@@ -27,7 +28,7 @@ contract BridgeCreatorTest is Test {
         bridge: new ERC20Bridge(),
         sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
         delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, true),
-        inbox: new ERC20Inbox(MAX_DATA_SIZE),
+        inbox: new ERC20Inbox(MAX_DATA_SIZE, DISABLE_MESSAGE_FROM_ORIGIN_EVENT),
         rollupEventInbox: new ERC20RollupEventInbox(),
         outbox: new ERC20Outbox()
     });
