@@ -7,7 +7,8 @@ pragma solidity >=0.4.21 <0.9.0;
 /**
  * @title Enables minting and burning native tokens.
  * @notice Authorized callers are added/removed through ArbOwner precompile.
- * Available in ArbOS version 41
+ *         Precompiled contract that exists in every Arbitrum chain at 0x0000000000000000000000000000000000000073.
+ *         Available in ArbOS version 41
  */
 interface ArbNativeTokenManager {
     /**
