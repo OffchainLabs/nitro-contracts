@@ -39,6 +39,14 @@ fs_permissions = [{ access = "read", path = "./"}]
 include_paths = ['gas-dimensions/src/', 'gas-dimensions/scripts']
 auto_detect_remappings = false
 
+[profile.gas-dimensions-yul]
+src = 'gas-dimensions/yul'
+out = 'out/gas-dimensions-yul'
+libs = []
+cache_path  = 'forge-cache/gas-dimensions-yul'
+remappings = []
+auto_detect_remappings = false
+
 [fmt]
 line_length = 100
 tab_width = 4
