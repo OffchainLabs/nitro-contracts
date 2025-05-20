@@ -12,14 +12,14 @@ pragma solidity >=0.4.21 <0.9.0;
  */
 interface ArbNativeTokenManager {
     /**
-     * @notice Emitted when some amount of the native gas token is minted by a NativeTokenOwner.
+     * @notice Emitted when some amount of the native gas token is minted to a NativeTokenOwner.
      */
-    event NativeTokenMinted(address indexed minter, address indexed to, uint256 amount);
+    event NativeTokenMinted(address indexed to, uint256 amount);
 
     /**
-     * @notice Emitted when some amount of the native gas token is burned by a NativeTokenOwner.
+     * @notice Emitted when some amount of the native gas token is burned from a NativeTokenOwner.
      */
-    event NativeTokenBurned(address indexed burner, address indexed to, uint256 amount);
+    event NativeTokenBurned(address indexed from, uint256 amount);
 
     /**
      * @notice In case the caller is authorized,
