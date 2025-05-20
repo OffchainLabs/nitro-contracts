@@ -24,6 +24,16 @@ interface ArbOwnerPublic {
     /// @notice Retrieves the list of chain owners
     function getAllChainOwners() external view returns (address[] memory);
 
+    /// @notice See if the user is a native token owner
+    /// Available in ArbOS version 41
+    function isNativeTokenOwner(
+        address addr
+    ) external view returns (bool);
+
+    /// @notice Retrieves the list of native token owners
+    /// Available in ArbOS version 41
+    function getAllNativeTokenOwners() external view returns (address[] memory);
+
     /// @notice Gets the network fee collector
     function getNetworkFeeAccount() external view returns (address);
 
