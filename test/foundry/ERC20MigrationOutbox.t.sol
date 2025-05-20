@@ -37,6 +37,11 @@ contract ERC20MigrationOutboxTest is Test {
         bridge.setOutbox(address(erc20MigrationOutbox), true);
     }
 
+    function test_invalid_destination() public {
+        vm.expectRevert(IERC20MigrationOutbox.InvalidDestination.selector);
+        new ERC20MigrationOutbox(bridge, address(0));
+    }
+
     function test_migrate() public {
         nativeToken.transfer(address(bridge), 1000);
 
