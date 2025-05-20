@@ -27,6 +27,8 @@
     // Regular Expression Denial of Service (ReDoS) in cross-spawn
     "GHSA-3xgq-45jj-v275",
     // axios Requests Vulnerable To Possible SSRF and Credential Leakage via Absolute URL
-    "GHSA-jr5f-v2jv-69x6"
+    "GHSA-jr5f-v2jv-69x6",
+    // Homograph attack allows Unicode lookalike characters to bypass validation
+    "GHSA-xq7p-g2vc-g82p"
   ]
 }
