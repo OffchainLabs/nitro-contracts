@@ -33,9 +33,9 @@ interface ArbOwner {
     /// @notice Retrieves the list of chain owners
     function getAllChainOwners() external view returns (address[] memory);
 
-    /// @notice Sets the NativeTokenEnabledFrom time
+    /// @notice Sets the NativeTokenManagementFrom time
     /// Available in ArbOS version 41
-    function setNativeTokenEnabledFrom(
+    function setNativeTokenManagementFrom(
         uint64 timestamp
     ) external;
 
