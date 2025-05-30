@@ -162,7 +162,7 @@ describe('Orbit Chain', () => {
       depositTx = await ERC20Inbox__factory.connect(
         l2Network.ethBridge.inbox,
         userL1Wallet
-      ).depositERC20(amountToDeposit)
+      )['depositERC20(uint256)'](amountToDeposit)
     } else {
       depositTx = await Inbox__factory.connect(
         l2Network.ethBridge.inbox,
