@@ -75,7 +75,9 @@ interface IInbox is IInboxBase {
      * @dev This does not trigger the fallback function when receiving in the L2 side.
      *      Look into retryable tickets if you are interested in this functionality.
      */
-    function depositEth(address destination) external payable returns (uint256);
+    function depositEth(
+        address destination
+    ) external payable returns (uint256);
 
     /**
      * @notice Put a message in the L2 inbox that can be reexecuted for some fixed amount of time if it reverts

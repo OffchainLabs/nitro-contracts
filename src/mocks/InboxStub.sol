@@ -181,7 +181,10 @@ contract InboxStub is IInboxBase, IInbox {
     function depositEth() external payable override returns (uint256) {
         revert("NOT_IMPLEMENTED");
     }
-    function depositEth(address) external payable override returns (uint256) {
+
+    function depositEth(
+        address
+    ) external payable override returns (uint256) {
         revert("NOT_IMPLEMENTED");
     }
 

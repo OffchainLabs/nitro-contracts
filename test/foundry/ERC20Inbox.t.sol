@@ -76,7 +76,9 @@ contract ERC20InboxTest is AbsInboxTest {
         _nativeToken.approve(address(_inbox), depositAmount);
 
         // expect event
-        uint256 expectedAmountToMintOnL2 = decimals > 18 ? depositAmount / 10 ** (decimals - 18) : depositAmount * 10 ** (18 - decimals);
+        uint256 expectedAmountToMintOnL2 = decimals > 18
+            ? depositAmount / 10 ** (decimals - 18)
+            : depositAmount * 10 ** (18 - decimals);
         vm.expectEmit(true, true, true, true);
         emit InboxMessageDelivered(
             delayedMsgCountBefore, abi.encodePacked(expectedDest, expectedAmountToMintOnL2)

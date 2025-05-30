@@ -212,7 +212,9 @@ contract Inbox is AbsInbox, IInbox {
     }
 
     /// @inheritdoc IInbox
-    function depositEth(address to) external payable whenNotPaused onlyAllowed returns (uint256) {
+    function depositEth(
+        address to
+    ) external payable whenNotPaused onlyAllowed returns (uint256) {
         return _depositEth(to);
     }
 
@@ -317,7 +319,9 @@ contract Inbox is AbsInbox, IInbox {
         return (1400 + 6 * dataLength) * (baseFee == 0 ? block.basefee : baseFee);
     }
 
-    function _depositEth(address dest) internal returns (uint256) {
+    function _depositEth(
+        address dest
+    ) internal returns (uint256) {
         return _deliverMessage(
             L1MessageType_ethDeposit, msg.sender, abi.encodePacked(dest, msg.value), msg.value
         );
