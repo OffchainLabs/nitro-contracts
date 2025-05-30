@@ -104,6 +104,30 @@ contract ERC20InboxTest is AbsInboxTest {
         assertEq(delayedMsgCountAfter - delayedMsgCountBefore, 1, "Invalid delayed message count");
     }
 
+    function test_depositERC20_WithDest() public {
+        _depositERC20({
+            _nativeToken: nativeToken,
+            decimals: 18,
+            depositAmount: 300,
+            sender: user,
+            origin: user,
+            to: address(1234),
+            useTo: true,
+            expectedDest: address(1234)
+        });
+
+        _depositERC20({
+            _nativeToken: nativeToken,
+            decimals: 18,
+            depositAmount: 300,
+            sender: user,
+            origin: tx.origin,
+            to: address(4321),
+            useTo: true,
+            expectedDest: address(4321)
+        });
+    }
+
     function test_depositERC20_FromEOA() public {
         _depositERC20({
             _nativeToken: nativeToken,
