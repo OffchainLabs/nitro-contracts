@@ -36,6 +36,11 @@ async function main() {
       ? ethers.BigNumber.from(process.env.MAX_DATA_SIZE)
       : ethers.BigNumber.from(117964)
 
+  const disableMessageFromOriginEvent =
+    process.env.DISABLE_MESSAGE_FROM_ORIGIN_EVENT !== undefined
+      ? process.env.DISABLE_MESSAGE_FROM_ORIGIN_EVENT === 'true'
+      : false
+
   /// get fee token address, if undefined use address(0) to have ETH as fee token
   let feeToken = process.env.FEE_TOKEN_ADDRESS as string
   if (!feeToken) {
@@ -62,7 +67,8 @@ async function main() {
 
   /// deploy templates and rollup creator
   console.log('Deploy RollupCreator')
-  const contracts = await deployAllContracts(deployerWallet, maxDataSize, false)
+  const verify = false;
+  const contracts = await deployAllContracts(deployerWallet, maxDataSize, disableMessageFromOriginEvent, verify)
 
   console.log('Set templates on the Rollup Creator')
   await (

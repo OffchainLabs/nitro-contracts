@@ -18,6 +18,7 @@ contract ERC20BridgeTest is AbsBridgeTest {
     IERC20 public nativeToken;
 
     uint256 public constant MAX_DATA_SIZE = 117_964;
+    bool public constant DISABLE_MESSAGE_FROM_ORIGIN_EVENT = false;
 
     // msg details
     uint8 public kind = 7;
@@ -34,7 +35,7 @@ contract ERC20BridgeTest is AbsBridgeTest {
         erc20Bridge.initialize(IOwnable(rollup), address(nativeToken));
 
         // deploy inbox
-        inbox = address(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+        inbox = address(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE, DISABLE_MESSAGE_FROM_ORIGIN_EVENT))));
         IERC20Inbox(address(inbox)).initialize(bridge, ISequencerInbox(seqInbox));
     }
 

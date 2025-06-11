@@ -6,6 +6,8 @@ export const maxDataSize = 117964
 
 export const isUsingFeeToken = false;
 
+export const disableMessageFromOriginEvent = false;
+
 export const config = {
   rollupConfig: {
     confirmPeriodBlocks: ethers.BigNumber.from('45818'),

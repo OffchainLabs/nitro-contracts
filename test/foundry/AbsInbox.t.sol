@@ -16,6 +16,7 @@ abstract contract AbsInboxTest is Test {
     IBridge public bridge;
 
     uint256 public constant MAX_DATA_SIZE = 117_964;
+    bool public constant DISABLE_MESSAGE_FROM_ORIGIN_EVENT = false;
 
     address public user = address(100);
     address public rollup = address(1000);
@@ -168,7 +169,7 @@ abstract contract AbsInboxTest is Test {
     }
 
     function test_initialize_revert_NonDelegated() public {
-        ERC20Inbox inb = new ERC20Inbox(MAX_DATA_SIZE);
+        ERC20Inbox inb = new ERC20Inbox(MAX_DATA_SIZE, DISABLE_MESSAGE_FROM_ORIGIN_EVENT);
         vm.expectRevert("Function must be called through delegatecall");
         inb.initialize(bridge, ISequencerInbox(seqInbox));
     }
