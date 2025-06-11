@@ -16,10 +16,13 @@
 
 /* eslint-env node, mocha */
 
-import { ethers, network } from 'hardhat'
+import { Interface } from '@ethersproject/abi'
 import { BigNumber } from '@ethersproject/bignumber'
+import { Event } from '@ethersproject/contracts'
 import { Block, TransactionReceipt } from '@ethersproject/providers'
 import { expect } from 'chai'
+import { constants, Signer } from 'ethers'
+import { ethers, network } from 'hardhat'
 import {
   Bridge,
   Bridge__factory,
@@ -31,17 +34,14 @@ import {
   SequencerInbox__factory,
   TransparentUpgradeableProxy__factory,
 } from '../../build/types'
-import { applyAlias, initializeAccounts } from './utils'
-import { Event } from '@ethersproject/contracts'
-import { Interface } from '@ethersproject/abi'
 import {
   BridgeInterface,
   MessageDeliveredEvent,
 } from '../../build/types/src/bridge/Bridge'
-import { constants, Signer } from 'ethers'
-import { Toolkit4844 } from './toolkit4844'
 import { data } from './batchData.json'
 import { seqInterface } from './testHelpers'
+import { Toolkit4844 } from './toolkit4844'
+import { applyAlias, initializeAccounts } from './utils'
 
 const mineBlocks = async (count: number, timeDiffPerBlock = 14) => {
   const block = (await network.provider.send('eth_getBlockByNumber', [
@@ -219,7 +219,11 @@ describe('SequencerInboxForceInclude', async () => {
     }
   }
 
-  const setupSequencerInbox = async (maxDelayBlocks = 10, maxDelayTime = 0) => {
+  const setupSequencerInbox = async (
+    maxDelayBlocks = 10,
+    maxDelayTime = 0,
+    disableMessageFromOriginEvent = false
+  ) => {
     const accounts = await initializeAccounts()
     const admin = accounts[0]
     const adminAddr = await admin.getAddress()
@@ -247,7 +251,10 @@ describe('SequencerInboxForceInclude', async () => {
     const inboxFac = (await ethers.getContractFactory(
       'Inbox'
     )) as Inbox__factory
-    const inboxTemplate = await inboxFac.deploy(117964)
+    const inboxTemplate = await inboxFac.deploy(
+      117964,
+      disableMessageFromOriginEvent
+    )
     const bridgeFac = (await ethers.getContractFactory(
       'Bridge'
     )) as Bridge__factory
