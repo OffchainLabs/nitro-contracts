@@ -29,6 +29,8 @@
     // axios Requests Vulnerable To Possible SSRF and Credential Leakage via Absolute URL
     "GHSA-jr5f-v2jv-69x6",
     // Homograph attack allows Unicode lookalike characters to bypass validation
-    "GHSA-xq7p-g2vc-g82p"
+    "GHSA-xq7p-g2vc-g82p",
+    // undici Denial of Service attack via bad certificate data
+    "GHSA-cxrh-j4jr-qwg3"
   ]
 }
