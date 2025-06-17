@@ -44,288 +44,178 @@ contract ERC20InboxTest is AbsInboxTest {
         assertEq(IERC20(nativeToken).allowance(address(inbox), address(bridge)), type(uint256).max);
     }
 
-    function test_depositERC20_FromEOA() public {
-        uint256 depositAmount = 300;
+    function _depositERC20(
+        IERC20 _nativeToken,
+        uint256 decimals,
+        uint256 depositAmount,
+        address sender,
+        address origin,
+        address to,
+        bool useTo,
+        address expectedDest
+    ) internal {
+        IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
+        IERC20Inbox _inbox =
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
 
-        uint256 bridgeTokenBalanceBefore = nativeToken.balanceOf(address(bridge));
-        uint256 userTokenBalanceBefore = nativeToken.balanceOf(address(user));
-        uint256 delayedMsgCountBefore = bridge.delayedMessageCount();
+        // init bridge and inbox
+        {
+            address _rollup = makeAddr("_rollup");
+            _bridge.initialize(IOwnable(_rollup), address(_nativeToken));
+            _inbox.initialize(_bridge, ISequencerInbox(makeAddr("_seqInbox")));
+            vm.prank(_rollup);
+        }
+        _bridge.setDelayedInbox(address(_inbox), true);
+
+        uint256 bridgeTokenBalanceBefore = _nativeToken.balanceOf(address(_bridge));
+        uint256 userTokenBalanceBefore = _nativeToken.balanceOf(address(sender));
+        uint256 delayedMsgCountBefore = _bridge.delayedMessageCount();
 
         // approve inbox to fetch tokens
-        vm.prank(user);
-        nativeToken.approve(address(inbox), depositAmount);
+        vm.prank(sender);
+        _nativeToken.approve(address(_inbox), depositAmount);
 
         // expect event
+        uint256 expectedAmountToMintOnL2 = decimals > 18
+            ? depositAmount / 10 ** (decimals - 18)
+            : depositAmount * 10 ** (18 - decimals);
         vm.expectEmit(true, true, true, true);
-        emit InboxMessageDelivered(0, abi.encodePacked(user, depositAmount));
+        emit InboxMessageDelivered(
+            delayedMsgCountBefore, abi.encodePacked(expectedDest, expectedAmountToMintOnL2)
+        );
 
         // deposit tokens -> tx.origin == msg.sender
-        vm.prank(user, user);
-        erc20Inbox.depositERC20(depositAmount);
+        vm.prank(sender, origin);
+        useTo ? _inbox.depositERC20(to, depositAmount) : _inbox.depositERC20(depositAmount);
 
         //// checks
 
-        uint256 bridgeTokenBalanceAfter = nativeToken.balanceOf(address(bridge));
         assertEq(
-            bridgeTokenBalanceAfter - bridgeTokenBalanceBefore,
+            _nativeToken.balanceOf(address(_bridge)) - bridgeTokenBalanceBefore,
             depositAmount,
             "Invalid bridge token balance"
         );
 
-        uint256 userTokenBalanceAfter = nativeToken.balanceOf(address(user));
         assertEq(
-            userTokenBalanceBefore - userTokenBalanceAfter,
+            userTokenBalanceBefore - _nativeToken.balanceOf(address(sender)),
             depositAmount,
             "Invalid user token balance"
         );
 
-        uint256 delayedMsgCountAfter = bridge.delayedMessageCount();
+        uint256 delayedMsgCountAfter = _bridge.delayedMessageCount();
         assertEq(delayedMsgCountAfter - delayedMsgCountBefore, 1, "Invalid delayed message count");
+    }
+
+    function test_depositERC20_WithDest() public {
+        _depositERC20({
+            _nativeToken: nativeToken,
+            decimals: 18,
+            depositAmount: 300,
+            sender: user,
+            origin: user,
+            to: address(1234),
+            useTo: true,
+            expectedDest: address(1234)
+        });
+
+        _depositERC20({
+            _nativeToken: nativeToken,
+            decimals: 18,
+            depositAmount: 300,
+            sender: user,
+            origin: tx.origin,
+            to: address(4321),
+            useTo: true,
+            expectedDest: address(4321)
+        });
+    }
+
+    function test_depositERC20_FromEOA() public {
+        _depositERC20({
+            _nativeToken: nativeToken,
+            decimals: 18,
+            depositAmount: 300,
+            sender: user,
+            origin: user,
+            to: address(0),
+            useTo: false,
+            expectedDest: user
+        });
     }
 
     function test_depositERC20_FromEOA_LessThan18Decimals() public {
-        uint8 decimals = 6;
-        ERC20 _nativeToken = new ERC20_6Decimals();
-
-        IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        IERC20Inbox _inbox =
-            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
-
-        // init bridge and inbox
-        address _rollup = makeAddr("_rollup");
-        _bridge.initialize(IOwnable(_rollup), address(_nativeToken));
-        _inbox.initialize(_bridge, ISequencerInbox(makeAddr("_seqInbox")));
-        vm.prank(_rollup);
-        _bridge.setDelayedInbox(address(_inbox), true);
-
-        // fund user account
-        ERC20_6Decimals(address(_nativeToken)).mint(user, 1000 * 10 ** decimals);
-
-        uint256 depositAmount = 300 * 10 ** decimals;
-
-        uint256 bridgeTokenBalanceBefore = _nativeToken.balanceOf(address(_bridge));
-        uint256 userTokenBalanceBefore = _nativeToken.balanceOf(address(user));
-        uint256 delayedMsgCountBefore = _bridge.delayedMessageCount();
-
-        // approve inbox to fetch tokens
-        vm.prank(user);
-        _nativeToken.approve(address(_inbox), depositAmount);
-
-        // expect event
-        uint256 expectedAmountToMintOnL2 = depositAmount * 10 ** (18 - decimals);
-        vm.expectEmit(true, true, true, true);
-        emit InboxMessageDelivered(0, abi.encodePacked(user, expectedAmountToMintOnL2));
-
-        // deposit tokens -> tx.origin == msg.sender
-        vm.prank(user, user);
-        _inbox.depositERC20(depositAmount);
-
-        //// checks
-
-        uint256 bridgeTokenBalanceAfter = _nativeToken.balanceOf(address(_bridge));
-        assertEq(
-            bridgeTokenBalanceAfter - bridgeTokenBalanceBefore,
-            depositAmount,
-            "Invalid bridge token balance"
-        );
-
-        uint256 userTokenBalanceAfter = _nativeToken.balanceOf(address(user));
-        assertEq(
-            userTokenBalanceBefore - userTokenBalanceAfter,
-            depositAmount,
-            "Invalid user token balance"
-        );
-
-        uint256 delayedMsgCountAfter = _bridge.delayedMessageCount();
-        assertEq(delayedMsgCountAfter - delayedMsgCountBefore, 1, "Invalid delayed message count");
+        ERC20_6Decimals _nativeToken = new ERC20_6Decimals();
+        _nativeToken.mint(user, 1000 * 10 ** 6);
+        _depositERC20({
+            _nativeToken: _nativeToken,
+            decimals: 6,
+            depositAmount: 300 * 10 ** 6,
+            sender: user,
+            origin: user,
+            to: address(0),
+            useTo: false,
+            expectedDest: user
+        });
     }
 
     function test_depositERC20_FromEOA_MoreThan18Decimals() public {
-        uint8 decimals = 20;
-        ERC20 _nativeToken = new ERC20_20Decimals();
-
-        IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        IERC20Inbox _inbox =
-            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
-
-        // init bridge and inbox
-        address _rollup = makeAddr("_rollup");
-        _bridge.initialize(IOwnable(_rollup), address(_nativeToken));
-        _inbox.initialize(_bridge, ISequencerInbox(makeAddr("_seqInbox")));
-        vm.prank(_rollup);
-        _bridge.setDelayedInbox(address(_inbox), true);
-
-        // fund user account
-        ERC20_20Decimals(address(_nativeToken)).mint(user, 1000 * 10 ** decimals);
-
-        uint256 depositAmount = 300 * 10 ** decimals;
-
-        uint256 bridgeTokenBalanceBefore = _nativeToken.balanceOf(address(_bridge));
-        uint256 userTokenBalanceBefore = _nativeToken.balanceOf(address(user));
-        uint256 delayedMsgCountBefore = _bridge.delayedMessageCount();
-
-        // approve inbox to fetch tokens
-        vm.prank(user);
-        _nativeToken.approve(address(_inbox), depositAmount);
-
-        // expect event
-        uint256 expectedAmountToMintOnL2 = depositAmount / (10 ** (decimals - 18));
-        vm.expectEmit(true, true, true, true);
-        emit InboxMessageDelivered(0, abi.encodePacked(user, expectedAmountToMintOnL2));
-
-        // deposit tokens -> tx.origin == msg.sender
-        vm.prank(user, user);
-        _inbox.depositERC20(depositAmount);
-
-        //// checks
-
-        uint256 bridgeTokenBalanceAfter = _nativeToken.balanceOf(address(_bridge));
-        assertEq(
-            bridgeTokenBalanceAfter - bridgeTokenBalanceBefore,
-            depositAmount,
-            "Invalid bridge token balance"
-        );
-
-        uint256 userTokenBalanceAfter = _nativeToken.balanceOf(address(user));
-        assertEq(
-            userTokenBalanceBefore - userTokenBalanceAfter,
-            depositAmount,
-            "Invalid user token balance"
-        );
-
-        uint256 delayedMsgCountAfter = _bridge.delayedMessageCount();
-        assertEq(delayedMsgCountAfter - delayedMsgCountBefore, 1, "Invalid delayed message count");
+        ERC20_20Decimals _nativeToken = new ERC20_20Decimals();
+        _nativeToken.mint(user, 1000 * 10 ** 20);
+        _depositERC20({
+            _nativeToken: _nativeToken,
+            decimals: 20,
+            depositAmount: 300 * 10 ** 20,
+            sender: user,
+            origin: user,
+            to: address(0),
+            useTo: false,
+            expectedDest: user
+        });
     }
 
     function test_depositERC20_FromEOA_NoDecimals() public {
         ERC20 _nativeToken = new ERC20NoDecimals();
-
-        IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
-        IERC20Inbox _inbox =
-            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
-
-        // init bridge and inbox
-        address _rollup = makeAddr("_rollup");
-        _bridge.initialize(IOwnable(_rollup), address(_nativeToken));
-        _inbox.initialize(_bridge, ISequencerInbox(makeAddr("_seqInbox")));
-        vm.prank(_rollup);
-        _bridge.setDelayedInbox(address(_inbox), true);
-
-        // fund user account
-        ERC20NoDecimals(address(_nativeToken)).mint(user, 1000);
-
-        uint256 depositAmount = 300;
-
-        uint256 bridgeTokenBalanceBefore = _nativeToken.balanceOf(address(_bridge));
-        uint256 userTokenBalanceBefore = _nativeToken.balanceOf(address(user));
-        uint256 delayedMsgCountBefore = _bridge.delayedMessageCount();
-
-        // approve inbox to fetch tokens
-        vm.prank(user);
-        _nativeToken.approve(address(_inbox), depositAmount);
-
-        // expect event
-        uint256 expectedAmountToMintOnL2 = depositAmount * 10 ** 18;
-        vm.expectEmit(true, true, true, true);
-        emit InboxMessageDelivered(0, abi.encodePacked(user, expectedAmountToMintOnL2));
-
-        // deposit tokens -> tx.origin == msg.sender
-        vm.prank(user, user);
-        _inbox.depositERC20(depositAmount);
-
-        //// checks
-
-        uint256 bridgeTokenBalanceAfter = _nativeToken.balanceOf(address(_bridge));
-        assertEq(
-            bridgeTokenBalanceAfter - bridgeTokenBalanceBefore,
-            depositAmount,
-            "Invalid bridge token balance"
-        );
-
-        uint256 userTokenBalanceAfter = _nativeToken.balanceOf(address(user));
-        assertEq(
-            userTokenBalanceBefore - userTokenBalanceAfter,
-            depositAmount,
-            "Invalid user token balance"
-        );
-
-        uint256 delayedMsgCountAfter = _bridge.delayedMessageCount();
-        assertEq(delayedMsgCountAfter - delayedMsgCountBefore, 1, "Invalid delayed message count");
+        ERC20PresetMinterPauser(address(_nativeToken)).mint(user, 1000);
+        _depositERC20({
+            _nativeToken: _nativeToken,
+            decimals: 0,
+            depositAmount: 300,
+            sender: user,
+            origin: user,
+            to: address(0),
+            useTo: false,
+            expectedDest: user
+        });
     }
 
     function test_depositERC20_FromEOA_InboxPrefunded() public {
         uint256 depositAmount = 300;
-
-        uint256 bridgeTokenBalanceBefore = nativeToken.balanceOf(address(bridge));
-        uint256 userTokenBalanceBefore = nativeToken.balanceOf(address(user));
-        uint256 delayedMsgCountBefore = bridge.delayedMessageCount();
-
         // prefund inbox with native token amount needed to pay for fees
         ERC20PresetMinterPauser(address(nativeToken)).mint(address(inbox), depositAmount);
 
-        // expect event
-        vm.expectEmit(true, true, true, true);
-        emit InboxMessageDelivered(0, abi.encodePacked(user, depositAmount));
-
-        // deposit tokens -> tx.origin == msg.sender
-        vm.prank(user, user);
-        erc20Inbox.depositERC20(depositAmount);
-
-        //// checks
-
-        uint256 bridgeTokenBalanceAfter = nativeToken.balanceOf(address(bridge));
-        assertEq(
-            bridgeTokenBalanceAfter - bridgeTokenBalanceBefore,
-            depositAmount,
-            "Invalid bridge token balance"
-        );
-
-        uint256 userTokenBalanceAfter = nativeToken.balanceOf(address(user));
-        assertEq(userTokenBalanceBefore, userTokenBalanceAfter, "Invalid user token balance");
-
-        uint256 delayedMsgCountAfter = bridge.delayedMessageCount();
-        assertEq(delayedMsgCountAfter - delayedMsgCountBefore, 1, "Invalid delayed message count");
+        _depositERC20({
+            _nativeToken: nativeToken,
+            decimals: 18,
+            depositAmount: depositAmount,
+            sender: user,
+            origin: user,
+            to: address(0),
+            useTo: false,
+            expectedDest: user
+        });
     }
 
     function test_depositERC20_FromContract() public {
-        uint256 depositAmount = 300;
-
-        uint256 bridgeTokenBalanceBefore = nativeToken.balanceOf(address(bridge));
-        uint256 userTokenBalanceBefore = nativeToken.balanceOf(address(user));
-        uint256 delayedMsgCountBefore = bridge.delayedMessageCount();
-
-        // approve inbox to fetch tokens
-        vm.prank(user);
-        nativeToken.approve(address(inbox), depositAmount);
-
-        // expect event
-        vm.expectEmit(true, true, true, true);
-        emit InboxMessageDelivered(
-            0, abi.encodePacked(AddressAliasHelper.applyL1ToL2Alias(user), depositAmount)
-        );
-
-        // deposit tokens -> tx.origin != msg.sender
-        vm.prank(user);
-        erc20Inbox.depositERC20(depositAmount);
-
-        //// checks
-
-        uint256 bridgeTokenBalanceAfter = nativeToken.balanceOf(address(bridge));
-        assertEq(
-            bridgeTokenBalanceAfter - bridgeTokenBalanceBefore,
-            depositAmount,
-            "Invalid bridge token balance"
-        );
-
-        uint256 userTokenBalanceAfter = nativeToken.balanceOf(address(user));
-        assertEq(
-            userTokenBalanceBefore - userTokenBalanceAfter,
-            depositAmount,
-            "Invalid user token balance"
-        );
-
-        uint256 delayedMsgCountAfter = bridge.delayedMessageCount();
-        assertEq(delayedMsgCountAfter - delayedMsgCountBefore, 1, "Invalid delayed message count");
+        _depositERC20({
+            _nativeToken: nativeToken,
+            decimals: 18,
+            depositAmount: 300,
+            sender: user,
+            origin: tx.origin,
+            to: address(0),
+            useTo: false,
+            expectedDest: AddressAliasHelper.applyL1ToL2Alias(user)
+        });
     }
 
     function test_depositERC20_revert_DepositAmountTooLarge() public {
