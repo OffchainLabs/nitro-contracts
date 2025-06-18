@@ -31,7 +31,7 @@ contract ReferenceDAProofValidator is ICustomDAProofValidator {
         }
 
         // Decode the actual proof data
-        require(proof[40] == 1, "Unsupported proof version");
+        require(proof[40] == 0x01, "Unsupported proof version");
 
         uint256 preimageSize;
         assembly {
