@@ -32,7 +32,9 @@ contract OneStepProverHostIo is IOneStepProver {
 
     ICustomDAProofValidator public customDAValidator;
 
-    function setCustomDAValidator(ICustomDAProofValidator _validator) external {
+    function setCustomDAValidator(
+        ICustomDAProofValidator _validator
+    ) external {
         // TODO: Add appropriate access control
         customDAValidator = _validator;
     }
