@@ -11,6 +11,7 @@ import "../state/MultiStack.sol";
 import "../state/Deserialize.sol";
 import "../state/ModuleMemory.sol";
 import "./IOneStepProver.sol";
+import "./ICustomDAProofValidator.sol";
 import "../bridge/Messages.sol";
 import "../bridge/IBridge.sol";
 
@@ -28,6 +29,13 @@ contract OneStepProverHostIo is IOneStepProver {
     uint256 private constant INBOX_NUM = 2;
     uint64 private constant INBOX_HEADER_LEN = 40;
     uint64 private constant DELAYED_HEADER_LEN = 112 + 1;
+
+    ICustomDAProofValidator public customDAValidator;
+
+    function setCustomDAValidator(ICustomDAProofValidator _validator) external {
+        // TODO: Add appropriate access control
+        customDAValidator = _validator;
+    }
 
     function setLeafByte(bytes32 oldLeaf, uint256 idx, uint8 val) internal pure returns (bytes32) {
         require(idx < LEAF_SIZE, "BAD_SET_LEAF_BYTE_IDX");
@@ -220,6 +228,20 @@ contract OneStepProverHostIo is IOneStepProver {
 
                 extracted = kzgProof[64:96];
             }
+        } else if (inst.argumentData == 3) {
+            // The machine is asking for a CustomDA preimage
+            require(proofType == 0, "UNKNOWN_PREIMAGE_PROOF");
+            require(address(customDAValidator) != address(0), "CUSTOM_DA_VALIDATOR_NOT_SET");
+
+            // The OSP is completely agnostic to CustomDA proof format
+            // Just forward all remaining proof bytes to the validator
+            bytes calldata customProof = proof[proofOffset:];
+
+            // Delegate entirely to the custom validator
+            extracted = customDAValidator.validateReadPreimage(customProof);
+
+            // Ensure we got a valid response
+            require(extracted.length > 0 && extracted.length <= 32, "INVALID_CUSTOM_DA_RESPONSE");
         } else {
             revert("UNKNOWN_PREIMAGE_TYPE");
         }
