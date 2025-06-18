@@ -1,4 +1,4 @@
-import { ethers, run, getNamedAccounts } from 'hardhat'
+import { ethers, run, deployments } from 'hardhat'
 import fs from 'fs'
 import assert from 'assert'
 import readline from 'readline'
@@ -6,9 +6,18 @@ import readline from 'readline'
 const PARALLEL = 128
 
 async function sendTestMessages() {
-  const { deployer } = await getNamedAccounts()
-  const inbox = await ethers.getContract('InboxStub', deployer)
-  const seqInbox = await ethers.getContract('SequencerInboxStub', deployer)
+  const inbox = await ethers.getContractAt(
+    'InboxStub',
+    (
+      await deployments.get('InboxStub')
+    ).address
+  )
+  const seqInbox = await ethers.getContractAt(
+    'SequencerInboxStub',
+    (
+      await deployments.get('SequencerInboxStub')
+    ).address
+  )
   const msgRoot = '../arbitrator/prover/test-cases/rust/data/'
   const gasOpts = {
     gasLimit: ethers.utils.hexlify(250000),
@@ -59,8 +68,18 @@ describe('OneStepProof', function () {
   for (const [path, file] of proofs) {
     it('Should pass ' + file + ' proofs', async function () {
       const proofs = JSON.parse(fs.readFileSync(path).toString('utf8'))
-      const osp = await ethers.getContract('OneStepProofEntry')
-      const bridge = await ethers.getContract('BridgeStub')
+      const osp = await ethers.getContractAt(
+        'OneStepProofEntry',
+        (
+          await deployments.get('OneStepProofEntry')
+        ).address
+      )
+      const bridge = await ethers.getContractAt(
+        'BridgeStub',
+        (
+          await deployments.get('BridgeStub')
+        ).address
+      )
 
       const promises = []
       const isdone = []

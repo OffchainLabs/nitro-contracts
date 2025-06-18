@@ -67,10 +67,7 @@ async function getPreUpgradeState(l1Rpc: JsonRpcProvider, config: Config) {
     l1Rpc
   )
 
-  const bridge = IERC20Bridge__factory.connect(
-    config.contracts.bridge,
-    l1Rpc
-  )
+  const bridge = IERC20Bridge__factory.connect(config.contracts.bridge, l1Rpc)
 
   const stakerCount = await oldRollupContract.stakerCount()
 
@@ -85,13 +82,15 @@ async function getPreUpgradeState(l1Rpc: JsonRpcProvider, config: Config) {
 
   const wasmModuleRoot = await oldRollupContract.wasmModuleRoot()
 
-  const feeToken = await seqInbox.isUsingFeeToken() ? await bridge.nativeToken() : null
+  const feeToken = (await seqInbox.isUsingFeeToken())
+    ? await bridge.nativeToken()
+    : null
 
   return {
     stakers,
     wasmModuleRoot,
     ...boxes,
-    feeToken
+    feeToken,
   }
 }
 
@@ -138,7 +137,10 @@ async function perform(
     boldActionPerformData,
   ])
 
-  const signerCanExecute = await upExec.hasRole('0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63', await timelockSigner.getAddress())
+  const signerCanExecute = await upExec.hasRole(
+    '0xd8aa0f3194971a2a116679f7c2090f6939c8d4e01a2a8d7e41d55e5351469e63',
+    await timelockSigner.getAddress()
+  )
 
   console.log('upgrade executor:', config.contracts.upgradeExecutor)
   console.log('execute(...) call to upgrade executor:', performCallData)
@@ -280,7 +282,8 @@ async function checkSequencerInbox(
 
   // make sure fee token-ness is correct
   if (
-    await seqInboxContract.isUsingFeeToken() !== (preUpgradeState.feeToken !== null)
+    (await seqInboxContract.isUsingFeeToken()) !==
+    (preUpgradeState.feeToken !== null)
   ) {
     throw new Error('SequencerInbox isUsingFeeToken does not match')
   }
@@ -294,23 +297,25 @@ async function checkSequencerInbox(
   }
 
   // check delay buffer parameters
-  const buffer = await seqInboxContract.buffer()
+  if (config.settings.isDelayBufferable) {
+    const buffer = await seqInboxContract.buffer()
 
-  if (!buffer.bufferBlocks.eq(config.settings.bufferConfig.max)) {
-    throw new Error('bufferBlocks does not match')
-  }
-  if (!buffer.max.eq(config.settings.bufferConfig.max)) {
-    throw new Error('max does not match')
-  }
-  if (!buffer.threshold.eq(config.settings.bufferConfig.threshold)) {
-    throw new Error('threshold does not match')
-  }
-  if (
-    !buffer.replenishRateInBasis.eq(
-      config.settings.bufferConfig.replenishRateInBasis
-    )
-  ) {
-    throw new Error('replenishRateInBasis does not match')
+    if (!buffer.bufferBlocks.eq(config.settings.bufferConfig.max)) {
+      throw new Error('bufferBlocks does not match')
+    }
+    if (!buffer.max.eq(config.settings.bufferConfig.max)) {
+      throw new Error('max does not match')
+    }
+    if (!buffer.threshold.eq(config.settings.bufferConfig.threshold)) {
+      throw new Error('threshold does not match')
+    }
+    if (
+      !buffer.replenishRateInBasis.eq(
+        config.settings.bufferConfig.replenishRateInBasis
+      )
+    ) {
+      throw new Error('replenishRateInBasis does not match')
+    }
   }
 
   // check rollup was set
@@ -327,7 +332,10 @@ async function checkInbox(params: VerificationParams) {
     config.contracts.inbox,
     l1Rpc
   )
-  const submissionFee = await inboxContract.calculateRetryableSubmissionFee(100, 100)
+  const submissionFee = await inboxContract.calculateRetryableSubmissionFee(
+    100,
+    100
+  )
   if (preUpgradeState.feeToken && !submissionFee.eq(0)) {
     throw new Error('Inbox is not an ERC20Inbox')
   }
@@ -387,8 +395,7 @@ async function checkOutbox(
     // will revert if not an ERC20Outbox
     const withdrawalAmt = await erc20Outbox.l2ToL1WithdrawalAmount()
     feeTokenValid = preUpgradeState.feeToken !== null
-  }
-  catch (e: any) {
+  } catch (e: any) {
     if (e.code !== 'CALL_EXCEPTION') throw e
     feeTokenValid = preUpgradeState.feeToken === null
   }
@@ -429,8 +436,7 @@ async function checkBridge(
     if (feeToken !== preUpgradeState.feeToken) {
       feeTokenValid = false
     }
-  }
-  catch (e: any) {
+  } catch (e: any) {
     if (e.code !== 'CALL_EXCEPTION') throw e
     feeTokenValid = preUpgradeState.feeToken === null
   }
@@ -552,7 +558,7 @@ async function checkNewRollup(
   newEdgeChallengeManager: EdgeChallengeManager,
   currentInboxCount: BigNumberish
 ) {
-  const { config, deployedContracts, preUpgradeState } = params
+  const { config, l1Rpc, preUpgradeState } = params
 
   // check bridge
   if (
@@ -664,12 +670,30 @@ async function checkNewRollup(
     throw new Error('Base stake does not match')
   }
 
-  // check fast confirmer (must be 0 for the local chain)
-  if (
-    getAddress(await newRollup.anyTrustFastConfirmer()) !==
-    ethers.constants.AddressZero
-  ) {
-    throw new Error('Any trust fast confirmer does not match')
+  // check fast confirmer with value in old rollup (must be 0 for the local chain)
+  const oldRollup = IOldRollup__factory.connect(config.contracts.rollup, l1Rpc)
+
+  try {
+    const oldFastConfirmer = getAddress(await oldRollup.anyTrustFastConfirmer())
+    if (
+      getAddress(await newRollup.anyTrustFastConfirmer()) !== oldFastConfirmer
+    ) {
+      throw new Error('Any trust fast confirmer does not match')
+    }
+  } catch (e: any) {
+    // Old rollup was on an older version that didn't have anyTrustFastConfirmer
+    if (e.code !== 'CALL_EXCEPTION') {
+      throw e
+    }
+
+    if (
+      getAddress(await newRollup.anyTrustFastConfirmer()) !==
+      ethers.constants.AddressZero
+    ) {
+      throw new Error(
+        'Any trust fast confirmer was not set in the old rollup and is non-zero in the new rollup'
+      )
+    }
   }
 }
 

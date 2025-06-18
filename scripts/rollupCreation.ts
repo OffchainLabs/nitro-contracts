@@ -3,12 +3,16 @@ import '@nomiclabs/hardhat-ethers'
 import { run } from 'hardhat'
 import { abi as rollupCreatorAbi } from '../build/contracts/src/rollup/RollupCreator.sol/RollupCreator.json'
 import { config, maxDataSize } from './config'
-import { BigNumber, Signer } from 'ethers'
+import { BigNumber, Event, Signer } from 'ethers'
 import { ERC20, ERC20__factory, IERC20__factory } from '../build/types'
 import { sleep } from './testSetup'
 import { promises as fs } from 'fs'
 import { _isRunningOnArbitrum, verifyContract } from './deploymentUtils'
-import { AssertionStateStruct, ConfigStruct, RollupCreator } from '../build/types/src/rollup/RollupCreator'
+import {
+  AssertionStateStruct,
+  ConfigStruct,
+  RollupCreator,
+} from '../build/types/src/rollup/RollupCreator'
 
 // 1 gwei
 const MAX_FER_PER_GAS = BigNumber.from('1000000000')
@@ -62,6 +66,7 @@ export async function createRollup(
   isDevDeployment: boolean,
   rollupCreatorAddress: string,
   feeToken: string,
+  feeTokenPricer: string,
   stakeToken: string
 ): Promise<{
   rollupCreationResult: RollupCreationResult
@@ -77,7 +82,7 @@ export async function createRollup(
     rollupCreatorAddress,
     rollupCreatorAbi,
     signer
-  )
+  ) as RollupCreator
   const validatorWalletCreator = await rollupCreator.validatorWalletCreator()
 
   try {
@@ -101,18 +106,25 @@ export async function createRollup(
 
     // Call the createRollup function
     console.log('Calling createRollup to generate a new rollup ...')
-    const deployParams = isDevDeployment
-      ? await _getDevRollupConfig(feeToken, validatorWalletCreator, stakeToken)
-      : {
-          config: config.rollupConfig,
-          validators: config.validators,
-          maxDataSize: ethers.BigNumber.from(maxDataSize),
-          nativeToken: feeToken,
-          deployFactoriesToL2: true,
-          maxFeePerGasForRetryables: MAX_FER_PER_GAS,
-          batchPosters: config.batchPosters,
-          batchPosterManager: config.batchPosterManager,
-        }
+    const deployParams: RollupCreator.RollupDeploymentParamsStruct =
+      isDevDeployment
+        ? await _getDevRollupConfig(
+            feeToken,
+            feeTokenPricer,
+            validatorWalletCreator,
+            stakeToken
+          )
+        : {
+            config: config.config,
+            validators: config.validators,
+            maxDataSize: ethers.BigNumber.from(maxDataSize),
+            nativeToken: feeToken,
+            deployFactoriesToL2: true,
+            maxFeePerGasForRetryables: MAX_FER_PER_GAS,
+            batchPosters: config.batchPosters,
+            batchPosterManager: config.batchPosterManager,
+            feeTokenPricer: feeTokenPricer,
+          }
 
     const createRollupTx = await rollupCreator.createRollup(deployParams, {
       value: feeCost,
@@ -120,7 +132,7 @@ export async function createRollup(
     const createRollupReceipt = await createRollupTx.wait()
 
     const rollupCreatedEvent = createRollupReceipt.events?.find(
-      (event: RollupCreatedEvent) =>
+      (event: Event): event is Event =>
         event.event === 'RollupCreated' &&
         event.address.toLowerCase() === rollupCreatorAddress.toLowerCase()
     )
@@ -201,7 +213,7 @@ export async function createRollup(
         'secondary-feed-url': '',
         'das-index-url': '',
         'has-genesis-state': false,
-        'chain-config': JSON.parse(deployParams.config.chainConfig),
+        'chain-config': JSON.parse(await deployParams.config.chainConfig),
         rollup: rollupCreationResult,
       }
 
@@ -221,6 +233,7 @@ export async function createRollup(
 
 async function _getDevRollupConfig(
   feeToken: string,
+  feeTokenPricer: string,
   validatorWalletCreator: string,
   stakeToken: string
 ): Promise<RollupCreator.RollupDeploymentParamsStruct> {
@@ -306,7 +319,7 @@ async function _getDevRollupConfig(
   }
 
   const config: ConfigStruct = {
-    confirmPeriodBlocks: ethers.BigNumber.from('20'),
+    confirmPeriodBlocks: ethers.BigNumber.from('1'), // was 20
     stakeToken: stakeToken,
     baseStake: 8,
     wasmModuleRoot: wasmModuleRoot,
@@ -314,15 +327,11 @@ async function _getDevRollupConfig(
     loserStakeEscrow: ownerAddress,
     chainId: JSON.parse(chainConfig)['chainId'],
     chainConfig: chainConfig,
-    minimumAssertionPeriod: 5,
+    minimumAssertionPeriod: 1, // was 5
     validatorAfkBlocks: 201600,
     genesisAssertionState: genesisAssertionState,
     genesisInboxCount: 0,
-    miniStakeValues: [
-      4,
-      2,
-      1,
-    ],
+    miniStakeValues: [4, 2, 1],
     layerZeroBlockEdgeHeight: 2 ** 26,
     layerZeroBigStepEdgeHeight: 2 ** 19,
     layerZeroSmallStepEdgeHeight: 2 ** 23,
@@ -335,7 +344,7 @@ async function _getDevRollupConfig(
       delaySeconds: ethers.BigNumber.from('86400'),
       futureSeconds: ethers.BigNumber.from('3600'),
     },
-    anyTrustFastConfirmer: ethers.constants.AddressZero
+    anyTrustFastConfirmer: ethers.constants.AddressZero,
   }
 
   return {
@@ -347,6 +356,7 @@ async function _getDevRollupConfig(
     maxFeePerGasForRetryables: MAX_FER_PER_GAS,
     batchPosters: batchPosters,
     batchPosterManager: batchPosterManager,
+    feeTokenPricer: feeTokenPricer,
   }
 
   function _createValidatorAddress(

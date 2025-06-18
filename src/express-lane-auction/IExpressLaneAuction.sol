@@ -226,6 +226,10 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
 
     /// @notice The current auction round that we're in
     ///         Bidding for control of the next round occurs in the current round
+    /// @dev On inactive chains without new block production, this method may return
+    ///      stale round information using the last known block timestamp. For chains
+    ///      with infrequent block creation, consider using off-chain timestamp calculations
+    ///      or implementing an alternative round tracking mechanism to ensure accuracy.
     function currentRound() external view returns (uint64);
 
     /// @notice Is the current auction round closed for bidding
