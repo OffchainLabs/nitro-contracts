@@ -59,7 +59,8 @@ contract RollupCreatorTest is Test {
         deployHelper = new DeployHelper();
 
         // deploy BridgeCreators
-        BridgeCreator bridgeCreator = new BridgeCreator(deployer, ethBasedTemplates, erc20BasedTemplates);
+        BridgeCreator bridgeCreator =
+            new BridgeCreator(deployer, ethBasedTemplates, erc20BasedTemplates);
 
         IUpgradeExecutor upgradeExecutorLogic = new UpgradeExecutorMock();
 
@@ -74,16 +75,19 @@ contract RollupCreatorTest is Test {
         rollupUser = _rollupUser;
 
         //// deploy creator and set logic
-        rollupCreator = new RollupCreator(deployer, RollupCreator.SetTemplatesArgs(
-            bridgeCreator,
-            ospEntry,
-            challengeManager,
-            _rollupAdmin,
-            _rollupUser,
-            upgradeExecutorLogic,
-            address(new ValidatorWalletCreator()),
-            deployHelper
-        ));
+        rollupCreator = new RollupCreator(
+            deployer,
+            RollupCreator.SetTemplatesArgs(
+                bridgeCreator,
+                ospEntry,
+                challengeManager,
+                _rollupAdmin,
+                _rollupUser,
+                upgradeExecutorLogic,
+                address(new ValidatorWalletCreator()),
+                deployHelper
+            )
+        );
 
         token = new TestWETH9("Test", "TEST");
         vm.deal(deployer, 10 ether);

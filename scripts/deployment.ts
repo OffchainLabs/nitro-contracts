@@ -39,11 +39,7 @@ async function main() {
   }
 
   // Deploying all contracts
-  await deployAllContracts(
-    signer,
-    ethers.BigNumber.from(maxDataSize),
-    true
-  )
+  await deployAllContracts(signer, ethers.BigNumber.from(maxDataSize), true)
 }
 
 main()

@@ -94,9 +94,13 @@ export async function deployContract(
 
   let contract: Contract
   if (useCreate2) {
-    contract = await create2(connectedFactory, constructorArgs, ethers.constants.HashZero, overrides)
-  }
-  else {
+    contract = await create2(
+      connectedFactory,
+      constructorArgs,
+      ethers.constants.HashZero,
+      overrides
+    )
+  } else {
     contract = await connectedFactory.deploy(...deploymentArgs)
     await contract.deployTransaction.wait()
   }
@@ -113,7 +117,12 @@ export async function deployContract(
   return contract
 }
 
-export async function create2(fac: ContractFactory, deploymentArgs: Array<any>, salt = ethers.constants.HashZero, overrides?: Overrides): Promise<Contract> {
+export async function create2(
+  fac: ContractFactory,
+  deploymentArgs: Array<any>,
+  salt = ethers.constants.HashZero,
+  overrides?: Overrides
+): Promise<Contract> {
   const FACTORY = '0x4e59b44847b379578588920cA78FbF26c0B4956C'
   if ((await fac.signer.provider!.getCode(FACTORY)).length <= 2) {
     throw new Error('Factory contract not deployed at address: ' + FACTORY)
@@ -122,19 +131,19 @@ export async function create2(fac: ContractFactory, deploymentArgs: Array<any>, 
   if (!data) {
     throw new Error('No deploy data found for contract factory')
   }
-  
+
   const address = getCreate2Address(FACTORY, salt, keccak256(data))
   if ((await fac.signer.provider!.getCode(address)).length > 2) {
     return fac.attach(address)
   }
-  
+
   const tx = await fac.signer.sendTransaction({
     to: FACTORY,
     data: concat([salt, data]),
     ...overrides,
   })
   await tx.wait()
-  
+
   return fac.attach(address)
 }
 
@@ -165,7 +174,17 @@ export async function deployAllContracts(
 
   const reader4844 = isOnArb
     ? ethers.constants.AddressZero
-    : (await create2(new ContractFactory(IReader4844__factory.abi, Reader4844Bytecode, signer), [], ethers.constants.HashZero)).address
+    : (
+        await create2(
+          new ContractFactory(
+            IReader4844__factory.abi,
+            Reader4844Bytecode,
+            signer
+          ),
+          [],
+          ethers.constants.HashZero
+        )
+      ).address
 
   const ethSequencerInbox = await deployContract(
     'SequencerInbox',
@@ -182,7 +201,13 @@ export async function deployAllContracts(
     true
   )
 
-  const ethInbox = await deployContract('Inbox', signer, [maxDataSize], verify, true)
+  const ethInbox = await deployContract(
+    'Inbox',
+    signer,
+    [maxDataSize],
+    verify,
+    true
+  )
   const ethRollupEventInbox = await deployContract(
     'RollupEventInbox',
     signer,
@@ -192,7 +217,13 @@ export async function deployAllContracts(
   )
   const ethOutbox = await deployContract('Outbox', signer, [], verify, true)
 
-  const erc20Bridge = await deployContract('ERC20Bridge', signer, [], verify, true)
+  const erc20Bridge = await deployContract(
+    'ERC20Bridge',
+    signer,
+    [],
+    verify,
+    true
+  )
   const erc20SequencerInbox = await deployContract(
     'SequencerInbox',
     signer,
@@ -221,7 +252,13 @@ export async function deployAllContracts(
     verify,
     true
   )
-  const erc20Outbox = await deployContract('ERC20Outbox', signer, [], verify, true)
+  const erc20Outbox = await deployContract(
+    'ERC20Outbox',
+    signer,
+    [],
+    verify,
+    true
+  )
 
   const bridgeCreator = await deployContract(
     'BridgeCreator',
@@ -248,7 +285,13 @@ export async function deployAllContracts(
     verify,
     true
   )
-  const prover0 = await deployContract('OneStepProver0', signer, [], verify, true)
+  const prover0 = await deployContract(
+    'OneStepProver0',
+    signer,
+    [],
+    verify,
+    true
+  )
   const proverMem = await deployContract(
     'OneStepProverMemory',
     signer,
@@ -296,7 +339,13 @@ export async function deployAllContracts(
     verify,
     true
   )
-  const rollupUser = await deployContract('RollupUserLogic', signer, [], verify, true)
+  const rollupUser = await deployContract(
+    'RollupUserLogic',
+    signer,
+    [],
+    verify,
+    true
+  )
   const upgradeExecutor = await deployUpgradeExecutor(signer)
   const validatorWalletCreator = await deployContract(
     'ValidatorWalletCreator',
@@ -305,7 +354,13 @@ export async function deployAllContracts(
     verify,
     true
   )
-  const deployHelper = await deployContract('DeployHelper', signer, [], verify, true)
+  const deployHelper = await deployContract(
+    'DeployHelper',
+    signer,
+    [],
+    verify,
+    true
+  )
   if (verify && !process.env.DISABLE_VERIFICATION) {
     // Deploy RollupProxy contract only for verification, should not be used anywhere else
     await deployContract('RollupProxy', signer, [], verify, true)
@@ -315,7 +370,7 @@ export async function deployAllContracts(
     'RollupCreator',
     signer,
     [
-      FACTORY_OWNER, 
+      FACTORY_OWNER,
       {
         bridgeCreator: bridgeCreator.address,
         osp: osp.address,
@@ -324,8 +379,8 @@ export async function deployAllContracts(
         rollupUserLogic: rollupUser.address,
         upgradeExecutorLogic: upgradeExecutor.address,
         validatorWalletCreator: validatorWalletCreator.address,
-        l2FactoriesDeployer: deployHelper.address
-      }
+        l2FactoriesDeployer: deployHelper.address,
+      },
     ],
     verify,
     true
