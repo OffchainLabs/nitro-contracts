@@ -38,33 +38,12 @@ async function main() {
     console.log('Ignoring maxDataSize warning')
   }
 
-  try {
-    // Deploying all contracts
-    const contracts = await deployAllContracts(
-      signer,
-      ethers.BigNumber.from(maxDataSize),
-      true
-    )
-
-    // Call setTemplates with the deployed contract addresses
-    console.log('Waiting for the Template to be set on the Rollup Creator')
-    await contracts.rollupCreator.setTemplates(
-      contracts.bridgeCreator.address,
-      contracts.osp.address,
-      contracts.challengeManager.address,
-      contracts.rollupAdmin.address,
-      contracts.rollupUser.address,
-      contracts.upgradeExecutor.address,
-      contracts.validatorWalletCreator.address,
-      contracts.deployHelper.address
-    )
-    console.log('Template is set on the Rollup Creator')
-  } catch (error) {
-    console.error(
-      'Deployment failed:',
-      error instanceof Error ? error.message : error
-    )
-  }
+  // Deploying all contracts
+  await deployAllContracts(
+    signer,
+    ethers.BigNumber.from(maxDataSize),
+    true
+  )
 }
 
 main()
