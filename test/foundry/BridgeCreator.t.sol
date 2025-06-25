@@ -34,7 +34,7 @@ contract BridgeCreatorTest is Test {
 
     function setUp() public {
         vm.prank(owner);
-        creator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
+        creator = new BridgeCreator(owner, ethBasedTemplates, erc20BasedTemplates);
     }
 
     function getEthBasedTemplates() internal view returns (BridgeCreator.BridgeTemplates memory) {

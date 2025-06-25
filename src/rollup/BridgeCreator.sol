@@ -43,11 +43,13 @@ contract BridgeCreator is Ownable {
     }
 
     constructor(
+        address initialOwner,
         BridgeTemplates memory _ethBasedTemplates,
         BridgeTemplates memory _erc20BasedTemplates
     ) Ownable() {
         ethBasedTemplates = _ethBasedTemplates;
         erc20BasedTemplates = _erc20BasedTemplates;
+        _transferOwnership(initialOwner);
     }
 
     function updateTemplates(
