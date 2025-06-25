@@ -565,7 +565,7 @@ contract RollupCreatorTest is Test {
             new OneStepProver0(),
             new OneStepProverMemory(),
             new OneStepProverMath(),
-            new OneStepProverHostIo()
+            new OneStepProverHostIo(address(0))
         );
         challengeManager = new EdgeChallengeManager();
 

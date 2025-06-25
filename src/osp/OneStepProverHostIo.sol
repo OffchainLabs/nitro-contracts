@@ -30,13 +30,12 @@ contract OneStepProverHostIo is IOneStepProver {
     uint64 private constant INBOX_HEADER_LEN = 40;
     uint64 private constant DELAYED_HEADER_LEN = 112 + 1;
 
-    ICustomDAProofValidator public customDAValidator;
+    ICustomDAProofValidator public immutable customDAValidator;
 
-    function setCustomDAValidator(
-        ICustomDAProofValidator _validator
-    ) external {
-        // TODO: Add appropriate access control
-        customDAValidator = _validator;
+    constructor(
+        address _customDAValidator
+    ) {
+        customDAValidator = ICustomDAProofValidator(_customDAValidator);
     }
 
     function setLeafByte(bytes32 oldLeaf, uint256 idx, uint8 val) internal pure returns (bytes32) {
@@ -232,8 +231,8 @@ contract OneStepProverHostIo is IOneStepProver {
             }
         } else if (inst.argumentData == 3) {
             // The machine is asking for a CustomDA preimage
+            require(address(customDAValidator) != address(0), "CUSTOM_DA_VALIDATOR_NOT_SUPPORTED");
             require(proofType == 0, "UNKNOWN_PREIMAGE_PROOF");
-            require(address(customDAValidator) != address(0), "CUSTOM_DA_VALIDATOR_NOT_SET");
 
             // The OSP is completely agnostic to CustomDA proof format
             // Just forward all remaining proof bytes to the validator

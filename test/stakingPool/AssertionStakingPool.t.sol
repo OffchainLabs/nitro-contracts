@@ -115,7 +115,7 @@ contract AssertionPoolTest is Test {
         OneStepProver0 oneStepProver = new OneStepProver0();
         OneStepProverMemory oneStepProverMemory = new OneStepProverMemory();
         OneStepProverMath oneStepProverMath = new OneStepProverMath();
-        OneStepProverHostIo oneStepProverHostIo = new OneStepProverHostIo();
+        OneStepProverHostIo oneStepProverHostIo = new OneStepProverHostIo(address(0));
         OneStepProofEntry oneStepProofEntry = new OneStepProofEntry(
             oneStepProver, oneStepProverMemory, oneStepProverMath, oneStepProverHostIo
         );
