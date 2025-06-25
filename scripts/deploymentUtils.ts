@@ -147,16 +147,6 @@ export async function create2(
   return fac.attach(address)
 }
 
-// Deploy upgrade executor from imported bytecode
-export async function deployUpgradeExecutor(signer: any): Promise<Contract> {
-  const upgradeExecutorFac = await ethers.getContractFactory(
-    UpgradeExecutorABI,
-    UpgradeExecutorBytecode
-  )
-  const connectedFactory: ContractFactory = upgradeExecutorFac.connect(signer)
-  return create2(connectedFactory, [], ethers.constants.HashZero)
-}
-
 // Function to handle all deployments of core contracts using deployContract function
 export async function deployAllContracts(
   signer: any,
@@ -346,7 +336,15 @@ export async function deployAllContracts(
     verify,
     true
   )
-  const upgradeExecutor = await deployUpgradeExecutor(signer)
+  const upgradeExecutor = await create2(
+    (
+      await ethers.getContractFactory(
+        UpgradeExecutorABI,
+        UpgradeExecutorBytecode
+      )
+    ).connect(signer),
+    []
+  )
   const validatorWalletCreator = await deployContract(
     'ValidatorWalletCreator',
     signer,
