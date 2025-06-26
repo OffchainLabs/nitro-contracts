@@ -55,7 +55,7 @@ async function main() {
   const proverHostIo = await deployContract(
     'OneStepProverHostIo',
     signer,
-    [],
+    [ethers.constants.AddressZero],
     false,
     overrides
   )
@@ -89,7 +89,9 @@ async function main() {
   await verifyContract('OneStepProver0', prover0.address, [])
   await verifyContract('OneStepProverMemory', proverMem.address, [])
   await verifyContract('OneStepProverMath', proverMath.address, [])
-  await verifyContract('OneStepProverHostIo', proverHostIo.address, [])
+  await verifyContract('OneStepProverHostIo', proverHostIo.address, [
+    ethers.constants.AddressZero,
+  ])
   await verifyContract('OneStepProofEntry', osp.address, [
     prover0.address,
     proverMem.address,
