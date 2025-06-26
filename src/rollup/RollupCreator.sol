@@ -13,6 +13,8 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "@openzeppelin/contracts/access/Ownable.sol";
 import {DeployHelper} from "./DeployHelper.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {OneStepProofEntry, IOneStepProofEntry, IOneStepProver} from "../osp/OneStepProofEntry.sol";
+import {OneStepProverHostIo} from "../osp/OneStepProverHostIo.sol";
 
 contract RollupCreator is Ownable {
     using SafeERC20 for IERC20;
@@ -32,6 +34,18 @@ contract RollupCreator is Ownable {
     );
     event TemplatesUpdated();
 
+    struct RollupDeploymentParamsLegacy {
+        Config config;
+        address[] validators;
+        uint256 maxDataSize;
+        address nativeToken;
+        bool deployFactoriesToL2;
+        uint256 maxFeePerGasForRetryables;
+        address[] batchPosters;
+        address batchPosterManager;
+        IFeeTokenPricer feeTokenPricer;
+    }
+
     struct RollupDeploymentParams {
         Config config;
         address[] validators;
@@ -42,6 +56,7 @@ contract RollupCreator is Ownable {
         address[] batchPosters;
         address batchPosterManager;
         IFeeTokenPricer feeTokenPricer;
+        address customOsp;
     }
 
     BridgeCreator public bridgeCreator;
@@ -85,7 +100,8 @@ contract RollupCreator is Ownable {
     function createChallengeManager(
         address rollupAddr,
         address proxyAdminAddr,
-        Config memory config
+        Config memory config,
+        address customOsp
     ) internal returns (IEdgeChallengeManager) {
         IEdgeChallengeManager challengeManager = IEdgeChallengeManager(
             address(
@@ -98,7 +114,7 @@ contract RollupCreator is Ownable {
         challengeManager.initialize({
             _assertionChain: IAssertionChain(rollupAddr),
             _challengePeriodBlocks: config.confirmPeriodBlocks,
-            _oneStepProofEntry: osp,
+            _oneStepProofEntry: customOsp == address(0) ? osp : IOneStepProofEntry(customOsp),
             layerZeroBlockEdgeHeight: config.layerZeroBlockEdgeHeight,
             layerZeroBigStepEdgeHeight: config.layerZeroBigStepEdgeHeight,
             layerZeroSmallStepEdgeHeight: config.layerZeroSmallStepEdgeHeight,
@@ -109,6 +125,29 @@ contract RollupCreator is Ownable {
         });
 
         return challengeManager;
+    }
+
+    /**
+     * @notice Create a new rollup
+     *         DEPRECATED, use the createRollup(RollupDeploymentParams) method instead
+     */
+    function createRollup(
+        RollupDeploymentParamsLegacy memory deployParams
+    ) public payable returns (address) {
+        return createRollup(
+            RollupDeploymentParams({
+                config: deployParams.config,
+                validators: deployParams.validators,
+                maxDataSize: deployParams.maxDataSize,
+                nativeToken: deployParams.nativeToken,
+                deployFactoriesToL2: deployParams.deployFactoriesToL2,
+                maxFeePerGasForRetryables: deployParams.maxFeePerGasForRetryables,
+                batchPosters: deployParams.batchPosters,
+                batchPosterManager: deployParams.batchPosterManager,
+                feeTokenPricer: deployParams.feeTokenPricer,
+                customOsp: address(0)
+            })
+        );
     }
 
     /**
@@ -132,6 +171,8 @@ contract RollupCreator is Ownable {
      *          - maxFeePerGasForRetryables price bid for L2 execution.
      *          - batchPosters  The list of batch poster addresses, not used when set to empty list
      *          - batchPosterManager The address which has the ability to rotate batch poster keys
+     *          - feeTokenPricer The fee token pricer contract for managing token fees
+     *          - customOsp Custom OSP address, if set to address(0) the default OSP will be used
      * @return The address of the newly created rollup
      */
     function createRollup(
@@ -191,8 +232,9 @@ contract RollupCreator is Ownable {
             deployParams.feeTokenPricer
         );
 
-        IEdgeChallengeManager challengeManager =
-            createChallengeManager(address(rollup), address(proxyAdmin), deployParams.config);
+        IEdgeChallengeManager challengeManager = createChallengeManager(
+            address(rollup), address(proxyAdmin), deployParams.config, deployParams.customOsp
+        );
 
         // deploy and init upgrade executor
         address upgradeExecutor = _deployUpgradeExecutor(deployParams.config.owner, proxyAdmin);
