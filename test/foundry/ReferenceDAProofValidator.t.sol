@@ -13,7 +13,8 @@ contract ReferenceDAProofValidatorTest is Test {
 
     function testValidateReadPreimage() public {
         // Test preimage data
-        bytes memory preimage = "This is a test preimage that is longer than 32 bytes for testing chunk extraction";
+        bytes memory preimage =
+            "This is a test preimage that is longer than 32 bytes for testing chunk extraction";
         bytes32 hash = keccak256(preimage);
         uint256 offset = 16; // Read from byte 16
 
@@ -32,7 +33,7 @@ contract ReferenceDAProofValidatorTest is Test {
         }
 
         // Set version
-        proof[40] = 1;
+        proof[40] = bytes1(0x01);
 
         // Set preimage size (8 bytes)
         uint256 preimageSize = preimage.length;
@@ -83,7 +84,7 @@ contract ReferenceDAProofValidatorTest is Test {
         }
 
         // Set version
-        proof[40] = 1;
+        proof[40] = bytes1(0x01);
 
         // Set preimage size
         assembly {
@@ -129,7 +130,7 @@ contract ReferenceDAProofValidatorTest is Test {
             let offsetData := shl(192, offset)
             mstore(add(proof, 64), offsetData)
         }
-        proof[40] = 1;
+        proof[40] = bytes1(0x01);
         assembly {
             let sizeData := shl(192, 13)
             mstore(add(proof, 73), sizeData)
@@ -151,7 +152,7 @@ contract ReferenceDAProofValidatorTest is Test {
         assembly {
             mstore(add(proof, 32), hash)
         }
-        proof[40] = 2; // Wrong version
+        proof[40] = bytes1(0x02); // Wrong version
 
         vm.expectRevert("Unsupported proof version");
         validator.validateReadPreimage(proof);
