@@ -33,7 +33,6 @@ contract BridgeCreatorTest is Test {
     });
 
     function setUp() public {
-        vm.prank(owner);
         creator = new BridgeCreator(owner, ethBasedTemplates, erc20BasedTemplates);
     }
 
