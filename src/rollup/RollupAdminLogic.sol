@@ -114,6 +114,15 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
         emit RollupInitialized(config.wasmModuleRoot, config.chainId);
     }
 
+    // (the admin logic)
+    function getPrimaryImplementation() external view returns (address) {
+        return _getImplementation();
+    }
+
+    function getSecondaryImplementation() external view returns (address) {
+        return _getSecondaryImplementation();
+    }
+
     /**
      * Functions are only to reach this logic contract if the caller is the owner
      * so there is no need for a redundant onlyOwner check
