@@ -14,7 +14,7 @@ import {
   CacheManager__factory,
   IReader4844__factory,
 } from '../build/types'
-import { concat, getCreate2Address, keccak256 } from 'ethers/lib/utils'
+import { concat, getCreate2Address, hexDataLength, keccak256 } from 'ethers/lib/utils'
 import { bytecode as Reader4844Bytecode } from '../out/yul/Reader4844.yul/Reader4844.json'
 
 const INIT_CACHE_SIZE = 536870912
@@ -123,6 +123,10 @@ export async function create2(
   salt = ethers.constants.HashZero,
   overrides?: Overrides
 ): Promise<Contract> {
+  if (hexDataLength(salt) !== 32) {
+    throw new Error('Salt must be a 32-byte hex string')
+  }
+
   const FACTORY = '0x4e59b44847b379578588920cA78FbF26c0B4956C'
   if ((await fac.signer.provider!.getCode(FACTORY)).length <= 2) {
     throw new Error('Factory contract not deployed at address: ' + FACTORY)
