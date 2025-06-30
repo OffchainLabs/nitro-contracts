@@ -4,99 +4,15 @@
 
 pragma solidity ^0.8.17;
 
-import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
-
-contract ImplementationsRegistry {
-    error UnknownContractName(string contractName);
-    error ContractNotRegistered(string contractName, bytes32 argsHash);
-    error InvalidArglessInitCode(bytes32 providedCodeHash, bytes32 expectedCodeHash);
-    error ContractNotDeployed(string contractName, bytes32 argsHash, address addr);
-
-    address public immutable create2Factory;
-    bytes32 public immutable create2Salt;
-
-    mapping(bytes32 => mapping(bytes32 => bytes32)) nameHashToArgsHashToInitCodeHash;
-    mapping(bytes32 => bool) knownContractName;
-    string[] contractNames;
-
-    constructor(
-        address _create2Factory,
-        bytes32 _create2Salt,
-        string[] memory _contractNames,
-        bytes32[] memory _codeHashes
-    ) {
-        require(_contractNames.length == _codeHashes.length, "Mismatched lengths");
-
-        create2Factory = _create2Factory;
-        create2Salt = _create2Salt;
-
-        contractNames = _contractNames;
-
-        for (uint256 i = 0; i < _contractNames.length; i++) {
-            bytes32 nameHash = keccak256(abi.encode(_contractNames[i]));
-            bytes32 codeHash = _codeHashes[i];
-            knownContractName[nameHash] = true;
-            nameHashToArgsHashToInitCodeHash[nameHash][keccak256("")] = codeHash;
-        }
-    }
-
-    function registerHashWithArgs(
-        string memory contractName,
-        bytes memory arglessInitCode,
-        bytes memory args
-    ) external {
-        bytes32 nameHash = keccak256(abi.encode(contractName));
-        if (!knownContractName[nameHash]) {
-            revert UnknownContractName(contractName);
-        }
-        bytes32 arglessCodeHash = nameHashToArgsHashToInitCodeHash[nameHash][keccak256("")];
-        if (keccak256(arglessInitCode) != arglessCodeHash) {
-            revert InvalidArglessInitCode(keccak256(arglessInitCode), arglessCodeHash);
-        }
-        nameHashToArgsHashToInitCodeHash[nameHash][keccak256(args)] =
-            keccak256(abi.encodePacked(arglessInitCode, args));
-    }
-
-    function getAddress(
-        string memory contractName
-    ) external view returns (address) {
-        return getAddressWithArgs(contractName, keccak256(""));
-    }
-
-    function getAddressWithArgs(
-        string memory contractName,
-        bytes32 argsHash
-    ) public view returns (address) {
-        bytes32 codeHash =
-            nameHashToArgsHashToInitCodeHash[keccak256(abi.encode(contractName))][argsHash];
-        if (codeHash == bytes32(0)) {
-            revert ContractNotRegistered(contractName, argsHash);
-        }
-
-        address addr = Create2.computeAddress(create2Salt, codeHash, create2Factory);
-
-        // if an invalid argsHash is provided, the address won't have code
-        // we should revert in that case
-        if (addr.code.length == 0) {
-            revert ContractNotDeployed(contractName, argsHash, addr);
-        }
-
-        return addr;
-    }
-
-    function getContractNames() external view returns (string[] memory) {
-        return contractNames;
-    }
-}
-
+import {ImplementationsRegistry} from "./ImplementationsRegistry.sol";
 import {TransparentUpgradeableProxy} from
     "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {IInbox} from "../bridge/IInbox.sol";
 import {SequencerInbox} from "../bridge/SequencerInbox.sol";
 import {IOutbox} from "../bridge/IOutbox.sol";
-import {RollupAdminLogic} from "./RollupAdminLogic.sol";
-import {IRollupCore} from "./IRollupCore.sol";
+import {RollupAdminLogic} from "../rollup/RollupAdminLogic.sol";
+import {IRollupCore} from "../rollup/IRollupCore.sol";
 import {
     IEdgeChallengeManager, EdgeChallengeManager
 } from "../challengeV2/EdgeChallengeManager.sol";
@@ -107,6 +23,14 @@ abstract contract BaseNitroContractsUpgradeAction {
     ImplementationsRegistry public immutable nextImplementationsRegistry;
 
     event ContractUpgraded(string contractName, address oldImpl, address newImpl);
+    event ChallengeManagerDeployed(
+        address oldChallengeManager,
+        address oldChallengeManagerImpl,
+        address newChallengeManager,
+        address newChallengeManagerImpl,
+        address oldOspEntry,
+        address newOspEntry
+    );
 
     constructor(
         ImplementationsRegistry _prevImplementationsRegistry,
@@ -207,8 +131,28 @@ abstract contract BaseNitroContractsUpgradeAction {
         ProxyAdmin proxyAdmin,
         EdgeChallengeManager oldChallengeManager
     ) private {
-        if (oldChallengeManager.oneStepProofEntry() != _getOspEntry(false)) {
+        address prevImpl =
+            prevImplementationsRegistry.getAddressWithArgs("RollupAdminLogic", keccak256(""));
+        address nextImpl =
+            nextImplementationsRegistry.getAddressWithArgs("RollupAdminLogic", keccak256(""));
+        IOneStepProofEntry prevOsp = _getOspEntry(false);
+        IOneStepProofEntry nextOsp = _getOspEntry(true);
+
+        if (
+            proxyAdmin.getProxyImplementation(
+                TransparentUpgradeableProxy(payable(address(oldChallengeManager)))
+            ) != prevImpl
+        ) {
+            revert("Old challenge manager implementation mismatch");
+        }
+
+        if (oldChallengeManager.oneStepProofEntry() != prevOsp) {
             revert("Old challenge manager OSP entry mismatch");
+        }
+
+        if (prevImpl == nextImpl && prevOsp == nextOsp) {
+            // no need to deploy a new challenge manager
+            return;
         }
 
         uint256 numBigStepLevels = oldChallengeManager.NUM_BIGSTEP_LEVEL();
@@ -217,24 +161,35 @@ abstract contract BaseNitroContractsUpgradeAction {
             stakeAmounts[i] = oldChallengeManager.stakeAmounts(i);
         }
 
-        new TransparentUpgradeableProxy(
-            nextImplementationsRegistry.getAddressWithArgs("EdgeChallengeManager", keccak256("")),
-            address(proxyAdmin),
-            abi.encodeCall(
-                IEdgeChallengeManager.initialize,
-                (
-                    oldChallengeManager.assertionChain(), // IAssertionChain _assertionChain,
-                    oldChallengeManager.challengePeriodBlocks(), // uint64 _challengePeriodBlocks,
-                    _getOspEntry(true), // IOneStepProofEntry _oneStepProofEntry,
-                    oldChallengeManager.LAYERZERO_BLOCKEDGE_HEIGHT(), // uint256 layerZeroBlockEdgeHeight,
-                    oldChallengeManager.LAYERZERO_BIGSTEPEDGE_HEIGHT(), // uint256 layerZeroBigStepEdgeHeight,
-                    oldChallengeManager.LAYERZERO_SMALLSTEPEDGE_HEIGHT(), // uint256 layerZeroSmallStepEdgeHeight,
-                    oldChallengeManager.stakeToken(), // IERC20 _stakeToken,
-                    oldChallengeManager.excessStakeReceiver(), // address _excessStakeReceiver,
-                    oldChallengeManager.NUM_BIGSTEP_LEVEL(), // uint8 _numBigStepLevel,
-                    stakeAmounts // uint256[] calldata _stakeAmounts
+        address newChallengeManager = address(
+            new TransparentUpgradeableProxy(
+                nextImpl,
+                address(proxyAdmin),
+                abi.encodeCall(
+                    IEdgeChallengeManager.initialize,
+                    (
+                        oldChallengeManager.assertionChain(), // IAssertionChain _assertionChain,
+                        oldChallengeManager.challengePeriodBlocks(), // uint64 _challengePeriodBlocks,
+                        nextOsp, // IOneStepProofEntry _oneStepProofEntry,
+                        oldChallengeManager.LAYERZERO_BLOCKEDGE_HEIGHT(), // uint256 layerZeroBlockEdgeHeight,
+                        oldChallengeManager.LAYERZERO_BIGSTEPEDGE_HEIGHT(), // uint256 layerZeroBigStepEdgeHeight,
+                        oldChallengeManager.LAYERZERO_SMALLSTEPEDGE_HEIGHT(), // uint256 layerZeroSmallStepEdgeHeight,
+                        oldChallengeManager.stakeToken(), // IERC20 _stakeToken,
+                        oldChallengeManager.excessStakeReceiver(), // address _excessStakeReceiver,
+                        oldChallengeManager.NUM_BIGSTEP_LEVEL(), // uint8 _numBigStepLevel,
+                        stakeAmounts // uint256[] calldata _stakeAmounts
+                    )
                 )
             )
+        );
+
+        emit ChallengeManagerDeployed(
+            address(oldChallengeManager),
+            prevImpl,
+            newChallengeManager,
+            nextImpl,
+            address(prevOsp),
+            address(nextOsp)
         );
     }
 
