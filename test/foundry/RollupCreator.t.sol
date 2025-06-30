@@ -166,7 +166,9 @@ contract RollupCreatorTest is Test {
         /// common checks
 
         /// rollup creator
-        assertEq(IOwnable(address(rollupCreator)).owner(), creatorOwner, "Invalid rollupCreator owner");
+        assertEq(
+            IOwnable(address(rollupCreator)).owner(), creatorOwner, "Invalid rollupCreator owner"
+        );
 
         /// rollup proxy
         assertEq(_getPrimary(rollupAddress), address(rollupAdmin), "Invalid proxy primary impl");
@@ -367,7 +369,9 @@ contract RollupCreatorTest is Test {
         /// common checks
 
         /// rollup creator
-        assertEq(IOwnable(address(rollupCreator)).owner(), creatorOwner, "Invalid rollupCreator owner");
+        assertEq(
+            IOwnable(address(rollupCreator)).owner(), creatorOwner, "Invalid rollupCreator owner"
+        );
 
         /// rollup proxy
         assertEq(_getPrimary(rollupAddress), address(rollupAdmin), "Invalid proxy primary impl");

@@ -14,7 +14,12 @@ import {
   CacheManager__factory,
   IReader4844__factory,
 } from '../build/types'
-import { concat, getCreate2Address, hexDataLength, keccak256 } from 'ethers/lib/utils'
+import {
+  concat,
+  getCreate2Address,
+  hexDataLength,
+  keccak256,
+} from 'ethers/lib/utils'
 import { bytecode as Reader4844Bytecode } from '../out/yul/Reader4844.yul/Reader4844.json'
 
 const INIT_CACHE_SIZE = 536870912
