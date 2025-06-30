@@ -40,7 +40,12 @@ import {
   ValidatorWalletCreator__factory,
   ImplementationsRegistry,
 } from '../build/types'
-import { concat, getCreate2Address, keccak256 } from 'ethers/lib/utils'
+import {
+  concat,
+  getCreate2Address,
+  hexDataLength,
+  keccak256,
+} from 'ethers/lib/utils'
 import { bytecode as Reader4844Bytecode } from '../out/yul/Reader4844.yul/Reader4844.json'
 
 const INIT_CACHE_SIZE = 536870912
@@ -150,6 +155,10 @@ export async function create2(
   salt = ethers.constants.HashZero,
   overrides?: Overrides
 ): Promise<Contract> {
+  if (hexDataLength(salt) !== 32) {
+    throw new Error('Salt must be a 32-byte hex string')
+  }
+
   if (
     (await fac.signer.provider!.getCode(CREATE2_FACTORY_ADDRESS)).length <= 2
   ) {
