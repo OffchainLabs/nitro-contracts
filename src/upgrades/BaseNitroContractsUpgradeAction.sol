@@ -13,6 +13,7 @@ import {SequencerInbox} from "../bridge/SequencerInbox.sol";
 import {IOutbox} from "../bridge/IOutbox.sol";
 import {RollupAdminLogic} from "../rollup/RollupAdminLogic.sol";
 import {IRollupCore} from "../rollup/IRollupCore.sol";
+import {IAssertionChain} from "../challengeV2/IAssertionChain.sol";
 import {
     IEdgeChallengeManager, EdgeChallengeManager
 } from "../challengeV2/EdgeChallengeManager.sol";
@@ -95,7 +96,7 @@ abstract contract BaseNitroContractsUpgradeAction {
         // OSP & EdgeChallengeManager
         // the standard path to upgrade the EdgeChallengeManager and OSP contracts is to
         // deploy a new challenge manager with the OSP's and set it on the rollup
-        _deployChallengeManager(
+        _deployAndSetChallengeManager(
             admin, EdgeChallengeManager(address(IRollupCore(rollup).challengeManager()))
         );
 
@@ -127,7 +128,7 @@ abstract contract BaseNitroContractsUpgradeAction {
         );
     }
 
-    function _deployChallengeManager(
+    function _deployAndSetChallengeManager(
         ProxyAdmin proxyAdmin,
         EdgeChallengeManager oldChallengeManager
     ) private {
@@ -155,6 +156,8 @@ abstract contract BaseNitroContractsUpgradeAction {
             return;
         }
 
+        address assertionChain = address(oldChallengeManager.assertionChain());
+
         uint256 numBigStepLevels = oldChallengeManager.NUM_BIGSTEP_LEVEL();
         uint256[] memory stakeAmounts = new uint256[](numBigStepLevels + 2);
         for (uint256 i = 0; i < numBigStepLevels + 2; i++) {
@@ -168,7 +171,7 @@ abstract contract BaseNitroContractsUpgradeAction {
                 abi.encodeCall(
                     IEdgeChallengeManager.initialize,
                     (
-                        oldChallengeManager.assertionChain(), // IAssertionChain _assertionChain,
+                        IAssertionChain(assertionChain), // IAssertionChain _assertionChain,
                         oldChallengeManager.challengePeriodBlocks(), // uint64 _challengePeriodBlocks,
                         nextOsp, // IOneStepProofEntry _oneStepProofEntry,
                         oldChallengeManager.LAYERZERO_BLOCKEDGE_HEIGHT(), // uint256 layerZeroBlockEdgeHeight,
@@ -181,6 +184,10 @@ abstract contract BaseNitroContractsUpgradeAction {
                     )
                 )
             )
+        );
+
+        RollupAdminLogic(assertionChain).setChallengeManager(
+            newChallengeManager
         );
 
         emit ChallengeManagerDeployed(
