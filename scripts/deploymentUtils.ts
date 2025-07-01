@@ -132,9 +132,16 @@ export async function create2(
     throw new Error('Salt must be a 32-byte hex string')
   }
 
-  const FACTORY = '0x4e59b44847b379578588920cA78FbF26c0B4956C'
+  const DEFAULT_FACTORY = '0x4e59b44847b379578588920cA78FbF26c0B4956C'
+  const FACTORY = process.env.CREATE2_FACTORY ?? DEFAULT_FACTORY
   if ((await fac.signer.provider!.getCode(FACTORY)).length <= 2) {
-    throw new Error('Factory contract not deployed at address: ' + FACTORY)
+    throw new Error(
+      `Factory contract not deployed at address: ${FACTORY}${
+        FACTORY.toLowerCase() === DEFAULT_FACTORY.toLowerCase()
+          ? '\n(For deployment instructions, see https://github.com/Arachnid/deterministic-deployment-proxy/ )'
+          : ''
+      }`
+    )
   }
   const data = fac.getDeployTransaction(...deploymentArgs).data
   if (!data) {
