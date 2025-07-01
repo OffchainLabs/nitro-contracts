@@ -13,17 +13,16 @@ import "./ICustomDAProofValidator.sol";
 contract ReferenceDAProofValidator is ICustomDAProofValidator {
     /**
      * @notice Validates a ReferenceDA proof and returns the preimage chunk
-     * @param proof ReferenceDA proof format: [certKeccak256(32), offset(8), certificate(33), Version(1), PreimageSize(8), PreimageData]
+     * @param proof ReferenceDA proof format: [certKeccak256(32), offset(8), Version(1), CertificateSize(8), Certificate, PreimageSize(8), PreimageData]
      * @return preimageChunk The 32-byte chunk at the specified offset
      */
     function validateReadPreimage(
         bytes calldata proof
     ) external pure override returns (bytes memory preimageChunk) {
-        // New proof format: [certKeccak256(32), offset(8), certificate(33), Version(1), PreimageSize(8), PreimageData]
-        // Certificate is always 33 bytes: [0x01 header(1), SHA256(32)]
-        require(proof.length >= 82, "Proof too short"); // 32 + 8 + 33 + 1 + 8
+        // Proof format: [certKeccak256(32), offset(8), Version(1), CertificateSize(8), Certificate, PreimageSize(8), PreimageData]
+        require(proof.length >= 58, "Proof too short"); // 32 + 8 + 1 + 8 + 8 + at least 1 byte
 
-        // Extract certKeccak256 and offset
+        // Extract certKeccak256 and offset from enhanced proof wrapper
         bytes32 certKeccak256;
         uint256 offset;
         assembly {
@@ -31,8 +30,22 @@ contract ReferenceDAProofValidator is ICustomDAProofValidator {
             offset := shr(192, calldataload(add(proof.offset, 32))) // Read 8 bytes as uint256
         }
 
-        // Extract and verify certificate (always at offset 40, always 33 bytes)
-        bytes memory certificate = proof[40:73];
+        // The actual custom proof starts at offset 40
+        uint256 customProofStart = 40;
+
+        // Verify version
+        require(proof[customProofStart] == 0x01, "Unsupported proof version");
+
+        // Extract certificate size
+        uint256 certSize;
+        assembly {
+            certSize := shr(192, calldataload(add(proof.offset, add(customProofStart, 1)))) // Read 8 bytes as uint256
+        }
+        require(certSize == 33, "Certificate must be 33 bytes");
+
+        // Extract and verify certificate
+        uint256 certStart = customProofStart + 9; // Skip version(1) + certSize(8)
+        bytes memory certificate = proof[certStart:certStart + certSize];
         require(certificate[0] == 0x01, "Invalid certificate header");
         require(keccak256(certificate) == certKeccak256, "Invalid certificate hash");
 
@@ -42,19 +55,17 @@ contract ReferenceDAProofValidator is ICustomDAProofValidator {
             sha256Hash := mload(add(certificate, 33)) // Skip length prefix and header byte
         }
 
-        // Verify proof version at offset 73
-        require(proof[73] == 0x01, "Unsupported proof version");
-
-        // Extract preimage size at offset 74
+        // Extract preimage size
+        uint256 preimageOffset = certStart + certSize;
         uint256 preimageSize;
         assembly {
-            preimageSize := shr(192, calldataload(add(proof.offset, 74))) // Read 8 bytes as uint256
+            preimageSize := shr(192, calldataload(add(proof.offset, preimageOffset))) // Read 8 bytes as uint256
         }
 
-        require(proof.length == 82 + preimageSize, "Invalid proof length");
+        require(proof.length >= preimageOffset + 8 + preimageSize, "Invalid proof length");
 
-        // Extract preimage data starting at offset 82
-        bytes memory preimage = proof[82:];
+        // Extract preimage data
+        bytes memory preimage = proof[preimageOffset + 8:preimageOffset + 8 + preimageSize];
 
         // Verify SHA256 hash matches
         require(sha256(abi.encodePacked(preimage)) == sha256Hash, "Invalid preimage hash");
