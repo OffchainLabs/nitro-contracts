@@ -59,8 +59,7 @@ contract RollupCreatorTest is Test {
         deployHelper = new DeployHelper();
 
         // deploy BridgeCreators
-        BridgeCreator bridgeCreator =
-            new BridgeCreator(creatorOwner, ethBasedTemplates, erc20BasedTemplates);
+        BridgeCreator bridgeCreator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
 
         IUpgradeExecutor upgradeExecutorLogic = new UpgradeExecutorMock();
 

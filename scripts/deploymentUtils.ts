@@ -263,7 +263,6 @@ export async function deployAllContracts(
     'BridgeCreator',
     signer,
     [
-      FACTORY_OWNER,
       [
         ethBridge.address,
         ethSequencerInbox.address,
