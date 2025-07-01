@@ -77,16 +77,14 @@ contract RollupCreatorTest is Test {
         //// deploy creator and set logic
         rollupCreator = new RollupCreator(
             creatorOwner,
-            RollupCreator.SetTemplatesArgs(
-                bridgeCreator,
-                ospEntry,
-                challengeManager,
-                _rollupAdmin,
-                _rollupUser,
-                upgradeExecutorLogic,
-                address(new ValidatorWalletCreator()),
-                deployHelper
-            )
+            bridgeCreator,
+            ospEntry,
+            challengeManager,
+            _rollupAdmin,
+            _rollupUser,
+            upgradeExecutorLogic,
+            address(new ValidatorWalletCreator()),
+            deployHelper
         );
 
         token = new TestWETH9("Test", "TEST");

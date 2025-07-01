@@ -44,17 +44,6 @@ contract RollupCreator is Ownable {
         IFeeTokenPricer feeTokenPricer;
     }
 
-    struct SetTemplatesArgs {
-        BridgeCreator bridgeCreator;
-        IOneStepProofEntry osp;
-        IEdgeChallengeManager challengeManagerLogic;
-        IRollupAdmin rollupAdminLogic;
-        IRollupUser rollupUserLogic;
-        IUpgradeExecutor upgradeExecutorLogic;
-        address validatorWalletCreator;
-        DeployHelper l2FactoriesDeployer;
-    }
-
     BridgeCreator public bridgeCreator;
     IOneStepProofEntry public osp;
     IEdgeChallengeManager public challengeManagerTemplate;
@@ -66,18 +55,52 @@ contract RollupCreator is Ownable {
 
     DeployHelper public l2FactoriesDeployer;
 
-    constructor(address initialOwner, SetTemplatesArgs memory templates) Ownable() {
+    constructor(
+        address initialOwner,
+        BridgeCreator _bridgeCreator,
+        IOneStepProofEntry _osp,
+        IEdgeChallengeManager _challengeManagerLogic,
+        IRollupAdmin _rollupAdminLogic,
+        IRollupUser _rollupUserLogic,
+        IUpgradeExecutor _upgradeExecutorLogic,
+        address _validatorWalletCreator,
+        DeployHelper _l2FactoriesDeployer
+    ) Ownable() {
+        setTemplates(
+            _bridgeCreator,
+            _osp,
+            _challengeManagerLogic,
+            _rollupAdminLogic,
+            _rollupUserLogic,
+            _upgradeExecutorLogic,
+            _validatorWalletCreator,
+            _l2FactoriesDeployer
+        );
         _transferOwnership(initialOwner);
-        _setTemplates(templates);
     }
 
     // creator receives back excess fees (for deploying L2 factories) so it can refund the caller
     receive() external payable {}
 
     function setTemplates(
-        SetTemplatesArgs calldata args
-    ) external onlyOwner {
-        _setTemplates(args);
+        BridgeCreator _bridgeCreator,
+        IOneStepProofEntry _osp,
+        IEdgeChallengeManager _challengeManagerLogic,
+        IRollupAdmin _rollupAdminLogic,
+        IRollupUser _rollupUserLogic,
+        IUpgradeExecutor _upgradeExecutorLogic,
+        address _validatorWalletCreator,
+        DeployHelper _l2FactoriesDeployer
+    ) public onlyOwner {
+        bridgeCreator = _bridgeCreator;
+        osp = _osp;
+        challengeManagerTemplate = _challengeManagerLogic;
+        rollupAdminLogic = _rollupAdminLogic;
+        rollupUserLogic = _rollupUserLogic;
+        upgradeExecutorLogic = _upgradeExecutorLogic;
+        validatorWalletCreator = _validatorWalletCreator;
+        l2FactoriesDeployer = _l2FactoriesDeployer;
+        emit TemplatesUpdated();
     }
 
     // internal function to workaround stack limit
@@ -344,19 +367,5 @@ contract RollupCreator is Ownable {
             }
         }
         return scaledAmount;
-    }
-
-    function _setTemplates(
-        SetTemplatesArgs memory args
-    ) internal {
-        bridgeCreator = args.bridgeCreator;
-        osp = args.osp;
-        challengeManagerTemplate = args.challengeManagerLogic;
-        rollupAdminLogic = args.rollupAdminLogic;
-        rollupUserLogic = args.rollupUserLogic;
-        upgradeExecutorLogic = args.upgradeExecutorLogic;
-        validatorWalletCreator = args.validatorWalletCreator;
-        l2FactoriesDeployer = args.l2FactoriesDeployer;
-        emit TemplatesUpdated();
     }
 }
