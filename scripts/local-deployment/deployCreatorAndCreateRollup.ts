@@ -62,7 +62,11 @@ async function main() {
 
   /// deploy templates and rollup creator
   console.log('Deploy RollupCreator')
-  const contracts = await deployAllContracts(deployerWallet, maxDataSize, false)
+  const factoryOwner = process.env.FACTORY_OWNER
+  if (!factoryOwner) {
+    throw new Error('FACTORY_OWNER environment variable is not set')
+  }
+  const contracts = await deployAllContracts(deployerWallet, factoryOwner, maxDataSize, false)
 
   console.log('Set templates on the Rollup Creator')
   await (

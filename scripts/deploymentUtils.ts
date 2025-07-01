@@ -166,14 +166,10 @@ export async function create2(
 // Function to handle all deployments of core contracts using deployContract function
 export async function deployAllContracts(
   signer: any,
+  factoryOwner: string,
   maxDataSize: BigNumber,
   verify: boolean = true
 ): Promise<Record<string, Contract>> {
-  const FACTORY_OWNER = process.env.FACTORY_OWNER
-  if (!FACTORY_OWNER) {
-    throw new Error('FACTORY_OWNER environment variable is not set')
-  }
-
   const isOnArb = await _isRunningOnArbitrum(signer)
 
   const ethBridge = await deployContract('Bridge', signer, [], verify, true)
@@ -383,7 +379,7 @@ export async function deployAllContracts(
     'RollupCreator',
     signer,
     [
-      FACTORY_OWNER,
+      factoryOwner,
       bridgeCreator.address,
       osp.address,
       challengeManager.address,
