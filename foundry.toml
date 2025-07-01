@@ -8,6 +8,8 @@ optimizer = true
 optimizer_runs = 2000
 via_ir = false
 evm_version = 'cancun'
+solc_version = '0.8.17'
+bytecode_hash = 'none'
 remappings = ['ds-test/=lib/forge-std/lib/ds-test/src/',
               'forge-std/=lib/forge-std/src/',
               '@openzeppelin/contracts-upgradeable/=node_modules/@openzeppelin/contracts-upgradeable/', 

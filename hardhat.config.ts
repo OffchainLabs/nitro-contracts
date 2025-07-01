@@ -8,14 +8,18 @@ import 'hardhat-gas-reporter'
 import 'hardhat-contract-sizer'
 import 'hardhat-ignore-warnings'
 import dotenv from 'dotenv'
+import { SolidityConfig } from 'hardhat/types'
 
 dotenv.config()
 
-const solidity = {
+const solidity: SolidityConfig = {
   compilers: [
     {
       version: '0.8.17',
       settings: {
+        metadata: {
+          bytecodeHash: 'none',
+        },
         optimizer: {
           enabled: true,
           runs: 2000,
@@ -27,6 +31,9 @@ const solidity = {
     'src/rollup/RollupUserLogic.sol': {
       version: '0.8.17',
       settings: {
+        metadata: {
+          bytecodeHash: 'none',
+        },
         optimizer: {
           enabled: true,
           runs: 20,
@@ -36,6 +43,9 @@ const solidity = {
     'src/challengeV2/EdgeChallengeManager.sol': {
       version: '0.8.17',
       settings: {
+        metadata: {
+          bytecodeHash: 'none',
+        },
         optimizer: {
           enabled: true,
           runs: 200,
@@ -45,6 +55,9 @@ const solidity = {
     'src/mocks/HostioTest.sol': {
       version: '0.8.24',
       settings: {
+        metadata: {
+          bytecodeHash: 'none',
+        },
         optimizer: {
           enabled: true,
           runs: 100,
@@ -55,6 +68,9 @@ const solidity = {
     'src/mocks/ArbOS11To32UpgradeTest.sol': {
       version: '0.8.24',
       settings: {
+        metadata: {
+          bytecodeHash: 'none',
+        },
         optimizer: {
           enabled: true,
           runs: 100,
@@ -69,6 +85,9 @@ if (process.env['INTERFACE_TESTER_SOLC_VERSION']) {
   solidity.compilers.push({
     version: process.env['INTERFACE_TESTER_SOLC_VERSION'],
     settings: {
+      metadata: {
+        bytecodeHash: 'none',
+      },
       optimizer: {
         enabled: true,
         runs: 100,
@@ -81,6 +100,9 @@ if (process.env['INTERFACE_TESTER_SOLC_VERSION']) {
       'src/test-helpers/InterfaceCompatibilityTester.sol': {
         version: process.env['INTERFACE_TESTER_SOLC_VERSION'],
         settings: {
+          metadata: {
+            bytecodeHash: 'none',
+          },
           optimizer: {
             enabled: true,
             runs: 100,
@@ -91,6 +113,9 @@ if (process.env['INTERFACE_TESTER_SOLC_VERSION']) {
     'src/mocks/HostioTest.sol': {
       version: '0.8.24',
       settings: {
+        metadata: {
+          bytecodeHash: 'none',
+        },
         optimizer: {
           enabled: true,
           runs: 100,
@@ -101,6 +126,9 @@ if (process.env['INTERFACE_TESTER_SOLC_VERSION']) {
     'src/mocks/ArbOS11To32UpgradeTest.sol': {
       version: '0.8.24',
       settings: {
+        metadata: {
+          bytecodeHash: 'none',
+        },
         optimizer: {
           enabled: true,
           runs: 100,
