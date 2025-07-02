@@ -18,6 +18,9 @@ remappings = ['ds-test/=lib/forge-std/lib/ds-test/src/',
               '@uniswap/v2-core/=node_modules/@uniswap/v2-core/contracts',
               '@uniswap/lib/=node_modules/@uniswap/lib/contracts']
 fs_permissions = [{ access = "read", path = "./"}]
+
+# all profiles inherit from default
+[profile.prod]
 additional_compiler_profiles = [
     { name = "20_runs", optimizer_runs = 20 },
     { name = "200_runs", optimizer_runs = 200 },
