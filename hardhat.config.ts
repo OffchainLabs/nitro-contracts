@@ -52,32 +52,6 @@ const solidity: SolidityConfig = {
         },
       },
     },
-    'src/mocks/HostioTest.sol': {
-      version: '0.8.24',
-      settings: {
-        metadata: {
-          bytecodeHash: 'none',
-        },
-        optimizer: {
-          enabled: true,
-          runs: 100,
-        },
-        evmVersion: 'cancun',
-      },
-    },
-    'src/mocks/ArbOS11To32UpgradeTest.sol': {
-      version: '0.8.24',
-      settings: {
-        metadata: {
-          bytecodeHash: 'none',
-        },
-        optimizer: {
-          enabled: true,
-          runs: 100,
-        },
-        evmVersion: 'cancun',
-      },
-    },
   },
 }
 
@@ -108,32 +82,6 @@ if (process.env['INTERFACE_TESTER_SOLC_VERSION']) {
             runs: 100,
           },
         },
-      },
-    },
-    'src/mocks/HostioTest.sol': {
-      version: '0.8.24',
-      settings: {
-        metadata: {
-          bytecodeHash: 'none',
-        },
-        optimizer: {
-          enabled: true,
-          runs: 100,
-        },
-        evmVersion: 'cancun',
-      },
-    },
-    'src/mocks/ArbOS11To32UpgradeTest.sol': {
-      version: '0.8.24',
-      settings: {
-        metadata: {
-          bytecodeHash: 'none',
-        },
-        optimizer: {
-          enabled: true,
-          runs: 100,
-        },
-        evmVersion: 'cancun',
       },
     },
   }
