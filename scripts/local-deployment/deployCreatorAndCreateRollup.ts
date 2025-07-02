@@ -62,7 +62,7 @@ async function main() {
 
   /// deploy templates and rollup creator
   console.log('Deploy RollupCreator')
-  const contracts = await deployAllContracts(deployerWallet, maxDataSize, false)
+  const contracts = await deployAllContracts(deployerWallet, deployerWallet.address, maxDataSize, false)
 
   console.log('Set templates on the Rollup Creator')
   await (
