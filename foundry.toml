@@ -7,7 +7,7 @@ cache_path = 'forge-cache/sol'
 optimizer = true
 optimizer_runs = 2000
 via_ir = false
-evm_version = 'cancun'
+evm_version = 'london'
 solc_version = '0.8.17'
 bytecode_hash = 'none'
 remappings = ['ds-test/=lib/forge-std/lib/ds-test/src/',
