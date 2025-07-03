@@ -43,7 +43,12 @@ async function main() {
   if (!factoryOwner) {
     throw new Error('FACTORY_OWNER environment variable is not set')
   }
-  await deployAllContracts(signer, factoryOwner, ethers.BigNumber.from(maxDataSize), true)
+  await deployAllContracts(
+    signer,
+    factoryOwner,
+    ethers.BigNumber.from(maxDataSize),
+    true
+  )
 }
 
 main()

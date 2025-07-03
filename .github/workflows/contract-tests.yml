@@ -79,6 +79,9 @@ jobs:
       - name: Lint Test Scripts
         run: yarn lint:test
 
+      - name: Compare bytecodes
+        run: yarn test:bytecodes
+
       - name: Build
         run: yarn build:all
 
