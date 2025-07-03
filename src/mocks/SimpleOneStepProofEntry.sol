@@ -26,7 +26,7 @@ contract SimpleOneStepProofEntry is IOneStepProofEntry {
         uint256 step,
         bytes32 beforeHash,
         bytes calldata proof
-    ) external view returns (bytes32 afterHash) {
+    ) external pure returns (bytes32 afterHash) {
         if (proof.length == 0) {
             revert("EMPTY_PROOF");
         }
