@@ -597,13 +597,13 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     ///         therefore we restrict which flags can be provided as a header in this field
     ///         This also safe guards unused flags for future use, as we know they would have been disallowed up until this point
     /// @param  headerByte The first byte in the calldata
-    function isValidCallDataFlag(bytes1 headerByte) internal pure returns (bool) {
-        return
-            headerByte == BROTLI_MESSAGE_HEADER_FLAG ||
-            headerByte == DAS_MESSAGE_HEADER_FLAG ||
-            (headerByte == (DAS_MESSAGE_HEADER_FLAG | TREE_DAS_MESSAGE_HEADER_FLAG)) ||
-            headerByte == ZERO_HEAVY_MESSAGE_HEADER_FLAG ||
-            headerByte == CUSTOM_DA_MESSAGE_HEADER_FLAG;
+    function isValidCallDataFlag(
+        bytes1 headerByte
+    ) internal pure returns (bool) {
+        return headerByte == BROTLI_MESSAGE_HEADER_FLAG || headerByte == DAS_MESSAGE_HEADER_FLAG
+            || (headerByte == (DAS_MESSAGE_HEADER_FLAG | TREE_DAS_MESSAGE_HEADER_FLAG))
+            || headerByte == ZERO_HEAVY_MESSAGE_HEADER_FLAG
+            || headerByte == CUSTOM_DA_MESSAGE_HEADER_FLAG;
     }
 
     /// @dev    Form a hash of the data taken from the calldata
