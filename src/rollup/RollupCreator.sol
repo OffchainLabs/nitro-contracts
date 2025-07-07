@@ -70,7 +70,29 @@ contract RollupCreator is Ownable {
 
     DeployHelper public l2FactoriesDeployer;
 
-    constructor() Ownable() {}
+    constructor(
+        address initialOwner,
+        BridgeCreator _bridgeCreator,
+        IOneStepProofEntry _osp,
+        IEdgeChallengeManager _challengeManagerLogic,
+        IRollupAdmin _rollupAdminLogic,
+        IRollupUser _rollupUserLogic,
+        IUpgradeExecutor _upgradeExecutorLogic,
+        address _validatorWalletCreator,
+        DeployHelper _l2FactoriesDeployer
+    ) Ownable() {
+        setTemplates(
+            _bridgeCreator,
+            _osp,
+            _challengeManagerLogic,
+            _rollupAdminLogic,
+            _rollupUserLogic,
+            _upgradeExecutorLogic,
+            _validatorWalletCreator,
+            _l2FactoriesDeployer
+        );
+        _transferOwnership(initialOwner);
+    }
 
     // creator receives back excess fees (for deploying L2 factories) so it can refund the caller
     receive() external payable {}
@@ -84,7 +106,7 @@ contract RollupCreator is Ownable {
         IUpgradeExecutor _upgradeExecutorLogic,
         address _validatorWalletCreator,
         DeployHelper _l2FactoriesDeployer
-    ) external onlyOwner {
+    ) public onlyOwner {
         bridgeCreator = _bridgeCreator;
         osp = _osp;
         challengeManagerTemplate = _challengeManagerLogic;

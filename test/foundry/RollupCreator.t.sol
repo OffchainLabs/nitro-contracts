@@ -25,6 +25,7 @@ contract RollupCreatorTest is Test {
     RollupCreator public rollupCreator;
     address public rollupOwner = makeAddr("rollupOwner");
     address public deployer = makeAddr("deployer");
+    address public creatorOwner = makeAddr("creatorOwner");
     IRollupAdmin public rollupAdmin;
     IRollupUser public rollupUser;
     DeployHelper public deployHelper;
@@ -55,8 +56,6 @@ contract RollupCreatorTest is Test {
     /* solhint-disable func-name-mixedcase */
     function setUp() public {
         //// deploy rollup creator and set templates
-        vm.startPrank(deployer);
-        rollupCreator = new RollupCreator();
         deployHelper = new DeployHelper();
 
         // deploy BridgeCreators
@@ -75,7 +74,8 @@ contract RollupCreatorTest is Test {
         rollupUser = _rollupUser;
 
         //// deploy creator and set logic
-        rollupCreator.setTemplates(
+        rollupCreator = new RollupCreator(
+            creatorOwner,
             bridgeCreator,
             ospEntry,
             challengeManager,
@@ -89,8 +89,6 @@ contract RollupCreatorTest is Test {
         token = new TestWETH9("Test", "TEST");
         vm.deal(deployer, 10 ether);
         IWETH9(address(token)).deposit{value: 10 ether}();
-
-        vm.stopPrank();
     }
 
     function _getDefaultConfig() internal view returns (Config memory) {
@@ -179,7 +177,9 @@ contract RollupCreatorTest is Test {
         /// common checks
 
         /// rollup creator
-        assertEq(IOwnable(address(rollupCreator)).owner(), deployer, "Invalid rollupCreator owner");
+        assertEq(
+            IOwnable(address(rollupCreator)).owner(), creatorOwner, "Invalid rollupCreator owner"
+        );
 
         /// rollup proxy
         assertEq(_getPrimary(rollupAddress), address(rollupAdmin), "Invalid proxy primary impl");
@@ -365,7 +365,9 @@ contract RollupCreatorTest is Test {
         /// common checks
 
         /// rollup creator
-        assertEq(IOwnable(address(rollupCreator)).owner(), deployer, "Invalid rollupCreator owner");
+        assertEq(
+            IOwnable(address(rollupCreator)).owner(), creatorOwner, "Invalid rollupCreator owner"
+        );
 
         /// rollup proxy
         assertEq(_getPrimary(rollupAddress), address(rollupAdmin), "Invalid proxy primary impl");
