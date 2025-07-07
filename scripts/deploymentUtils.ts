@@ -281,7 +281,7 @@ export async function deployAllContracts(
     deployContract('ERC20Outbox', signer, [], verify, true),
   ])
 
-  // Deploy OneStepProver contracts and OneStepProofEntry
+  console.log('Deploying OneStepProver contracts and OneStepProofEntry...')
   const ospDeployment = await deployOneStepProofEntry(
     signer,
     ethers.constants.AddressZero,
@@ -341,6 +341,7 @@ export async function deployAllContracts(
     true
   )
 
+  console.log('Deploying RollupProxy for verification if needed...')
   // Deploy RollupProxy for verification if needed
   if (verify && !process.env.DISABLE_VERIFICATION) {
     await deployContract('RollupProxy', signer, [], verify, true)
