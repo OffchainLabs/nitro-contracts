@@ -129,7 +129,9 @@ export async function createRollup(
             customOsp: config.customOsp,
           }
 
-    const createRollupTx = await rollupCreator.createRollup(deployParams, {
+    const createRollupTx = await rollupCreator.functions[
+      'createRollup(((uint64,address,uint256,bytes32,address,address,uint256,string,uint256,uint64,uint256[],(uint256,uint256,uint256,uint256),uint256,uint256,uint256,((bytes32[2],uint64[2]),uint8,bytes32),uint256,address,uint8,uint64,(uint64,uint64,uint64)),address[],uint256,address,bool,uint256,address[],address,address,address))'
+    ](deployParams, {
       value: feeCost,
     })
     const createRollupReceipt = await createRollupTx.wait()
