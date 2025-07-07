@@ -385,7 +385,6 @@ export async function deployAllContracts(
 
 export async function deployOneStepProofEntry(
   signer: ethers.Signer,
-  customDAValidator: string = ethers.constants.AddressZero,
   verify: boolean = true
 ): Promise<{
   prover0: Contract
@@ -401,13 +400,7 @@ export async function deployOneStepProofEntry(
     deployContract('OneStepProver0', signer, [], verify, true),
     deployContract('OneStepProverMemory', signer, [], verify, true),
     deployContract('OneStepProverMath', signer, [], verify, true),
-    deployContract(
-      'OneStepProverHostIo',
-      signer,
-      [customDAValidator],
-      verify,
-      true
-    ),
+    deployContract('OneStepProverHostIo', signer, [], verify, true),
   ])
 
   console.log('Deploying OneStepProofEntry...')
