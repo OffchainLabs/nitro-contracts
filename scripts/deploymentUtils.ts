@@ -281,13 +281,13 @@ export async function deployAllContracts(
     deployContract('ERC20Outbox', signer, [], verify, true),
   ])
 
-  console.log('Deploying OneStepProver contracts in parallel...')
-  const [prover0, proverMem, proverMath, proverHostIo] = await Promise.all([
-    deployContract('OneStepProver0', signer, [], verify, true),
-    deployContract('OneStepProverMemory', signer, [], verify, true),
-    deployContract('OneStepProverMath', signer, [], verify, true),
-    deployContract('OneStepProverHostIo', signer, [], verify, true),
-  ])
+  // Deploy OneStepProver contracts and OneStepProofEntry
+  const ospDeployment = await deployOneStepProofEntry(
+    signer,
+    ethers.constants.AddressZero,
+    verify
+  )
+  const { prover0, proverMem, proverMath, proverHostIo, osp } = ospDeployment
 
   console.log('Deploying core contracts in parallel...')
   const [
@@ -315,45 +315,31 @@ export async function deployAllContracts(
   ])
   const upgradeExecutor = upgradeExecutorResult
 
-  console.log('Deploying bridgeCreator and OneStepProofEntry...')
-  const [bridgeCreator, osp] = await Promise.all([
-    deployContract(
-      'BridgeCreator',
-      signer,
+  console.log('Deploying bridgeCreator...')
+  const bridgeCreator = await deployContract(
+    'BridgeCreator',
+    signer,
+    [
       [
-        [
-          ethBridge.address,
-          ethSequencerInbox.address,
-          ethSequencerInboxDelayBufferable.address,
-          ethInbox.address,
-          ethRollupEventInbox.address,
-          ethOutbox.address,
-        ],
-        [
-          erc20Bridge.address,
-          erc20SequencerInbox.address,
-          erc20SequencerInboxDelayBufferable.address,
-          erc20Inbox.address,
-          erc20RollupEventInbox.address,
-          erc20Outbox.address,
-        ],
+        ethBridge.address,
+        ethSequencerInbox.address,
+        ethSequencerInboxDelayBufferable.address,
+        ethInbox.address,
+        ethRollupEventInbox.address,
+        ethOutbox.address,
       ],
-      verify,
-      true
-    ),
-    deployContract(
-      'OneStepProofEntry',
-      signer,
       [
-        prover0.address,
-        proverMem.address,
-        proverMath.address,
-        proverHostIo.address,
+        erc20Bridge.address,
+        erc20SequencerInbox.address,
+        erc20SequencerInboxDelayBufferable.address,
+        erc20Inbox.address,
+        erc20RollupEventInbox.address,
+        erc20Outbox.address,
       ],
-      verify,
-      true
-    ),
-  ])
+    ],
+    verify,
+    true
+  )
 
   // Deploy RollupProxy for verification if needed
   if (verify && !process.env.DISABLE_VERIFICATION) {
@@ -393,6 +379,56 @@ export async function deployAllContracts(
     validatorWalletCreator,
     rollupCreator,
     deployHelper,
+  }
+}
+
+export async function deployOneStepProofEntry(
+  signer: ethers.Signer,
+  customDAValidator: string = ethers.constants.AddressZero,
+  verify: boolean = true
+): Promise<{
+  prover0: Contract
+  proverMem: Contract
+  proverMath: Contract
+  proverHostIo: Contract
+  osp: Contract
+}> {
+  console.log('Deploying OneStepProver contracts with custom DA validator...')
+
+  // Deploy the four OneStepProver contracts in parallel
+  const [prover0, proverMem, proverMath, proverHostIo] = await Promise.all([
+    deployContract('OneStepProver0', signer, [], verify, true),
+    deployContract('OneStepProverMemory', signer, [], verify, true),
+    deployContract('OneStepProverMath', signer, [], verify, true),
+    deployContract(
+      'OneStepProverHostIo',
+      signer,
+      [customDAValidator],
+      verify,
+      true
+    ),
+  ])
+
+  console.log('Deploying OneStepProofEntry...')
+  const osp = await deployContract(
+    'OneStepProofEntry',
+    signer,
+    [
+      prover0.address,
+      proverMem.address,
+      proverMath.address,
+      proverHostIo.address,
+    ],
+    verify,
+    true
+  )
+
+  return {
+    prover0,
+    proverMem,
+    proverMath,
+    proverHostIo,
+    osp,
   }
 }
 
