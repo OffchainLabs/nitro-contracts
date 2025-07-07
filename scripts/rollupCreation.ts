@@ -67,7 +67,8 @@ export async function createRollup(
   rollupCreatorAddress: string,
   feeToken: string,
   feeTokenPricer: string,
-  stakeToken: string
+  stakeToken: string,
+  customOsp: string
 ): Promise<{
   rollupCreationResult: RollupCreationResult
   chainInfo: ChainInfo
@@ -112,7 +113,8 @@ export async function createRollup(
             feeToken,
             feeTokenPricer,
             validatorWalletCreator,
-            stakeToken
+            stakeToken,
+            customOsp
           )
         : {
             config: config.config,
@@ -124,9 +126,12 @@ export async function createRollup(
             batchPosters: config.batchPosters,
             batchPosterManager: config.batchPosterManager,
             feeTokenPricer: feeTokenPricer,
+            customOsp: config.customOsp,
           }
 
-    const createRollupTx = await rollupCreator.createRollup(deployParams, {
+    const createRollupTx = await rollupCreator.functions[
+      'createRollup(((uint64,address,uint256,bytes32,address,address,uint256,string,uint256,uint64,uint256[],(uint256,uint256,uint256,uint256),uint256,uint256,uint256,((bytes32[2],uint64[2]),uint8,bytes32),uint256,address,uint8,uint64,(uint64,uint64,uint64)),address[],uint256,address,bool,uint256,address[],address,address,address))'
+    ](deployParams, {
       value: feeCost,
     })
     const createRollupReceipt = await createRollupTx.wait()
@@ -235,7 +240,8 @@ async function _getDevRollupConfig(
   feeToken: string,
   feeTokenPricer: string,
   validatorWalletCreator: string,
-  stakeToken: string
+  stakeToken: string,
+  customOsp: string
 ): Promise<RollupCreator.RollupDeploymentParamsStruct> {
   // set up owner address
   const ownerAddress =
@@ -357,6 +363,7 @@ async function _getDevRollupConfig(
     batchPosters: batchPosters,
     batchPosterManager: batchPosterManager,
     feeTokenPricer: feeTokenPricer,
+    customOsp: customOsp,
   }
 
   function _createValidatorAddress(

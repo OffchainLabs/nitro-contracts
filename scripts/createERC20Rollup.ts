@@ -43,6 +43,11 @@ async function main() {
     feeTokenPricer = ethers.constants.AddressZero
   }
 
+  let customOsp = process.env.CUSTOM_OSP_ADDRESS as string
+  if (!customOsp) {
+    customOsp = ethers.constants.AddressZero
+  }
+
   console.log(
     'Creating new rollup with',
     customFeeTokenAddress,
@@ -56,7 +61,8 @@ async function main() {
     rollupCreatorAddress,
     customFeeTokenAddress,
     feeTokenPricer,
-    stakeTokenAddress
+    stakeTokenAddress,
+    customOsp
   )
 }
 
