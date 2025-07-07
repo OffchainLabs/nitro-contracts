@@ -28,6 +28,7 @@ async function main() {
     signer,
     [maxDataSize, reader4844.address, isUsingFeeToken],
     false,
+    true,
     overrides
   )
   // SequencerInbox logic do not need to be initialized
@@ -36,6 +37,7 @@ async function main() {
     signer,
     [],
     false,
+    true,
     overrides
   )
   const proverMem = await deployContract(
@@ -43,6 +45,7 @@ async function main() {
     signer,
     [],
     false,
+    true,
     overrides
   )
   const proverMath = await deployContract(
@@ -50,6 +53,7 @@ async function main() {
     signer,
     [],
     false,
+    true,
     overrides
   )
   const proverHostIo = await deployContract(
@@ -57,6 +61,7 @@ async function main() {
     signer,
     [],
     false,
+    true,
     overrides
   )
   const osp: Contract = await deployContract(
@@ -69,6 +74,7 @@ async function main() {
       proverHostIo.address,
     ],
     false,
+    true,
     overrides
   )
   const challengeManager = await deployContract(
@@ -76,6 +82,7 @@ async function main() {
     signer,
     [],
     false,
+    true,
     overrides
   )
   // ChallengeManager logic do not need to be initialized
