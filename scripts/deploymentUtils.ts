@@ -48,6 +48,7 @@ class SimpleMutex {
 let nonceManager: { [key: string]: number } = {}
 let nonceLock = new SimpleMutex()
 let verifyLock = new SimpleMutex()
+let deployLock = new SimpleMutex()
 
 // Define a verification function
 export async function verifyContract(
@@ -193,17 +194,13 @@ async function deployBatch<T>(
     // Serial deployment: execute one by one using the nonce lock as mutex
     const results: T[] = []
     for (const deployFn of deployFunctions) {
-      await nonceLock
-      let resolveNonceLock: () => void
-      nonceLock = new Promise(resolve => {
-        resolveNonceLock = resolve
-      })
+      const resolveDeployLock = await deployLock.lock()
 
       try {
         const result = await deployFn()
         results.push(result)
       } finally {
-        resolveNonceLock!()
+        resolveDeployLock()
       }
     }
     return results
