@@ -19,6 +19,10 @@ import {
 } from "../challengeV2/EdgeChallengeManager.sol";
 import {IOneStepProofEntry} from "../osp/IOneStepProofEntry.sol";
 
+/// @notice Base contract for Nitro contracts upgrade actions.
+/// This contract provides a _upgradeAllContract function that upgrades all the
+/// Nitro contracts to the next implementations. It will only perform the upgrade if the implementation address is different.
+/// Uses the ImplementationsRegistry to get the implementation addresses for the current and next version.
 abstract contract BaseNitroContractsUpgradeAction {
     ImplementationsRegistry public immutable prevImplementationsRegistry;
     ImplementationsRegistry public immutable nextImplementationsRegistry;
@@ -39,7 +43,7 @@ abstract contract BaseNitroContractsUpgradeAction {
         nextImplementationsRegistry = _nextImplementationsRegistry;
     }
 
-    function _upgradeAllProxies(address proxyAdmin, address inbox) internal {
+    function _upgradeAllContracts(address proxyAdmin, address inbox) internal {
         ProxyAdmin admin = ProxyAdmin(proxyAdmin);
         SequencerInbox sequencerInbox = SequencerInbox(address(IInbox(inbox).sequencerInbox()));
         bool isUsingFeeToken = sequencerInbox.isUsingFeeToken();

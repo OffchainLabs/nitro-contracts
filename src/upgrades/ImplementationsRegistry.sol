@@ -6,6 +6,11 @@ pragma solidity ^0.8.17;
 
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
+/// @notice A registry for nitro contracts implementations.
+///         All contract implementations are now deployed with CREATE2.
+///         This registry is also deployed with CREATE2 at each nitro contracts release.
+///         It allows you to look up the address of a contract implementation by its name and constructor arguments.
+///         Used by upgrade actions
 contract ImplementationsRegistry {
     error UnknownContractName(string contractName);
     error ContractNotRegistered(string contractName, bytes32 argsHash);
