@@ -284,7 +284,6 @@ export async function deployAllContracts(
   console.log('Deploying OneStepProver contracts and OneStepProofEntry...')
   const ospDeployment = await deployOneStepProofEntry(
     signer,
-    ethers.constants.AddressZero,
     verify
   )
   const { prover0, proverMem, proverMath, proverHostIo, osp } = ospDeployment
@@ -384,7 +383,7 @@ export async function deployAllContracts(
 }
 
 export async function deployOneStepProofEntry(
-  signer: ethers.Signer,
+  signer: any,
   verify: boolean = true
 ): Promise<{
   prover0: Contract
