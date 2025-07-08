@@ -1,18 +1,44 @@
 import { ethers } from 'hardhat'
-import { ContractFactory, Contract, Overrides, BigNumber, Wallet } from 'ethers'
+import {
+  ContractFactory,
+  Contract,
+  Overrides,
+  BigNumber,
+  Wallet,
+  Signer,
+} from 'ethers'
 import '@nomiclabs/hardhat-ethers'
 import { run } from 'hardhat'
 import {
   abi as UpgradeExecutorABI,
   bytecode as UpgradeExecutorBytecode,
 } from '@offchainlabs/upgrade-executor/build/contracts/src/UpgradeExecutor.sol/UpgradeExecutor.json'
-import { Toolkit4844 } from '../test/contract/toolkit4844'
 import {
   ArbOwner__factory,
   ArbOwnerPublic__factory,
   ArbSys__factory,
   CacheManager__factory,
   IReader4844__factory,
+  Bridge__factory,
+  Inbox__factory,
+  RollupEventInbox__factory,
+  Outbox__factory,
+  ERC20Bridge__factory,
+  SequencerInbox__factory,
+  ERC20Inbox__factory,
+  ERC20RollupEventInbox__factory,
+  ERC20Outbox__factory,
+  BridgeCreator__factory,
+  OneStepProver0__factory,
+  OneStepProverMemory__factory,
+  OneStepProverMath__factory,
+  OneStepProverHostIo__factory,
+  OneStepProofEntry__factory,
+  EdgeChallengeManager__factory,
+  RollupAdminLogic__factory,
+  RollupUserLogic__factory,
+  ValidatorWalletCreator__factory,
+  ImplementationsRegistry,
 } from '../build/types'
 import {
   concat,
@@ -27,6 +53,7 @@ const INIT_DECAY = 10322197911
 const ARB_OWNER_ADDRESS = '0x0000000000000000000000000000000000000070'
 const ARB_OWNER_PUBLIC_ADDRESS = '0x000000000000000000000000000000000000006b'
 const ARB_SYS_ADDRESS = '0x0000000000000000000000000000000000000064'
+const CREATE2_FACTORY_ADDRESS = '0x4e59b44847b379578588920cA78FbF26c0B4956C'
 
 // Define a verification function
 export async function verifyContract(
@@ -148,19 +175,133 @@ export async function create2(
     throw new Error('No deploy data found for contract factory')
   }
 
-  const address = getCreate2Address(FACTORY, salt, keccak256(data))
+  const address = getCreate2Address(
+    CREATE2_FACTORY_ADDRESS,
+    salt,
+    keccak256(data)
+  )
   if ((await fac.signer.provider!.getCode(address)).length > 2) {
     return fac.attach(address)
   }
 
   const tx = await fac.signer.sendTransaction({
-    to: FACTORY,
+    to: CREATE2_FACTORY_ADDRESS,
     data: concat([salt, data]),
     ...overrides,
   })
   await tx.wait()
 
   return fac.attach(address)
+}
+
+function deployImplementationsRegistry(signer: Signer, verify: boolean) {
+  return deployContract(
+    'ImplementationsRegistry',
+    signer,
+    [
+      CREATE2_FACTORY_ADDRESS,
+      ethers.constants.HashZero,
+      [
+        'Bridge',
+        'Inbox',
+        'RollupEventInbox',
+        'Outbox',
+        'ERC20Bridge',
+        'SequencerInbox',
+        'ERC20Inbox',
+        'ERC20RollupEventInbox',
+        'ERC20Outbox',
+        'BridgeCreator',
+        'OneStepProver0',
+        'OneStepProverMemory',
+        'OneStepProverMath',
+        'OneStepProverHostIo',
+        'OneStepProofEntry',
+        'EdgeChallengeManager',
+        'RollupAdminLogic',
+        'RollupUserLogic',
+        'ValidatorWalletCreator',
+        'Reader4844',
+        'UpgradeExecutor',
+      ],
+      [
+        keccak256(Bridge__factory.bytecode),
+        keccak256(Inbox__factory.bytecode),
+        keccak256(RollupEventInbox__factory.bytecode),
+        keccak256(Outbox__factory.bytecode),
+        keccak256(ERC20Bridge__factory.bytecode),
+        keccak256(SequencerInbox__factory.bytecode),
+        keccak256(ERC20Inbox__factory.bytecode),
+        keccak256(ERC20RollupEventInbox__factory.bytecode),
+        keccak256(ERC20Outbox__factory.bytecode),
+        keccak256(BridgeCreator__factory.bytecode),
+        keccak256(OneStepProver0__factory.bytecode),
+        keccak256(OneStepProverMemory__factory.bytecode),
+        keccak256(OneStepProverMath__factory.bytecode),
+        keccak256(OneStepProverHostIo__factory.bytecode),
+        keccak256(OneStepProofEntry__factory.bytecode),
+        keccak256(EdgeChallengeManager__factory.bytecode),
+        keccak256(RollupAdminLogic__factory.bytecode),
+        keccak256(RollupUserLogic__factory.bytecode),
+        keccak256(ValidatorWalletCreator__factory.bytecode),
+        keccak256(Reader4844Bytecode.object),
+        keccak256(UpgradeExecutorBytecode),
+      ],
+    ],
+    verify,
+    true
+  ) as Promise<ImplementationsRegistry>
+}
+
+async function deployContractWithRegistry(
+  implsRegistry: ImplementationsRegistry,
+  contractName: string,
+  signer: Signer,
+  constructorArgs: any[] = [],
+  verify: boolean = true
+) {
+  const factory: ContractFactory = await ethers.getContractFactory(contractName)
+  const connectedFactory: ContractFactory = factory.connect(signer)
+
+  const contract = await create2(connectedFactory, constructorArgs)
+  const encodedConstructorArgs = ethers.utils.defaultAbiCoder.encode(
+    factory.interface.deploy.inputs,
+    constructorArgs
+  )
+
+  if (
+    (await implsRegistry.getAddressWithArgs(
+      contractName,
+      keccak256(encodedConstructorArgs)
+    )) !== ethers.constants.AddressZero
+  ) {
+    return contract
+  }
+
+  await (
+    await implsRegistry
+      .connect(signer)
+      .registerHashWithArgs(
+        contractName,
+        factory.bytecode,
+        encodedConstructorArgs
+      )
+  ).wait()
+
+  const expectedAddress = await implsRegistry.getAddressWithArgs(
+    contractName,
+    keccak256(constructorArgs)
+  )
+  if (expectedAddress !== contract.address) {
+    throw new Error(
+      `Invalid address for ${contractName}. Expected: ${expectedAddress}, got: ${contract.address}`
+    )
+  }
+
+  if (verify)
+    await verifyContract(contractName, contract.address, constructorArgs)
+
+  return contract
 }
 
 // Function to handle all deployments of core contracts using deployContract function
@@ -172,7 +313,15 @@ export async function deployAllContracts(
 ): Promise<Record<string, Contract>> {
   const isOnArb = await _isRunningOnArbitrum(signer)
 
-  const ethBridge = await deployContract('Bridge', signer, [], verify, true)
+  const implsRegistry = await deployImplementationsRegistry(signer, verify)
+
+  const ethBridge = await deployContractWithRegistry(
+    implsRegistry,
+    'Bridge',
+    signer,
+    [],
+    verify
+  )
 
   const reader4844 = isOnArb
     ? ethers.constants.AddressZero
@@ -187,79 +336,93 @@ export async function deployAllContracts(
           ethers.constants.HashZero
         )
       ).address
+  if (
+    !isOnArb &&
+    reader4844 !== (await implsRegistry.getAddress('Reader4844'))
+  ) {
+    throw new Error(
+      `Reader4844 not deployed at expected address: ${reader4844}`
+    )
+  }
 
-  const ethSequencerInbox = await deployContract(
+  const ethSequencerInbox = await deployContractWithRegistry(
+    implsRegistry,
     'SequencerInbox',
     signer,
     [maxDataSize, reader4844, false, false],
-    verify,
-    true
+    verify
   )
-  const ethSequencerInboxDelayBufferable = await deployContract(
+  const ethSequencerInboxDelayBufferable = await deployContractWithRegistry(
+    implsRegistry,
     'SequencerInbox',
     signer,
     [maxDataSize, reader4844, false, true],
-    verify,
-    true
+    verify
   )
 
-  const ethInbox = await deployContract(
+  const ethInbox = await deployContractWithRegistry(
+    implsRegistry,
     'Inbox',
     signer,
     [maxDataSize],
-    verify,
-    true
+    verify
   )
-  const ethRollupEventInbox = await deployContract(
+  const ethRollupEventInbox = await deployContractWithRegistry(
+    implsRegistry,
     'RollupEventInbox',
     signer,
     [],
-    verify,
-    true
+    verify
   )
-  const ethOutbox = await deployContract('Outbox', signer, [], verify, true)
+  const ethOutbox = await deployContractWithRegistry(
+    implsRegistry,
+    'Outbox',
+    signer,
+    [],
+    verify
+  )
 
-  const erc20Bridge = await deployContract(
+  const erc20Bridge = await deployContractWithRegistry(
+    implsRegistry,
     'ERC20Bridge',
     signer,
     [],
-    verify,
-    true
+    verify
   )
-  const erc20SequencerInbox = await deployContract(
+  const erc20SequencerInbox = await deployContractWithRegistry(
+    implsRegistry,
     'SequencerInbox',
     signer,
     [maxDataSize, reader4844, true, false],
-    verify,
-    true
+    verify
   )
-  const erc20SequencerInboxDelayBufferable = await deployContract(
+  const erc20SequencerInboxDelayBufferable = await deployContractWithRegistry(
+    implsRegistry,
     'SequencerInbox',
     signer,
     [maxDataSize, reader4844, true, true],
-    verify,
-    true
+    verify
   )
-  const erc20Inbox = await deployContract(
+  const erc20Inbox = await deployContractWithRegistry(
+    implsRegistry,
     'ERC20Inbox',
     signer,
     [maxDataSize],
-    verify,
-    true
+    verify
   )
-  const erc20RollupEventInbox = await deployContract(
+  const erc20RollupEventInbox = await deployContractWithRegistry(
+    implsRegistry,
     'ERC20RollupEventInbox',
     signer,
     [],
-    verify,
-    true
+    verify
   )
-  const erc20Outbox = await deployContract(
+  const erc20Outbox = await deployContractWithRegistry(
+    implsRegistry,
     'ERC20Outbox',
     signer,
     [],
-    verify,
-    true
+    verify
   )
 
   const bridgeCreator = await deployContract(
@@ -286,35 +449,36 @@ export async function deployAllContracts(
     verify,
     true
   )
-  const prover0 = await deployContract(
+  const prover0 = await deployContractWithRegistry(
+    implsRegistry,
     'OneStepProver0',
     signer,
     [],
-    verify,
-    true
+    verify
   )
-  const proverMem = await deployContract(
+  const proverMem = await deployContractWithRegistry(
+    implsRegistry,
     'OneStepProverMemory',
     signer,
     [],
-    verify,
-    true
+    verify
   )
-  const proverMath = await deployContract(
+  const proverMath = await deployContractWithRegistry(
+    implsRegistry,
     'OneStepProverMath',
     signer,
     [],
-    verify,
-    true
+    verify
   )
-  const proverHostIo = await deployContract(
+  const proverHostIo = await deployContractWithRegistry(
+    implsRegistry,
     'OneStepProverHostIo',
     signer,
     [],
-    verify,
-    true
+    verify
   )
-  const osp: Contract = await deployContract(
+  const osp: Contract = await deployContractWithRegistry(
+    implsRegistry,
     'OneStepProofEntry',
     signer,
     [
@@ -323,29 +487,28 @@ export async function deployAllContracts(
       proverMath.address,
       proverHostIo.address,
     ],
-    verify,
-    true
+    verify
   )
-  const challengeManager = await deployContract(
+  const challengeManager = await deployContractWithRegistry(
+    implsRegistry,
     'EdgeChallengeManager',
     signer,
     [],
-    verify,
-    true
+    verify
   )
-  const rollupAdmin = await deployContract(
+  const rollupAdmin = await deployContractWithRegistry(
+    implsRegistry,
     'RollupAdminLogic',
     signer,
     [],
-    verify,
-    true
+    verify
   )
-  const rollupUser = await deployContract(
+  const rollupUser = await deployContractWithRegistry(
+    implsRegistry,
     'RollupUserLogic',
     signer,
     [],
-    verify,
-    true
+    verify
   )
   const upgradeExecutor = await create2(
     (
@@ -356,12 +519,20 @@ export async function deployAllContracts(
     ).connect(signer),
     []
   )
-  const validatorWalletCreator = await deployContract(
+  if (
+    (await implsRegistry.getAddress('UpgradeExecutor')) !==
+    upgradeExecutor.address
+  ) {
+    throw new Error(
+      `UpgradeExecutor not deployed at expected address: ${upgradeExecutor.address}`
+    )
+  }
+  const validatorWalletCreator = await deployContractWithRegistry(
+    implsRegistry,
     'ValidatorWalletCreator',
     signer,
     [],
-    verify,
-    true
+    verify
   )
   const deployHelper = await deployContract(
     'DeployHelper',
