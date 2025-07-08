@@ -28,6 +28,27 @@ const ARB_OWNER_ADDRESS = '0x0000000000000000000000000000000000000070'
 const ARB_OWNER_PUBLIC_ADDRESS = '0x000000000000000000000000000000000000006b'
 const ARB_SYS_ADDRESS = '0x0000000000000000000000000000000000000064'
 
+class SimpleMutex {
+  private current: Promise<void> = Promise.resolve()
+
+  lock(): Promise<() => void> {
+    let release: () => void
+    const next = new Promise<void>(resolve => {
+      release = resolve
+    })
+
+    const prev = this.current
+    this.current = this.current.then(() => next)
+
+    return prev.then(() => release!)
+  }
+}
+
+// Nonce manager for parallel deployments
+let nonceManager: { [key: string]: number } = {}
+let nonceLock = new SimpleMutex()
+let verifyLock = new SimpleMutex()
+
 // Define a verification function
 export async function verifyContract(
   contractName: string,
@@ -35,8 +56,14 @@ export async function verifyContract(
   constructorArguments: any[] = [],
   contractPathAndName?: string // optional
 ): Promise<void> {
+  if (process.env.DISABLE_VERIFICATION === 'true') return
+  // Prevent multiple verifications at the same time
+  const resolveVerifyLock = await verifyLock.lock()
+
   try {
-    if (process.env.DISABLE_VERIFICATION === 'true') return
+    console.log(
+      `Verifying contract ${contractName} at address ${contractAddress}`
+    )
     // Define the verification options with possible 'contract' property
     const verificationOptions: {
       contract?: string
@@ -71,6 +98,8 @@ export async function verifyContract(
         `Verification for ${contractName} failed with the following error: ${error.message}`
       )
     }
+  } finally {
+    resolveVerifyLock()
   }
 }
 
@@ -106,6 +135,17 @@ export async function deployContract(
       overrides
     )
   } else {
+    // For non-CREATE2 deployments, use nonce manager
+    const nonce = await getNextNonce(signer)
+    const deployOverrides = { ...overrides, nonce }
+
+    // Update deployment args with overrides
+    if (overrides) {
+      deploymentArgs[deploymentArgs.length - 1] = deployOverrides
+    } else {
+      deploymentArgs.push(deployOverrides)
+    }
+
     contract = await connectedFactory.deploy(...deploymentArgs)
     await contract.deployTransaction.wait()
   }
@@ -120,6 +160,22 @@ export async function deployContract(
     await verifyContract(contractName, contract.address, constructorArgs)
 
   return contract
+}
+
+async function getNextNonce(signer: any): Promise<number> {
+  const address = await signer.getAddress()
+  const resolveNonceLock = await nonceLock.lock()
+
+  try {
+    if (!(address in nonceManager)) {
+      nonceManager[address] = await signer.getTransactionCount()
+    }
+    const nonce = nonceManager[address]
+    nonceManager[address]++
+    return nonce
+  } finally {
+    resolveNonceLock()
+  }
 }
 
 export async function create2(
@@ -153,9 +209,11 @@ export async function create2(
     return fac.attach(address)
   }
 
+  const nonce = await getNextNonce(fac.signer)
   const tx = await fac.signer.sendTransaction({
     to: FACTORY,
     data: concat([salt, data]),
+    nonce,
     ...overrides,
   })
   await tx.wait()
@@ -170,10 +228,12 @@ export async function deployAllContracts(
   maxDataSize: BigNumber,
   verify: boolean = true
 ): Promise<Record<string, Contract>> {
+  // Reset nonce manager for fresh deployment
+  nonceManager = {}
+
   const isOnArb = await _isRunningOnArbitrum(signer)
 
-  const ethBridge = await deployContract('Bridge', signer, [], verify, true)
-
+  // Deploy Reader4844 first if not on Arbitrum
   const reader4844 = isOnArb
     ? ethers.constants.AddressZero
     : (
@@ -188,80 +248,90 @@ export async function deployAllContracts(
         )
       ).address
 
-  const ethSequencerInbox = await deployContract(
-    'SequencerInbox',
-    signer,
-    [maxDataSize, reader4844, false, false],
-    verify,
-    true
-  )
-  const ethSequencerInboxDelayBufferable = await deployContract(
-    'SequencerInbox',
-    signer,
-    [maxDataSize, reader4844, false, true],
-    verify,
-    true
-  )
+  console.log('Deploying bridge templates in parallel...')
+  const [
+    ethBridge,
+    ethSequencerInbox,
+    ethSequencerInboxDelayBufferable,
+    ethInbox,
+    ethRollupEventInbox,
+    ethOutbox,
+    erc20Bridge,
+    erc20SequencerInbox,
+    erc20SequencerInboxDelayBufferable,
+    erc20Inbox,
+    erc20RollupEventInbox,
+    erc20Outbox,
+  ] = await Promise.all([
+    deployContract('Bridge', signer, [], verify, true),
+    deployContract(
+      'SequencerInbox',
+      signer,
+      [maxDataSize, reader4844, false, false],
+      verify,
+      true
+    ),
+    deployContract(
+      'SequencerInbox',
+      signer,
+      [maxDataSize, reader4844, false, true],
+      verify,
+      true
+    ),
+    deployContract('Inbox', signer, [maxDataSize], verify, true),
+    deployContract('RollupEventInbox', signer, [], verify, true),
+    deployContract('Outbox', signer, [], verify, true),
+    deployContract('ERC20Bridge', signer, [], verify, true),
+    deployContract(
+      'SequencerInbox',
+      signer,
+      [maxDataSize, reader4844, true, false],
+      verify,
+      true
+    ),
+    deployContract(
+      'SequencerInbox',
+      signer,
+      [maxDataSize, reader4844, true, true],
+      verify,
+      true
+    ),
+    deployContract('ERC20Inbox', signer, [maxDataSize], verify, true),
+    deployContract('ERC20RollupEventInbox', signer, [], verify, true),
+    deployContract('ERC20Outbox', signer, [], verify, true),
+  ])
 
-  const ethInbox = await deployContract(
-    'Inbox',
-    signer,
-    [maxDataSize],
-    verify,
-    true
-  )
-  const ethRollupEventInbox = await deployContract(
-    'RollupEventInbox',
-    signer,
-    [],
-    verify,
-    true
-  )
-  const ethOutbox = await deployContract('Outbox', signer, [], verify, true)
+  console.log('Deploying OneStepProver contracts and OneStepProofEntry...')
+  const ospDeployment = await deployOneStepProofEntry(signer, verify)
+  const { prover0, proverMem, proverMath, proverHostIo, osp } = ospDeployment
 
-  const erc20Bridge = await deployContract(
-    'ERC20Bridge',
-    signer,
-    [],
-    verify,
-    true
-  )
-  const erc20SequencerInbox = await deployContract(
-    'SequencerInbox',
-    signer,
-    [maxDataSize, reader4844, true, false],
-    verify,
-    true
-  )
-  const erc20SequencerInboxDelayBufferable = await deployContract(
-    'SequencerInbox',
-    signer,
-    [maxDataSize, reader4844, true, true],
-    verify,
-    true
-  )
-  const erc20Inbox = await deployContract(
-    'ERC20Inbox',
-    signer,
-    [maxDataSize],
-    verify,
-    true
-  )
-  const erc20RollupEventInbox = await deployContract(
-    'ERC20RollupEventInbox',
-    signer,
-    [],
-    verify,
-    true
-  )
-  const erc20Outbox = await deployContract(
-    'ERC20Outbox',
-    signer,
-    [],
-    verify,
-    true
-  )
+  console.log('Deploying core contracts in parallel...')
+  const [
+    challengeManager,
+    rollupAdmin,
+    rollupUser,
+    upgradeExecutorResult,
+    validatorWalletCreator,
+    deployHelper,
+  ] = await Promise.all([
+    deployContract('EdgeChallengeManager', signer, [], verify, true),
+    deployContract('RollupAdminLogic', signer, [], verify, true),
+    deployContract('RollupUserLogic', signer, [], verify, true),
+    create2(
+      (
+        await ethers.getContractFactory(
+          UpgradeExecutorABI,
+          UpgradeExecutorBytecode
+        )
+      ).connect(signer),
+      []
+    ),
+    deployContract('ValidatorWalletCreator', signer, [], verify, true),
+    deployContract('DeployHelper', signer, [], verify, true),
+  ])
+  const upgradeExecutor = upgradeExecutorResult
 
+  console.log('Deploying bridgeCreator...')
   const bridgeCreator = await deployContract(
     'BridgeCreator',
     signer,
@@ -286,95 +356,14 @@ export async function deployAllContracts(
     verify,
     true
   )
-  const prover0 = await deployContract(
-    'OneStepProver0',
-    signer,
-    [],
-    verify,
-    true
-  )
-  const proverMem = await deployContract(
-    'OneStepProverMemory',
-    signer,
-    [],
-    verify,
-    true
-  )
-  const proverMath = await deployContract(
-    'OneStepProverMath',
-    signer,
-    [],
-    verify,
-    true
-  )
-  const proverHostIo = await deployContract(
-    'OneStepProverHostIo',
-    signer,
-    [],
-    verify,
-    true
-  )
-  const osp: Contract = await deployContract(
-    'OneStepProofEntry',
-    signer,
-    [
-      prover0.address,
-      proverMem.address,
-      proverMath.address,
-      proverHostIo.address,
-    ],
-    verify,
-    true
-  )
-  const challengeManager = await deployContract(
-    'EdgeChallengeManager',
-    signer,
-    [],
-    verify,
-    true
-  )
-  const rollupAdmin = await deployContract(
-    'RollupAdminLogic',
-    signer,
-    [],
-    verify,
-    true
-  )
-  const rollupUser = await deployContract(
-    'RollupUserLogic',
-    signer,
-    [],
-    verify,
-    true
-  )
-  const upgradeExecutor = await create2(
-    (
-      await ethers.getContractFactory(
-        UpgradeExecutorABI,
-        UpgradeExecutorBytecode
-      )
-    ).connect(signer),
-    []
-  )
-  const validatorWalletCreator = await deployContract(
-    'ValidatorWalletCreator',
-    signer,
-    [],
-    verify,
-    true
-  )
-  const deployHelper = await deployContract(
-    'DeployHelper',
-    signer,
-    [],
-    verify,
-    true
-  )
+
+  console.log('Deploying RollupProxy for verification if needed...')
+  // Deploy RollupProxy for verification if needed
   if (verify && !process.env.DISABLE_VERIFICATION) {
-    // Deploy RollupProxy contract only for verification, should not be used anywhere else
     await deployContract('RollupProxy', signer, [], verify, true)
   }
 
+  console.log('Deploying RollupCreator...')
   const rollupCreator = await deployContract(
     'RollupCreator',
     signer,
@@ -407,6 +396,49 @@ export async function deployAllContracts(
     validatorWalletCreator,
     rollupCreator,
     deployHelper,
+  }
+}
+
+export async function deployOneStepProofEntry(
+  signer: any,
+  verify: boolean = true
+): Promise<{
+  prover0: Contract
+  proverMem: Contract
+  proverMath: Contract
+  proverHostIo: Contract
+  osp: Contract
+}> {
+  console.log('Deploying OneStepProver contracts with custom DA validator...')
+
+  // Deploy the four OneStepProver contracts in parallel
+  const [prover0, proverMem, proverMath, proverHostIo] = await Promise.all([
+    deployContract('OneStepProver0', signer, [], verify, true),
+    deployContract('OneStepProverMemory', signer, [], verify, true),
+    deployContract('OneStepProverMath', signer, [], verify, true),
+    deployContract('OneStepProverHostIo', signer, [], verify, true),
+  ])
+
+  console.log('Deploying OneStepProofEntry...')
+  const osp = await deployContract(
+    'OneStepProofEntry',
+    signer,
+    [
+      prover0.address,
+      proverMem.address,
+      proverMath.address,
+      proverHostIo.address,
+    ],
+    verify,
+    true
+  )
+
+  return {
+    prover0,
+    proverMem,
+    proverMath,
+    proverHostIo,
+    osp,
   }
 }
 
