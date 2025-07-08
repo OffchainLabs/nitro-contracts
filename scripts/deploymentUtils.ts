@@ -56,12 +56,11 @@ export async function verifyContract(
   constructorArguments: any[] = [],
   contractPathAndName?: string // optional
 ): Promise<void> {
+  if (process.env.DISABLE_VERIFICATION === 'true') return
   // Prevent multiple verifications at the same time
   const resolveVerifyLock = await verifyLock.lock()
 
   try {
-    if (process.env.DISABLE_VERIFICATION === 'true') return
-
     console.log(
       `Verifying contract ${contractName} at address ${contractAddress}`
     )
