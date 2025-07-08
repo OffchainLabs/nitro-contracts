@@ -18,7 +18,7 @@ import "../bridge/IBridge.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
-contract BridgeCreator is Ownable {
+contract BridgeCreator {
     BridgeTemplates public ethBasedTemplates;
     BridgeTemplates public erc20BasedTemplates;
 
@@ -43,27 +43,11 @@ contract BridgeCreator is Ownable {
     }
 
     constructor(
-        address initialOwner,
         BridgeTemplates memory _ethBasedTemplates,
         BridgeTemplates memory _erc20BasedTemplates
-    ) Ownable() {
+    ) {
         ethBasedTemplates = _ethBasedTemplates;
         erc20BasedTemplates = _erc20BasedTemplates;
-        _transferOwnership(initialOwner);
-    }
-
-    function updateTemplates(
-        BridgeTemplates calldata _newTemplates
-    ) external onlyOwner {
-        ethBasedTemplates = _newTemplates;
-        emit TemplatesUpdated();
-    }
-
-    function updateERC20Templates(
-        BridgeTemplates calldata _newTemplates
-    ) external onlyOwner {
-        erc20BasedTemplates = _newTemplates;
-        emit ERC20TemplatesUpdated();
     }
 
     function _createBridge(

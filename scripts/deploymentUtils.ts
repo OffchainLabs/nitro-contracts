@@ -159,11 +159,15 @@ export async function create2(
     throw new Error('Salt must be a 32-byte hex string')
   }
 
-  if (
-    (await fac.signer.provider!.getCode(CREATE2_FACTORY_ADDRESS)).length <= 2
-  ) {
+  const DEFAULT_FACTORY = '0x4e59b44847b379578588920cA78FbF26c0B4956C'
+  const FACTORY = process.env.CREATE2_FACTORY ?? DEFAULT_FACTORY
+  if ((await fac.signer.provider!.getCode(FACTORY)).length <= 2) {
     throw new Error(
-      'Factory contract not deployed at address: ' + CREATE2_FACTORY_ADDRESS
+      `Factory contract not deployed at address: ${FACTORY}${
+        FACTORY.toLowerCase() === DEFAULT_FACTORY.toLowerCase()
+          ? '\n(For deployment instructions, see https://github.com/Arachnid/deterministic-deployment-proxy/ )'
+          : ''
+      }`
     )
   }
   const data = fac.getDeployTransaction(...deploymentArgs).data
@@ -303,14 +307,10 @@ async function deployContractWithRegistry(
 // Function to handle all deployments of core contracts using deployContract function
 export async function deployAllContracts(
   signer: any,
+  factoryOwner: string,
   maxDataSize: BigNumber,
   verify: boolean = true
 ): Promise<Record<string, Contract>> {
-  const FACTORY_OWNER = process.env.FACTORY_OWNER
-  if (!FACTORY_OWNER) {
-    throw new Error('FACTORY_OWNER environment variable is not set')
-  }
-
   const isOnArb = await _isRunningOnArbitrum(signer)
 
   const implsRegistry = await deployImplementationsRegistry(signer, verify)
@@ -429,7 +429,6 @@ export async function deployAllContracts(
     'BridgeCreator',
     signer,
     [
-      FACTORY_OWNER,
       [
         ethBridge.address,
         ethSequencerInbox.address,
@@ -551,17 +550,15 @@ export async function deployAllContracts(
     'RollupCreator',
     signer,
     [
-      FACTORY_OWNER,
-      {
-        bridgeCreator: bridgeCreator.address,
-        osp: osp.address,
-        challengeManagerLogic: challengeManager.address,
-        rollupAdminLogic: rollupAdmin.address,
-        rollupUserLogic: rollupUser.address,
-        upgradeExecutorLogic: upgradeExecutor.address,
-        validatorWalletCreator: validatorWalletCreator.address,
-        l2FactoriesDeployer: deployHelper.address,
-      },
+      factoryOwner,
+      bridgeCreator.address,
+      osp.address,
+      challengeManager.address,
+      rollupAdmin.address,
+      rollupUser.address,
+      upgradeExecutor.address,
+      validatorWalletCreator.address,
+      deployHelper.address,
     ],
     verify,
     true
