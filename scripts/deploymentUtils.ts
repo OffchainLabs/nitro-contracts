@@ -28,6 +28,27 @@ const ARB_OWNER_ADDRESS = '0x0000000000000000000000000000000000000070'
 const ARB_OWNER_PUBLIC_ADDRESS = '0x000000000000000000000000000000000000006b'
 const ARB_SYS_ADDRESS = '0x0000000000000000000000000000000000000064'
 
+class SimpleMutex {
+  private current: Promise<void> = Promise.resolve()
+
+  lock(): Promise<() => void> {
+    let release: () => void
+    const next = new Promise<void>(resolve => {
+      release = resolve
+    })
+
+    const prev = this.current
+    this.current = this.current.then(() => next)
+
+    return prev.then(() => release!)
+  }
+}
+
+// Nonce manager for parallel deployments
+let nonceManager: { [key: string]: number } = {}
+let nonceLock = new SimpleMutex()
+let verifyLock = new SimpleMutex()
+
 // Define a verification function
 export async function verifyContract(
   contractName: string,
@@ -35,8 +56,15 @@ export async function verifyContract(
   constructorArguments: any[] = [],
   contractPathAndName?: string // optional
 ): Promise<void> {
+  // Prevent multiple verifications at the same time
+  const resolveVerifyLock = await verifyLock.lock()
+
   try {
     if (process.env.DISABLE_VERIFICATION === 'true') return
+
+    console.log(
+      `Verifying contract ${contractName} at address ${contractAddress}`
+    )
     // Define the verification options with possible 'contract' property
     const verificationOptions: {
       contract?: string
@@ -71,6 +99,8 @@ export async function verifyContract(
         `Verification for ${contractName} failed with the following error: ${error.message}`
       )
     }
+  } finally {
+    resolveVerifyLock()
   }
 }
 
@@ -133,18 +163,9 @@ export async function deployContract(
   return contract
 }
 
-// Nonce manager for parallel deployments
-let nonceManager: { [key: string]: number } = {}
-let nonceLock = Promise.resolve()
-
 async function getNextNonce(signer: any): Promise<number> {
   const address = await signer.getAddress()
-  await nonceLock
-
-  let resolveNonceLock: () => void
-  nonceLock = new Promise(resolve => {
-    resolveNonceLock = resolve
-  })
+  const resolveNonceLock = await nonceLock.lock()
 
   try {
     if (!(address in nonceManager)) {
@@ -154,7 +175,7 @@ async function getNextNonce(signer: any): Promise<number> {
     nonceManager[address]++
     return nonce
   } finally {
-    resolveNonceLock!()
+    resolveNonceLock()
   }
 }
 
@@ -282,10 +303,7 @@ export async function deployAllContracts(
   ])
 
   console.log('Deploying OneStepProver contracts and OneStepProofEntry...')
-  const ospDeployment = await deployOneStepProofEntry(
-    signer,
-    verify
-  )
+  const ospDeployment = await deployOneStepProofEntry(signer, verify)
   const { prover0, proverMem, proverMath, proverHostIo, osp } = ospDeployment
 
   console.log('Deploying core contracts in parallel...')
