@@ -39,42 +39,6 @@ abstract contract BaseNitroContractsUpgradeAction {
         nextImplementationsRegistry = _nextImplementationsRegistry;
     }
 
-    function _sequencerInbox(
-        address inbox
-    ) internal view returns (address) {
-        return address(IInbox(inbox).sequencerInbox());
-    }
-
-    function _bridge(
-        address inbox
-    ) internal view returns (address) {
-        return address(IInbox(inbox).bridge());
-    }
-
-    function _outbox(
-        address inbox
-    ) internal view returns (address) {
-        return IInbox(inbox).bridge().activeOutbox();
-    }
-
-    function _rollup(
-        address inbox
-    ) internal view returns (address) {
-        return IOutbox(_outbox(inbox)).rollup();
-    }
-
-    function _rollupEventInbox(
-        address inbox
-    ) internal view returns (address) {
-        return address(IRollupCore(_rollup(inbox)).rollupEventInbox());
-    }
-
-    function _challengeManager(
-        address inbox
-    ) internal view returns (address) {
-        return address(IRollupCore(_rollup(inbox)).challengeManager());
-    }
-
     function _upgradeAllProxies(address proxyAdmin, address inbox) internal {
         ProxyAdmin admin = ProxyAdmin(proxyAdmin);
         SequencerInbox sequencerInbox = SequencerInbox(address(IInbox(inbox).sequencerInbox()));
@@ -130,6 +94,42 @@ abstract contract BaseNitroContractsUpgradeAction {
 
         // UpgradeExecutor
         _upgrade(admin, address(this), "UpgradeExecutor", "");
+    }
+
+    function _sequencerInbox(
+        address inbox
+    ) internal view returns (address) {
+        return address(IInbox(inbox).sequencerInbox());
+    }
+
+    function _bridge(
+        address inbox
+    ) internal view returns (address) {
+        return address(IInbox(inbox).bridge());
+    }
+
+    function _outbox(
+        address inbox
+    ) internal view returns (address) {
+        return IInbox(inbox).bridge().activeOutbox();
+    }
+
+    function _rollup(
+        address inbox
+    ) internal view returns (address) {
+        return IOutbox(_outbox(inbox)).rollup();
+    }
+
+    function _rollupEventInbox(
+        address inbox
+    ) internal view returns (address) {
+        return address(IRollupCore(_rollup(inbox)).rollupEventInbox());
+    }
+
+    function _challengeManager(
+        address inbox
+    ) internal view returns (address) {
+        return address(IRollupCore(_rollup(inbox)).challengeManager());
     }
 
     function _getOspEntry(
