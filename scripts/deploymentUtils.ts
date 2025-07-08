@@ -106,15 +106,20 @@ export async function deployContract(
       overrides
     )
   } else {
-    // For non-CREATE2 deployments, use nonce manager
-    const nonce = await getNextNonce(signer)
-    const deployOverrides = { ...overrides, nonce }
+    // For non-CREATE2 deployments, use nonce manager only in parallel mode
+    const useSerialDeployment = process.env.NO_PARALLEL_DEPLOYMENT === 'true'
 
-    // Update deployment args with overrides
-    if (overrides) {
-      deploymentArgs[deploymentArgs.length - 1] = deployOverrides
-    } else {
-      deploymentArgs.push(deployOverrides)
+    if (!useSerialDeployment) {
+      // Parallel mode: use nonce manager
+      const nonce = await getNextNonce(signer)
+      const deployOverrides = { ...overrides, nonce }
+
+      // Update deployment args with overrides
+      if (overrides) {
+        deploymentArgs[deploymentArgs.length - 1] = deployOverrides
+      } else {
+        deploymentArgs.push(deployOverrides)
+      }
     }
 
     contract = await connectedFactory.deploy(...deploymentArgs)
@@ -158,6 +163,36 @@ async function getNextNonce(signer: any): Promise<number> {
   }
 }
 
+// Helper function to handle both parallel and serial deployments
+async function deployBatch<T>(
+  deployFunctions: (() => Promise<T>)[]
+): Promise<T[]> {
+  const isSerialDeployment = process.env.NO_PARALLEL_DEPLOYMENT === 'true'
+
+  if (isSerialDeployment) {
+    // Serial deployment: execute one by one using the nonce lock as mutex
+    const results: T[] = []
+    for (const deployFn of deployFunctions) {
+      await nonceLock
+      let resolveNonceLock: () => void
+      nonceLock = new Promise(resolve => {
+        resolveNonceLock = resolve
+      })
+
+      try {
+        const result = await deployFn()
+        results.push(result)
+      } finally {
+        resolveNonceLock!()
+      }
+    }
+    return results
+  } else {
+    // Parallel deployment
+    return Promise.all(deployFunctions.map(fn => fn()))
+  }
+}
+
 export async function create2(
   fac: ContractFactory,
   deploymentArgs: Array<any>,
@@ -189,13 +224,21 @@ export async function create2(
     return fac.attach(address)
   }
 
-  const nonce = await getNextNonce(fac.signer)
-  const tx = await fac.signer.sendTransaction({
+  const isSerialDeployment = process.env.NO_PARALLEL_DEPLOYMENT === 'true'
+
+  const txParams: any = {
     to: FACTORY,
     data: concat([salt, data]),
-    nonce,
     ...overrides,
-  })
+  }
+
+  if (!isSerialDeployment) {
+    // Only use nonce manager in parallel mode
+    const nonce = await getNextNonce(fac.signer)
+    txParams.nonce = nonce
+  }
+
+  const tx = await fac.signer.sendTransaction(txParams)
   await tx.wait()
 
   return fac.attach(address)
@@ -210,6 +253,11 @@ export async function deployAllContracts(
 ): Promise<Record<string, Contract>> {
   // Reset nonce manager for fresh deployment
   nonceManager = {}
+
+  const isSerialDeployment = process.env.NO_PARALLEL_DEPLOYMENT === 'true'
+  if (isSerialDeployment) {
+    console.log('Using serial deployment mode (NO_PARALLEL_DEPLOYMENT=true)')
+  }
 
   const isOnArb = await _isRunningOnArbitrum(signer)
 
@@ -228,7 +276,12 @@ export async function deployAllContracts(
         )
       ).address
 
-  console.log('Deploying bridge templates in parallel...')
+  console.log(
+    `Deploying bridge templates${
+      isSerialDeployment ? ' in serial mode' : ' in parallel'
+    }...`
+  )
+
   const [
     ethBridge,
     ethSequencerInbox,
@@ -242,78 +295,87 @@ export async function deployAllContracts(
     erc20Inbox,
     erc20RollupEventInbox,
     erc20Outbox,
-  ] = await Promise.all([
-    deployContract('Bridge', signer, [], verify, true),
-    deployContract(
-      'SequencerInbox',
-      signer,
-      [maxDataSize, reader4844, false, false],
-      verify,
-      true
-    ),
-    deployContract(
-      'SequencerInbox',
-      signer,
-      [maxDataSize, reader4844, false, true],
-      verify,
-      true
-    ),
-    deployContract('Inbox', signer, [maxDataSize], verify, true),
-    deployContract('RollupEventInbox', signer, [], verify, true),
-    deployContract('Outbox', signer, [], verify, true),
-    deployContract('ERC20Bridge', signer, [], verify, true),
-    deployContract(
-      'SequencerInbox',
-      signer,
-      [maxDataSize, reader4844, true, false],
-      verify,
-      true
-    ),
-    deployContract(
-      'SequencerInbox',
-      signer,
-      [maxDataSize, reader4844, true, true],
-      verify,
-      true
-    ),
-    deployContract('ERC20Inbox', signer, [maxDataSize], verify, true),
-    deployContract('ERC20RollupEventInbox', signer, [], verify, true),
-    deployContract('ERC20Outbox', signer, [], verify, true),
+  ] = await deployBatch([
+    () => deployContract('Bridge', signer, [], verify, true),
+    () =>
+      deployContract(
+        'SequencerInbox',
+        signer,
+        [maxDataSize, reader4844, false, false],
+        verify,
+        true
+      ),
+    () =>
+      deployContract(
+        'SequencerInbox',
+        signer,
+        [maxDataSize, reader4844, false, true],
+        verify,
+        true
+      ),
+    () => deployContract('Inbox', signer, [maxDataSize], verify, true),
+    () => deployContract('RollupEventInbox', signer, [], verify, true),
+    () => deployContract('Outbox', signer, [], verify, true),
+    () => deployContract('ERC20Bridge', signer, [], verify, true),
+    () =>
+      deployContract(
+        'SequencerInbox',
+        signer,
+        [maxDataSize, reader4844, true, false],
+        verify,
+        true
+      ),
+    () =>
+      deployContract(
+        'SequencerInbox',
+        signer,
+        [maxDataSize, reader4844, true, true],
+        verify,
+        true
+      ),
+    () => deployContract('ERC20Inbox', signer, [maxDataSize], verify, true),
+    () => deployContract('ERC20RollupEventInbox', signer, [], verify, true),
+    () => deployContract('ERC20Outbox', signer, [], verify, true),
   ])
 
   console.log('Deploying OneStepProver contracts and OneStepProofEntry...')
   const ospDeployment = await deployOneStepProofEntry(
     signer,
-    ethers.constants.AddressZero,
-    verify
+    verify,
+    isSerialDeployment
   )
   const { prover0, proverMem, proverMath, proverHostIo, osp } = ospDeployment
 
-  console.log('Deploying core contracts in parallel...')
+  console.log(
+    `Deploying core contracts${
+      isSerialDeployment ? ' in serial mode' : ' in parallel'
+    }...`
+  )
+
   const [
     challengeManager,
     rollupAdmin,
     rollupUser,
-    upgradeExecutorResult,
+    upgradeExecutor,
     validatorWalletCreator,
     deployHelper,
-  ] = await Promise.all([
-    deployContract('EdgeChallengeManager', signer, [], verify, true),
-    deployContract('RollupAdminLogic', signer, [], verify, true),
-    deployContract('RollupUserLogic', signer, [], verify, true),
-    create2(
-      (
-        await ethers.getContractFactory(
-          UpgradeExecutorABI,
-          UpgradeExecutorBytecode
-        )
-      ).connect(signer),
-      []
-    ),
-    deployContract('ValidatorWalletCreator', signer, [], verify, true),
-    deployContract('DeployHelper', signer, [], verify, true),
+  ] = await deployBatch([
+    () => deployContract('EdgeChallengeManager', signer, [], verify, true),
+    () => deployContract('RollupAdminLogic', signer, [], verify, true),
+    () => deployContract('RollupUserLogic', signer, [], verify, true),
+    async () =>
+      create2(
+        (
+          await ethers.getContractFactory(
+            UpgradeExecutorABI,
+            UpgradeExecutorBytecode
+          )
+        ).connect(signer),
+        []
+      ),
+    () => deployContract('ValidatorWalletCreator', signer, [], verify, true),
+    () => deployContract('DeployHelper', signer, [], verify, true),
   ])
-  const upgradeExecutor = upgradeExecutorResult
 
   console.log('Deploying bridgeCreator...')
   const bridgeCreator = await deployContract(
@@ -384,8 +446,9 @@ export async function deployAllContracts(
 }
 
 export async function deployOneStepProofEntry(
-  signer: ethers.Signer,
-  verify: boolean = true
+  signer: any,
+  verify: boolean = true,
+  isSerialDeployment: boolean = false
 ): Promise<{
   prover0: Contract
   proverMem: Contract
@@ -393,14 +456,17 @@ export async function deployOneStepProofEntry(
   proverHostIo: Contract
   osp: Contract
 }> {
-  console.log('Deploying OneStepProver contracts with custom DA validator...')
+  console.log(
+    `Deploying OneStepProver contracts${
+      isSerialDeployment ? ' in serial mode' : ''
+    }...`
+  )
 
-  // Deploy the four OneStepProver contracts in parallel
-  const [prover0, proverMem, proverMath, proverHostIo] = await Promise.all([
-    deployContract('OneStepProver0', signer, [], verify, true),
-    deployContract('OneStepProverMemory', signer, [], verify, true),
-    deployContract('OneStepProverMath', signer, [], verify, true),
-    deployContract('OneStepProverHostIo', signer, [], verify, true),
+  const [prover0, proverMem, proverMath, proverHostIo] = await deployBatch([
+    () => deployContract('OneStepProver0', signer, [], verify, true),
+    () => deployContract('OneStepProverMemory', signer, [], verify, true),
+    () => deployContract('OneStepProverMath', signer, [], verify, true),
+    () => deployContract('OneStepProverHostIo', signer, [], verify, true),
   ])
 
   console.log('Deploying OneStepProofEntry...')
