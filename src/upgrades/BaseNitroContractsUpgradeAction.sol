@@ -26,10 +26,8 @@ abstract contract BaseNitroContractsUpgradeAction {
     event ContractUpgraded(string contractName, address oldImpl, address newImpl);
     event ChallengeManagerDeployed(
         address oldChallengeManager,
-        address oldChallengeManagerImpl,
         address newChallengeManager,
         address newChallengeManagerImpl,
-        address oldOspEntry,
         address newOspEntry
     );
 
@@ -41,13 +39,49 @@ abstract contract BaseNitroContractsUpgradeAction {
         nextImplementationsRegistry = _nextImplementationsRegistry;
     }
 
+    function _sequencerInbox(
+        address inbox
+    ) internal view returns (address) {
+        return address(IInbox(inbox).sequencerInbox());
+    }
+
+    function _bridge(
+        address inbox
+    ) internal view returns (address) {
+        return address(IInbox(inbox).bridge());
+    }
+
+    function _outbox(
+        address inbox
+    ) internal view returns (address) {
+        return IInbox(inbox).bridge().activeOutbox();
+    }
+
+    function _rollup(
+        address inbox
+    ) internal view returns (address) {
+        return IOutbox(_outbox(inbox)).rollup();
+    }
+
+    function _rollupEventInbox(
+        address inbox
+    ) internal view returns (address) {
+        return address(IRollupCore(_rollup(inbox)).rollupEventInbox());
+    }
+
+    function _challengeManager(
+        address inbox
+    ) internal view returns (address) {
+        return address(IRollupCore(_rollup(inbox)).challengeManager());
+    }
+
     function _upgradeAllProxies(address proxyAdmin, address inbox) internal {
         ProxyAdmin admin = ProxyAdmin(proxyAdmin);
         SequencerInbox sequencerInbox = SequencerInbox(address(IInbox(inbox).sequencerInbox()));
         bool isUsingFeeToken = sequencerInbox.isUsingFeeToken();
 
         // Inbox
-        _upgradeOne(
+        _upgrade(
             admin,
             inbox,
             isUsingFeeToken ? "ERC20Inbox" : "Inbox",
@@ -55,9 +89,9 @@ abstract contract BaseNitroContractsUpgradeAction {
         );
 
         // SequencerInbox
-        _upgradeOne(
+        _upgrade(
             admin,
-            address(sequencerInbox),
+            _sequencerInbox(inbox),
             "SequencerInbox",
             abi.encode(
                 sequencerInbox.maxDataSize(),
@@ -68,44 +102,34 @@ abstract contract BaseNitroContractsUpgradeAction {
         );
 
         // Bridge
-        _upgradeOne(
-            admin,
-            address(IInbox(inbox).bridge()),
-            isUsingFeeToken ? "ERC20Bridge" : "Bridge",
-            abi.encode(inbox)
+        _upgrade(
+            admin, _bridge(inbox), isUsingFeeToken ? "ERC20Bridge" : "Bridge", abi.encode(inbox)
         );
 
         // Outbox
-        _upgradeOne(
-            admin,
-            IInbox(inbox).bridge().activeOutbox(),
-            isUsingFeeToken ? "ERC20Outbox" : "Outbox",
-            ""
-        );
+        _upgrade(admin, _outbox(inbox), isUsingFeeToken ? "ERC20Outbox" : "Outbox", "");
 
         // RollupAdminLogic & RollupUserLogic
         // since the rollup is a double logic proxy, we have special logic to upgrade it
-        address rollup = IOutbox(IInbox(inbox).bridge().activeOutbox()).rollup();
+        address rollup = _rollup(inbox);
         _upgradeRollupAdmmin(rollup);
         _upgradeRollupUser(rollup);
 
         // REI
-        address rei = address(IRollupCore(rollup).rollupEventInbox());
-        _upgradeOne(admin, rei, "RollupEventInbox", "");
+        address rei = _rollupEventInbox(inbox);
+        _upgrade(admin, rei, "RollupEventInbox", "");
 
         // OSP & EdgeChallengeManager
         // the standard path to upgrade the EdgeChallengeManager and OSP contracts is to
         // deploy a new challenge manager with the OSP's and set it on the rollup
-        _deployAndSetChallengeManager(
-            admin, EdgeChallengeManager(address(IRollupCore(rollup).challengeManager()))
-        );
+        _deployAndSetChallengeManager(admin, EdgeChallengeManager(_challengeManager(inbox)));
 
         // ValidatorWalletCreator
         // currently there is no way to set the creator on the rollup
         // todo: put this in nitro config or something
 
         // UpgradeExecutor
-        _upgradeOne(admin, address(this), "UpgradeExecutor", "");
+        _upgrade(admin, address(this), "UpgradeExecutor", "");
     }
 
     function _getOspEntry(
@@ -132,38 +156,41 @@ abstract contract BaseNitroContractsUpgradeAction {
         ProxyAdmin proxyAdmin,
         EdgeChallengeManager oldChallengeManager
     ) private {
-        address prevImpl =
-            prevImplementationsRegistry.getAddressWithArgs("RollupAdminLogic", keccak256(""));
         address nextImpl =
             nextImplementationsRegistry.getAddressWithArgs("RollupAdminLogic", keccak256(""));
-        IOneStepProofEntry prevOsp = _getOspEntry(false);
         IOneStepProofEntry nextOsp = _getOspEntry(true);
 
-        if (
-            proxyAdmin.getProxyImplementation(
-                TransparentUpgradeableProxy(payable(address(oldChallengeManager)))
-            ) != prevImpl
-        ) {
-            revert("Old challenge manager implementation mismatch");
+        {
+            IOneStepProofEntry prevOsp = _getOspEntry(false);
+            address prevImpl =
+                prevImplementationsRegistry.getAddressWithArgs("RollupAdminLogic", keccak256(""));
+            if (
+                proxyAdmin.getProxyImplementation(
+                    TransparentUpgradeableProxy(payable(address(oldChallengeManager)))
+                ) != prevImpl
+            ) {
+                revert("Old challenge manager implementation mismatch");
+            }
+
+            if (oldChallengeManager.oneStepProofEntry() != prevOsp) {
+                revert("Old challenge manager OSP entry mismatch");
+            }
+
+            if (prevImpl == nextImpl && prevOsp == nextOsp) {
+                // no need to deploy a new challenge manager
+                return;
+            }
         }
 
-        if (oldChallengeManager.oneStepProofEntry() != prevOsp) {
-            revert("Old challenge manager OSP entry mismatch");
-        }
-
-        if (prevImpl == nextImpl && prevOsp == nextOsp) {
-            // no need to deploy a new challenge manager
-            return;
-        }
-
+        uint256[] memory stakeAmounts;
         address assertionChain = address(oldChallengeManager.assertionChain());
-
-        uint256 numBigStepLevels = oldChallengeManager.NUM_BIGSTEP_LEVEL();
-        uint256[] memory stakeAmounts = new uint256[](numBigStepLevels + 2);
-        for (uint256 i = 0; i < numBigStepLevels + 2; i++) {
-            stakeAmounts[i] = oldChallengeManager.stakeAmounts(i);
+        {
+            uint256 numBigStepLevels = oldChallengeManager.NUM_BIGSTEP_LEVEL();
+            stakeAmounts = new uint256[](numBigStepLevels + 2);
+            for (uint256 i = 0; i < numBigStepLevels + 2; i++) {
+                stakeAmounts[i] = oldChallengeManager.stakeAmounts(i);
+            }
         }
-
         address newChallengeManager = address(
             new TransparentUpgradeableProxy(
                 nextImpl,
@@ -186,17 +213,10 @@ abstract contract BaseNitroContractsUpgradeAction {
             )
         );
 
-        RollupAdminLogic(assertionChain).setChallengeManager(
-            newChallengeManager
-        );
+        RollupAdminLogic(assertionChain).setChallengeManager(newChallengeManager);
 
         emit ChallengeManagerDeployed(
-            address(oldChallengeManager),
-            prevImpl,
-            newChallengeManager,
-            nextImpl,
-            address(prevOsp),
-            address(nextOsp)
+            address(oldChallengeManager), newChallengeManager, nextImpl, address(nextOsp)
         );
     }
 
@@ -232,7 +252,7 @@ abstract contract BaseNitroContractsUpgradeAction {
         }
     }
 
-    function _upgradeOne(
+    function _upgrade(
         ProxyAdmin admin,
         address proxy,
         string memory name,
