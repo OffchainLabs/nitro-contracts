@@ -162,4 +162,157 @@ contract ReferenceDAProofValidatorTest is Test {
         vm.expectRevert("Proof too short for certificate");
         validator.validateReadPreimage(certHash, 0, proof);
     }
+
+    function testCertificateHashMismatch() public {
+        bytes memory preimage = "Test preimage";
+        uint256 offset = 0;
+
+        // Build a valid proof
+        (bytes memory proof, bytes32 certHash) = buildValidProof(preimage, offset);
+
+        // Use a different certHash than what's in the proof
+        bytes32 wrongCertHash = keccak256("wrong certificate");
+
+        vm.expectRevert("Certificate hash mismatch");
+        validator.validateReadPreimage(wrongCertHash, offset, proof);
+    }
+
+    function testInvalidCertificateLength() public {
+        // Build a proof with wrong certificate length
+        bytes memory preimage = "Test";
+        bytes32 sha256Hash = sha256(abi.encodePacked(preimage));
+
+        // Create invalid certificate with wrong length (34 bytes instead of 33)
+        bytes memory certificate = new bytes(34);
+        certificate[0] = 0x01;
+        assembly {
+            mstore(add(certificate, 33), sha256Hash)
+        }
+        certificate[33] = 0xFF; // Extra byte
+
+        bytes32 certHash = keccak256(certificate);
+
+        // Build proof with invalid certificate
+        uint256 proofLength = 8 + 34 + 1 + 8 + preimage.length;
+        bytes memory proof = new bytes(proofLength);
+
+        // Set certificate size
+        assembly {
+            let certSize := shl(192, 34) // Wrong size
+            mstore(add(proof, 32), certSize)
+        }
+
+        // Copy certificate
+        for (uint256 i = 0; i < 34; i++) {
+            proof[8 + i] = certificate[i];
+        }
+
+        // Set version
+        proof[42] = bytes1(0x01);
+
+        // Set preimage size
+        assembly {
+            let preimageSize := shl(192, 4) // "Test" is 4 bytes
+            mstore(add(proof, 75), preimageSize)
+        }
+
+        // Copy preimage
+        for (uint256 i = 0; i < preimage.length; i++) {
+            proof[51 + i] = preimage[i];
+        }
+
+        vm.expectRevert("Invalid certificate length");
+        validator.validateReadPreimage(certHash, 0, proof);
+    }
+
+    function testInvalidCertificateHeader() public {
+        // Build a proof with wrong certificate header
+        bytes memory preimage = "Test";
+        bytes32 sha256Hash = sha256(abi.encodePacked(preimage));
+
+        // Create certificate with wrong header
+        bytes memory certificate = new bytes(33);
+        certificate[0] = 0x02; // Wrong header (should be 0x01)
+        assembly {
+            mstore(add(certificate, 33), sha256Hash)
+        }
+
+        bytes32 certHash = keccak256(certificate);
+
+        // Build proof
+        uint256 proofLength = 8 + 33 + 1 + 8 + preimage.length;
+        bytes memory proof = new bytes(proofLength);
+
+        // Set certificate size
+        assembly {
+            let certSize := shl(192, 33)
+            mstore(add(proof, 32), certSize)
+        }
+
+        // Copy certificate
+        for (uint256 i = 0; i < 33; i++) {
+            proof[8 + i] = certificate[i];
+        }
+
+        // Set version
+        proof[41] = bytes1(0x01);
+
+        // Set preimage size
+        assembly {
+            let preimageSize := shl(192, 4)
+            mstore(add(proof, 74), preimageSize)
+        }
+
+        // Copy preimage
+        for (uint256 i = 0; i < preimage.length; i++) {
+            proof[50 + i] = preimage[i];
+        }
+
+        vm.expectRevert("Invalid certificate header");
+        validator.validateReadPreimage(certHash, 0, proof);
+    }
+
+    function testProofTooShortForCustomData() public {
+        bytes memory preimage = "Test";
+        bytes32 sha256Hash = sha256(abi.encodePacked(preimage));
+
+        // Create valid certificate
+        bytes memory certificate = new bytes(33);
+        certificate[0] = 0x01;
+        assembly {
+            mstore(add(certificate, 33), sha256Hash)
+        }
+        bytes32 certHash = keccak256(certificate);
+
+        // Build proof that's too short for custom data (missing version and rest)
+        bytes memory proof = new bytes(41); // Only has certSize + certificate
+
+        // Set certificate size
+        assembly {
+            let certSize := shl(192, 33)
+            mstore(add(proof, 32), certSize)
+        }
+
+        // Copy certificate
+        for (uint256 i = 0; i < 33; i++) {
+            proof[8 + i] = certificate[i];
+        }
+
+        vm.expectRevert("Proof too short for custom data");
+        validator.validateReadPreimage(certHash, 0, proof);
+    }
+
+    function testInvalidProofLength() public {
+        bytes memory preimage = "Test";
+        (bytes memory proof, bytes32 certHash) = buildValidProof(preimage, 0);
+
+        // Truncate the proof to make it invalid
+        bytes memory truncatedProof = new bytes(proof.length - 2);
+        for (uint256 i = 0; i < truncatedProof.length; i++) {
+            truncatedProof[i] = proof[i];
+        }
+
+        vm.expectRevert("Invalid proof length");
+        validator.validateReadPreimage(certHash, 0, truncatedProof);
+    }
 }

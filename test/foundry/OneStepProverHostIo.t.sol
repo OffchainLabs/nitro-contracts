@@ -31,6 +31,28 @@ contract CustomDAProofValidatorMock is ICustomDAProofValidator {
     }
 }
 
+contract CustomDAProofValidatorBadResponse is ICustomDAProofValidator {
+    function validateReadPreimage(
+        bytes32 certHash,
+        uint256 offset,
+        bytes calldata proof
+    ) external pure override returns (bytes memory preimageChunk) {
+        // Return invalid response (too long)
+        return new bytes(33);
+    }
+}
+
+contract CustomDAProofValidatorEmptyResponse is ICustomDAProofValidator {
+    function validateReadPreimage(
+        bytes32 certHash,
+        uint256 offset,
+        bytes calldata proof
+    ) external pure override returns (bytes memory preimageChunk) {
+        // Return empty response
+        return new bytes(0);
+    }
+}
+
 contract OneStepProverHostIoTest is Test {
     using MachineLib for Machine;
     using ValueLib for Value;
@@ -197,6 +219,147 @@ contract OneStepProverHostIoTest is Test {
         mod.moduleMemory.merkleRoot = keccak256(abi.encodePacked("Memory leaf:", certKeccak256));
 
         vm.expectRevert("CUSTOM_DA_VALIDATOR_NOT_SUPPORTED");
+        ospHostIo.executeReadPreImagePublic(context, mach, mod, inst, proof);
+    }
+
+    function testCustomDAProofTooShort() public {
+        // Deploy OSP with mockCustomDAProofValidator as customDAValidator
+        OneStepProverHostIoPublic ospHostIo =
+            new OneStepProverHostIoPublic(address(mockCustomDAProofValidator));
+
+        bytes32 certKeccak256 = keccak256("test");
+        bytes memory merkleProof = buildMerkleProof(certKeccak256);
+
+        // Build proof that's too short (less than 8 bytes for cert size)
+        bytes memory customDAProof = new bytes(7);
+        bytes memory proof = abi.encodePacked(merkleProof, uint8(0), customDAProof);
+
+        ExecutionContext memory context;
+        Machine memory mach;
+        Module memory mod;
+        Instruction memory inst;
+
+        mach.valueStack.push(ValueLib.newI32(0)); // ptr
+        mach.valueStack.push(ValueLib.newI32(0)); // preimageOffset
+        mod.moduleMemory.size = 32;
+        inst.argumentData = 3; // CustomDA
+
+        mod.moduleMemory.merkleRoot = keccak256(abi.encodePacked("Memory leaf:", certKeccak256));
+
+        vm.expectRevert("CUSTOM_DA_PROOF_TOO_SHORT");
+        ospHostIo.executeReadPreImagePublic(context, mach, mod, inst, proof);
+    }
+
+    function testProofTooShortForCert() public {
+        // Deploy OSP with mockCustomDAProofValidator as customDAValidator
+        OneStepProverHostIoPublic ospHostIo =
+            new OneStepProverHostIoPublic(address(mockCustomDAProofValidator));
+
+        bytes32 certKeccak256 = keccak256("test");
+        bytes memory merkleProof = buildMerkleProof(certKeccak256);
+
+        // Build proof with cert size but not enough bytes for the certificate
+        bytes memory customDAProof = new bytes(10);
+        // Set certSize to 33 but only provide 10 bytes total
+        assembly {
+            let certSize := shl(192, 33)
+            mstore(add(customDAProof, 32), certSize)
+        }
+        bytes memory proof = abi.encodePacked(merkleProof, uint8(0), customDAProof);
+
+        ExecutionContext memory context;
+        Machine memory mach;
+        Module memory mod;
+        Instruction memory inst;
+
+        mach.valueStack.push(ValueLib.newI32(0)); // ptr
+        mach.valueStack.push(ValueLib.newI32(0)); // preimageOffset
+        mod.moduleMemory.size = 32;
+        inst.argumentData = 3; // CustomDA
+
+        mod.moduleMemory.merkleRoot = keccak256(abi.encodePacked("Memory leaf:", certKeccak256));
+
+        vm.expectRevert("PROOF_TOO_SHORT_FOR_CERT");
+        ospHostIo.executeReadPreImagePublic(context, mach, mod, inst, proof);
+    }
+
+    function testUnknownPreimageProof() public {
+        // Deploy OSP with mockCustomDAProofValidator as customDAValidator
+        OneStepProverHostIoPublic ospHostIo =
+            new OneStepProverHostIoPublic(address(mockCustomDAProofValidator));
+
+        bytes memory preimage =
+            hex"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20";
+        bytes memory certificate = prepareCertificate(preimage);
+        bytes32 certKeccak256 = keccak256(certificate);
+        bytes memory customDAProof = buildDAProof(preimage);
+        bytes memory merkleProof = buildMerkleProof(certKeccak256);
+
+        // Build complete proof with wrong proofType (not 0)
+        bytes memory proof = abi.encodePacked(merkleProof, uint8(1), customDAProof);
+
+        ExecutionContext memory context;
+        Machine memory mach;
+        Module memory mod;
+        Instruction memory inst;
+
+        mach.valueStack.push(ValueLib.newI32(0)); // ptr
+        mach.valueStack.push(ValueLib.newI32(0)); // preimageOffset
+        mod.moduleMemory.size = 32;
+        inst.argumentData = 3; // CustomDA
+
+        mod.moduleMemory.merkleRoot = keccak256(abi.encodePacked("Memory leaf:", certKeccak256));
+
+        vm.expectRevert("UNKNOWN_PREIMAGE_PROOF");
+        ospHostIo.executeReadPreImagePublic(context, mach, mod, inst, proof);
+    }
+
+    function testInvalidCustomDAResponseTooLong() public {
+        // Deploy OSP with a validator that returns too long response
+        CustomDAProofValidatorBadResponse badValidator = new CustomDAProofValidatorBadResponse();
+        OneStepProverHostIoPublic ospHostIo = new OneStepProverHostIoPublic(address(badValidator));
+
+        (bytes32 certKeccak256, bytes memory proof) =
+            buildFullProof(hex"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20");
+
+        ExecutionContext memory context;
+        Machine memory mach;
+        Module memory mod;
+        Instruction memory inst;
+
+        mach.valueStack.push(ValueLib.newI32(0)); // ptr
+        mach.valueStack.push(ValueLib.newI32(0)); // preimageOffset
+        mod.moduleMemory.size = 32;
+        inst.argumentData = 3; // CustomDA
+
+        mod.moduleMemory.merkleRoot = keccak256(abi.encodePacked("Memory leaf:", certKeccak256));
+
+        vm.expectRevert("INVALID_CUSTOM_DA_RESPONSE");
+        ospHostIo.executeReadPreImagePublic(context, mach, mod, inst, proof);
+    }
+
+    function testInvalidCustomDAResponseEmpty() public {
+        // Deploy OSP with a validator that returns empty response
+        CustomDAProofValidatorEmptyResponse emptyValidator =
+            new CustomDAProofValidatorEmptyResponse();
+        OneStepProverHostIoPublic ospHostIo = new OneStepProverHostIoPublic(address(emptyValidator));
+
+        (bytes32 certKeccak256, bytes memory proof) =
+            buildFullProof(hex"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20");
+
+        ExecutionContext memory context;
+        Machine memory mach;
+        Module memory mod;
+        Instruction memory inst;
+
+        mach.valueStack.push(ValueLib.newI32(0)); // ptr
+        mach.valueStack.push(ValueLib.newI32(0)); // preimageOffset
+        mod.moduleMemory.size = 32;
+        inst.argumentData = 3; // CustomDA
+
+        mod.moduleMemory.merkleRoot = keccak256(abi.encodePacked("Memory leaf:", certKeccak256));
+
+        vm.expectRevert("INVALID_CUSTOM_DA_RESPONSE");
         ospHostIo.executeReadPreImagePublic(context, mach, mod, inst, proof);
     }
 }
