@@ -7,11 +7,13 @@ pragma solidity ^0.8.0;
 /**
  * @title ICustomDAProofValidator
  * @notice Interface for custom data availability proof validators
+ * @dev All proofs MUST start with [certKeccak256(32), offset(8), ...] format
+ *      Implementations MUST validate certKeccak256 against the certificate.
  */
 interface ICustomDAProofValidator {
     /**
      * @notice Validates a custom DA proof and returns the preimage chunk
-     * @param proof The complete proof data (format determined by implementation)
+     * @param proof The complete proof data starting with [certKeccak256(32), offset(8), ...]
      * @return preimageChunk The 32-byte chunk of preimage data
      */
     function validateReadPreimage(
