@@ -236,34 +236,24 @@ contract OneStepProverHostIo is IOneStepProver {
 
             bytes calldata customProof = proof[proofOffset:];
 
-            // All CustomDA proofs must start with [certKeccak256(32), offset(8), certSize(8), certificate, ...]
-            require(customProof.length >= 48, "CUSTOM_DA_PROOF_TOO_SHORT");
+            // Extract certificate size and certificate
+            require(customProof.length >= 8, "CUSTOM_DA_PROOF_TOO_SHORT");
 
-            // Extract standardized header
-            bytes32 certKeccak256;
-            uint256 requestedOffsetInProof;
             uint256 certSize;
             assembly {
-                certKeccak256 := calldataload(add(customProof.offset, 0))
-                requestedOffsetInProof := shr(192, calldataload(add(customProof.offset, 32))) // Read 8 bytes at position 32
-                certSize := shr(192, calldataload(add(customProof.offset, 40))) // Read 8 bytes at position 40
+                certSize := shr(192, calldataload(add(customProof.offset, 0))) // Read 8 bytes
             }
 
-            // SECURITY CHECK: Verify the offset in the proof matches what the machine requested
-            require(requestedOffsetInProof == preimageOffset, "WRONG_OFFSET");
-
-            require(customProof.length >= 48 + certSize, "PROOF_TOO_SHORT_FOR_CERT");
+            require(customProof.length >= 8 + certSize, "PROOF_TOO_SHORT_FOR_CERT");
 
             // Extract and validate certificate
-            bytes calldata certificate = customProof[48:48 + certSize];
-            require(keccak256(certificate) == certKeccak256, "INVALID_CERTIFICATE_HASH");
+            bytes calldata certificate = customProof[8:8 + certSize];
 
             // SECURITY CHECK: Verify this is the certificate the machine requested
-            // leafContents contains the preimage hash that we have proven to exist in machine memory
-            require(certKeccak256 == leafContents, "WRONG_CERTIFICATE_HASH");
+            require(keccak256(certificate) == leafContents, "WRONG_CERTIFICATE_HASH");
 
-            // Now delegate to the custom validator with the full proof
-            extracted = customDAValidator.validateReadPreimage(customProof);
+            // Delegate to custom validator with proven values and full proof
+            extracted = customDAValidator.validateReadPreimage(leafContents, preimageOffset, customProof);
 
             // Ensure we got a valid response
             require(extracted.length > 0 && extracted.length <= 32, "INVALID_CUSTOM_DA_RESPONSE");
