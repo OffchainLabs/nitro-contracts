@@ -253,7 +253,8 @@ contract OneStepProverHostIo is IOneStepProver {
             require(keccak256(certificate) == leafContents, "WRONG_CERTIFICATE_HASH");
 
             // Delegate to custom validator with proven values and full proof
-            extracted = customDAValidator.validateReadPreimage(leafContents, preimageOffset, customProof);
+            extracted =
+                customDAValidator.validateReadPreimage(leafContents, preimageOffset, customProof);
 
             // Ensure we got a valid response
             require(extracted.length > 0 && extracted.length <= 32, "INVALID_CUSTOM_DA_RESPONSE");
