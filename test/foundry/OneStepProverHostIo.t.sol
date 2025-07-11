@@ -63,10 +63,9 @@ contract OneStepProverHostIoTest is Test {
         return proofData;
     }
 
-    function prepareCertificate() internal pure returns (bytes32) {
-        bytes memory preimage =
-            hex"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20";
-
+    function prepareCertificate(
+        bytes memory preimage
+    ) internal pure returns (bytes memory) {
         // Create certificate: [header(1), sha256Hash(32)]
         bytes memory certificate = new bytes(33);
         certificate[0] = 0x01; // header
@@ -74,15 +73,12 @@ contract OneStepProverHostIoTest is Test {
         assembly {
             mstore(add(certificate, 33), sha256Hash)
         }
-        return keccak256(certificate);
+        return certificate;
     }
 
-    function buildFullProof(
-        bytes32 certKeccak256
+    function buildDAProof(
+        bytes memory preimage
     ) internal pure returns (bytes memory) {
-        bytes memory preimage =
-            hex"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20";
-
         // Create certificate: [header(1), sha256Hash(32)]
         bytes memory certificate = new bytes(33);
         certificate[0] = 0x01; // header
@@ -92,19 +88,68 @@ contract OneStepProverHostIoTest is Test {
         }
 
         // Build CustomDA proof with new format: [certSize(8), certificate, version(1), preimageSize(8), preimageData]
-        bytes memory customDAProof = abi.encodePacked(
+        return abi.encodePacked(
             uint64(33), // certSize
             certificate,
             uint8(0x01), // version
             uint64(preimage.length), // preimageSize
             preimage
         );
+    }
+
+    function buildFullProof(
+        bytes memory preimage
+    ) internal pure returns (bytes32 certKeccak256, bytes memory proof) {
+        bytes memory certificate = prepareCertificate(preimage);
+        bytes32 certKeccak256 = keccak256(certificate);
+        // Build CustomDA proof with new format: [certSize(8), certificate, version(1), preimageSize(8), preimageData]
+        bytes memory customDAProof = buildDAProof(preimage);
 
         // Build merkle proof for the leaf containing certKeccak256
         bytes memory merkleProof = buildMerkleProof(certKeccak256);
 
         // Build complete proof: merkleProof + proofType(1) + customDAProof
-        return abi.encodePacked(merkleProof, uint8(0), customDAProof);
+        return (certKeccak256, abi.encodePacked(merkleProof, uint8(0), customDAProof));
+    }
+
+    function testWrongCertificateHash() public {
+        // Deploy OSP with mockCustomDAProofValidator as customDAValidator
+        OneStepProverHostIoPublic ospHostIo =
+            new OneStepProverHostIoPublic(address(mockCustomDAProofValidator));
+
+        // Create a different certificate hash that the machine expects
+        bytes32 correctCertKeccak256 = keccak256(
+            prepareCertificate(
+                hex"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20"
+            )
+        );
+
+        // Build the DA proof with another certificate
+        bytes memory customDAProof =
+            buildDAProof(hex"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f201337");
+
+        // Build merkle proof for the correct certificate hash (what the machine expects)
+        bytes memory merkleProof = buildMerkleProof(correctCertKeccak256);
+
+        // Build complete proof
+        bytes memory proof = abi.encodePacked(merkleProof, uint8(0), customDAProof);
+
+        ExecutionContext memory context;
+        Machine memory mach;
+        Module memory mod;
+        Instruction memory inst;
+
+        mach.valueStack.push(ValueLib.newI32(0)); // ptr
+        mach.valueStack.push(ValueLib.newI32(0)); // preimageOffset
+        mod.moduleMemory.size = 32;
+        inst.argumentData = 3; // CustomDA
+
+        // Set the merkleRoot to match what the machine expects
+        mod.moduleMemory.merkleRoot =
+            keccak256(abi.encodePacked("Memory leaf:", correctCertKeccak256));
+
+        vm.expectRevert("WRONG_CERTIFICATE_HASH");
+        ospHostIo.executeReadPreImagePublic(context, mach, mod, inst, proof);
     }
 
     function testCustomDAValidatorSupported() public {
@@ -112,8 +157,8 @@ contract OneStepProverHostIoTest is Test {
         OneStepProverHostIoPublic ospHostIo =
             new OneStepProverHostIoPublic(address(mockCustomDAProofValidator));
 
-        bytes32 certKeccak256 = prepareCertificate();
-        bytes memory proof = buildFullProof(certKeccak256);
+        (bytes32 certKeccak256, bytes memory proof) =
+            buildFullProof(hex"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20");
 
         ExecutionContext memory context;
         Machine memory mach;
@@ -135,8 +180,8 @@ contract OneStepProverHostIoTest is Test {
         // Deploy OSP with address(0) as customDAValidator
         OneStepProverHostIoPublic ospHostIo = new OneStepProverHostIoPublic(address(0));
 
-        bytes32 certKeccak256 = prepareCertificate();
-        bytes memory proof = buildFullProof(certKeccak256);
+        (bytes32 certKeccak256, bytes memory proof) =
+            buildFullProof(hex"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20");
 
         ExecutionContext memory context;
         Machine memory mach;
