@@ -2270,7 +2270,7 @@ contract RollupTest is Test {
         vm.prank(upgradeExecutorAddr);
         adminRollup.setOwner(newOwner);
 
-        assertEq(adminRollup.owner(), newOwner);
+        assertEq(userRollup.owner(), newOwner);
     }
 
     function testAccessControl() public {
