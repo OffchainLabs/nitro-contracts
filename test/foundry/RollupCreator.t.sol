@@ -606,6 +606,147 @@ contract RollupCreatorTest is Test {
             bytes32(uint256(keccak256("eip1967.proxy.implementation.secondary")) - 1);
         return address(uint160(uint256(vm.load(proxy, secondarySlot))));
     }
+
+    function test_createErc20RollupLowDecimalToken() public {
+        // Create a 6 decimal token (like USDC)
+        MockLowDecimalToken lowDecimalToken = new MockLowDecimalToken("USDC", "USDC", 6);
+        lowDecimalToken.mint(deployer, 1_000_000 * 10 ** 6); // 1M USDC
+
+        _createERC20RollupWithDecimals(address(lowDecimalToken), 6);
+    }
+
+    function test_createErc20RollupHighDecimalToken() public {
+        // Create a 24 decimal token
+        MockHighDecimalToken highDecimalToken = new MockHighDecimalToken("HIGH", "HIGH", 24);
+        highDecimalToken.mint(deployer, 1_000_000 * 10 ** 24); // 1M tokens
+
+        _createERC20RollupWithDecimals(address(highDecimalToken), 24);
+    }
+
+    function _createERC20RollupWithDecimals(address nativeToken, uint8 decimals) internal {
+        vm.startPrank(deployer);
+
+        // deployment params
+        ISequencerInbox.MaxTimeVariation memory timeVars =
+            ISequencerInbox.MaxTimeVariation(((60 * 60 * 24) / 15), 12, 60 * 60 * 24, 60 * 60);
+        uint256[] memory miniStakeValues = new uint256[](3);
+        miniStakeValues[0] = 1 ether;
+        miniStakeValues[1] = 2 ether;
+        miniStakeValues[2] = 3 ether;
+        AssertionState memory emptyState = AssertionState(
+            GlobalState([bytes32(0), bytes32(0)], [uint64(0), uint64(0)]),
+            MachineStatus.FINISHED,
+            bytes32(0)
+        );
+        Config memory config = Config({
+            baseStake: 1000,
+            chainId: 1337,
+            chainConfig: "abc",
+            minimumAssertionPeriod: 75,
+            validatorAfkBlocks: 1234,
+            confirmPeriodBlocks: 567,
+            owner: rollupOwner,
+            sequencerInboxMaxTimeVariation: timeVars,
+            stakeToken: address(token),
+            wasmModuleRoot: keccak256("wasm"),
+            loserStakeEscrow: address(200),
+            genesisAssertionState: emptyState,
+            genesisInboxCount: 0,
+            miniStakeValues: miniStakeValues,
+            layerZeroBlockEdgeHeight: 2 ** 5,
+            layerZeroBigStepEdgeHeight: 2 ** 5,
+            layerZeroSmallStepEdgeHeight: 2 ** 5,
+            anyTrustFastConfirmer: address(0),
+            numBigStepLevel: 1,
+            challengeGracePeriodBlocks: 10,
+            bufferConfig: BufferConfig({threshold: 600, max: 14400, replenishRateInBasis: 500})
+        });
+
+        // Calculate expected cost based on decimals
+        uint256 expectedCost;
+        if (decimals < 18) {
+            // For low decimal tokens, the cost is scaled down
+            expectedCost = 0.2 ether / (10 ** (18 - decimals));
+        } else if (decimals > 18) {
+            // For high decimal tokens, the cost is scaled up
+            expectedCost = 0.2 ether * (10 ** (decimals - 18));
+        } else {
+            expectedCost = 0.2 ether;
+        }
+
+        IERC20(nativeToken).approve(address(rollupCreator), expectedCost);
+
+        address[] memory validators = new address[](2);
+        validators[0] = makeAddr("validator1");
+        validators[1] = makeAddr("validator2");
+        address[] memory batchPosters = new address[](1);
+        batchPosters[0] = makeAddr("batchPoster");
+
+        RollupCreator.RollupDeploymentParams memory param = RollupCreator.RollupDeploymentParams({
+            config: config,
+            validators: validators,
+            maxDataSize: MAX_DATA_SIZE,
+            nativeToken: nativeToken,
+            deployFactoriesToL2: true,
+            maxFeePerGasForRetryables: MAX_FEE_PER_GAS,
+            batchPosters: batchPosters,
+            batchPosterManager: address(0),
+            feeTokenPricer: IFeeTokenPricer(address(0))
+        });
+
+        address rollupAddress = rollupCreator.createRollup(param);
+
+        // Verify rollup was created
+        assertTrue(rollupAddress != address(0), "Failed to create rollup");
+
+        // Verify native token is correctly set
+        RollupCore rollup = RollupCore(rollupAddress);
+        IBridge bridge = rollup.bridge();
+        assertEq(
+            IERC20Bridge(address(bridge)).nativeToken(), nativeToken, "Invalid native token ref"
+        );
+    }
+}
+
+// Mock tokens for testing different decimals
+contract MockLowDecimalToken is ERC20PresetFixedSupply {
+    uint8 private _decimals;
+
+    constructor(
+        string memory name,
+        string memory symbol,
+        uint8 decimals_
+    ) ERC20PresetFixedSupply(name, symbol, 0, msg.sender) {
+        _decimals = decimals_;
+    }
+
+    function decimals() public view override returns (uint8) {
+        return _decimals;
+    }
+
+    function mint(address to, uint256 amount) public {
+        _mint(to, amount);
+    }
+}
+
+contract MockHighDecimalToken is ERC20PresetFixedSupply {
+    uint8 private _decimals;
+
+    constructor(
+        string memory name,
+        string memory symbol,
+        uint8 decimals_
+    ) ERC20PresetFixedSupply(name, symbol, 0, msg.sender) {
+        _decimals = decimals_;
+    }
+
+    function decimals() public view override returns (uint8) {
+        return _decimals;
+    }
+
+    function mint(address to, uint256 amount) public {
+        _mint(to, amount);
+    }
 }
 
 contract ProxyUpgradeAction {
