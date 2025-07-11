@@ -14,7 +14,7 @@ contract ReferenceDAProofValidatorTest is Test {
     function buildValidProof(
         bytes memory preimage,
         uint256 offset
-    ) internal pure returns (bytes memory proof) {
+    ) internal pure returns (bytes memory proof, bytes32 certHash) {
         bytes32 sha256Hash = sha256(abi.encodePacked(preimage));
 
         // Create certificate: [header(1), sha256Hash(32)]
@@ -23,47 +23,36 @@ contract ReferenceDAProofValidatorTest is Test {
         assembly {
             mstore(add(certificate, 33), sha256Hash)
         }
-        bytes32 certKeccak256 = keccak256(certificate);
+        certHash = keccak256(certificate);
 
-        // Build proof: [certKeccak256(32), offset(8), Version(1), CertificateSize(8), Certificate(33), PreimageSize(8), PreimageData]
-        uint256 proofLength = 32 + 8 + 1 + 8 + 33 + 8 + preimage.length;
+        // Build proof with new format: [certSize(8), certificate(33), version(1), preimageSize(8), preimageData]
+        uint256 proofLength = 8 + 33 + 1 + 8 + preimage.length;
         proof = new bytes(proofLength);
 
-        // Copy certKeccak256
-        assembly {
-            mstore(add(proof, 32), certKeccak256)
-        }
-
-        // Copy offset (8 bytes)
-        assembly {
-            let offsetData := shl(192, offset)
-            mstore(add(proof, 64), offsetData)
-        }
-
-        // Set version
-        proof[40] = bytes1(0x01);
-
-        // Set certificate size (8 bytes)
+        // Set certificate size (8 bytes at position 0)
         assembly {
             let certSize := shl(192, 33)
-            mstore(add(proof, 73), certSize)
+            mstore(add(proof, 32), certSize)
         }
 
-        // Copy certificate
+        // Copy certificate (33 bytes starting at position 8)
         for (uint256 i = 0; i < 33; i++) {
-            proof[49 + i] = certificate[i];
+            proof[8 + i] = certificate[i];
         }
 
-        // Set preimage size (8 bytes)
+        // Set version (1 byte at position 41)
+        proof[41] = bytes1(0x01);
+
+        // Set preimage size (8 bytes at position 42)
         uint256 preimageLen = preimage.length;
         assembly {
             let preimageSize := shl(192, preimageLen)
-            mstore(add(proof, 114), preimageSize)
+            mstore(add(proof, 74), preimageSize)
         }
 
-        // Copy preimage data
+        // Copy preimage data (starting at position 50)
         for (uint256 i = 0; i < preimage.length; i++) {
-            proof[90 + i] = preimage[i];
+            proof[50 + i] = preimage[i];
         }
     }
 
@@ -74,10 +63,10 @@ contract ReferenceDAProofValidatorTest is Test {
         uint256 offset = 16; // Read from byte 16
 
         // Build valid proof
-        bytes memory proof = buildValidProof(preimage, offset);
+        (bytes memory proof, bytes32 certHash) = buildValidProof(preimage, offset);
 
         // Call validateReadPreimage
-        bytes memory chunk = validator.validateReadPreimage(proof);
+        bytes memory chunk = validator.validateReadPreimage(certHash, offset, proof);
 
         // Verify the chunk
         assertEq(chunk.length, 32, "Chunk should be 32 bytes");
@@ -98,10 +87,10 @@ contract ReferenceDAProofValidatorTest is Test {
         uint256 offset = 8; // Only 6 bytes available from offset 8
 
         // Build valid proof
-        bytes memory proof = buildValidProof(preimage, offset);
+        (bytes memory proof, bytes32 certHash) = buildValidProof(preimage, offset);
 
         // Validate
-        bytes memory chunk = validator.validateReadPreimage(proof);
+        bytes memory chunk = validator.validateReadPreimage(certHash, offset, proof);
 
         // Should get "eimage" (6 bytes) padded with zeros
         assertEq(chunk.length, 32);
@@ -124,23 +113,23 @@ contract ReferenceDAProofValidatorTest is Test {
         uint256 offset = 0;
 
         // Build a valid proof with the wrong preimage to get wrong hash in certificate
-        bytes memory proof = buildValidProof(wrongPreimage, offset);
+        (bytes memory proof, bytes32 certHash) = buildValidProof(wrongPreimage, offset);
 
         // Replace the preimage data with wrong preimage data
-        // The preimage starts at offset 90 in the proof
+        // The preimage starts at offset 50 in the proof (after certSize(8) + certificate(33) + version(1) + preimageSize(8))
         for (uint256 i = 0; i < preimage.length; i++) {
-            proof[90 + i] = preimage[i];
+            proof[50 + i] = preimage[i];
         }
 
         // Update preimage size to match the wrong preimage
         assembly {
             let preimageSize := shl(192, 13) // "Test preimage" is 13 bytes
-            mstore(add(proof, 114), preimageSize)
+            mstore(add(proof, 74), preimageSize)
         }
 
         // Should revert when preimage hash doesn't match
         vm.expectRevert("Invalid preimage hash");
-        validator.validateReadPreimage(proof);
+        validator.validateReadPreimage(certHash, offset, proof);
     }
 
     function testInvalidVersion() public {
@@ -148,19 +137,29 @@ contract ReferenceDAProofValidatorTest is Test {
         uint256 offset = 0;
 
         // Build a valid proof
-        bytes memory proof = buildValidProof(preimage, offset);
+        (bytes memory proof, bytes32 certHash) = buildValidProof(preimage, offset);
 
-        // Set wrong version
-        proof[40] = bytes1(0x02); // Wrong version
+        // Set wrong version (version byte is at position 41)
+        proof[41] = bytes1(0x02); // Wrong version
 
         vm.expectRevert("Unsupported proof version");
-        validator.validateReadPreimage(proof);
+        validator.validateReadPreimage(certHash, offset, proof);
     }
 
     function testProofTooShort() public {
-        bytes memory proof = new bytes(48); // Too short
+        // Create a proof that's too short to contain the certificate
+        bytes memory proof = new bytes(40); // Has header but not enough for full certificate
 
-        vm.expectRevert("Proof too short");
-        validator.validateReadPreimage(proof);
+        // Set certificate size to 33 at position 0
+        assembly {
+            let certSize := shl(192, 33)
+            mstore(add(proof, 32), certSize)
+        }
+
+        // Create a dummy certHash for the test
+        bytes32 certHash = keccak256("test");
+
+        vm.expectRevert("Proof too short for certificate");
+        validator.validateReadPreimage(certHash, 0, proof);
     }
 }

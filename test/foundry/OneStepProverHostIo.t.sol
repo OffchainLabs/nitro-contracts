@@ -23,6 +23,8 @@ contract OneStepProverHostIoPublic is OneStepProverHostIo {
 
 contract CustomDAProofValidatorMock is ICustomDAProofValidator {
     function validateReadPreimage(
+        bytes32 certHash,
+        uint256 offset,
         bytes calldata proof
     ) external pure override returns (bytes memory preimageChunk) {
         return new bytes(32);
@@ -41,31 +43,90 @@ contract OneStepProverHostIoTest is Test {
         mockCustomDAProofValidator = new CustomDAProofValidatorMock();
     }
 
+    function buildMerkleProof(
+        bytes32 leafContents
+    ) internal pure returns (bytes memory) {
+        // For a simple test case, we'll create a merkle tree with just one level
+        // The leaf at index 0 contains our leafContents
+
+        // Build the proof data: leafContents (32 bytes) + counterparts length (1 byte) + counterparts data
+        bytes memory proofData = new bytes(32 + 1); // No counterparts for a single element tree
+
+        // Copy leaf contents
+        assembly {
+            mstore(add(proofData, 32), leafContents)
+        }
+
+        // Set counterparts length to 0 (1 byte)
+        proofData[32] = 0;
+
+        return proofData;
+    }
+
+    function prepareCertificate() internal pure returns (bytes32) {
+        bytes memory preimage =
+            hex"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20";
+
+        // Create certificate: [header(1), sha256Hash(32)]
+        bytes memory certificate = new bytes(33);
+        certificate[0] = 0x01; // header
+        bytes32 sha256Hash = sha256(preimage);
+        assembly {
+            mstore(add(certificate, 33), sha256Hash)
+        }
+        return keccak256(certificate);
+    }
+
+    function buildFullProof(
+        bytes32 certKeccak256
+    ) internal pure returns (bytes memory) {
+        bytes memory preimage =
+            hex"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20";
+
+        // Create certificate: [header(1), sha256Hash(32)]
+        bytes memory certificate = new bytes(33);
+        certificate[0] = 0x01; // header
+        bytes32 sha256Hash = sha256(preimage);
+        assembly {
+            mstore(add(certificate, 33), sha256Hash)
+        }
+
+        // Build CustomDA proof with new format: [certSize(8), certificate, version(1), preimageSize(8), preimageData]
+        bytes memory customDAProof = abi.encodePacked(
+            uint64(33), // certSize
+            certificate,
+            uint8(0x01), // version
+            uint64(preimage.length), // preimageSize
+            preimage
+        );
+
+        // Build merkle proof for the leaf containing certKeccak256
+        bytes memory merkleProof = buildMerkleProof(certKeccak256);
+
+        // Build complete proof: merkleProof + proofType(1) + customDAProof
+        return abi.encodePacked(merkleProof, uint8(0), customDAProof);
+    }
+
     function testCustomDAValidatorSupported() public {
         // Deploy OSP with mockCustomDAProofValidator as customDAValidator
         OneStepProverHostIoPublic ospHostIo =
             new OneStepProverHostIoPublic(address(mockCustomDAProofValidator));
 
-        // Prepare a valid ReferenceDA proof
-        bytes memory preimage =
-            hex"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20";
-        bytes32 hash = keccak256(preimage);
-        uint64 offset = 0;
-        uint8 version = 0x01;
-        uint64 preimageSize = uint64(preimage.length);
-        bytes memory proof = abi.encodePacked(hash, offset, version, preimageSize, preimage);
+        bytes32 certKeccak256 = prepareCertificate();
+        bytes memory proof = buildFullProof(certKeccak256);
 
         ExecutionContext memory context;
         Machine memory mach;
         Module memory mod;
         Instruction memory inst;
 
-        mach.valueStack.push(ValueLib.newI32(0));
-        mach.valueStack.push(ValueLib.newI32(0));
+        mach.valueStack.push(ValueLib.newI32(0)); // ptr
+        mach.valueStack.push(ValueLib.newI32(0)); // preimageOffset
         mod.moduleMemory.size = 32;
         inst.argumentData = 3; // CustomDA
-        mod.moduleMemory.merkleRoot =
-            0x3fc4ac0e48eb4af888852fca798249c069e469c12221c04bbc0c6321064c8fe0;
+
+        // Set the merkleRoot to match our single-element merkle tree
+        mod.moduleMemory.merkleRoot = keccak256(abi.encodePacked("Memory leaf:", certKeccak256));
 
         ospHostIo.executeReadPreImagePublic(context, mach, mod, inst, proof);
     }
@@ -74,26 +135,21 @@ contract OneStepProverHostIoTest is Test {
         // Deploy OSP with address(0) as customDAValidator
         OneStepProverHostIoPublic ospHostIo = new OneStepProverHostIoPublic(address(0));
 
-        // Prepare a valid ReferenceDA proof
-        bytes memory preimage =
-            hex"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20";
-        bytes32 hash = keccak256(preimage);
-        uint64 offset = 0;
-        uint8 version = 0x01;
-        uint64 preimageSize = uint64(preimage.length);
-        bytes memory proof = abi.encodePacked(hash, offset, version, preimageSize, preimage);
+        bytes32 certKeccak256 = prepareCertificate();
+        bytes memory proof = buildFullProof(certKeccak256);
 
         ExecutionContext memory context;
         Machine memory mach;
         Module memory mod;
         Instruction memory inst;
 
-        mach.valueStack.push(ValueLib.newI32(0));
-        mach.valueStack.push(ValueLib.newI32(0));
+        mach.valueStack.push(ValueLib.newI32(0)); // ptr
+        mach.valueStack.push(ValueLib.newI32(0)); // preimageOffset
         mod.moduleMemory.size = 32;
         inst.argumentData = 3; // CustomDA
-        mod.moduleMemory.merkleRoot =
-            0x3fc4ac0e48eb4af888852fca798249c069e469c12221c04bbc0c6321064c8fe0;
+
+        // Set the merkleRoot to match our single-element merkle tree
+        mod.moduleMemory.merkleRoot = keccak256(abi.encodePacked("Memory leaf:", certKeccak256));
 
         vm.expectRevert("CUSTOM_DA_VALIDATOR_NOT_SUPPORTED");
         ospHostIo.executeReadPreImagePublic(context, mach, mod, inst, proof);
