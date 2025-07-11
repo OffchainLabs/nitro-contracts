@@ -21,7 +21,7 @@
     "audit:ci": "audit-ci --config ./audit-ci.jsonc",
     "audit:fix": "yarn-audit-fix",
     "prepublishOnly": "hardhat clean && forge clean && hardhat compile && yarn build:forge:yul",
-    "coverage": "FOUNDRY_PROFILE=test forge coverage --report lcov --ir-minimum && lcov --remove lcov.info 'node_modules/*' 'test/*' 'script/*' 'src/test-helpers/*' 'challenge/*' --ignore-errors unused -o lcov.info && genhtml lcov.info --branch-coverage --output-dir coverage",
+    "coverage": "FOUNDRY_PROFILE=test forge coverage --report lcov --ir-minimum --no-match-test .*ToFork.* && lcov --remove lcov.info 'node_modules/*' 'test/*' 'script/*' 'src/test-helpers/*' 'challenge/*' --ignore-errors unused -o lcov.info && genhtml lcov.info --branch-coverage --output-dir coverage",
     "build:all": "yarn build && yarn build:forge",
     "build": "hardhat compile",
     "build:forge:sol": "forge build --skip *.yul",

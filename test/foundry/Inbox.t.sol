@@ -8,6 +8,16 @@ import "../../src/bridge/IInbox.sol";
 import "../../src/bridge/Bridge.sol";
 import "../../src/bridge/ISequencerInbox.sol";
 import "../../src/libraries/AddressAliasHelper.sol";
+import {
+    NotOrigin, NotForked, GasLimitTooLarge, RetryableData
+} from "../../src/libraries/Error.sol";
+import {
+    L2MessageType_unsignedEOATx,
+    L2MessageType_unsignedContractTx
+} from "../../src/libraries/MessageTypes.sol";
+import "../../src/bridge/IOwnable.sol";
+import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 /// forge-config: default.allow_internal_expect_revert = true
 contract InboxTest is AbsInboxTest {
@@ -30,14 +40,14 @@ contract InboxTest is AbsInboxTest {
     }
 
     /* solhint-disable func-name-mixedcase */
-    function test_initialize() public {
+    function testInitialize() public {
         assertEq(address(inbox.bridge()), address(bridge), "Invalid bridge ref");
         assertEq(address(inbox.sequencerInbox()), seqInbox, "Invalid seqInbox ref");
         assertEq(inbox.allowListEnabled(), false, "Invalid allowListEnabled");
         assertEq((PausableUpgradeable(address(inbox))).paused(), false, "Invalid paused state");
     }
 
-    function test_depositEth_FromEOA() public {
+    function testDepositEthFromEOA() public {
         uint256 depositAmount = 2 ether;
 
         uint256 bridgeEthBalanceBefore = address(bridge).balance;
@@ -68,7 +78,7 @@ contract InboxTest is AbsInboxTest {
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
     }
 
-    function test_depositEth_FromContract() public {
+    function testDepositEthFromContract() public {
         uint256 depositAmount = 1.2 ether;
 
         uint256 bridgeEthBalanceBefore = address(bridge).balance;
@@ -101,7 +111,7 @@ contract InboxTest is AbsInboxTest {
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
     }
 
-    function test_depositEth_revert_EthTransferFails() public {
+    function testDepositEthRevertEthTransferFails() public {
         uint256 bridgeEthBalanceBefore = address(bridge).balance;
         uint256 userEthBalanceBefore = address(user).balance;
 
@@ -122,7 +132,7 @@ contract InboxTest is AbsInboxTest {
         assertEq(bridge.delayedMessageCount(), 0, "Invalid delayed message count");
     }
 
-    function test_createRetryableTicket_FromEOA() public {
+    function testCreateRetryableTicketFromEOA() public {
         uint256 bridgeEthBalanceBefore = address(bridge).balance;
         uint256 userEthBalanceBefore = address(user).balance;
 
@@ -183,7 +193,7 @@ contract InboxTest is AbsInboxTest {
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
     }
 
-    function test_createRetryableTicket_FromContract() public {
+    function testCreateRetryableTicketFromContract() public {
         address sender = address(new Sender());
         vm.deal(sender, 10 ether);
 
@@ -249,7 +259,7 @@ contract InboxTest is AbsInboxTest {
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
     }
 
-    function test_createRetryableTicket_revert_WhenPaused() public {
+    function testCreateRetryableTicketRevertWhenPaused() public {
         vm.prank(rollup);
         inbox.pause();
 
@@ -266,7 +276,7 @@ contract InboxTest is AbsInboxTest {
         });
     }
 
-    function test_createRetryableTicket_revert_OnlyAllowed() public {
+    function testCreateRetryableTicketRevertOnlyAllowed() public {
         vm.prank(rollup);
         inbox.setAllowListEnabled(true);
 
@@ -284,7 +294,7 @@ contract InboxTest is AbsInboxTest {
         });
     }
 
-    function test_createRetryableTicket_revert_InsufficientValue() public {
+    function testCreateRetryableTicketRevertInsufficientValue() public {
         uint256 tooSmallEthAmount = 1 ether;
         uint256 l2CallValue = 2 ether;
         uint256 maxSubmissionCost = 0.1 ether;
@@ -311,7 +321,7 @@ contract InboxTest is AbsInboxTest {
         });
     }
 
-    function test_createRetryableTicket_revert_RetryableDataTracer() public {
+    function testCreateRetryableTicketRevertRetryableDataTracer() public {
         uint256 msgValue = 3 ether;
         uint256 l2CallValue = 1 ether;
         uint256 maxSubmissionCost = 0.1 ether;
@@ -379,7 +389,7 @@ contract InboxTest is AbsInboxTest {
         });
     }
 
-    function test_createRetryableTicket_revert_GasLimitTooLarge() public {
+    function testCreateRetryableTicketRevertGasLimitTooLarge() public {
         uint256 tooBigGasLimit = uint256(type(uint64).max) + 1;
 
         vm.deal(user, uint256(type(uint64).max) * 3);
@@ -397,7 +407,7 @@ contract InboxTest is AbsInboxTest {
         });
     }
 
-    function test_createRetryableTicket_revert_InsufficientSubmissionCost() public {
+    function testCreateRetryableTicketRevertInsufficientSubmissionCost() public {
         uint256 tooSmallMaxSubmissionCost = 5;
         bytes memory data = abi.encodePacked("msg");
 
@@ -424,7 +434,7 @@ contract InboxTest is AbsInboxTest {
         });
     }
 
-    function test_unsafeCreateRetryableTicket_FromEOA() public {
+    function testUnsafeCreateRetryableTicketFromEOA() public {
         uint256 bridgeEthBalanceBefore = address(bridge).balance;
         uint256 userEthBalanceBefore = address(user).balance;
 
@@ -485,7 +495,7 @@ contract InboxTest is AbsInboxTest {
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
     }
 
-    function test_unsafeCreateRetryableTicket_FromContract() public {
+    function testUnsafeCreateRetryableTicketFromContract() public {
         address sender = address(new Sender());
         vm.deal(sender, 10 ether);
 
@@ -550,7 +560,7 @@ contract InboxTest is AbsInboxTest {
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
     }
 
-    function test_unsafeCreateRetryableTicket_NotRevertingOnInsufficientValue() public {
+    function testUnsafeCreateRetryableTicketNotRevertingOnInsufficientValue() public {
         uint256 bridgeEthBalanceBefore = address(bridge).balance;
         uint256 userEthBalanceBefore = address(user).balance;
 
@@ -609,7 +619,7 @@ contract InboxTest is AbsInboxTest {
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
     }
 
-    function test_calculateRetryableSubmissionFee() public {
+    function testCalculateRetryableSubmissionFee() public {
         // 30 gwei fee
         uint256 basefee = 30000000000;
         vm.fee(basefee);
@@ -620,5 +630,363 @@ contract InboxTest is AbsInboxTest {
             (1400 + 6 * datalength) * basefee,
             "Invalid eth retryable submission fee"
         );
+    }
+
+    function testSendL1FundedUnsignedTransaction() public {
+        uint256 depositAmount = 1 ether;
+        uint256 gasLimit = 100_000;
+        uint256 maxFeePerGas = 0.000000002 ether;
+        uint256 nonce = 5;
+        bytes memory data = abi.encodePacked("test data");
+
+        uint256 bridgeEthBalanceBefore = address(bridge).balance;
+        uint256 userEthBalanceBefore = address(user).balance;
+
+        // expect event
+        vm.expectEmit(true, true, true, true);
+        emit InboxMessageDelivered(
+            0,
+            abi.encodePacked(
+                L2MessageType_unsignedEOATx,
+                gasLimit,
+                maxFeePerGas,
+                nonce,
+                uint256(uint160(user)),
+                depositAmount,
+                data
+            )
+        );
+
+        // send transaction
+        vm.prank(user);
+        uint256 msgNum = ethInbox.sendL1FundedUnsignedTransaction{value: depositAmount}(
+            gasLimit, maxFeePerGas, nonce, user, data
+        );
+
+        // checks
+        assertEq(msgNum, 0, "Invalid message number");
+        assertEq(
+            address(bridge).balance - bridgeEthBalanceBefore,
+            depositAmount,
+            "Invalid bridge balance"
+        );
+        assertEq(
+            userEthBalanceBefore - address(user).balance, depositAmount, "Invalid user balance"
+        );
+        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
+    }
+
+    function testSendL1FundedUnsignedTransactionRevertGasLimitTooLarge() public {
+        uint256 tooBigGasLimit = uint256(type(uint64).max) + 1;
+
+        vm.deal(user, 10 ether);
+        vm.prank(user);
+        vm.expectRevert(GasLimitTooLarge.selector);
+        ethInbox.sendL1FundedUnsignedTransaction{value: 1 ether}(tooBigGasLimit, 1, 0, user, "");
+    }
+
+    function testSendL1FundedContractTransaction() public {
+        address contractAddress = address(new Sender());
+        uint256 depositAmount = 0.5 ether;
+        uint256 gasLimit = 200_000;
+        uint256 maxFeePerGas = 0.000000003 ether;
+        bytes memory data = abi.encodePacked("contract call data");
+
+        uint256 bridgeEthBalanceBefore = address(bridge).balance;
+        uint256 userEthBalanceBefore = address(user).balance;
+
+        // expect event
+        vm.expectEmit(true, true, true, true);
+        emit InboxMessageDelivered(
+            0,
+            abi.encodePacked(
+                L2MessageType_unsignedContractTx,
+                gasLimit,
+                maxFeePerGas,
+                uint256(uint160(contractAddress)),
+                depositAmount,
+                data
+            )
+        );
+
+        // send transaction
+        vm.prank(user);
+        uint256 msgNum = ethInbox.sendL1FundedContractTransaction{value: depositAmount}(
+            gasLimit, maxFeePerGas, contractAddress, data
+        );
+
+        // checks
+        assertEq(msgNum, 0, "Invalid message number");
+        assertEq(
+            address(bridge).balance - bridgeEthBalanceBefore,
+            depositAmount,
+            "Invalid bridge balance"
+        );
+        assertEq(
+            userEthBalanceBefore - address(user).balance, depositAmount, "Invalid user balance"
+        );
+        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
+    }
+
+    function testSendL1FundedContractTransactionRevertGasLimitTooLarge() public {
+        uint256 tooBigGasLimit = uint256(type(uint64).max) + 1;
+
+        vm.deal(user, 10 ether);
+        vm.prank(user);
+        vm.expectRevert(GasLimitTooLarge.selector);
+        ethInbox.sendL1FundedContractTransaction{value: 1 ether}(tooBigGasLimit, 1, user, "");
+    }
+
+    function testSendL1FundedUnsignedTransactionToFork() public {
+        // This test requires simulating a fork by changing the chain ID
+        // Since deployTimeChainId is immutable, we need to deploy a new inbox with different chainId
+        uint256 currentChainId = block.chainid;
+
+        // Change chain ID to simulate fork
+        vm.chainId(currentChainId + 1);
+
+        // Deploy new inbox through proxy with new chain ID
+        address inboxImpl = address(new Inbox(MAX_DATA_SIZE));
+        address proxyAddress = TestUtil.deployProxy(inboxImpl);
+        Inbox forkInbox = Inbox(proxyAddress);
+        forkInbox.initialize(bridge, ISequencerInbox(seqInbox));
+        vm.prank(rollup);
+        bridge.setDelayedInbox(address(forkInbox), true);
+
+        // Change back to original chain ID (simulating we're on forked chain)
+        vm.chainId(currentChainId);
+
+        uint256 depositAmount = 0.8 ether;
+        uint256 gasLimit = 150_000;
+        uint256 maxFeePerGas = 0.000000002 ether;
+        uint256 nonce = 10;
+        bytes memory data = abi.encodePacked("fork test data");
+
+        uint256 bridgeEthBalanceBefore = address(bridge).balance;
+
+        // send transaction from EOA (tx.origin == msg.sender)
+        vm.prank(user, user);
+        uint256 msgNum = IInbox(address(forkInbox)).sendL1FundedUnsignedTransactionToFork{
+            value: depositAmount
+        }(gasLimit, maxFeePerGas, nonce, user, data);
+
+        assertEq(msgNum, 0, "Invalid message number");
+        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
+        assertEq(
+            address(bridge).balance - bridgeEthBalanceBefore,
+            depositAmount,
+            "Invalid bridge balance"
+        );
+    }
+
+    function testSendL1FundedUnsignedTransactionToForkRevertNotForked() public {
+        // Should revert when chain ID hasn't changed
+        vm.prank(user, user);
+        vm.expectRevert(NotForked.selector);
+        ethInbox.sendL1FundedUnsignedTransactionToFork{value: 1 ether}(100_000, 1, 0, user, "");
+    }
+
+    function testSendL1FundedUnsignedTransactionToForkRevertNotOrigin() public {
+        // Deploy inbox with different chain ID to simulate fork
+        uint256 currentChainId = block.chainid;
+        vm.chainId(currentChainId + 1);
+        address inboxImpl = address(new Inbox(MAX_DATA_SIZE));
+        address proxyAddress = TestUtil.deployProxy(inboxImpl);
+        Inbox forkInbox = Inbox(proxyAddress);
+        forkInbox.initialize(bridge, ISequencerInbox(seqInbox));
+        vm.chainId(currentChainId);
+
+        // Call from contract (tx.origin != msg.sender)
+        vm.prank(user);
+        vm.expectRevert(NotOrigin.selector);
+        IInbox(address(forkInbox)).sendL1FundedUnsignedTransactionToFork{value: 1 ether}(
+            100_000, 1, 0, user, ""
+        );
+    }
+
+    function testSendUnsignedTransactionToFork() public {
+        // Deploy inbox with different chain ID
+        uint256 currentChainId = block.chainid;
+        vm.chainId(currentChainId + 1);
+        address inboxImpl = address(new Inbox(MAX_DATA_SIZE));
+        address proxyAddress = TestUtil.deployProxy(inboxImpl);
+        Inbox forkInbox = Inbox(proxyAddress);
+        forkInbox.initialize(bridge, ISequencerInbox(seqInbox));
+        vm.prank(rollup);
+        bridge.setDelayedInbox(address(forkInbox), true);
+        vm.chainId(currentChainId);
+
+        uint256 gasLimit = 100_000;
+        uint256 maxFeePerGas = 0.000000002 ether;
+        uint256 nonce = 15;
+        uint256 value = 0.5 ether;
+        bytes memory data = abi.encodePacked("unsigned fork tx");
+
+        // send transaction from EOA
+        vm.prank(user, user);
+        uint256 msgNum = IInbox(address(forkInbox)).sendUnsignedTransactionToFork(
+            gasLimit, maxFeePerGas, nonce, user, value, data
+        );
+
+        assertEq(msgNum, 0, "Invalid message number");
+        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
+    }
+
+    function testSendUnsignedTransactionToForkRevertNotForked() public {
+        vm.prank(user, user);
+        vm.expectRevert(NotForked.selector);
+        ethInbox.sendUnsignedTransactionToFork(100_000, 1, 0, user, 0.1 ether, "");
+    }
+
+    function testSendUnsignedTransactionToForkRevertGasLimitTooLarge() public {
+        // Deploy inbox with different chain ID
+        uint256 currentChainId = block.chainid;
+        vm.chainId(currentChainId + 1);
+        address inboxImpl = address(new Inbox(MAX_DATA_SIZE));
+        address proxyAddress = TestUtil.deployProxy(inboxImpl);
+        Inbox forkInbox = Inbox(proxyAddress);
+        forkInbox.initialize(bridge, ISequencerInbox(seqInbox));
+        vm.chainId(currentChainId);
+
+        uint256 tooBigGasLimit = uint256(type(uint64).max) + 1;
+
+        vm.prank(user, user);
+        vm.expectRevert(GasLimitTooLarge.selector);
+        IInbox(address(forkInbox)).sendUnsignedTransactionToFork(
+            tooBigGasLimit, 1, 0, user, 0.1 ether, ""
+        );
+    }
+
+    function testSendWithdrawEthToFork() public {
+        // Deploy inbox with different chain ID
+        uint256 currentChainId = block.chainid;
+        vm.chainId(currentChainId + 1);
+        address inboxImpl = address(new Inbox(MAX_DATA_SIZE));
+        address proxyAddress = TestUtil.deployProxy(inboxImpl);
+        Inbox forkInbox = Inbox(proxyAddress);
+        forkInbox.initialize(bridge, ISequencerInbox(seqInbox));
+        vm.prank(rollup);
+        bridge.setDelayedInbox(address(forkInbox), true);
+        vm.chainId(currentChainId);
+
+        uint256 gasLimit = 80_000;
+        uint256 maxFeePerGas = 0.000000002 ether;
+        uint256 nonce = 20;
+        uint256 withdrawValue = 1.5 ether;
+        address withdrawTo = address(0x1234);
+
+        // send withdrawal from EOA
+        vm.prank(user, user);
+        uint256 msgNum = IInbox(address(forkInbox)).sendWithdrawEthToFork(
+            gasLimit, maxFeePerGas, nonce, withdrawValue, withdrawTo
+        );
+
+        assertEq(msgNum, 0, "Invalid message number");
+        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
+    }
+
+    function testSendWithdrawEthToForkRevertNotForked() public {
+        vm.prank(user, user);
+        vm.expectRevert(NotForked.selector);
+        ethInbox.sendWithdrawEthToFork(100_000, 1, 0, 1 ether, address(0x1234));
+    }
+
+    function testSendWithdrawEthToForkRevertNotOrigin() public {
+        // Deploy inbox with different chain ID
+        uint256 currentChainId = block.chainid;
+        vm.chainId(currentChainId + 1);
+        address inboxImpl = address(new Inbox(MAX_DATA_SIZE));
+        address proxyAddress = TestUtil.deployProxy(inboxImpl);
+        Inbox forkInbox = Inbox(proxyAddress);
+        forkInbox.initialize(bridge, ISequencerInbox(seqInbox));
+        vm.chainId(currentChainId);
+
+        // Call from contract
+        vm.prank(user);
+        vm.expectRevert(NotOrigin.selector);
+        IInbox(address(forkInbox)).sendWithdrawEthToFork(100_000, 1, 0, 1 ether, address(0x1234));
+    }
+
+    function testCreateRetryableTicketNoRefundAliasRewrite() public {
+        // This deprecated function should work the same as unsafeCreateRetryableTicket
+        uint256 ethToSend = 0.3 ether;
+        uint256 l2CallValue = 0.1 ether;
+        uint256 maxSubmissionCost = 0.1 ether;
+        uint256 gasLimit = 100_000;
+        uint256 maxFeePerGas = 0.000000002 ether;
+        bytes memory data = abi.encodePacked("deprecated method test");
+
+        uint256 bridgeEthBalanceBefore = address(bridge).balance;
+        uint256 userEthBalanceBefore = address(user).balance;
+
+        // expect event
+        vm.expectEmit(true, true, true, true);
+        emit InboxMessageDelivered(
+            0,
+            abi.encodePacked(
+                uint256(uint160(user)),
+                l2CallValue,
+                ethToSend,
+                maxSubmissionCost,
+                uint256(uint160(user)),
+                uint256(uint160(user)),
+                gasLimit,
+                maxFeePerGas,
+                data.length,
+                data
+            )
+        );
+
+        // call deprecated method
+        vm.prank(user, user);
+        uint256 msgNum = Inbox(address(ethInbox)).createRetryableTicketNoRefundAliasRewrite{
+            value: ethToSend
+        }(user, l2CallValue, maxSubmissionCost, user, user, gasLimit, maxFeePerGas, data);
+
+        // checks
+        assertEq(msgNum, 0, "Invalid message number");
+        assertEq(
+            address(bridge).balance - bridgeEthBalanceBefore, ethToSend, "Invalid bridge balance"
+        );
+        assertEq(userEthBalanceBefore - address(user).balance, ethToSend, "Invalid user balance");
+        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
+    }
+
+    function testCreateRetryableTicketNoRefundAliasRewriteRevertGasLimitTooLarge() public {
+        uint256 tooBigGasLimit = uint256(type(uint64).max) + 1;
+        uint256 l2CallValue = 0.1 ether;
+        uint256 maxSubmissionCost = 0.1 ether;
+        uint256 msgValue = 1 ether;
+
+        vm.deal(user, 10 ether);
+        vm.prank(user);
+        // The deprecated function calls unsafeCreateRetryableTicket which reverts with RetryableData
+        // when gasLimit or maxFeePerGas is set to 1 (magic value)
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                RetryableData.selector,
+                user,
+                user,
+                l2CallValue,
+                msgValue,
+                maxSubmissionCost,
+                user,
+                user,
+                tooBigGasLimit,
+                1,
+                ""
+            )
+        );
+        Inbox(address(ethInbox)).createRetryableTicketNoRefundAliasRewrite{value: msgValue}(
+            user, l2CallValue, maxSubmissionCost, user, user, tooBigGasLimit, 1, ""
+        );
+    }
+
+    function testPostUpgradeInit() public {
+        Inbox testInbox = new Inbox(MAX_DATA_SIZE);
+
+        // Attempting to call it directly should fail due to onlyDelegated
+        vm.expectRevert("Function must be called through delegatecall");
+        testInbox.postUpgradeInit(bridge);
     }
 }
