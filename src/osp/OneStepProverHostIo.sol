@@ -234,11 +234,20 @@ contract OneStepProverHostIo is IOneStepProver {
             require(address(customDAValidator) != address(0), "CUSTOM_DA_VALIDATOR_NOT_SUPPORTED");
             require(proofType == 0, "UNKNOWN_PREIMAGE_PROOF");
 
-            // The OSP is completely agnostic to CustomDA proof format
-            // Just forward all remaining proof bytes to the validator
             bytes calldata customProof = proof[proofOffset:];
 
-            // Delegate entirely to the custom validator
+            // All CustomDA proofs must start with [certKeccak256(32), offset(8), ...]
+            require(customProof.length >= 40, "CUSTOM_DA_PROOF_TOO_SHORT");
+
+            bytes32 certKeccak256;
+            assembly {
+                certKeccak256 := calldataload(add(customProof.offset, 0))
+            }
+
+			// leafContents containts the preimage hash that we have proven to exist in machine memory.
+            require(certKeccak256 == leafContents, "WRONG_CERTIFICATE_HASH");
+
+            // Now delegate to the custom validator
             extracted = customDAValidator.validateReadPreimage(customProof);
 
             // Ensure we got a valid response
