@@ -21,4 +21,23 @@ interface ICustomDAProofValidator {
         uint256 offset,
         bytes calldata proof
     ) external view returns (bytes memory preimageChunk);
+
+    /**
+     * @notice Validates whether a certificate is well-formed and legitimate
+     * @dev This function MUST NOT revert. It should return false for malformed or invalid certificates.
+     *      The security model requires that the prover's validity claim matches what this function returns.
+     *      If they disagree (e.g., prover claims valid but this returns false), the OSP will revert.
+     *
+     *      The proof format is: [certSize(8), certificate, claimedValid(1), validityProof...]
+     *      The validityProof section can contain additional verification data such as:
+     *      - Cryptographic signatures
+     *      - Merkle proofs
+     *      - Timestamped attestations
+     *      - Or other authentication mechanisms
+     * @param proof The proof data starting with [certSize(8), certificate, validityProof...]
+     * @return isValid True if the certificate is valid, false otherwise
+     */
+    function validateCertificate(
+        bytes calldata proof
+    ) external view returns (bool isValid);
 }

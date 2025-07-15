@@ -29,6 +29,29 @@ contract CustomDAProofValidatorMock is ICustomDAProofValidator {
     ) external pure override returns (bytes memory preimageChunk) {
         return new bytes(32);
     }
+
+    function validateCertificate(
+        bytes calldata proof
+    ) external pure override returns (bool isValid) {
+        // Extract certificate size
+        if (proof.length < 8) {
+            return false;
+        }
+
+        uint256 certSize;
+        assembly {
+            certSize := shr(192, calldataload(add(proof.offset, 0)))
+        }
+
+        if (proof.length < 8 + certSize) {
+            return false;
+        }
+
+        bytes calldata certificate = proof[8:8 + certSize];
+
+        // Simple mock validation - just check length
+        return certificate.length == 33;
+    }
 }
 
 contract CustomDAProofValidatorBadResponse is ICustomDAProofValidator {
@@ -40,6 +63,13 @@ contract CustomDAProofValidatorBadResponse is ICustomDAProofValidator {
         // Return invalid response (too long)
         return new bytes(33);
     }
+
+    function validateCertificate(
+        bytes calldata proof
+    ) external pure override returns (bool isValid) {
+        // Always return false for this mock
+        return false;
+    }
 }
 
 contract CustomDAProofValidatorEmptyResponse is ICustomDAProofValidator {
@@ -50,6 +80,13 @@ contract CustomDAProofValidatorEmptyResponse is ICustomDAProofValidator {
     ) external pure override returns (bytes memory preimageChunk) {
         // Return empty response
         return new bytes(0);
+    }
+
+    function validateCertificate(
+        bytes calldata proof
+    ) external pure override returns (bool isValid) {
+        // Always return true for this mock
+        return true;
     }
 }
 
@@ -123,7 +160,7 @@ contract OneStepProverHostIoTest is Test {
         bytes memory preimage
     ) internal pure returns (bytes32 certKeccak256, bytes memory proof) {
         bytes memory certificate = prepareCertificate(preimage);
-        bytes32 certKeccak256 = keccak256(certificate);
+        certKeccak256 = keccak256(certificate);
         // Build CustomDA proof with new format: [certSize(8), certificate, version(1), preimageSize(8), preimageData]
         bytes memory customDAProof = buildDAProof(preimage);
 

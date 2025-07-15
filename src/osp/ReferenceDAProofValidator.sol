@@ -69,4 +69,54 @@ contract ReferenceDAProofValidator is ICustomDAProofValidator {
 
         return preimageChunk;
     }
+
+    /**
+     * @notice Validates whether a certificate is well-formed and legitimate
+     * @dev This function MUST NOT revert. It should return false for malformed or invalid certificates.
+     *      The proof format is: [certSize(8), certificate, claimedValid(1), validityProof...]
+     *      For ReferenceDA, the validityProof is simply a version byte (0x01).
+     *      Other DA providers can include more complex validity proofs after the claimedValid byte,
+     *      such as cryptographic signatures, merkle proofs, or other verification data.
+     * @param proof The proof data starting with [certSize(8), certificate, validityProof...]
+     * @return isValid True if the certificate is valid, false otherwise
+     */
+    function validateCertificate(
+        bytes calldata proof
+    ) external pure override returns (bool isValid) {
+        // Extract certificate size
+        if (proof.length < 8) {
+            return false;
+        }
+
+        uint256 certSize;
+        assembly {
+            certSize := shr(192, calldataload(add(proof.offset, 0)))
+        }
+
+        // Check we have enough data for certificate and validity proof
+        if (proof.length < 8 + certSize + 2) {
+            // Need at least claimedValid(1) + version(1)
+            return false;
+        }
+
+        bytes calldata certificate = proof[8:8 + certSize];
+
+        // Basic validation for ReferenceDA:
+        // - Certificate must be exactly 33 bytes (1 byte prefix + 32 bytes hash)
+        // - First byte must be 0x01 (ReferenceDA marker)
+        if (certificate.length != 33) {
+            return false;
+        }
+        if (certificate[0] != 0x01) {
+            return false;
+        }
+
+        // Check version byte at the end of the proof
+        uint8 version = uint8(proof[proof.length - 1]);
+        if (version != 0x01) {
+            return false;
+        }
+
+        return true;
+    }
 }

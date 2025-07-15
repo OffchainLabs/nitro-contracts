@@ -271,6 +271,82 @@ contract OneStepProverHostIo is IOneStepProver {
         mach.valueStack.push(ValueLib.newI32(uint32(extracted.length)));
     }
 
+    function executeValidatePreimage(
+        ExecutionContext calldata execCtx,
+        Machine memory mach,
+        Module memory mod,
+        Instruction calldata inst,
+        bytes calldata proof
+    ) internal view {
+        uint256 preimageType = mach.valueStack.pop().assumeI32();
+        uint256 ptr = mach.valueStack.pop().assumeI32();
+
+        // Prove the hash in memory
+        uint256 leafIdx = ptr / LEAF_SIZE;
+        uint256 proofOffset = 0;
+        bytes32 leafContents;
+        MerkleProof memory merkleProof;
+        (leafContents, proofOffset, merkleProof) =
+            mod.moduleMemory.proveLeaf(leafIdx, proof, proofOffset);
+
+        if (preimageType == 3) {
+            if (
+                validateAndCheckCertificate(
+                    address(customDAValidator), proof, proofOffset, leafContents
+                )
+            ) {
+                mach.valueStack.push(ValueLib.newI32(1));
+            } else {
+                mach.valueStack.push(ValueLib.newI32(0));
+            }
+        } else {
+            // Non-CustomDA always valid
+            mach.valueStack.push(ValueLib.newI32(1));
+        }
+
+        // Update merkle root
+        mod.moduleMemory.merkleRoot = merkleProof.computeRootFromMemory(leafIdx, leafContents);
+    }
+
+    function validateAndCheckCertificate(
+        address customDAAddr,
+        bytes calldata proof,
+        uint256 proofOffset,
+        bytes32 expectedHash
+    ) internal view returns (bool) {
+        uint256 certSize;
+        assembly {
+            certSize := shr(192, calldataload(add(proof.offset, add(proofOffset, 0))))
+        }
+
+        require(proof.length >= proofOffset + 8 + certSize + 1, "PROOF_TOO_SHORT");
+
+        bytes calldata certificate = proof[proofOffset + 8:proofOffset + 8 + certSize];
+
+        // SECURITY CHECK: Verify this is the certificate the machine requested
+        require(keccak256(certificate) == expectedHash, "WRONG_CERTIFICATE_HASH");
+
+        bool claimedValid = uint8(proof[proofOffset + 8 + certSize]) != 0;
+
+        // Pass the full proof segment to validateCertificate
+        bytes calldata validationProof = proof[proofOffset:];
+
+        // Check actual validity and verify claims match
+        if (ICustomDAProofValidator(customDAAddr).validateCertificate(validationProof)) {
+            // Certificate is actually valid
+            if (!claimedValid) {
+                revert("CLAIMED_INVALID_BUT_VALID");
+            }
+            return true;
+        } else {
+            // Certificate is actually invalid
+            if (claimedValid) {
+                revert("CLAIMED_VALID_BUT_INVALID");
+            }
+            return false;
+        }
+    }
+
     function validateSequencerInbox(
         ExecutionContext calldata execCtx,
         uint64 msgIndex,
@@ -635,6 +711,8 @@ contract OneStepProverHostIo is IOneStepProver {
                 && opcode <= Instructions.SET_GLOBAL_STATE_U64
         ) {
             impl = executeGlobalStateAccess;
+        } else if (opcode == Instructions.VALIDATE_PREIMAGE) {
+            impl = executeValidatePreimage;
         } else if (opcode == Instructions.READ_PRE_IMAGE) {
             impl = executeReadPreImage;
         } else if (opcode == Instructions.READ_INBOX_MESSAGE) {
