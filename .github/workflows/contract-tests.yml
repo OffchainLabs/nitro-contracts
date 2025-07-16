@@ -14,7 +14,7 @@ jobs:
     name: Test unit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -44,7 +44,7 @@ jobs:
         shell: bash
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -55,7 +55,7 @@ jobs:
           cache: false
 
       - name: Setup nodejs
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: '18'
           cache: 'yarn'
@@ -124,7 +124,7 @@ jobs:
     name: 4844 tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -140,7 +140,7 @@ jobs:
           no-token-bridge: true
 
       - name: Setup nodejs
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: 18
           cache: 'yarn'
@@ -159,7 +159,7 @@ jobs:
     name: Test e2e
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -191,7 +191,7 @@ jobs:
     name: Test e2e custom fee token
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -224,7 +224,7 @@ jobs:
     name: Test e2e fee token with 6 decimals and pricer
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -257,7 +257,7 @@ jobs:
   #   name: BOLD upgrade test
   #   runs-on: ubuntu-latest
   #   steps:
-  #     - uses: actions/checkout@v3
+  #     - uses: actions/checkout@v4
   #       with:
   #         submodules: recursive
 

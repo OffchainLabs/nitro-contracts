@@ -262,4 +262,7 @@ module.exports = {
   contractSizer: {
     strict: true,
   },
+  sourcify: {
+    enabled: true,
+  },
 }
