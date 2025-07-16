@@ -307,10 +307,14 @@ export const populateLookup = async (
   const latestConfirmed = await oldRollup.latestConfirmed()
   let latestConfirmedLog
   let toBlock = await wallet.provider!.getBlockNumber()
-  for (let i = 0; i < 100; i++) {
+  const numBatches = parseInt(process.env.NODECREATED_LOG_LOOKUP_BATCH_COUNT || '100')
+  const batchSize = parseInt(
+    process.env.NODECREATED_LOG_LOOKUP_BATCH_SIZE || '10000'
+  )
+  for (let i = 0; i < numBatches; i++) {
     latestConfirmedLog = await wallet.provider!.getLogs({
       address: rollupAddr,
-      fromBlock: toBlock >= 1000 ? toBlock - 1000 : 0,
+      fromBlock: toBlock >= batchSize ? toBlock - batchSize : 0,
       toBlock: toBlock,
       topics: [
         oldRollup.interface.getEventTopic('NodeCreated'),
@@ -321,7 +325,7 @@ export const populateLookup = async (
     if (toBlock == 0) {
       throw new Error('Could not find latest confirmed node')
     }
-    toBlock -= 1000
+    toBlock -= batchSize
     if (toBlock < 0) {
       toBlock = 0
     }
