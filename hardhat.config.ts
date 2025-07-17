@@ -8,64 +8,51 @@ import 'hardhat-gas-reporter'
 import 'hardhat-contract-sizer'
 import 'hardhat-ignore-warnings'
 import dotenv from 'dotenv'
+import { SolidityConfig } from 'hardhat/types'
 
 dotenv.config()
 
-const solidity = {
+const commonSetting = {
+  metadata: {
+    bytecodeHash: 'none',
+  },
+  optimizer: {
+    enabled: true,
+    runs: 2000, // default value, can be overridden
+  },
+  evmVersion: 'london',
+}
+
+const solidity: SolidityConfig = {
   compilers: [
     {
       version: '0.8.17',
-      settings: {
-        optimizer: {
-          enabled: true,
-          runs: 2000,
-        },
-      },
+      settings: { ...commonSetting },
     },
   ],
   overrides: {
     'src/rollup/RollupUserLogic.sol': {
       version: '0.8.17',
       settings: {
-        optimizer: {
-          enabled: true,
-          runs: 20,
-        },
+        ...commonSetting,
+        optimizer: { ...commonSetting.optimizer, runs: 20 },
       },
     },
     'src/challengeV2/EdgeChallengeManager.sol': {
       version: '0.8.17',
       settings: {
-        optimizer: {
-          enabled: true,
-          runs: 200,
-        },
-      },
-    },
-    'src/mocks/HostioTest.sol': {
-      version: '0.8.24',
-      settings: {
-        optimizer: {
-          enabled: true,
-          runs: 100,
-        },
-        evmVersion: 'cancun',
-      },
-    },
-    'src/mocks/ArbOS11To32UpgradeTest.sol': {
-      version: '0.8.24',
-      settings: {
-        optimizer: {
-          enabled: true,
-          runs: 100,
-        },
-        evmVersion: 'cancun',
+        ...commonSetting,
+        optimizer: { ...commonSetting.optimizer, runs: 200 },
       },
     },
   },
 }
 
 if (process.env['INTERFACE_TESTER_SOLC_VERSION']) {
+  console.log(
+    'Running in interface tester mode with solc version',
+    process.env['INTERFACE_TESTER_SOLC_VERSION']
+  )
   solidity.compilers.push({
     version: process.env['INTERFACE_TESTER_SOLC_VERSION'],
     settings: {
@@ -86,26 +73,6 @@ if (process.env['INTERFACE_TESTER_SOLC_VERSION']) {
             runs: 100,
           },
         },
-      },
-    },
-    'src/mocks/HostioTest.sol': {
-      version: '0.8.24',
-      settings: {
-        optimizer: {
-          enabled: true,
-          runs: 100,
-        },
-        evmVersion: 'cancun',
-      },
-    },
-    'src/mocks/ArbOS11To32UpgradeTest.sol': {
-      version: '0.8.24',
-      settings: {
-        optimizer: {
-          enabled: true,
-          runs: 100,
-        },
-        evmVersion: 'cancun',
       },
     },
   }
