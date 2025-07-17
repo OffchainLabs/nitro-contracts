@@ -880,13 +880,18 @@ describe('Orbit Chain', () => {
       deployFactoriesToL2,
       maxFeePerGasForRetryables,
       feeTokenPricer: ethers.constants.AddressZero,
+      customOsp: ethers.constants.AddressZero,
     }
 
     /// deploy it
     const receipt = await (
-      await rollupCreator.connect(userL1Wallet).createRollup(deployParams, {
-        value: nativeToken ? BigNumber.from(0) : fee,
-      })
+      await rollupCreator
+        .connect(userL1Wallet)
+        [
+          'createRollup(((uint64,address,uint256,bytes32,address,address,uint256,string,uint256,uint64,uint256[],(uint256,uint256,uint256,uint256),uint256,uint256,uint256,((bytes32[2],uint64[2]),uint8,bytes32),uint256,address,uint8,uint64,(uint64,uint64,uint64)),address[],uint256,address,bool,uint256,address[],address,address,address))'
+        ](deployParams, {
+          value: nativeToken ? BigNumber.from(0) : fee,
+        })
     ).wait()
 
     const l1TxReceipt = new L1TransactionReceipt(receipt)
