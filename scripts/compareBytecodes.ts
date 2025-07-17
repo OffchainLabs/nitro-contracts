@@ -9,7 +9,6 @@ interface ComparisonResult {
   match: boolean
   hardhatLength: number
   foundryLength: number
-  difference: string
 }
 
 function getHardhatArtifacts(): Map<string, string> {
@@ -29,6 +28,9 @@ function getHardhatArtifacts(): Map<string, string> {
         const content = JSON.parse(fs.readFileSync(fullPath, 'utf8'))
         if (content.bytecode && content.bytecode !== '0x') {
           const contractName = file.replace('.json', '')
+          if (artifacts.has(contractName)) {
+            throw new Error(`Duplicate contract name found: ${contractName}`)
+          }
           artifacts.set(contractName, content.bytecode)
         }
       }
@@ -46,7 +48,7 @@ function getFoundryArtifacts(): Map<string, string> {
   const artifacts = new Map<string, string>()
   const outDir = path.join(__dirname, '..', 'out')
 
-  function scanDirectory(dir: string, basePath: string = '') {
+  function scanDirectory(dir: string) {
     const files = fs.readdirSync(dir)
 
     for (const file of files) {
@@ -54,11 +56,7 @@ function getFoundryArtifacts(): Map<string, string> {
       const stat = fs.statSync(fullPath)
 
       if (stat.isDirectory()) {
-        // Skip test directories
-        if (file === 'test' || file === 'mocks' || file === 'test-helpers') {
-          continue
-        }
-        scanDirectory(fullPath, path.join(basePath, file))
+        scanDirectory(fullPath)
       } else if (file.endsWith('.json')) {
         const content = JSON.parse(fs.readFileSync(fullPath, 'utf8'))
         if (
@@ -67,9 +65,10 @@ function getFoundryArtifacts(): Map<string, string> {
           content.bytecode.object !== '0x'
         ) {
           const contractName = file.replace('.json', '')
-          // Include the path in the key for Foundry artifacts
-          const key = basePath ? `${basePath}/${contractName}` : contractName
-          artifacts.set(key, content.bytecode.object)
+          if (artifacts.has(contractName)) {
+            throw new Error(`Duplicate contract name found: ${contractName}`)
+          }
+          artifacts.set(contractName, content.bytecode.object)
         }
       }
     }
@@ -114,27 +113,6 @@ function findMatchingContracts(
       // Compare normalized bytecodes
       const match = normalizedHardhat === normalizedFoundry
 
-      let difference = ''
-      if (!match) {
-        // Find the first position where they differ
-        for (
-          let i = 0;
-          i < Math.min(normalizedHardhat.length, normalizedFoundry.length);
-          i++
-        ) {
-          if (normalizedHardhat[i] !== normalizedFoundry[i]) {
-            difference = `First difference at position ${i}`
-            break
-          }
-        }
-        if (
-          !difference &&
-          normalizedHardhat.length !== normalizedFoundry.length
-        ) {
-          difference = 'Different lengths'
-        }
-      }
-
       results.push({
         contract: contractName,
         hardhatBytecode: normalizedHardhat,
@@ -142,7 +120,6 @@ function findMatchingContracts(
         match,
         hardhatLength: normalizedHardhat.length,
         foundryLength: normalizedFoundry.length,
-        difference,
       })
     }
   }
@@ -180,24 +157,6 @@ async function main() {
       console.log(`\n${result.contract}:`)
       console.log(`  Hardhat length: ${result.hardhatLength}`)
       console.log(`  Foundry length: ${result.foundryLength}`)
-      console.log(`  Difference: ${result.difference}`)
-
-      // Show a snippet of where they differ
-      if (result.difference.startsWith('First difference at position')) {
-        const pos = parseInt(result.difference.match(/\d+/)?.[0] || '0')
-        const start = Math.max(0, pos - 20)
-        const end = Math.min(
-          pos + 20,
-          Math.min(result.hardhatBytecode.length, result.foundryBytecode.length)
-        )
-
-        console.log(
-          `  Hardhat snippet: ...${result.hardhatBytecode.slice(start, end)}...`
-        )
-        console.log(
-          `  Foundry snippet: ...${result.foundryBytecode.slice(start, end)}...`
-        )
-      }
     }
   }
 
