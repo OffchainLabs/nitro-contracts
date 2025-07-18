@@ -163,6 +163,67 @@ export async function create2(
   return fac.attach(address)
 }
 
+export async function deployOneStepProofEntry(
+  signer: any,
+  verify: boolean = true
+): Promise<{
+  prover0: Contract
+  proverMem: Contract
+  proverMath: Contract
+  proverHostIo: Contract
+  osp: Contract
+}> {
+  console.log('Deploying OneStepProver contracts...')
+  const prover0 = await deployContract(
+    'OneStepProver0',
+    signer,
+    [],
+    verify,
+    true
+  )
+  const proverMem = await deployContract(
+    'OneStepProverMemory',
+    signer,
+    [],
+    verify,
+    true
+  )
+  const proverMath = await deployContract(
+    'OneStepProverMath',
+    signer,
+    [],
+    verify,
+    true
+  )
+  const proverHostIo = await deployContract(
+    'OneStepProverHostIo',
+    signer,
+    [],
+    verify,
+    true
+  )
+  const osp: Contract = await deployContract(
+    'OneStepProofEntry',
+    signer,
+    [
+      prover0.address,
+      proverMem.address,
+      proverMath.address,
+      proverHostIo.address,
+    ],
+    verify,
+    true
+  )
+
+  return {
+    prover0,
+    proverMem,
+    proverMath,
+    proverHostIo,
+    osp,
+  }
+}
+
 // Function to handle all deployments of core contracts using deployContract function
 export async function deployAllContracts(
   signer: any,
@@ -286,46 +347,8 @@ export async function deployAllContracts(
     verify,
     true
   )
-  const prover0 = await deployContract(
-    'OneStepProver0',
-    signer,
-    [],
-    verify,
-    true
-  )
-  const proverMem = await deployContract(
-    'OneStepProverMemory',
-    signer,
-    [],
-    verify,
-    true
-  )
-  const proverMath = await deployContract(
-    'OneStepProverMath',
-    signer,
-    [],
-    verify,
-    true
-  )
-  const proverHostIo = await deployContract(
-    'OneStepProverHostIo',
-    signer,
-    [],
-    verify,
-    true
-  )
-  const osp: Contract = await deployContract(
-    'OneStepProofEntry',
-    signer,
-    [
-      prover0.address,
-      proverMem.address,
-      proverMath.address,
-      proverHostIo.address,
-    ],
-    verify,
-    true
-  )
+  const { prover0, proverMem, proverMath, proverHostIo, osp } =
+    await deployOneStepProofEntry(signer, verify)
   const challengeManager = await deployContract(
     'EdgeChallengeManager',
     signer,
