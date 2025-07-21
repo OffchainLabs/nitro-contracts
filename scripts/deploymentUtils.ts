@@ -310,7 +310,7 @@ export async function deployAllContracts(
   const proverHostIo = await deployContract(
     'OneStepProverHostIo',
     signer,
-    [],
+    [ethers.constants.AddressZero],
     verify,
     true
   )

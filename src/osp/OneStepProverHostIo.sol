@@ -11,6 +11,7 @@ import "../state/MultiStack.sol";
 import "../state/Deserialize.sol";
 import "../state/ModuleMemory.sol";
 import "./IOneStepProver.sol";
+import "./ICustomDAProofValidator.sol";
 import "../bridge/Messages.sol";
 import "../bridge/IBridge.sol";
 
@@ -28,6 +29,14 @@ contract OneStepProverHostIo is IOneStepProver {
     uint256 private constant INBOX_NUM = 2;
     uint64 private constant INBOX_HEADER_LEN = 40;
     uint64 private constant DELAYED_HEADER_LEN = 112 + 1;
+
+    ICustomDAProofValidator public immutable customDAValidator;
+
+    constructor(
+        address _customDAValidator
+    ) {
+        customDAValidator = ICustomDAProofValidator(_customDAValidator);
+    }
 
     function setLeafByte(bytes32 oldLeaf, uint256 idx, uint8 val) internal pure returns (bytes32) {
         require(idx < LEAF_SIZE, "BAD_SET_LEAF_BYTE_IDX");
@@ -220,6 +229,35 @@ contract OneStepProverHostIo is IOneStepProver {
 
                 extracted = kzgProof[64:96];
             }
+        } else if (inst.argumentData == 3) {
+            // The machine is asking for a CustomDA preimage
+            require(address(customDAValidator) != address(0), "CUSTOM_DA_VALIDATOR_NOT_SUPPORTED");
+            require(proofType == 0, "UNKNOWN_PREIMAGE_PROOF");
+
+            bytes calldata customProof = proof[proofOffset:];
+
+            // Extract certificate size and certificate
+            require(customProof.length >= 8, "CUSTOM_DA_PROOF_TOO_SHORT");
+
+            uint256 certSize;
+            assembly {
+                certSize := shr(192, calldataload(add(customProof.offset, 0))) // Read 8 bytes
+            }
+
+            require(customProof.length >= 8 + certSize, "PROOF_TOO_SHORT_FOR_CERT");
+
+            // Extract and validate certificate
+            bytes calldata certificate = customProof[8:8 + certSize];
+
+            // SECURITY CHECK: Verify this is the certificate the machine requested
+            require(keccak256(certificate) == leafContents, "WRONG_CERTIFICATE_HASH");
+
+            // Delegate to custom validator with proven values and full proof
+            extracted =
+                customDAValidator.validateReadPreimage(leafContents, preimageOffset, customProof);
+
+            // Ensure we got a valid response
+            require(extracted.length > 0 && extracted.length <= 32, "INVALID_CUSTOM_DA_RESPONSE");
         } else {
             revert("UNKNOWN_PREIMAGE_TYPE");
         }
@@ -231,6 +269,82 @@ contract OneStepProverHostIo is IOneStepProver {
         mod.moduleMemory.merkleRoot = merkleProof.computeRootFromMemory(leafIdx, leafContents);
 
         mach.valueStack.push(ValueLib.newI32(uint32(extracted.length)));
+    }
+
+    function executeValidatePreimage(
+        ExecutionContext calldata execCtx,
+        Machine memory mach,
+        Module memory mod,
+        Instruction calldata inst,
+        bytes calldata proof
+    ) internal view {
+        uint256 preimageType = mach.valueStack.pop().assumeI32();
+        uint256 ptr = mach.valueStack.pop().assumeI32();
+
+        // Prove the hash in memory
+        uint256 leafIdx = ptr / LEAF_SIZE;
+        uint256 proofOffset = 0;
+        bytes32 leafContents;
+        MerkleProof memory merkleProof;
+        (leafContents, proofOffset, merkleProof) =
+            mod.moduleMemory.proveLeaf(leafIdx, proof, proofOffset);
+
+        if (preimageType == 3) {
+            if (
+                validateAndCheckCertificate(
+                    address(customDAValidator), proof, proofOffset, leafContents
+                )
+            ) {
+                mach.valueStack.push(ValueLib.newI32(1));
+            } else {
+                mach.valueStack.push(ValueLib.newI32(0));
+            }
+        } else {
+            // Non-CustomDA always valid
+            mach.valueStack.push(ValueLib.newI32(1));
+        }
+
+        // Update merkle root
+        mod.moduleMemory.merkleRoot = merkleProof.computeRootFromMemory(leafIdx, leafContents);
+    }
+
+    function validateAndCheckCertificate(
+        address customDAAddr,
+        bytes calldata proof,
+        uint256 proofOffset,
+        bytes32 expectedHash
+    ) internal view returns (bool) {
+        uint256 certSize;
+        assembly {
+            certSize := shr(192, calldataload(add(proof.offset, add(proofOffset, 0))))
+        }
+
+        require(proof.length >= proofOffset + 8 + certSize + 1, "PROOF_TOO_SHORT");
+
+        bytes calldata certificate = proof[proofOffset + 8:proofOffset + 8 + certSize];
+
+        // SECURITY CHECK: Verify this is the certificate the machine requested
+        require(keccak256(certificate) == expectedHash, "WRONG_CERTIFICATE_HASH");
+
+        bool claimedValid = uint8(proof[proofOffset + 8 + certSize]) != 0;
+
+        // Pass the full proof segment to validateCertificate
+        bytes calldata validationProof = proof[proofOffset:];
+
+        // Check actual validity and verify claims match
+        if (ICustomDAProofValidator(customDAAddr).validateCertificate(validationProof)) {
+            // Certificate is actually valid
+            if (!claimedValid) {
+                revert("CLAIMED_INVALID_BUT_VALID");
+            }
+            return true;
+        } else {
+            // Certificate is actually invalid
+            if (claimedValid) {
+                revert("CLAIMED_VALID_BUT_INVALID");
+            }
+            return false;
+        }
     }
 
     function validateSequencerInbox(
@@ -597,6 +711,8 @@ contract OneStepProverHostIo is IOneStepProver {
                 && opcode <= Instructions.SET_GLOBAL_STATE_U64
         ) {
             impl = executeGlobalStateAccess;
+        } else if (opcode == Instructions.VALIDATE_PREIMAGE) {
+            impl = executeValidatePreimage;
         } else if (opcode == Instructions.READ_PRE_IMAGE) {
             impl = executeReadPreImage;
         } else if (opcode == Instructions.READ_INBOX_MESSAGE) {
