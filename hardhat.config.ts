@@ -62,6 +62,16 @@ const solidity = {
         evmVersion: 'cancun',
       },
     },
+    'src/mocks/ArbNativeTokenManagerTest.sol': {
+      version: '0.8.24',
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 100,
+        },
+        evmVersion: 'cancun',
+      },
+    },
   },
 }
 
