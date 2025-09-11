@@ -40,7 +40,9 @@ interface ArbosActs {
         uint256 batchTimestamp,
         address batchPosterAddress,
         uint64 batchNumber,
-        uint64 batchDataGas,
+        uint64 batchLength,
+        uint64 batchNonZeroes,
+        uint64 batchExtraGas,
         uint256 l1BaseFeeWei
     ) external;
 
