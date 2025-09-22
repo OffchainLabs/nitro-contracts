@@ -34,10 +34,7 @@ contract ReferenceDAProofValidator is ICustomDAProofValidator {
         bytes calldata proof
     ) external pure override returns (bytes memory preimageChunk) {
         // Extract certificate size from proof
-        uint256 certSize;
-        assembly {
-            certSize := shr(192, calldataload(add(proof.offset, 0))) // Read 8 bytes
-        }
+        uint256 certSize = uint256(uint64(bytes8(proof[0:8])));
 
         require(proof.length >= 8 + certSize, "Proof too short for certificate");
         bytes calldata certificate = proof[8:8 + certSize];
@@ -58,10 +55,8 @@ contract ReferenceDAProofValidator is ICustomDAProofValidator {
         require(proof[customDataStart] == 0x01, "Unsupported proof version");
 
         // Extract preimage size
-        uint256 preimageSize;
-        assembly {
-            preimageSize := shr(192, calldataload(add(proof.offset, add(customDataStart, 1))))
-        }
+        uint256 preimageSize =
+            uint256(uint64(bytes8(proof[customDataStart + 1:customDataStart + 9])));
 
         require(proof.length >= customDataStart + 9 + preimageSize, "Invalid proof length");
 
@@ -110,10 +105,7 @@ contract ReferenceDAProofValidator is ICustomDAProofValidator {
         // Extract certificate size
         require(proof.length >= 8, "Proof too short");
 
-        uint256 certSize;
-        assembly {
-            certSize := shr(192, calldataload(add(proof.offset, 0)))
-        }
+        uint256 certSize = uint256(uint64(bytes8(proof[0:8])));
 
         // Check we have enough data for certificate and validity proof
         require(proof.length >= 8 + certSize + 2, "Proof too short for cert and validity");
