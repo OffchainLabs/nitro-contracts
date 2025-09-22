@@ -327,19 +327,12 @@ contract OneStepProverHostIo is IOneStepProver {
         bytes calldata validationProof = proof[proofOffset:];
 
         // Check actual validity and verify claims match
-        if (ICustomDAProofValidator(customDAAddr).validateCertificate(validationProof)) {
-            // Certificate is actually valid
-            if (!claimedValid) {
-                revert("CLAIMED_INVALID_BUT_VALID");
-            }
-            return true;
-        } else {
-            // Certificate is actually invalid
-            if (claimedValid) {
-                revert("CLAIMED_VALID_BUT_INVALID");
-            }
-            return false;
-        }
+        bool isValid = ICustomDAProofValidator(customDAAddr).validateCertificate(validationProof);
+        require(
+            isValid == claimedValid,
+            isValid ? "CLAIMED_INVALID_BUT_VALID" : "CLAIMED_VALID_BUT_INVALID"
+        );
+        return isValid;
     }
 
     function validateSequencerInbox(
