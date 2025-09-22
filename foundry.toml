@@ -46,7 +46,7 @@ remappings = []
 auto_detect_remappings = false
 skip = ['*.sol', 'test/*']
 
-[profile.yul.lint]
+[lint]
 lint_on_build = false
 
 [fmt]
