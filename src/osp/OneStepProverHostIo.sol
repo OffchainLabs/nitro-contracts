@@ -287,6 +287,7 @@ contract OneStepProverHostIo is IOneStepProver {
             mod.moduleMemory.proveLeaf(leafIdx, proof, proofOffset);
 
         if (preimageType == 3) {
+            require(address(customDAValidator) != address(0), "CUSTOM_DA_VALIDATOR_NOT_SUPPORTED");
             if (
                 validateAndCheckCertificate(
                     address(customDAValidator), proof, proofOffset, leafContents
