@@ -239,10 +239,7 @@ contract OneStepProverHostIo is IOneStepProver {
             // Extract certificate size and certificate
             require(customProof.length >= 8, "CUSTOM_DA_PROOF_TOO_SHORT");
 
-            uint256 certSize;
-            assembly {
-                certSize := shr(192, calldataload(add(customProof.offset, 0))) // Read 8 bytes
-            }
+            uint256 certSize = uint256(uint64(bytes8(customProof[0:8])));
 
             require(customProof.length >= 8 + certSize, "PROOF_TOO_SHORT_FOR_CERT");
 
@@ -314,10 +311,7 @@ contract OneStepProverHostIo is IOneStepProver {
         uint256 proofOffset,
         bytes32 expectedHash
     ) internal view returns (bool) {
-        uint256 certSize;
-        assembly {
-            certSize := shr(192, calldataload(add(proof.offset, add(proofOffset, 0))))
-        }
+        uint256 certSize = uint256(uint64(bytes8(proof[0:8])));
 
         require(proof.length >= proofOffset + 8 + certSize + 1, "PROOF_TOO_SHORT");
 
