@@ -33,7 +33,7 @@ contract ReferenceDAProofValidator is ICustomDAProofValidator {
      * @param certHash The keccak256 hash of the certificate (from machine's proven state)
      * @param offset The offset into the preimage to read from (from machine's proven state)
      * @param proof The proof data: [certSize(8), certificate, version(1), preimageSize(8), preimageData]
-     * @return preimageChunk The 32-byte chunk at the specified offset
+     * @return preimageChunk The up to 32-byte chunk at the specified offset
      */
 
     function validateReadPreimage(
@@ -90,16 +90,18 @@ contract ReferenceDAProofValidator is ICustomDAProofValidator {
         bytes32 dataHashFromCert = bytes32(certificate[1:33]);
         require(sha256(preimage) == dataHashFromCert, "Invalid preimage hash");
 
-        // Extract chunk at offset
-        preimageChunk = new bytes(32);
-        if (offset < preimage.length) {
-            uint256 endPos = offset + 32 > preimage.length ? preimage.length : offset + 32;
-            for (uint256 i = offset; i < endPos; i++) {
-                preimageChunk[i - offset] = preimage[i];
-            }
+        // Extract chunk at offset, matching the behavior of other preimage types
+        // Returns up to 32 bytes from the specified offset
+        uint256 preimageEnd = offset + 32;
+        if (preimageEnd > preimage.length) {
+            preimageEnd = preimage.length;
         }
 
-        return preimageChunk;
+        if (offset >= preimage.length) {
+            return new bytes(0);
+        }
+
+        return preimage[offset:preimageEnd];
     }
 
     /**
