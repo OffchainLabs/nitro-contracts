@@ -699,7 +699,7 @@ contract OneStepProverHostIo is IOneStepProver {
                 && opcode <= Instructions.SET_GLOBAL_STATE_U64
         ) {
             impl = executeGlobalStateAccess;
-        } else if (opcode == Instructions.VALIDATE_PREIMAGE) {
+        } else if (opcode == Instructions.VALIDATE_CERTIFICATE) {
             impl = executeValidatePreimage;
         } else if (opcode == Instructions.READ_PRE_IMAGE) {
             impl = executeReadPreImage;
