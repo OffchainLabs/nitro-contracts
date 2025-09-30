@@ -30,6 +30,10 @@ contract OneStepProverHostIo is IOneStepProver {
     uint64 private constant INBOX_HEADER_LEN = 40;
     uint64 private constant DELAYED_HEADER_LEN = 112 + 1;
 
+    // CustomDA proof format constants
+    uint256 private constant CERT_SIZE_LEN = 8;
+    uint256 private constant CLAIMED_VALID_LEN = 1;
+
     ICustomDAProofValidator public immutable customDAValidator;
 
     constructor(
@@ -237,14 +241,14 @@ contract OneStepProverHostIo is IOneStepProver {
             bytes calldata customProof = proof[proofOffset:];
 
             // Extract certificate size and certificate
-            require(customProof.length >= 8, "CUSTOM_DA_PROOF_TOO_SHORT");
+            require(customProof.length >= CERT_SIZE_LEN, "CUSTOM_DA_PROOF_TOO_SHORT");
 
-            uint256 certSize = uint256(uint64(bytes8(customProof[0:8])));
+            uint256 certSize = uint256(uint64(bytes8(customProof[0:CERT_SIZE_LEN])));
 
-            require(customProof.length >= 8 + certSize, "PROOF_TOO_SHORT_FOR_CERT");
+            require(customProof.length >= CERT_SIZE_LEN + certSize, "PROOF_TOO_SHORT_FOR_CERT");
 
             // Extract and validate certificate
-            bytes calldata certificate = customProof[8:8 + certSize];
+            bytes calldata certificate = customProof[CERT_SIZE_LEN:CERT_SIZE_LEN + certSize];
 
             // SECURITY CHECK: Verify this is the certificate the machine requested
             require(keccak256(certificate) == leafContents, "WRONG_CERTIFICATE_HASH");
@@ -312,16 +316,20 @@ contract OneStepProverHostIo is IOneStepProver {
         uint256 proofOffset,
         bytes32 expectedHash
     ) internal view returns (bool) {
-        uint256 certSize = uint256(uint64(bytes8(proof[0:8])));
+        uint256 certSize = uint256(uint64(bytes8(proof[0:CERT_SIZE_LEN])));
 
-        require(proof.length >= proofOffset + 8 + certSize + 1, "PROOF_TOO_SHORT");
+        require(
+            proof.length >= proofOffset + CERT_SIZE_LEN + certSize + CLAIMED_VALID_LEN,
+            "PROOF_TOO_SHORT"
+        );
 
-        bytes calldata certificate = proof[proofOffset + 8:proofOffset + 8 + certSize];
+        bytes calldata certificate =
+            proof[proofOffset + CERT_SIZE_LEN:proofOffset + CERT_SIZE_LEN + certSize];
 
         // SECURITY CHECK: Verify this is the certificate the machine requested
         require(keccak256(certificate) == expectedHash, "WRONG_CERTIFICATE_HASH");
 
-        bool claimedValid = uint8(proof[proofOffset + 8 + certSize]) != 0;
+        bool claimedValid = uint8(proof[proofOffset + CERT_SIZE_LEN + certSize]) != 0;
 
         // Pass the full proof segment to validateCertificate
         bytes calldata validationProof = proof[proofOffset:];

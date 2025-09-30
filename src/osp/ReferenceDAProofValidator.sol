@@ -11,6 +11,14 @@ import "./ICustomDAProofValidator.sol";
  * @notice Reference implementation of a CustomDA proof validator
  */
 contract ReferenceDAProofValidator is ICustomDAProofValidator {
+    uint256 private constant CERT_SIZE_LEN = 8;
+    uint256 private constant CLAIMED_VALID_LEN = 1;
+    uint256 private constant VERSION_LEN = 1;
+    uint256 private constant PREIMAGE_SIZE_LEN = 8;
+    uint256 private constant CERT_HEADER = 0x01;
+    uint256 private constant CERT_TOTAL_LEN = 98;
+    uint256 private constant PROOF_VERSION = 0x01;
+
     mapping(address => bool) public trustedSigners;
 
     constructor(
@@ -34,34 +42,51 @@ contract ReferenceDAProofValidator is ICustomDAProofValidator {
         bytes calldata proof
     ) external pure override returns (bytes memory preimageChunk) {
         // Extract certificate size from proof
-        uint256 certSize = uint256(uint64(bytes8(proof[0:8])));
+        uint256 certSize = uint256(uint64(bytes8(proof[0:CERT_SIZE_LEN])));
 
-        require(proof.length >= 8 + certSize, "Proof too short for certificate");
-        bytes calldata certificate = proof[8:8 + certSize];
+        require(proof.length >= CERT_SIZE_LEN + certSize, "Proof too short for certificate");
+        bytes calldata certificate = proof[CERT_SIZE_LEN:CERT_SIZE_LEN + certSize];
 
         // Verify certificate hash matches what OSP validated
         require(keccak256(certificate) == certHash, "Certificate hash mismatch");
 
         // Validate certificate format: [prefix(1), dataHash(32), v(1), r(32), s(32)] = 98 bytes
         // First byte must be 0x01 (CustomDA message header flag)
-        require(certificate.length == 98, "Invalid certificate length");
-        require(certificate[0] == 0x01, "Invalid certificate header");
+        require(certificate.length == CERT_TOTAL_LEN, "Invalid certificate length");
+        require(certificate[0] == bytes1(uint8(CERT_HEADER)), "Invalid certificate header");
 
         // Custom data starts after certificate
-        uint256 customDataStart = 8 + certSize;
-        require(proof.length >= customDataStart + 9, "Proof too short for custom data");
+        uint256 customDataStart = CERT_SIZE_LEN + certSize;
+        require(
+            proof.length >= customDataStart + VERSION_LEN + PREIMAGE_SIZE_LEN,
+            "Proof too short for custom data"
+        );
 
         // Verify version
-        require(proof[customDataStart] == 0x01, "Unsupported proof version");
+        require(proof[customDataStart] == bytes1(uint8(PROOF_VERSION)), "Unsupported proof version");
 
         // Extract preimage size
-        uint256 preimageSize =
-            uint256(uint64(bytes8(proof[customDataStart + 1:customDataStart + 9])));
+        uint256 preimageSize = uint256(
+            uint64(
+                bytes8(
+                    proof[
+                        customDataStart + VERSION_LEN:
+                            customDataStart + VERSION_LEN + PREIMAGE_SIZE_LEN
+                    ]
+                )
+            )
+        );
 
-        require(proof.length >= customDataStart + 9 + preimageSize, "Invalid proof length");
+        require(
+            proof.length >= customDataStart + VERSION_LEN + PREIMAGE_SIZE_LEN + preimageSize,
+            "Invalid proof length"
+        );
 
         // Extract and verify preimage against sha256sum in the certificate
-        bytes calldata preimage = proof[customDataStart + 9:customDataStart + 9 + preimageSize];
+        bytes calldata preimage = proof[
+            customDataStart + VERSION_LEN + PREIMAGE_SIZE_LEN:
+                customDataStart + VERSION_LEN + PREIMAGE_SIZE_LEN + preimageSize
+        ];
         bytes32 dataHashFromCert = bytes32(certificate[1:33]);
         require(sha256(preimage) == dataHashFromCert, "Invalid preimage hash");
 
@@ -103,14 +128,17 @@ contract ReferenceDAProofValidator is ICustomDAProofValidator {
         bytes calldata proof
     ) external view override returns (bool isValid) {
         // Extract certificate size
-        require(proof.length >= 8, "Proof too short");
+        require(proof.length >= CERT_SIZE_LEN, "Proof too short");
 
-        uint256 certSize = uint256(uint64(bytes8(proof[0:8])));
+        uint256 certSize = uint256(uint64(bytes8(proof[0:CERT_SIZE_LEN])));
 
         // Check we have enough data for certificate and validity proof
-        require(proof.length >= 8 + certSize + 2, "Proof too short for cert and validity");
+        require(
+            proof.length >= CERT_SIZE_LEN + certSize + CLAIMED_VALID_LEN + VERSION_LEN,
+            "Proof too short for cert and validity"
+        );
 
-        bytes calldata certificate = proof[8:8 + certSize];
+        bytes calldata certificate = proof[CERT_SIZE_LEN:CERT_SIZE_LEN + certSize];
 
         // Certificate format is: [prefix(1), dataHash(32), v(1), r(32), s(32)] = 98 bytes total
         // First byte must be 0x01 (CustomDA message header flag)
@@ -118,10 +146,10 @@ contract ReferenceDAProofValidator is ICustomDAProofValidator {
         // because the certificate is already onchain. An honest validator must be able
         // to win a challenge to prove that ValidatePreImage should return false
         // so that an invalid cert can be skipped.
-        if (certificate.length != 98) {
+        if (certificate.length != CERT_TOTAL_LEN) {
             return false; // Invalid certificate length
         }
-        if (certificate[0] != 0x01) {
+        if (certificate[0] != bytes1(uint8(CERT_HEADER))) {
             return false; // Invalid certificate header
         }
 
@@ -148,8 +176,8 @@ contract ReferenceDAProofValidator is ICustomDAProofValidator {
         // Note: This is a deliberately simple example. A good rule of thumb is that
         // anything added to the proof beyond the isValid byte must not be able to cause both
         // true and false to be returned from this function, given the same certificate.
-        uint8 version = uint8(proof[proof.length - 1]);
-        require(version == 0x01, "Invalid proof version");
+        uint8 version = uint8(proof[proof.length - VERSION_LEN]);
+        require(version == PROOF_VERSION, "Invalid proof version");
 
         return true;
     }
