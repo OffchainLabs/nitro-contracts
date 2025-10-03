@@ -40,9 +40,10 @@ async function main() {
 
   // Verification of contracts
   // (If undefined, default "true" is used; if anything other than "false" is set, verification is disabled)
-  const verifyContracts = process.env.DISABLE_VERIFICATION === undefined
-    ? undefined
-    : process.env.DISABLE_VERIFICATION === 'false'
+  const verifyContracts =
+    process.env.DISABLE_VERIFICATION === undefined
+      ? undefined
+      : process.env.DISABLE_VERIFICATION === 'false'
 
   // Deploying all contracts
   const factoryOwner = process.env.FACTORY_OWNER
@@ -53,7 +54,7 @@ async function main() {
     signer,
     factoryOwner,
     ethers.BigNumber.from(maxDataSize),
-    verifyContracts,
+    verifyContracts
   )
 }
 
