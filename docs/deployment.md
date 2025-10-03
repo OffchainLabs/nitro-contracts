@@ -1,5 +1,8 @@
 # How to deploy the RollupCreator factory contract and create new rollup chains?
 
+> [!IMPORTANT]
+> The recommended way of creating new Arbitrum chains is through the Arbitrum Orbit SDK. Instructions are available in our [documentation portal](https://docs.arbitrum.io/launch-arbitrum-chain/arbitrum-chain-sdk-introduction). These instructions are targetted to readers who are familiar with the Nitro stack and the creation of Arbitrum chains.
+
 This short guide includes instructions to deploy the `RollupCreator` factory contract, as well as create new rollup chains using it.
 
 ## 1. Setup project
