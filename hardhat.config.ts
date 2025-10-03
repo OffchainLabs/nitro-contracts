@@ -172,6 +172,9 @@ module.exports = {
     },
     custom: {
       url: process.env['CUSTOM_RPC_URL'] || 'N/A',
+      accounts: process.env['CUSTOM_PRIVKEY']
+        ? [process.env['CUSTOM_PRIVKEY']]
+        : [],
     },
     geth: {
       url: 'http://localhost:8545',
