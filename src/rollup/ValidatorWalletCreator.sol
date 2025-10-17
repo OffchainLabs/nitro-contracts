@@ -6,31 +6,18 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./ValidatorWallet.sol";
 
-contract ValidatorWalletCreator is Ownable {
+contract ValidatorWalletCreator {
     event WalletCreated(
         address indexed walletAddress,
         address indexed executorAddress,
         address indexed ownerAddress,
         address adminProxy
     );
-    event TemplateUpdated();
 
-    address public template;
-
-    constructor() Ownable() {
-        template = address(new ValidatorWallet());
-    }
-
-    function setTemplate(
-        address _template
-    ) external onlyOwner {
-        template = _template;
-        emit TemplateUpdated();
-    }
+    address public immutable template = address(new ValidatorWallet());
 
     function createWallet(
         address[] calldata initialExecutorAllowedDests
