@@ -576,7 +576,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         }
     }
 
-    function genesisAssertionHash() external pure returns (bytes32) {
+    function _emptyGenesisAssertionHash() internal pure returns (bytes32) {
         GlobalState memory emptyGlobalState;
         AssertionState memory emptyAssertionState =
             AssertionState(emptyGlobalState, MachineStatus.FINISHED, bytes32(0));
@@ -587,6 +587,15 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
             afterState: emptyAssertionState,
             inboxAcc: inboxAcc
         });
+    }
+
+    function emptyGenesisAssertionHash() external pure returns (bytes32) {
+        return _emptyGenesisAssertionHash();
+    }
+
+    /// @notice deprecated, use emptyGenesisAssertionHash()
+    function genesisAssertionHash() external pure returns (bytes32) {
+        return _emptyGenesisAssertionHash();
     }
 
     function getFirstChildCreationBlock(

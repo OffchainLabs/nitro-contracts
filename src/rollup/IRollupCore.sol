@@ -81,6 +81,8 @@ interface IRollupCore is IAssertionChain {
 
     function minimumAssertionPeriod() external view returns (uint256);
 
+    function emptyGenesisAssertionHash() external pure returns (bytes32);
+
     function genesisAssertionHash() external pure returns (bytes32);
 
     /**
