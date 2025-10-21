@@ -429,10 +429,8 @@ contract OneStepProverHostIo is IOneStepProver {
             require(proof[proofOffset] == 0, "UNKNOWN_INBOX_PROOF");
             proofOffset++;
 
-            function(ExecutionContext calldata, uint64, bytes calldata)
-                internal
-                view
-                returns (bool) inboxValidate;
+            function(ExecutionContext calldata, uint64, bytes calldata) internal view returns (bool)
+                inboxValidate;
 
             bool success;
             if (inst.argumentData == Instructions.INBOX_INDEX_SEQUENCER) {
@@ -694,13 +692,9 @@ contract OneStepProverHostIo is IOneStepProver {
 
         uint16 opcode = inst.opcode;
 
-        function(
-            ExecutionContext calldata,
-            Machine memory,
-            Module memory,
-            Instruction calldata,
-            bytes calldata
-        ) internal view impl;
+        function(ExecutionContext calldata, Machine memory, Module memory, Instruction calldata, bytes calldata)
+            internal
+            view impl;
 
         if (
             opcode >= Instructions.GET_GLOBAL_STATE_BYTES32

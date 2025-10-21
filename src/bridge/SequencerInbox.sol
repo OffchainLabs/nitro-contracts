@@ -635,7 +635,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             if (data[0] & DAS_MESSAGE_HEADER_FLAG != 0 && data.length >= 33) {
                 // we skip the first byte, then read the next 32 bytes for the keyset
                 bytes32 dasKeysetHash = bytes32(data[1:33]);
-                if (!dasKeySetInfo[dasKeysetHash].isValidKeyset) revert NoSuchKeyset(dasKeysetHash);
+                if (!dasKeySetInfo[dasKeysetHash].isValidKeyset) {
+                    revert NoSuchKeyset(dasKeysetHash);
+                }
             }
         }
         return (keccak256(bytes.concat(header, data)), timeBounds);
@@ -723,7 +725,9 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         internal
         returns (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc)
     {
-        if (afterDelayedMessagesRead < totalDelayedMessagesRead) revert DelayedBackwards();
+        if (afterDelayedMessagesRead < totalDelayedMessagesRead) {
+            revert DelayedBackwards();
+        }
         if (afterDelayedMessagesRead > bridge.delayedMessageCount()) revert DelayedTooFar();
 
         (seqMessageIndex, beforeAcc, delayedAcc, acc) = bridge.enqueueSequencerMessage(
