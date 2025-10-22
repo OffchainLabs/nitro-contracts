@@ -81,7 +81,7 @@ contract ERC20RollupEventInboxTest is AbsRollupEventInboxTest {
         );
 
         vm.prank(rollup);
-        rollupEventInbox.rollupInitialized(chainId, chainConfig);
+        rollupEventInbox.rollupInitialized(chainId, chainConfig, 0);
     }
 
     function test_rollupInitialized_NonArbitrumHosted() public {
@@ -112,7 +112,7 @@ contract ERC20RollupEventInboxTest is AbsRollupEventInboxTest {
         emit InboxMessageDelivered(0, expectedInitMsg);
 
         vm.prank(rollup);
-        rollupEventInbox.rollupInitialized(chainId, chainConfig);
+        rollupEventInbox.rollupInitialized(chainId, chainConfig, 0);
     }
 
     function testFuzz_rollupInitialized(
@@ -174,7 +174,7 @@ contract ERC20RollupEventInboxTest is AbsRollupEventInboxTest {
         }
 
         vm.prank(rollup);
-        rollupEventInbox.rollupInitialized(chainId, chainConfig);
+        rollupEventInbox.rollupInitialized(chainId, chainConfig, 0);
     }
 
     function _calculateExpectedCurrentDataCost(

@@ -38,6 +38,8 @@ struct Config {
     uint8 numBigStepLevel;
     uint64 challengeGracePeriodBlocks;
     BufferConfig bufferConfig;
+    /// @notice An estimate of the parent chain's base fee to include in the rollup initialization message
+    uint256 dataCostEstimate;
 }
 
 struct ContractDependencies {
