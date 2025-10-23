@@ -121,6 +121,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload 4bytes
+        continue-on-error: true
         run: yarn upload-4bytes
 
   test-4844:
