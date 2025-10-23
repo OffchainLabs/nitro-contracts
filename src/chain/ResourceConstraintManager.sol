@@ -8,16 +8,16 @@ import "../precompiles/ArbOwner.sol";
 import "../precompiles/ArbGasInfo.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 
-contract PricingManager is AccessControlEnumerable {
+contract ResourceConstraintManager is AccessControlEnumerable {
     ArbOwner internal constant ARB_OWNER = ArbOwner(address(0x70));
     ArbGasInfo internal constant ARB_GAS_INFO = ArbGasInfo(address(0x6c));
 
-    bytes32 public constant EXECUTOR_ROLE = keccak256("EXECUTOR_ROLE");
+    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
     constructor(address admin, address executor) {
         _setupRole(DEFAULT_ADMIN_ROLE, admin);
-        _setupRole(EXECUTOR_ROLE, admin);
-        _setupRole(EXECUTOR_ROLE, executor);
+        _setupRole(MANAGER_ROLE, admin);
+        _setupRole(MANAGER_ROLE, executor);
     }
 
     /// @notice Adds or updates a resource constraint
@@ -28,7 +28,7 @@ contract PricingManager is AccessControlEnumerable {
         ArbResourceConstraintsTypes.ResourceWeight[] calldata resources,
         uint32 periodSecs,
         uint64 targetPerSec
-    ) external onlyRole(EXECUTOR_ROLE) {
+    ) external onlyRole(MANAGER_ROLE) {
         // TODO: restrict input
         ARB_OWNER.setResourceConstraint(resources, periodSecs, targetPerSec);
     }
@@ -39,7 +39,7 @@ contract PricingManager is AccessControlEnumerable {
     function clearConstraint(
         ArbResourceConstraintsTypes.ResourceKind[] calldata resources,
         uint32 periodSecs
-    ) external onlyRole(EXECUTOR_ROLE) {
+    ) external onlyRole(MANAGER_ROLE) {
         // TODO: restrict input
         ARB_OWNER.clearConstraint(resources, periodSecs);
     }
