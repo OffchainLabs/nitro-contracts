@@ -345,6 +345,7 @@ async function _getDevRollupConfig(
       futureSeconds: ethers.BigNumber.from('3600'),
     },
     anyTrustFastConfirmer: ethers.constants.AddressZero,
+    dataCostEstimate: ethers.BigNumber.from('0'),
   }
 
   return {
