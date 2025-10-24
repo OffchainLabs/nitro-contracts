@@ -265,19 +265,42 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
 
     /**
      * @notice Set base stake required for an assertion
-     * @param newBaseStake minimum amount of stake required
+     * @param newBaseStake minimum amount of stake required. Can only be less than
+     *                     current base stake if there is at most one staker on a pending assertion.
+     *                     This should be true for permissioned chains that have the validator whitelist enabled
      */
     function setBaseStake(
         uint256 newBaseStake
     ) external override {
-        // we do not currently allow base stake to be reduced since as doing so might allow a malicious party
-        // to withdraw some (up to the difference between baseStake and newBaseStake) honest funds from this contract
-        // The sequence of events is as follows:
-        // 1. The malicious party creates a sibling assertion, stake size is currently S
-        // 2. The base stake is then reduced to S'
-        // 3. The malicious party uses a different address to create a child of the malicious assertion, using stake size S'
-        // 4. This allows the malicious party to withdraw the stake S, since assertions with children set the staker to "inactive"
-        require(newBaseStake > baseStake, "BASE_STAKE_MUST_BE_INCREASED");
+        if(newBaseStake < baseStake) {
+            // if we're reducing the stake we need to be more careful not to allow a malicious party
+            // to withdraw some (up to the difference between baseStake and newBaseStake) honest funds from this contract
+            // The sequence of events is as follows:
+            // 1. The malicious party creates a sibling assertion, stake size is currently S
+            // 2. The base stake is then reduced to S'
+            // 3. The malicious party uses a different address to create a child of the malicious assertion, using stake size S'
+            // 4. This allows the malicious party to withdraw the stake S, since assertions with children set the staker to "inactive"
+
+            // because of the above reason, reducing the base stake is only supported for permissioned chains (validator whitelist not disabled)
+            // who have control over who can stake. In a permissionless setting, it's possible for a staker to DOS base stake reduction
+            // by creating themselves as a staker
+            
+            // we can check that's it's safe to reduce the base stake by ensuring that there is at most one staker on a pending assertion
+            // whilst we've documented above that stake should only be reduced in the permissioned setting, we add the check below as an 
+            // added safety measure
+            uint256 pendingCount = 0;
+
+            // check that all the stakers are on confirmed - except at most one
+            address[] memory stakers = getAllStakers();
+            for (uint i = 0; i < stakers.length; i++) {
+                bytes32 latestStaked = latestStakedAssertion(stakers[i]);
+                if(getAssertionStorage(latestStaked).status == AssertionStatus.Pending) {
+                    pendingCount++;
+                }
+            }
+
+            require(pendingCount <= 1, "PENDING_COUNT_TOO_HIGH");
+        }
         baseStake = newBaseStake;
         emit BaseStakeSet(newBaseStake);
         // previously: emit OwnerFunctionCalled(12);
