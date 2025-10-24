@@ -229,11 +229,11 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     ) public view override returns (Staker memory) {
         return _stakerMap[staker];
     }
-    
+
     /**
      * @notice Retrieves all currently registered stakers
      */
-    function getAllStakers() public view returns(address[] memory) {
+    function getAllStakers() public view returns (address[] memory) {
         return _stakerList;
     }
 

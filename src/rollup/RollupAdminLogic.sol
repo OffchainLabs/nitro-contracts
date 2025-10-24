@@ -272,7 +272,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
     function setBaseStake(
         uint256 newBaseStake
     ) external override {
-        if(newBaseStake < baseStake) {
+        if (newBaseStake < baseStake) {
             // if we're reducing the stake we need to be more careful not to allow a malicious party
             // to withdraw some (up to the difference between baseStake and newBaseStake) honest funds from this contract
             // The sequence of events is as follows:
@@ -284,17 +284,17 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
             // because of the above reason, reducing the base stake is only supported for permissioned chains (validator whitelist not disabled)
             // who have control over who can stake. In a permissionless setting, it's possible for a staker to DOS base stake reduction
             // by creating themselves as a staker
-            
+
             // we can check that's it's safe to reduce the base stake by ensuring that there is at most one staker on a pending assertion
-            // whilst we've documented above that stake should only be reduced in the permissioned setting, we add the check below as an 
+            // whilst we've documented above that stake should only be reduced in the permissioned setting, we add the check below as an
             // added safety measure
             uint256 pendingCount = 0;
 
             // check that all the stakers are on confirmed - except at most one
             address[] memory stakers = getAllStakers();
-            for (uint i = 0; i < stakers.length; i++) {
+            for (uint256 i = 0; i < stakers.length; i++) {
                 bytes32 latestStaked = latestStakedAssertion(stakers[i]);
-                if(getAssertionStorage(latestStaked).status == AssertionStatus.Pending) {
+                if (getAssertionStorage(latestStaked).status == AssertionStatus.Pending) {
                     pendingCount++;
                 }
             }
