@@ -1618,8 +1618,56 @@ contract RollupTest is Test {
         );
     }
 
-    // do this last as it changes the base stake
     function testBaseStake() public {
+        assertEq(adminRollup.baseStake(), BASE_STAKE, "Invalid before base stake");
+
+        vm.prank(upgradeExecutorAddr);
+        adminRollup.setBaseStake(BASE_STAKE - 1);
+        assertEq(adminRollup.baseStake(), BASE_STAKE - 1, "Invalid after decrease base stake");
+
+        // create an assertion - this creates a pending staker
+        (bytes32 assertionHash1,,) = testSuccessCreateAssertion();
+
+        // increase base stake amount
+        vm.prank(upgradeExecutorAddr);
+        adminRollup.setBaseStake(BASE_STAKE + 1);
+        assertEq(adminRollup.baseStake(), BASE_STAKE + 1, "Invalid after increase base stake");
+
+        // decreasing now should fail since we have a pending staker 
+        vm.prank(upgradeExecutorAddr);
+        vm.expectRevert("STAKERS_NOT_ALL_CONFIRMED");
+        adminRollup.setBaseStake(BASE_STAKE - 1);
+        assertEq(adminRollup.baseStake(), BASE_STAKE + 1, "Decrease should have failed");
+
+        vm.roll(userRollup.getAssertion(genesisHash).firstChildBlock + CONFIRM_PERIOD_BLOCKS + 1);
+        bytes32 inboxAccs = userRollup.bridge().sequencerInboxAccs(0);
+        vm.prank(validator1);
+        userRollup.confirmAssertion(
+            assertionHash1,
+            genesisHash,
+            firstState,
+            bytes32(0),
+            ConfigData({
+                wasmModuleRoot: WASM_MODULE_ROOT,
+                requiredStake: BASE_STAKE,
+                challengeManager: address(challengeManager),
+                confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
+                nextInboxPosition: firstState.globalState.u64Vals[0]
+            }),
+            inboxAccs
+        );
+
+        vm.prank(upgradeExecutorAddr);
+        adminRollup.setBaseStake(BASE_STAKE - 1);
+        assertEq(adminRollup.baseStake(), BASE_STAKE - 1, "Decrease should have failed");
+
+        // reset base stake
+        vm.prank(upgradeExecutorAddr);
+        adminRollup.setBaseStake(BASE_STAKE);
+        assertEq(adminRollup.baseStake(), BASE_STAKE, "Reset should have succeeded");
+    }
+
+    function testBaseStakeAfterChallenge() public {
         assertEq(adminRollup.baseStake(), BASE_STAKE, "Invalid before base stake");
 
         // increase base stake amount
@@ -1627,23 +1675,15 @@ contract RollupTest is Test {
         adminRollup.setBaseStake(BASE_STAKE + 1);
         assertEq(adminRollup.baseStake(), BASE_STAKE + 1, "Invalid after increase base stake");
 
-        // // set it to be the same
-        // vm.expectRevert("BASE_STAKE_MUST_BE_INCREASED");
-        // adminRollup.setBaseStake(BASE_STAKE + 1);
-
         // set it to be less - we expect this to succeed
         adminRollup.setBaseStake(BASE_STAKE);
-
+        assertEq(adminRollup.baseStake(), BASE_STAKE, "Invalid after decrease base stake");
         vm.stopPrank();
 
-        // add another staker
-        vm.prank(validator2);
-        userRollup.newStake({
-            tokenAmount: 0,
-            _withdrawalAddress: validator2Withdrawal
-        });
-
+        // test cant reduce with multiple pending stakers
+        testSuccessCreateChallenge();
         vm.prank(upgradeExecutorAddr);
+        vm.expectRevert("STAKERS_NOT_ALL_CONFIRMED");
         adminRollup.setBaseStake(BASE_STAKE - 1);
     }
 }

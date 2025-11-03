@@ -290,7 +290,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
             // added safety measure
             uint256 pendingCount = 0;
 
-            // check that all the stakers are on confirmed - except at most one
+            // check that all the stakers are on confirmed
             address[] memory stakers = getAllStakers();
             for (uint256 i = 0; i < stakers.length; i++) {
                 bytes32 latestStaked = latestStakedAssertion(stakers[i]);
@@ -299,7 +299,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
                 }
             }
 
-            require(pendingCount <= 1, "PENDING_COUNT_TOO_HIGH");
+            require(pendingCount == 0, "STAKERS_NOT_ALL_CONFIRMED");
         }
         baseStake = newBaseStake;
         emit BaseStakeSet(newBaseStake);
