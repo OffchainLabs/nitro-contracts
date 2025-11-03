@@ -287,7 +287,8 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
 
             // we can check that's it's safe to reduce the base stake by ensuring that there are no stakers on pending assertions
             // whilst we've documented above that stake should only be reduced in the permissioned setting, we add the check below as an
-            // added safety measure
+            // added safety measure. Because this safety check ensure there are no pending stakers, the permissioned staker should ensure
+            // they move to a confirmed assertion before reducing the stake.
 
             // check that all the stakers are on confirmed
             address[] memory stakers = getAllStakers();
