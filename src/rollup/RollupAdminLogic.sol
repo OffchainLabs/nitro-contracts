@@ -285,21 +285,18 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
             // who have control over who can stake. In a permissionless setting, it's possible for a staker to DOS base stake reduction
             // by creating themselves as a staker
 
-            // we can check that's it's safe to reduce the base stake by ensuring that there is at most one staker on a pending assertion
+            // we can check that's it's safe to reduce the base stake by ensuring that there are no stakers on pending assertions
             // whilst we've documented above that stake should only be reduced in the permissioned setting, we add the check below as an
             // added safety measure
-            uint256 pendingCount = 0;
 
             // check that all the stakers are on confirmed
             address[] memory stakers = getAllStakers();
             for (uint256 i = 0; i < stakers.length; i++) {
                 bytes32 latestStaked = latestStakedAssertion(stakers[i]);
                 if (getAssertionStorage(latestStaked).status == AssertionStatus.Pending) {
-                    pendingCount++;
+                    revert("STAKERS_NOT_ALL_CONFIRMED");
                 }
             }
-
-            require(pendingCount == 0, "STAKERS_NOT_ALL_CONFIRMED");
         }
         baseStake = newBaseStake;
         emit BaseStakeSet(newBaseStake);
