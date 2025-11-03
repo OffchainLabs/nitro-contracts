@@ -1633,7 +1633,7 @@ contract RollupTest is Test {
         adminRollup.setBaseStake(BASE_STAKE + 1);
         assertEq(adminRollup.baseStake(), BASE_STAKE + 1, "Invalid after increase base stake");
 
-        // decreasing now should fail since we have a pending staker 
+        // decreasing now should fail since we have a pending staker
         vm.prank(upgradeExecutorAddr);
         vm.expectRevert("STAKERS_NOT_ALL_CONFIRMED");
         adminRollup.setBaseStake(BASE_STAKE - 1);
