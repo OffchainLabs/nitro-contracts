@@ -3,25 +3,25 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import "../src/rollup/RollupProxy.sol";
+import "../../src/rollup/RollupProxy.sol";
 
-import "../src/rollup/RollupCore.sol";
-import "../src/rollup/RollupUserLogic.sol";
-import "../src/rollup/RollupAdminLogic.sol";
-import "../src/rollup/RollupCreator.sol";
+import "../../src/rollup/RollupCore.sol";
+import "../../src/rollup/RollupUserLogic.sol";
+import "../../src/rollup/RollupAdminLogic.sol";
+import "../../src/rollup/RollupCreator.sol";
 
-import "../src/osp/OneStepProver0.sol";
-import "../src/osp/OneStepProverMemory.sol";
-import "../src/osp/OneStepProverMath.sol";
-import "../src/osp/OneStepProverHostIo.sol";
-import "../src/osp/OneStepProofEntry.sol";
-import "../src/challengeV2/EdgeChallengeManager.sol";
-import "./challengeV2/Utils.sol";
+import "../../src/osp/OneStepProver0.sol";
+import "../../src/osp/OneStepProverMemory.sol";
+import "../../src/osp/OneStepProverMath.sol";
+import "../../src/osp/OneStepProverHostIo.sol";
+import "../../src/osp/OneStepProofEntry.sol";
+import "../../src/challengeV2/EdgeChallengeManager.sol";
+import "./../challengeV2/Utils.sol";
 
-import "../src/libraries/Error.sol";
+import "../../src/libraries/Error.sol";
 
-import "../src/mocks/TestWETH9.sol";
-import "../src/mocks/UpgradeExecutorMock.sol";
+import "../../src/mocks/TestWETH9.sol";
+import "../../src/mocks/UpgradeExecutorMock.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts-upgradeable/utils/Create2Upgradeable.sol";
@@ -118,13 +118,12 @@ contract RollupTest is Test {
         EdgeChallengeManager edgeChallengeManager = new EdgeChallengeManager();
 
         BridgeCreator bridgeCreator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
-        RollupCreator rollupCreator = new RollupCreator();
         RollupAdminLogic rollupAdminLogicImpl = new RollupAdminLogic();
         RollupUserLogic rollupUserLogicImpl = new RollupUserLogic();
         DeployHelper deployHelper = new DeployHelper();
         IUpgradeExecutor upgradeExecutorLogic = new UpgradeExecutorMock();
-
-        rollupCreator.setTemplates(
+        RollupCreator rollupCreator = new RollupCreator(
+            address(this),
             bridgeCreator,
             oneStepProofEntry,
             edgeChallengeManager,
@@ -1628,12 +1627,23 @@ contract RollupTest is Test {
         adminRollup.setBaseStake(BASE_STAKE + 1);
         assertEq(adminRollup.baseStake(), BASE_STAKE + 1, "Invalid after increase base stake");
 
-        // set it to be the same
-        vm.expectRevert("BASE_STAKE_MUST_BE_INCREASED");
-        adminRollup.setBaseStake(BASE_STAKE + 1);
+        // // set it to be the same
+        // vm.expectRevert("BASE_STAKE_MUST_BE_INCREASED");
+        // adminRollup.setBaseStake(BASE_STAKE + 1);
 
-        // set it to be less
-        vm.expectRevert("BASE_STAKE_MUST_BE_INCREASED");
+        // set it to be less - we expect this to succeed
         adminRollup.setBaseStake(BASE_STAKE);
+
+        vm.stopPrank();
+
+        // add another staker
+        vm.prank(validator2);
+        userRollup.newStake({
+            tokenAmount: 0,
+            _withdrawalAddress: validator2Withdrawal
+        });
+
+        vm.prank(upgradeExecutorAddr);
+        adminRollup.setBaseStake(BASE_STAKE - 1);
     }
 }
