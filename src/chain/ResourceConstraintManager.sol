@@ -13,15 +13,26 @@ contract ResourceConstraintManager is AccessControlEnumerable {
     ArbGasInfo internal constant ARB_GAS_INFO = ArbGasInfo(address(0x6c));
 
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+    uint256 public expiryTimestamp;
 
     error TooManyConstraints();
     error InvalidPeriod(uint64[3] constraint);
     error InvalidTarget(uint64[3] constraint);
+    error NotExpired();
 
-    constructor(address admin, address executor) {
+    constructor(address admin, address executor, uint256 _expiryTimestamp) {
         _setupRole(DEFAULT_ADMIN_ROLE, admin);
         _setupRole(MANAGER_ROLE, admin);
         _setupRole(MANAGER_ROLE, executor);
+        expiryTimestamp = _expiryTimestamp;
+    }
+
+    /// @notice Removes the contract from the list of chain owners after the expiry timestamp
+    function revoke() external {
+        if (block.timestamp < expiryTimestamp) {
+            revert NotExpired();
+        }
+        ARB_OWNER.removeChainOwner(address(this));
     }
 
     /// @notice Sets the list of gas pricing constraints for the multi-constraint pricing model.
