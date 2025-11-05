@@ -34,10 +34,10 @@ contract ResourceConstraintManager is AccessControlEnumerable {
         uint64[3][] calldata constraints
     ) external onlyRole(MANAGER_ROLE) {
         // If zero constraints are provided, the chain uses the single-constraint pricing model
-        if (constraints.length > 10) {
+        uint256 nConstraints = constraints.length;
+        if (nConstraints > 10) {
             revert TooManyConstraints();
         }
-        uint256 nConstraints = constraints.length;
         for (uint256 i = 0; i < nConstraints; ++i) {
             uint64 gasTargetPerSec = constraints[i][0];
             uint64 adjustmentWindowSecs = constraints[i][1];
