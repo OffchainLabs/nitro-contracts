@@ -18,6 +18,7 @@ contract ResourceConstraintManager is AccessControlEnumerable {
     error TooManyConstraints();
     error InvalidPeriod(uint64[3] constraint);
     error InvalidTarget(uint64[3] constraint);
+    error InvalidBacklog(uint64[3] constraint);
     error NotExpired();
 
     constructor(address admin, address executor, uint256 _expiryTimestamp) {
@@ -52,11 +53,15 @@ contract ResourceConstraintManager is AccessControlEnumerable {
         for (uint256 i = 0; i < nConstraints; ++i) {
             uint64 gasTargetPerSec = constraints[i][0];
             uint64 adjustmentWindowSecs = constraints[i][1];
+            uint64 startingBacklogValue = constraints[i][2];
             if (gasTargetPerSec < 7_000_000 || gasTargetPerSec > 100_000_000) {
                 revert InvalidTarget(constraints[i]);
             }
             if (adjustmentWindowSecs < 5 || adjustmentWindowSecs > 86400) {
                 revert InvalidPeriod(constraints[i]);
+            }
+            if (startingBacklogValue != 0) {
+                revert InvalidBacklog(constraints[i]);
             }
         }
         ARB_OWNER.setGasPricingConstraints(constraints);
