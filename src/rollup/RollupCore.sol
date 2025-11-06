@@ -576,7 +576,12 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         }
     }
 
-    function _emptyGenesisAssertionHash() internal pure returns (bytes32) {
+    /**
+     * @notice Returns an empty genesis assertion hash
+     * @dev In chains that were created with a non-empty genesis state, this function
+     *      will return a different value than the actual genesis assertion hash.
+     */
+    function genesisAssertionHash() external pure returns (bytes32) {
         GlobalState memory emptyGlobalState;
         AssertionState memory emptyAssertionState =
             AssertionState(emptyGlobalState, MachineStatus.FINISHED, bytes32(0));
@@ -587,15 +592,6 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
             afterState: emptyAssertionState,
             inboxAcc: inboxAcc
         });
-    }
-
-    function emptyGenesisAssertionHash() external pure returns (bytes32) {
-        return _emptyGenesisAssertionHash();
-    }
-
-    /// @notice deprecated, use emptyGenesisAssertionHash()
-    function genesisAssertionHash() external pure returns (bytes32) {
-        return _emptyGenesisAssertionHash();
     }
 
     function getFirstChildCreationBlock(
