@@ -576,6 +576,11 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         }
     }
 
+    /**
+     * @notice Returns an empty genesis assertion hash
+     * @dev In chains that were created with a non-empty genesis state, this function
+     *      will return a different value than the actual genesis assertion hash.
+     */
     function genesisAssertionHash() external pure returns (bytes32) {
         GlobalState memory emptyGlobalState;
         AssertionState memory emptyAssertionState =
