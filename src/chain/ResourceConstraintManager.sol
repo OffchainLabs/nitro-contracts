@@ -27,10 +27,9 @@ contract ResourceConstraintManager is AccessControlEnumerable {
     );
     error NotExpired();
 
-    constructor(address admin, address executor, uint256 _expiryTimestamp) {
+    constructor(address admin, address manager, uint256 _expiryTimestamp) {
         _setupRole(DEFAULT_ADMIN_ROLE, admin);
-        _setupRole(MANAGER_ROLE, admin);
-        _setupRole(MANAGER_ROLE, executor);
+        _setupRole(MANAGER_ROLE, manager);
         expiryTimestamp = _expiryTimestamp;
     }
 
