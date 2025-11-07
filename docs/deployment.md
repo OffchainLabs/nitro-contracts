@@ -14,17 +14,17 @@ git clone https://github.com/offchainlabs/nitro-contracts
 cd nitro-contracts
 ```
 
-Checkout the appropriate release (e.g. v3.1.0)
+Checkout the appropriate release (e.g. `develop`)
 
 ```shell
-git checkout v3.1.0
+git checkout develop
 ```
 
 Install dependencies and build
 
 ```shell
 yarn install
-yarn build
+yarn build:all
 ```
 
 Make a copy of the .env-sample file
