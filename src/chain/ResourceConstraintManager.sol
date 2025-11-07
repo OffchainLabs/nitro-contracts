@@ -16,9 +16,15 @@ contract ResourceConstraintManager is AccessControlEnumerable {
     uint256 public expiryTimestamp;
 
     error TooManyConstraints();
-    error InvalidPeriod(uint64[3] constraint);
-    error InvalidTarget(uint64[3] constraint);
-    error InvalidBacklog(uint64[3] constraint);
+    error InvalidPeriod(
+        uint64 gasTargetPerSec, uint64 adjustmentWindowSecs, uint64 startingBacklogValue
+    );
+    error InvalidTarget(
+        uint64 gasTargetPerSec, uint64 adjustmentWindowSecs, uint64 startingBacklogValue
+    );
+    error InvalidBacklog(
+        uint64 gasTargetPerSec, uint64 adjustmentWindowSecs, uint64 startingBacklogValue
+    );
     error NotExpired();
 
     constructor(address admin, address executor, uint256 _expiryTimestamp) {
@@ -55,13 +61,13 @@ contract ResourceConstraintManager is AccessControlEnumerable {
             uint64 adjustmentWindowSecs = constraints[i][1];
             uint64 startingBacklogValue = constraints[i][2];
             if (gasTargetPerSec < 7_000_000 || gasTargetPerSec > 100_000_000) {
-                revert InvalidTarget(constraints[i]);
+                revert InvalidTarget(gasTargetPerSec, adjustmentWindowSecs, startingBacklogValue);
             }
             if (adjustmentWindowSecs < 5 || adjustmentWindowSecs > 86400) {
-                revert InvalidPeriod(constraints[i]);
+                revert InvalidPeriod(gasTargetPerSec, adjustmentWindowSecs, startingBacklogValue);
             }
             if (startingBacklogValue != 0) {
-                revert InvalidBacklog(constraints[i]);
+                revert InvalidBacklog(gasTargetPerSec, adjustmentWindowSecs, startingBacklogValue);
             }
         }
         ARB_OWNER.setGasPricingConstraints(constraints);
