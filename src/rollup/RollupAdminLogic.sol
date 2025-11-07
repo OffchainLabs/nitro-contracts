@@ -264,41 +264,78 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
     }
 
     /**
-     * @notice Set base stake required for an assertion
-     * @param newBaseStake minimum amount of stake required. Can only be less than
-     *                     current base stake if there is at most one staker on a pending assertion.
-     *                     This should be true for permissioned chains that have the validator whitelist enabled
+     * @inheritdoc IRollupAdmin
      */
-    function setBaseStake(
+    function decreaseBaseStake(uint256 newBaseStake, uint64 latestNextInboxPosition) external override {
+        require(newBaseStake < baseStake, "BASE_STAKE_NOT_DECREASED");
+
+        // if we're decreasing the stake we need to be more careful not to allow a malicious party
+        // to withdraw some (up to the difference between baseStake and newBaseStake) honest funds from this contract
+        // The sequence of events is as follows:
+        // 1. The malicious party creates a sibling assertion, stake size is currently S
+        // 2. The base stake is then decreased to S'
+        // 3. The malicious party uses a different address to create a child of the malicious assertion, using stake size S'
+        // 4. This allows the malicious party to withdraw the stake S, since assertions with children set the staker to "inactive"
+
+        // for this reason the base stake can only be decreased on permissioned chains where the creation of pending assertions can be controlled
+        // In a permissionless setting, it's possible for a staker to DOS base stake decrease by creating themselves as a staker.
+        // we can do a basic safety check to ensure that we're in the permissioned setting by checking that there is only one
+        // staker on a pending assertion. It could be that we're in the permissionless setting and that pending assertion is a malicious one
+        // but we assume that the rollup admin will ensure that's not the case before calling this function by checking that a staker they trust is
+        // on a correct pending assertion.
+        require(validatorWhitelistDisabled == false, "DECREASE_ONLY_FOR_PERMISSIONED_CHAINS");
+
+        bytes32 currentConfigHash = RollupLib.configHash({
+            wasmModuleRoot: wasmModuleRoot,
+            requiredStake: baseStake,
+            challengeManager: address(challengeManager),
+            confirmPeriodBlocks: confirmPeriodBlocks,
+            nextInboxPosition: uint64(latestNextInboxPosition)
+        });
+
+        uint256 pendingCount = 0;
+        // check that all the stakers are on confirmed
+        address[] memory stakers = getAllStakers();
+        for (uint256 i = 0; i < stakers.length; i++) {
+            bytes32 latestStaked = latestStakedAssertion(stakers[i]);
+            AssertionNode storage latestAssertion = getAssertionStorage(latestStaked);
+            if (latestAssertion.status == AssertionStatus.Pending) {
+                // check that in overwriting the config hash, we'll only be updating the required stake field
+                require(latestAssertion.configHash == currentConfigHash, "EXPIRED_CONFIG_HASH");
+                // In order to support transitioning from permissioned to permissionless, we need to ensure that after the transition
+                // a malicious party cannot created decreased stake assertions as children of historical (even confirmed) assertions.
+                // To avoid this an additional check has been added in RollupUserLogic.createNewAssertion to ensure that the base stake
+                // is always >= the required stake of the prev assertion. Having added this check we also need to override the config hash of
+                // the latest staked assertion so that children can be created from it in the normal way. We do that below
+                latestAssertion.configHash = RollupLib.configHash({
+                    wasmModuleRoot: wasmModuleRoot,
+                    requiredStake: newBaseStake,
+                    challengeManager: address(challengeManager),
+                    confirmPeriodBlocks: confirmPeriodBlocks,
+                    nextInboxPosition: uint64(latestNextInboxPosition)
+                });
+                
+                pendingCount++;
+            }
+
+            require(pendingCount <= 1, "TOO_MANY_PENDING_STAKERS");
+        }
+
+        // we need to have a non zero pending count to ensure that exactly one config hash was updated
+        // if no config hashes are updated then no new assertions will be created, since they will all trigger STAKE_TOO_LOW
+        require(pendingCount == 1, "PENDING_ASSERTION_NOT_UPDATED");
+
+        baseStake = newBaseStake;
+        emit BaseStakeSet(newBaseStake);
+    }
+
+    /**
+     * @inheritdoc IRollupAdmin
+     */
+    function increaseBaseStake(
         uint256 newBaseStake
     ) external override {
-        if (newBaseStake < baseStake) {
-            // if we're reducing the stake we need to be more careful not to allow a malicious party
-            // to withdraw some (up to the difference between baseStake and newBaseStake) honest funds from this contract
-            // The sequence of events is as follows:
-            // 1. The malicious party creates a sibling assertion, stake size is currently S
-            // 2. The base stake is then reduced to S'
-            // 3. The malicious party uses a different address to create a child of the malicious assertion, using stake size S'
-            // 4. This allows the malicious party to withdraw the stake S, since assertions with children set the staker to "inactive"
-
-            // because of the above reason, reducing the base stake is only supported for permissioned chains (validator whitelist not disabled)
-            // who have control over who can stake. In a permissionless setting, it's possible for a staker to DOS base stake reduction
-            // by creating themselves as a staker
-
-            // we can check that's it's safe to reduce the base stake by ensuring that there are no stakers on pending assertions
-            // whilst we've documented above that stake should only be reduced in the permissioned setting, we add the check below as an
-            // added safety measure. Because this safety check ensure there are no pending stakers, the permissioned staker should ensure
-            // they move to a confirmed assertion before reducing the stake.
-
-            // check that all the stakers are on confirmed
-            address[] memory stakers = getAllStakers();
-            for (uint256 i = 0; i < stakers.length; i++) {
-                bytes32 latestStaked = latestStakedAssertion(stakers[i]);
-                if (getAssertionStorage(latestStaked).status == AssertionStatus.Pending) {
-                    revert("STAKERS_NOT_ALL_CONFIRMED");
-                }
-            }
-        }
+        require (newBaseStake > baseStake, "BASE_STAKE_NOT_INCREASED");
         baseStake = newBaseStake;
         emit BaseStakeSet(newBaseStake);
         // previously: emit OwnerFunctionCalled(12);

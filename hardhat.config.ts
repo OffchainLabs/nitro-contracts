@@ -38,8 +38,15 @@ const solidity: SolidityConfig = {
         optimizer: { ...commonSetting.optimizer, runs: 20 },
       },
     },
-    'src/challengeV2/EdgeChallengeManager.sol': {
+    'src/rollup/RollupAdminLogic.sol': {
       version: '0.8.17',
+      settings: {
+        ...commonSetting,
+        optimizer: { ...commonSetting.optimizer, runs: 20 },
+      },
+    },
+    'src/challengeV2/EdgeChallengeManager.sol': {
+      version: '0.8.17', 
       settings: {
         ...commonSetting,
         optimizer: { ...commonSetting.optimizer, runs: 200 },

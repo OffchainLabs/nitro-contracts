@@ -184,6 +184,12 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
             "INSUFFICIENT_STAKE"
         );
 
+        // the new assertion will be created with requiredStake equal to the baseStake
+        // however, for the reasons explained in RollupAdminLogic.reduceBaseStake we cannot allow an assertion to be created
+        // base stake than it's prev. In order to reduce the base stake the config hash of the latest assertion
+        // must be overridden, this occurs in the RollupAdminLogic.reduceBaseStake function
+        require(baseStake >= assertion.beforeStateData.configData.requiredStake, "STAKE_TOO_LOW");
+
         bytes32 prevAssertion = RollupLib.assertionHash(
             assertion.beforeStateData.prevPrevAssertionHash,
             assertion.beforeState,

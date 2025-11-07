@@ -1618,72 +1618,171 @@ contract RollupTest is Test {
         );
     }
 
-    function testBaseStake() public {
+    function testIncreaseBaseStake() public {
         assertEq(adminRollup.baseStake(), BASE_STAKE, "Invalid before base stake");
 
+        vm.expectRevert();
+        adminRollup.increaseBaseStake(BASE_STAKE + 1);
+        
+        vm.expectRevert("BASE_STAKE_NOT_INCREASED");
         vm.prank(upgradeExecutorAddr);
-        adminRollup.setBaseStake(BASE_STAKE - 1);
-        assertEq(adminRollup.baseStake(), BASE_STAKE - 1, "Invalid after decrease base stake");
+        adminRollup.increaseBaseStake(BASE_STAKE - 1);
 
-        // create an assertion - this creates a pending staker
-        (bytes32 assertionHash1,,) = testSuccessCreateAssertion();
-
-        // increase base stake amount
+        vm.expectRevert("BASE_STAKE_NOT_INCREASED");
         vm.prank(upgradeExecutorAddr);
-        adminRollup.setBaseStake(BASE_STAKE + 1);
+        adminRollup.increaseBaseStake(BASE_STAKE);
+
+        vm.prank(upgradeExecutorAddr);
+        adminRollup.increaseBaseStake(BASE_STAKE + 1);
         assertEq(adminRollup.baseStake(), BASE_STAKE + 1, "Invalid after increase base stake");
-
-        // decreasing now should fail since we have a pending staker
-        vm.prank(upgradeExecutorAddr);
-        vm.expectRevert("STAKERS_NOT_ALL_CONFIRMED");
-        adminRollup.setBaseStake(BASE_STAKE - 1);
-        assertEq(adminRollup.baseStake(), BASE_STAKE + 1, "Decrease should have failed");
-
-        vm.roll(userRollup.getAssertion(genesisHash).firstChildBlock + CONFIRM_PERIOD_BLOCKS + 1);
-        bytes32 inboxAccs = userRollup.bridge().sequencerInboxAccs(0);
-        vm.prank(validator1);
-        userRollup.confirmAssertion(
-            assertionHash1,
-            genesisHash,
-            firstState,
-            bytes32(0),
-            ConfigData({
-                wasmModuleRoot: WASM_MODULE_ROOT,
-                requiredStake: BASE_STAKE,
-                challengeManager: address(challengeManager),
-                confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                nextInboxPosition: firstState.globalState.u64Vals[0]
-            }),
-            inboxAccs
-        );
-
-        vm.prank(upgradeExecutorAddr);
-        adminRollup.setBaseStake(BASE_STAKE - 1);
-        assertEq(adminRollup.baseStake(), BASE_STAKE - 1, "Decrease should have failed");
-
-        // reset base stake
-        vm.prank(upgradeExecutorAddr);
-        adminRollup.setBaseStake(BASE_STAKE);
-        assertEq(adminRollup.baseStake(), BASE_STAKE, "Reset should have succeeded");
     }
 
-    function testBaseStakeAfterChallenge() public {
+    function testDecreaseBaseStake() public {
         assertEq(adminRollup.baseStake(), BASE_STAKE, "Invalid before base stake");
 
-        // increase base stake amount
-        vm.startPrank(upgradeExecutorAddr);
-        adminRollup.setBaseStake(BASE_STAKE + 1);
-        assertEq(adminRollup.baseStake(), BASE_STAKE + 1, "Invalid after increase base stake");
+        vm.expectRevert();
+        adminRollup.decreaseBaseStake(BASE_STAKE - 1, 0);
 
-        // set it to be less - we expect this to succeed
-        adminRollup.setBaseStake(BASE_STAKE);
-        assertEq(adminRollup.baseStake(), BASE_STAKE, "Invalid after decrease base stake");
+        vm.expectRevert("BASE_STAKE_NOT_DECREASED");
+        vm.prank(upgradeExecutorAddr);
+        adminRollup.decreaseBaseStake(BASE_STAKE + 1, 0);
+
+        vm.expectRevert("BASE_STAKE_NOT_DECREASED");
+        vm.prank(upgradeExecutorAddr);
+        adminRollup.decreaseBaseStake(BASE_STAKE, 0);
+
+        vm.startPrank(upgradeExecutorAddr);
+        adminRollup.setValidatorWhitelistDisabled(true);
+        vm.expectRevert("DECREASE_ONLY_FOR_PERMISSIONED_CHAINS");
+        adminRollup.decreaseBaseStake(BASE_STAKE - 1, 0);
+        adminRollup.setValidatorWhitelistDisabled(false);
         vm.stopPrank();
 
-        // test cant reduce with multiple pending stakers
-        testSuccessCreateChallenge();
+        vm.expectRevert("PENDING_ASSERTION_NOT_UPDATED");
         vm.prank(upgradeExecutorAddr);
-        vm.expectRevert("STAKERS_NOT_ALL_CONFIRMED");
-        adminRollup.setBaseStake(BASE_STAKE - 1);
+        adminRollup.decreaseBaseStake(BASE_STAKE - 1, 0);
+        
+        (bytes32 assertionHash1,,) = testSuccessCreateAssertion();
+        vm.prank(upgradeExecutorAddr);
+        vm.expectRevert("EXPIRED_CONFIG_HASH");
+        adminRollup.decreaseBaseStake(BASE_STAKE - 1, 0);
+
+        uint64 nextInboxPosition = uint64(userRollup.bridge().sequencerMessageCount());
+        vm.prank(upgradeExecutorAddr);
+        adminRollup.decreaseBaseStake(BASE_STAKE - 1, nextInboxPosition);
+
+        uint64 inboxcount = uint64(_createNewBatch());
+        AssertionState memory beforeState;
+        beforeState.machineStatus = MachineStatus.FINISHED;
+        beforeState.globalState.bytes32Vals[0] = FIRST_ASSERTION_BLOCKHASH; // blockhash
+        beforeState.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // sendroot
+        beforeState.globalState.u64Vals[0] = 1; // inbox count
+        beforeState.globalState.u64Vals[1] = 0; // pos in msg
+        AssertionState memory afterState;
+        afterState.machineStatus = MachineStatus.FINISHED;
+        afterState.globalState.bytes32Vals[0] = FIRST_ASSERTION_BLOCKHASH; // blockhash
+        afterState.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // sendroot
+        afterState.globalState.u64Vals[0] = 2; // inbox count
+        afterState.globalState.u64Vals[1] = 0; // pos in msg
+
+        AssertionState memory emptyState = AssertionState(
+            GlobalState([bytes32(0), bytes32(0)], [uint64(0), uint64(0)]),
+            MachineStatus.FINISHED,
+            bytes32(0)
+        );
+        // genesis hash
+        bytes32 genesisAssertionHash = RollupLib.assertionHash({
+            parentAssertionHash: bytes32(0),
+            afterState: emptyState,
+            inboxAcc: bytes32(0)
+        });
+
+        bytes32 expectedAssertionHash = RollupLib.assertionHash({
+            parentAssertionHash: assertionHash1,
+            afterState: afterState,
+            inboxAcc: userRollup.bridge().sequencerInboxAccs(1)
+        });
+
+
+        bytes32 beforeInboxAcc = userRollup.bridge().sequencerInboxAccs(0);
+        vm.roll(block.number + userRollup.minimumAssertionPeriod());
+
+        // test that we can create a new assertion after stake reduction
+        vm.prank(validator2);
+        userRollup.newStakeOnNewAssertion({
+            tokenAmount: BASE_STAKE - 1,
+            assertion: AssertionInputs({
+                beforeStateData: BeforeStateData({
+                    sequencerBatchAcc: beforeInboxAcc,
+                    prevPrevAssertionHash: genesisAssertionHash,
+                    configData: ConfigData({
+                        wasmModuleRoot: WASM_MODULE_ROOT,
+                        requiredStake: BASE_STAKE - 1,
+                        challengeManager: address(challengeManager),
+                        confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
+                        nextInboxPosition: 2
+                    })
+                }),
+                beforeState: beforeState,
+                afterState: afterState
+            }),
+            expectedAssertionHash: expectedAssertionHash,
+            _withdrawalAddress: validator1Withdrawal
+        });
+
+        createStakeTooLowAssertion();
+    }
+
+    function createStakeTooLowAssertion() public {
+        // trying to create an assertion with the genesis as parent will fail with stake too low
+        AssertionState memory beforeState3;
+        beforeState3.machineStatus = MachineStatus.FINISHED;
+        AssertionState memory afterState3;
+        afterState3.machineStatus = MachineStatus.FINISHED;
+        afterState3.globalState.bytes32Vals[0] = keccak256(abi.encodePacked(FIRST_ASSERTION_BLOCKHASH)); // blockhash
+        afterState3.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // sendroot
+        afterState3.globalState.u64Vals[0] = 1; // inbox count
+        afterState3.globalState.u64Vals[1] = 0; // pos in msg
+
+        bytes32 expectedAssertionHash3 = RollupLib.assertionHash({
+            parentAssertionHash: genesisHash,
+            afterState: afterState3,
+            inboxAcc: userRollup.bridge().sequencerInboxAccs(0)
+        });
+
+        vm.expectRevert("STAKE_TOO_LOW");
+        vm.prank(validator3);
+        userRollup.newStakeOnNewAssertion({
+            tokenAmount: BASE_STAKE,
+            assertion: AssertionInputs({
+                beforeStateData: BeforeStateData({
+                    sequencerBatchAcc: bytes32(0),
+                    prevPrevAssertionHash: bytes32(0),
+                    configData: ConfigData({
+                        wasmModuleRoot: WASM_MODULE_ROOT,
+                        requiredStake: BASE_STAKE,
+                        challengeManager: address(challengeManager),
+                        confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
+                        nextInboxPosition: 1
+                    })
+                }),
+                beforeState: beforeState3,
+                afterState: afterState3
+            }),
+            expectedAssertionHash: expectedAssertionHash3,
+            _withdrawalAddress: validator1Withdrawal
+        });
+    }
+
+    function testCannotDecreaseBaseStakeWithForkedAssertionTree() public {
+        assertEq(adminRollup.baseStake(), BASE_STAKE, "Invalid before base stake");
+
+        SuccessCreateChallengeData memory data = testSuccessCreateChallenge();
+
+        uint64 nextInboxPosition = uint64(userRollup.bridge().sequencerMessageCount());
+        userRollup.getAssertion(data.assertionHash);
+        vm.expectRevert("TOO_MANY_PENDING_STAKERS");
+        vm.prank(upgradeExecutorAddr);
+        adminRollup.decreaseBaseStake(BASE_STAKE - 1, nextInboxPosition);
     }
 }
