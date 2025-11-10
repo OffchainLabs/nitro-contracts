@@ -156,11 +156,6 @@ interface IRollupCore is IAssertionChain {
     ) external view returns (Staker memory);
 
     /**
-     * @notice Retrieves all currently registered stakers
-     */
-    function getAllStakers() external view returns (address[] memory);
-
-    /**
      * @notice Get the amount of funds withdrawable by the given address
      * @param owner Address to check the funds of
      * @return Amount of funds withdrawable by owner

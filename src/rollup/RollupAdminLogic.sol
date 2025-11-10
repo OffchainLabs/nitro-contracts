@@ -295,9 +295,9 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
 
         uint256 pendingCount = 0;
         // check that all the stakers are on confirmed
-        address[] memory stakers = getAllStakers();
-        for (uint256 i = 0; i < stakers.length; i++) {
-            bytes32 latestStaked = latestStakedAssertion(stakers[i]);
+        uint64 stakerCount = stakerCount();
+        for (uint64 i = 0; i < stakerCount; i++) {
+            bytes32 latestStaked = latestStakedAssertion(_stakerList[i]);
             AssertionNode storage latestAssertion = getAssertionStorage(latestStaked);
             if (latestAssertion.status == AssertionStatus.Pending) {
                 // check that in overwriting the config hash, we'll only be updating the required stake field
