@@ -25,6 +25,7 @@ contract ResourceConstraintManager is AccessControlEnumerable {
     error InvalidBacklog(
         uint64 gasTargetPerSec, uint64 adjustmentWindowSecs, uint64 startingBacklogValue
     );
+    error PricingExponentTooHigh(uint64 pricingExponent);
     error NotExpired();
 
     constructor(address admin, address manager, uint256 _expiryTimestamp) {
@@ -55,6 +56,7 @@ contract ResourceConstraintManager is AccessControlEnumerable {
         if (nConstraints > 10) {
             revert TooManyConstraints();
         }
+        uint64 pricingExponent = 0;
         for (uint256 i = 0; i < nConstraints; ++i) {
             uint64 gasTargetPerSec = constraints[i][0];
             uint64 adjustmentWindowSecs = constraints[i][1];
@@ -65,10 +67,24 @@ contract ResourceConstraintManager is AccessControlEnumerable {
             if (adjustmentWindowSecs < 5 || adjustmentWindowSecs > 86400) {
                 revert InvalidPeriod(gasTargetPerSec, adjustmentWindowSecs, startingBacklogValue);
             }
-            if (startingBacklogValue != 0) {
-                revert InvalidBacklog(gasTargetPerSec, adjustmentWindowSecs, startingBacklogValue);
-            }
+            // we scale by 1000 to improve precision in calculating the exponent
+            // since this division will round down, it's always possible for the real exponent to be up to
+            // the number of constraints greater than the value we measure
+            // for instance 
+            // if n = 10, and we check with precision 1 against threshold 8, then the real exponent might actually be up to 18
+            // if n = 10, and we check with precision 1000 against threshold 8000, then the real exponent might actually be up to 8010 / 1000
+            pricingExponent += (startingBacklogValue * 1000) / (gasTargetPerSec * adjustmentWindowSecs);
         }
+
+        // this calculated pricing exponent will by used by nitro to calculate the gas price
+        // we check that the pricing exponent is below some reasonable number to avoid setting the gas price astronomically high
+        // as long as the gas price is not so high that no-one at all can send a transaction the chain will be able to function
+        // eg. these constraints can be changed again, or the sec council can send admin transactions
+        // with min base fee of 0.02, exponent of 8 (scaled by 1000) corresponds to a gas price of ~60 Gwei
+        if (pricingExponent > 8000) {
+            revert PricingExponentTooHigh(pricingExponent);
+        }
+
         ARB_OWNER.setGasPricingConstraints(constraints);
     }
 }

@@ -41,8 +41,8 @@ contract ResourceConstraintManagerTest is Test {
         // Test with multiple valid constraints
         uint64[3][] memory multipleConstraints = new uint64[3][](3);
         multipleConstraints[0] = [uint64(7_000_000), uint64(5), uint64(0)];
-        multipleConstraints[1] = [uint64(50_000_000), uint64(1000), uint64(0)];
-        multipleConstraints[2] = [uint64(100_000_000), uint64(86400), uint64(0)];
+        multipleConstraints[1] = [uint64(50_000_000), uint64(1000), uint64(1)];
+        multipleConstraints[2] = [uint64(100_000_000), uint64(86400), uint64(10000)];
 
         vm.prank(manager);
         resourceConstraintManager.setGasPricingConstraints(multipleConstraints);
@@ -51,6 +51,28 @@ contract ResourceConstraintManagerTest is Test {
         uint64[3][] memory emptyConstraints = new uint64[3][](0);
         vm.prank(manager);
         resourceConstraintManager.setGasPricingConstraints(emptyConstraints);
+    }
+
+    function test_setGasPricingConstraints_pricingExponentTooHigh() external {
+        // create constraints on the limit of the pricing exponent
+        uint64[3][] memory multipleConstraints = new uint64[3][](3);
+        multipleConstraints[0] = [uint64(7_000_000), uint64(5), uint64(35_000_000)]; // 1
+        multipleConstraints[1] = [uint64(50_000_000), uint64(1000), uint64(300_000_000_000)]; // 6
+        multipleConstraints[2] = [uint64(100_000_000), uint64(86400), uint64(8_640_000_000_000)]; // 1
+
+        vm.prank(manager);
+        resourceConstraintManager.setGasPricingConstraints(multipleConstraints);
+
+        // up to the limit
+        multipleConstraints[1][2] = uint64(300_050_000_000);
+        vm.prank(manager);
+        resourceConstraintManager.setGasPricingConstraints(multipleConstraints);
+
+        // over the limit
+        multipleConstraints[1][2] = uint64(300_051_000_000);
+        vm.prank(manager);
+        vm.expectRevert(abi.encodeWithSelector(ResourceConstraintManager.PricingExponentTooHigh.selector, 8001));
+        resourceConstraintManager.setGasPricingConstraints(multipleConstraints);   
     }
 
     function test_setGasPricingConstraints_accessControl() external {
@@ -174,38 +196,6 @@ contract ResourceConstraintManagerTest is Test {
         constraintsMaxPeriod[0] = [uint64(10_000_000), uint64(86400), uint64(0)];
         vm.prank(manager);
         resourceConstraintManager.setGasPricingConstraints(constraintsMaxPeriod);
-    }
-
-    function test_setGasPricingConstraints_invalidBacklog() external {
-        // Test non-zero starting backlog
-        uint64[3][] memory constraintsNonZeroBacklog = new uint64[3][](1);
-        constraintsNonZeroBacklog[0] = [uint64(10_000_000), uint64(100), uint64(1)];
-
-        vm.prank(manager);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ResourceConstraintManager.InvalidBacklog.selector,
-                uint64(10_000_000),
-                uint64(100),
-                uint64(1)
-            )
-        );
-        resourceConstraintManager.setGasPricingConstraints(constraintsNonZeroBacklog);
-
-        // Test large non-zero backlog
-        uint64[3][] memory constraintsLargeBacklog = new uint64[3][](1);
-        constraintsLargeBacklog[0] = [uint64(10_000_000), uint64(100), uint64(999999)];
-
-        vm.prank(manager);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                ResourceConstraintManager.InvalidBacklog.selector,
-                uint64(10_000_000),
-                uint64(100),
-                uint64(999999)
-            )
-        );
-        resourceConstraintManager.setGasPricingConstraints(constraintsLargeBacklog);
     }
 
     function test_setGasPricingConstraints_multipleConstraintValidation() external {
