@@ -72,7 +72,7 @@ contract ResourceConstraintManagerTest is Test {
         multipleConstraints[1][2] = uint64(300_050_000_000);
         vm.prank(manager);
         vm.expectRevert(
-            // abi.encodeWithSelector(ResourceConstraintManager.PricingExponentTooHigh.selector, 8001)
+            abi.encodeWithSelector(ResourceConstraintManager.PricingExponentTooHigh.selector, 8001)
         );
         resourceConstraintManager.setGasPricingConstraints(multipleConstraints);
     }
