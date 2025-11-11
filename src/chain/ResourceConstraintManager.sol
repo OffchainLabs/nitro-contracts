@@ -22,9 +22,6 @@ contract ResourceConstraintManager is AccessControlEnumerable {
     error InvalidTarget(
         uint64 gasTargetPerSec, uint64 adjustmentWindowSecs, uint64 startingBacklogValue
     );
-    error InvalidBacklog(
-        uint64 gasTargetPerSec, uint64 adjustmentWindowSecs, uint64 startingBacklogValue
-    );
     error PricingExponentTooHigh(uint64 pricingExponent);
     error NotExpired();
 
