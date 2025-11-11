@@ -70,10 +70,11 @@ contract ResourceConstraintManager is AccessControlEnumerable {
             // we scale by 1000 to improve precision in calculating the exponent
             // since this division will round down, it's always possible for the real exponent to be up to
             // the number of constraints greater than the value we measure
-            // for instance 
+            // for instance
             // if n = 10, and we check with precision 1 against threshold 8, then the real exponent might actually be up to 18
             // if n = 10, and we check with precision 1000 against threshold 8000, then the real exponent might actually be up to 8010 / 1000
-            pricingExponent += (startingBacklogValue * 1000) / (gasTargetPerSec * adjustmentWindowSecs);
+            pricingExponent +=
+                (startingBacklogValue * 1000) / (gasTargetPerSec * adjustmentWindowSecs);
         }
 
         // this calculated pricing exponent will by used by nitro to calculate the gas price

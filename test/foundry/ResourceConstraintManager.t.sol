@@ -71,8 +71,10 @@ contract ResourceConstraintManagerTest is Test {
         // over the limit
         multipleConstraints[1][2] = uint64(300_051_000_000);
         vm.prank(manager);
-        vm.expectRevert(abi.encodeWithSelector(ResourceConstraintManager.PricingExponentTooHigh.selector, 8001));
-        resourceConstraintManager.setGasPricingConstraints(multipleConstraints);   
+        vm.expectRevert(
+            abi.encodeWithSelector(ResourceConstraintManager.PricingExponentTooHigh.selector, 8001)
+        );
+        resourceConstraintManager.setGasPricingConstraints(multipleConstraints);
     }
 
     function test_setGasPricingConstraints_accessControl() external {
