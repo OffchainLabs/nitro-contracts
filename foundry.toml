@@ -36,7 +36,6 @@ compilation_restrictions = []
 skip = []
 
 [profile.yul]
-inherit = "default"
 src = 'yul'
 out = 'out/yul'
 libs = ['node_modules', 'lib']
