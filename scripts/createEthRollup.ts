@@ -15,6 +15,11 @@ async function main() {
     throw new Error('STAKE_TOKEN_ADDRESS not set')
   }
 
+  let customOsp = process.env.CUSTOM_OSP_ADDRESS as string
+  if (!customOsp) {
+    customOsp = ethers.constants.AddressZero
+  }
+
   const [signer] = await ethers.getSigners()
 
   await createRollup(
@@ -23,7 +28,8 @@ async function main() {
     rollupCreatorAddress,
     feeToken,
     feeTokenPricer,
-    stakeTokenAddress
+    stakeTokenAddress,
+    customOsp
   )
 }
 

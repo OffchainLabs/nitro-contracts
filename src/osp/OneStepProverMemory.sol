@@ -250,9 +250,8 @@ contract OneStepProverMemory is IOneStepProver {
 
         uint16 opcode = inst.opcode;
 
-        function(Machine memory, Module memory, Instruction calldata, bytes calldata)
-            internal
-            pure impl;
+        function(Machine memory, Module memory, Instruction calldata, bytes calldata) internal pure
+            impl;
         if (opcode >= Instructions.I32_LOAD && opcode <= Instructions.I64_LOAD32_U) {
             impl = executeMemoryLoad;
         } else if (opcode >= Instructions.I32_STORE && opcode <= Instructions.I64_STORE32) {
