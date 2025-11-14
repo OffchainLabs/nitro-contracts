@@ -34,18 +34,6 @@ contract RollupCreator is Ownable {
     );
     event TemplatesUpdated();
 
-    struct RollupDeploymentParamsLegacy {
-        Config config;
-        address[] validators;
-        uint256 maxDataSize;
-        address nativeToken;
-        bool deployFactoriesToL2;
-        uint256 maxFeePerGasForRetryables;
-        address[] batchPosters;
-        address batchPosterManager;
-        IFeeTokenPricer feeTokenPricer;
-    }
-
     struct RollupDeploymentParams {
         Config config;
         address[] validators;
@@ -147,29 +135,6 @@ contract RollupCreator is Ownable {
         });
 
         return challengeManager;
-    }
-
-    /**
-     * @notice Create a new rollup
-     *         DEPRECATED, use the createRollup(RollupDeploymentParams) method instead
-     */
-    function createRollup(
-        RollupDeploymentParamsLegacy memory deployParams
-    ) public payable returns (address) {
-        return createRollup(
-            RollupDeploymentParams({
-                config: deployParams.config,
-                validators: deployParams.validators,
-                maxDataSize: deployParams.maxDataSize,
-                nativeToken: deployParams.nativeToken,
-                deployFactoriesToL2: deployParams.deployFactoriesToL2,
-                maxFeePerGasForRetryables: deployParams.maxFeePerGasForRetryables,
-                batchPosters: deployParams.batchPosters,
-                batchPosterManager: deployParams.batchPosterManager,
-                feeTokenPricer: deployParams.feeTokenPricer,
-                customOsp: address(0)
-            })
-        );
     }
 
     /**

@@ -202,7 +202,8 @@ contract AssertionPoolTest is Test {
             maxFeePerGasForRetryables: 0,
             batchPosters: new address[](0),
             batchPosterManager: address(0),
-            feeTokenPricer: IFeeTokenPricer(address(0))
+            feeTokenPricer: IFeeTokenPricer(address(0)),
+            customOsp: address(0)
         });
 
         rollupAddr = rollupCreator.createRollup(param);
