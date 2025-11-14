@@ -5,7 +5,7 @@ module.exports = async hre => {
 
   await deploy('OneStepProverHostIo', {
     from: deployer,
-    args: [],
+    args: [ethers.constants.AddressZero],
   })
 }
 

@@ -880,6 +880,7 @@ describe('Orbit Chain', () => {
       deployFactoriesToL2,
       maxFeePerGasForRetryables,
       feeTokenPricer: ethers.constants.AddressZero,
+      customOsp: ethers.constants.AddressZero,
     }
 
     /// deploy it

@@ -116,6 +116,11 @@ interface ISequencerInbox is IDelayedMessageProvider {
     // solhint-disable-next-line func-name-mixedcase
     function ZERO_HEAVY_MESSAGE_HEADER_FLAG() external view returns (bytes1);
 
+    /// @dev If the first data byte after the header has this set,
+    ///      then the batch data comes from a custom data availability provider
+    // solhint-disable-next-line func-name-mixedcase
+    function CUSTOM_DA_MESSAGE_HEADER_FLAG() external view returns (bytes1);
+
     function rollup() external view returns (IOwnable);
 
     function isBatchPoster(

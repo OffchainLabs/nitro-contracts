@@ -30,7 +30,6 @@ compilation_restrictions = [
 skip = ['test/*']
 
 [profile.test]
-inherit = "default"
 optimizer = false
 additional_compiler_profiles = []
 compilation_restrictions = []
@@ -45,6 +44,9 @@ cache_path = 'forge-cache/yul'
 remappings = []
 auto_detect_remappings = false
 skip = ['*.sol', 'test/*']
+
+[lint]
+lint_on_build = false
 
 [fmt]
 line_length = 100
