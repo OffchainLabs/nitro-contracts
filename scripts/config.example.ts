@@ -6,7 +6,7 @@ import {
 
 type PartialRollupParams = Pick<
   RollupCreator.RollupDeploymentParamsStruct,
-  'config' | 'validators' | 'batchPosterManager' | 'batchPosters'
+  'config' | 'validators' | 'batchPosterManager' | 'batchPosters' | 'customOsp'
 >
 
 // 90% of Geth's 128KB tx size limit, leaving ~13KB for proving
@@ -68,6 +68,7 @@ export const config: PartialRollupParams = {
   ],
   batchPosterManager: '0x1234123412341234123412341234123412341234',
   batchPosters: ['0x1234123412341234123412341234123412341234'],
+  customOsp: ethers.constants.AddressZero,
 }
 
 // These value should be defined in the env
