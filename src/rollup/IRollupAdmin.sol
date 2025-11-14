@@ -159,10 +159,7 @@ interface IRollupAdmin {
      * @param newBaseStake New base stake to be set. Must be less than current base stake, otherwise use increaseBaseStake
      * @param latestNextInboxPosition The nextInboxPosition of the only pending latestStakedAssertion
      */
-    function decreaseBaseStake(
-        uint256 newBaseStake,
-        uint64 latestNextInboxPosition
-    ) external;
+    function decreaseBaseStake(uint256 newBaseStake, uint64 latestNextInboxPosition) external;
 
     /**
      * @notice Increase the base stake required for creating an assertion

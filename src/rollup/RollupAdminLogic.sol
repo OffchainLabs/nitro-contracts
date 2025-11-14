@@ -266,7 +266,10 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
     /**
      * @inheritdoc IRollupAdmin
      */
-    function decreaseBaseStake(uint256 newBaseStake, uint64 latestNextInboxPosition) external override {
+    function decreaseBaseStake(
+        uint256 newBaseStake,
+        uint64 latestNextInboxPosition
+    ) external override {
         require(newBaseStake < baseStake, "BASE_STAKE_NOT_DECREASED");
 
         // if we're decreasing the stake we need to be more careful not to allow a malicious party
@@ -313,7 +316,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
                     confirmPeriodBlocks: confirmPeriodBlocks,
                     nextInboxPosition: uint64(latestNextInboxPosition)
                 });
-                
+
                 pendingCount++;
             }
 
@@ -334,7 +337,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
     function increaseBaseStake(
         uint256 newBaseStake
     ) external override {
-        require (newBaseStake > baseStake, "BASE_STAKE_NOT_INCREASED");
+        require(newBaseStake > baseStake, "BASE_STAKE_NOT_INCREASED");
         baseStake = newBaseStake;
         emit BaseStakeSet(newBaseStake);
         // previously: emit OwnerFunctionCalled(12);

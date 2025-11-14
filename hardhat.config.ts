@@ -46,7 +46,7 @@ const solidity: SolidityConfig = {
       },
     },
     'src/challengeV2/EdgeChallengeManager.sol': {
-      version: '0.8.17', 
+      version: '0.8.17',
       settings: {
         ...commonSetting,
         optimizer: { ...commonSetting.optimizer, runs: 200 },

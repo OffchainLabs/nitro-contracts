@@ -1624,7 +1624,7 @@ contract RollupTest is Test {
 
         vm.expectRevert();
         adminRollup.increaseBaseStake(BASE_STAKE + 1);
-        
+
         vm.expectRevert("BASE_STAKE_NOT_INCREASED");
         vm.prank(upgradeExecutorAddr);
         adminRollup.increaseBaseStake(BASE_STAKE - 1);
@@ -1662,7 +1662,7 @@ contract RollupTest is Test {
         vm.expectRevert("PENDING_ASSERTION_NOT_UPDATED");
         vm.prank(upgradeExecutorAddr);
         adminRollup.decreaseBaseStake(BASE_STAKE - 1, 0);
-        
+
         (bytes32 assertionHash1,,) = testSuccessCreateAssertion();
         vm.prank(upgradeExecutorAddr);
         vm.expectRevert("EXPIRED_CONFIG_HASH");
@@ -1704,7 +1704,6 @@ contract RollupTest is Test {
             inboxAcc: userRollup.bridge().sequencerInboxAccs(1)
         });
 
-
         bytes32 beforeInboxAcc = userRollup.bridge().sequencerInboxAccs(0);
         vm.roll(block.number + userRollup.minimumAssertionPeriod());
 
@@ -1740,7 +1739,8 @@ contract RollupTest is Test {
         beforeState3.machineStatus = MachineStatus.FINISHED;
         AssertionState memory afterState3;
         afterState3.machineStatus = MachineStatus.FINISHED;
-        afterState3.globalState.bytes32Vals[0] = keccak256(abi.encodePacked(FIRST_ASSERTION_BLOCKHASH)); // blockhash
+        afterState3.globalState.bytes32Vals[0] =
+            keccak256(abi.encodePacked(FIRST_ASSERTION_BLOCKHASH)); // blockhash
         afterState3.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // sendroot
         afterState3.globalState.u64Vals[0] = 1; // inbox count
         afterState3.globalState.u64Vals[1] = 0; // pos in msg
