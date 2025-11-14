@@ -14,7 +14,7 @@ git clone https://github.com/offchainlabs/nitro-contracts
 cd nitro-contracts
 ```
 
-Checkout the appropriate release (e.g. `develop`)
+Checkout the appropriate release (e.g. `develop` or `v3.1.1`)
 
 ```shell
 git checkout develop
