@@ -38,6 +38,13 @@ async function main() {
     console.log('Ignoring maxDataSize warning')
   }
 
+  // Verification of contracts
+  // (If undefined, default "true" is used; if anything other than "false" is set, verification is disabled)
+  const verifyContracts =
+    process.env.DISABLE_VERIFICATION === undefined
+      ? undefined
+      : process.env.DISABLE_VERIFICATION === 'false'
+
   // Deploying all contracts
   const factoryOwner = process.env.FACTORY_OWNER
   if (!factoryOwner) {
@@ -47,7 +54,7 @@ async function main() {
     signer,
     factoryOwner,
     ethers.BigNumber.from(maxDataSize),
-    true
+    verifyContracts
   )
 }
 

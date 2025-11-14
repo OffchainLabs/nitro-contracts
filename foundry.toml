@@ -31,14 +31,12 @@ compilation_restrictions = [
 skip = ['test/*']
 
 [profile.test]
-inherit = "default"
 optimizer = false
 additional_compiler_profiles = []
 compilation_restrictions = []
 skip = []
 
 [profile.yul]
-inherit = "default"
 src = 'yul'
 out = 'out/yul'
 libs = ['node_modules', 'lib']
