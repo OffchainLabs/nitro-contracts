@@ -35,7 +35,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
                 address(connectedContracts.rollupEventInbox), true
             );
             connectedContracts.rollupEventInbox.rollupInitialized(
-                config.chainId, config.chainConfig
+                config.chainId, config.chainConfig, config.dataCostEstimate
             );
         }
 
