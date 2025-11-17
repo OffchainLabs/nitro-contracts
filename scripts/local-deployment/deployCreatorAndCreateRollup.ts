@@ -60,6 +60,11 @@ async function main() {
     console.log('WETH deployed at', stakeToken)
   }
 
+  let customOsp = process.env.CUSTOM_OSP_ADDRESS as string
+  if (!customOsp) {
+    customOsp = ethers.constants.AddressZero
+  }
+
   const factoryCode = await deployerWallet.provider.getCode(
     '0x4e59b44847b379578588920ca78fbf26c0b4956c'
   )
@@ -116,7 +121,8 @@ async function main() {
     contracts.rollupCreator.address,
     feeToken,
     feeTokenPricer,
-    stakeToken
+    stakeToken,
+    customOsp
   )
 
   if (!result) {

@@ -392,7 +392,8 @@ contract BOLDUpgradeAction {
             anyTrustFastConfirmer: address(0), // fast confirmer would be migrated from the old rollup if existed
             numBigStepLevel: NUM_BIGSTEP_LEVEL,
             challengeGracePeriodBlocks: CHALLENGE_GRACE_PERIOD_BLOCKS,
-            bufferConfig: bufferConfig
+            bufferConfig: bufferConfig,
+            dataCostEstimate: 0
         });
     }
 
