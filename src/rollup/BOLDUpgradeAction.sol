@@ -8,7 +8,6 @@ import "@openzeppelin/contracts-upgradeable/utils/Create2Upgradeable.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "./RollupProxy.sol";
 import "./RollupLib.sol";
-import "./RollupAdminLogic.sol";
 
 struct Node {
     // Hash of the state of the chain as of this node
