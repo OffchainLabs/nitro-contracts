@@ -198,7 +198,7 @@ export async function deployOneStepProofEntry(
   const proverHostIo = await deployContract(
     'OneStepProverHostIo',
     signer,
-    [],
+    [ethers.constants.AddressZero],
     verify,
     true
   )
