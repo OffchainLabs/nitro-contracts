@@ -102,7 +102,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     bytes32 private _latestConfirmed;
     mapping(bytes32 => AssertionNode) private _assertions;
 
-    address[] internal _stakerList;
+    address[] private _stakerList;
     mapping(address => Staker) public _stakerMap;
 
     mapping(address => uint256) private _withdrawableFunds;
@@ -171,7 +171,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
      */
     function getStakerAddress(
         uint64 stakerNum
-    ) external view override returns (address) {
+    ) public view override returns (address) {
         return _stakerList[stakerNum];
     }
 
