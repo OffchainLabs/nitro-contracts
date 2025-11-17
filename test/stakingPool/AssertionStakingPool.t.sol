@@ -176,7 +176,8 @@ contract AssertionPoolTest is Test {
             numBigStepLevel: 2,
             anyTrustFastConfirmer: address(300001),
             challengeGracePeriodBlocks: CHALLENGE_GRACE_PERIOD_BLOCKS,
-            bufferConfig: BufferConfig({threshold: 600, max: 14400, replenishRateInBasis: 500})
+            bufferConfig: BufferConfig({threshold: 600, max: 14400, replenishRateInBasis: 500}),
+            dataCostEstimate: 0
         });
 
         vm.expectEmit(false, false, false, false);

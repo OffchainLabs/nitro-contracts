@@ -61,6 +61,7 @@ export const config: PartialRollupParams = {
       futureSeconds: ethers.BigNumber.from('3600'),
     },
     anyTrustFastConfirmer: ethers.constants.AddressZero,
+    dataCostEstimate: ethers.BigNumber.from('0'),
   },
   validators: [
     '0x1234123412341234123412341234123412341234',
