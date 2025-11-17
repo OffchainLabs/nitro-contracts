@@ -124,7 +124,8 @@ contract RollupCreatorTest is Test {
             anyTrustFastConfirmer: address(0),
             numBigStepLevel: 1,
             challengeGracePeriodBlocks: 10,
-            bufferConfig: BufferConfig({threshold: 600, max: 14400, replenishRateInBasis: 500})
+            bufferConfig: BufferConfig({threshold: 600, max: 14400, replenishRateInBasis: 500}),
+            dataCostEstimate: 0
         });
     }
 

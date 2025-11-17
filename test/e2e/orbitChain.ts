@@ -859,6 +859,7 @@ describe('Orbit Chain', () => {
         delaySeconds: ethers.BigNumber.from('86400'),
         futureSeconds: ethers.BigNumber.from('3600'),
       },
+      dataCostEstimate: ethers.BigNumber.from('0'),
     }
     const batchPosters = [ethers.Wallet.createRandom().address]
     const batchPosterManager = ethers.Wallet.createRandom().address
