@@ -226,7 +226,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
      */
     function getStaker(
         address staker
-    ) public view override returns (Staker memory) {
+    ) external view override returns (Staker memory) {
         return _stakerMap[staker];
     }
 
