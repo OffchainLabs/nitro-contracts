@@ -296,8 +296,8 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
         });
 
         uint256 pendingCount = 0;
-        uint64 stakerCount = stakerCount();
-        for (uint64 i = 0; i < stakerCount; i++) {
+        uint64 nStakers = stakerCount();
+        for (uint64 i = 0; i < nStakers; i++) {
             bytes32 latestStaked = latestStakedAssertion(getStakerAddress(i));
             AssertionNode storage latestAssertion = getAssertionStorage(latestStaked);
             if (latestAssertion.status == AssertionStatus.Pending) {
