@@ -27,6 +27,8 @@
     // Axios is vulnerable to DoS attack through lack of data size check
     "GHSA-4hjh-wcwx-xvwj",
     // form-data uses unsafe random function in form-data for choosing boundary
-    "GHSA-fjxv-7rqg-78g4"
+    "GHSA-fjxv-7rqg-78g4",
+    // js-yaml has prototype pollution in merge (<<)
+    "GHSA-mh29-5h37-fv8m"
   ]
 }
