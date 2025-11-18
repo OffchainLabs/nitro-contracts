@@ -25,6 +25,7 @@ additional_compiler_profiles = [
 ]
 compilation_restrictions = [
     { paths = "src/rollup/RollupUserLogic.sol", optimizer_runs = 20 },
+    { paths = "src/rollup/RollupAdminLogic.sol", optimizer_runs = 20 },
     { paths = "src/challengeV2/EdgeChallengeManager.sol", optimizer_runs = 200 },
 ]
 skip = ['test/*']
