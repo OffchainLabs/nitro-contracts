@@ -250,7 +250,7 @@ contract OneStepProverHostIo is IOneStepProver {
             // Extract and validate certificate
             bytes calldata certificate = customProof[CERT_SIZE_LEN:CERT_SIZE_LEN + certSize];
 
-            // SECURITY CHECK: Verify this is the certificate the machine requested
+            // Verify this is the certificate the machine requested
             require(keccak256(certificate) == leafContents, "WRONG_CERTIFICATE_HASH");
 
             // Delegate to custom validator with proven values and full proof
@@ -273,10 +273,10 @@ contract OneStepProverHostIo is IOneStepProver {
     }
 
     function executeValidatePreimage(
-        ExecutionContext calldata execCtx,
+        ExecutionContext calldata,
         Machine memory mach,
         Module memory mod,
-        Instruction calldata inst,
+        Instruction calldata,
         bytes calldata proof
     ) internal view {
         uint256 preimageType = mach.valueStack.pop().assumeI32();
@@ -292,11 +292,7 @@ contract OneStepProverHostIo is IOneStepProver {
 
         if (preimageType == 3) {
             require(address(customDAValidator) != address(0), "CUSTOM_DA_VALIDATOR_NOT_SUPPORTED");
-            if (
-                validateAndCheckCertificate(
-                    address(customDAValidator), proof, proofOffset, leafContents
-                )
-            ) {
+            if (validateAndCheckCertificate(proof, proofOffset, leafContents)) {
                 mach.valueStack.push(ValueLib.newI32(1));
             } else {
                 mach.valueStack.push(ValueLib.newI32(0));
@@ -311,11 +307,11 @@ contract OneStepProverHostIo is IOneStepProver {
     }
 
     function validateAndCheckCertificate(
-        address customDAAddr,
         bytes calldata proof,
         uint256 proofOffset,
         bytes32 expectedHash
     ) internal view returns (bool) {
+        // Proof format: [certSize(8), certificate(certSize), claimedValid(1)]
         uint256 certSize = uint256(uint64(bytes8(proof[proofOffset:proofOffset + CERT_SIZE_LEN])));
 
         require(
@@ -326,7 +322,7 @@ contract OneStepProverHostIo is IOneStepProver {
         bytes calldata certificate =
             proof[proofOffset + CERT_SIZE_LEN:proofOffset + CERT_SIZE_LEN + certSize];
 
-        // SECURITY CHECK: Verify this is the certificate the machine requested
+        // Verify this is the certificate the machine requested
         require(keccak256(certificate) == expectedHash, "WRONG_CERTIFICATE_HASH");
 
         bool claimedValid = uint8(proof[proofOffset + CERT_SIZE_LEN + certSize]) != 0;
@@ -335,7 +331,7 @@ contract OneStepProverHostIo is IOneStepProver {
         bytes calldata validationProof = proof[proofOffset:];
 
         // Check actual validity and verify claims match
-        bool isValid = ICustomDAProofValidator(customDAAddr).validateCertificate(validationProof);
+        bool isValid = customDAValidator.validateCertificate(validationProof);
         require(
             isValid == claimedValid,
             isValid ? "CLAIMED_INVALID_BUT_VALID" : "CLAIMED_VALID_BUT_INVALID"
