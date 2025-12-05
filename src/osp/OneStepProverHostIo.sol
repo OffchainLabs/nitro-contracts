@@ -311,7 +311,7 @@ contract OneStepProverHostIo is IOneStepProver {
         uint256 proofOffset,
         bytes32 expectedHash
     ) internal view returns (bool) {
-        // Proof format: [certSize(8), certificate(certSize), claimedValid(1)]
+        // Proof format is: [certSize(8), certificate, claimedValid(1), validityProof...]
         uint256 certSize = uint256(uint64(bytes8(proof[proofOffset:proofOffset + CERT_SIZE_LEN])));
 
         require(
