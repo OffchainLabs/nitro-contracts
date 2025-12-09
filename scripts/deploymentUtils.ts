@@ -165,6 +165,7 @@ export async function create2(
 
 export async function deployOneStepProofEntry(
   signer: any,
+  customDAValidator: string,
   verify: boolean = true
 ): Promise<{
   prover0: Contract
@@ -198,7 +199,7 @@ export async function deployOneStepProofEntry(
   const proverHostIo = await deployContract(
     'OneStepProverHostIo',
     signer,
-    [ethers.constants.AddressZero],
+    [customDAValidator],
     verify,
     true
   )
@@ -347,8 +348,14 @@ export async function deployAllContracts(
     verify,
     true
   )
+  // Get custom DA validator address from environment variable
+  const customDAValidator =
+    process.env.CUSTOM_DA_VALIDATOR || ethers.constants.AddressZero
+  if (customDAValidator !== ethers.constants.AddressZero) {
+    console.log('Custom DA Validator:', customDAValidator)
+  }
   const { prover0, proverMem, proverMath, proverHostIo, osp } =
-    await deployOneStepProofEntry(signer, verify)
+    await deployOneStepProofEntry(signer, customDAValidator, verify)
   const challengeManager = await deployContract(
     'EdgeChallengeManager',
     signer,
