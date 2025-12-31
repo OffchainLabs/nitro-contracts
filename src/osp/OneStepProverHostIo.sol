@@ -282,10 +282,9 @@ contract OneStepProverHostIo is IOneStepProver {
         uint256 preimageType = mach.valueStack.pop().assumeI32();
         uint256 ptr = mach.valueStack.pop().assumeI32();
 
-        // Validate preimageType fits in u8 (matches Rust u8::try_from)
+        // Validate preimageType fits in u8 (matches Rust u8::try_from which uses ? to propagate error)
         if (preimageType > 255) {
-            mach.status = MachineStatus.ERRORED;
-            return;
+            revert("PREIMAGE_TYPE_OVERFLOW");
         }
 
         // Invalid enum values (4-255) return 0 with no memory access
