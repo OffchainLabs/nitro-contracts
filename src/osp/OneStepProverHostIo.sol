@@ -152,7 +152,7 @@ contract OneStepProverHostIo is IOneStepProver {
         bytes memory extracted;
         uint8 proofType = uint8(proof[proofOffset]);
         proofOffset++;
-        // These values must be kept in sync with `arbitrator/arbutil/src/types.rs`
+        // These values must be kept in sync with `crates/arbutil/src/types.rs`
         // and `arbutil/preimage_type.go` (both in the nitro repo).
         if (inst.argumentData == 0) {
             // The machine is asking for a keccak256 preimage
