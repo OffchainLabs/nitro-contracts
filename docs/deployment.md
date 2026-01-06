@@ -152,17 +152,11 @@ The script will output all deployed addresses and the block at which the transac
 If you choose to verify the deployed contracts, you'll also need to set the key to use Etherscan's API (or the appropriate network's block explorer).
 
 ```shell
-# For deployments on an L1
+# This key will be used against Etherscan's API (v2) on all supported networks,
+# or against the API URL defined in `CUSTOM_ETHERSCAN_API_URL` when using a custom network
 ETHERSCAN_API_KEY=
 
-# For deployments on Arbitrum One and Arbitrum Sepolia
-ARBISCAN_API_KEY=
-
-# For deployments on Base or Base Sepolia
-BASESCAN_API_KEY=
-
 # For deployments on other networks
-CUSTOM_ETHERSCAN_API_KEY=
 CUSTOM_CHAINID=
 CUSTOM_ETHERSCAN_API_URL=
 CUSTOM_ETHERSCAN_BROWSER_URL=

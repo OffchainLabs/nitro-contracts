@@ -188,32 +188,18 @@ module.exports = {
     },
   },
   etherscan: {
-    apiKey: {
-      mainnet: process.env['ETHERSCAN_API_KEY'],
-      sepolia: process.env['ETHERSCAN_API_KEY'],
-      holesky: process.env['ETHERSCAN_API_KEY'],
-      arbitrumOne: process.env['ARBISCAN_API_KEY'],
-      nova: process.env['NOVA_ARBISCAN_API_KEY'],
-      arbSepolia: process.env['ARBISCAN_API_KEY'],
-      base: process.env['BASESCAN_API_KEY'],
-      baseSepolia: process.env['BASESCAN_API_KEY'],
-      custom: process.env['CUSTOM_ETHERSCAN_API_KEY'],
+    apiKey: process.env['ETHERSCAN_API_KEY'],
+    sourcify: {
+      // Doesn't need an API key
+      enabled: true
     },
     customChains: [
       {
         network: 'nova',
         chainId: 42170,
         urls: {
-          apiURL: 'https://api-nova.arbiscan.io/api',
+          apiURL: 'https://api.etherscan.io/v2/api',
           browserURL: 'https://nova.arbiscan.io/',
-        },
-      },
-      {
-        network: 'arbSepolia',
-        chainId: 421614,
-        urls: {
-          apiURL: 'https://api-sepolia.arbiscan.io/api',
-          browserURL: 'https://sepolia.arbiscan.io/',
         },
       },
       {
