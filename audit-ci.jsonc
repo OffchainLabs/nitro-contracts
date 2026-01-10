@@ -25,6 +25,8 @@
     // tmp allows arbitrary temporary file / directory write via symbolic link `dir` parameter
     "GHSA-52f5-9888-hmc6",
     // Axios is vulnerable to DoS attack through lack of data size check
-    "GHSA-4hjh-wcwx-xvwj"
+    "GHSA-4hjh-wcwx-xvwj",
+    // Elliptic Uses a Cryptographic Primitive with a Risky Implementation
+    "GHSA-848j-6mx2-7j84"
   ]
 }
