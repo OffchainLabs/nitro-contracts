@@ -282,6 +282,24 @@ contract OneStepProverHostIo is IOneStepProver {
         uint256 preimageType = mach.valueStack.pop().assumeI32();
         uint256 ptr = mach.valueStack.pop().assumeI32();
 
+        // Validate preimageType fits in u8 (matches Rust u8::try_from which uses ? to propagate error)
+        if (preimageType > 255) {
+            revert("PREIMAGE_TYPE_OVERFLOW");
+        }
+
+        // Invalid enum values (4-255) return 0 with no memory access
+        // This matches Rust where PreimageType::try_from fails
+        if (preimageType >= 4) {
+            mach.valueStack.push(ValueLib.newI32(0));
+            return;
+        }
+
+        // Validate ptr (matches Rust load_32_byte_aligned check)
+        if (!mod.moduleMemory.isValidLeaf(ptr)) {
+            mach.status = MachineStatus.ERRORED;
+            return;
+        }
+
         // Prove the hash in memory
         uint256 leafIdx = ptr / LEAF_SIZE;
         uint256 proofOffset = 0;
@@ -298,7 +316,7 @@ contract OneStepProverHostIo is IOneStepProver {
                 mach.valueStack.push(ValueLib.newI32(0));
             }
         } else {
-            // Non-CustomDA always valid
+            // preimageType 0, 1, 2 -> always valid
             mach.valueStack.push(ValueLib.newI32(1));
         }
 
