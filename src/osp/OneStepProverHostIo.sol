@@ -149,7 +149,7 @@ contract OneStepProverHostIo is IOneStepProver {
         bytes memory extracted;
         uint8 proofType = uint8(proof[proofOffset]);
         proofOffset++;
-        // These values must be kept in sync with `arbitrator/arbutil/src/types.rs`
+        // These values must be kept in sync with `crates/arbutil/src/types.rs`
         // and `arbutil/preimage_type.go` (both in the nitro repo).
         if (inst.argumentData == 0) {
             // The machine is asking for a keccak256 preimage
@@ -250,7 +250,7 @@ contract OneStepProverHostIo is IOneStepProver {
             // Extract and validate certificate
             bytes calldata certificate = customProof[CERT_SIZE_LEN:CERT_SIZE_LEN + certSize];
 
-            // SECURITY CHECK: Verify this is the certificate the machine requested
+            // Verify this is the certificate the machine requested
             require(keccak256(certificate) == leafContents, "WRONG_CERTIFICATE_HASH");
 
             // Delegate to custom validator with proven values and full proof
@@ -273,14 +273,32 @@ contract OneStepProverHostIo is IOneStepProver {
     }
 
     function executeValidatePreimage(
-        ExecutionContext calldata execCtx,
+        ExecutionContext calldata,
         Machine memory mach,
         Module memory mod,
-        Instruction calldata inst,
+        Instruction calldata,
         bytes calldata proof
     ) internal view {
         uint256 preimageType = mach.valueStack.pop().assumeI32();
         uint256 ptr = mach.valueStack.pop().assumeI32();
+
+        // Validate preimageType fits in u8 (matches Rust u8::try_from which uses ? to propagate error)
+        if (preimageType > 255) {
+            revert("PREIMAGE_TYPE_OVERFLOW");
+        }
+
+        // Invalid enum values (4-255) return 0 with no memory access
+        // This matches Rust where PreimageType::try_from fails
+        if (preimageType >= 4) {
+            mach.valueStack.push(ValueLib.newI32(0));
+            return;
+        }
+
+        // Validate ptr (matches Rust load_32_byte_aligned check)
+        if (!mod.moduleMemory.isValidLeaf(ptr)) {
+            mach.status = MachineStatus.ERRORED;
+            return;
+        }
 
         // Prove the hash in memory
         uint256 leafIdx = ptr / LEAF_SIZE;
@@ -292,17 +310,13 @@ contract OneStepProverHostIo is IOneStepProver {
 
         if (preimageType == 3) {
             require(address(customDAValidator) != address(0), "CUSTOM_DA_VALIDATOR_NOT_SUPPORTED");
-            if (
-                validateAndCheckCertificate(
-                    address(customDAValidator), proof, proofOffset, leafContents
-                )
-            ) {
+            if (validateAndCheckCertificate(proof, proofOffset, leafContents)) {
                 mach.valueStack.push(ValueLib.newI32(1));
             } else {
                 mach.valueStack.push(ValueLib.newI32(0));
             }
         } else {
-            // Non-CustomDA always valid
+            // preimageType 0, 1, 2 -> always valid
             mach.valueStack.push(ValueLib.newI32(1));
         }
 
@@ -311,11 +325,11 @@ contract OneStepProverHostIo is IOneStepProver {
     }
 
     function validateAndCheckCertificate(
-        address customDAAddr,
         bytes calldata proof,
         uint256 proofOffset,
         bytes32 expectedHash
     ) internal view returns (bool) {
+        // Proof format is: [certSize(8), certificate, claimedValid(1), validityProof...]
         uint256 certSize = uint256(uint64(bytes8(proof[proofOffset:proofOffset + CERT_SIZE_LEN])));
 
         require(
@@ -326,7 +340,7 @@ contract OneStepProverHostIo is IOneStepProver {
         bytes calldata certificate =
             proof[proofOffset + CERT_SIZE_LEN:proofOffset + CERT_SIZE_LEN + certSize];
 
-        // SECURITY CHECK: Verify this is the certificate the machine requested
+        // Verify this is the certificate the machine requested
         require(keccak256(certificate) == expectedHash, "WRONG_CERTIFICATE_HASH");
 
         bool claimedValid = uint8(proof[proofOffset + CERT_SIZE_LEN + certSize]) != 0;
@@ -335,7 +349,7 @@ contract OneStepProverHostIo is IOneStepProver {
         bytes calldata validationProof = proof[proofOffset:];
 
         // Check actual validity and verify claims match
-        bool isValid = ICustomDAProofValidator(customDAAddr).validateCertificate(validationProof);
+        bool isValid = customDAValidator.validateCertificate(validationProof);
         require(
             isValid == claimedValid,
             isValid ? "CLAIMED_INVALID_BUT_VALID" : "CLAIMED_VALID_BUT_INVALID"
