@@ -35,6 +35,33 @@ export async function verifyContract(
   constructorArguments: any[] = [],
   contractPathAndName?: string // optional
 ): Promise<void> {
+  contractPathAndName = contractPathAndName ?? {
+    Bridge: 'src/bridge/Bridge.sol:Bridge',
+    SequencerInbox: 'src/bridge/SequencerInbox.sol:SequencerInbox',
+    Inbox: 'src/bridge/Inbox.sol:Inbox',
+    Outbox: 'src/bridge/Outbox.sol:Outbox',
+    ERC20Bridge: 'src/bridge/ERC20Bridge.sol:ERC20Bridge',
+    ERC20Inbox: 'src/bridge/ERC20Inbox.sol:ERC20Inbox',
+    ERC20Outbox: 'src/bridge/ERC20Outbox.sol:ERC20Outbox',
+    RollupEventInbox: 'src/rollup/RollupEventInbox.sol:RollupEventInbox',
+    ERC20RollupEventInbox:
+      'src/rollup/ERC20RollupEventInbox.sol:ERC20RollupEventInbox',
+    RollupAdminLogic: 'src/rollup/RollupAdminLogic.sol:RollupAdminLogic',
+    RollupUserLogic: 'src/rollup/RollupUserLogic.sol:RollupUserLogic',
+    BridgeCreator: 'src/rollup/BridgeCreator.sol:BridgeCreator',
+    EdgeChallengeManager:
+      'src/challengeV2/EdgeChallengeManager.sol:EdgeChallengeManager',
+    ValidatorWalletCreator: 'src/rollup/ValidatorWalletCreator.sol:ValidatorWalletCreator',
+    DeployHelper: 'src/rollup/DeployHelper.sol:DeployHelper',
+    RollupProxy: 'src/rollup/RollupProxy.sol:RollupProxy',
+    RollupCreator: 'src/rollup/RollupCreator.sol:RollupCreator',
+    OneStepProver0: 'src/osp/OneStepProver0.sol:OneStepProver0',
+    OneStepProverMemory: 'src/osp/OneStepProverMemory.sol:OneStepProverMemory',
+    OneStepProverMath: 'src/osp/OneStepProverMath.sol:OneStepProverMath',
+    OneStepProverHostIo: 'src/osp/OneStepProverHostIo.sol:OneStepProverHostIo',
+    OneStepProofEntry: 'src/osp/OneStepProofEntry.sol:OneStepProofEntry',
+  }[contractName]
+
   try {
     if (process.env.DISABLE_VERIFICATION === 'true') return
     // Define the verification options with possible 'contract' property
@@ -158,7 +185,7 @@ export async function create2(
     data: concat([salt, data]),
     ...overrides,
   })
-  await tx.wait()
+  await tx.wait(2)
 
   return fac.attach(address)
 }
@@ -232,12 +259,12 @@ export async function deployAllContracts(
   maxDataSize: BigNumber,
   verify: boolean = true
 ): Promise<Record<string, Contract>> {
-  const isOnArb = await _isRunningOnArbitrum(signer)
+  const isOnL1 = await _isRunningOnL1(signer)
 
   const ethBridge = await deployContract('Bridge', signer, [], verify, true)
 
-  const reader4844 = isOnArb
-    ? ethers.constants.AddressZero
+  const reader4844 = !isOnL1
+    ? '0x0000000000000000000000000000000000000001' // dead address
     : (
         await create2(
           new ContractFactory(
@@ -508,4 +535,10 @@ export async function _isRunningOnArbitrum(signer: any): Promise<boolean> {
   } catch (error) {
     return false
   }
+}
+
+// return true if running on L1 (Ethereum mainnet or Sepolia)
+export async function _isRunningOnL1(signer: any): Promise<boolean> {
+  const chainId = (await signer.provider.getNetwork()).chainId
+  return chainId === 1 || chainId === 11155111
 }
