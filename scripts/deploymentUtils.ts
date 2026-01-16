@@ -259,23 +259,25 @@ export async function deployAllContracts(
   maxDataSize: BigNumber,
   verify: boolean = true
 ): Promise<Record<string, Contract>> {
+  const isOnArb = await _isRunningOnArbitrum(signer)
   const isOnL1 = await _isRunningOnL1(signer)
 
   const ethBridge = await deployContract('Bridge', signer, [], verify, true)
 
-  const reader4844 = !isOnL1
-    ? '0x0000000000000000000000000000000000000001' // dead address
-    : (
-        await create2(
-          new ContractFactory(
-            IReader4844__factory.abi,
-            Reader4844Bytecode,
-            signer
-          ),
-          [],
-          ethers.constants.HashZero
-        )
-      ).address
+  let reader4844: string;
+  if (isOnArb) reader4844 = ethers.constants.AddressZero
+  else if (!isOnL1) reader4844 = '0x0000000000000000000000000000000000000001' // dead address
+  else reader4844 = (
+    await create2(
+      new ContractFactory(
+        IReader4844__factory.abi,
+        Reader4844Bytecode,
+        signer
+      ),
+      [],
+      ethers.constants.HashZero
+    )
+  ).address
 
   const ethSequencerInbox = await deployContract(
     'SequencerInbox',
