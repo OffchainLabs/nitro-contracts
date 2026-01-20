@@ -27,6 +27,10 @@
     // Axios is vulnerable to DoS attack through lack of data size check
     "GHSA-4hjh-wcwx-xvwj",
     // Elliptic Uses a Cryptographic Primitive with a Risky Implementation
-    "GHSA-848j-6mx2-7j84"
+    "GHSA-848j-6mx2-7j84",
+    // jsdiff has a Denial of Service vulnerability in parsePatch and applyPatch
+    "GHSA-73rr-hh4g-fpgx",
+    // Undici has an unbounded decompression chain in HTTP responses on Node.js Fetch API via Content-Encoding leads to resource exhaustion
+    "GHSA-g9mf-h72j-4rw9"
   ]
 }
