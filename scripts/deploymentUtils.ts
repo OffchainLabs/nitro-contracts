@@ -266,7 +266,7 @@ export async function deployAllContracts(
 
   let reader4844: string;
   if (isOnArb) reader4844 = ethers.constants.AddressZero
-  else if (!isOnL1) reader4844 = '0x0000000000000000000000000000000000000001' // dead address
+  else if (!isOnL1) reader4844 = '0x000000000000000000000000000000000000dead' // dead address
   else reader4844 = (
     await create2(
       new ContractFactory(
