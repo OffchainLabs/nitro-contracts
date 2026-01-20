@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat'
 import '@nomiclabs/hardhat-ethers'
-import { deployAllContracts, _isRunningOnArbitrum } from './deploymentUtils'
+import { deployAllContracts, _isRunningOnArbitrum, _isRunningOnL1 } from './deploymentUtils'
 import { maxDataSize as defaultMaxDataSize } from './config'
 
 import { ArbSys__factory } from '../build/types'
@@ -24,14 +24,14 @@ async function main() {
 
   console.log('Deploying contracts with maxDataSize:', maxDataSize)
   if (process.env['IGNORE_MAX_DATA_SIZE_WARNING'] !== 'true') {
-    let isArbitrum = await _isRunningOnArbitrum(signer)
-    if (isArbitrum && (maxDataSize as number) !== 104857) {
+    let isL1 = await _isRunningOnL1(signer)
+    if (!isL1 && (maxDataSize as number) !== 104857) {
       throw new Error(
-        'maxDataSize should be 104857 when the parent chain is Arbitrum (set IGNORE_MAX_DATA_SIZE_WARNING to ignore)'
+        'maxDataSize should be 104857 when the parent chain is not L1 (set IGNORE_MAX_DATA_SIZE_WARNING to ignore)'
       )
-    } else if (!isArbitrum && (maxDataSize as number) !== 117964) {
+    } else if (isL1 && (maxDataSize as number) !== 117964) {
       throw new Error(
-        'maxDataSize should be 117964 when the parent chain is not Arbitrum (set IGNORE_MAX_DATA_SIZE_WARNING to ignore)'
+        'maxDataSize should be 117964 when the parent chain is L1 (set IGNORE_MAX_DATA_SIZE_WARNING to ignore)'
       )
     }
   } else {
