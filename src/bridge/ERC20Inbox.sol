@@ -54,10 +54,15 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
             dest = AddressAliasHelper.applyL1ToL2Alias(msg.sender);
         }
 
-        uint256 amountToMintOnL2 = _fromNativeTo18Decimals(amount);
-        return _deliverMessage(
-            L1MessageType_ethDeposit, msg.sender, abi.encodePacked(dest, amountToMintOnL2), amount
-        );
+        return _depositERC20(dest, amount);
+    }
+
+    /// @inheritdoc IERC20Inbox
+    function depositERC20(
+        address to,
+        uint256 amount
+    ) public whenNotPaused onlyAllowed returns (uint256) {
+        return _depositERC20(to, amount);
     }
 
     /// @inheritdoc IERC20Inbox
@@ -117,6 +122,13 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
     ) public pure override(AbsInbox, IInboxBase) returns (uint256) {
         // retryable ticket's submission fee is not charged when ERC20 token is used to pay for fees
         return 0;
+    }
+
+    function _depositERC20(address dest, uint256 amount) internal returns (uint256) {
+        uint256 amountToMintOnL2 = _fromNativeTo18Decimals(amount);
+        return _deliverMessage(
+            L1MessageType_ethDeposit, msg.sender, abi.encodePacked(dest, amountToMintOnL2), amount
+        );
     }
 
     function _deliverToBridge(
