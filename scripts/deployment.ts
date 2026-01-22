@@ -1,6 +1,6 @@
 import { ethers } from 'hardhat'
 import '@nomiclabs/hardhat-ethers'
-import { deployAllContracts, _isRunningOnArbitrum } from './deploymentUtils'
+import { deployAllContracts, _isRunningOnArbitrum, _isRunningOnL1 } from './deploymentUtils'
 import { maxDataSize as defaultMaxDataSize } from './config'
 
 import { ArbSys__factory } from '../build/types'
@@ -24,47 +24,38 @@ async function main() {
 
   console.log('Deploying contracts with maxDataSize:', maxDataSize)
   if (process.env['IGNORE_MAX_DATA_SIZE_WARNING'] !== 'true') {
-    let isArbitrum = await _isRunningOnArbitrum(signer)
-    if (isArbitrum && (maxDataSize as number) !== 104857) {
+    let isL1 = await _isRunningOnL1(signer)
+    if (!isL1 && (maxDataSize as number) !== 104857) {
       throw new Error(
-        'maxDataSize should be 104857 when the parent chain is Arbitrum (set IGNORE_MAX_DATA_SIZE_WARNING to ignore)'
+        'maxDataSize should be 104857 when the parent chain is not L1 (set IGNORE_MAX_DATA_SIZE_WARNING to ignore)'
       )
-    } else if (!isArbitrum && (maxDataSize as number) !== 117964) {
+    } else if (isL1 && (maxDataSize as number) !== 117964) {
       throw new Error(
-        'maxDataSize should be 117964 when the parent chain is not Arbitrum (set IGNORE_MAX_DATA_SIZE_WARNING to ignore)'
+        'maxDataSize should be 117964 when the parent chain is L1 (set IGNORE_MAX_DATA_SIZE_WARNING to ignore)'
       )
     }
   } else {
     console.log('Ignoring maxDataSize warning')
   }
 
-  try {
-    // Deploying all contracts
-    const contracts = await deployAllContracts(
-      signer,
-      ethers.BigNumber.from(maxDataSize),
-      true
-    )
+  // Verification of contracts
+  // (If undefined, default "true" is used; if anything other than "false" is set, verification is disabled)
+  const verifyContracts =
+    process.env.DISABLE_VERIFICATION === undefined
+      ? undefined
+      : process.env.DISABLE_VERIFICATION === 'false'
 
-    // Call setTemplates with the deployed contract addresses
-    console.log('Waiting for the Template to be set on the Rollup Creator')
-    await contracts.rollupCreator.setTemplates(
-      contracts.bridgeCreator.address,
-      contracts.osp.address,
-      contracts.challengeManager.address,
-      contracts.rollupAdmin.address,
-      contracts.rollupUser.address,
-      contracts.upgradeExecutor.address,
-      contracts.validatorWalletCreator.address,
-      contracts.deployHelper.address
-    )
-    console.log('Template is set on the Rollup Creator')
-  } catch (error) {
-    console.error(
-      'Deployment failed:',
-      error instanceof Error ? error.message : error
-    )
+  // Deploying all contracts
+  const factoryOwner = process.env.FACTORY_OWNER
+  if (!factoryOwner) {
+    throw new Error('FACTORY_OWNER environment variable is not set')
   }
+  await deployAllContracts(
+    signer,
+    factoryOwner,
+    ethers.BigNumber.from(maxDataSize),
+    verifyContracts
+  )
 }
 
 main()

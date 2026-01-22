@@ -468,9 +468,8 @@ contract OneStepProver0 is IOneStepProver {
 
         uint16 opcode = inst.opcode;
 
-        function(Machine memory, Module memory, Instruction calldata, bytes calldata)
-            internal
-            pure impl;
+        function(Machine memory, Module memory, Instruction calldata, bytes calldata) internal pure
+            impl;
         if (opcode == Instructions.UNREACHABLE) {
             impl = executeUnreachable;
         } else if (opcode == Instructions.NOP) {

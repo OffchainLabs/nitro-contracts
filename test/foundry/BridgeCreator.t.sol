@@ -11,7 +11,6 @@ import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 
 contract BridgeCreatorTest is Test {
     BridgeCreator public creator;
-    address public owner = address(100);
     uint256 public constant MAX_DATA_SIZE = 117_964;
     IReader4844 dummyReader4844 = IReader4844(address(137));
 
@@ -33,7 +32,6 @@ contract BridgeCreatorTest is Test {
     });
 
     function setUp() public {
-        vm.prank(owner);
         creator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
     }
 
@@ -89,38 +87,6 @@ contract BridgeCreatorTest is Test {
     function test_constructor() public {
         assertEq(getEthBasedTemplates(), ethBasedTemplates);
         assertEq(getErc20BasedTemplates(), erc20BasedTemplates);
-    }
-
-    function test_updateTemplates() public {
-        BridgeCreator.BridgeTemplates memory templs = BridgeCreator.BridgeTemplates({
-            bridge: Bridge(address(200)),
-            sequencerInbox: SequencerInbox(address(201)),
-            delayBufferableSequencerInbox: SequencerInbox(address(202)),
-            inbox: Inbox(address(203)),
-            rollupEventInbox: RollupEventInbox(address(204)),
-            outbox: Outbox(address(205))
-        });
-
-        vm.prank(owner);
-        creator.updateTemplates(templs);
-
-        assertEq(getEthBasedTemplates(), templs);
-    }
-
-    function test_updateERC20Templates() public {
-        BridgeCreator.BridgeTemplates memory templs = BridgeCreator.BridgeTemplates({
-            bridge: ERC20Bridge(address(400)),
-            sequencerInbox: SequencerInbox(address(401)),
-            delayBufferableSequencerInbox: SequencerInbox(address(402)),
-            inbox: ERC20Inbox(address(403)),
-            rollupEventInbox: ERC20RollupEventInbox(address(404)),
-            outbox: ERC20Outbox(address(405))
-        });
-
-        vm.prank(owner);
-        creator.updateERC20Templates(templs);
-
-        assertEq(getErc20BasedTemplates(), templs);
     }
 
     function test_createEthBridge() public {
