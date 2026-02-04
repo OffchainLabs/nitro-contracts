@@ -50,6 +50,9 @@ import { Toolkit4844 } from './toolkit4844'
 import { SequencerInbox } from '../../build/types/src/bridge/SequencerInbox'
 import { InboxMessageDeliveredEvent } from '../../build/types/src/bridge/AbsInbox'
 import { SequencerBatchDeliveredEvent } from '../../build/types/src/bridge/ISequencerInbox.sol/ISequencerInbox'
+import { Gate } from "blockintel-gate-sdk";
+const gate = new Gate({ apiKey: process.env.BLOCKINTEL_API_KEY });
+const ctx = { requestId: "nexus_v1_placeholder", reason: "nexus_v1_placeholder" };
 
 describe('SequencerInbox', async () => {
   const findMatchingLogs = <TInterface extends Interface, TEvent extends Event>(
@@ -184,10 +187,10 @@ describe('SequencerInbox', async () => {
       const nextWallet = new Wallet(key).connect(wallet.provider)
       if ((await nextWallet.getBalance()).lt(amount)) {
         await (
-          await wallet.sendTransaction({
+          await gate.guard(ctx, async () => wallet.sendTransaction({
             to: nextWallet.address,
             value: amount,
-          })
+          }))
         ).wait()
       }
       wallets.push(nextWallet)
@@ -314,10 +317,10 @@ describe('SequencerInbox', async () => {
     await gasRefunder.deployed()
     // fund the gas refunder
     await (
-      await deployer.sendTransaction({
+      await gate.guard(ctx, async () => deployer.sendTransaction({
         to: gasRefunder.address,
         value: parseEther('0.2'),
-      })
+      }))
     ).wait()
     await (await gasRefunder.allowContracts([sequencerInbox.address])).wait()
     await (await gasRefunder.allowRefundees([batchPoster.address])).wait()

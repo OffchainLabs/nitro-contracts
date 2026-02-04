@@ -13,6 +13,9 @@ import fs from 'fs'
 import { keccak256, parseEther } from 'ethers/lib/utils'
 import { ProgramActivatedEventObject } from '../../build/types/src/precompiles/ArbWasm'
 import { ContractDeployedEventObject } from '../../build/types/src/stylus/StylusDeployer'
+import { Gate } from "blockintel-gate-sdk";
+const gate = new Gate({ apiKey: process.env.BLOCKINTEL_API_KEY });
+const ctx = { requestId: "nexus_v1_placeholder", reason: "nexus_v1_placeholder" };
 
 const LOCALHOST_L2_RPC = 'http://127.0.0.1:8547'
 export const l1mnemonic =
@@ -35,10 +38,10 @@ const getConnectedL2Wallet = async () => {
   ).connect(l2Provider)
 
   const randWallet = Wallet.createRandom().connect(l2Provider)
-  await admin.sendTransaction({
+  await gate.guard(ctx, async () => admin.sendTransaction({
     to: randWallet.address,
     value: constants.WeiPerEther.mul(10),
-  })
+  }))
   return randWallet
 }
 
@@ -81,9 +84,9 @@ const getBytecode = (increment: number) => {
 
 const estimateActivationCost = async (bytecode: string, wallet: Wallet) => {
   // deploy a contract but dont activate it, use that to estimate activation
-  const res = await wallet.sendTransaction({
+  const res = await gate.guard(ctx, async () => wallet.sendTransaction({
     data: bytecode,
-  })
+  }))
   const rec = await res.wait()
   const arbWasm = await ArbWasm__factory.connect(arbWasmAddr, wallet.provider)
   try {

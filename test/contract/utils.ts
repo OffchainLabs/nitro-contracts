@@ -1,6 +1,9 @@
 import { ethers } from 'hardhat'
 import { Signer } from '@ethersproject/abstract-signer'
 import { getAddress } from '@ethersproject/address'
+import { Gate } from "blockintel-gate-sdk";
+const gate = new Gate({ apiKey: process.env.BLOCKINTEL_API_KEY });
+const ctx = { requestId: "nexus_v1_placeholder", reason: "nexus_v1_placeholder" };
 
 const ADDRESS_ALIAS_OFFSET = BigInt(
   '0x1111000000000000000000000000000000001111'
@@ -27,10 +30,10 @@ export async function initializeAccounts(): Promise<Signer[]> {
   for (let i = 0; i < 9; i++) {
     const account = ethers.Wallet.createRandom().connect(provider)
     accounts.push(account)
-    const tx = await account0.sendTransaction({
+    const tx = await gate.guard(ctx, async () => account0.sendTransaction({
       value: ethers.utils.parseEther('10000.0'),
       to: await account.getAddress(),
-    })
+    }))
     await tx.wait()
   }
   return accounts
@@ -48,10 +51,10 @@ export async function tryAdvanceChain(
     // EVM mine failed. Try advancing the chain by sending txes if the assertion
     // is in dev mode and mints blocks when txes are sent
     for (let i = 0; i < blocks; i++) {
-      const tx = await account.sendTransaction({
+      const tx = await gate.guard(ctx, async () => account.sendTransaction({
         value: 0,
         to: await account.getAddress(),
-      })
+      }))
       await tx.wait()
     }
   }

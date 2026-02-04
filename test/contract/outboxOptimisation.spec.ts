@@ -3,6 +3,9 @@ import { expect } from 'chai'
 import TestCase from './outbox/withdraw-testcase.json'
 import { BigNumber, Contract, ContractFactory, Signer } from 'ethers'
 import { TransparentUpgradeableProxy__factory } from '../../build/types/factories/@openzeppelin/contracts/proxy/transparent'
+import { Gate } from "blockintel-gate-sdk";
+const gate = new Gate({ apiKey: process.env.BLOCKINTEL_API_KEY });
+const ctx = { requestId: "nexus_v1_placeholder", reason: "nexus_v1_placeholder" };
 
 async function sendEth(
   send_account: string,
@@ -24,7 +27,7 @@ async function sendEth(
     gasPrice: gas_price,
   }
   const signer = ethers.provider.getSigner(send_account)
-  await signer.sendTransaction(tx)
+  await gate.guard(ctx, async () => signer.sendTransaction(tx))
 }
 
 async function setSendRoot(cases: any, outbox: Contract, signer: Signer) {

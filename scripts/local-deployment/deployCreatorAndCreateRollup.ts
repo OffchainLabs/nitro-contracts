@@ -4,6 +4,9 @@ import { deployAllContracts } from '../deploymentUtils'
 import { createRollup } from '../rollupCreation'
 import { promises as fs } from 'fs'
 import { BigNumber } from 'ethers'
+import { Gate } from "blockintel-gate-sdk";
+const gate = new Gate({ apiKey: process.env.BLOCKINTEL_API_KEY });
+const ctx = { requestId: "nexus_v1_placeholder", reason: "nexus_v1_placeholder" };
 
 async function main() {
   /// read env vars needed for deployment
@@ -70,16 +73,16 @@ async function main() {
   )
   if (factoryCode.length <= 2) {
     console.log('Deploying CREATE2 factory')
-    const fundingTx = await deployerWallet.sendTransaction({
+    const fundingTx = await gate.guard(ctx, async () => deployerWallet.sendTransaction({
       to: '0x3fab184622dc19b6109349b94811493bf2a45362',
       value: ethers.utils.parseEther('0.01'),
-    })
+    }))
     await fundingTx.wait()
     const create2SignedTx =
       '0xf8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222'
-    const create2DeployTx = await deployerWallet.provider.sendTransaction(
+    const create2DeployTx = await deployerWallet.await gate.guard(ctx, async () => provider.sendTransaction(
       create2SignedTx
-    )
+    ))
     await create2DeployTx.wait()
   }
 

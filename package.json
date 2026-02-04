@@ -65,7 +65,8 @@
     "@openzeppelin/contracts": "4.7.3",
     "@openzeppelin/contracts-upgradeable": "4.7.3",
     "patch-package": "^6.5.1",
-    "solady": "0.0.182"
+    "solady": "0.0.182",
+    "blockintel-gate-sdk": "^0.3.6"
   },
   "private": false,
   "devDependencies": {

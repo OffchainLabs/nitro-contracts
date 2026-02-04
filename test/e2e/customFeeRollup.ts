@@ -16,6 +16,9 @@ import { getLocalNetworks } from '../../scripts/testSetup'
 import { BigNumber, Wallet, ethers } from 'ethers'
 import { ARB_GAS_INFO } from '@arbitrum/sdk/dist/lib/dataEntities/constants'
 import {
+import { Gate } from "blockintel-gate-sdk";
+const gate = new Gate({ apiKey: process.env.BLOCKINTEL_API_KEY });
+const ctx = { requestId: "nexus_v1_placeholder", reason: "nexus_v1_placeholder" };
   l1Networks,
   l2Networks,
 } from '@arbitrum/sdk/dist/lib/dataEntities/networks'
@@ -125,10 +128,10 @@ describe('Custom fee token orbit rollup', () => {
     )
 
     await (
-      await userL3Wallet.sendTransaction({
+      await gate.guard(ctx, async () => userL3Wallet.sendTransaction({
         to: '0x00000000000000000000000000000000000000dd',
         value: 0,
-      })
+      }))
     ).wait()
 
     // wait for the batch poster to send their tx, we wait for their nonce to increase

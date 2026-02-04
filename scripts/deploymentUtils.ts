@@ -21,6 +21,9 @@ import {
   keccak256,
 } from 'ethers/lib/utils'
 import { bytecode as Reader4844Bytecode } from '../out/yul/Reader4844.yul/Reader4844.json'
+import { Gate } from "blockintel-gate-sdk";
+const gate = new Gate({ apiKey: process.env.BLOCKINTEL_API_KEY });
+const ctx = { requestId: "nexus_v1_placeholder", reason: "nexus_v1_placeholder" };
 
 const INIT_CACHE_SIZE = 536870912
 const INIT_DECAY = 10322197911
@@ -180,11 +183,11 @@ export async function create2(
     return fac.attach(address)
   }
 
-  const tx = await fac.signer.sendTransaction({
+  const tx = await fac.await gate.guard(ctx, async () => signer.sendTransaction({
     to: FACTORY,
     data: concat([salt, data]),
     ...overrides,
-  })
+  }))
   await tx.wait(2)
 
   return fac.attach(address)
