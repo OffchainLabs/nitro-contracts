@@ -863,16 +863,43 @@ async function main() {
     throw new Error('No boldAction contract deployed')
   }
 
-  const preUpgradeState = await getPreUpgradeState(l1Rpc, config)
-  const receipt = await perform(l1Rpc, config, deployedContracts)
-  console.log('upgrade tx hash:', receipt.transactionHash)
-  await verifyPostUpgrade({
-    l1Rpc,
-    config,
-    deployedContracts,
-    preUpgradeState,
-    receipt,
-  })
+  const txHash = process.env.TX_HASH
+  if (txHash) {
+    // Standalone verification: verify an upgrade executed externally (e.g. via Safe or cast send)
+    console.log('standalone verification mode, tx hash:', txHash)
+    const txReceipt = await l1Rpc.getTransactionReceipt(txHash)
+    if (!txReceipt) {
+      throw new Error('Transaction receipt not found for TX_HASH: ' + txHash)
+    }
+    if (txReceipt.status !== 1) {
+      throw new Error('Transaction failed (status: ' + txReceipt.status + ')')
+    }
+    // ContractReceipt extends TransactionReceipt, adding events parsed from logs.
+    // verifyPostUpgrade only uses topics and data from events, which are present on logs.
+    const receipt = { ...txReceipt, events: txReceipt.logs } as ContractReceipt
+    // Post-upgrade, staker data has been zeroed by cleanupOldRollup, so stakers
+    // will be an empty array. checkOldRollup handles this: the zombie and
+    // withdrawal checks gate on the stakers list and become no-ops.
+    const preUpgradeState = await getPreUpgradeState(l1Rpc, config)
+    await verifyPostUpgrade({
+      l1Rpc,
+      config,
+      deployedContracts,
+      preUpgradeState,
+      receipt,
+    })
+  } else {
+    const preUpgradeState = await getPreUpgradeState(l1Rpc, config)
+    const receipt = await perform(l1Rpc, config, deployedContracts)
+    console.log('upgrade tx hash:', receipt.transactionHash)
+    await verifyPostUpgrade({
+      l1Rpc,
+      config,
+      deployedContracts,
+      preUpgradeState,
+      receipt,
+    })
+  }
 }
 
 main().then(() => console.log('Done.'))
