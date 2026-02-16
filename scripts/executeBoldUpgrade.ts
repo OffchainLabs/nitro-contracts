@@ -166,9 +166,9 @@ async function verifyPostUpgrade(params: VerificationParams) {
     l1Rpc
   )
 
-  const rollupMigratedLogs = receipt.events!.filter(
-    event =>
-      event.topics[0] === boldAction.interface.getEventTopic('RollupMigrated')
+  const rollupMigratedLogs = receipt.logs.filter(
+    log =>
+      log.topics[0] === boldAction.interface.getEventTopic('RollupMigrated')
   )
   if (rollupMigratedLogs.length !== 1) {
     console.log(rollupMigratedLogs)
@@ -188,9 +188,9 @@ async function verifyPostUpgrade(params: VerificationParams) {
     l1Rpc
   )
 
-  const assertionCreatedLogs = receipt.events!.filter(
-    event =>
-      event.topics[0] === boldRollup.interface.getEventTopic('AssertionCreated')
+  const assertionCreatedLogs = receipt.logs.filter(
+    log =>
+      log.topics[0] === boldRollup.interface.getEventTopic('AssertionCreated')
   )
   if (assertionCreatedLogs.length !== 1) {
     console.log(assertionCreatedLogs)
