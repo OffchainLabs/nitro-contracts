@@ -4,7 +4,9 @@ set -eo pipefail
 ANVILFORK=true
 export ANVILFORK
 
-anvil --fork-url $L1_RPC > /dev/null &
+# Fork from the last block before the BOLD upgrade on Arb1 (deployed at 21830860)
+FORK_BLOCK=${FORK_BLOCK:-21830859}
+anvil --fork-url $L1_RPC --fork-block-number $FORK_BLOCK > /dev/null &
 anvil_pid=$!
 trap 'kill $anvil_pid' EXIT
 
