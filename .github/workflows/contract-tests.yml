@@ -278,7 +278,7 @@ jobs:
         run: yarn
 
       - name: Compile contracts
-        run: yarn build
+        run: yarn build:all
 
       - name: Copy .env
         run: |
