@@ -4,8 +4,8 @@ set -eo pipefail
 ANVILFORK=true
 export ANVILFORK
 
-# Fork from the last block before the BOLD upgrade on Arb1 (deployed at 21830860)
-FORK_BLOCK=${FORK_BLOCK:-21830859}
+# Fork from a block after BOLD template deployment so bold-prepare can verify them
+FORK_BLOCK=${FORK_BLOCK:-22247726}
 anvil --fork-url $L1_RPC --fork-block-number $FORK_BLOCK > /dev/null &
 anvil_pid=$!
 trap 'kill $anvil_pid' EXIT
