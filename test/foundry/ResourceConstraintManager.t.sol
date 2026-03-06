@@ -266,7 +266,9 @@ contract ResourceConstraintManagerTest is Test {
             resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation,
             weight: 1
         });
-        return _createMultiGasConstraintWithResources(targetPerSec, adjustmentWindowSecs, backlog, resources);
+        return _createMultiGasConstraintWithResources(
+            targetPerSec, adjustmentWindowSecs, backlog, resources
+        );
     }
 
     function test_setMultiGasPricingConstraints_success() external {
@@ -296,7 +298,8 @@ contract ResourceConstraintManagerTest is Test {
             resource: ArbMultiGasConstraintsTypes.ResourceKind.StorageAccess,
             weight: 1
         });
-        multipleConstraints[1] = _createMultiGasConstraintWithResources(50_000_000, 1000, 1, resources2);
+        multipleConstraints[1] =
+            _createMultiGasConstraintWithResources(50_000_000, 1000, 1, resources2);
 
         // Multiple resources: HistoryGrowth (weight 5) + L1Calldata (weight 1)
         ArbMultiGasConstraintsTypes.WeightedResource[] memory resources3 =
@@ -309,7 +312,8 @@ contract ResourceConstraintManagerTest is Test {
             resource: ArbMultiGasConstraintsTypes.ResourceKind.L1Calldata,
             weight: 1
         });
-        multipleConstraints[2] = _createMultiGasConstraintWithResources(100_000_000, 86400, 10000, resources3);
+        multipleConstraints[2] =
+            _createMultiGasConstraintWithResources(100_000_000, 86400, 10000, resources3);
 
         vm.prank(manager);
         resourceConstraintManager.setMultiGasPricingConstraints(multipleConstraints);
@@ -553,8 +557,7 @@ contract ArbOwnerMock {
             return new ArbMultiGasConstraintsTypes.ResourceConstraint[](0);
         }
         return abi.decode(
-            lastMultiGasConstraintsEncoded,
-            (ArbMultiGasConstraintsTypes.ResourceConstraint[])
+            lastMultiGasConstraintsEncoded, (ArbMultiGasConstraintsTypes.ResourceConstraint[])
         );
     }
 }

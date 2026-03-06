@@ -118,7 +118,10 @@ contract ResourceConstraintManager is AccessControlEnumerable {
             if (targetPerSec < MIN_GAS_TARGET_PER_SEC || targetPerSec > MAX_GAS_TARGET_PER_SEC) {
                 revert InvalidTarget(targetPerSec, adjustmentWindowSecs, startingBacklogValue);
             }
-            if (adjustmentWindowSecs < MIN_ADJUSTMENT_WINDOW_SECS || adjustmentWindowSecs > MAX_ADJUSTMENT_WINDOW_SECS) {
+            if (
+                adjustmentWindowSecs < MIN_ADJUSTMENT_WINDOW_SECS
+                    || adjustmentWindowSecs > MAX_ADJUSTMENT_WINDOW_SECS
+            ) {
                 revert InvalidPeriod(targetPerSec, adjustmentWindowSecs, startingBacklogValue);
             }
             if (startingBacklogValue > 0) {
@@ -134,7 +137,8 @@ contract ResourceConstraintManager is AccessControlEnumerable {
 
                 if (maxWeight > 0) {
                     // Neither of these values can be zero due to the earlier checks, so this division is safe
-                    uint256 divisor = uint256(adjustmentWindowSecs) * uint256(targetPerSec) * uint256(maxWeight);
+                    uint256 divisor =
+                        uint256(adjustmentWindowSecs) * uint256(targetPerSec) * uint256(maxWeight);
 
                     // Calculate per-resource-kind exponent contribution
                     // we scale by 1000 to improve precision in calculating the exponent
@@ -144,7 +148,8 @@ contract ResourceConstraintManager is AccessControlEnumerable {
                     for (uint256 j = 0; j < nResources; ++j) {
                         uint8 kind = uint8(constraints[i].resources[j].resource);
                         uint64 weight = constraints[i].resources[j].weight;
-                        pricingExponents[kind] += uint64(uint256(startingBacklogValue) * uint256(weight) * 1000 / divisor);
+                        pricingExponents[kind] +=
+                            uint64(uint256(startingBacklogValue) * uint256(weight) * 1000 / divisor);
                     }
                 }
             }
