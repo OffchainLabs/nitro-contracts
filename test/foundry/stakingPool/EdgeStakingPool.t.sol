@@ -2,9 +2,9 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "../ERC20Mock.sol";
-import "../../src/assertionStakingPool/EdgeStakingPoolCreator.sol";
-import "../../src/challengeV2/EdgeChallengeManager.sol";
+import "../../ERC20Mock.sol";
+import "src/assertionStakingPool/EdgeStakingPoolCreator.sol";
+import "src/challengeV2/EdgeChallengeManager.sol";
 
 contract MockChallengeManager {
     IERC20 public immutable stakeToken;
