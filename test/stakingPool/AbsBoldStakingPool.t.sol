@@ -196,4 +196,95 @@ contract AbsBoldStakingPoolTest is Test {
         pool.withdrawFromPool();
         vm.stopPrank();
     }
+
+    function testDepositZeroReverts() external {
+        vm.prank(staker1);
+        vm.expectRevert(abi.encodeWithSelector(IAbsBoldStakingPool.ZeroAmount.selector));
+        pool.depositIntoPool(0);
+    }
+
+    function testDepositUpdatesBalance() external {
+        vm.prank(staker1);
+        pool.depositIntoPool(staker1Bal);
+        assertEq(pool.depositBalance(staker1), staker1Bal, "depositBalance updated after deposit");
+
+        vm.prank(staker2);
+        pool.depositIntoPool(staker2Bal);
+        assertEq(pool.depositBalance(staker2), staker2Bal, "depositBalance updated after deposit");
+    }
+
+    function testDepositTransfersTokens() external {
+        uint256 poolBefore = token.balanceOf(address(pool));
+        vm.prank(staker1);
+        pool.depositIntoPool(staker1Bal);
+        assertEq(token.balanceOf(address(pool)), poolBefore + staker1Bal, "pool token balance increased");
+    }
+
+    function testWithdrawZeroReverts() external {
+        vm.prank(staker1);
+        pool.depositIntoPool(staker1Bal);
+
+        vm.prank(staker1);
+        vm.expectRevert(abi.encodeWithSelector(IAbsBoldStakingPool.ZeroAmount.selector));
+        pool.withdrawFromPool(0);
+    }
+
+    function testWithdrawExceedsBalanceReverts() external {
+        vm.prank(staker1);
+        pool.depositIntoPool(staker1Bal);
+
+        vm.prank(staker1);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAbsBoldStakingPool.AmountExceedsBalance.selector, staker1, staker1Bal + 1, staker1Bal
+            )
+        );
+        pool.withdrawFromPool(staker1Bal + 1);
+    }
+
+    function testWithdrawUpdatesBalance() external {
+        vm.prank(staker1);
+        pool.depositIntoPool(staker1Bal);
+        assertEq(pool.depositBalance(staker1), staker1Bal, "balance after deposit");
+
+        vm.prank(staker1);
+        pool.withdrawFromPool(staker1Bal);
+        assertEq(pool.depositBalance(staker1), 0, "balance zeroed after full withdraw");
+    }
+
+    function testWithdrawTransfersTokens() external {
+        vm.prank(staker1);
+        pool.depositIntoPool(staker1Bal);
+
+        uint256 stakerBefore = token.balanceOf(staker1);
+        vm.prank(staker1);
+        pool.withdrawFromPool(staker1Bal);
+        assertEq(token.balanceOf(staker1), stakerBefore + staker1Bal, "tokens returned to staker");
+    }
+
+    function testWithdrawNoArgWithdraws() external {
+        vm.prank(staker1);
+        pool.depositIntoPool(staker1Bal);
+
+        vm.prank(staker1);
+        pool.withdrawFromPool();
+
+        assertEq(pool.depositBalance(staker1), 0, "depositBalance zeroed");
+        assertEq(token.balanceOf(staker1), staker1Bal, "tokens returned");
+    }
+
+    function testPartialWithdrawBalance() external {
+        vm.prank(staker1);
+        pool.depositIntoPool(staker1Bal);
+
+        uint256 partialAmount = 2 ether;
+        vm.prank(staker1);
+        pool.withdrawFromPool(partialAmount);
+
+        assertEq(
+            pool.depositBalance(staker1),
+            staker1Bal - partialAmount,
+            "depositBalance equals deposited minus partial withdraw"
+        );
+    }
 }

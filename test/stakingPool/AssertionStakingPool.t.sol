@@ -375,4 +375,54 @@ contract AssertionPoolTest is Test {
         assertEq(token.balanceOf(address(pool)), 0, "stake moved to rollup");
         assertEq(token.balanceOf(address(userRollup)), BASE_STAKE, "stake moved to rollup");
     }
+
+    function testConstructorStoresAssertionHash() external {
+        assertEq(pool.assertionHash(), assertionHash, "assertionHash stored correctly");
+    }
+
+    function testConstructorRevertsZeroHash() external {
+        vm.expectRevert(abi.encodeWithSelector(IAssertionStakingPool.EmptyAssertionId.selector));
+        aspcreator.createPool(address(rollupAddr), bytes32(0));
+
+        IAssertionStakingPool validPool = aspcreator.createPool(
+            address(rollupAddr),
+            keccak256("uniqueHash")
+        );
+        assertEq(validPool.assertionHash(), keccak256("uniqueHash"), "valid pool created");
+    }
+
+    function testCreateAssertionSetsAllowance() external {
+        _createAssertion();
+        assertEq(token.balanceOf(address(userRollup)), BASE_STAKE, "rollup received tokens");
+        assertEq(token.balanceOf(address(pool)), 0, "pool tokens transferred out");
+    }
+
+    function testMakeStakeWithdrawableAndWithdrawBackIntoPool() external {
+        _createAndConfirmAssertion();
+        uint256 poolBalBefore = token.balanceOf(address(pool));
+        pool.makeStakeWithdrawableAndWithdrawBackIntoPool();
+        assertEq(
+            token.balanceOf(address(pool)),
+            poolBalBefore + BASE_STAKE,
+            "pool balance restored after combined call"
+        );
+    }
+
+    function testWithdrawStakeBackIntoPoolMovesTokens() external {
+        _createAndConfirmAssertion();
+
+        uint256 poolBalBefore = token.balanceOf(address(pool));
+        pool.makeStakeWithdrawable();
+        pool.withdrawStakeBackIntoPool();
+        assertEq(
+            token.balanceOf(address(pool)),
+            poolBalBefore + BASE_STAKE,
+            "pool balance restored after separate calls"
+        );
+    }
+
+    function testGetPoolNonExistent() external {
+        vm.expectRevert(abi.encodeWithSelector(StakingPoolCreatorUtils.PoolDoesntExist.selector));
+        aspcreator.getPool(address(rollupAddr), keccak256("nonExistentHash"));
+    }
 }

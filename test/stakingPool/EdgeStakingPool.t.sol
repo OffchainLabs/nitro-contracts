@@ -101,4 +101,67 @@ contract EdgeStakingPoolTest is Test {
         assertEq(token.balanceOf(address(stakingPool)), 0);
         assertEq(token.balanceOf(address(challengeManager)), requiredStake);
     }
+
+    function testDeterministicConstruction() public {
+        bytes32 testEdgeId = keccak256("testEdgeId");
+        IEdgeStakingPool stakingPool =
+            stakingPoolCreator.createPool(address(challengeManager), testEdgeId);
+
+        assertEq(stakingPool.edgeId(), testEdgeId, "edgeId stored correctly");
+        assertEq(address(stakingPool.challengeManager()), address(challengeManager), "challengeManager stored correctly");
+        assertEq(address(stakingPool.stakeToken()), address(token), "stakeToken stored correctly");
+    }
+
+    function testDeterministicEmptyEdgeId() public {
+        vm.expectRevert(abi.encodeWithSelector(IEdgeStakingPool.EmptyEdgeId.selector));
+        stakingPoolCreator.createPool(address(challengeManager), bytes32(0));
+    }
+
+    function testDeterministicCreateEdge() public {
+        CreateEdgeArgs memory args;
+        args.level = 0;
+        args.endHistoryRoot = keccak256("endHistoryRoot");
+        args.endHeight = 32;
+        args.claimId = keccak256("claimId");
+
+        uint256 requiredStake = challengeManager.stakeAmounts(args.level);
+        bytes32 realEdgeId = keccak256(abi.encode(args));
+        IEdgeStakingPool stakingPool =
+            stakingPoolCreator.createPool(address(challengeManager), realEdgeId);
+
+        token.transfer(address(stakingPool), requiredStake);
+
+        vm.expectEmit(false, false, false, true);
+        emit EdgeCreated(args);
+        stakingPool.createEdge(args);
+
+        assertEq(token.balanceOf(address(stakingPool)), 0, "tokens moved from pool");
+        assertEq(token.balanceOf(address(challengeManager)), requiredStake, "tokens moved to challenge manager");
+
+        // test with wrong edgeId pool
+        IEdgeStakingPool wrongIdPool =
+            stakingPoolCreator.createPool(address(challengeManager), keccak256("fixedWrongId"));
+        token.transfer(address(wrongIdPool), requiredStake);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IEdgeStakingPool.IncorrectEdgeId.selector,
+                keccak256(abi.encode(args)),
+                keccak256("fixedWrongId")
+            )
+        );
+        wrongIdPool.createEdge(args);
+    }
+
+    function testGetPoolNonExistent() public {
+        vm.expectRevert(abi.encodeWithSelector(StakingPoolCreatorUtils.PoolDoesntExist.selector));
+        stakingPoolCreator.getPool(address(challengeManager), keccak256("nonExistentEdge"));
+    }
+
+    function testGetPoolExists() public {
+        bytes32 testEdgeId = keccak256("existingEdge");
+        IEdgeStakingPool created = stakingPoolCreator.createPool(address(challengeManager), testEdgeId);
+        IEdgeStakingPool fetched = stakingPoolCreator.getPool(address(challengeManager), testEdgeId);
+        assertEq(address(created), address(fetched), "getPool returns correct pool");
+    }
 }
