@@ -10,6 +10,7 @@ import "../../src/libraries/AddressAliasHelper.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "../../src/libraries/Error.sol";
 
 abstract contract AbsInboxTest is Test {
     IInboxBase public inbox;
@@ -120,6 +121,40 @@ abstract contract AbsInboxTest is Test {
         vm.prank(rollup);
         vm.expectRevert("ALREADY_SET");
         inbox.setAllowListEnabled(false);
+    }
+
+    function test_setAllowList_UpdatesMapping() public {
+        address[] memory users = new address[](1);
+        users[0] = address(300);
+        bool[] memory allowed = new bool[](1);
+        allowed[0] = true;
+
+        vm.prank(rollup);
+        inbox.setAllowList(users, allowed);
+
+        assertTrue(inbox.isAllowed(users[0]), "isAllowed should be true");
+    }
+
+    function test_setAllowListEnabled_RollupOwnerCanCall() public {
+        address rollupOwner = address(10_000);
+        vm.mockCall(
+            rollup, abi.encodeWithSelector(IOwnable.owner.selector), abi.encode(rollupOwner)
+        );
+
+        vm.prank(rollupOwner);
+        inbox.setAllowListEnabled(true);
+        assertTrue(inbox.allowListEnabled(), "Should be enabled by rollup owner");
+    }
+
+    function test_sendL2MessageFromOrigin_revert_DataTooLarge() public {
+        uint256 maxData = inbox.maxDataSize();
+        bytes memory data = new bytes(maxData + 1);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(DataTooLarge.selector, maxData + 1, maxData)
+        );
+        vm.prank(user, user);
+        inbox.sendL2MessageFromOrigin(data);
     }
 
     function test_setAllowListEnabled_revert_NonOwnerCall() public {

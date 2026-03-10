@@ -3,6 +3,7 @@ pragma solidity ^0.8.4;
 
 import "forge-std/Test.sol";
 import "./util/TestUtil.sol";
+import "../../src/bridge/IBridge.sol";
 import "../../src/bridge/IERC20Bridge.sol";
 import "../../src/bridge/ERC20Bridge.sol";
 import "../../src/bridge/extra/ERC20MigrationOutbox.sol";
@@ -49,6 +50,22 @@ contract ERC20MigrationOutboxTest is Test {
         erc20MigrationOutbox.migrate();
 
         assertEq(nativeToken.balanceOf(dst), 1000);
+    }
+
+    function test_migrate_reverts_on_failed_execution() public {
+        nativeToken.transfer(address(bridge), 1000);
+
+        vm.mockCall(
+            address(bridge),
+            abi.encodeWithSelector(IBridge.executeCall.selector),
+            abi.encode(false, "")
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC20MigrationOutbox.MigrationFailed.selector, "")
+        );
+        vm.prank(user);
+        erc20MigrationOutbox.migrate();
     }
 
     function test_migrate_no_balance() public {

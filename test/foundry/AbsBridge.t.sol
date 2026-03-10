@@ -11,6 +11,20 @@ import "../../src/bridge/IEthBridge.sol";
 import "../../src/libraries/AddressAliasHelper.sol";
 import "../../src/test-helpers/EthVault.sol";
 
+// todo: this might have another more appropriate home
+contract ActiveOutboxChecker {
+    IBridge public immutable bridge;
+    address public activeOutboxDuringCall;
+
+    constructor(IBridge _bridge) {
+        bridge = _bridge;
+    }
+
+    receive() external payable {
+        activeOutboxDuringCall = bridge.activeOutbox();
+    }
+}
+
 abstract contract AbsBridgeTest is Test {
     IBridge public bridge;
 
@@ -476,6 +490,168 @@ abstract contract AbsBridgeTest is Test {
             )
         );
         bridge.updateRollupAddress(IOwnable(address(1234)));
+    }
+
+    function test_setDelayedInbox_disableMiddleFromThree() public {
+        address inboxA = address(2001);
+        address inboxB = address(2002);
+        address inboxC = address(2003);
+
+        vm.startPrank(rollup);
+        bridge.setDelayedInbox(inboxA, true);
+        bridge.setDelayedInbox(inboxB, true);
+        bridge.setDelayedInbox(inboxC, true);
+
+        // disable the middle inbox (index 1) — last element (C) swaps into its slot
+        bridge.setDelayedInbox(inboxB, false);
+        assertEq(bridge.allowedDelayedInboxList(0), inboxA, "A should remain at index 0");
+        assertEq(bridge.allowedDelayedInboxList(1), inboxC, "C should move to index 1");
+        assertEq(bridge.allowedDelayedInboxes(inboxA), true, "A should still be allowed");
+        assertEq(bridge.allowedDelayedInboxes(inboxB), false, "B should be disallowed");
+        assertEq(bridge.allowedDelayedInboxes(inboxC), true, "C should still be allowed");
+
+        // disable C — verifies the swapped element's index was updated correctly
+        bridge.setDelayedInbox(inboxC, false);
+        assertEq(bridge.allowedDelayedInboxList(0), inboxA, "A should remain at index 0 after second disable");
+        assertEq(bridge.allowedDelayedInboxes(inboxA), true, "A should still be allowed");
+        assertEq(bridge.allowedDelayedInboxes(inboxB), false, "B should be disallowed");
+        assertEq(bridge.allowedDelayedInboxes(inboxC), false, "C should be disallowed");
+        vm.stopPrank();
+    }
+
+    function test_setDelayedInbox_disableFirstFromThree() public {
+        address inboxA = address(2001);
+        address inboxB = address(2002);
+        address inboxC = address(2003);
+
+        vm.startPrank(rollup);
+        bridge.setDelayedInbox(inboxA, true);
+        bridge.setDelayedInbox(inboxB, true);
+        bridge.setDelayedInbox(inboxC, true);
+
+        // disable first inbox (index 0) — C swaps into slot 0
+        bridge.setDelayedInbox(inboxA, false);
+        assertEq(bridge.allowedDelayedInboxList(0), inboxC, "C should move to index 0");
+        assertEq(bridge.allowedDelayedInboxList(1), inboxB, "B should remain at index 1");
+        assertEq(bridge.allowedDelayedInboxes(inboxA), false, "A should be disallowed");
+        assertEq(bridge.allowedDelayedInboxes(inboxB), true, "B should still be allowed");
+        assertEq(bridge.allowedDelayedInboxes(inboxC), true, "C should still be allowed");
+        
+
+        // disable C — verifies the swapped element's index was updated correctly
+        bridge.setDelayedInbox(inboxC, false);
+        assertEq(bridge.allowedDelayedInboxList(0), inboxB, "B should remain at index 0");
+        assertEq(bridge.allowedDelayedInboxes(inboxA), false, "A should be disallowed");
+        assertEq(bridge.allowedDelayedInboxes(inboxB), true, "B should still be allowed");
+        assertEq(bridge.allowedDelayedInboxes(inboxC), false, "C should be disallowed");
+        vm.stopPrank();
+    }
+
+    function test_setOutbox_disableMiddleFromThree() public {
+        address outboxA = address(3001);
+        address outboxB = address(3002);
+        address outboxC = address(3003);
+
+        vm.startPrank(rollup);
+        bridge.setOutbox(outboxA, true);
+        bridge.setOutbox(outboxB, true);
+        bridge.setOutbox(outboxC, true);
+
+        // disable middle outbox (index 1) — C swaps into slot 1
+        bridge.setOutbox(outboxB, false);
+        assertEq(bridge.allowedOutboxList(0), outboxA, "A should remain at index 0");
+        assertEq(bridge.allowedOutboxList(1), outboxC, "C should move to index 1");
+        assertEq(bridge.allowedOutboxes(outboxA), true, "A should still be allowed");
+        assertEq(bridge.allowedOutboxes(outboxB), false, "B should be disallowed");
+        assertEq(bridge.allowedOutboxes(outboxC), true, "C should still be allowed");
+
+        // disable C — verifies the swapped element's index was updated correctly
+        bridge.setOutbox(outboxC, false);
+        assertEq(bridge.allowedOutboxList(0), outboxA, "A should remain at index 0 after second disable");
+        assertEq(bridge.allowedOutboxes(outboxA), true, "A should still be allowed");
+        assertEq(bridge.allowedOutboxes(outboxB), false, "B should be disallowed");
+        assertEq(bridge.allowedOutboxes(outboxC), false, "C should be disallowed");
+        vm.stopPrank();
+    }
+
+    function test_setOutbox_disableFirstFromThree() public {
+        address outboxA = address(3001);
+        address outboxB = address(3002);
+        address outboxC = address(3003);
+
+        vm.startPrank(rollup);
+        bridge.setOutbox(outboxA, true);
+        bridge.setOutbox(outboxB, true);
+        bridge.setOutbox(outboxC, true);
+
+        // disable first outbox (index 0) — C swaps into slot 0
+        bridge.setOutbox(outboxA, false);
+        assertEq(bridge.allowedOutboxList(0), outboxC, "C should move to index 0");
+        assertEq(bridge.allowedOutboxList(1), outboxB, "B should remain at index 1");
+        assertEq(bridge.allowedOutboxes(outboxA), false, "A should be disallowed");
+        assertEq(bridge.allowedOutboxes(outboxB), true, "B should still be allowed");
+        assertEq(bridge.allowedOutboxes(outboxC), true, "C should still be allowed");
+
+        // disable C — verifies the swapped element's index was updated correctly
+        bridge.setOutbox(outboxC, false);
+        assertEq(bridge.allowedOutboxList(0), outboxB, "B should remain at index 0");
+        assertEq(bridge.allowedOutboxes(outboxA), false, "A should be disallowed");
+        assertEq(bridge.allowedOutboxes(outboxB), true, "B should still be allowed");
+        assertEq(bridge.allowedOutboxes(outboxC), false, "C should be disallowed");
+        vm.stopPrank();
+    }
+
+    function test_enqueueSequencerMessage_ThirdEnqueuedMsg() public {
+        vm.prank(rollup);
+        bridge.setSequencerInbox(seqInbox);
+
+        vm.startPrank(seqInbox);
+        bridge.submitBatchSpendingReport(address(1), keccak256("1"));
+        bridge.enqueueSequencerMessage(keccak256("seq1"), 0, 0, 10);
+        bridge.enqueueSequencerMessage(keccak256("seq2"), 0, 10, 20);
+
+        // 3rd sequencer message — beforeAcc should be sequencerInboxAccs[1], not [0]
+        bytes32 dataHash = keccak256("seq3");
+        (uint256 seqMessageIndex, bytes32 beforeAcc,,) =
+            bridge.enqueueSequencerMessage(dataHash, 1, 20, 30);
+        vm.stopPrank();
+
+        assertEq(seqMessageIndex, 2, "Invalid seqMessageIndex");
+        assertEq(beforeAcc, bridge.sequencerInboxAccs(1), "beforeAcc should be second seq entry");
+        assertTrue(beforeAcc != bridge.sequencerInboxAccs(0), "beforeAcc should differ from first seq entry");
+    }
+
+    // test that the third delayed inbox acc chains from the second, not the first
+    function test_accumulatesFromPrev() public {
+        vm.prank(rollup);
+        bridge.setSequencerInbox(seqInbox);
+
+        vm.startPrank(seqInbox);
+        bridge.submitBatchSpendingReport(address(1), keccak256("1"));
+        bridge.submitBatchSpendingReport(address(2), keccak256("2"));
+        bridge.submitBatchSpendingReport(address(3), keccak256("3"));
+        vm.stopPrank();
+
+        // verify the third accumulator chains from the second (not the first)
+        bytes32 acc0 = bridge.delayedInboxAccs(0);
+        bytes32 acc1 = bridge.delayedInboxAccs(1);
+        bytes32 acc2 = bridge.delayedInboxAccs(2);
+
+        // acc2 should be derived from acc1, not acc0
+        // recompute: messageHash for 3rd message (count=2 at time of insertion)
+        // todo: avoid magic number use
+        bytes32 msgHash = keccak256(
+            abi.encodePacked(
+                uint8(13), address(3), uint64(block.number), uint64(block.timestamp),
+                uint256(2), block.basefee, keccak256("3")
+            )
+        );
+        bytes32 expectedAcc2 = keccak256(abi.encodePacked(acc1, msgHash));
+        assertEq(acc2, expectedAcc2, "Third accumulator should chain from second");
+
+        // sanity: acc2 should differ if computed from acc0
+        bytes32 wrongAcc2 = keccak256(abi.encodePacked(acc0, msgHash));
+        assertTrue(acc2 != wrongAcc2, "Accumulator should not chain from first");
     }
 
     /**

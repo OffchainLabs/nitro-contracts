@@ -7,6 +7,8 @@ import "./AbsBridge.t.sol";
 import "../../src/bridge/IEthBridge.sol";
 import "../../src/libraries/AddressAliasHelper.sol";
 
+import "../../src/bridge/AbsBridge.sol";
+
 contract BridgeTest is AbsBridgeTest {
     IEthBridge public ethBridge;
 
@@ -291,6 +293,16 @@ contract BridgeTest is AbsBridgeTest {
         bridge.executeCall({to: user, value: 0.1 ether, data: ""});
     }
 
+    function test_initialize_SetsActiveOutboxSentinel() public {
+        // _activeOutbox is at storage slot 5 in AbsBridge
+        bytes32 val = vm.load(address(bridge), bytes32(uint256(5)));
+        assertEq(
+            address(uint160(uint256(val))),
+            address(type(uint160).max),
+            "_activeOutbox should be EMPTY_ACTIVEOUTBOX after init"
+        );
+    }
+
     function test_executeCall_revert_NotContract() public {
         // allow outbox
         vm.prank(rollup);
@@ -301,5 +313,31 @@ contract BridgeTest is AbsBridgeTest {
         vm.expectRevert(abi.encodeWithSelector(NotContract.selector, address(to)));
         vm.prank(outbox);
         bridge.executeCall({to: to, value: 0.1 ether, data: "some data"});
+    }
+
+    function test_executeCall_activeOutboxSetDuringCall() public {
+        vm.deal(address(bridge), 10 ether);
+
+        vm.prank(rollup);
+        bridge.setOutbox(outbox, true);
+
+        ActiveOutboxChecker checker = new ActiveOutboxChecker(bridge);
+
+        vm.prank(outbox);
+        (bool success,) = bridge.executeCall({to: address(checker), value: 1 ether, data: ""});
+        assertTrue(success, "Execute call failed");
+        assertEq(checker.activeOutboxDuringCall(), outbox, "activeOutbox should be caller during executeCall");
+    }
+
+    function test_executeCall_activeOutboxRestoredAfterCall() public {
+        vm.deal(address(bridge), 10 ether);
+
+        vm.prank(rollup);
+        bridge.setOutbox(outbox, true);
+
+        vm.prank(outbox);
+        bridge.executeCall({to: user, value: 1 ether, data: ""});
+
+        assertEq(bridge.activeOutbox(), address(0), "activeOutbox should be reset after executeCall");
     }
 }

@@ -50,6 +50,29 @@ contract ERC20BridgeTest is AbsBridgeTest {
         );
     }
 
+    function test_initialize_SetsActiveOutboxSentinel() public {
+        // _activeOutbox is at storage slot 5 in AbsBridge
+        bytes32 val = vm.load(address(bridge), bytes32(uint256(5)));
+        assertEq(
+            address(uint160(uint256(val))),
+            address(type(uint160).max),
+            "_activeOutbox should be EMPTY_ACTIVEOUTBOX after init"
+        );
+    }
+
+    function test_executeCall_EmptyDataSkipsExtraCall() public {
+        ERC20PresetMinterPauser(address(nativeToken)).mint(address(bridge), 100);
+
+        vm.prank(rollup);
+        bridge.setOutbox(outbox, true);
+
+        RevertOnFallback receiver = new RevertOnFallback();
+
+        vm.prank(outbox);
+        (bool success,) = bridge.executeCall(address(receiver), 10, "");
+        assertTrue(success, "Empty-data call should succeed");
+    }
+
     function test_initialize_revert_ZeroAddressToken() public {
         IERC20Bridge noTokenBridge = ERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
         vm.expectRevert(abi.encodeWithSelector(InvalidTokenSet.selector, address(0)));
@@ -479,5 +502,11 @@ contract ERC20NoDecimals is ERC20 {
 
     function mint(address to, uint256 amount) public virtual {
         _mint(to, amount);
+    }
+}
+
+contract RevertOnFallback {
+    fallback() external payable {
+        revert("no fallback");
     }
 }

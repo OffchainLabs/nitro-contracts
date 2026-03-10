@@ -156,6 +156,53 @@ contract DelayBufferableTest is Test {
         assertEq(buffer, 9);
     }
 
+    function testCalcBufferDelayBinaryOpMutation() public {
+        // ai generated test to catch a mutation:
+        // Original:                                                                                          
+        // return block.number - self.prevBlockNumber <= self.threshold;                                         
+                                                                                                                
+        // Mutant:                                
+        // return block.number * self.prevBlockNumber <= self.threshold;
+
+        // start=100, end=200, sequenced=150, threshold=5, buffer=500, max=1000, rate=0
+        // delay = 150 - 100 = 50, unexpectedDelay = 50 - 5 = 45 (< elapsed=100, not capped)
+        // result = 500 - 45 = 455
+        uint256 result = DelayBuffer.calcBuffer(100, 200, 500, 150, 5, 1000, 0);
+        assertEq(result, 455);
+    }
+
+    function testIsSynced() public {
+        delayBuffer = BufferData({
+            bufferBlocks: config.max,
+            max: config.max,
+            threshold: config.threshold,
+            prevBlockNumber: 100,
+            replenishRateInBasis: config.replenishRateInBasis,
+            prevSequencedBlockNumber: 100
+        });
+        // block.number - prevBlockNumber == threshold (5), should be synced (<= threshold)
+        vm.roll(104);
+        assertTrue(delayBuffer.isSynced());
+        vm.roll(105);
+        assertTrue(delayBuffer.isSynced());
+        vm.roll(106);
+        assertFalse(delayBuffer.isSynced());
+    }
+
+    function testIsUpdatableWhenBufferNotFull() public {
+        delayBuffer = BufferData({
+            bufferBlocks: config.max - 1,
+            max: config.max,
+            threshold: config.threshold,
+            prevBlockNumber: 100,
+            replenishRateInBasis: config.replenishRateInBasis,
+            prevSequencedBlockNumber: 100
+        });
+        // synced (within threshold), but buffer < max so should be updatable
+        vm.roll(103);
+        assertTrue(delayBuffer.isUpdatable());
+    }
+
     function testUpdateDepleteAndReplenish(
         BufferConfig memory _config
     ) public {

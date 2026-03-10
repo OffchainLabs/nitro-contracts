@@ -1392,4 +1392,47 @@ contract ERC20InboxTest is AbsInboxTest {
         assertEq(msgNum, 0, "Invalid msgNum");
         assertEq(_bridge.delayedMessageCount(), 1, "Invalid delayed message count");
     }
+
+    // MAX_UPSCALE_AMOUNT overflow check should only apply to tokens with < 18 decimals.
+    // Tokens with >= 18 decimals don't upscale, so large amounts must be allowed through.
+    function test_depositERC20_FromEOA_LargeAmountWithHighDecimals() public {
+        ERC20_20Decimals _nativeToken = new ERC20_20Decimals();
+
+        IERC20Bridge _bridge = IERC20Bridge(TestUtil.deployProxy(address(new ERC20Bridge())));
+        IERC20Inbox _inbox =
+            IERC20Inbox(TestUtil.deployProxy(address(new ERC20Inbox(MAX_DATA_SIZE))));
+
+        address _rollup = makeAddr("_rollup");
+        _bridge.initialize(IOwnable(_rollup), address(_nativeToken));
+        _inbox.initialize(_bridge, ISequencerInbox(makeAddr("_seqInbox")));
+        vm.prank(_rollup);
+        _bridge.setDelayedInbox(address(_inbox), true);
+
+        uint256 largeAmount = uint256(type(uint192).max) + 1;
+        _nativeToken.mint(user, largeAmount);
+
+        vm.prank(user);
+        IERC20(address(_nativeToken)).approve(address(_inbox), largeAmount);
+
+        vm.prank(user, user);
+        _inbox.depositERC20(largeAmount);
+    }
+
+    function test_depositERC20_FromEOA_TransfersOnlyDiffWhenPrefunded() public {
+        uint256 depositAmount = 300;
+        uint256 preFund = 100;
+
+        ERC20PresetMinterPauser(address(nativeToken)).mint(address(inbox), preFund);
+
+        uint256 userBalance = nativeToken.balanceOf(user);
+        vm.prank(user);
+        nativeToken.transfer(address(1), userBalance);
+        ERC20PresetMinterPauser(address(nativeToken)).mint(user, depositAmount - preFund);
+
+        vm.prank(user);
+        nativeToken.approve(address(inbox), depositAmount - preFund);
+
+        vm.prank(user, user);
+        erc20Inbox.depositERC20(depositAmount);
+    }
 }
