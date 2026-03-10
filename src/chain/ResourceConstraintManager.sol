@@ -5,12 +5,10 @@
 pragma solidity ^0.8.0;
 
 import "../precompiles/ArbOwner.sol";
-import "../precompiles/ArbGasInfo.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 
 contract ResourceConstraintManager is AccessControlEnumerable {
     ArbOwner internal constant ARB_OWNER = ArbOwner(address(0x70));
-    ArbGasInfo internal constant ARB_GAS_INFO = ArbGasInfo(address(0x6c));
 
     // Constraint parameters boundaries
     uint256 public constant MAX_CONSTRAINTS = 10;
@@ -58,7 +56,7 @@ contract ResourceConstraintManager is AccessControlEnumerable {
     ) external onlyRole(MANAGER_ROLE) {
         // If zero constraints are provided, the chain uses the single-constraint pricing model
         uint256 nConstraints = constraints.length;
-        if (nConstraints > 10) {
+        if (nConstraints > MAX_CONSTRAINTS) {
             revert TooManyConstraints();
         }
         uint64 pricingExponent = 0;
@@ -66,10 +64,10 @@ contract ResourceConstraintManager is AccessControlEnumerable {
             uint64 gasTargetPerSec = constraints[i][0];
             uint64 adjustmentWindowSecs = constraints[i][1];
             uint64 startingBacklogValue = constraints[i][2];
-            if (gasTargetPerSec < 7_000_000 || gasTargetPerSec > 100_000_000) {
+            if (gasTargetPerSec < MIN_GAS_TARGET_PER_SEC || gasTargetPerSec > MAX_GAS_TARGET_PER_SEC) {
                 revert InvalidTarget(gasTargetPerSec, adjustmentWindowSecs, startingBacklogValue);
             }
-            if (adjustmentWindowSecs < 5 || adjustmentWindowSecs > 86400) {
+            if (adjustmentWindowSecs < MIN_ADJUSTMENT_WINDOW_SECS || adjustmentWindowSecs > MAX_ADJUSTMENT_WINDOW_SECS) {
                 revert InvalidPeriod(gasTargetPerSec, adjustmentWindowSecs, startingBacklogValue);
             }
             // we scale by 1000 to improve precision in calculating the exponent
@@ -82,12 +80,12 @@ contract ResourceConstraintManager is AccessControlEnumerable {
                 (startingBacklogValue * 1000) / (gasTargetPerSec * adjustmentWindowSecs);
         }
 
-        // this calculated pricing exponent will by used by nitro to calculate the gas price
+        // this calculated pricing exponent will be used by nitro to calculate the gas price
         // we check that the pricing exponent is below some reasonable number to avoid setting the gas price astronomically high
         // as long as the gas price is not so high that no-one at all can send a transaction the chain will be able to function
         // eg. these constraints can be changed again, or the sec council can send admin transactions
         // with min base fee of 0.02, exponent of 8 (scaled by 1000) corresponds to a gas price of ~60 Gwei
-        if (pricingExponent > 8000) {
+        if (pricingExponent > MAX_PRICING_EXPONENT) {
             revert PricingExponentTooHigh(pricingExponent);
         }
 
@@ -155,7 +153,7 @@ contract ResourceConstraintManager is AccessControlEnumerable {
             }
         }
 
-        // this calculated pricing exponent will by used by nitro to calculate the gas price
+        // this calculated pricing exponent will be used by nitro to calculate the gas price
         // we check that the pricing exponent is below some reasonable number to avoid setting the gas price astronomically high
         // as long as the gas price is not so high that no-one at all can send a transaction the chain will be able to function
         // eg. these constraints can be changed again, or the sec council can send admin transactions
