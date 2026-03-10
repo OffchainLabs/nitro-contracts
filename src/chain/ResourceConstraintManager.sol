@@ -64,10 +64,15 @@ contract ResourceConstraintManager is AccessControlEnumerable {
             uint64 gasTargetPerSec = constraints[i][0];
             uint64 adjustmentWindowSecs = constraints[i][1];
             uint64 startingBacklogValue = constraints[i][2];
-            if (gasTargetPerSec < MIN_GAS_TARGET_PER_SEC || gasTargetPerSec > MAX_GAS_TARGET_PER_SEC) {
+            if (
+                gasTargetPerSec < MIN_GAS_TARGET_PER_SEC || gasTargetPerSec > MAX_GAS_TARGET_PER_SEC
+            ) {
                 revert InvalidTarget(gasTargetPerSec, adjustmentWindowSecs, startingBacklogValue);
             }
-            if (adjustmentWindowSecs < MIN_ADJUSTMENT_WINDOW_SECS || adjustmentWindowSecs > MAX_ADJUSTMENT_WINDOW_SECS) {
+            if (
+                adjustmentWindowSecs < MIN_ADJUSTMENT_WINDOW_SECS
+                    || adjustmentWindowSecs > MAX_ADJUSTMENT_WINDOW_SECS
+            ) {
                 revert InvalidPeriod(gasTargetPerSec, adjustmentWindowSecs, startingBacklogValue);
             }
             // we scale by 1000 to improve precision in calculating the exponent
