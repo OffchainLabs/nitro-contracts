@@ -6,7 +6,7 @@ import {IAssertionChain} from "../src/challengeV2/IAssertionChain.sol";
 import {IEdgeChallengeManager} from "../src/challengeV2/IEdgeChallengeManager.sol";
 import "../src/bridge/IBridge.sol";
 import "../src/rollup/RollupLib.sol";
-import "./challengeV2/StateTools.sol";
+import "./foundry/challengeV2/StateTools.sol";
 
 struct MockAssertion {
     bytes32 predecessorId;
