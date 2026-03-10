@@ -47,6 +47,19 @@ abstract contract AbsInboxTest is Test {
         assertEq(inbox.isAllowed(users[1]), allowed[1], "Invalid isAllowed user[1]");
     }
 
+    function test_setAllowList_enableAddress() public {
+        address[] memory users = new address[](1);
+        users[0] = address(300);
+
+        bool[] memory allowed = new bool[](1);
+        allowed[0] = true;
+
+        vm.prank(rollup);
+        inbox.setAllowList(users, allowed);
+
+        assertTrue(inbox.isAllowed(users[0]), "Address should be allowed");
+    }
+
     function test_setAllowList_revert_InvalidLength() public {
         address[] memory users = new address[](1);
         users[0] = address(300);

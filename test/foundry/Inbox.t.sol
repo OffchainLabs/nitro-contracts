@@ -610,6 +610,219 @@ contract InboxTest is AbsInboxTest {
         assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
     }
 
+    function test_sendL1FundedUnsignedTransaction() public {
+        uint256 gasLimit = type(uint64).max; // max valid gas limit
+        uint256 maxFeePerGas = 1 gwei;
+        uint256 nonce = 1;
+        uint256 ethToSend = 0.1 ether;
+
+        vm.prank(user, user);
+        uint256 msgNum = ethInbox.sendL1FundedUnsignedTransaction{value: ethToSend}(
+            gasLimit, maxFeePerGas, nonce, user, ""
+        );
+
+        assertEq(msgNum, 0, "Invalid msgNum");
+        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
+    }
+
+    function test_sendL1FundedUnsignedTransaction_revert_GasLimitTooLarge() public {
+        uint256 tooBigGasLimit = uint256(type(uint64).max) + 1;
+
+        vm.prank(user, user);
+        vm.expectRevert(GasLimitTooLarge.selector);
+        ethInbox.sendL1FundedUnsignedTransaction{value: 0.1 ether}(
+            tooBigGasLimit, 1 gwei, 1, user, ""
+        );
+    }
+
+    function test_sendL1FundedContractTransaction() public {
+        uint256 gasLimit = type(uint64).max; // max valid gas limit
+        uint256 maxFeePerGas = 1 gwei;
+        uint256 ethToSend = 0.1 ether;
+
+        vm.prank(user);
+        uint256 msgNum = ethInbox.sendL1FundedContractTransaction{value: ethToSend}(
+            gasLimit, maxFeePerGas, user, ""
+        );
+
+        assertEq(msgNum, 0, "Invalid msgNum");
+        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
+    }
+
+    function test_sendL1FundedContractTransaction_revert_GasLimitTooLarge() public {
+        uint256 tooBigGasLimit = uint256(type(uint64).max) + 1;
+
+        vm.prank(user);
+        vm.expectRevert(GasLimitTooLarge.selector);
+        ethInbox.sendL1FundedContractTransaction{value: 0.1 ether}(
+            tooBigGasLimit, 1 gwei, user, ""
+        );
+    }
+
+    function test_sendL1FundedUnsignedTransactionToFork() public {
+        vm.chainId(10);
+        uint256 ethToSend = 0.1 ether;
+
+        vm.prank(user, user);
+        uint256 msgNum = ethInbox.sendL1FundedUnsignedTransactionToFork{value: ethToSend}(
+            100_000, 1 gwei, 1, user, ""
+        );
+
+        assertEq(msgNum, 0, "Invalid msgNum");
+        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
+    }
+
+    function test_sendL1FundedUnsignedTransactionToFork_revert_NotForked() public {
+        vm.prank(user, user);
+        vm.expectRevert(NotForked.selector);
+        ethInbox.sendL1FundedUnsignedTransactionToFork{value: 0.1 ether}(
+            100_000, 1 gwei, 1, user, ""
+        );
+    }
+
+    function test_sendL1FundedUnsignedTransactionToFork_revert_NotOrigin() public {
+        vm.chainId(10);
+        vm.prank(user);
+        vm.expectRevert(NotOrigin.selector);
+        ethInbox.sendL1FundedUnsignedTransactionToFork{value: 0.1 ether}(
+            100_000, 1 gwei, 1, user, ""
+        );
+    }
+
+    function test_sendL1FundedUnsignedTransactionToFork_OriginPassesEOA() public {
+        vm.chainId(10);
+        vm.prank(user, user);
+        uint256 msgNum = ethInbox.sendL1FundedUnsignedTransactionToFork{value: 0.1 ether}(
+            100_000, 1 gwei, 1, user, ""
+        );
+        assertEq(msgNum, 0, "Invalid msgNum");
+        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
+    }
+
+    function test_sendL1FundedUnsignedTransactionToFork_ValidGasLimit() public {
+        vm.chainId(10);
+        vm.prank(user, user);
+        uint256 msgNum = ethInbox.sendL1FundedUnsignedTransactionToFork{value: 0.1 ether}(
+            uint256(type(uint64).max), 1 gwei, 1, user, ""
+        );
+        assertEq(msgNum, 0, "Invalid msgNum");
+        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
+    }
+
+    function test_sendL1FundedUnsignedTransactionToFork_revert_GasLimitTooLarge() public {
+        vm.chainId(10);
+        uint256 tooBigGasLimit = uint256(type(uint64).max) + 1;
+
+        vm.prank(user, user);
+        vm.expectRevert(GasLimitTooLarge.selector);
+        ethInbox.sendL1FundedUnsignedTransactionToFork{value: 0.1 ether}(
+            tooBigGasLimit, 1 gwei, 1, user, ""
+        );
+    }
+
+    function test_sendUnsignedTransactionToFork() public {
+        vm.chainId(10);
+
+        vm.prank(user, user);
+        uint256 msgNum = ethInbox.sendUnsignedTransactionToFork(
+            100_000, 1 gwei, 1, user, 0, ""
+        );
+
+        assertEq(msgNum, 0, "Invalid msgNum");
+        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
+    }
+
+    function test_sendUnsignedTransactionToFork_revert_NotForked() public {
+        vm.prank(user, user);
+        vm.expectRevert(NotForked.selector);
+        ethInbox.sendUnsignedTransactionToFork(100_000, 1 gwei, 1, user, 0, "");
+    }
+
+    function test_sendUnsignedTransactionToFork_revert_NotOrigin() public {
+        vm.chainId(10);
+        vm.prank(user);
+        vm.expectRevert(NotOrigin.selector);
+        ethInbox.sendUnsignedTransactionToFork(100_000, 1 gwei, 1, user, 0, "");
+    }
+
+    function test_sendUnsignedTransactionToFork_OriginPassesEOA() public {
+        vm.chainId(10);
+        vm.prank(user, user);
+        uint256 msgNum = ethInbox.sendUnsignedTransactionToFork(100_000, 1 gwei, 1, user, 0, "");
+        assertEq(msgNum, 0, "Invalid msgNum");
+        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
+    }
+
+    function test_sendUnsignedTransactionToFork_ValidGasLimit() public {
+        vm.chainId(10);
+        vm.prank(user, user);
+        uint256 msgNum = ethInbox.sendUnsignedTransactionToFork(
+            uint256(type(uint64).max), 1 gwei, 1, user, 0, ""
+        );
+        assertEq(msgNum, 0, "Invalid msgNum");
+        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
+    }
+
+    function test_sendUnsignedTransactionToFork_revert_GasLimitTooLarge() public {
+        vm.chainId(10);
+        uint256 tooBigGasLimit = uint256(type(uint64).max) + 1;
+
+        vm.prank(user, user);
+        vm.expectRevert(GasLimitTooLarge.selector);
+        ethInbox.sendUnsignedTransactionToFork(tooBigGasLimit, 1 gwei, 1, user, 0, "");
+    }
+
+    function test_sendWithdrawEthToFork() public {
+        vm.chainId(10);
+
+        vm.prank(user, user);
+        uint256 msgNum = ethInbox.sendWithdrawEthToFork(
+            100_000, 1 gwei, 1, 0.05 ether, user
+        );
+
+        assertEq(msgNum, 0, "Invalid msgNum");
+        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
+    }
+
+    function test_sendWithdrawEthToFork_revert_NotForked() public {
+        vm.prank(user, user);
+        vm.expectRevert(NotForked.selector);
+        ethInbox.sendWithdrawEthToFork(100_000, 1 gwei, 1, 0.05 ether, user);
+    }
+
+    function test_sendWithdrawEthToFork_revert_NotOrigin() public {
+        vm.chainId(10);
+        vm.prank(user);
+        vm.expectRevert(NotOrigin.selector);
+        ethInbox.sendWithdrawEthToFork(100_000, 1 gwei, 1, 0.05 ether, user);
+    }
+
+    function test_sendWithdrawEthToFork_OriginPassesEOA() public {
+        vm.chainId(10);
+        vm.prank(user, user);
+        uint256 msgNum = ethInbox.sendWithdrawEthToFork(100_000, 1 gwei, 1, 0.05 ether, user);
+        assertEq(msgNum, 0, "Invalid msgNum");
+    }
+
+    function test_sendWithdrawEthToFork_ValidGasLimit() public {
+        vm.chainId(10);
+        vm.prank(user, user);
+        uint256 msgNum = ethInbox.sendWithdrawEthToFork(
+            uint256(type(uint64).max), 1 gwei, 1, 0.05 ether, user
+        );
+        assertEq(msgNum, 0, "Invalid msgNum");
+        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
+    }
+
+    function test_sendWithdrawEthToFork_revert_GasLimitTooLarge() public {
+        vm.chainId(10);
+        uint256 tooBigGasLimit = uint256(type(uint64).max) + 1;
+
+        vm.prank(user, user);
+        vm.expectRevert(GasLimitTooLarge.selector);
+        ethInbox.sendWithdrawEthToFork(tooBigGasLimit, 1 gwei, 1, 0.05 ether, user);
+    }
+
     function test_calculateRetryableSubmissionFee() public {
         // 30 gwei fee
         uint256 basefee = 30000000000;
@@ -623,57 +836,40 @@ contract InboxTest is AbsInboxTest {
         );
     }
 
-    // --- ToFork functions: NotForked revert ---
+    // AI generated test case to catch a mutated required value calculation
+    // KILLS MUTANT in src/bridge/AbsInbox.sol
+    // BinaryOpMutation(`*` |==> `+`) of: `if (amountToBeMintedOnL2 < (maxSubmissionCost + l2CallValue + gasLimit * maxFeePerGas)) {`
+    // if (amountToBeMintedOnL2 < (maxSubmissionCost + l2CallValue + gasLimit+maxFeePerGas)) {
+    //     revert InsufficientValue(
+    function test_createRetryableTicket_revert_InsufficientValue_MulVsAdd() public {
+        // Choose values where gasLimit * maxFeePerGas >> gasLimit + maxFeePerGas
+        // gasLimit=1000, maxFeePerGas=0.000001 ether => product = 0.001 ether, sum = 1000 + 1e12
+        uint256 l2CallValue = 0;
+        uint256 maxSubmissionCost = 0.1 ether;
+        uint256 gasLimit = 1000;
+        uint256 maxFeePerGas = 0.000001 ether;
+        // required with *: 0.1 ether + 0 + 1000 * 0.000001 ether = 0.1 + 0.001 = 0.101 ether
+        // required with +: 0.1 ether + 0 + 1000 + 1e12 = ~0.100000001001 ether
+        // send amount between the two so only * triggers revert
+        uint256 ethToSend = 0.1001 ether;
 
-    function test_sendL1FundedUnsignedTransactionToFork_revert_NotForked() public {
         vm.prank(user, user);
-        vm.expectRevert(NotForked.selector);
-        ethInbox.sendL1FundedUnsignedTransactionToFork{value: 0.1 ether}(
-            100_000, 1 gwei, 0, user, abi.encodePacked("data")
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                InsufficientValue.selector,
+                maxSubmissionCost + l2CallValue + gasLimit * maxFeePerGas,
+                ethToSend
+            )
         );
-    }
-
-    function test_sendUnsignedTransactionToFork_revert_NotForked() public {
-        vm.prank(user, user);
-        vm.expectRevert(NotForked.selector);
-        ethInbox.sendUnsignedTransactionToFork(
-            100_000, 1 gwei, 0, user, 10, abi.encodePacked("data")
-        );
-    }
-
-    function test_sendWithdrawEthToFork_revert_NotForked() public {
-        vm.prank(user, user);
-        vm.expectRevert(NotForked.selector);
-        ethInbox.sendWithdrawEthToFork(100_000, 1 gwei, 0, 10, user);
-    }
-
-    // --- ToFork success paths (forked chain, EOA caller) ---
-
-    function test_sendL1FundedUnsignedTransactionToFork_success() public {
-        vm.chainId(999);
-        vm.prank(user, user);
-        uint256 msgNum = ethInbox.sendL1FundedUnsignedTransactionToFork{value: 0.1 ether}(
-            100_000, 1 gwei, 0, user, abi.encodePacked("data")
-        );
-        assertEq(msgNum, 0);
-        assertEq(bridge.delayedMessageCount(), 1);
-    }
-
-    function test_sendUnsignedTransactionToFork_success() public {
-        vm.chainId(999);
-        vm.prank(user, user);
-        uint256 msgNum = ethInbox.sendUnsignedTransactionToFork(
-            100_000, 1 gwei, 0, user, 10, abi.encodePacked("data")
-        );
-        assertEq(msgNum, 0);
-        assertEq(bridge.delayedMessageCount(), 1);
-    }
-
-    function test_sendWithdrawEthToFork_success() public {
-        vm.chainId(999);
-        vm.prank(user, user);
-        uint256 msgNum = ethInbox.sendWithdrawEthToFork(100_000, 1 gwei, 0, 10, user);
-        assertEq(msgNum, 0);
-        assertEq(bridge.delayedMessageCount(), 1);
+        ethInbox.createRetryableTicket{value: ethToSend}({
+            to: user,
+            l2CallValue: l2CallValue,
+            maxSubmissionCost: maxSubmissionCost,
+            excessFeeRefundAddress: user,
+            callValueRefundAddress: user,
+            gasLimit: gasLimit,
+            maxFeePerGas: maxFeePerGas,
+            data: abi.encodePacked("data")
+        });
     }
 }

@@ -158,10 +158,10 @@ contract DelayBufferableTest is Test {
 
     function testCalcBufferDelayBinaryOpMutation() public {
         // ai generated test to catch a mutation:
-        // Original:                                                                                          
-        // return block.number - self.prevBlockNumber <= self.threshold;                                         
-                                                                                                                
-        // Mutant:                                
+        // Original:
+        // return block.number - self.prevBlockNumber <= self.threshold;
+
+        // Mutant:
         // return block.number * self.prevBlockNumber <= self.threshold;
 
         // start=100, end=200, sequenced=150, threshold=5, buffer=500, max=1000, rate=0
