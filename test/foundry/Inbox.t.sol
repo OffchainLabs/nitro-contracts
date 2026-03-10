@@ -8,6 +8,7 @@ import "../../src/bridge/IInbox.sol";
 import "../../src/bridge/Bridge.sol";
 import "../../src/bridge/ISequencerInbox.sol";
 import "../../src/libraries/AddressAliasHelper.sol";
+import {NotForked} from "../../src/libraries/Error.sol";
 
 /// forge-config: default.allow_internal_expect_revert = true
 contract InboxTest is AbsInboxTest {
@@ -620,5 +621,59 @@ contract InboxTest is AbsInboxTest {
             (1400 + 6 * datalength) * basefee,
             "Invalid eth retryable submission fee"
         );
+    }
+
+    // --- ToFork functions: NotForked revert ---
+
+    function test_sendL1FundedUnsignedTransactionToFork_revert_NotForked() public {
+        vm.prank(user, user);
+        vm.expectRevert(NotForked.selector);
+        ethInbox.sendL1FundedUnsignedTransactionToFork{value: 0.1 ether}(
+            100_000, 1 gwei, 0, user, abi.encodePacked("data")
+        );
+    }
+
+    function test_sendUnsignedTransactionToFork_revert_NotForked() public {
+        vm.prank(user, user);
+        vm.expectRevert(NotForked.selector);
+        ethInbox.sendUnsignedTransactionToFork(
+            100_000, 1 gwei, 0, user, 10, abi.encodePacked("data")
+        );
+    }
+
+    function test_sendWithdrawEthToFork_revert_NotForked() public {
+        vm.prank(user, user);
+        vm.expectRevert(NotForked.selector);
+        ethInbox.sendWithdrawEthToFork(100_000, 1 gwei, 0, 10, user);
+    }
+
+    // --- ToFork success paths (forked chain, EOA caller) ---
+
+    function test_sendL1FundedUnsignedTransactionToFork_success() public {
+        vm.chainId(999);
+        vm.prank(user, user);
+        uint256 msgNum = ethInbox.sendL1FundedUnsignedTransactionToFork{value: 0.1 ether}(
+            100_000, 1 gwei, 0, user, abi.encodePacked("data")
+        );
+        assertEq(msgNum, 0);
+        assertEq(bridge.delayedMessageCount(), 1);
+    }
+
+    function test_sendUnsignedTransactionToFork_success() public {
+        vm.chainId(999);
+        vm.prank(user, user);
+        uint256 msgNum = ethInbox.sendUnsignedTransactionToFork(
+            100_000, 1 gwei, 0, user, 10, abi.encodePacked("data")
+        );
+        assertEq(msgNum, 0);
+        assertEq(bridge.delayedMessageCount(), 1);
+    }
+
+    function test_sendWithdrawEthToFork_success() public {
+        vm.chainId(999);
+        vm.prank(user, user);
+        uint256 msgNum = ethInbox.sendWithdrawEthToFork(100_000, 1 gwei, 0, 10, user);
+        assertEq(msgNum, 0);
+        assertEq(bridge.delayedMessageCount(), 1);
     }
 }
