@@ -5,9 +5,9 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
-import "../../src/state/GlobalState.sol";
-import "../../src/state/Machine.sol";
-import "../../src/rollup/RollupLib.sol";
+import "src/state/GlobalState.sol";
+import "src/state/Machine.sol";
+import "src/rollup/RollupLib.sol";
 import "./Utils.sol";
 
 library StateToolsLib {

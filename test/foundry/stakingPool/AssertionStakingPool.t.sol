@@ -16,7 +16,7 @@ import "src/osp/OneStepProverMath.sol";
 import "src/osp/OneStepProverHostIo.sol";
 import "src/osp/OneStepProofEntry.sol";
 import "src/challengeV2/EdgeChallengeManager.sol";
-import "../../challengeV2/Utils.sol";
+import "../challengeV2/Utils.sol";
 
 import "src/libraries/Error.sol";
 

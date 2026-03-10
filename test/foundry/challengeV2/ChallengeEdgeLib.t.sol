@@ -6,7 +6,7 @@ pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
 import "./Utils.sol";
-import "../../src/challengeV2/libraries/ChallengeEdgeLib.sol";
+import "src/challengeV2/libraries/ChallengeEdgeLib.sol";
 
 contract TestChallengeEdge {
     function levelToType(

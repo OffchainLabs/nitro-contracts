@@ -5,8 +5,8 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
-import "../../src/challengeV2/libraries/MerkleTreeAccumulatorLib.sol";
-import "../../src/libraries/MerkleLib.sol";
+import "src/challengeV2/libraries/MerkleTreeAccumulatorLib.sol";
+import "src/libraries/MerkleLib.sol";
 import "./Utils.sol";
 
 /// forge-config: default.allow_internal_expect_revert = true

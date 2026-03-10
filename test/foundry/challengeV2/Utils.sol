@@ -4,9 +4,9 @@
 //
 pragma solidity ^0.8.17;
 
-import "../../src/challengeV2/libraries/MerkleTreeAccumulatorLib.sol";
-import "../../src/challengeV2/libraries/UintUtilsLib.sol";
-import "../../src/challengeV2/libraries/ArrayUtilsLib.sol";
+import "src/challengeV2/libraries/MerkleTreeAccumulatorLib.sol";
+import "src/challengeV2/libraries/UintUtilsLib.sol";
+import "src/challengeV2/libraries/ArrayUtilsLib.sol";
 import "forge-std/Test.sol";
 
 contract Random {

@@ -6,11 +6,11 @@ pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
 import "./Utils.sol";
-import "../MockAssertionChain.sol";
-import "../../src/challengeV2/EdgeChallengeManager.sol";
+import "../../MockAssertionChain.sol";
+import "src/challengeV2/EdgeChallengeManager.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import "../ERC20Mock.sol";
+import "../../ERC20Mock.sol";
 import "./StateTools.sol";
 
 contract MockOneStepProofEntry is IOneStepProofEntry {

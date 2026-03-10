@@ -5,8 +5,8 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
-import "../MockAssertionChain.sol";
-import "../../src/challengeV2/EdgeChallengeManager.sol";
+import "../../MockAssertionChain.sol";
+import "src/challengeV2/EdgeChallengeManager.sol";
 import "./Utils.sol";
 
 contract MockOneStepProofEntry is IOneStepProofEntry {
