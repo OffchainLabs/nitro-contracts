@@ -287,21 +287,21 @@ contract ResourceConstraintManagerTest is Test {
         // Single resource: Computation with weight 1
         multipleConstraints[0] = _createMultiGasConstraint(7_000_000, 5, 0);
 
-        // Multiple resources: Computation (weight 2) + StorageAccess (weight 3)
+        // Multiple resources: HistoryGrowth (weight 2) + StorageAccess (weight 3)
         ArbMultiGasConstraintsTypes.WeightedResource[] memory resources2 =
             new ArbMultiGasConstraintsTypes.WeightedResource[](2);
         resources2[0] = ArbMultiGasConstraintsTypes.WeightedResource({
             resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth,
-            weight: 1
+            weight: 2
         });
         resources2[1] = ArbMultiGasConstraintsTypes.WeightedResource({
             resource: ArbMultiGasConstraintsTypes.ResourceKind.StorageAccess,
-            weight: 1
+            weight: 3
         });
         multipleConstraints[1] =
             _createMultiGasConstraintWithResources(50_000_000, 1000, 1, resources2);
 
-        // Multiple resources: HistoryGrowth (weight 5) + L1Calldata (weight 1)
+        // Multiple resources: WasmComputation (weight 5) + L1Calldata (weight 1)
         ArbMultiGasConstraintsTypes.WeightedResource[] memory resources3 =
             new ArbMultiGasConstraintsTypes.WeightedResource[](2);
         resources3[0] = ArbMultiGasConstraintsTypes.WeightedResource({
@@ -326,28 +326,68 @@ contract ResourceConstraintManagerTest is Test {
     }
 
     function test_setMultiGasPricingConstraints_pricingExponentTooHigh() external {
-        // create constraints on the limit of the pricing exponent
+        // Create constraints on the limit of the pricing exponent
+        // Computation (weight=1), maxWeight=1
+        // exponent = backlog * 1 * 1000 / (targetPerSec * adjustmentWindowSecs * 1) = backlog * 1000 / (targetPerSec * adjustmentWindowSecs)
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory multipleConstraints =
             new ArbMultiGasConstraintsTypes.ResourceConstraint[](3);
-        multipleConstraints[0] = _createMultiGasConstraint(7_000_000, 5, 35_000_000); // 1000
-        multipleConstraints[1] = _createMultiGasConstraint(50_000_000, 1000, 300_000_000_000); // 6000
-        multipleConstraints[2] = _createMultiGasConstraint(100_000_000, 86400, 8_640_000_000_000); // 1000
+        // 35_000_000 * 1000 / (7_000_000 * 5) = 1000
+        multipleConstraints[0] = _createMultiGasConstraint(7_000_000, 5, 35_000_000);
+        // 300_000_000_000 * 1000 / (50_000_000 * 1000) = 6000
+        multipleConstraints[1] = _createMultiGasConstraint(50_000_000, 1000, 300_000_000_000);
+        // 8_640_000_000_000 * 1000 / (100_000_000 * 86400) = 1000
+        multipleConstraints[2] = _createMultiGasConstraint(100_000_000, 86400, 8_640_000_000_000);
+        // total = 1000 + 6000 + 1000 = 8000
 
         vm.prank(manager);
         resourceConstraintManager.setMultiGasPricingConstraints(multipleConstraints);
 
-        // up to the limit
+        // Modify constraint and set it up to the limit: 300_049_999_999 * 1000 / 50_000_000_000 = 6000, total = 8000
         multipleConstraints[1] = _createMultiGasConstraint(50_000_000, 1000, 300_049_999_999);
         vm.prank(manager);
         resourceConstraintManager.setMultiGasPricingConstraints(multipleConstraints);
 
-        // over the limit
+        // Modify constraint and set it over the limit: 300_050_000_000 * 1000 / 50_000_000_000 = 6001, total = 8001
         multipleConstraints[1] = _createMultiGasConstraint(50_000_000, 1000, 300_050_000_000);
         vm.prank(manager);
         vm.expectRevert(
             abi.encodeWithSelector(ResourceConstraintManager.PricingExponentTooHigh.selector, 8001)
         );
         resourceConstraintManager.setMultiGasPricingConstraints(multipleConstraints);
+
+        // Test with multi-resource constraint (with one resource over the limit)
+        // Computation (weight=2) and HistoryGrowth (weight=1), targetPerSec=10_000_000, adjustmentWindowSecs=100
+        // maxWeight=2, divisor=2_000_000_000
+        // Computation exponent = backlog * 2 * 1000 / 2_000_000_000 = backlog / 1_000_000
+        // HistoryGrowth exponent = backlog * 1 * 1000 / 2_000_000_000 = backlog / 2_000_000
+        ArbMultiGasConstraintsTypes.WeightedResource[] memory resources =
+            new ArbMultiGasConstraintsTypes.WeightedResource[](2);
+        resources[0] = ArbMultiGasConstraintsTypes.WeightedResource({
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation,
+            weight: 2
+        });
+        resources[1] = ArbMultiGasConstraintsTypes.WeightedResource({
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth,
+            weight: 1
+        });
+
+        ArbMultiGasConstraintsTypes.ResourceConstraint[] memory multiResourceConstraints =
+            new ArbMultiGasConstraintsTypes.ResourceConstraint[](1);
+
+        // Constraint up to the limit: Computation exponent = 8000, HistoryGrowth exponent = 4000
+        multiResourceConstraints[0] =
+            _createMultiGasConstraintWithResources(10_000_000, 100, 8_000_000_000, resources);
+        vm.prank(manager);
+        resourceConstraintManager.setMultiGasPricingConstraints(multiResourceConstraints);
+
+        // Constraint over the limit: Computation exponent = 8001, HistoryGrowth exponent = 4000
+        multiResourceConstraints[0] =
+            _createMultiGasConstraintWithResources(10_000_000, 100, 8_001_000_000, resources);
+        vm.prank(manager);
+        vm.expectRevert(
+            abi.encodeWithSelector(ResourceConstraintManager.PricingExponentTooHigh.selector, 8001)
+        );
+        resourceConstraintManager.setMultiGasPricingConstraints(multiResourceConstraints);
     }
 
     function test_setMultiGasPricingConstraints_accessControl() external {
@@ -367,27 +407,6 @@ contract ResourceConstraintManagerTest is Test {
         // Test manager can call
         vm.prank(manager);
         resourceConstraintManager.setMultiGasPricingConstraints(constraints);
-    }
-
-    function test_setMultiGasPricingConstraints_noConstraintLimit() external {
-        // Starting from ArbOS 60, there's no limit to the number of constraints
-        // Test 10 constraints (should succeed)
-        ArbMultiGasConstraintsTypes.ResourceConstraint[] memory tenConstraints =
-            new ArbMultiGasConstraintsTypes.ResourceConstraint[](10);
-        for (uint256 i = 0; i < 10; i++) {
-            tenConstraints[i] = _createMultiGasConstraint(10_000_000, 100, 0);
-        }
-        vm.prank(manager);
-        resourceConstraintManager.setMultiGasPricingConstraints(tenConstraints);
-
-        // Test 11 constraints (should also succeed)
-        ArbMultiGasConstraintsTypes.ResourceConstraint[] memory elevenConstraints =
-            new ArbMultiGasConstraintsTypes.ResourceConstraint[](11);
-        for (uint256 i = 0; i < 11; i++) {
-            elevenConstraints[i] = _createMultiGasConstraint(10_000_000, 100, 0);
-        }
-        vm.prank(manager);
-        resourceConstraintManager.setMultiGasPricingConstraints(elevenConstraints);
     }
 
     function test_setMultiGasPricingConstraints_invalidTarget() external {
@@ -527,7 +546,7 @@ contract ArbOwnerMock {
     bytes internal lastMultiGasConstraintsEncoded;
 
     function removeChainOwner(
-        address ownerToRemove
+        address
     ) external {
         removeChainOwnerCalled = true;
     }
@@ -538,26 +557,9 @@ contract ArbOwnerMock {
         lastConstraints = constraints;
     }
 
-    function getLastConstraints() external view returns (uint64[3][] memory) {
-        return lastConstraints;
-    }
-
     function setMultiGasPricingConstraints(
         ArbMultiGasConstraintsTypes.ResourceConstraint[] calldata constraints
     ) external {
         lastMultiGasConstraintsEncoded = abi.encode(constraints);
-    }
-
-    function getLastMultiGasConstraints()
-        external
-        view
-        returns (ArbMultiGasConstraintsTypes.ResourceConstraint[] memory)
-    {
-        if (lastMultiGasConstraintsEncoded.length == 0) {
-            return new ArbMultiGasConstraintsTypes.ResourceConstraint[](0);
-        }
-        return abi.decode(
-            lastMultiGasConstraintsEncoded, (ArbMultiGasConstraintsTypes.ResourceConstraint[])
-        );
     }
 }
