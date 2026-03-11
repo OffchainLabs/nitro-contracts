@@ -69,13 +69,6 @@ async function getPreUpgradeState(l1Rpc: JsonRpcProvider, config: Config) {
 
   const bridge = IERC20Bridge__factory.connect(config.contracts.bridge, l1Rpc)
 
-  const stakerCount = await oldRollupContract.stakerCount()
-
-  const stakers: string[] = []
-  for (let i = BigNumber.from(0); i.lt(stakerCount); i = i.add(1)) {
-    stakers.push(await oldRollupContract.getStakerAddress(i))
-  }
-
   const boxes = await getAllowedInboxesOutboxesFromBridge(
     Bridge__factory.connect(config.contracts.bridge, l1Rpc)
   )
@@ -87,7 +80,6 @@ async function getPreUpgradeState(l1Rpc: JsonRpcProvider, config: Config) {
     : null
 
   return {
-    stakers,
     wasmModuleRoot,
     ...boxes,
     feeToken,
@@ -480,7 +472,7 @@ async function checkBridge(
 async function checkOldRollup(
   params: VerificationParams
 ): Promise<{ oldLatestConfirmedStateHash: string }> {
-  const { l1Rpc, config, preUpgradeState } = params
+  const { l1Rpc, config } = params
 
   const oldRollupContract = IOldRollup__factory.connect(
     config.contracts.rollup,
@@ -497,17 +489,29 @@ async function checkOldRollup(
     throw new Error('Old rollup has stakers')
   }
 
-  // ensure that the old stakers are now zombies
-  for (const staker of preUpgradeState.stakers) {
-    if (!(await oldRollupContract.isZombie(staker))) {
+  // Enumerate zombies from the old rollup to verify stakers were properly
+  // converted by forceRefundStaker during cleanupOldRollup.
+  const zombieAbi = [
+    'function zombieCount() view returns (uint256)',
+    'function zombieAddress(uint256) view returns (address)',
+  ]
+  const oldRollup = new Contract(config.contracts.rollup, zombieAbi, l1Rpc)
+  const zombieCount = (await oldRollup.zombieCount()).toNumber()
+  const zombies: string[] = []
+  for (let i = 0; i < zombieCount; i++) {
+    zombies.push(await oldRollup.zombieAddress(i))
+  }
+
+  for (const zombie of zombies) {
+    if (!(await oldRollupContract.isZombie(zombie))) {
       throw new Error('Old staker is not a zombie')
     }
   }
 
-  if (preUpgradeState.stakers.length > 0) {
+  if (zombies.length > 0) {
     try {
       await oldRollupContract.callStatic.withdrawStakerFunds({
-        from: preUpgradeState.stakers[0],
+        from: zombies[0],
       })
     } catch (e) {
       if (e instanceof Error && e.message.includes('Pausable: paused')) {
@@ -877,9 +881,6 @@ async function main() {
     // ContractReceipt extends TransactionReceipt, adding events parsed from logs.
     // verifyPostUpgrade only uses topics and data from events, which are present on logs.
     const receipt = { ...txReceipt, events: txReceipt.logs } as ContractReceipt
-    // Post-upgrade, staker data has been zeroed by cleanupOldRollup, so stakers
-    // will be an empty array. checkOldRollup handles this: the zombie and
-    // withdrawal checks gate on the stakers list and become no-ops.
     const preUpgradeState = await getPreUpgradeState(l1Rpc, config)
     await verifyPostUpgrade({
       l1Rpc,
