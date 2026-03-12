@@ -859,6 +859,7 @@ describe('Orbit Chain', () => {
         delaySeconds: ethers.BigNumber.from('86400'),
         futureSeconds: ethers.BigNumber.from('3600'),
       },
+      dataCostEstimate: ethers.BigNumber.from('0'),
     }
     const batchPosters = [ethers.Wallet.createRandom().address]
     const batchPosterManager = ethers.Wallet.createRandom().address
@@ -880,6 +881,7 @@ describe('Orbit Chain', () => {
       deployFactoriesToL2,
       maxFeePerGasForRetryables,
       feeTokenPricer: ethers.constants.AddressZero,
+      customOsp: ethers.constants.AddressZero,
     }
 
     /// deploy it
@@ -1111,8 +1113,11 @@ async function _decodeInboxMessage(encodedMsg: string) {
   }
 }
 
-function _uint256ToAddress(uint256: string) {
-  return ethers.utils.getAddress(ethers.utils.hexStripZeros(uint256))
+function _uint256ToAddress(uint256: BigNumber) {
+  const t = uint256.toHexString()
+  const address =
+    '0x' + (t.startsWith('0x') ? t.slice(2) : t).padStart(64, '0').slice(-40)
+  return ethers.utils.getAddress(address)
 }
 
 function _submissionCost(gasPrice: BigNumber) {

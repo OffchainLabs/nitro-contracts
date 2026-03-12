@@ -18,7 +18,7 @@ async function sendTestMessages() {
       await deployments.get('SequencerInboxStub')
     ).address
   )
-  const msgRoot = '../arbitrator/prover/test-cases/rust/data/'
+  const msgRoot = '../crates/prover/test-cases/rust/data/'
   const gasOpts = {
     gasLimit: ethers.utils.hexlify(250000),
     gasPrice: ethers.utils.parseUnits('5', 'gwei'),

@@ -16,19 +16,21 @@
     "GHSA-wprv-93r4-jj2p",
     // Open Zeppelin: Base64 encoding may read from potentially dirty memory
     "GHSA-9vx6-7xxf-x967",
-    // semver vulnerable to Regular Expression Denial of Service
-    "GHSA-c2qf-rxjj-qqgw",
     // Server-Side Request Forgery in axios
     "GHSA-8hc4-vh64-cxmj",
-    // Regular Expression Denial of Service (ReDoS) in micromatch
-    "GHSA-952p-6rrq-rcjv",
     // cookie accepts cookie name, path, and domain with out of bounds characters
     "GHSA-pxg6-pf52-xh8x",
-    // Regular Expression Denial of Service (ReDoS) in cross-spawn
-    "GHSA-3xgq-45jj-v275",
     // axios Requests Vulnerable To Possible SSRF and Credential Leakage via Absolute URL
     "GHSA-jr5f-v2jv-69x6",
-    // Homograph attack allows Unicode lookalike characters to bypass validation
-    "GHSA-xq7p-g2vc-g82p"
+    // tmp allows arbitrary temporary file / directory write via symbolic link `dir` parameter
+    "GHSA-52f5-9888-hmc6",
+    // Axios is vulnerable to DoS attack through lack of data size check
+    "GHSA-4hjh-wcwx-xvwj",
+    // Elliptic Uses a Cryptographic Primitive with a Risky Implementation
+    "GHSA-848j-6mx2-7j84",
+    // jsdiff has a Denial of Service vulnerability in parsePatch and applyPatch
+    "GHSA-73rr-hh4g-fpgx",
+    // Undici has an unbounded decompression chain in HTTP responses on Node.js Fetch API via Content-Encoding leads to resource exhaustion
+    "GHSA-g9mf-h72j-4rw9"
   ]
 }

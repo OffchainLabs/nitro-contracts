@@ -11,6 +11,7 @@ import "../state/MultiStack.sol";
 import "../state/Deserialize.sol";
 import "../state/ModuleMemory.sol";
 import "./IOneStepProver.sol";
+import "./ICustomDAProofValidator.sol";
 import "../bridge/Messages.sol";
 import "../bridge/IBridge.sol";
 
@@ -28,6 +29,18 @@ contract OneStepProverHostIo is IOneStepProver {
     uint256 private constant INBOX_NUM = 2;
     uint64 private constant INBOX_HEADER_LEN = 40;
     uint64 private constant DELAYED_HEADER_LEN = 112 + 1;
+
+    // CustomDA proof format constants
+    uint256 private constant CERT_SIZE_LEN = 8;
+    uint256 private constant CLAIMED_VALID_LEN = 1;
+
+    ICustomDAProofValidator public immutable customDAValidator;
+
+    constructor(
+        address _customDAValidator
+    ) {
+        customDAValidator = ICustomDAProofValidator(_customDAValidator);
+    }
 
     function setLeafByte(bytes32 oldLeaf, uint256 idx, uint8 val) internal pure returns (bytes32) {
         require(idx < LEAF_SIZE, "BAD_SET_LEAF_BYTE_IDX");
@@ -136,7 +149,7 @@ contract OneStepProverHostIo is IOneStepProver {
         bytes memory extracted;
         uint8 proofType = uint8(proof[proofOffset]);
         proofOffset++;
-        // These values must be kept in sync with `arbitrator/arbutil/src/types.rs`
+        // These values must be kept in sync with `crates/arbutil/src/types.rs`
         // and `arbutil/preimage_type.go` (both in the nitro repo).
         if (inst.argumentData == 0) {
             // The machine is asking for a keccak256 preimage
@@ -220,6 +233,32 @@ contract OneStepProverHostIo is IOneStepProver {
 
                 extracted = kzgProof[64:96];
             }
+        } else if (inst.argumentData == 3) {
+            // The machine is asking for a CustomDA preimage
+            require(address(customDAValidator) != address(0), "CUSTOM_DA_VALIDATOR_NOT_SUPPORTED");
+            require(proofType == 0, "UNKNOWN_PREIMAGE_PROOF");
+
+            bytes calldata customProof = proof[proofOffset:];
+
+            // Extract certificate size and certificate
+            require(customProof.length >= CERT_SIZE_LEN, "CUSTOM_DA_PROOF_TOO_SHORT");
+
+            uint256 certSize = uint256(uint64(bytes8(customProof[0:CERT_SIZE_LEN])));
+
+            require(customProof.length >= CERT_SIZE_LEN + certSize, "PROOF_TOO_SHORT_FOR_CERT");
+
+            // Extract and validate certificate
+            bytes calldata certificate = customProof[CERT_SIZE_LEN:CERT_SIZE_LEN + certSize];
+
+            // Verify this is the certificate the machine requested
+            require(keccak256(certificate) == leafContents, "WRONG_CERTIFICATE_HASH");
+
+            // Delegate to custom validator with proven values and full proof
+            extracted =
+                customDAValidator.validateReadPreimage(leafContents, preimageOffset, customProof);
+
+            // Ensure we got a valid response
+            require(extracted.length > 0 && extracted.length <= 32, "INVALID_CUSTOM_DA_RESPONSE");
         } else {
             revert("UNKNOWN_PREIMAGE_TYPE");
         }
@@ -231,6 +270,91 @@ contract OneStepProverHostIo is IOneStepProver {
         mod.moduleMemory.merkleRoot = merkleProof.computeRootFromMemory(leafIdx, leafContents);
 
         mach.valueStack.push(ValueLib.newI32(uint32(extracted.length)));
+    }
+
+    function executeValidatePreimage(
+        ExecutionContext calldata,
+        Machine memory mach,
+        Module memory mod,
+        Instruction calldata,
+        bytes calldata proof
+    ) internal view {
+        uint256 preimageType = mach.valueStack.pop().assumeI32();
+        uint256 ptr = mach.valueStack.pop().assumeI32();
+
+        // Validate preimageType fits in u8 (matches Rust u8::try_from which uses ? to propagate error)
+        if (preimageType > 255) {
+            revert("PREIMAGE_TYPE_OVERFLOW");
+        }
+
+        // Invalid enum values (4-255) return 0 with no memory access
+        // This matches Rust where PreimageType::try_from fails
+        if (preimageType >= 4) {
+            mach.valueStack.push(ValueLib.newI32(0));
+            return;
+        }
+
+        // Validate ptr (matches Rust load_32_byte_aligned check)
+        if (!mod.moduleMemory.isValidLeaf(ptr)) {
+            mach.status = MachineStatus.ERRORED;
+            return;
+        }
+
+        // Prove the hash in memory
+        uint256 leafIdx = ptr / LEAF_SIZE;
+        uint256 proofOffset = 0;
+        bytes32 leafContents;
+        MerkleProof memory merkleProof;
+        (leafContents, proofOffset, merkleProof) =
+            mod.moduleMemory.proveLeaf(leafIdx, proof, proofOffset);
+
+        if (preimageType == 3) {
+            require(address(customDAValidator) != address(0), "CUSTOM_DA_VALIDATOR_NOT_SUPPORTED");
+            if (validateAndCheckCertificate(proof, proofOffset, leafContents)) {
+                mach.valueStack.push(ValueLib.newI32(1));
+            } else {
+                mach.valueStack.push(ValueLib.newI32(0));
+            }
+        } else {
+            // preimageType 0, 1, 2 -> always valid
+            mach.valueStack.push(ValueLib.newI32(1));
+        }
+
+        // Update merkle root
+        mod.moduleMemory.merkleRoot = merkleProof.computeRootFromMemory(leafIdx, leafContents);
+    }
+
+    function validateAndCheckCertificate(
+        bytes calldata proof,
+        uint256 proofOffset,
+        bytes32 expectedHash
+    ) internal view returns (bool) {
+        // Proof format is: [certSize(8), certificate, claimedValid(1), validityProof...]
+        uint256 certSize = uint256(uint64(bytes8(proof[proofOffset:proofOffset + CERT_SIZE_LEN])));
+
+        require(
+            proof.length >= proofOffset + CERT_SIZE_LEN + certSize + CLAIMED_VALID_LEN,
+            "PROOF_TOO_SHORT"
+        );
+
+        bytes calldata certificate =
+            proof[proofOffset + CERT_SIZE_LEN:proofOffset + CERT_SIZE_LEN + certSize];
+
+        // Verify this is the certificate the machine requested
+        require(keccak256(certificate) == expectedHash, "WRONG_CERTIFICATE_HASH");
+
+        bool claimedValid = uint8(proof[proofOffset + CERT_SIZE_LEN + certSize]) != 0;
+
+        // Pass the full proof segment to validateCertificate
+        bytes calldata validationProof = proof[proofOffset:];
+
+        // Check actual validity and verify claims match
+        bool isValid = customDAValidator.validateCertificate(validationProof);
+        require(
+            isValid == claimedValid,
+            isValid ? "CLAIMED_INVALID_BUT_VALID" : "CLAIMED_VALID_BUT_INVALID"
+        );
+        return isValid;
     }
 
     function validateSequencerInbox(
@@ -319,10 +443,8 @@ contract OneStepProverHostIo is IOneStepProver {
             require(proof[proofOffset] == 0, "UNKNOWN_INBOX_PROOF");
             proofOffset++;
 
-            function(ExecutionContext calldata, uint64, bytes calldata)
-                internal
-                view
-                returns (bool) inboxValidate;
+            function(ExecutionContext calldata, uint64, bytes calldata) internal view returns (bool)
+                inboxValidate;
 
             bool success;
             if (inst.argumentData == Instructions.INBOX_INDEX_SEQUENCER) {
@@ -584,19 +706,17 @@ contract OneStepProverHostIo is IOneStepProver {
 
         uint16 opcode = inst.opcode;
 
-        function(
-            ExecutionContext calldata,
-            Machine memory,
-            Module memory,
-            Instruction calldata,
-            bytes calldata
-        ) internal view impl;
+        function(ExecutionContext calldata, Machine memory, Module memory, Instruction calldata, bytes calldata)
+            internal
+            view impl;
 
         if (
             opcode >= Instructions.GET_GLOBAL_STATE_BYTES32
                 && opcode <= Instructions.SET_GLOBAL_STATE_U64
         ) {
             impl = executeGlobalStateAccess;
+        } else if (opcode == Instructions.VALIDATE_CERTIFICATE) {
+            impl = executeValidatePreimage;
         } else if (opcode == Instructions.READ_PRE_IMAGE) {
             impl = executeReadPreImage;
         } else if (opcode == Instructions.READ_INBOX_MESSAGE) {

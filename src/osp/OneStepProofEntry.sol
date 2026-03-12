@@ -184,7 +184,8 @@ contract OneStepProofEntry is IOneStepProofEntry {
             (
                 opcode >= Instructions.GET_GLOBAL_STATE_BYTES32
                     && opcode <= Instructions.SET_GLOBAL_STATE_U64
-            ) || (opcode >= Instructions.READ_PRE_IMAGE && opcode <= Instructions.UNLINK_MODULE)
+            )
+                || (opcode >= Instructions.VALIDATE_CERTIFICATE && opcode <= Instructions.UNLINK_MODULE)
                 || (opcode >= Instructions.NEW_COTHREAD && opcode <= Instructions.SWITCH_COTHREAD)
         ) {
             prover = proverHostIo;
