@@ -131,7 +131,7 @@ contract ResourceConstraintManager is AccessControlEnumerable {
             {
                 // Check for duplicate resource kinds within this constraint
                 // Using bit comparison for efficient calculation (supports up to 256 kinds)
-                uint256 seenKinds;
+                uint256 seenKinds = 0;
                 uint256 nResources = constraints[i].resources.length;
                 for (uint256 j = 0; j < nResources; ++j) {
                     uint8 kind = uint8(constraints[i].resources[j].resource);
