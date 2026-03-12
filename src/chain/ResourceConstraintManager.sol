@@ -29,6 +29,7 @@ contract ResourceConstraintManager is AccessControlEnumerable {
         uint64 gasTargetPerSec, uint64 adjustmentWindowSecs, uint64 startingBacklogValue
     );
     error PricingExponentTooHigh(uint64 pricingExponent);
+    error DuplicateResourceKind(uint8 resourceKind);
     error NotExpired();
 
     constructor(address admin, address manager, uint256 _expiryTimestamp) {
@@ -126,6 +127,25 @@ contract ResourceConstraintManager is AccessControlEnumerable {
                     || adjustmentWindowSecs > MAX_ADJUSTMENT_WINDOW_SECS
             ) {
                 revert InvalidPeriod(targetPerSec, adjustmentWindowSecs, startingBacklogValue);
+            }
+            {
+                // Check for duplicate resource kinds within this constraint
+                // Using bit comparison for efficient calculation (supports up to 256 kinds)
+                uint256 seenKinds;
+                uint256 nResources = constraints[i].resources.length;
+                for (uint256 j = 0; j < nResources; ++j) {
+                    uint8 kind = uint8(constraints[i].resources[j].resource);
+                    // Shifting 1 by the resource kind value
+                    // (example: kind = 1, kindBit = ...0010)
+                    // (example: kind = 2, kindBit = ...0100)
+                    uint256 kindBit = 1 << kind;
+                    // Bitwise AND comparison
+                    if ((seenKinds & kindBit) != 0) {
+                        revert DuplicateResourceKind(kind);
+                    }
+                    // Bitwise OR to add kind to seenKinds
+                    seenKinds = seenKinds | kindBit;
+                }
             }
             if (startingBacklogValue > 0) {
                 // Find the maximum weight among all resources in this constraint
