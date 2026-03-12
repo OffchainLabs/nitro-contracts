@@ -64,6 +64,9 @@ ignore = []
 contract_new_lines = false
 sort_imports = false
 
+[lint]
+lint_on_build = false
+
 [fuzz]
 runs = 1000
 
