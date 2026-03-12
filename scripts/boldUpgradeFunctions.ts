@@ -87,15 +87,9 @@ export const populateLookup = async (
   let latestConfirmedLog
   let toBlock = await wallet.provider!.getBlockNumber()
   const numBatches = parseInt(process.env.NODECREATED_LOG_LOOKUP_BATCH_COUNT || '100')
-  if (isNaN(numBatches) || numBatches <= 0) {
-    throw new Error('NODECREATED_LOG_LOOKUP_BATCH_COUNT must be a positive integer')
-  }
   const batchSize = parseInt(
     process.env.NODECREATED_LOG_LOOKUP_BATCH_SIZE || '10000'
   )
-  if (isNaN(batchSize) || batchSize <= 0) {
-    throw new Error('NODECREATED_LOG_LOOKUP_BATCH_SIZE must be a positive integer')
-  }
   for (let i = 0; i < numBatches; i++) {
     latestConfirmedLog = await wallet.provider!.getLogs({
       address: rollupAddr,
