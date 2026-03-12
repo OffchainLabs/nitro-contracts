@@ -24,6 +24,7 @@ libs = ['node_modules', 'lib']
 cache_path = 'forge-cache/yul'
 remappings = []
 auto_detect_remappings = false
+
 [fmt]
 line_length = 100
 tab_width = 4

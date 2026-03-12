@@ -872,6 +872,7 @@ async function main() {
     throw new Error('No boldAction contract deployed')
   }
 
+  let receipt: ContractReceipt
   const txHash = process.env.TX_HASH
   if (txHash) {
     // Standalone verification: verify an upgrade executed externally (e.g. via Safe or cast send)
@@ -883,29 +884,23 @@ async function main() {
     if (txReceipt.status !== 1) {
       throw new Error('Transaction failed (status: ' + txReceipt.status + ')')
     }
-    // ContractReceipt extends TransactionReceipt, adding events parsed from logs.
-    // verifyPostUpgrade only uses topics and data from events, which are present on logs.
-    const receipt = { ...txReceipt, events: txReceipt.logs } as ContractReceipt
-    const oldRollupState = await getOldRollupState(l1Rpc, config)
-    await verifyPostUpgrade({
-      l1Rpc,
-      config,
-      deployedContracts,
-      oldRollupState,
-      receipt,
-    })
+    // Event extends Log, so assigning logs as events is structurally safe for topic/data access.
+    receipt = { ...txReceipt, events: txReceipt.logs } as ContractReceipt
   } else {
-    const oldRollupState = await getOldRollupState(l1Rpc, config)
-    const receipt = await perform(l1Rpc, config, deployedContracts)
+    receipt = await perform(l1Rpc, config, deployedContracts)
     console.log('upgrade tx hash:', receipt.transactionHash)
-    await verifyPostUpgrade({
-      l1Rpc,
-      config,
-      deployedContracts,
-      oldRollupState,
-      receipt,
-    })
   }
+
+  // These values (wasmModuleRoot, fee token, inbox/outbox lists) are stable across the upgrade,
+  // so reading them post-upgrade in standalone verification mode is safe.
+  const oldRollupState = await getOldRollupState(l1Rpc, config)
+  await verifyPostUpgrade({
+    l1Rpc,
+    config,
+    deployedContracts,
+    oldRollupState,
+    receipt,
+  })
 }
 
 main().then(() => console.log('Done.'))

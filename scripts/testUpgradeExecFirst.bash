@@ -6,10 +6,15 @@ set -eo pipefail
 #
 # Flow:
 #   1. bold-prepare
-#   2. bold-local-execute (non-executor key -> captures calldata, does not execute)
+#   2. bold-local-execute (ANVILFORK unset + non-executor key -> captures calldata only)
 #   3. bold-populate-lookup (happens AFTER calldata generation)
 #   4. cast send (impersonate executor, send captured calldata)
 #   5. bold-verify (standalone verification via TX_HASH)
+
+if [[ -z "$L1_RPC" ]]; then
+  echo "ERROR: L1_RPC environment variable is not set"
+  exit 1
+fi
 
 # Arb1 DAO L1 Timelock (executor role on the UpgradeExecutor)
 EXECUTOR="0xE6841D92B0C345144506576eC13ECf5103aC7f49"
@@ -20,41 +25,16 @@ ANVIL_RPC="http://localhost:8545"
 
 # Fork before the BOLD upgrade (block 21830860) so the rollup is still active
 FORK_BLOCK=${FORK_BLOCK:-21830000}
-anvil --fork-url $L1_RPC --fork-block-number $FORK_BLOCK > /dev/null &
+anvil --fork-url "$L1_RPC" --fork-block-number $FORK_BLOCK > /dev/null &
 anvil_pid=$!
 trap 'kill $anvil_pid' EXIT
 
 # Give Anvil time to start before seeding templates
 sleep 2
 
-# Seed BOLD template contracts onto the fork.
-# Templates were deployed on mainnet after the BOLD upgrade via CREATE2, so they
-# don't exist at the pre-upgrade fork block. Copy bytecode from current mainnet.
-TEMPLATES=(
-  0x677ECf96DBFeE1deFbDe8D2E905A39f73Aa27B89  # eth.bridge
-  0x93dCfC7E658050c80700a6eB7FAF12efaCF5BF76  # eth.sequencerInbox
-  0xE4bE5495054fE4fa4Ea5972219484984927681E3  # eth.delayBufferableSequencerInbox
-  0x9C4ce5EF20F831F4e7fEcf58aAA0Cda8d3091c35  # eth.inbox
-  0x7b6784fbd233EDB47E11eA4e7205fC4229447662  # eth.rollupEventInbox
-  0x186267690cb723d72A7EDBC002476E23D694cB33  # eth.outbox
-  0x81be1Bf06cB9B23e8EEDa3145c3366A912DAD9D6  # erc20.bridge
-  0xe154a8d54e39Cd8edaEA85870Ea349B82B0E4eF4  # erc20.sequencerInbox
-  0x6F2E7F9B5Db5e4e9B5B1181D2Eb0e4972500C324  # erc20.delayBufferableSequencerInbox
-  0xD210b64eD9D47Ef8Acf1A3284722FcC7Fc6A1f4e  # erc20.inbox
-  0x0d079b22B0B4083b9b0bDc62Bf1a4EAF4a95bDEe  # erc20.rollupEventInbox
-  0x17E0C5fE0dFF2AE4cfC9E96d9Ccd112DaF5c0386  # erc20.outbox
-  0xA4892FFE3Deab25337D7D1A5b94b35dABa255451  # rollupUserLogic
-  0x16aD566aaa05fe6977A033DE2472c05C84CAB724  # rollupAdminLogic
-  0x93069fFd7730733eCfd57A0D2D528CF686248524  # challengeManagerTemplate
-  0x91cB57F200Bd5F897E41C164425Ab4DB0991A64f  # osp
-  0x43698080f40dB54DEE6871540037b8AB8fD0AB44  # rollupCreator
-)
-echo "seeding ${#TEMPLATES[@]} BOLD template contracts..."
-for addr in "${TEMPLATES[@]}"; do
-  code=$(cast code "$addr" --rpc-url "$L1_RPC")
-  cast rpc anvil_setCode "$addr" "$code" --rpc-url "$ANVIL_RPC" > /dev/null
-done
-echo "templates seeded"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export ANVIL_RPC
+source "$SCRIPT_DIR/seed-bold-templates.bash"
 
 # Step 1: Deploy BOLDUpgradeAction
 yarn script:bold-prepare
@@ -71,6 +51,10 @@ rm -f execute.log
 
 if [[ -z "$calldata" ]]; then
   echo "Failed to capture calldata from bold-local-execute"
+  exit 1
+fi
+if [[ -z "$upgrade_executor" ]]; then
+  echo "Failed to capture upgrade executor address from bold-local-execute"
   exit 1
 fi
 echo "captured calldata for upgrade executor $upgrade_executor"
