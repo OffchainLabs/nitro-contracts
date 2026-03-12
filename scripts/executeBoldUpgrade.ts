@@ -47,7 +47,7 @@ type VerificationParams = {
   l1Rpc: JsonRpcProvider
   config: Config
   deployedContracts: DeployedContracts
-  preUpgradeState: UnwrapPromise<ReturnType<typeof getPreUpgradeState>>
+  oldRollupState: UnwrapPromise<ReturnType<typeof getOldRollupState>>
   receipt: ContractReceipt
 }
 
@@ -59,7 +59,7 @@ const executors: { [key: string]: string } = {
   local: '0x5E1497dD1f08C87b2d8FE23e9AAB6c1De833D927',
 }
 
-async function getPreUpgradeState(l1Rpc: JsonRpcProvider, config: Config) {
+async function getOldRollupState(l1Rpc: JsonRpcProvider, config: Config) {
   const oldRollupContract = IOldRollup__factory.connect(
     config.contracts.rollup,
     l1Rpc
@@ -268,7 +268,7 @@ async function checkSequencerInbox(
   params: VerificationParams,
   newRollup: RollupUserLogic
 ) {
-  const { l1Rpc, config, deployedContracts, preUpgradeState } = params
+  const { l1Rpc, config, deployedContracts, oldRollupState } = params
 
   const seqInboxContract = SequencerInbox__factory.connect(
     config.contracts.sequencerInbox,
@@ -278,7 +278,7 @@ async function checkSequencerInbox(
   // make sure fee token-ness is correct
   if (
     (await seqInboxContract.isUsingFeeToken()) !==
-    (preUpgradeState.feeToken !== null)
+    (oldRollupState.feeToken !== null)
   ) {
     throw new Error('SequencerInbox isUsingFeeToken does not match')
   }
@@ -320,7 +320,7 @@ async function checkSequencerInbox(
 }
 
 async function checkInbox(params: VerificationParams) {
-  const { l1Rpc, config, deployedContracts, preUpgradeState } = params
+  const { l1Rpc, config, deployedContracts, oldRollupState } = params
 
   // make sure it's an ERC20Inbox if we're using a fee token
   const inboxContract = IERC20Inbox__factory.connect(
@@ -331,10 +331,10 @@ async function checkInbox(params: VerificationParams) {
     100,
     100
   )
-  if (preUpgradeState.feeToken && !submissionFee.eq(0)) {
+  if (oldRollupState.feeToken && !submissionFee.eq(0)) {
     throw new Error('Inbox is not an ERC20Inbox')
   }
-  if (!preUpgradeState.feeToken && submissionFee.eq(0)) {
+  if (!oldRollupState.feeToken && submissionFee.eq(0)) {
     throw new Error('Inbox is an ERC20Inbox')
   }
 
@@ -376,7 +376,7 @@ async function checkOutbox(
   params: VerificationParams,
   newRollup: RollupUserLogic
 ) {
-  const { l1Rpc, config, deployedContracts, preUpgradeState } = params
+  const { l1Rpc, config, deployedContracts, oldRollupState } = params
 
   const outboxContract = Outbox__factory.connect(config.contracts.outbox, l1Rpc)
 
@@ -389,10 +389,10 @@ async function checkOutbox(
     )
     // will revert if not an ERC20Outbox
     const withdrawalAmt = await erc20Outbox.l2ToL1WithdrawalAmount()
-    feeTokenValid = preUpgradeState.feeToken !== null
+    feeTokenValid = oldRollupState.feeToken !== null
   } catch (e: any) {
     if (e.code !== 'CALL_EXCEPTION') throw e
-    feeTokenValid = preUpgradeState.feeToken === null
+    feeTokenValid = oldRollupState.feeToken === null
   }
 
   if (!feeTokenValid) {
@@ -417,7 +417,7 @@ async function checkBridge(
   params: VerificationParams,
   newRollup: RollupUserLogic
 ) {
-  const { l1Rpc, config, deployedContracts, preUpgradeState } = params
+  const { l1Rpc, config, deployedContracts, oldRollupState } = params
   const bridgeContract = Bridge__factory.connect(config.contracts.bridge, l1Rpc)
 
   // make sure the fee token was preserved
@@ -428,12 +428,12 @@ async function checkBridge(
       l1Rpc
     )
     const feeToken = await erc20Bridge.nativeToken()
-    if (feeToken !== preUpgradeState.feeToken) {
+    if (feeToken !== oldRollupState.feeToken) {
       feeTokenValid = false
     }
   } catch (e: any) {
     if (e.code !== 'CALL_EXCEPTION') throw e
-    feeTokenValid = preUpgradeState.feeToken === null
+    feeTokenValid = oldRollupState.feeToken === null
   }
 
   if (!feeTokenValid) {
@@ -457,10 +457,10 @@ async function checkBridge(
   const { inboxes, outboxes } = await getAllowedInboxesOutboxesFromBridge(
     bridgeContract
   )
-  if (JSON.stringify(inboxes) !== JSON.stringify(preUpgradeState.inboxes)) {
+  if (JSON.stringify(inboxes) !== JSON.stringify(oldRollupState.inboxes)) {
     throw new Error('Allowed inbox list has changed')
   }
-  if (JSON.stringify(outboxes) !== JSON.stringify(preUpgradeState.outboxes)) {
+  if (JSON.stringify(outboxes) !== JSON.stringify(oldRollupState.outboxes)) {
     throw new Error('Allowed outbox list has changed')
   }
 
@@ -549,7 +549,7 @@ async function checkInitialAssertion(
   const latestConfirmed = await newRollup.latestConfirmed()
 
   await newRollup.validateConfig(latestConfirmed, {
-    wasmModuleRoot: params.preUpgradeState.wasmModuleRoot,
+    wasmModuleRoot: params.oldRollupState.wasmModuleRoot,
     requiredStake: config.settings.stakeAmt,
     challengeManager: newEdgeChallengeManager.address,
     confirmPeriodBlocks: config.settings.confirmPeriodBlocks,
@@ -567,7 +567,7 @@ async function checkNewRollup(
   newEdgeChallengeManager: EdgeChallengeManager,
   currentInboxCount: BigNumberish
 ) {
-  const { config, l1Rpc, preUpgradeState } = params
+  const { config, l1Rpc, oldRollupState } = params
 
   // check bridge
   if (
@@ -612,7 +612,7 @@ async function checkNewRollup(
   }
 
   // wasmModuleRoot
-  if ((await newRollup.wasmModuleRoot()) !== preUpgradeState.wasmModuleRoot) {
+  if ((await newRollup.wasmModuleRoot()) !== oldRollupState.wasmModuleRoot) {
     throw new Error('Wasm module root does not match')
   }
 
@@ -886,23 +886,23 @@ async function main() {
     // ContractReceipt extends TransactionReceipt, adding events parsed from logs.
     // verifyPostUpgrade only uses topics and data from events, which are present on logs.
     const receipt = { ...txReceipt, events: txReceipt.logs } as ContractReceipt
-    const preUpgradeState = await getPreUpgradeState(l1Rpc, config)
+    const oldRollupState = await getOldRollupState(l1Rpc, config)
     await verifyPostUpgrade({
       l1Rpc,
       config,
       deployedContracts,
-      preUpgradeState,
+      oldRollupState,
       receipt,
     })
   } else {
-    const preUpgradeState = await getPreUpgradeState(l1Rpc, config)
+    const oldRollupState = await getOldRollupState(l1Rpc, config)
     const receipt = await perform(l1Rpc, config, deployedContracts)
     console.log('upgrade tx hash:', receipt.transactionHash)
     await verifyPostUpgrade({
       l1Rpc,
       config,
       deployedContracts,
-      preUpgradeState,
+      oldRollupState,
       receipt,
     })
   }
