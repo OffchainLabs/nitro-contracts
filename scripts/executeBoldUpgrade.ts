@@ -491,6 +491,8 @@ async function checkOldRollup(
 
   // Enumerate zombies from the old rollup to verify stakers were properly
   // converted by forceRefundStaker during cleanupOldRollup.
+  // zombieCount/zombieAddress aren't on the IOldRollup interface (it only
+  // has the subset needed by BOLDUpgradeAction), so we call them via raw ABI.
   const zombieAbi = [
     'function zombieCount() view returns (uint256)',
     'function zombieAddress(uint256) view returns (address)',
