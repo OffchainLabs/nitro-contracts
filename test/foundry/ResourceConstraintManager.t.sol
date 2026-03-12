@@ -301,16 +301,16 @@ contract ResourceConstraintManagerTest is Test {
         multipleConstraints[1] =
             _createMultiGasConstraintWithResources(50_000_000, 1000, 1, resources2);
 
-        // Multiple resources: WasmComputation (weight 5) + L1Calldata (weight 1)
+        // Multiple resources: L1Calldata (weight 1) + WasmComputation (weight 5)
         ArbMultiGasConstraintsTypes.WeightedResource[] memory resources3 =
             new ArbMultiGasConstraintsTypes.WeightedResource[](2);
         resources3[0] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.WasmComputation,
-            weight: 5
-        });
-        resources3[1] = ArbMultiGasConstraintsTypes.WeightedResource({
             resource: ArbMultiGasConstraintsTypes.ResourceKind.L1Calldata,
             weight: 1
+        });
+        resources3[1] = ArbMultiGasConstraintsTypes.WeightedResource({
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.WasmComputation,
+            weight: 5
         });
         multipleConstraints[2] =
             _createMultiGasConstraintWithResources(100_000_000, 86400, 10000, resources3);
@@ -539,6 +539,19 @@ contract ResourceConstraintManagerTest is Test {
         resourceConstraintManager.setMultiGasPricingConstraints(constraints);
     }
 
+    function test_setMultiGasPricingConstraints_emptyResources() external {
+        // Edge case: a constraint with an empty resources array should succeed (no-op constraint)
+        ArbMultiGasConstraintsTypes.WeightedResource[] memory emptyResources =
+            new ArbMultiGasConstraintsTypes.WeightedResource[](0);
+
+        ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraints =
+            new ArbMultiGasConstraintsTypes.ResourceConstraint[](1);
+        constraints[0] = _createMultiGasConstraintWithResources(10_000_000, 100, 1, emptyResources);
+
+        vm.prank(manager);
+        resourceConstraintManager.setMultiGasPricingConstraints(constraints);
+    }
+
     function test_setMultiGasPricingConstraints_duplicateResourceKind() external {
         // Test duplicate Computation (kind=1) in a single constraint
         ArbMultiGasConstraintsTypes.WeightedResource[] memory resources1 =
@@ -554,19 +567,18 @@ contract ResourceConstraintManagerTest is Test {
 
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraints1 =
             new ArbMultiGasConstraintsTypes.ResourceConstraint[](1);
-        constraints1[0] = _createMultiGasConstraintWithResources(10_000_000, 100, 0, resources1);
+        constraints1[0] = _createMultiGasConstraintWithResources(10_000_000, 100, 1, resources1);
 
         vm.prank(manager);
         vm.expectRevert(
             abi.encodeWithSelector(
-                ResourceConstraintManager.DuplicateResourceKind.selector,
+                ResourceConstraintManager.InvalidResources.selector,
                 uint8(ArbMultiGasConstraintsTypes.ResourceKind.Computation)
             )
         );
         resourceConstraintManager.setMultiGasPricingConstraints(constraints1);
-        
+
         // Test duplicate Unknown (kind=0) in a single constraint
-        // Special case in case bitwise operations are modified and the zero value is not handled correctly
         ArbMultiGasConstraintsTypes.WeightedResource[] memory resources2 =
             new ArbMultiGasConstraintsTypes.WeightedResource[](2);
         resources2[0] = ArbMultiGasConstraintsTypes.WeightedResource({
@@ -580,19 +592,19 @@ contract ResourceConstraintManagerTest is Test {
 
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraints2 =
             new ArbMultiGasConstraintsTypes.ResourceConstraint[](1);
-        constraints2[0] = _createMultiGasConstraintWithResources(10_000_000, 100, 0, resources2);
+        constraints2[0] = _createMultiGasConstraintWithResources(10_000_000, 100, 1, resources2);
 
         vm.prank(manager);
         vm.expectRevert(
             abi.encodeWithSelector(
-                ResourceConstraintManager.DuplicateResourceKind.selector,
+                ResourceConstraintManager.InvalidResources.selector,
                 uint8(ArbMultiGasConstraintsTypes.ResourceKind.Unknown)
             )
         );
         resourceConstraintManager.setMultiGasPricingConstraints(constraints2);
 
-        // Test constraint with two pairs of duplicates: [Computation, HistoryGrowth, Computation, HistoryGrowth]
-        // Should revert on the first duplicate found (Computation at index 2)
+        // Test constraint with adjacent duplicates in sorted order: [Computation, HistoryGrowth, HistoryGrowth, StorageAccess]
+        // Should revert on the duplicate HistoryGrowth at index 2
         ArbMultiGasConstraintsTypes.WeightedResource[] memory resources3 =
             new ArbMultiGasConstraintsTypes.WeightedResource[](4);
         resources3[0] = ArbMultiGasConstraintsTypes.WeightedResource({
@@ -601,15 +613,143 @@ contract ResourceConstraintManagerTest is Test {
         });
         resources3[1] = ArbMultiGasConstraintsTypes.WeightedResource({
             resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth,
-            weight: 2
-        });
-        resources3[2] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation,
             weight: 3
         });
-        resources3[3] = ArbMultiGasConstraintsTypes.WeightedResource({
+        resources3[2] = ArbMultiGasConstraintsTypes.WeightedResource({
             resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth,
             weight: 4
+        });
+        resources3[3] = ArbMultiGasConstraintsTypes.WeightedResource({
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.StorageAccess,
+            weight: 2
+        });
+
+        ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraints3 =
+            new ArbMultiGasConstraintsTypes.ResourceConstraint[](1);
+        constraints3[0] = _createMultiGasConstraintWithResources(10_000_000, 100, 1, resources3);
+
+        vm.prank(manager);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ResourceConstraintManager.InvalidResources.selector,
+                uint8(ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth)
+            )
+        );
+        resourceConstraintManager.setMultiGasPricingConstraints(constraints3);
+
+        // Duplicate resources with zero backlog
+        ArbMultiGasConstraintsTypes.WeightedResource[] memory resources4 =
+            new ArbMultiGasConstraintsTypes.WeightedResource[](2);
+        resources4[0] = ArbMultiGasConstraintsTypes.WeightedResource({
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation,
+            weight: 1
+        });
+        resources4[1] = ArbMultiGasConstraintsTypes.WeightedResource({
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation,
+            weight: 2
+        });
+
+        ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraints4 =
+            new ArbMultiGasConstraintsTypes.ResourceConstraint[](1);
+        constraints4[0] = _createMultiGasConstraintWithResources(10_000_000, 100, 0, resources4);
+
+        vm.prank(manager);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ResourceConstraintManager.InvalidResources.selector,
+                uint8(ArbMultiGasConstraintsTypes.ResourceKind.Computation)
+            )
+        );
+        resourceConstraintManager.setMultiGasPricingConstraints(constraints4);
+    }
+
+    function test_setMultiGasPricingConstraints_zeroWeightsWithNonZeroBacklog() external {
+        // Edge case: all-zero weights with non-zero backlog: sorted check runs but no exponent is added
+        ArbMultiGasConstraintsTypes.WeightedResource[] memory resources =
+            new ArbMultiGasConstraintsTypes.WeightedResource[](2);
+        resources[0] = ArbMultiGasConstraintsTypes.WeightedResource({
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation,
+            weight: 0
+        });
+        resources[1] = ArbMultiGasConstraintsTypes.WeightedResource({
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth,
+            weight: 0
+        });
+
+        ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraints =
+            new ArbMultiGasConstraintsTypes.ResourceConstraint[](1);
+        constraints[0] = _createMultiGasConstraintWithResources(10_000_000, 100, 1, resources);
+
+        vm.prank(manager);
+        resourceConstraintManager.setMultiGasPricingConstraints(constraints);
+    }
+
+    function test_setMultiGasPricingConstraints_unsortedResources() external {
+        // Resources not in ascending order by kind should revert
+        // HistoryGrowth (kind=2) before Computation (kind=1)
+        ArbMultiGasConstraintsTypes.WeightedResource[] memory resources =
+            new ArbMultiGasConstraintsTypes.WeightedResource[](2);
+        resources[0] = ArbMultiGasConstraintsTypes.WeightedResource({
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth,
+            weight: 1
+        });
+        resources[1] = ArbMultiGasConstraintsTypes.WeightedResource({
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation,
+            weight: 2
+        });
+
+        ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraints =
+            new ArbMultiGasConstraintsTypes.ResourceConstraint[](1);
+        constraints[0] = _createMultiGasConstraintWithResources(10_000_000, 100, 1, resources);
+
+        vm.prank(manager);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ResourceConstraintManager.InvalidResources.selector,
+                uint8(ArbMultiGasConstraintsTypes.ResourceKind.Computation)
+            )
+        );
+        resourceConstraintManager.setMultiGasPricingConstraints(constraints);
+
+        // Larger unsorted array: [Computation(1), StorageAccess(3), HistoryGrowth(2)]
+        ArbMultiGasConstraintsTypes.WeightedResource[] memory resources2 =
+            new ArbMultiGasConstraintsTypes.WeightedResource[](3);
+        resources2[0] = ArbMultiGasConstraintsTypes.WeightedResource({
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation,
+            weight: 1
+        });
+        resources2[1] = ArbMultiGasConstraintsTypes.WeightedResource({
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.StorageAccess,
+            weight: 2
+        });
+        resources2[2] = ArbMultiGasConstraintsTypes.WeightedResource({
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth,
+            weight: 3
+        });
+
+        ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraints2 =
+            new ArbMultiGasConstraintsTypes.ResourceConstraint[](1);
+        constraints2[0] = _createMultiGasConstraintWithResources(10_000_000, 100, 1, resources2);
+
+        vm.prank(manager);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ResourceConstraintManager.InvalidResources.selector,
+                uint8(ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth)
+            )
+        );
+        resourceConstraintManager.setMultiGasPricingConstraints(constraints2);
+
+        // Unsorted resources should revert even with zero backlog
+        ArbMultiGasConstraintsTypes.WeightedResource[] memory resources3 =
+            new ArbMultiGasConstraintsTypes.WeightedResource[](2);
+        resources3[0] = ArbMultiGasConstraintsTypes.WeightedResource({
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth,
+            weight: 1
+        });
+        resources3[1] = ArbMultiGasConstraintsTypes.WeightedResource({
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation,
+            weight: 2
         });
 
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraints3 =
@@ -619,7 +759,7 @@ contract ResourceConstraintManagerTest is Test {
         vm.prank(manager);
         vm.expectRevert(
             abi.encodeWithSelector(
-                ResourceConstraintManager.DuplicateResourceKind.selector,
+                ResourceConstraintManager.InvalidResources.selector,
                 uint8(ArbMultiGasConstraintsTypes.ResourceKind.Computation)
             )
         );

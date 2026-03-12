@@ -28,8 +28,8 @@ contract ResourceConstraintManager is AccessControlEnumerable {
     error InvalidTarget(
         uint64 gasTargetPerSec, uint64 adjustmentWindowSecs, uint64 startingBacklogValue
     );
+    error InvalidResources(uint8 resourceKind);
     error PricingExponentTooHigh(uint64 pricingExponent);
-    error DuplicateResourceKind(uint8 resourceKind);
     error NotExpired();
 
     constructor(address admin, address manager, uint256 _expiryTimestamp) {
@@ -101,7 +101,7 @@ contract ResourceConstraintManager is AccessControlEnumerable {
     /// @notice Sets the list of multi-gas pricing constraints for the multi-dimensional multi-constraint pricing model.
     ///         See ArbOwner.setMultiGasPricingConstraints interface for more information.
     /// @param constraints Array of ResourceConstraint structs, each containing:
-    ///        - resources: list of (ResourceKind, weight) pairs
+    ///        - resources: list of (ResourceKind, weight) pairs. Must be sorted by ResourceKind and contain no duplicate ResourceKinds. (see ArbMultiGasConstraintsTypes for struct definitions)
     ///        - adjustmentWindowSecs: time window (seconds) over which the price will rise by a factor of e if demand is 2x the target (uint32, seconds)
     ///        - targetPerSec: target gas usage per second for this constraint (uint64, gas/sec)
     ///        - backlog: initial backlog value for this constraint (uint64, gas units)
@@ -129,22 +129,19 @@ contract ResourceConstraintManager is AccessControlEnumerable {
                 revert InvalidPeriod(targetPerSec, adjustmentWindowSecs, startingBacklogValue);
             }
             {
-                // Check for duplicate resource kinds within this constraint
-                // Using bit comparison for efficient calculation (supports up to 256 kinds)
-                uint256 seenKinds = 0;
+                // Check for unsorted or duplicate resource kinds within this constraint
+                // The check is performed here instead of in the loop below (for calculating pricing exponents)
+                // to prevent bypassing the check when setting a starting backlog value of zero
+                // (in that case, nitro would only store the last of the duplicated entries)
+                uint8 lastResourceKind = 0;
                 uint256 nResources = constraints[i].resources.length;
                 for (uint256 j = 0; j < nResources; ++j) {
                     uint8 kind = uint8(constraints[i].resources[j].resource);
-                    // Shifting 1 by the resource kind value
-                    // (example: kind = 1, kindBit = ...0010)
-                    // (example: kind = 2, kindBit = ...0100)
-                    uint256 kindBit = 1 << kind;
-                    // Bitwise AND comparison
-                    if ((seenKinds & kindBit) != 0) {
-                        revert DuplicateResourceKind(kind);
+                    // check that resource kinds are sorted and contain no duplicates
+                    if (j > 0 && kind <= lastResourceKind) {
+                        revert InvalidResources(kind);
                     }
-                    // Bitwise OR to add kind to seenKinds
-                    seenKinds = seenKinds | kindBit;
+                    lastResourceKind = kind;
                 }
             }
             if (startingBacklogValue > 0) {
