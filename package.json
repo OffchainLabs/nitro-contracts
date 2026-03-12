@@ -58,7 +58,7 @@
     "script:bold-prepare": "hardhat run ./scripts/prepareBoldUpgrade.ts",
     "script:bold-populate-lookup": "hardhat run ./scripts/populateLookup.ts",
     "script:bold-local-execute": "hardhat run ./scripts/executeBoldUpgrade.ts",
-    "script:bold-verify": "hardhat run ./scripts/executeBoldUpgrade.ts",
+    "script:bold-verify": "test -n \"$TX_HASH\" || { echo 'TX_HASH must be set for standalone verification'; exit 1; } && hardhat run ./scripts/executeBoldUpgrade.ts",
     "deploy-cachemanager-testnode": "hardhat run scripts/local-deployment/deployCacheManager.ts"
   },
   "dependencies": {

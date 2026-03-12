@@ -1,3 +1,6 @@
+// This script executes the BOLD upgrade and verifies proper execution using the pre and post state.
+// If the TX_HASH environment variable is set, then this script will assume the upgrade has already
+// been executed in that transaction. Pre and post state verification will still be performed in this case.
 import {
   BigNumber,
   BigNumberish,
