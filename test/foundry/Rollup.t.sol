@@ -3,25 +3,25 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import "../src/rollup/RollupProxy.sol";
+import "../../src/rollup/RollupProxy.sol";
 
-import "../src/rollup/RollupCore.sol";
-import "../src/rollup/RollupUserLogic.sol";
-import "../src/rollup/RollupAdminLogic.sol";
-import "../src/rollup/RollupCreator.sol";
+import "../../src/rollup/RollupCore.sol";
+import "../../src/rollup/RollupUserLogic.sol";
+import "../../src/rollup/RollupAdminLogic.sol";
+import "../../src/rollup/RollupCreator.sol";
 
-import "../src/osp/OneStepProver0.sol";
-import "../src/osp/OneStepProverMemory.sol";
-import "../src/osp/OneStepProverMath.sol";
-import "../src/osp/OneStepProverHostIo.sol";
-import "../src/osp/OneStepProofEntry.sol";
-import "../src/challengeV2/EdgeChallengeManager.sol";
-import "./challengeV2/Utils.sol";
+import "../../src/osp/OneStepProver0.sol";
+import "../../src/osp/OneStepProverMemory.sol";
+import "../../src/osp/OneStepProverMath.sol";
+import "../../src/osp/OneStepProverHostIo.sol";
+import "../../src/osp/OneStepProofEntry.sol";
+import "../../src/challengeV2/EdgeChallengeManager.sol";
+import "./../challengeV2/Utils.sol";
 
-import "../src/libraries/Error.sol";
+import "../../src/libraries/Error.sol";
 
-import "../src/mocks/TestWETH9.sol";
-import "../src/mocks/UpgradeExecutorMock.sol";
+import "../../src/mocks/TestWETH9.sol";
+import "../../src/mocks/UpgradeExecutorMock.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts-upgradeable/utils/Create2Upgradeable.sol";
@@ -111,20 +111,19 @@ contract RollupTest is Test {
         OneStepProver0 oneStepProver = new OneStepProver0();
         OneStepProverMemory oneStepProverMemory = new OneStepProverMemory();
         OneStepProverMath oneStepProverMath = new OneStepProverMath();
-        OneStepProverHostIo oneStepProverHostIo = new OneStepProverHostIo();
+        OneStepProverHostIo oneStepProverHostIo = new OneStepProverHostIo(address(0));
         OneStepProofEntry oneStepProofEntry = new OneStepProofEntry(
             oneStepProver, oneStepProverMemory, oneStepProverMath, oneStepProverHostIo
         );
         EdgeChallengeManager edgeChallengeManager = new EdgeChallengeManager();
 
         BridgeCreator bridgeCreator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
-        RollupCreator rollupCreator = new RollupCreator();
         RollupAdminLogic rollupAdminLogicImpl = new RollupAdminLogic();
         RollupUserLogic rollupUserLogicImpl = new RollupUserLogic();
         DeployHelper deployHelper = new DeployHelper();
         IUpgradeExecutor upgradeExecutorLogic = new UpgradeExecutorMock();
-
-        rollupCreator.setTemplates(
+        RollupCreator rollupCreator = new RollupCreator(
+            address(this),
             bridgeCreator,
             oneStepProofEntry,
             edgeChallengeManager,
@@ -176,7 +175,8 @@ contract RollupTest is Test {
             anyTrustFastConfirmer: anyTrustFastConfirmer,
             numBigStepLevel: 3,
             challengeGracePeriodBlocks: CHALLENGE_GRACE_PERIOD_BLOCKS,
-            bufferConfig: BufferConfig({threshold: 600, max: 14400, replenishRateInBasis: 500})
+            bufferConfig: BufferConfig({threshold: 600, max: 14400, replenishRateInBasis: 500}),
+            dataCostEstimate: 0
         });
 
         vm.expectEmit(false, false, false, false);
@@ -203,7 +203,8 @@ contract RollupTest is Test {
             maxFeePerGasForRetryables: 0,
             batchPosters: new address[](0),
             batchPosterManager: address(0),
-            feeTokenPricer: IFeeTokenPricer(address(0))
+            feeTokenPricer: IFeeTokenPricer(address(0)),
+            customOsp: address(0)
         });
 
         address rollupAddr = rollupCreator.createRollup(param);
@@ -1619,21 +1620,171 @@ contract RollupTest is Test {
         );
     }
 
-    // do this last as it changes the base stake
-    function testBaseStake() public {
+    function testIncreaseBaseStake() public {
         assertEq(adminRollup.baseStake(), BASE_STAKE, "Invalid before base stake");
 
-        // increase base stake amount
-        vm.startPrank(upgradeExecutorAddr);
-        adminRollup.setBaseStake(BASE_STAKE + 1);
+        vm.expectRevert();
+        adminRollup.increaseBaseStake(BASE_STAKE + 1);
+
+        vm.expectRevert("BASE_STAKE_NOT_INCREASED");
+        vm.prank(upgradeExecutorAddr);
+        adminRollup.increaseBaseStake(BASE_STAKE - 1);
+
+        vm.expectRevert("BASE_STAKE_NOT_INCREASED");
+        vm.prank(upgradeExecutorAddr);
+        adminRollup.increaseBaseStake(BASE_STAKE);
+
+        vm.prank(upgradeExecutorAddr);
+        adminRollup.increaseBaseStake(BASE_STAKE + 1);
         assertEq(adminRollup.baseStake(), BASE_STAKE + 1, "Invalid after increase base stake");
+    }
 
-        // set it to be the same
-        vm.expectRevert("BASE_STAKE_MUST_BE_INCREASED");
-        adminRollup.setBaseStake(BASE_STAKE + 1);
+    function testDecreaseBaseStake() public {
+        assertEq(adminRollup.baseStake(), BASE_STAKE, "Invalid before base stake");
 
-        // set it to be less
-        vm.expectRevert("BASE_STAKE_MUST_BE_INCREASED");
-        adminRollup.setBaseStake(BASE_STAKE);
+        vm.expectRevert();
+        adminRollup.decreaseBaseStake(BASE_STAKE - 1, 0);
+
+        vm.expectRevert("BASE_STAKE_NOT_DECREASED");
+        vm.prank(upgradeExecutorAddr);
+        adminRollup.decreaseBaseStake(BASE_STAKE + 1, 0);
+
+        vm.expectRevert("BASE_STAKE_NOT_DECREASED");
+        vm.prank(upgradeExecutorAddr);
+        adminRollup.decreaseBaseStake(BASE_STAKE, 0);
+
+        vm.startPrank(upgradeExecutorAddr);
+        adminRollup.setValidatorWhitelistDisabled(true);
+        vm.expectRevert("DECREASE_ONLY_FOR_PERMISSIONED_CHAINS");
+        adminRollup.decreaseBaseStake(BASE_STAKE - 1, 0);
+        adminRollup.setValidatorWhitelistDisabled(false);
+        vm.stopPrank();
+
+        vm.expectRevert("PENDING_ASSERTION_NOT_UPDATED");
+        vm.prank(upgradeExecutorAddr);
+        adminRollup.decreaseBaseStake(BASE_STAKE - 1, 0);
+
+        (bytes32 assertionHash1,,) = testSuccessCreateAssertion();
+        vm.prank(upgradeExecutorAddr);
+        vm.expectRevert("EXPIRED_CONFIG_HASH");
+        adminRollup.decreaseBaseStake(BASE_STAKE - 1, 0);
+
+        uint64 nextInboxPosition = uint64(userRollup.bridge().sequencerMessageCount());
+        vm.prank(upgradeExecutorAddr);
+        adminRollup.decreaseBaseStake(BASE_STAKE - 1, nextInboxPosition);
+
+        uint64 inboxcount = uint64(_createNewBatch());
+        AssertionState memory beforeState;
+        beforeState.machineStatus = MachineStatus.FINISHED;
+        beforeState.globalState.bytes32Vals[0] = FIRST_ASSERTION_BLOCKHASH; // blockhash
+        beforeState.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // sendroot
+        beforeState.globalState.u64Vals[0] = 1; // inbox count
+        beforeState.globalState.u64Vals[1] = 0; // pos in msg
+        AssertionState memory afterState;
+        afterState.machineStatus = MachineStatus.FINISHED;
+        afterState.globalState.bytes32Vals[0] = FIRST_ASSERTION_BLOCKHASH; // blockhash
+        afterState.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // sendroot
+        afterState.globalState.u64Vals[0] = 2; // inbox count
+        afterState.globalState.u64Vals[1] = 0; // pos in msg
+
+        AssertionState memory emptyState = AssertionState(
+            GlobalState([bytes32(0), bytes32(0)], [uint64(0), uint64(0)]),
+            MachineStatus.FINISHED,
+            bytes32(0)
+        );
+        // genesis hash
+        bytes32 genesisAssertionHash = RollupLib.assertionHash({
+            parentAssertionHash: bytes32(0),
+            afterState: emptyState,
+            inboxAcc: bytes32(0)
+        });
+
+        bytes32 expectedAssertionHash = RollupLib.assertionHash({
+            parentAssertionHash: assertionHash1,
+            afterState: afterState,
+            inboxAcc: userRollup.bridge().sequencerInboxAccs(1)
+        });
+
+        bytes32 beforeInboxAcc = userRollup.bridge().sequencerInboxAccs(0);
+        vm.roll(block.number + userRollup.minimumAssertionPeriod());
+
+        // test that we can create a new assertion after stake reduction
+        vm.prank(validator2);
+        userRollup.newStakeOnNewAssertion({
+            tokenAmount: BASE_STAKE - 1,
+            assertion: AssertionInputs({
+                beforeStateData: BeforeStateData({
+                    sequencerBatchAcc: beforeInboxAcc,
+                    prevPrevAssertionHash: genesisAssertionHash,
+                    configData: ConfigData({
+                        wasmModuleRoot: WASM_MODULE_ROOT,
+                        requiredStake: BASE_STAKE - 1,
+                        challengeManager: address(challengeManager),
+                        confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
+                        nextInboxPosition: 2
+                    })
+                }),
+                beforeState: beforeState,
+                afterState: afterState
+            }),
+            expectedAssertionHash: expectedAssertionHash,
+            _withdrawalAddress: validator1Withdrawal
+        });
+
+        createStakeTooLowAssertion();
+    }
+
+    function createStakeTooLowAssertion() public {
+        // trying to create an assertion with the genesis as parent will fail with stake too low
+        AssertionState memory beforeState3;
+        beforeState3.machineStatus = MachineStatus.FINISHED;
+        AssertionState memory afterState3;
+        afterState3.machineStatus = MachineStatus.FINISHED;
+        afterState3.globalState.bytes32Vals[0] =
+            keccak256(abi.encodePacked(FIRST_ASSERTION_BLOCKHASH)); // blockhash
+        afterState3.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // sendroot
+        afterState3.globalState.u64Vals[0] = 1; // inbox count
+        afterState3.globalState.u64Vals[1] = 0; // pos in msg
+
+        bytes32 expectedAssertionHash3 = RollupLib.assertionHash({
+            parentAssertionHash: genesisHash,
+            afterState: afterState3,
+            inboxAcc: userRollup.bridge().sequencerInboxAccs(0)
+        });
+
+        vm.expectRevert("STAKE_TOO_LOW");
+        vm.prank(validator3);
+        userRollup.newStakeOnNewAssertion({
+            tokenAmount: BASE_STAKE,
+            assertion: AssertionInputs({
+                beforeStateData: BeforeStateData({
+                    sequencerBatchAcc: bytes32(0),
+                    prevPrevAssertionHash: bytes32(0),
+                    configData: ConfigData({
+                        wasmModuleRoot: WASM_MODULE_ROOT,
+                        requiredStake: BASE_STAKE,
+                        challengeManager: address(challengeManager),
+                        confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
+                        nextInboxPosition: 1
+                    })
+                }),
+                beforeState: beforeState3,
+                afterState: afterState3
+            }),
+            expectedAssertionHash: expectedAssertionHash3,
+            _withdrawalAddress: validator1Withdrawal
+        });
+    }
+
+    function testCannotDecreaseBaseStakeWithForkedAssertionTree() public {
+        assertEq(adminRollup.baseStake(), BASE_STAKE, "Invalid before base stake");
+
+        SuccessCreateChallengeData memory data = testSuccessCreateChallenge();
+
+        uint64 nextInboxPosition = uint64(userRollup.bridge().sequencerMessageCount());
+        userRollup.getAssertion(data.assertionHash);
+        vm.expectRevert("TOO_MANY_PENDING_STAKERS");
+        vm.prank(upgradeExecutorAddr);
+        adminRollup.decreaseBaseStake(BASE_STAKE - 1, nextInboxPosition);
     }
 }

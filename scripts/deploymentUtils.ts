@@ -12,7 +12,15 @@ import {
   ArbOwnerPublic__factory,
   ArbSys__factory,
   CacheManager__factory,
+  IReader4844__factory,
 } from '../build/types'
+import {
+  concat,
+  getCreate2Address,
+  hexDataLength,
+  keccak256,
+} from 'ethers/lib/utils'
+import { bytecode as Reader4844Bytecode } from '../out/yul/Reader4844.yul/Reader4844.json'
 
 const INIT_CACHE_SIZE = 536870912
 const INIT_DECAY = 10322197911
@@ -27,6 +35,33 @@ export async function verifyContract(
   constructorArguments: any[] = [],
   contractPathAndName?: string // optional
 ): Promise<void> {
+  contractPathAndName = contractPathAndName ?? {
+    Bridge: 'src/bridge/Bridge.sol:Bridge',
+    SequencerInbox: 'src/bridge/SequencerInbox.sol:SequencerInbox',
+    Inbox: 'src/bridge/Inbox.sol:Inbox',
+    Outbox: 'src/bridge/Outbox.sol:Outbox',
+    ERC20Bridge: 'src/bridge/ERC20Bridge.sol:ERC20Bridge',
+    ERC20Inbox: 'src/bridge/ERC20Inbox.sol:ERC20Inbox',
+    ERC20Outbox: 'src/bridge/ERC20Outbox.sol:ERC20Outbox',
+    RollupEventInbox: 'src/rollup/RollupEventInbox.sol:RollupEventInbox',
+    ERC20RollupEventInbox:
+      'src/rollup/ERC20RollupEventInbox.sol:ERC20RollupEventInbox',
+    RollupAdminLogic: 'src/rollup/RollupAdminLogic.sol:RollupAdminLogic',
+    RollupUserLogic: 'src/rollup/RollupUserLogic.sol:RollupUserLogic',
+    BridgeCreator: 'src/rollup/BridgeCreator.sol:BridgeCreator',
+    EdgeChallengeManager:
+      'src/challengeV2/EdgeChallengeManager.sol:EdgeChallengeManager',
+    ValidatorWalletCreator: 'src/rollup/ValidatorWalletCreator.sol:ValidatorWalletCreator',
+    DeployHelper: 'src/rollup/DeployHelper.sol:DeployHelper',
+    RollupProxy: 'src/rollup/RollupProxy.sol:RollupProxy',
+    RollupCreator: 'src/rollup/RollupCreator.sol:RollupCreator',
+    OneStepProver0: 'src/osp/OneStepProver0.sol:OneStepProver0',
+    OneStepProverMemory: 'src/osp/OneStepProverMemory.sol:OneStepProverMemory',
+    OneStepProverMath: 'src/osp/OneStepProverMath.sol:OneStepProverMath',
+    OneStepProverHostIo: 'src/osp/OneStepProverHostIo.sol:OneStepProverHostIo',
+    OneStepProofEntry: 'src/osp/OneStepProofEntry.sol:OneStepProofEntry',
+  }[contractName]
+
   try {
     if (process.env.DISABLE_VERIFICATION === 'true') return
     // Define the verification options with possible 'contract' property
@@ -72,6 +107,7 @@ export async function deployContract(
   signer: any,
   constructorArgs: any[] = [],
   verify: boolean = true,
+  useCreate2: boolean = false,
   overrides?: Overrides
 ): Promise<Contract> {
   const factory: ContractFactory = await ethers.getContractFactory(contractName)
@@ -88,10 +124,21 @@ export async function deployContract(
     // deploymentArgs.push(overrides)
   }
 
-  const contract: Contract = await connectedFactory.deploy(...deploymentArgs)
-  await contract.deployTransaction.wait()
+  let contract: Contract
+  if (useCreate2) {
+    contract = await create2(
+      connectedFactory,
+      constructorArgs,
+      ethers.constants.HashZero,
+      overrides
+    )
+  } else {
+    contract = await connectedFactory.deploy(...deploymentArgs)
+    await contract.deployTransaction.wait()
+  }
+
   console.log(
-    `* New ${contractName} created at address: ${
+    `* ${contractName} created at address: ${
       contract.address
     } ${constructorArgs.join(' ')}`
   )
@@ -102,78 +149,209 @@ export async function deployContract(
   return contract
 }
 
-// Deploy upgrade executor from imported bytecode
-export async function deployUpgradeExecutor(signer: any): Promise<Contract> {
-  const upgradeExecutorFac = await ethers.getContractFactory(
-    UpgradeExecutorABI,
-    UpgradeExecutorBytecode
+export async function create2(
+  fac: ContractFactory,
+  deploymentArgs: Array<any>,
+  salt = ethers.constants.HashZero,
+  overrides?: Overrides
+): Promise<Contract> {
+  if (hexDataLength(salt) !== 32) {
+    throw new Error('Salt must be a 32-byte hex string')
+  }
+
+  const DEFAULT_FACTORY = '0x4e59b44847b379578588920cA78FbF26c0B4956C'
+  const FACTORY = process.env.CREATE2_FACTORY ?? DEFAULT_FACTORY
+  if ((await fac.signer.provider!.getCode(FACTORY)).length <= 2) {
+    throw new Error(
+      `Factory contract not deployed at address: ${FACTORY}${
+        FACTORY.toLowerCase() === DEFAULT_FACTORY.toLowerCase()
+          ? '\n(For deployment instructions, see https://github.com/Arachnid/deterministic-deployment-proxy/ )'
+          : ''
+      }`
+    )
+  }
+  const data = fac.getDeployTransaction(...deploymentArgs).data
+  if (!data) {
+    throw new Error('No deploy data found for contract factory')
+  }
+
+  const address = getCreate2Address(FACTORY, salt, keccak256(data))
+  if ((await fac.signer.provider!.getCode(address)).length > 2) {
+    return fac.attach(address)
+  }
+
+  const tx = await fac.signer.sendTransaction({
+    to: FACTORY,
+    data: concat([salt, data]),
+    ...overrides,
+  })
+  await tx.wait(2)
+
+  return fac.attach(address)
+}
+
+export async function deployOneStepProofEntry(
+  signer: any,
+  customDAValidator: string,
+  verify: boolean = true
+): Promise<{
+  prover0: Contract
+  proverMem: Contract
+  proverMath: Contract
+  proverHostIo: Contract
+  osp: Contract
+}> {
+  console.log('Deploying OneStepProver contracts...')
+  const prover0 = await deployContract(
+    'OneStepProver0',
+    signer,
+    [],
+    verify,
+    true
   )
-  const connectedFactory: ContractFactory = upgradeExecutorFac.connect(signer)
-  const upgradeExecutor = await connectedFactory.deploy()
-  return upgradeExecutor
+  const proverMem = await deployContract(
+    'OneStepProverMemory',
+    signer,
+    [],
+    verify,
+    true
+  )
+  const proverMath = await deployContract(
+    'OneStepProverMath',
+    signer,
+    [],
+    verify,
+    true
+  )
+  const proverHostIo = await deployContract(
+    'OneStepProverHostIo',
+    signer,
+    [customDAValidator],
+    verify,
+    true
+  )
+  const osp: Contract = await deployContract(
+    'OneStepProofEntry',
+    signer,
+    [
+      prover0.address,
+      proverMem.address,
+      proverMath.address,
+      proverHostIo.address,
+    ],
+    verify,
+    true
+  )
+
+  return {
+    prover0,
+    proverMem,
+    proverMath,
+    proverHostIo,
+    osp,
+  }
 }
 
 // Function to handle all deployments of core contracts using deployContract function
 export async function deployAllContracts(
   signer: any,
+  factoryOwner: string,
   maxDataSize: BigNumber,
   verify: boolean = true
 ): Promise<Record<string, Contract>> {
   const isOnArb = await _isRunningOnArbitrum(signer)
+  const isOnL1 = await _isRunningOnL1(signer)
 
-  const ethBridge = await deployContract('Bridge', signer, [], verify)
-  const reader4844 = isOnArb
-    ? ethers.constants.AddressZero
-    : (await Toolkit4844.deployReader4844(signer)).address
+  const ethBridge = await deployContract('Bridge', signer, [], verify, true)
+
+  let reader4844: string;
+  if (isOnArb) reader4844 = ethers.constants.AddressZero
+  else if (!isOnL1) reader4844 = '0x000000000000000000000000000000000000dead' // dead address
+  else reader4844 = (
+    await create2(
+      new ContractFactory(
+        IReader4844__factory.abi,
+        Reader4844Bytecode,
+        signer
+      ),
+      [],
+      ethers.constants.HashZero
+    )
+  ).address
 
   const ethSequencerInbox = await deployContract(
     'SequencerInbox',
     signer,
     [maxDataSize, reader4844, false, false],
-    verify
+    verify,
+    true
   )
   const ethSequencerInboxDelayBufferable = await deployContract(
     'SequencerInbox',
     signer,
     [maxDataSize, reader4844, false, true],
-    verify
+    verify,
+    true
   )
 
-  const ethInbox = await deployContract('Inbox', signer, [maxDataSize], verify)
+  const ethInbox = await deployContract(
+    'Inbox',
+    signer,
+    [maxDataSize],
+    verify,
+    true
+  )
   const ethRollupEventInbox = await deployContract(
     'RollupEventInbox',
     signer,
     [],
-    verify
+    verify,
+    true
   )
-  const ethOutbox = await deployContract('Outbox', signer, [], verify)
+  const ethOutbox = await deployContract('Outbox', signer, [], verify, true)
 
-  const erc20Bridge = await deployContract('ERC20Bridge', signer, [], verify)
+  const erc20Bridge = await deployContract(
+    'ERC20Bridge',
+    signer,
+    [],
+    verify,
+    true
+  )
   const erc20SequencerInbox = await deployContract(
     'SequencerInbox',
     signer,
     [maxDataSize, reader4844, true, false],
-    verify
+    verify,
+    true
   )
   const erc20SequencerInboxDelayBufferable = await deployContract(
     'SequencerInbox',
     signer,
     [maxDataSize, reader4844, true, true],
-    verify
+    verify,
+    true
   )
   const erc20Inbox = await deployContract(
     'ERC20Inbox',
     signer,
     [maxDataSize],
-    verify
+    verify,
+    true
   )
   const erc20RollupEventInbox = await deployContract(
     'ERC20RollupEventInbox',
     signer,
     [],
-    verify
+    verify,
+    true
   )
-  const erc20Outbox = await deployContract('ERC20Outbox', signer, [], verify)
+  const erc20Outbox = await deployContract(
+    'ERC20Outbox',
+    signer,
+    [],
+    verify,
+    true
+  )
 
   const bridgeCreator = await deployContract(
     'BridgeCreator',
@@ -196,70 +374,78 @@ export async function deployAllContracts(
         erc20Outbox.address,
       ],
     ],
-    verify
+    verify,
+    true
   )
-  const prover0 = await deployContract('OneStepProver0', signer, [], verify)
-  const proverMem = await deployContract(
-    'OneStepProverMemory',
-    signer,
-    [],
-    verify
-  )
-  const proverMath = await deployContract(
-    'OneStepProverMath',
-    signer,
-    [],
-    verify
-  )
-  const proverHostIo = await deployContract(
-    'OneStepProverHostIo',
-    signer,
-    [],
-    verify
-  )
-  const osp: Contract = await deployContract(
-    'OneStepProofEntry',
-    signer,
-    [
-      prover0.address,
-      proverMem.address,
-      proverMath.address,
-      proverHostIo.address,
-    ],
-    verify
-  )
+  const { prover0, proverMem, proverMath, proverHostIo, osp } =
+    await deployOneStepProofEntry(signer, ethers.constants.AddressZero, verify)
   const challengeManager = await deployContract(
     'EdgeChallengeManager',
     signer,
     [],
-    verify
+    verify,
+    true
   )
   const rollupAdmin = await deployContract(
     'RollupAdminLogic',
     signer,
     [],
-    verify
+    verify,
+    true
   )
-  const rollupUser = await deployContract('RollupUserLogic', signer, [], verify)
-  const upgradeExecutor = await deployUpgradeExecutor(signer)
-  await upgradeExecutor.deployTransaction.wait()
+  const rollupUser = await deployContract(
+    'RollupUserLogic',
+    signer,
+    [],
+    verify,
+    true
+  )
+  const upgradeExecutor = await create2(
+    (
+      await ethers.getContractFactory(
+        UpgradeExecutorABI,
+        UpgradeExecutorBytecode
+      )
+    ).connect(signer),
+    []
+  )
   const validatorWalletCreator = await deployContract(
     'ValidatorWalletCreator',
     signer,
     [],
-    verify
+    verify,
+    true
   )
+  const deployHelper = await deployContract(
+    'DeployHelper',
+    signer,
+    [],
+    verify,
+    true
+  )
+  if (verify && !process.env.DISABLE_VERIFICATION) {
+    // Deploy RollupProxy contract only for verification, should not be used anywhere else
+    await deployContract('RollupProxy', signer, [], verify, true)
+  }
+
   const rollupCreator = await deployContract(
     'RollupCreator',
     signer,
-    [],
-    verify
+    [
+      factoryOwner,
+      bridgeCreator.address,
+      osp.address,
+      challengeManager.address,
+      rollupAdmin.address,
+      rollupUser.address,
+      upgradeExecutor.address,
+      validatorWalletCreator.address,
+      deployHelper.address,
+    ],
+    verify,
+    true
   )
-  const deployHelper = await deployContract('DeployHelper', signer, [], verify)
-  if (verify && !process.env.DISABLE_VERIFICATION) {
-    // Deploy RollupProxy contract only for verification, should not be used anywhere else
-    await deployContract('RollupProxy', signer, [], verify)
-  }
+
   return {
     bridgeCreator,
     prover0,
@@ -351,4 +537,10 @@ export async function _isRunningOnArbitrum(signer: any): Promise<boolean> {
   } catch (error) {
     return false
   }
+}
+
+// return true if running on L1 (Ethereum mainnet or Sepolia)
+export async function _isRunningOnL1(signer: any): Promise<boolean> {
+  const chainId = (await signer.provider.getNetwork()).chainId
+  return chainId === 1 || chainId === 11155111
 }

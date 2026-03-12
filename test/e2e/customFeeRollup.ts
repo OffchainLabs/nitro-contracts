@@ -187,15 +187,24 @@ describe('Custom fee token orbit rollup', () => {
 
     const bp = batchSpendingReportData.substring(66, 106)
     const gasPrice = BigNumber.from(
-      '0x' + batchSpendingReportData.substring(236, 298)
+      '0x' + batchSpendingReportData.substring(234, 298)
     )
     const extraGas = BigNumber.from(
-      '0x' + batchSpendingReportData.substring(298)
+      '0x' + batchSpendingReportData.substring(298, 314)
     )
+
+    const gasUsedForL1 = BigNumber.from(
+      (
+        await l2Provider.send('eth_getTransactionReceipt', [
+          batchSpendingReportEvent.transactionHash,
+        ])
+      ).gasUsedForL1
+    )
+
     expect('0x' + bp.toLowerCase(), 'batch poster from message').to.eq(
       batchPosterAddr.toLowerCase()
     )
-    expect(extraGas.toNumber(), 'batch poster extra gas').to.eq(0)
+    expect(extraGas, 'batch poster extra gas').to.eq(gasUsedForL1)
     const l2GasPrice = await l2Provider.getGasPrice()
     const exchangeRate = await feeTokenPricer.callStatic.getExchangeRate()
     expect(
@@ -275,8 +284,9 @@ describe('Custom fee token orbit rollup', () => {
       headerVals + batchtxData['data'].substring(2)
     )
     const arbGasInfo = ArbGasInfo__factory.connect(ARB_GAS_INFO, l3Provider)
-    const reimbursedGas =
-      batchGas + (await arbGasInfo.getPerBatchGasCharge()).toNumber()
+    const reimbursedGas = BigNumber.from(batchGas)
+      .add(await arbGasInfo.getPerBatchGasCharge())
+      .add(gasUsedForL1)
     return gasPrice.mul(reimbursedGas)
   }
 

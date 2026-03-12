@@ -8,7 +8,6 @@ import "@openzeppelin/contracts-upgradeable/utils/Create2Upgradeable.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "./RollupProxy.sol";
 import "./RollupLib.sol";
-import "./RollupAdminLogic.sol";
 
 struct Node {
     // Hash of the state of the chain as of this node
@@ -392,7 +391,8 @@ contract BOLDUpgradeAction {
             anyTrustFastConfirmer: address(0), // fast confirmer would be migrated from the old rollup if existed
             numBigStepLevel: NUM_BIGSTEP_LEVEL,
             challengeGracePeriodBlocks: CHALLENGE_GRACE_PERIOD_BLOCKS,
-            bufferConfig: bufferConfig
+            bufferConfig: bufferConfig,
+            dataCostEstimate: 0
         });
     }
 
