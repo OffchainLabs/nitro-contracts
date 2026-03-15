@@ -115,7 +115,7 @@ contract StylusDeployer {
         address addr
     ) public view returns (bool) {
         // currently codeHashVersion returns an error when codeHashVersion != stylus version
-        // so we do a try/catch to to check it
+        // so we do a try/catch to check it
         uint16 codeHashVersion;
         try ARB_WASM.codehashVersion(addr.codehash) returns (uint16 version) {
             codeHashVersion = version;
