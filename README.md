@@ -14,6 +14,8 @@ Compile these contracts locally by running
 ```bash
 git clone https://github.com/offchainlabs/nitro-contracts
 cd nitro-contracts
+git submodule init
+git submodule update
 yarn install
 yarn build
 ```
