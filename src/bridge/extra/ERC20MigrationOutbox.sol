@@ -21,6 +21,9 @@ contract ERC20MigrationOutbox is IERC20MigrationOutbox {
     address public immutable destination;
 
     constructor(IERC20Bridge _bridge, address _destination) {
+        if (address(_bridge) == address(0)) {
+            revert InvalidDestination();
+        }
         if (_destination == address(0)) {
             revert InvalidDestination();
         }
