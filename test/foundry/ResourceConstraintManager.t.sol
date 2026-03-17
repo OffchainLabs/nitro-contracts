@@ -539,6 +539,27 @@ contract ResourceConstraintManagerTest is Test {
         resourceConstraintManager.setMultiGasPricingConstraints(constraints);
     }
 
+    function test_setMultiGasPricingConstraints_tooManyConstraints() external {
+        // Test exactly 70 constraints (should succeed)
+        ArbMultiGasConstraintsTypes.ResourceConstraint[] memory seventyConstraints =
+            new ArbMultiGasConstraintsTypes.ResourceConstraint[](70);
+        for (uint256 i = 0; i < 70; i++) {
+            seventyConstraints[i] = _createMultiGasConstraint(10_000_000, 100, 0);
+        }
+        vm.prank(manager);
+        resourceConstraintManager.setMultiGasPricingConstraints(seventyConstraints);
+
+        // Test 71 constraints (should revert)
+        ArbMultiGasConstraintsTypes.ResourceConstraint[] memory seventyOneConstraints =
+            new ArbMultiGasConstraintsTypes.ResourceConstraint[](71);
+        for (uint256 i = 0; i < 71; i++) {
+            seventyOneConstraints[i] = _createMultiGasConstraint(10_000_000, 100, 0);
+        }
+        vm.prank(manager);
+        vm.expectRevert(ResourceConstraintManager.TooManyConstraints.selector);
+        resourceConstraintManager.setMultiGasPricingConstraints(seventyOneConstraints);
+    }
+
     function test_setMultiGasPricingConstraints_emptyResources() external {
         // Edge case: a constraint with an empty resources array should succeed (no-op constraint)
         ArbMultiGasConstraintsTypes.WeightedResource[] memory emptyResources =

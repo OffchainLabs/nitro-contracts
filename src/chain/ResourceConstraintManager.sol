@@ -11,7 +11,8 @@ contract ResourceConstraintManager is AccessControlEnumerable {
     ArbOwner internal constant ARB_OWNER = ArbOwner(address(0x70));
 
     // Constraint parameters boundaries
-    uint256 public constant MAX_CONSTRAINTS = 10;
+    uint256 public constant MAX_SINGLE_GAS_CONSTRAINTS = 10;
+    uint256 public constant MAX_MULTI_GAS_CONSTRAINTS = 70;
     uint64 public constant MIN_GAS_TARGET_PER_SEC = 7_000_000;
     uint64 public constant MAX_GAS_TARGET_PER_SEC = 100_000_000;
     uint32 public constant MIN_ADJUSTMENT_WINDOW_SECS = 5;
@@ -57,7 +58,7 @@ contract ResourceConstraintManager is AccessControlEnumerable {
     ) external onlyRole(MANAGER_ROLE) {
         // If zero constraints are provided, the chain uses the single-constraint pricing model
         uint256 nConstraints = constraints.length;
-        if (nConstraints > MAX_CONSTRAINTS) {
+        if (nConstraints > MAX_SINGLE_GAS_CONSTRAINTS) {
             revert TooManyConstraints();
         }
         uint64 pricingExponent = 0;
@@ -109,8 +110,11 @@ contract ResourceConstraintManager is AccessControlEnumerable {
         ArbMultiGasConstraintsTypes.ResourceConstraint[] calldata constraints
     ) external onlyRole(MANAGER_ROLE) {
         // If zero constraints are provided, the chain uses the single-constraint pricing model
-        // Starting from ArbOS 60, there's no limit to the number of constraints to set
+        // Each constraint adds a small amount of overhead to the gas cost of each transaction and block, so we limit the number of constraints that can be set
         uint256 nConstraints = constraints.length;
+        if (nConstraints > MAX_MULTI_GAS_CONSTRAINTS) {
+            revert TooManyConstraints();
+        }
 
         // We calculate the implied pricing exponent for each resource kind
         uint8 numResourceKinds = uint8(type(ArbMultiGasConstraintsTypes.ResourceKind).max) + 1;
