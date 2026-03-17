@@ -540,7 +540,7 @@ contract ResourceConstraintManagerTest is Test {
     }
 
     function test_setMultiGasPricingConstraints_tooManyConstraints() external {
-        uint256 maxConstraints = 60;
+        uint256 maxConstraints = 100;
         // Test exactly maxConstraints (should succeed)
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory maxConstraintsArray =
             new ArbMultiGasConstraintsTypes.ResourceConstraint[](maxConstraints);

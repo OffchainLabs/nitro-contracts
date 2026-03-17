@@ -12,7 +12,7 @@ contract ResourceConstraintManager is AccessControlEnumerable {
 
     // Constraint parameters boundaries
     uint256 public constant MAX_SINGLE_GAS_CONSTRAINTS = 10;
-    uint256 public constant MAX_MULTI_GAS_CONSTRAINTS = 60;
+    uint256 public constant MAX_MULTI_GAS_CONSTRAINTS = 100;
     uint64 public constant MIN_GAS_TARGET_PER_SEC = 7_000_000;
     uint64 public constant MAX_GAS_TARGET_PER_SEC = 100_000_000;
     uint32 public constant MIN_ADJUSTMENT_WINDOW_SECS = 5;
