@@ -540,24 +540,25 @@ contract ResourceConstraintManagerTest is Test {
     }
 
     function test_setMultiGasPricingConstraints_tooManyConstraints() external {
-        // Test exactly 70 constraints (should succeed)
-        ArbMultiGasConstraintsTypes.ResourceConstraint[] memory seventyConstraints =
-            new ArbMultiGasConstraintsTypes.ResourceConstraint[](70);
-        for (uint256 i = 0; i < 70; i++) {
-            seventyConstraints[i] = _createMultiGasConstraint(10_000_000, 100, 0);
+        uint256 maxConstraints = 60;
+        // Test exactly maxConstraints (should succeed)
+        ArbMultiGasConstraintsTypes.ResourceConstraint[] memory maxConstraintsArray =
+            new ArbMultiGasConstraintsTypes.ResourceConstraint[](maxConstraints);
+        for (uint256 i = 0; i < maxConstraints; i++) {
+            maxConstraintsArray[i] = _createMultiGasConstraint(10_000_000, 100, 0);
         }
         vm.prank(manager);
-        resourceConstraintManager.setMultiGasPricingConstraints(seventyConstraints);
+        resourceConstraintManager.setMultiGasPricingConstraints(maxConstraintsArray);
 
-        // Test 71 constraints (should revert)
-        ArbMultiGasConstraintsTypes.ResourceConstraint[] memory seventyOneConstraints =
-            new ArbMultiGasConstraintsTypes.ResourceConstraint[](71);
-        for (uint256 i = 0; i < 71; i++) {
-            seventyOneConstraints[i] = _createMultiGasConstraint(10_000_000, 100, 0);
+        // Test maxConstraints + 1 constraints (should revert)
+        ArbMultiGasConstraintsTypes.ResourceConstraint[] memory tooManyConstraints =
+            new ArbMultiGasConstraintsTypes.ResourceConstraint[](maxConstraints + 1);
+        for (uint256 i = 0; i < maxConstraints + 1; i++) {
+            tooManyConstraints[i] = _createMultiGasConstraint(10_000_000, 100, 0);
         }
         vm.prank(manager);
         vm.expectRevert(ResourceConstraintManager.TooManyConstraints.selector);
-        resourceConstraintManager.setMultiGasPricingConstraints(seventyOneConstraints);
+        resourceConstraintManager.setMultiGasPricingConstraints(tooManyConstraints);
     }
 
     function test_setMultiGasPricingConstraints_emptyResources() external {
