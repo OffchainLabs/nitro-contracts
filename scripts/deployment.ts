@@ -17,6 +17,10 @@ async function main() {
     signer = signers[0]
   }
 
+  if (process.env.POLLING_INTERVAL !== undefined) {
+    signer.provider.pollingInterval = Number(process.env.POLLING_INTERVAL)
+  }
+
   const maxDataSize =
     process.env.MAX_DATA_SIZE !== undefined
       ? Number(process.env.MAX_DATA_SIZE)
