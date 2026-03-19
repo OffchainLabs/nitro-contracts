@@ -32,7 +32,9 @@ contract BaseFeeManagerTest is Test {
     function test_revoke() external {
         // Test before expiry
         vm.warp(expiryTimestamp - 1);
-        vm.expectRevert(BaseFeeManager.NotExpired.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(BaseFeeManager.NotExpired.selector, expiryTimestamp)
+        );
         baseFeeManager.revoke();
 
         // Test after expiry

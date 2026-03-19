@@ -1,4 +1,4 @@
-// Copyright 2022-2025, Offchain Labs, Inc.
+// Copyright 2022-2026, Offchain Labs, Inc.
 // For license information, see https://github.com/nitro/blob/master/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
@@ -16,11 +16,11 @@ contract BaseFeeManager is AccessControlEnumerable {
     uint256 public constant MIN_BASE_FEE_WEI = 0.01 gwei;
     uint256 public constant MAX_BASE_FEE_WEI = 0.1 gwei;
 
-    uint256 public expiryTimestamp;
+    uint256 public immutable expiryTimestamp;
 
     error InvalidBaseFee(uint256 newL2BaseFee);
     error BaseFeeBelowMinimum(uint256 newL2BaseFee, uint256 minimumBaseFee);
-    error NotExpired();
+    error NotExpired(uint256 expiryTimestamp);
 
     constructor(address admin, address manager, uint256 _expiryTimestamp) {
         _setupRole(DEFAULT_ADMIN_ROLE, admin);
@@ -31,7 +31,7 @@ contract BaseFeeManager is AccessControlEnumerable {
     /// @notice Removes the contract from the list of chain owners after the expiry timestamp
     function revoke() external {
         if (block.timestamp < expiryTimestamp) {
-            revert NotExpired();
+            revert NotExpired(expiryTimestamp);
         }
         ARB_OWNER.removeChainOwner(address(this));
     }
