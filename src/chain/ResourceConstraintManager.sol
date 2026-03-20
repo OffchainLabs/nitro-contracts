@@ -137,12 +137,20 @@ contract ResourceConstraintManager is AccessControlEnumerable {
                 // The check is performed here instead of in the loop below (for calculating pricing exponents)
                 // to prevent bypassing the check when setting a starting backlog value of zero
                 // (in that case, nitro would only store the last of the duplicated entries)
+                // lastResourceKind starts at 0 so that Unknown (kind=0) is rejected by the sorted check
+                // out-of-range enum values are automatically rejected
                 uint8 lastResourceKind = 0;
                 uint256 nResources = constraints[i].resources.length;
                 for (uint256 j = 0; j < nResources; ++j) {
                     uint8 kind = uint8(constraints[i].resources[j].resource);
                     // check that resource kinds are sorted and contain no duplicates
-                    if (j > 0 && kind <= lastResourceKind) {
+                    // we disallow the resource kind "Unknown" (kind=0), so this condition also applies during the first iteration
+                    if (kind <= lastResourceKind) {
+                        revert InvalidResources(kind);
+                    }
+
+                    // check that resources have non-zero weights
+                    if (constraints[i].resources[j].weight == 0) {
                         revert InvalidResources(kind);
                     }
                     lastResourceKind = kind;
