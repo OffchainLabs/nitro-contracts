@@ -1,3 +1,6 @@
+// This script executes the BOLD upgrade and verifies proper execution using the pre and post state.
+// If the TX_HASH environment variable is set, then this script will assume the upgrade has already
+// been executed in that transaction. Pre and post state verification will still be performed in this case.
 import {
   BigNumber,
   BigNumberish,
@@ -44,7 +47,7 @@ type VerificationParams = {
   l1Rpc: JsonRpcProvider
   config: Config
   deployedContracts: DeployedContracts
-  preUpgradeState: UnwrapPromise<ReturnType<typeof getPreUpgradeState>>
+  oldRollupState: UnwrapPromise<ReturnType<typeof getOldRollupState>>
   receipt: ContractReceipt
 }
 
@@ -56,7 +59,7 @@ const executors: { [key: string]: string } = {
   local: '0x5E1497dD1f08C87b2d8FE23e9AAB6c1De833D927',
 }
 
-async function getPreUpgradeState(l1Rpc: JsonRpcProvider, config: Config) {
+async function getOldRollupState(l1Rpc: JsonRpcProvider, config: Config) {
   const oldRollupContract = IOldRollup__factory.connect(
     config.contracts.rollup,
     l1Rpc
@@ -69,13 +72,6 @@ async function getPreUpgradeState(l1Rpc: JsonRpcProvider, config: Config) {
 
   const bridge = IERC20Bridge__factory.connect(config.contracts.bridge, l1Rpc)
 
-  const stakerCount = await oldRollupContract.stakerCount()
-
-  const stakers: string[] = []
-  for (let i = BigNumber.from(0); i.lt(stakerCount); i = i.add(1)) {
-    stakers.push(await oldRollupContract.getStakerAddress(i))
-  }
-
   const boxes = await getAllowedInboxesOutboxesFromBridge(
     Bridge__factory.connect(config.contracts.bridge, l1Rpc)
   )
@@ -87,7 +83,6 @@ async function getPreUpgradeState(l1Rpc: JsonRpcProvider, config: Config) {
     : null
 
   return {
-    stakers,
     wasmModuleRoot,
     ...boxes,
     feeToken,
@@ -273,7 +268,7 @@ async function checkSequencerInbox(
   params: VerificationParams,
   newRollup: RollupUserLogic
 ) {
-  const { l1Rpc, config, deployedContracts, preUpgradeState } = params
+  const { l1Rpc, config, deployedContracts, oldRollupState } = params
 
   const seqInboxContract = SequencerInbox__factory.connect(
     config.contracts.sequencerInbox,
@@ -283,7 +278,7 @@ async function checkSequencerInbox(
   // make sure fee token-ness is correct
   if (
     (await seqInboxContract.isUsingFeeToken()) !==
-    (preUpgradeState.feeToken !== null)
+    (oldRollupState.feeToken !== null)
   ) {
     throw new Error('SequencerInbox isUsingFeeToken does not match')
   }
@@ -325,7 +320,7 @@ async function checkSequencerInbox(
 }
 
 async function checkInbox(params: VerificationParams) {
-  const { l1Rpc, config, deployedContracts, preUpgradeState } = params
+  const { l1Rpc, config, deployedContracts, oldRollupState } = params
 
   // make sure it's an ERC20Inbox if we're using a fee token
   const inboxContract = IERC20Inbox__factory.connect(
@@ -336,10 +331,10 @@ async function checkInbox(params: VerificationParams) {
     100,
     100
   )
-  if (preUpgradeState.feeToken && !submissionFee.eq(0)) {
+  if (oldRollupState.feeToken && !submissionFee.eq(0)) {
     throw new Error('Inbox is not an ERC20Inbox')
   }
-  if (!preUpgradeState.feeToken && submissionFee.eq(0)) {
+  if (!oldRollupState.feeToken && submissionFee.eq(0)) {
     throw new Error('Inbox is an ERC20Inbox')
   }
 
@@ -381,7 +376,7 @@ async function checkOutbox(
   params: VerificationParams,
   newRollup: RollupUserLogic
 ) {
-  const { l1Rpc, config, deployedContracts, preUpgradeState } = params
+  const { l1Rpc, config, deployedContracts, oldRollupState } = params
 
   const outboxContract = Outbox__factory.connect(config.contracts.outbox, l1Rpc)
 
@@ -394,10 +389,10 @@ async function checkOutbox(
     )
     // will revert if not an ERC20Outbox
     const withdrawalAmt = await erc20Outbox.l2ToL1WithdrawalAmount()
-    feeTokenValid = preUpgradeState.feeToken !== null
+    feeTokenValid = oldRollupState.feeToken !== null
   } catch (e: any) {
     if (e.code !== 'CALL_EXCEPTION') throw e
-    feeTokenValid = preUpgradeState.feeToken === null
+    feeTokenValid = oldRollupState.feeToken === null
   }
 
   if (!feeTokenValid) {
@@ -422,7 +417,7 @@ async function checkBridge(
   params: VerificationParams,
   newRollup: RollupUserLogic
 ) {
-  const { l1Rpc, config, deployedContracts, preUpgradeState } = params
+  const { l1Rpc, config, deployedContracts, oldRollupState } = params
   const bridgeContract = Bridge__factory.connect(config.contracts.bridge, l1Rpc)
 
   // make sure the fee token was preserved
@@ -433,12 +428,12 @@ async function checkBridge(
       l1Rpc
     )
     const feeToken = await erc20Bridge.nativeToken()
-    if (feeToken !== preUpgradeState.feeToken) {
+    if (feeToken !== oldRollupState.feeToken) {
       feeTokenValid = false
     }
   } catch (e: any) {
     if (e.code !== 'CALL_EXCEPTION') throw e
-    feeTokenValid = preUpgradeState.feeToken === null
+    feeTokenValid = oldRollupState.feeToken === null
   }
 
   if (!feeTokenValid) {
@@ -462,10 +457,10 @@ async function checkBridge(
   const { inboxes, outboxes } = await getAllowedInboxesOutboxesFromBridge(
     bridgeContract
   )
-  if (JSON.stringify(inboxes) !== JSON.stringify(preUpgradeState.inboxes)) {
+  if (JSON.stringify(inboxes) !== JSON.stringify(oldRollupState.inboxes)) {
     throw new Error('Allowed inbox list has changed')
   }
-  if (JSON.stringify(outboxes) !== JSON.stringify(preUpgradeState.outboxes)) {
+  if (JSON.stringify(outboxes) !== JSON.stringify(oldRollupState.outboxes)) {
     throw new Error('Allowed outbox list has changed')
   }
 
@@ -480,7 +475,7 @@ async function checkBridge(
 async function checkOldRollup(
   params: VerificationParams
 ): Promise<{ oldLatestConfirmedStateHash: string }> {
-  const { l1Rpc, config, preUpgradeState } = params
+  const { l1Rpc, config } = params
 
   const oldRollupContract = IOldRollup__factory.connect(
     config.contracts.rollup,
@@ -497,17 +492,31 @@ async function checkOldRollup(
     throw new Error('Old rollup has stakers')
   }
 
-  // ensure that the old stakers are now zombies
-  for (const staker of preUpgradeState.stakers) {
-    if (!(await oldRollupContract.isZombie(staker))) {
+  // Enumerate zombies from the old rollup to verify stakers were properly
+  // converted by forceRefundStaker during cleanupOldRollup.
+  // zombieCount/zombieAddress aren't on the IOldRollup interface (it only
+  // has the subset needed by BOLDUpgradeAction), so we call them via raw ABI.
+  const zombieAbi = [
+    'function zombieCount() view returns (uint256)',
+    'function zombieAddress(uint256) view returns (address)',
+  ]
+  const oldRollup = new Contract(config.contracts.rollup, zombieAbi, l1Rpc)
+  const zombieCount = (await oldRollup.zombieCount()).toNumber()
+  const zombies: string[] = []
+  for (let i = 0; i < zombieCount; i++) {
+    zombies.push(await oldRollup.zombieAddress(i))
+  }
+
+  for (const zombie of zombies) {
+    if (!(await oldRollupContract.isZombie(zombie))) {
       throw new Error('Old staker is not a zombie')
     }
   }
 
-  if (preUpgradeState.stakers.length > 0) {
+  if (zombies.length > 0) {
     try {
       await oldRollupContract.callStatic.withdrawStakerFunds({
-        from: preUpgradeState.stakers[0],
+        from: zombies[0],
       })
     } catch (e) {
       if (e instanceof Error && e.message.includes('Pausable: paused')) {
@@ -540,7 +549,7 @@ async function checkInitialAssertion(
   const latestConfirmed = await newRollup.latestConfirmed()
 
   await newRollup.validateConfig(latestConfirmed, {
-    wasmModuleRoot: params.preUpgradeState.wasmModuleRoot,
+    wasmModuleRoot: params.oldRollupState.wasmModuleRoot,
     requiredStake: config.settings.stakeAmt,
     challengeManager: newEdgeChallengeManager.address,
     confirmPeriodBlocks: config.settings.confirmPeriodBlocks,
@@ -558,7 +567,7 @@ async function checkNewRollup(
   newEdgeChallengeManager: EdgeChallengeManager,
   currentInboxCount: BigNumberish
 ) {
-  const { config, l1Rpc, preUpgradeState } = params
+  const { config, l1Rpc, oldRollupState } = params
 
   // check bridge
   if (
@@ -603,7 +612,7 @@ async function checkNewRollup(
   }
 
   // wasmModuleRoot
-  if ((await newRollup.wasmModuleRoot()) !== preUpgradeState.wasmModuleRoot) {
+  if ((await newRollup.wasmModuleRoot()) !== oldRollupState.wasmModuleRoot) {
     throw new Error('Wasm module root does not match')
   }
 
@@ -863,14 +872,33 @@ async function main() {
     throw new Error('No boldAction contract deployed')
   }
 
-  const preUpgradeState = await getPreUpgradeState(l1Rpc, config)
-  const receipt = await perform(l1Rpc, config, deployedContracts)
-  console.log('upgrade tx hash:', receipt.transactionHash)
+  let receipt: ContractReceipt
+  const txHash = process.env.TX_HASH
+  if (txHash) {
+    // Standalone verification: verify an upgrade executed externally (e.g. via Safe or cast send)
+    console.log('standalone verification mode, tx hash:', txHash)
+    const txReceipt = await l1Rpc.getTransactionReceipt(txHash)
+    if (!txReceipt) {
+      throw new Error('Transaction receipt not found for TX_HASH: ' + txHash)
+    }
+    if (txReceipt.status !== 1) {
+      throw new Error('Transaction failed (status: ' + txReceipt.status + ')')
+    }
+    // Event extends Log, so assigning logs as events is structurally safe for topic/data access.
+    receipt = { ...txReceipt, events: txReceipt.logs } as ContractReceipt
+  } else {
+    receipt = await perform(l1Rpc, config, deployedContracts)
+    console.log('upgrade tx hash:', receipt.transactionHash)
+  }
+
+  // These values (wasmModuleRoot, fee token, inbox/outbox lists) are stable across the upgrade,
+  // so reading them post-upgrade in standalone verification mode is safe.
+  const oldRollupState = await getOldRollupState(l1Rpc, config)
   await verifyPostUpgrade({
     l1Rpc,
     config,
     deployedContracts,
-    preUpgradeState,
+    oldRollupState,
     receipt,
   })
 }

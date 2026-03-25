@@ -169,7 +169,7 @@ jobs:
           no-token-bridge: true
           no-l3-token-bridge: true
           nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
-          nitro-testnode-ref: v3-support
+          nitro-testnode-ref: release
 
       - name: Setup node/yarn
         uses: actions/setup-node@v3
@@ -202,7 +202,7 @@ jobs:
           no-token-bridge: true
           no-l3-token-bridge: true
           nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
-          nitro-testnode-ref: v3-support
+          nitro-testnode-ref: release
 
       - name: Setup node/yarn
         uses: actions/setup-node@v3
@@ -234,7 +234,7 @@ jobs:
           args: --l3-fee-token --l3-fee-token-pricer --l3-fee-token-decimals 6
           no-token-bridge: true
           no-l3-token-bridge: true
-          nitro-testnode-ref: v3-support
+          nitro-testnode-ref: release
           nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
 
       - name: Setup node/yarn
@@ -253,36 +253,70 @@ jobs:
       - name: Run e2e tests
         run: yarn test:e2e
 
-  # bold-upgrade:
-  #   name: BOLD upgrade test
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         submodules: recursive
+  bold-upgrade:
+    name: BOLD upgrade test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-  #     - name: Install Foundry
-  #       uses: foundry-rs/foundry-toolchain@v1
-  #       with:
-  #         version: stable
-  #         cache: false
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+          cache: false
 
-  #     - name: Setup node/yarn
-  #       uses: actions/setup-node@v3
-  #       with:
-  #         node-version: 18
-  #         cache: 'yarn'
-  #         cache-dependency-path: '**/yarn.lock'
+      - name: Setup node/yarn
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'yarn'
+          cache-dependency-path: '**/yarn.lock'
 
-  #     - name: Install packages
-  #       run: yarn
+      - name: Install packages
+        run: yarn
 
-  #     - name: Compile contracts
-  #       run: yarn build:all
+      - name: Compile contracts
+        run: yarn build:all
 
-  #     - name: Copy .env
-  #       run: |
-  #         cp ./.env-sample ./.env
+      - name: Copy .env
+        run: |
+          cp ./.env-sample ./.env
 
-  #     - name: Test upgrade
-  #       run: L1_RPC=${{ secrets.L1_RPC || 'https://rpc.ankr.com/eth' }} yarn test:upgrade
+      - name: Test upgrade
+        run: L1_RPC=${{ secrets.L1_RPC || 'https://rpc.ankr.com/eth' }} yarn test:upgrade
+
+  bold-upgrade-exec-first:
+    name: BOLD upgrade exec-first test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+          cache: false
+
+      - name: Setup node/yarn
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'yarn'
+          cache-dependency-path: '**/yarn.lock'
+
+      - name: Install packages
+        run: yarn
+
+      - name: Compile contracts
+        run: yarn build:all
+
+      - name: Copy .env
+        run: |
+          cp ./.env-sample ./.env
+
+      - name: Test upgrade (exec-first)
+        run: L1_RPC=${{ secrets.L1_RPC || 'https://rpc.ankr.com/eth' }} yarn test:upgrade:exec-first
