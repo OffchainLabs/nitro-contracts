@@ -132,6 +132,9 @@ contract ResourceConstraintManager is AccessControlEnumerable {
             ) {
                 revert InvalidPeriod(targetPerSec, adjustmentWindowSecs, startingBacklogValue);
             }
+
+            uint256 nResources = constraints[i].resources.length;
+            uint64 maxWeight = 0;
             {
                 // Check for unsorted or duplicate resource kinds within this constraint
                 // The check is performed here instead of in the loop below (for calculating pricing exponents)
@@ -140,7 +143,6 @@ contract ResourceConstraintManager is AccessControlEnumerable {
                 // lastResourceKind starts at 0 so that Unknown (kind=0) is rejected by the sorted check
                 // out-of-range enum values are automatically rejected
                 uint8 lastResourceKind = 0;
-                uint256 nResources = constraints[i].resources.length;
                 for (uint256 j = 0; j < nResources; ++j) {
                     uint8 kind = uint8(constraints[i].resources[j].resource);
                     // check that resource kinds are sorted and contain no duplicates
@@ -154,47 +156,39 @@ contract ResourceConstraintManager is AccessControlEnumerable {
                         revert InvalidResources(kind);
                     }
                     lastResourceKind = kind;
-                }
-            }
-            if (startingBacklogValue > 0) {
-                // Find the maximum weight among all resources in this constraint
-                uint64 maxWeight = 0;
-                uint256 nResources = constraints[i].resources.length;
-                for (uint256 j = 0; j < nResources; ++j) {
+
+                    // Find the maximum weight among all resources in this constraint
                     uint64 weight = constraints[i].resources[j].weight;
                     if (weight > maxWeight) {
                         maxWeight = weight;
                     }
                 }
+            }
+            if ((startingBacklogValue > 0) && (maxWeight > 0)) {
+                // Neither of these values can be zero due to the earlier checks, so this division is safe
+                uint256 divisor =
+                    uint256(adjustmentWindowSecs) * uint256(targetPerSec) * uint256(maxWeight);
 
-                if (maxWeight > 0) {
-                    // Neither of these values can be zero due to the earlier checks, so this division is safe
-                    uint256 divisor =
-                        uint256(adjustmentWindowSecs) * uint256(targetPerSec) * uint256(maxWeight);
+                // Calculate per-resource-kind exponent contribution
+                // we scale by 1000 to improve precision in calculating the exponent
+                // since this division will round down, it's always possible for the real exponent to be up to
+                // the number of constraints greater than the value we measure
+                // Operation is performed in uint256 to avoid overflow, but the result is guaranteed to fit in uint64 due to the earlier check
+                for (uint256 j = 0; j < nResources; ++j) {
+                    uint8 kind = uint8(constraints[i].resources[j].resource);
+                    uint64 weight = constraints[i].resources[j].weight;
+                    pricingExponents[kind] +=
+                        uint64(uint256(startingBacklogValue) * uint256(weight) * 1000 / divisor);
 
-                    // Calculate per-resource-kind exponent contribution
-                    // we scale by 1000 to improve precision in calculating the exponent
-                    // since this division will round down, it's always possible for the real exponent to be up to
-                    // the number of constraints greater than the value we measure
-                    // Operation is performed in uint256 to avoid overflow, but the result is guaranteed to fit in uint64 due to the earlier check
-                    for (uint256 j = 0; j < nResources; ++j) {
-                        uint8 kind = uint8(constraints[i].resources[j].resource);
-                        uint64 weight = constraints[i].resources[j].weight;
-                        pricingExponents[kind] +=
-                            uint64(uint256(startingBacklogValue) * uint256(weight) * 1000 / divisor);
+                    // this calculated pricing exponent will be used by nitro to calculate the gas price
+                    // we check that the pricing exponent is below some reasonable number to avoid setting the gas price astronomically high
+                    // as long as the gas price is not so high that no-one at all can send a transaction the chain will be able to function
+                    // eg. these constraints can be changed again, or the sec council can send admin transactions
+                    // with min base fee of 0.02, exponent of 8 (scaled by 1000) corresponds to a gas price of ~60 Gwei
+                    if (pricingExponents[kind] > MAX_PRICING_EXPONENT) {
+                        revert PricingExponentTooHigh(pricingExponents[kind]);
                     }
                 }
-            }
-        }
-
-        // this calculated pricing exponent will be used by nitro to calculate the gas price
-        // we check that the pricing exponent is below some reasonable number to avoid setting the gas price astronomically high
-        // as long as the gas price is not so high that no-one at all can send a transaction the chain will be able to function
-        // eg. these constraints can be changed again, or the sec council can send admin transactions
-        // with min base fee of 0.02, exponent of 8 (scaled by 1000) corresponds to a gas price of ~60 Gwei
-        for (uint8 k = 0; k < numResourceKinds; ++k) {
-            if (pricingExponents[k] > MAX_PRICING_EXPONENT) {
-                revert PricingExponentTooHigh(pricingExponents[k]);
             }
         }
 
