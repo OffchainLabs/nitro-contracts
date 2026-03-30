@@ -110,6 +110,13 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     uint256 public rollupDeploymentBlock;
 
     bool public validatorWhitelistDisabled;
+    address private __unused__anyTrustFastConfirmer;
+
+    // If the chain this RollupCore is deployed on is an Arbitrum chain.
+    bool internal immutable _hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
+    // If the chain RollupCore is deployed on, this will contain the ArbSys.blockNumber() at each node's creation.
+    mapping(bytes32 => uint256) internal _assertionCreatedAtArbSysBlock;
+
     EnumerableSetUpgradeable.AddressSet internal _fastConfirmers;
 
     /// @notice Whether fastConfirmNewAssertion has been called with the given prevAssertion
@@ -118,11 +125,6 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     ///         it would result in incorrect accounting of withdrawable funds in the loserStakeEscrow.
     ///         This is because the protocol assume there is only 1 unique confirmable child assertion.
     mapping(bytes32 => bool) public fastConfirmNewAssertionPrevUsed;
-
-    // If the chain this RollupCore is deployed on is an Arbitrum chain.
-    bool internal immutable _hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
-    // If the chain RollupCore is deployed on, this will contain the ArbSys.blockNumber() at each node's creation.
-    mapping(bytes32 => uint256) internal _assertionCreatedAtArbSysBlock;
 
     function sequencerInbox() public view virtual returns (ISequencerInbox) {
         return ISequencerInbox(bridge.sequencerInbox());
