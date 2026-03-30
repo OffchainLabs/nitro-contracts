@@ -4,7 +4,8 @@
 
 pragma solidity ^0.8.0;
 
-import {AssertionState} from "./AssertionState.sol";
+import {AssertionInputs} from "./Assertion.sol";
+import {AssertionState, AssertionStateLib} from "./AssertionState.sol";
 import {
     OwnableUpgradeable
 } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -22,6 +23,8 @@ interface ISnarkVerifier {
 }
 
 contract ZeroLevelBoldFastConfirmer is OwnableUpgradeable, EIP712Upgradeable {
+    using AssertionStateLib for AssertionState;
+
     bytes32 public constant FAST_CONFIRM_TYPEHASH =
         keccak256("FastConfirmAssertion(bytes32 assertionHash)");
 
@@ -53,8 +56,6 @@ contract ZeroLevelBoldFastConfirmer is OwnableUpgradeable, EIP712Upgradeable {
         snarkVerifier = ISnarkVerifier(_snarkVerifier);
     }
 
-    /// @notice Fast confirms an assertion
-    /// @dev    MUST revert if we cannot validate the guardian council signatures or the SNARK
     function fastConfirmAssertion(
         bytes32 assertionHash,
         bytes32 parentAssertionHash,
@@ -63,19 +64,18 @@ contract ZeroLevelBoldFastConfirmer is OwnableUpgradeable, EIP712Upgradeable {
         bytes calldata guardianSignature,
         bytes calldata snarkProof
     ) public {
-        bytes32 messageDigest = getFastConfirmAssertionMessageDigest(assertionHash);
-        if (
-            IERC1271(guardianCouncil).isValidSignature(messageDigest, guardianSignature)
-                != 0x1626ba7e
-        ) {
-            revert InvalidGuardianSignature();
-        }
-
-        if (!snarkVerifier.verifyProof(snarkProof)) {
-            revert InvalidSnarkProof();
-        }
-
+        _verifyProofs(assertionHash, guardianSignature, snarkProof);
         rollup.fastConfirmAssertion(assertionHash, parentAssertionHash, confirmState, inboxAcc);
+    }
+
+    function fastConfirmNewAssertion(
+        AssertionInputs calldata assertion,
+        bytes32 assertionHash,
+        bytes calldata guardianSignature,
+        bytes calldata snarkProof
+    ) external {
+        _verifyProofs(assertionHash, guardianSignature, snarkProof);
+        rollup.fastConfirmNewAssertion(assertion, assertionHash);
     }
 
     function getFastConfirmAssertionMessageDigest(
@@ -95,5 +95,23 @@ contract ZeroLevelBoldFastConfirmer is OwnableUpgradeable, EIP712Upgradeable {
         address _snarkVerifier
     ) external onlyOwner {
         snarkVerifier = ISnarkVerifier(_snarkVerifier);
+    }
+
+    function _verifyProofs(
+        bytes32 assertionHash,
+        bytes calldata guardianSignature,
+        bytes calldata snarkProof
+    ) internal view {
+        bytes32 messageDigest = getFastConfirmAssertionMessageDigest(assertionHash);
+        if (
+            IERC1271(guardianCouncil).isValidSignature(messageDigest, guardianSignature)
+                != 0x1626ba7e
+        ) {
+            revert InvalidGuardianSignature();
+        }
+
+        if (!snarkVerifier.verifyProof(snarkProof)) {
+            revert InvalidSnarkProof();
+        }
     }
 }

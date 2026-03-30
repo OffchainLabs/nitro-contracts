@@ -73,4 +73,9 @@ interface IRollupUser is IRollupCore, IOwnable {
         AssertionState calldata confirmState,
         bytes32 inboxAcc
     ) external;
+
+    function fastConfirmNewAssertion(
+        AssertionInputs calldata assertion,
+        bytes32 expectedAssertionHash
+    ) external;
 }
