@@ -66,7 +66,8 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
         loserStakeEscrow = config.loserStakeEscrow;
 
         stakeToken = config.stakeToken;
-        anyTrustFastConfirmer = config.anyTrustFastConfirmer;
+        // todo: add config.zeroLevelBoldFastConfirmer
+        _fastConfirmers.add(config.anyTrustFastConfirmer);
 
         bytes32 parentAssertionHash = bytes32(0);
         bytes32 inboxAcc = bytes32(0);
@@ -451,9 +452,10 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
     function setAnyTrustFastConfirmer(
         address _anyTrustFastConfirmer
     ) external {
-        anyTrustFastConfirmer = _anyTrustFastConfirmer;
-        emit AnyTrustFastConfirmerSet(_anyTrustFastConfirmer);
-        // previously: emit OwnerFunctionCalled(31);
+        // TODO: new function for adding removing generic fastConfirmers. this function should be removed
+        // anyTrustFastConfirmer = _anyTrustFastConfirmer;
+        // emit AnyTrustFastConfirmerSet(_anyTrustFastConfirmer);
+        // // previously: emit OwnerFunctionCalled(31);
     }
 
     /**
