@@ -66,4 +66,11 @@ interface IRollupUser is IRollupCore, IOwnable {
         address expectedWithdrawalAddress,
         uint256 tokenAmount
     ) external;
+
+    function fastConfirmAssertion(
+        bytes32 assertionHash,
+        bytes32 parentAssertionHash,
+        AssertionState calldata confirmState,
+        bytes32 inboxAcc
+    ) external;
 }

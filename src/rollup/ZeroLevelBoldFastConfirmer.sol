@@ -12,6 +12,7 @@ import {
     EIP712Upgradeable
 } from "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
+import {IRollupUser} from "./IRollupLogic.sol";
 
 // dummy interface for the SNARK verifier.
 interface ISnarkVerifier {
@@ -23,6 +24,9 @@ interface ISnarkVerifier {
 contract ZeroLevelBoldFastConfirmer is OwnableUpgradeable, EIP712Upgradeable {
     bytes32 public constant FAST_CONFIRM_TYPEHASH =
         keccak256("FastConfirmAssertion(bytes32 assertionHash)");
+
+    /// @notice The rollup contract to fast confirm on
+    IRollupUser public rollup;
 
     /// @notice Gnosis Safe multisig address of the guardian council
     address public guardianCouncil;
@@ -36,12 +40,14 @@ contract ZeroLevelBoldFastConfirmer is OwnableUpgradeable, EIP712Upgradeable {
     event GuardianCouncilSet(address indexed newGuardianCouncil);
 
     function initialize(
+        address _rollup,
         address _guardianCouncil,
         address _initialOwner,
         address _snarkVerifier
     ) public initializer {
         __Ownable_init();
         __EIP712_init("ZeroLevelBoldFastConfirmer", "1");
+        rollup = IRollupUser(_rollup);
         guardianCouncil = _guardianCouncil;
         _transferOwnership(_initialOwner);
         snarkVerifier = ISnarkVerifier(_snarkVerifier);
@@ -57,9 +63,6 @@ contract ZeroLevelBoldFastConfirmer is OwnableUpgradeable, EIP712Upgradeable {
         bytes calldata guardianSignature,
         bytes calldata snarkProof
     ) public {
-        bytes32 digest =
-            _hashTypedDataV4(keccak256(abi.encode(FAST_CONFIRM_TYPEHASH, assertionHash)));
-
         if (
             IERC1271(guardianCouncil)
                     .isValidSignature(
@@ -73,7 +76,7 @@ contract ZeroLevelBoldFastConfirmer is OwnableUpgradeable, EIP712Upgradeable {
             revert InvalidSnarkProof();
         }
 
-        // todo: confirm the assertion
+        rollup.fastConfirmAssertion(assertionHash, parentAssertionHash, confirmState, inboxAcc);
     }
 
     function getFastConfirmAssertionMessageDigest(
