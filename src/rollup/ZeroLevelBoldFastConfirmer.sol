@@ -31,6 +31,7 @@ contract ZeroLevelBoldFastConfirmer is OwnableUpgradeable, EIP712Upgradeable {
     ISnarkVerifier public snarkVerifier;
 
     error InvalidGuardianSignature();
+    error InvalidSnarkProof();
 
     event GuardianCouncilSet(address indexed newGuardianCouncil);
 
@@ -53,7 +54,8 @@ contract ZeroLevelBoldFastConfirmer is OwnableUpgradeable, EIP712Upgradeable {
         bytes32 parentAssertionHash,
         AssertionState calldata confirmState,
         bytes32 inboxAcc,
-        bytes calldata guardianSignature
+        bytes calldata guardianSignature,
+        bytes calldata snarkProof
     ) public {
         bytes32 digest =
             _hashTypedDataV4(keccak256(abi.encode(FAST_CONFIRM_TYPEHASH, assertionHash)));
@@ -67,7 +69,10 @@ contract ZeroLevelBoldFastConfirmer is OwnableUpgradeable, EIP712Upgradeable {
             revert InvalidGuardianSignature();
         }
 
-        // todo: check snark
+        if (!snarkVerifier.verifyProof(snarkProof)) {
+            revert InvalidSnarkProof();
+        }
+
         // todo: confirm the assertion
     }
 
