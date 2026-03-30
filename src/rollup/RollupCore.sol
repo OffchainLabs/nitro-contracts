@@ -113,7 +113,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     EnumerableSetUpgradeable.AddressSet internal _fastConfirmers;
 
     /// @notice Whether fastConfirmNewAssertion has been called with the given prevAssertion
-    /// @dev    Used to prevent stake accounting issues when fastConfirmNewAssertion is called multiple times on the same prev.
+    /// @dev    Used to prevent stake accounting issues so fastConfirmNewAssertion cannot be called multiple times on the same prev.
     ///         If fastConfirmNewAssertion is called multiple times on the same prev,
     ///         it would result in incorrect accounting of withdrawable funds in the loserStakeEscrow.
     ///         This is because the protocol assume there is only 1 unique confirmable child assertion.
