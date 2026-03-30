@@ -18,7 +18,8 @@ import {IRollupUser} from "./IRollupLogic.sol";
 // dummy interface for the SNARK verifier.
 interface ISnarkVerifier {
     function verifyProof(
-        bytes calldata inputS
+        bytes32 assertionHash,
+        bytes calldata input
     ) external view returns (bool);
 }
 
@@ -110,7 +111,7 @@ contract ZeroLevelBoldFastConfirmer is OwnableUpgradeable, EIP712Upgradeable {
             revert InvalidGuardianSignature();
         }
 
-        if (!snarkVerifier.verifyProof(snarkProof)) {
+        if (!snarkVerifier.verifyProof(assertionHash, snarkProof)) {
             revert InvalidSnarkProof();
         }
     }
