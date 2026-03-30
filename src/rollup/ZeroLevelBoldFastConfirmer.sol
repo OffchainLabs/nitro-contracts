@@ -63,11 +63,10 @@ contract ZeroLevelBoldFastConfirmer is OwnableUpgradeable, EIP712Upgradeable {
         bytes calldata guardianSignature,
         bytes calldata snarkProof
     ) public {
+        bytes32 messageDigest = getFastConfirmAssertionMessageDigest(assertionHash);
         if (
-            IERC1271(guardianCouncil)
-                    .isValidSignature(
-                        getFastConfirmAssertionMessageDigest(assertionHash), guardianSignature
-                    ) != 0x1626ba7e
+            IERC1271(guardianCouncil).isValidSignature(messageDigest, guardianSignature)
+                != 0x1626ba7e
         ) {
             revert InvalidGuardianSignature();
         }
