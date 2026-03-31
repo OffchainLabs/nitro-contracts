@@ -389,6 +389,7 @@ contract BOLDUpgradeAction {
             genesisAssertionState: genesisAssertionState,
             genesisInboxCount: inboxMaxCount,
             anyTrustFastConfirmer: address(0), // fast confirmer would be migrated from the old rollup if existed
+            zeroLevelBoldFastConfirmer: address(0), // this feature is not enabled for the original bold upgrade. included to satisfy compiler
             numBigStepLevel: NUM_BIGSTEP_LEVEL,
             challengeGracePeriodBlocks: CHALLENGE_GRACE_PERIOD_BLOCKS,
             bufferConfig: bufferConfig,

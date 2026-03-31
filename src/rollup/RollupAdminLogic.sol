@@ -66,8 +66,12 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
         loserStakeEscrow = config.loserStakeEscrow;
 
         stakeToken = config.stakeToken;
-        // todo: add config.zeroLevelBoldFastConfirmer
-        _fastConfirmers.add(config.anyTrustFastConfirmer);
+        if (config.anyTrustFastConfirmer != address(0)) {
+            _fastConfirmers.add(config.anyTrustFastConfirmer);
+        }
+        if (config.zeroLevelBoldFastConfirmer != address(0)) {
+            _fastConfirmers.add(config.zeroLevelBoldFastConfirmer);
+        }
 
         bytes32 parentAssertionHash = bytes32(0);
         bytes32 inboxAcc = bytes32(0);
