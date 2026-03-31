@@ -568,7 +568,7 @@ contract BOLDUpgradeAction {
         // anyTrustFastConfirmer only exists since v2.0.0, but the old rollup can be on an older version
         try OLD_ROLLUP.anyTrustFastConfirmer() returns (address anyTrustFastConfirmer) {
             if (anyTrustFastConfirmer != address(0)) {
-                IRollupAdmin(address(rollup)).setAnyTrustFastConfirmer(anyTrustFastConfirmer);
+                IRollupAdmin(address(rollup)).setFastConfirmer(anyTrustFastConfirmer, true); // todo: consider removing this action entirely
             }
         } catch {
             // do nothing if anyTrustFastConfirmer doesnt exist

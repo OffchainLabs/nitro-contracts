@@ -460,16 +460,14 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
     }
 
     /**
-     * @notice set the anyTrustFastConfirmer address
-     * @param _anyTrustFastConfirmer new value of anyTrustFastConfirmer
+     * @notice set or unset a fastConfirmer address
      */
-    function setAnyTrustFastConfirmer(
-        address _anyTrustFastConfirmer
+    function setFastConfirmer(
+        address fastConfirmer,
+        bool enabled
     ) external {
-        // TODO: new function for adding removing generic fastConfirmers. this function should be removed
-        // anyTrustFastConfirmer = _anyTrustFastConfirmer;
-        // emit AnyTrustFastConfirmerSet(_anyTrustFastConfirmer);
-        // // previously: emit OwnerFunctionCalled(31);
+        enabled ? _fastConfirmers.add(fastConfirmer) : _fastConfirmers.remove(fastConfirmer);
+        emit FastConfirmerSet(fastConfirmer, enabled);
     }
 
     /**
