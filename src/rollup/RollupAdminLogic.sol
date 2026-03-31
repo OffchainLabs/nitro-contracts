@@ -118,6 +118,16 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
         emit RollupInitialized(config.wasmModuleRoot, config.chainId);
     }
 
+    function postUpgradeInit(address zeroLevelBoldFastConfirmer) external onlyProxy reinitializer(2) {
+        if (zeroLevelBoldFastConfirmer != address(0)) {
+            _fastConfirmers.add(zeroLevelBoldFastConfirmer);
+        }
+        if (__unused__anyTrustFastConfirmer != address(0)) {
+            _fastConfirmers.add(__unused__anyTrustFastConfirmer);
+            __unused__anyTrustFastConfirmer = address(0);
+        }
+    }
+
     /**
      * Functions are only to reach this logic contract if the caller is the owner
      * so there is no need for a redundant onlyOwner check
