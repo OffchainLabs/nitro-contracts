@@ -65,7 +65,5 @@
 | _assertionCreatedAtArbSysBlock  | mapping(bytes32 => uint256)                   | 124  | 0      | 32    | src/rollup/RollupUserLogic.sol:RollupUserLogic |
 |---------------------------------+-----------------------------------------------+------+--------+-------+------------------------------------------------|
 | _fastConfirmers                 | struct EnumerableSetUpgradeable.AddressSet    | 125  | 0      | 64    | src/rollup/RollupUserLogic.sol:RollupUserLogic |
-|---------------------------------+-----------------------------------------------+------+--------+-------+------------------------------------------------|
-| fastConfirmNewAssertionPrevUsed | mapping(bytes32 => bool)                      | 127  | 0      | 32    | src/rollup/RollupUserLogic.sol:RollupUserLogic |
 ╰---------------------------------+-----------------------------------------------+------+--------+-------+------------------------------------------------╯
 

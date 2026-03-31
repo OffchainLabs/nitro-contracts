@@ -303,6 +303,11 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
      * @notice This allows fastConfirmers to immediately create and confirm an assertion
      *
      *         The logic in this function is similar to stakeOnNewAssertion, but without staker checks
+     *
+     *         We trust the fastConfirmers to not call this function multiple times on the same prev,
+     *         as doing so would result in incorrect accounting of withdrawable funds in the loserStakeEscrow.
+     *         This is because the protocol assume there is only 1 unique confirmable child assertion.
+     *         Since fastConfirmers are assumed to only create / confirm honest assertions, this should not be an issue in practice.
      */
     function fastConfirmNewAssertion(
         AssertionInputs calldata assertion,
@@ -318,8 +323,6 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
             assertion.beforeStateData.sequencerBatchAcc
         );
         getAssertionStorage(prevAssertion).requireExists();
-        require(!fastConfirmNewAssertionPrevUsed[prevAssertion], "PREV_ALREADY_USED");
-        fastConfirmNewAssertionPrevUsed[prevAssertion] = true;
 
         if (status == AssertionStatus.NoAssertion) {
             // If not exists, we create the new assertion

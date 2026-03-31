@@ -119,18 +119,12 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
 
     EnumerableSetUpgradeable.AddressSet internal _fastConfirmers;
 
-    /// @notice Whether fastConfirmNewAssertion has been called with the given prevAssertion
-    /// @dev    Used to prevent stake accounting issues so fastConfirmNewAssertion cannot be called multiple times on the same prev.
-    ///         If fastConfirmNewAssertion is called multiple times on the same prev,
-    ///         it would result in incorrect accounting of withdrawable funds in the loserStakeEscrow.
-    ///         This is because the protocol assume there is only 1 unique confirmable child assertion.
-    mapping(bytes32 => bool) public fastConfirmNewAssertionPrevUsed;
-
     function sequencerInbox() public view virtual returns (ISequencerInbox) {
         return ISequencerInbox(bridge.sequencerInbox());
     }
 
-    /// @notice Fast confirmers are allowed to create and confirm assertions instantly, without any checks or stake
+    /// @notice Fast confirmers are allowed to create and confirm assertions instantly, without any checks or stake.
+    ///         Fast confirmers are assumed to only create / confirm honest assertions.
     ///         In an AnyTrust chain, there may be a fastConfirmer which is a contract that can call this function when it receives sufficient signatures from DAC members.
     ///         In a 0-level bold enabled chain, there may be a fastConfirmer which accepts guardian signatures and a SNARK proving the assertion.
     function fastConfirmers() external view returns (address[] memory) {
