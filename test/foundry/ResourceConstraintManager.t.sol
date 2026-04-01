@@ -285,7 +285,7 @@ contract ResourceConstraintManagerTest is Test {
             new ArbMultiGasConstraintsTypes.ResourceConstraint[](3);
 
         // Single resource: Computation with weight 1
-        multipleConstraints[0] = _createMultiGasConstraint(7_000_000, 5, 0);
+        multipleConstraints[0] = _createMultiGasConstraint(10_000_000, 5, 0);
 
         // Multiple resources: HistoryGrowth (weight 2) + StorageAccessRead (weight 3)
         ArbMultiGasConstraintsTypes.WeightedResource[] memory resources2 =
@@ -331,8 +331,8 @@ contract ResourceConstraintManagerTest is Test {
         // exponent = backlog * 1 * 1000 / (targetPerSec * adjustmentWindowSecs * 1) = backlog * 1000 / (targetPerSec * adjustmentWindowSecs)
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory multipleConstraints =
             new ArbMultiGasConstraintsTypes.ResourceConstraint[](3);
-        // 35_000_000 * 1000 / (7_000_000 * 5) = 1000
-        multipleConstraints[0] = _createMultiGasConstraint(7_000_000, 5, 35_000_000);
+        // 50_000_000 * 1000 / (10_000_000 * 5) = 1000
+        multipleConstraints[0] = _createMultiGasConstraint(10_000_000, 5, 50_000_000);
         // 300_000_000_000 * 1000 / (50_000_000 * 1000) = 6000
         multipleConstraints[1] = _createMultiGasConstraint(50_000_000, 1000, 300_000_000_000);
         // 8_640_000_000_000 * 1000 / (100_000_000 * 86400) = 1000
@@ -410,32 +410,32 @@ contract ResourceConstraintManagerTest is Test {
     }
 
     function test_setMultiGasPricingConstraints_invalidTarget() external {
-        // Test gas target below minimum (6,999,999)
+        // Test gas target below minimum (9,999,999)
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraintsLowTarget =
             new ArbMultiGasConstraintsTypes.ResourceConstraint[](1);
-        constraintsLowTarget[0] = _createMultiGasConstraint(6_999_999, 100, 0);
+        constraintsLowTarget[0] = _createMultiGasConstraint(9_999_999, 100, 0);
 
         vm.prank(manager);
         vm.expectRevert(
             abi.encodeWithSelector(
                 ResourceConstraintManager.InvalidTarget.selector,
-                uint64(6_999_999),
+                uint64(9_999_999),
                 uint64(100),
                 uint64(0)
             )
         );
         resourceConstraintManager.setMultiGasPricingConstraints(constraintsLowTarget);
 
-        // Test gas target above maximum (100,000,001)
+        // Test gas target above maximum (500,000,001)
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraintsHighTarget =
             new ArbMultiGasConstraintsTypes.ResourceConstraint[](1);
-        constraintsHighTarget[0] = _createMultiGasConstraint(100_000_001, 100, 0);
+        constraintsHighTarget[0] = _createMultiGasConstraint(500_000_001, 100, 0);
 
         vm.prank(manager);
         vm.expectRevert(
             abi.encodeWithSelector(
                 ResourceConstraintManager.InvalidTarget.selector,
-                uint64(100_000_001),
+                uint64(500_000_001),
                 uint64(100),
                 uint64(0)
             )
@@ -445,13 +445,13 @@ contract ResourceConstraintManagerTest is Test {
         // Test edge cases (exactly at boundaries should succeed)
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraintsMinTarget =
             new ArbMultiGasConstraintsTypes.ResourceConstraint[](1);
-        constraintsMinTarget[0] = _createMultiGasConstraint(7_000_000, 100, 0);
+        constraintsMinTarget[0] = _createMultiGasConstraint(10_000_000, 100, 0);
         vm.prank(manager);
         resourceConstraintManager.setMultiGasPricingConstraints(constraintsMinTarget);
 
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraintsMaxTarget =
             new ArbMultiGasConstraintsTypes.ResourceConstraint[](1);
-        constraintsMaxTarget[0] = _createMultiGasConstraint(100_000_000, 100, 0);
+        constraintsMaxTarget[0] = _createMultiGasConstraint(500_000_000, 100, 0);
         vm.prank(manager);
         resourceConstraintManager.setMultiGasPricingConstraints(constraintsMaxTarget);
     }
@@ -473,17 +473,17 @@ contract ResourceConstraintManagerTest is Test {
         );
         resourceConstraintManager.setMultiGasPricingConstraints(constraintsLowPeriod);
 
-        // Test adjustment window above maximum (86401 seconds)
+        // Test adjustment window above maximum (604801 seconds)
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraintsHighPeriod =
             new ArbMultiGasConstraintsTypes.ResourceConstraint[](1);
-        constraintsHighPeriod[0] = _createMultiGasConstraint(10_000_000, 86401, 0);
+        constraintsHighPeriod[0] = _createMultiGasConstraint(10_000_000, 604801, 0);
 
         vm.prank(manager);
         vm.expectRevert(
             abi.encodeWithSelector(
                 ResourceConstraintManager.InvalidPeriod.selector,
                 uint64(10_000_000),
-                uint64(86401),
+                uint64(604801),
                 uint64(0)
             )
         );
@@ -498,7 +498,7 @@ contract ResourceConstraintManagerTest is Test {
 
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraintsMaxPeriod =
             new ArbMultiGasConstraintsTypes.ResourceConstraint[](1);
-        constraintsMaxPeriod[0] = _createMultiGasConstraint(10_000_000, 86400, 0);
+        constraintsMaxPeriod[0] = _createMultiGasConstraint(10_000_000, 604800, 0);
         vm.prank(manager);
         resourceConstraintManager.setMultiGasPricingConstraints(constraintsMaxPeriod);
     }
