@@ -6,6 +6,7 @@ pragma solidity ^0.8.0;
 
 import {AssertionInputs} from "./Assertion.sol";
 import {AssertionState, AssertionStateLib} from "./AssertionState.sol";
+import {RollupLib} from "./RollupLib.sol";
 import {
     OwnableUpgradeable
 } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -40,6 +41,7 @@ contract ZeroLevelBoldFastConfirmer is OwnableUpgradeable, EIP712Upgradeable {
 
     error InvalidGuardianSignature();
     error InvalidSnarkProof();
+    error LatestConfirmedAssertionMismatch(bytes32 expected, bytes32 actual);
 
     event GuardianCouncilSet(address indexed newGuardianCouncil);
 
@@ -66,6 +68,7 @@ contract ZeroLevelBoldFastConfirmer is OwnableUpgradeable, EIP712Upgradeable {
         bytes calldata snarkProof
     ) public {
         _verifyProofs(assertionHash, guardianSignature, snarkProof);
+        _verifyLatestConfirmed(parentAssertionHash);
         rollup.fastConfirmAssertion(assertionHash, parentAssertionHash, confirmState, inboxAcc);
     }
 
@@ -76,6 +79,11 @@ contract ZeroLevelBoldFastConfirmer is OwnableUpgradeable, EIP712Upgradeable {
         bytes calldata snarkProof
     ) external {
         _verifyProofs(assertionHash, guardianSignature, snarkProof);
+        _verifyLatestConfirmed(RollupLib.assertionHash(
+            assertion.beforeStateData.prevPrevAssertionHash,
+            assertion.beforeState,
+            assertion.beforeStateData.sequencerBatchAcc
+        ));
         rollup.fastConfirmNewAssertion(assertion, assertionHash);
     }
 
@@ -96,6 +104,13 @@ contract ZeroLevelBoldFastConfirmer is OwnableUpgradeable, EIP712Upgradeable {
         address _snarkVerifier
     ) external onlyOwner {
         snarkVerifier = ISnarkVerifier(_snarkVerifier);
+    }
+
+    function _verifyLatestConfirmed(bytes32 parentAssertionHash) internal view {
+        bytes32 latestConfirmed = rollup.latestConfirmed();
+        if (parentAssertionHash != latestConfirmed) {
+            revert LatestConfirmedAssertionMismatch(parentAssertionHash, latestConfirmed);
+        }
     }
 
     function _verifyProofs(
