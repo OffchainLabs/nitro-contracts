@@ -467,4 +467,24 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
         emit ChallengeManagerSet(_challengeManager);
         // previously: emit OwnerFunctionCalled(32);
     }
+
+    /**
+     * @notice Set MEL configuration for inbox and sequencer inbox address changes
+     * @param _inbox new address of inbox
+     * @param _sequencerInbox new address of sequencer inbox
+     * @param _melVersionActivationBlock parent chain block number at which the new config activates
+     */
+    function setMELConfig(
+        address _inbox,
+        address _sequencerInbox,
+        uint256 _melVersionActivationBlock
+    ) external override {
+        require(
+            pendingMELVersionActivationBlock == 0 || block.number >= pendingMELVersionActivationBlock,
+            "MEL_CONFIG_ALREADY_SCHEDULED"
+        );
+        require(_melVersionActivationBlock > block.number, "ACTIVATION_MUST_BE_FUTURE");
+        pendingMELVersionActivationBlock = _melVersionActivationBlock;
+        emit MELConfigEvent(_inbox, _sequencerInbox, _melVersionActivationBlock);
+    }
 }
