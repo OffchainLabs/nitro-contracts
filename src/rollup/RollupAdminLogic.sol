@@ -480,7 +480,8 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
         uint256 _melVersionActivationBlock
     ) external override {
         require(
-            pendingMELVersionActivationBlock == 0 || block.number >= pendingMELVersionActivationBlock,
+            pendingMELVersionActivationBlock == 0
+                || block.number >= pendingMELVersionActivationBlock,
             "MEL_CONFIG_ALREADY_SCHEDULED"
         );
         require(_melVersionActivationBlock > block.number, "ACTIVATION_MUST_BE_FUTURE");
