@@ -80,17 +80,6 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         ConfigData calldata prevConfig,
         bytes32 inboxAcc
     ) external onlyValidator(msg.sender) whenNotPaused {
-        /*
-        * To confirm an assertion, the following must be true:
-        * 1. The assertion must be pending
-        * 2. The assertion's deadline must have passed
-        * 3. The assertion's prev must be latest confirmed
-        * 4. The assertion's prev's child confirm deadline must have passed
-        * 5. If the assertion's prev has more than 1 child, the assertion must be the winner of the challenge
-        *
-        * Note that we do not need to ever reject invalid assertion because they can never confirm
-        *      and the stake on them is swept to the loserStakeEscrow as soon as the leaf is created
-        */
 
         // The assertion's must exists and be pending and will be validated in RollupCore.confirmAssertionInternal
         AssertionNode storage assertion = getAssertionStorage(assertionHash);
@@ -283,6 +272,61 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         requireInactiveStaker(msg.sender);
         // amount will be checked when creating an assertion
         reduceStakeTo(msg.sender, target);
+    }
+
+    address zlFastConfirmer;
+    function fastConfirmZeroLevelBold() external whenNotPaused {
+        // all of the checks / side effects that are performed during normal confirmation are as follows (reading through confirmAssertion())
+        // - whenNotPaused
+        // - onlyValidator
+        // - we validate the prev assertion's config hash. (we only do this to find the challenge manager)
+        // - block.number >= assertion.createdAtBlock + prevConfig.confirmPeriodBlocks
+        // - require(prevAssertionHash == latestConfirmed(), "PREV_NOT_LATEST_CONFIRMED");
+        // - if the prev has more than 1 child, check if this assertion is the challenge winner and grace period passed
+        // - require assertion is pending
+        // - validate assertion preimage (global state needed for outbox, assertion hash needed to set latest confirmed)
+        // - set outbox sendroot
+        // - set latest confirmed
+        // - set assertion status to confirmed
+        // - emit AssertionConfirmed event
+
+        // the subset of checks / side effects that are kept for fastConfirmZeroLevelBold are as follows:
+        // - whenNotPaused
+        // - require(prevAssertionHash == latestConfirmed(), "PREV_NOT_LATEST_CONFIRMED");
+        // - require assertion is pending
+        // - validate assertion preimage (global state needed for outbox, assertion hash needed to set latest confirmed)
+        // - set outbox sendroot
+        // - set latest confirmed
+        // - set assertion status to confirmed
+        // - emit AssertionConfirmed event
+
+        // new checks:
+        // - is zlFastConfirmer
+    }
+
+    function fastConfirmNewAssertionZeroLevelBold() external whenNotPaused {
+        // all of the checks / side effects that are performed during normal creation are as follows (reading through stakeOnNewAssertion())
+        // - whenNotPaused
+        // - onlyValidator
+        // - require isStaked
+        // - require baseStake >= assertion.beforeStateData.configData.requiredStake (config hash validated later)
+        // - require baseStake isn't decreasing
+        // - require assertion's prev exists
+        // - require staker is staked on the prev or the prev have a child (not staked on another branch)
+        // - createNewAssertion() - todo: list out what's in here
+        // - set staker's latest staked assertion to the new assertion
+        // - if not overflow, require time since prev >= minimumAssertionPeriod
+        // - transfer stake to appropriate escrow
+
+        // the subset of checks / side effects that are kept for fastConfirmNewAssertionZeroLevelBold are as follows:
+        // - whenNotPaused
+        // - require assertion's prev exists
+        // - createNewAssertion()
+        // - if not overflow, require time since prev >= minimumAssertionPeriod
+        // - transfer stake to appropriate escrow
+
+        // new checks:
+        // - is zlFastConfirmer
     }
 
     /**
