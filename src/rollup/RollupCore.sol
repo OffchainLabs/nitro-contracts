@@ -112,10 +112,6 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     bool public validatorWhitelistDisabled;
     address public anyTrustFastConfirmer;
 
-    // Tracks the activation block of a pending MEL config upgrade.
-    // Non-zero means a config change is scheduled; zero means none is pending.
-    uint256 public pendingMELVersionActivationBlock;
-
     // If the chain this RollupCore is deployed on is an Arbitrum chain.
     bool internal immutable _hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
     // If the chain RollupCore is deployed on, this will contain the ArbSys.blockNumber() at each node's creation.

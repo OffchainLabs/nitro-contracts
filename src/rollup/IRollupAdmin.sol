@@ -66,7 +66,7 @@ interface IRollupAdmin {
     event ChallengeManagerSet(address challengeManager);
 
     /// @dev MEL configuration was updated
-    event MELConfigEvent(address inbox, address sequencerInbox, uint256 melVersionActivationBlock);
+    event MELConfigEvent(address inbox, address sequencerInbox);
 
     function initialize(
         Config calldata config,
@@ -237,11 +237,9 @@ interface IRollupAdmin {
      * @notice Set MEL configuration for inbox and sequencer inbox address changes
      * @param _inbox new address of inbox
      * @param _sequencerInbox new address of sequencer inbox
-     * @param _melVersionActivationBlock parent chain block number at which the new config activates
      */
     function setMELConfig(
         address _inbox,
-        address _sequencerInbox,
-        uint256 _melVersionActivationBlock
+        address _sequencerInbox
     ) external;
 }
