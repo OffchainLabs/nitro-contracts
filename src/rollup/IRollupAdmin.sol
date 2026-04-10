@@ -238,8 +238,5 @@ interface IRollupAdmin {
      * @param _inbox new address of inbox
      * @param _sequencerInbox new address of sequencer inbox
      */
-    function setMELConfig(
-        address _inbox,
-        address _sequencerInbox
-    ) external;
+    function setMELConfig(address _inbox, address _sequencerInbox) external;
 }

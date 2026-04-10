@@ -473,10 +473,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      * @param _inbox new address of inbox
      * @param _sequencerInbox new address of sequencer inbox
      */
-    function setMELConfig(
-        address _inbox,
-        address _sequencerInbox
-    ) external override {
+    function setMELConfig(address _inbox, address _sequencerInbox) external override {
         emit MELConfigEvent(_inbox, _sequencerInbox);
     }
 }
