@@ -21,6 +21,17 @@ interface IRollupCore is IAssertionChain {
         address withdrawalAddress;
     }
 
+    struct MELConfig {
+        // MEL version
+        uint64 melVersion;
+        // Inbox contract that MEL will use from this moment on
+        address inbox;
+        // SequencerInbox contract that MEL will use from this moment on
+        address sequencerInbox;
+        // The block number at which this MEL version was activated
+        uint64 activationBlockNumber;
+    }
+
     event RollupInitialized(bytes32 machineHash, uint256 chainId);
 
     event AssertionCreated(

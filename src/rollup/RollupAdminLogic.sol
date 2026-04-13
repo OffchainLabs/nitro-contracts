@@ -414,7 +414,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      */
     function setSequencerInbox(
         address _sequencerInbox
-    ) external override {
+    ) public {
         bridge.setSequencerInbox(_sequencerInbox);
         emit SequencerInboxSet(_sequencerInbox);
         // previously: emit OwnerFunctionCalled(27);
@@ -426,7 +426,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      */
     function setInbox(
         IInboxBase newInbox
-    ) external {
+    ) public {
         inbox = newInbox;
         emit InboxSet(address(newInbox));
         // previously: emit OwnerFunctionCalled(28);
@@ -466,5 +466,38 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
         challengeManager = IEdgeChallengeManager(_challengeManager);
         emit ChallengeManagerSet(_challengeManager);
         // previously: emit OwnerFunctionCalled(32);
+    }
+
+    /**
+     * @inheritdoc IRollupAdmin
+     */
+    function setMELConfig(
+        uint64 _melVersion,
+        address _inbox,
+        address _sequencerInbox
+    ) external {
+        // MEL versions can only be increased
+        require(_melVersion > melVersion, "INVALID_MEL_VERSION");
+
+        // Setting the contracts
+        setInbox(IInboxBase(_inbox));
+        setSequencerInbox(_sequencerInbox);
+
+        // Set the new MEL version
+        melVersion = _melVersion;
+
+        // Save the new MELConfig
+        MELConfig memory _melConfig = MELConfig({
+            melVersion: _melVersion,
+            inbox: _inbox,
+            sequencerInbox: _sequencerInbox,
+            activationBlockNumber: uint64(block.number)
+        });
+
+        bytes32 melConfigHash = keccak256(abi.encode(_melConfig));
+        melConfig[melConfigHash] = _melConfig;
+
+        // Emit event to signal the update to nitro
+        emit MELConfigSet(_melVersion, _inbox, _sequencerInbox, uint64(block.number));
     }
 }

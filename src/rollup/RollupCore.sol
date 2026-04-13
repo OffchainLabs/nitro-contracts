@@ -117,6 +117,13 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     // If the chain RollupCore is deployed on, this will contain the ArbSys.blockNumber() at each node's creation.
     mapping(bytes32 => uint256) internal _assertionCreatedAtArbSysBlock;
 
+    // Message Extraction Layer (MEL) version
+    uint64 public melVersion;
+
+    // Message Extraction Layer (MEL) config history
+    // MELConfig hash => MELConfig
+    mapping (bytes32 => MELConfig) public melConfig;
+
     function sequencerInbox() public view virtual returns (ISequencerInbox) {
         return ISequencerInbox(bridge.sequencerInbox());
     }

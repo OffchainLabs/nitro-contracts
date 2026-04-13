@@ -65,6 +65,11 @@ interface IRollupAdmin {
     /// @dev Challenge manager was set
     event ChallengeManagerSet(address challengeManager);
 
+    /// @dev MELConfig was set
+    event MELConfigSet(
+        uint64 indexed melVersion, address indexed inbox, address indexed sequencerInbox, uint64 activationBlock 
+    );
+
     function initialize(
         Config calldata config,
         ContractDependencies calldata connectedContracts
@@ -207,6 +212,14 @@ interface IRollupAdmin {
     ) external;
 
     /**
+     * @notice sets the rollup's inbox reference. Does not update the bridge's view.
+     * @param newInbox new address of inbox
+     */
+    function setInbox(
+        IInboxBase newInbox
+    ) external;
+
+    /**
      * @notice set the validatorWhitelistDisabled flag
      * @param _validatorWhitelistDisabled new value of validatorWhitelistDisabled, i.e. true = disabled
      */
@@ -228,5 +241,17 @@ interface IRollupAdmin {
      */
     function setChallengeManager(
         address _challengeManager
+    ) external;
+
+    /**
+     * @notice set a new MELConfig which updates the current version and sets new Inbox and Bridge contracts
+     * @param _melVersion new MEL Version
+     * @param _inbox new address of the inbox contract
+     * @param _sequencerInbox new address of sequencer inbox
+     */
+    function setMELConfig(
+        uint64 _melVersion,
+        address _inbox,
+        address _sequencerInbox
     ) external;
 }
