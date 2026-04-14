@@ -283,7 +283,7 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         bytes32 prevAssertionHash,
         AssertionState calldata confirmState,
         bytes32 inboxAcc
-    ) external whenNotPaused {
+    ) public whenNotPaused {
         // all of the checks / side effects that are performed during normal confirmation are as follows (reading through confirmAssertion())
         // - whenNotPaused
         // - onlyValidator
@@ -318,7 +318,11 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         confirmAssertionInternal(assertionHash, prevAssertionHash, confirmState, inboxAcc);
     }
 
-    function fastConfirmNewAssertionZeroLevelBold() external whenNotPaused {
+    // this is a reimplementation of fastConfirmNewAssertion + ZeroLevelBoldFastConfirmer to validate the approach
+    function fastConfirmNewAssertionZeroLevelBold(
+        AssertionInputs calldata assertion,
+        bytes32 expectedAssertionHash
+    ) external whenNotPaused {
         // all of the checks / side effects that are performed during normal creation are as follows (reading through stakeOnNewAssertion())
         // - whenNotPaused
         // - onlyValidator
@@ -358,6 +362,44 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
 
         // new checks:
         // - is zlFastConfirmer
+        // - require expectedAssertionHash is supplied
+
+        require(msg.sender == zlFastConfirmer, "NOT_ZL_FAST_CONFIRMER");
+
+        require(expectedAssertionHash != bytes32(0), "EXPECTED_ASSERTION_HASH");
+
+        bytes32 prevAssertion = RollupLib.assertionHash(
+            assertion.beforeStateData.prevPrevAssertionHash,
+            assertion.beforeState,
+            assertion.beforeStateData.sequencerBatchAcc
+        );
+        getAssertionStorage(prevAssertion).requireExists();
+
+        AssertionStatus status = getAssertionStorage(expectedAssertionHash).status;
+        if (status == AssertionStatus.NoAssertion) {
+            // If not exists, we create the new assertion
+            (bytes32 newAssertionHash, bool overflowAssertion) =
+                createNewAssertion(assertion, prevAssertion, expectedAssertionHash);
+
+            if (!overflowAssertion) {
+                uint256 timeSincePrev = block.number - getAssertionStorage(prevAssertion).createdAtBlock;
+                // Verify that assertion meets the minimum Delta time requirement
+                require(timeSincePrev >= minimumAssertionPeriod, "TIME_DELTA");
+            }
+
+            if (!getAssertionStorage(newAssertionHash).isFirstChild) {
+                IERC20(stakeToken).safeTransfer(
+                    loserStakeEscrow, assertion.beforeStateData.configData.requiredStake
+                );
+            }
+        }
+
+        fastConfirmZeroLevelBold(
+            expectedAssertionHash,
+            prevAssertion,
+            assertion.afterState,
+            bridge.sequencerInboxAccs(assertion.afterState.globalState.getInboxPosition() - 1)
+        );
     }
 
     /**
