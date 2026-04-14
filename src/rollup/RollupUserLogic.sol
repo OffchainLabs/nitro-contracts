@@ -274,8 +274,16 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         reduceStakeTo(msg.sender, target);
     }
 
+
+    // this version assumes there are no checks being performed by the zlFastConfirmer besides snark + council.
+    // it is a reimplementation of fastConfirmAssertion + ZeroLevelBoldFastConfirmer to validate the approach
     address zlFastConfirmer;
-    function fastConfirmZeroLevelBold() external whenNotPaused {
+    function fastConfirmZeroLevelBold(
+        bytes32 assertionHash,
+        bytes32 prevAssertionHash,
+        AssertionState calldata confirmState,
+        bytes32 inboxAcc
+    ) external whenNotPaused {
         // all of the checks / side effects that are performed during normal confirmation are as follows (reading through confirmAssertion())
         // - whenNotPaused
         // - onlyValidator
@@ -283,25 +291,31 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         // - block.number >= assertion.createdAtBlock + prevConfig.confirmPeriodBlocks
         // - require(prevAssertionHash == latestConfirmed(), "PREV_NOT_LATEST_CONFIRMED");
         // - if the prev has more than 1 child, check if this assertion is the challenge winner and grace period passed
-        // - require assertion is pending
-        // - validate assertion preimage (global state needed for outbox, assertion hash needed to set latest confirmed)
-        // - set outbox sendroot
-        // - set latest confirmed
-        // - set assertion status to confirmed
-        // - emit AssertionConfirmed event
+        // - confirmAssertionInternal():
+        //   - require assertion is pending
+        //   - validate assertion preimage (global state needed for outbox, assertion hash needed to set latest confirmed)
+        //   - set outbox sendroot
+        //   - set latest confirmed
+        //   - set assertion status to confirmed
+        //   - emit AssertionConfirmed event
 
         // the subset of checks / side effects that are kept for fastConfirmZeroLevelBold are as follows:
         // - whenNotPaused
         // - require(prevAssertionHash == latestConfirmed(), "PREV_NOT_LATEST_CONFIRMED");
-        // - require assertion is pending
-        // - validate assertion preimage (global state needed for outbox, assertion hash needed to set latest confirmed)
-        // - set outbox sendroot
-        // - set latest confirmed
-        // - set assertion status to confirmed
-        // - emit AssertionConfirmed event
+        // - confirmAssertionInternal():
+        //   - require assertion is pending
+        //   - validate assertion preimage (global state needed for outbox, assertion hash needed to set latest confirmed)
+        //   - set outbox sendroot
+        //   - set latest confirmed
+        //   - set assertion status to confirmed
+        //   - emit AssertionConfirmed event
 
         // new checks:
         // - is zlFastConfirmer
+
+        require(msg.sender == zlFastConfirmer, "NOT_ZL_FAST_CONFIRMER");
+        require(prevAssertionHash == latestConfirmed(), "PREV_NOT_LATEST_CONFIRMED"); // this check exists in the ZeroLevelBoldFastConfirmer in the other impl
+        confirmAssertionInternal(assertionHash, prevAssertionHash, confirmState, inboxAcc);
     }
 
     function fastConfirmNewAssertionZeroLevelBold() external whenNotPaused {
