@@ -313,7 +313,24 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         // - require baseStake isn't decreasing
         // - require assertion's prev exists
         // - require staker is staked on the prev or the prev have a child (not staked on another branch)
-        // - createNewAssertion() - todo: list out what's in here
+        // - createNewAssertion():
+        //   - validate config hash against prev assertion
+        //   - require afterState is FINISHED or ERRORED
+        //   - require beforeState matches prevAssertionHash
+        //   - require beforeState is FINISHED
+        //   - validate inbox position: afterGS >= beforeGS, afterGS <= nextInboxPosition
+        //   - detect overflow assertion (didn't reach target nextInboxPosition)
+        //   - require afterGS inbox position <= current bridge inbox count
+        //   - require nextInboxPosition <= current bridge inbox count
+        //   - compute nextInboxPosition for the next assertion (currentInboxCount, or +1 if no new messages)
+        //   - require afterInboxPosition != 0
+        //   - fetch sequencerBatchAcc from bridge
+        //   - compute newAssertionHash, check against expectedAssertionHash
+        //   - require assertion not already seen
+        //   - create AssertionNode in storage with configHash
+        //   - mark prevAssertion as having a child
+        //   - emit AssertionCreated event
+        //   - record ArbSys block number if on Arbitrum
         // - set staker's latest staked assertion to the new assertion
         // - if not overflow, require time since prev >= minimumAssertionPeriod
         // - transfer stake to appropriate escrow
