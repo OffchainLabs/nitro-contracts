@@ -80,6 +80,17 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         ConfigData calldata prevConfig,
         bytes32 inboxAcc
     ) external onlyValidator(msg.sender) whenNotPaused {
+        /*
+        * To confirm an assertion, the following must be true:
+        * 1. The assertion must be pending
+        * 2. The assertion's deadline must have passed
+        * 3. The assertion's prev must be latest confirmed
+        * 4. The assertion's prev's child confirm deadline must have passed
+        * 5. If the assertion's prev has more than 1 child, the assertion must be the winner of the challenge
+        *
+        * Note that we do not need to ever reject invalid assertion because they can never confirm
+        *      and the stake on them is swept to the loserStakeEscrow as soon as the leaf is created
+        */
 
         // The assertion's must exists and be pending and will be validated in RollupCore.confirmAssertionInternal
         AssertionNode storage assertion = getAssertionStorage(assertionHash);
