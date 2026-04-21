@@ -24,6 +24,7 @@ interface ISnarkVerifier {
     ) external view returns (bool);
 }
 
+// todo: add AnyTrust fast confirmer path to perserve that functionality
 contract ZeroLevelBoldFastConfirmer is OwnableUpgradeable, EIP712Upgradeable {
     using AssertionStateLib for AssertionState;
 
