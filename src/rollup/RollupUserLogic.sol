@@ -286,7 +286,9 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
     }
 
     /**
-     * @notice This allows fastConfirmers to force confirm any pending assertion
+     * @notice This allow the anyTrustFastConfirmer to force confirm any pending assertion
+     *         the anyTrustFastConfirmer is supposed to be set only on an AnyTrust chain to
+     *         a contract that can call this function when received sufficient signatures
      */
     function fastConfirmAssertion(
         bytes32 assertionHash,
@@ -294,20 +296,20 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         AssertionState calldata confirmState,
         bytes32 inboxAcc
     ) public whenNotPaused {
-        require(_fastConfirmers.contains(msg.sender), "NOT_FAST_CONFIRMER");
+        require(msg.sender == anyTrustFastConfirmer, "NOT_FAST_CONFIRMER");
         // this skip deadline, prev, challenge validations
         confirmAssertionInternal(assertionHash, parentAssertionHash, confirmState, inboxAcc);
     }
 
     /**
-     * @notice This allows fastConfirmers to immediately create and confirm an assertion
-     *
+     * @notice This allow the anyTrustFastConfirmer to immediately create and confirm an assertion
+     *         the anyTrustFastConfirmer is supposed to be set only on an AnyTrust chain to
+     *         a contract that can call this function when received sufficient signatures
      *         The logic in this function is similar to stakeOnNewAssertion, but without staker checks
      *
-     *         We trust the fastConfirmers to not call this function multiple times on the same prev,
+     *         We trust the anyTrustFastConfirmer to not call this function multiple times on the same prev,
      *         as doing so would result in incorrect accounting of withdrawable funds in the loserStakeEscrow.
      *         This is because the protocol assume there is only 1 unique confirmable child assertion.
-     *         Since fastConfirmers are assumed to only create / confirm honest assertions, this should not be an issue in practice.
      */
     function fastConfirmNewAssertion(
         AssertionInputs calldata assertion,

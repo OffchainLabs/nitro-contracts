@@ -59,8 +59,8 @@ interface IRollupAdmin {
     /// @dev Validator whitelist was disabled or enabled
     event ValidatorWhitelistDisabledSet(bool _validatorWhitelistDisabled);
 
-    /// @dev Fast confirmer was set or unset
-    event FastConfirmerSet(address anyTrustFastConfirmer, bool enabled);
+    /// @dev AnyTrust fast confirmer was set
+    event AnyTrustFastConfirmerSet(address anyTrustFastConfirmer);
 
     /// @dev Challenge manager was set
     event ChallengeManagerSet(address challengeManager);
@@ -215,11 +215,11 @@ interface IRollupAdmin {
     ) external;
 
     /**
-     * @notice set or unset a fastConfirmer address
+     * @notice set the anyTrustFastConfirmer address
+     * @param _anyTrustFastConfirmer new value of anyTrustFastConfirmer
      */
-    function setFastConfirmer(
-        address fastConfirmer,
-        bool enabled
+    function setAnyTrustFastConfirmer(
+        address _anyTrustFastConfirmer
     ) external;
 
     /**

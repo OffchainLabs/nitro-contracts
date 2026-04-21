@@ -110,25 +110,15 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     uint256 public rollupDeploymentBlock;
 
     bool public validatorWhitelistDisabled;
-    address internal __unused__anyTrustFastConfirmer;
+    address public anyTrustFastConfirmer;
 
     // If the chain this RollupCore is deployed on is an Arbitrum chain.
     bool internal immutable _hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
     // If the chain RollupCore is deployed on, this will contain the ArbSys.blockNumber() at each node's creation.
     mapping(bytes32 => uint256) internal _assertionCreatedAtArbSysBlock;
 
-    EnumerableSetUpgradeable.AddressSet internal _fastConfirmers;
-
     function sequencerInbox() public view virtual returns (ISequencerInbox) {
         return ISequencerInbox(bridge.sequencerInbox());
-    }
-
-    /// @notice Fast confirmers are allowed to create and confirm assertions instantly, without any checks or stake.
-    ///         Fast confirmers are assumed to only create / confirm honest assertions.
-    ///         In an AnyTrust chain, there may be a fastConfirmer which is a contract that can call this function when it receives sufficient signatures from DAC members.
-    ///         In a 0-level bold enabled chain, there may be a fastConfirmer which accepts guardian signatures and a SNARK proving the assertion.
-    function fastConfirmers() external view returns (address[] memory) {
-        return _fastConfirmers.values();
     }
 
     /**

@@ -35,7 +35,6 @@ struct Config {
     /// @notice The inbox size at the time the genesis execution state was created
     uint256 genesisInboxCount;
     address anyTrustFastConfirmer;
-    address zeroLevelBoldFastConfirmer;
     uint8 numBigStepLevel;
     uint64 challengeGracePeriodBlocks;
     BufferConfig bufferConfig;

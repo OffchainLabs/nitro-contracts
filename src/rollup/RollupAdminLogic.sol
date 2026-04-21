@@ -66,12 +66,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
         loserStakeEscrow = config.loserStakeEscrow;
 
         stakeToken = config.stakeToken;
-        if (config.anyTrustFastConfirmer != address(0)) {
-            _fastConfirmers.add(config.anyTrustFastConfirmer);
-        }
-        if (config.zeroLevelBoldFastConfirmer != address(0)) {
-            _fastConfirmers.add(config.zeroLevelBoldFastConfirmer);
-        }
+        anyTrustFastConfirmer = config.anyTrustFastConfirmer;
 
         bytes32 parentAssertionHash = bytes32(0);
         bytes32 inboxAcc = bytes32(0);
@@ -116,16 +111,6 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
         }
 
         emit RollupInitialized(config.wasmModuleRoot, config.chainId);
-    }
-
-    function postUpgradeInit(address zeroLevelBoldFastConfirmer) external onlyProxy reinitializer(2) {
-        if (zeroLevelBoldFastConfirmer != address(0)) {
-            _fastConfirmers.add(zeroLevelBoldFastConfirmer);
-        }
-        if (__unused__anyTrustFastConfirmer != address(0)) {
-            _fastConfirmers.add(__unused__anyTrustFastConfirmer);
-            __unused__anyTrustFastConfirmer = address(0);
-        }
     }
 
     /**
@@ -460,14 +445,15 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
     }
 
     /**
-     * @notice set or unset a fastConfirmer address
+     * @notice set the anyTrustFastConfirmer address
+     * @param _anyTrustFastConfirmer new value of anyTrustFastConfirmer
      */
-    function setFastConfirmer(
-        address fastConfirmer,
-        bool enabled
+    function setAnyTrustFastConfirmer(
+        address _anyTrustFastConfirmer
     ) external {
-        enabled ? _fastConfirmers.add(fastConfirmer) : _fastConfirmers.remove(fastConfirmer);
-        emit FastConfirmerSet(fastConfirmer, enabled);
+        anyTrustFastConfirmer = _anyTrustFastConfirmer;
+        emit AnyTrustFastConfirmerSet(_anyTrustFastConfirmer);
+        // previously: emit OwnerFunctionCalled(31);
     }
 
     /**
