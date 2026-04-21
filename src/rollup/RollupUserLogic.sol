@@ -285,6 +285,134 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         reduceStakeTo(msg.sender, target);
     }
 
+
+    // this version assumes there are no checks being performed by the zlFastConfirmer besides snark + council.
+    // it is a reimplementation of fastConfirmAssertion + ZeroLevelBoldFastConfirmer to validate the approach
+    address zlFastConfirmer;
+    function fastConfirmZeroLevelBold(
+        bytes32 assertionHash,
+        bytes32 prevAssertionHash,
+        AssertionState calldata confirmState,
+        bytes32 inboxAcc
+    ) public whenNotPaused {
+        // all of the checks / side effects that are performed during normal confirmation are as follows (reading through confirmAssertion())
+        // - whenNotPaused
+        // - onlyValidator
+        // - we validate the prev assertion's config hash. (we only do this to find the challenge manager)
+        // - block.number >= assertion.createdAtBlock + prevConfig.confirmPeriodBlocks
+        // - require(prevAssertionHash == latestConfirmed(), "PREV_NOT_LATEST_CONFIRMED");
+        // - if the prev has more than 1 child, check if this assertion is the challenge winner and grace period passed
+        // - confirmAssertionInternal():
+        //   - require assertion is pending
+        //   - validate assertion preimage (global state needed for outbox, assertion hash needed to set latest confirmed)
+        //   - set outbox sendroot
+        //   - set latest confirmed
+        //   - set assertion status to confirmed
+        //   - emit AssertionConfirmed event
+
+        // the subset of checks / side effects that are kept for fastConfirmZeroLevelBold are as follows:
+        // - whenNotPaused
+        // - require(prevAssertionHash == latestConfirmed(), "PREV_NOT_LATEST_CONFIRMED");
+        // - confirmAssertionInternal():
+        //   - require assertion is pending
+        //   - validate assertion preimage (global state needed for outbox, assertion hash needed to set latest confirmed)
+        //   - set outbox sendroot
+        //   - set latest confirmed
+        //   - set assertion status to confirmed
+        //   - emit AssertionConfirmed event
+
+        // new checks:
+        // - is zlFastConfirmer
+
+        require(msg.sender == zlFastConfirmer, "NOT_ZL_FAST_CONFIRMER");
+        require(prevAssertionHash == latestConfirmed(), "PREV_NOT_LATEST_CONFIRMED"); // this check exists in the ZeroLevelBoldFastConfirmer in the other impl
+        confirmAssertionInternal(assertionHash, prevAssertionHash, confirmState, inboxAcc);
+    }
+
+    // this is a reimplementation of fastConfirmNewAssertion + ZeroLevelBoldFastConfirmer to validate the approach
+    function fastConfirmNewAssertionZeroLevelBold(
+        AssertionInputs calldata assertion,
+        bytes32 expectedAssertionHash
+    ) external whenNotPaused {
+        // all of the checks / side effects that are performed during normal creation are as follows (reading through stakeOnNewAssertion())
+        // - whenNotPaused
+        // - onlyValidator
+        // - require isStaked
+        // - require baseStake >= assertion.beforeStateData.configData.requiredStake (config hash validated later)
+        // - require baseStake isn't decreasing
+        // - require assertion's prev exists
+        // - require staker is staked on the prev or the prev have a child (not staked on another branch)
+        // - createNewAssertion():
+        //   - validate config hash against prev assertion
+        //   - require afterState is FINISHED or ERRORED
+        //   - require beforeState matches prevAssertionHash
+        //   - require beforeState is FINISHED
+        //   - validate inbox position: afterGS >= beforeGS, afterGS <= nextInboxPosition
+        //   - detect overflow assertion (didn't reach target nextInboxPosition)
+        //   - require afterGS inbox position <= current bridge inbox count
+        //   - require nextInboxPosition <= current bridge inbox count
+        //   - compute nextInboxPosition for the next assertion (currentInboxCount, or +1 if no new messages)
+        //   - require afterInboxPosition != 0
+        //   - fetch sequencerBatchAcc from bridge
+        //   - compute newAssertionHash, check against expectedAssertionHash
+        //   - require assertion not already seen
+        //   - create AssertionNode in storage with configHash
+        //   - mark prevAssertion as having a child
+        //   - emit AssertionCreated event
+        //   - record ArbSys block number if on Arbitrum
+        // - set staker's latest staked assertion to the new assertion
+        // - if not overflow, require time since prev >= minimumAssertionPeriod
+        // - transfer stake to appropriate escrow
+
+        // the subset of checks / side effects that are kept for fastConfirmNewAssertionZeroLevelBold are as follows:
+        // - whenNotPaused
+        // - require assertion's prev exists
+        // - createNewAssertion()
+        // - if not overflow, require time since prev >= minimumAssertionPeriod
+        // - transfer stake to appropriate escrow
+
+        // new checks:
+        // - is zlFastConfirmer
+        // - require expectedAssertionHash is supplied
+
+        require(msg.sender == zlFastConfirmer, "NOT_ZL_FAST_CONFIRMER");
+
+        require(expectedAssertionHash != bytes32(0), "EXPECTED_ASSERTION_HASH");
+
+        bytes32 prevAssertion = RollupLib.assertionHash(
+            assertion.beforeStateData.prevPrevAssertionHash,
+            assertion.beforeState,
+            assertion.beforeStateData.sequencerBatchAcc
+        );
+        getAssertionStorage(prevAssertion).requireExists();
+
+        AssertionStatus status = getAssertionStorage(expectedAssertionHash).status;
+        if (status == AssertionStatus.NoAssertion) {
+            // If not exists, we create the new assertion
+            (bytes32 newAssertionHash, bool overflowAssertion) =
+                createNewAssertion(assertion, prevAssertion, expectedAssertionHash);
+
+            if (!overflowAssertion) {
+                uint256 timeSincePrev = block.number - getAssertionStorage(prevAssertion).createdAtBlock;
+                // Verify that assertion meets the minimum Delta time requirement
+                require(timeSincePrev >= minimumAssertionPeriod, "TIME_DELTA");
+            }
+
+            if (!getAssertionStorage(newAssertionHash).isFirstChild) {
+                IERC20(stakeToken).safeTransfer(
+                    loserStakeEscrow, assertion.beforeStateData.configData.requiredStake
+                );
+            }
+        }
+
+        fastConfirmZeroLevelBold(
+            expectedAssertionHash,
+            prevAssertion,
+            assertion.afterState,
+            bridge.sequencerInboxAccs(assertion.afterState.globalState.getInboxPosition() - 1)
+        );
+    }
+
     /**
      * @notice This allow the anyTrustFastConfirmer to force confirm any pending assertion
      *         the anyTrustFastConfirmer is supposed to be set only on an AnyTrust chain to
