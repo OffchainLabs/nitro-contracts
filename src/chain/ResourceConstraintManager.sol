@@ -23,6 +23,7 @@ contract ResourceConstraintManager is AccessControlEnumerable {
     uint64 public constant MAX_PRICING_EXPONENT = 8000; // scaled by 1000 to allow for fractional exponents
 
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+    uint256 public constant TWO_YEARS_IN_SECONDS = 365 days * 2;
     uint256 public expiryTimestamp;
 
     error TooManyConstraints();
@@ -36,15 +37,23 @@ contract ResourceConstraintManager is AccessControlEnumerable {
     error PricingExponentTooHigh(uint64 pricingExponent);
     error NotExpired();
 
-    constructor(address admin, address manager, uint256 _expiryTimestamp) {
+    constructor(address admin, address manager) {
         _setupRole(DEFAULT_ADMIN_ROLE, admin);
         _setupRole(MANAGER_ROLE, manager);
-        expiryTimestamp = _expiryTimestamp;
+    }
+
+    /// @notice Sets the expiry timestamp for the current manager contract if it has not been set already.
+    ///        This is called at the beginning of the setGasPricingConstraints and setMultiGasPricingConstraints functions
+    ///        to ensure that this contract can only be used for 2 years from the moment it is first used.
+    function setExpiryTimestamp() internal {
+        if (expiryTimestamp == 0) {
+            expiryTimestamp = block.timestamp + TWO_YEARS_IN_SECONDS;
+        }
     }
 
     /// @notice Removes the contract from the list of chain owners after the expiry timestamp
     function revoke() external {
-        if (block.timestamp < expiryTimestamp) {
+        if (expiryTimestamp == 0 || block.timestamp < expiryTimestamp) {
             revert NotExpired();
         }
         ARB_OWNER.removeChainOwner(address(this));
@@ -59,6 +68,9 @@ contract ResourceConstraintManager is AccessControlEnumerable {
     function setGasPricingConstraints(
         uint64[3][] calldata constraints
     ) external onlyRole(MANAGER_ROLE) {
+        // Set the expiry timestamp in the first call to either `set` function
+        setExpiryTimestamp();
+
         // If zero constraints are provided, the chain uses the single-constraint pricing model
         uint256 nConstraints = constraints.length;
         if (nConstraints > MAX_SINGLE_GAS_CONSTRAINTS) {
@@ -112,6 +124,9 @@ contract ResourceConstraintManager is AccessControlEnumerable {
     function setMultiGasPricingConstraints(
         ArbMultiGasConstraintsTypes.ResourceConstraint[] calldata constraints
     ) external onlyRole(MANAGER_ROLE) {
+        // Set the expiry timestamp in the first call to either `set` function
+        setExpiryTimestamp();
+
         // If zero constraints are provided, the chain uses the single-constraint pricing model
         // Each constraint adds a small amount of overhead to the gas cost of each transaction and block, so we limit the number of constraints that can be set
         uint256 nConstraints = constraints.length;
