@@ -10,24 +10,106 @@ contract ResourceConstraintManagerTest is Test {
 
     address constant admin = address(1337);
     address constant manager = address(7331);
-    uint256 constant expiryTimestamp = 12345678;
 
     constructor() {
-        resourceConstraintManager = new ResourceConstraintManager(admin, manager, expiryTimestamp);
+        resourceConstraintManager = new ResourceConstraintManager(admin, manager);
         vm.etch(address(ARB_OWNER), type(ArbOwnerMock).runtimeCode);
     }
 
     function test_revoke() external {
-        // Test before expiry
-        vm.warp(expiryTimestamp - 1);
+        // Trigger the expiry timestamp via the first set call
+        uint256 startTime = 1_000_000;
+        vm.warp(startTime);
+        uint64[3][] memory constraints = new uint64[3][](1);
+        constraints[0] = [uint64(10_000_000), uint64(100), uint64(0)];
+        vm.prank(manager);
+        resourceConstraintManager.setGasPricingConstraints(constraints);
+
+        uint256 expiry = startTime + resourceConstraintManager.TWO_YEARS_IN_SECONDS();
+        assertEq(resourceConstraintManager.expiryTimestamp(), expiry);
+
+        // One second before expiry should revert
+        vm.warp(expiry - 1);
         vm.expectRevert(ResourceConstraintManager.NotExpired.selector);
         resourceConstraintManager.revoke();
 
-        // Test after expiry
-        vm.warp(expiryTimestamp);
+        // Exactly at expiry should succeed
+        vm.warp(expiry);
         assertFalse(ARB_OWNER.removeChainOwnerCalled());
         resourceConstraintManager.revoke();
         assertTrue(ARB_OWNER.removeChainOwnerCalled());
+    }
+
+    function test_revoke_neverUsed() external {
+        // If no set call has been made, expiryTimestamp is 0 and revoke must revert
+        assertEq(resourceConstraintManager.expiryTimestamp(), 0);
+        vm.expectRevert(ResourceConstraintManager.NotExpired.selector);
+        resourceConstraintManager.revoke();
+
+        // Warping far forward does not change that — expiry was never initialized
+        vm.warp(type(uint64).max);
+        vm.expectRevert(ResourceConstraintManager.NotExpired.selector);
+        resourceConstraintManager.revoke();
+    }
+
+    function test_expiryTimestamp_notUpdatedOnSubsequentCalls() external {
+        uint256 startTime = 1_000_000;
+        vm.warp(startTime);
+
+        uint64[3][] memory constraints = new uint64[3][](1);
+        constraints[0] = [uint64(10_000_000), uint64(100), uint64(0)];
+        vm.prank(manager);
+        resourceConstraintManager.setGasPricingConstraints(constraints);
+
+        uint256 originalExpiry = resourceConstraintManager.expiryTimestamp();
+        assertEq(originalExpiry, startTime + resourceConstraintManager.TWO_YEARS_IN_SECONDS());
+
+        // A later call must not shift the expiry forward
+        vm.warp(startTime + 1 days);
+        vm.prank(manager);
+        resourceConstraintManager.setGasPricingConstraints(constraints);
+        assertEq(resourceConstraintManager.expiryTimestamp(), originalExpiry);
+
+        // Same guarantee after a much larger gap
+        vm.warp(startTime + 365 days);
+        vm.prank(manager);
+        resourceConstraintManager.setGasPricingConstraints(constraints);
+        assertEq(resourceConstraintManager.expiryTimestamp(), originalExpiry);
+    }
+
+    function test_expiryTimestamp_sharedAcrossSetters() external {
+        uint64[3][] memory singleConstraints = new uint64[3][](1);
+        singleConstraints[0] = [uint64(10_000_000), uint64(100), uint64(0)];
+        ArbMultiGasConstraintsTypes.ResourceConstraint[] memory multiConstraints =
+            new ArbMultiGasConstraintsTypes.ResourceConstraint[](1);
+        multiConstraints[0] = _createMultiGasConstraint(10_000_000, 100, 0);
+
+        // Case 1: single-dim first, multi-dim second — multi-dim must not reset expiry
+        uint256 startTime1 = 1_000_000;
+        vm.warp(startTime1);
+        vm.prank(manager);
+        resourceConstraintManager.setGasPricingConstraints(singleConstraints);
+        uint256 expiry1 = resourceConstraintManager.expiryTimestamp();
+        assertEq(expiry1, startTime1 + resourceConstraintManager.TWO_YEARS_IN_SECONDS());
+
+        vm.warp(startTime1 + 1 days);
+        vm.prank(manager);
+        resourceConstraintManager.setMultiGasPricingConstraints(multiConstraints);
+        assertEq(resourceConstraintManager.expiryTimestamp(), expiry1);
+
+        // Case 2: multi-dim first, single-dim second — single-dim must not reset expiry
+        uint256 startTime2 = 2_000_000;
+        vm.warp(startTime2);
+        ResourceConstraintManager rcm2 = new ResourceConstraintManager(admin, manager);
+        vm.prank(manager);
+        rcm2.setMultiGasPricingConstraints(multiConstraints);
+        uint256 expiry2 = rcm2.expiryTimestamp();
+        assertEq(expiry2, startTime2 + rcm2.TWO_YEARS_IN_SECONDS());
+
+        vm.warp(startTime2 + 1 days);
+        vm.prank(manager);
+        rcm2.setGasPricingConstraints(singleConstraints);
+        assertEq(rcm2.expiryTimestamp(), expiry2);
     }
 
     //
