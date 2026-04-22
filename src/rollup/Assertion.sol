@@ -5,6 +5,7 @@
 pragma solidity ^0.8.0;
 
 import "./AssertionState.sol";
+import "./MELState.sol";
 
 enum AssertionStatus {
     // No assertion at this index
@@ -50,6 +51,7 @@ struct AssertionInputs {
     BeforeStateData beforeStateData;
     AssertionState beforeState;
     AssertionState afterState;
+    MELState afterMELState;
 }
 
 struct ConfigData {
@@ -57,7 +59,8 @@ struct ConfigData {
     uint256 requiredStake;
     address challengeManager;
     uint64 confirmPeriodBlocks;
-    uint64 nextInboxPosition;
+    // The next assertion should process parent chain blocks up to this one
+    bytes32 nextParentChainBlockHash;
 }
 
 /**

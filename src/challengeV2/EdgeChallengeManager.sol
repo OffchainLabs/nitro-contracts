@@ -224,15 +224,13 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
             assertionChain.validateAssertionHash(
                 args.claimId,
                 claimStateData.assertionState,
-                claimStateData.prevAssertionHash,
-                claimStateData.inboxAcc
+                claimStateData.prevAssertionHash
             );
 
             assertionChain.validateAssertionHash(
                 claimStateData.prevAssertionHash,
                 predecessorStateData.assertionState,
-                predecessorStateData.prevAssertionHash,
-                predecessorStateData.inboxAcc
+                predecessorStateData.prevAssertionHash
             );
 
             if (args.endHistoryRoot != claimStateData.assertionState.endHistoryRoot) {
@@ -376,8 +374,7 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
             assertionChain.validateAssertionHash(
                 topEdge.claimId,
                 claimStateData.assertionState,
-                claimStateData.prevAssertionHash,
-                claimStateData.inboxAcc
+                claimStateData.prevAssertionHash
             );
             assertionBlocks = assertionChain.getSecondChildCreationBlock(
                 claimStateData.prevAssertionHash

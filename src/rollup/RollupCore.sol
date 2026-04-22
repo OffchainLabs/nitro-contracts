@@ -9,6 +9,7 @@ import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeab
 
 import "./Assertion.sol";
 import "./RollupLib.sol";
+import "./MELState.sol";
 import "./IRollupEventInbox.sol";
 import "./IRollupCore.sol";
 
@@ -23,6 +24,7 @@ import "../libraries/ArbitrumChecker.sol";
 abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     using AssertionNodeLib for AssertionNode;
     using GlobalStateLib for GlobalState;
+    using MELStateLib for MELState;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
     // Rollup Config
@@ -279,8 +281,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     function confirmAssertionInternal(
         bytes32 assertionHash,
         bytes32 parentAssertionHash,
-        AssertionState calldata confirmState,
-        bytes32 inboxAcc
+        AssertionState calldata confirmState
     ) internal {
         AssertionNode storage assertion = getAssertionStorage(assertionHash);
         // Check that assertion is pending, this also checks that assertion exists
@@ -291,8 +292,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
             assertionHash
                 == RollupLib.assertionHash({
                     parentAssertionHash: parentAssertionHash,
-                    afterState: confirmState,
-                    inboxAcc: inboxAcc
+                    afterState: confirmState
                 }),
             "CONFIRM_DATA"
         );
@@ -420,7 +420,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         AssertionInputs calldata assertion,
         bytes32 prevAssertionHash,
         bytes32 expectedAssertionHash
-    ) internal returns (bytes32 newAssertionHash, bool overflowAssertion) {
+    ) internal returns (bytes32 newAssertionHash) {
         // Validate the config hash
         RollupLib.validateConfigHash(
             assertion.beforeStateData.configData, getAssertionStorage(prevAssertionHash).configHash
@@ -439,10 +439,15 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         require(
             RollupLib.assertionHash(
                 assertion.beforeStateData.prevPrevAssertionHash,
-                assertion.beforeState,
-                assertion.beforeStateData.sequencerBatchAcc
+                assertion.beforeState
             ) == prevAssertionHash,
             "INVALID_BEFORE_STATE"
+        );
+
+        // validate the MELState hash provided
+        require(
+            assertion.afterMELState.hash() == assertion.afterState.globalState.getMELStateHash(),
+            "INVALID_MEL_STATE"
         );
 
         // The rollup cannot advance from an errored state
@@ -453,88 +458,24 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         require(assertion.beforeState.machineStatus == MachineStatus.FINISHED, "BAD_PREV_STATUS");
 
         AssertionNode storage prevAssertion = getAssertionStorage(prevAssertionHash);
-        // Required inbox position through which the next assertion (the one after this new assertion) must consume
-        uint256 nextInboxPosition;
-        bytes32 sequencerBatchAcc;
         {
-            // This new assertion consumes the messages from prevInboxPosition to afterInboxPosition
+            // This new assertion consumes the messages from prevParentChainBlockHash to afterParentChainBlockHash
             GlobalState calldata afterGS = assertion.afterState.globalState;
             GlobalState calldata beforeGS = assertion.beforeState.globalState;
+            MELState calldata afterMELState = assertion.afterMELState;
+            
+            // AfterState must have executed at least as many messages as beforeState
+            require(afterGS.compareExecutedMessages(beforeGS) >= 0, "INBOX_BACKWARDS");
 
-            // there are 3 kinds of assertions that can be made. Assertions must be made when they fill the maximum number
-            // of blocks, or when they process all messages up to prev.nextInboxPosition. When they fill the max
-            // blocks, but dont manage to process all messages, we call this an "overflow" assertion.
-            // 1. ERRORED assertion
-            //    The machine finished in an ERRORED state. This can happen with processing any
-            //    messages, or moving the position in the message.
-            // 2. FINISHED assertion that did not overflow
-            //    The machine finished as normal, and fully processed all the messages up to prev.nextInboxPosition.
-            //    In this case the inbox position must equal prev.nextInboxPosition and position in message must be 0
-            // 3. FINISHED assertion that did overflow
-            //    The machine finished as normal, but didn't process all messages in the inbox.
-            //    The inbox can be anywhere between the previous assertion's position and the nextInboxPosition, exclusive.
-
-            //    All types of assertion must have inbox position in the range prev.inboxPosition <= x <= prev.nextInboxPosition
-            require(afterGS.comparePositions(beforeGS) >= 0, "INBOX_BACKWARDS");
-            int256 afterStateCmpMaxInbox = afterGS.comparePositionsAgainstStartOfBatch(
-                assertion.beforeStateData.configData.nextInboxPosition
-            );
-            require(afterStateCmpMaxInbox <= 0, "INBOX_TOO_FAR");
-
-            if (
-                assertion.afterState.machineStatus != MachineStatus.ERRORED
-                    && afterStateCmpMaxInbox < 0
-            ) {
-                // If we didn't reach the target next inbox position, this is an overflow assertion.
-                overflowAssertion = true;
-                // This shouldn't be necessary, but might as well constrain the assertion to be non-empty
-                require(afterGS.comparePositions(beforeGS) > 0, "OVERFLOW_STANDSTILL");
-            }
-            // Inbox position at the time of this assertion being created
-            uint256 currentInboxPosition = bridge.sequencerMessageCount();
-            // Cannot read more messages than currently exist in the inbox
+            // Checking the last processed block hash (we won't check for overflowing assertions)
             require(
-                afterGS.comparePositionsAgainstStartOfBatch(currentInboxPosition) <= 0,
-                "INBOX_PAST_END"
+                afterMELState.parentChainBlockHash == assertion.beforeStateData.configData.nextParentChainBlockHash,
+                "BAD_PARENT_CHAIN_BLOCK_HASH"
             );
-
-            // under normal circumstances prev.nextInboxPosition is guaranteed to exist
-            // because we populate it from bridge.sequencerMessageCount(). However, when
-            // the inbox message count doesnt change we artificially increase it by 1 as explained below
-            // in this case we need to ensure when the assertion is made the inbox messages are available
-            // to ensure that a valid assertion can actually be made.
-            require(
-                assertion.beforeStateData.configData.nextInboxPosition <= currentInboxPosition,
-                "INBOX_NOT_POPULATED"
-            );
-
-            // The next assertion must consume all the messages that are currently found in the inbox
-            uint256 afterInboxPosition = afterGS.getInboxPosition();
-            if (afterInboxPosition == currentInboxPosition) {
-                // No new messages have been added to the inbox since the last assertion
-                // In this case if we set the next inbox position to the current one we would be insisting that
-                // the next assertion process no messages. So instead we increment the next inbox position to current
-                // plus one, so that the next assertion will process exactly one message.
-                // Thus, no assertion can be empty (except the genesis assertion, which is created
-                // via a different codepath).
-                nextInboxPosition = currentInboxPosition + 1;
-            } else {
-                nextInboxPosition = currentInboxPosition;
-            }
-
-            // only the genesis assertion processes no messages, and that assertion is created
-            // when we initialize this contract. Therefore, all assertions created here should have a non
-            // zero inbox position.
-            require(afterInboxPosition != 0, "EMPTY_INBOX_COUNT");
-
-            // Fetch the inbox accumulator for this message count. Fetching this and checking against it
-            // allows the assertion creator to ensure they're creating an assertion against the expected
-            // inbox messages
-            sequencerBatchAcc = bridge.sequencerInboxAccs(afterInboxPosition - 1);
         }
 
-        newAssertionHash =
-            RollupLib.assertionHash(prevAssertionHash, assertion.afterState, sequencerBatchAcc);
+        // AfterState includes the hash of the MELState up to which messages have been processed
+        newAssertionHash = RollupLib.assertionHash(prevAssertionHash, assertion.afterState);
 
         // allow an assertion creator to ensure that they're creating their assertion against the expected state
         require(
@@ -550,6 +491,9 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
             "ASSERTION_SEEN"
         );
 
+        // Next assertion will have to process messages from blocks up to the previous one
+        bytes32 nextParentChainBlockHash = blockhash(block.number - 1);
+
         // state updates
         AssertionNode memory newAssertion = AssertionNodeLib.createAssertion(
             prevAssertion.firstChildBlock == 0, // assumes block 0 is impossible
@@ -558,7 +502,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
                 requiredStake: baseStake,
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: confirmPeriodBlocks,
-                nextInboxPosition: uint64(nextInboxPosition)
+                nextParentChainBlockHash: nextParentChainBlockHash
             })
         );
 
@@ -571,8 +515,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
             newAssertionHash,
             prevAssertionHash,
             assertion,
-            sequencerBatchAcc,
-            nextInboxPosition,
+            nextParentChainBlockHash,
             wasmModuleRoot,
             baseStake,
             address(challengeManager),
@@ -593,11 +536,9 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         AssertionState memory emptyAssertionState =
             AssertionState(emptyGlobalState, MachineStatus.FINISHED, bytes32(0));
         bytes32 parentAssertionHash = bytes32(0);
-        bytes32 inboxAcc = bytes32(0);
         return RollupLib.assertionHash({
             parentAssertionHash: parentAssertionHash,
-            afterState: emptyAssertionState,
-            inboxAcc: inboxAcc
+            afterState: emptyAssertionState
         });
     }
 
@@ -616,11 +557,10 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     function validateAssertionHash(
         bytes32 assertionHash,
         AssertionState calldata state,
-        bytes32 prevAssertionHash,
-        bytes32 inboxAcc
+        bytes32 prevAssertionHash
     ) external pure {
         require(
-            assertionHash == RollupLib.assertionHash(prevAssertionHash, state, inboxAcc),
+            assertionHash == RollupLib.assertionHash(prevAssertionHash, state),
             "INVALID_ASSERTION_HASH"
         );
     }

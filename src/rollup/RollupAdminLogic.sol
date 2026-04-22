@@ -69,18 +69,12 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
         anyTrustFastConfirmer = config.anyTrustFastConfirmer;
 
         bytes32 parentAssertionHash = bytes32(0);
-        bytes32 inboxAcc = bytes32(0);
         bytes32 genesisHash = RollupLib.assertionHash({
             parentAssertionHash: parentAssertionHash,
-            afterStateHash: config.genesisAssertionState.hash(),
-            inboxAcc: inboxAcc
+            afterStateHash: config.genesisAssertionState.hash()
         });
 
-        uint256 currentInboxCount = bridge.sequencerMessageCount();
-        // ensure to move the inbox forward by at least one message
-        if (currentInboxCount == config.genesisInboxCount) {
-            currentInboxCount += 1;
-        }
+        bytes32 nextParentChainBlockHash = blockhash(block.number - 1);
         AssertionNode memory initialAssertion = AssertionNodeLib.createAssertion(
             true,
             RollupLib.configHash({
@@ -88,7 +82,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
                 requiredStake: baseStake,
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: confirmPeriodBlocks,
-                nextInboxPosition: uint64(currentInboxCount)
+                nextParentChainBlockHash: nextParentChainBlockHash
             })
         );
         initializeCore(initialAssertion, genesisHash);
@@ -99,8 +93,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
             genesisHash,
             parentAssertionHash,
             assertionInputs,
-            inboxAcc,
-            currentInboxCount,
+            nextParentChainBlockHash,
             wasmModuleRoot,
             baseStake,
             address(challengeManager),
@@ -267,7 +260,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      */
     function decreaseBaseStake(
         uint256 newBaseStake,
-        uint64 latestNextInboxPosition
+        bytes32 latestNextParentChainBlockHash
     ) external override {
         require(newBaseStake < baseStake, "BASE_STAKE_NOT_DECREASED");
 
@@ -292,7 +285,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
             requiredStake: baseStake,
             challengeManager: address(challengeManager),
             confirmPeriodBlocks: confirmPeriodBlocks,
-            nextInboxPosition: uint64(latestNextInboxPosition)
+            nextParentChainBlockHash: latestNextParentChainBlockHash
         });
 
         uint256 pendingCount = 0;
@@ -313,7 +306,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
                     requiredStake: newBaseStake,
                     challengeManager: address(challengeManager),
                     confirmPeriodBlocks: confirmPeriodBlocks,
-                    nextInboxPosition: uint64(latestNextInboxPosition)
+                    nextParentChainBlockHash: latestNextParentChainBlockHash
                 });
 
                 pendingCount++;
@@ -376,11 +369,10 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
     function forceConfirmAssertion(
         bytes32 assertionHash,
         bytes32 parentAssertionHash,
-        AssertionState calldata confirmState,
-        bytes32 inboxAcc
+        AssertionState calldata confirmState
     ) external override whenPaused {
         // this skip deadline, prev, challenge validations
-        confirmAssertionInternal(assertionHash, parentAssertionHash, confirmState, inboxAcc);
+        confirmAssertionInternal(assertionHash, parentAssertionHash, confirmState);
         emit AssertionForceConfirmed(assertionHash);
         // previously: emit OwnerFunctionCalled(24);
     }

@@ -5,8 +5,15 @@
 pragma solidity ^0.8.0;
 
 struct GlobalState {
+    // BlockHash and SendRoot
     bytes32[2] bytes32Vals;
+    // Deprecated after MEL: Batch (InboxPosition) and PositionInBatch (PositionInMessage)
     uint64[2] u64Vals;
+
+    // MELState hash and NextMsg hash
+    bytes32[2] melBytes32Vals;
+    // MsgCount and ExecutedMsgCount
+    uint64[2] melU64Vals;
 }
 
 library GlobalStateLib {
@@ -24,7 +31,11 @@ library GlobalStateLib {
                 state.bytes32Vals[0],
                 state.bytes32Vals[1],
                 state.u64Vals[0],
-                state.u64Vals[1]
+                state.u64Vals[1],
+                state.melBytes32Vals[0],
+                state.melBytes32Vals[1],
+                state.melU64Vals[0],
+                state.melU64Vals[1]
             )
         );
     }
@@ -51,6 +62,30 @@ library GlobalStateLib {
         GlobalState memory state
     ) internal pure returns (uint64) {
         return state.u64Vals[1];
+    }
+
+    function getMELStateHash(
+        GlobalState memory state
+    ) internal pure returns (bytes32) {
+        return state.melBytes32Vals[0];
+    }
+
+    function getMELNextMsgHash(
+        GlobalState memory state
+    ) internal pure returns (bytes32) {
+        return state.melBytes32Vals[1];
+    }
+
+    function getMELMsgCount(
+        GlobalState memory state
+    ) internal pure returns (uint64) {
+        return state.melU64Vals[0];
+    }
+
+    function getMELExecutedMsgCount(
+        GlobalState memory state
+    ) internal pure returns (uint64) {
+        return state.melU64Vals[1];
     }
 
     function isEmpty(
@@ -100,6 +135,21 @@ library GlobalStateLib {
             } else {
                 return 0;
             }
+        }
+    }
+
+    function compareExecutedMessages(
+        GlobalState calldata a,
+        GlobalState calldata b
+    ) internal pure returns (int256) {
+        uint64 aPos = a.getMELExecutedMsgCount();
+        uint64 bPos = b.getMELExecutedMsgCount();
+        if (aPos < bPos) {
+            return -1;
+        } else if (aPos > bPos) {
+            return 1;
+        } else {
+            return 0;
         }
     }
 }
