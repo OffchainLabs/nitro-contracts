@@ -67,7 +67,7 @@ interface IRollupAdmin {
 
     /// @dev MELConfig was set
     event MELConfigSet(
-        uint64 indexed melVersion, address indexed inbox, address indexed sequencerInbox, uint64 activationBlock 
+        uint16 indexed melVersion, address indexed inbox, address indexed sequencerInbox, uint64 activationBlock 
     );
 
     function initialize(
@@ -249,7 +249,7 @@ interface IRollupAdmin {
      * @param _sequencerInbox new address of sequencer inbox
      */
     function setMELConfig(
-        uint64 _melVersion,
+        uint16 _melVersion,
         address _inbox,
         address _sequencerInbox
     ) external;

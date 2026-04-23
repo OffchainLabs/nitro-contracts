@@ -464,7 +464,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      * @inheritdoc IRollupAdmin
      */
     function setMELConfig(
-        uint64 _melVersion,
+        uint16 _melVersion,
         address _inbox,
         address _sequencerInbox
     ) external {
