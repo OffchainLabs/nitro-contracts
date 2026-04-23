@@ -492,16 +492,16 @@ contract ResourceConstraintManagerTest is Test {
     }
 
     function test_setMultiGasPricingConstraints_invalidTarget() external {
-        // Test gas target below minimum (9,999,999)
+        // Test gas target below minimum (999,999)
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraintsLowTarget =
             new ArbMultiGasConstraintsTypes.ResourceConstraint[](1);
-        constraintsLowTarget[0] = _createMultiGasConstraint(9_999_999, 100, 0);
+        constraintsLowTarget[0] = _createMultiGasConstraint(999_999, 100, 0);
 
         vm.prank(manager);
         vm.expectRevert(
             abi.encodeWithSelector(
                 ResourceConstraintManager.InvalidTarget.selector,
-                uint64(9_999_999),
+                uint64(999_999),
                 uint64(100),
                 uint64(0)
             )
@@ -527,7 +527,7 @@ contract ResourceConstraintManagerTest is Test {
         // Test edge cases (exactly at boundaries should succeed)
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraintsMinTarget =
             new ArbMultiGasConstraintsTypes.ResourceConstraint[](1);
-        constraintsMinTarget[0] = _createMultiGasConstraint(10_000_000, 100, 0);
+        constraintsMinTarget[0] = _createMultiGasConstraint(1_000_000, 100, 0);
         vm.prank(manager);
         resourceConstraintManager.setMultiGasPricingConstraints(constraintsMinTarget);
 
@@ -539,33 +539,33 @@ contract ResourceConstraintManagerTest is Test {
     }
 
     function test_setMultiGasPricingConstraints_invalidPeriod() external {
-        // Test adjustment window below minimum (4 seconds)
+        // Test adjustment window below minimum (0 seconds)
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraintsLowPeriod =
             new ArbMultiGasConstraintsTypes.ResourceConstraint[](1);
-        constraintsLowPeriod[0] = _createMultiGasConstraint(10_000_000, 4, 0);
+        constraintsLowPeriod[0] = _createMultiGasConstraint(10_000_000, 0, 0);
 
         vm.prank(manager);
         vm.expectRevert(
             abi.encodeWithSelector(
                 ResourceConstraintManager.InvalidPeriod.selector,
                 uint64(10_000_000),
-                uint64(4),
+                uint64(0),
                 uint64(0)
             )
         );
         resourceConstraintManager.setMultiGasPricingConstraints(constraintsLowPeriod);
 
-        // Test adjustment window above maximum (604801 seconds)
+        // Test adjustment window above maximum (2,592,001 seconds)
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraintsHighPeriod =
             new ArbMultiGasConstraintsTypes.ResourceConstraint[](1);
-        constraintsHighPeriod[0] = _createMultiGasConstraint(10_000_000, 604801, 0);
+        constraintsHighPeriod[0] = _createMultiGasConstraint(10_000_000, 2_592_001, 0);
 
         vm.prank(manager);
         vm.expectRevert(
             abi.encodeWithSelector(
                 ResourceConstraintManager.InvalidPeriod.selector,
                 uint64(10_000_000),
-                uint64(604801),
+                uint64(2_592_001),
                 uint64(0)
             )
         );
@@ -574,13 +574,13 @@ contract ResourceConstraintManagerTest is Test {
         // Test edge cases (exactly at boundaries should succeed)
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraintsMinPeriod =
             new ArbMultiGasConstraintsTypes.ResourceConstraint[](1);
-        constraintsMinPeriod[0] = _createMultiGasConstraint(10_000_000, 5, 0);
+        constraintsMinPeriod[0] = _createMultiGasConstraint(10_000_000, 1, 0);
         vm.prank(manager);
         resourceConstraintManager.setMultiGasPricingConstraints(constraintsMinPeriod);
 
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraintsMaxPeriod =
             new ArbMultiGasConstraintsTypes.ResourceConstraint[](1);
-        constraintsMaxPeriod[0] = _createMultiGasConstraint(10_000_000, 604800, 0);
+        constraintsMaxPeriod[0] = _createMultiGasConstraint(10_000_000, 2_592_000, 0);
         vm.prank(manager);
         resourceConstraintManager.setMultiGasPricingConstraints(constraintsMaxPeriod);
     }
@@ -591,13 +591,13 @@ contract ResourceConstraintManagerTest is Test {
             new ArbMultiGasConstraintsTypes.ResourceConstraint[](3);
         constraints[0] = _createMultiGasConstraint(10_000_000, 100, 0); // Valid
         constraints[1] = _createMultiGasConstraint(20_000_000, 200, 0); // Valid
-        constraints[2] = _createMultiGasConstraint(5_000_000, 100, 0); // Invalid target
+        constraints[2] = _createMultiGasConstraint(999_999, 100, 0); // Invalid target
 
         vm.prank(manager);
         vm.expectRevert(
             abi.encodeWithSelector(
                 ResourceConstraintManager.InvalidTarget.selector,
-                uint64(5_000_000),
+                uint64(999_999),
                 uint64(100),
                 uint64(0)
             )
@@ -606,7 +606,7 @@ contract ResourceConstraintManagerTest is Test {
 
         // Test with invalid period in middle
         constraints[0] = _createMultiGasConstraint(10_000_000, 100, 0); // Valid
-        constraints[1] = _createMultiGasConstraint(20_000_000, 3, 0); // Invalid period
+        constraints[1] = _createMultiGasConstraint(20_000_000, 0, 0); // Invalid period
         constraints[2] = _createMultiGasConstraint(30_000_000, 100, 0); // Valid
 
         vm.prank(manager);
@@ -614,7 +614,7 @@ contract ResourceConstraintManagerTest is Test {
             abi.encodeWithSelector(
                 ResourceConstraintManager.InvalidPeriod.selector,
                 uint64(20_000_000),
-                uint64(3),
+                uint64(0),
                 uint64(0)
             )
         );
