@@ -5,21 +5,17 @@
 pragma solidity ^0.8.0;
 
 struct GlobalState {
-    // BlockHash and SendRoot
-    bytes32[2] bytes32Vals;
-    // Deprecated after MEL: Batch (InboxPosition) and PositionInBatch (PositionInMessage)
+    // BlockHash, SendRoot, MELState hash and NextMsg hash
+    bytes32[4] bytes32Vals;
+    // TBD: Batch (InboxPosition) and PositionInBatch (PositionInMessage)
+    //      or MsgCount and ExecutedMsgCount
     uint64[2] u64Vals;
-
-    // MELState hash and NextMsg hash
-    bytes32[2] melBytes32Vals;
-    // MsgCount and ExecutedMsgCount
-    uint64[2] melU64Vals;
 }
 
 library GlobalStateLib {
     using GlobalStateLib for GlobalState;
 
-    uint16 internal constant BYTES32_VALS_NUM = 2;
+    uint16 internal constant BYTES32_VALS_NUM = 4;
     uint16 internal constant U64_VALS_NUM = 2;
 
     function hash(
@@ -30,12 +26,10 @@ library GlobalStateLib {
                 "Global state:",
                 state.bytes32Vals[0],
                 state.bytes32Vals[1],
+                state.bytes32Vals[2],
+                state.bytes32Vals[3],
                 state.u64Vals[0],
-                state.u64Vals[1],
-                state.melBytes32Vals[0],
-                state.melBytes32Vals[1],
-                state.melU64Vals[0],
-                state.melU64Vals[1]
+                state.u64Vals[1]
             )
         );
     }
@@ -52,6 +46,18 @@ library GlobalStateLib {
         return state.bytes32Vals[1];
     }
 
+    function getMELStateHash(
+        GlobalState memory state
+    ) internal pure returns (bytes32) {
+        return state.bytes32Vals[2];
+    }
+
+    function getMELNextMsgHash(
+        GlobalState memory state
+    ) internal pure returns (bytes32) {
+        return state.bytes32Vals[3];
+    }
+
     function getInboxPosition(
         GlobalState memory state
     ) internal pure returns (uint64) {
@@ -64,28 +70,16 @@ library GlobalStateLib {
         return state.u64Vals[1];
     }
 
-    function getMELStateHash(
-        GlobalState memory state
-    ) internal pure returns (bytes32) {
-        return state.melBytes32Vals[0];
-    }
-
-    function getMELNextMsgHash(
-        GlobalState memory state
-    ) internal pure returns (bytes32) {
-        return state.melBytes32Vals[1];
-    }
-
     function getMELMsgCount(
         GlobalState memory state
     ) internal pure returns (uint64) {
-        return state.melU64Vals[0];
+        return state.u64Vals[0];
     }
 
     function getMELExecutedMsgCount(
         GlobalState memory state
     ) internal pure returns (uint64) {
-        return state.melU64Vals[1];
+        return state.u64Vals[1];
     }
 
     function isEmpty(
@@ -93,6 +87,7 @@ library GlobalStateLib {
     ) internal pure returns (bool) {
         return (
             state.bytes32Vals[0] == bytes32(0) && state.bytes32Vals[1] == bytes32(0)
+                && state.bytes32Vals[2] == bytes32(0) && state.bytes32Vals[3] == bytes32(0)
                 && state.u64Vals[0] == 0 && state.u64Vals[1] == 0
         );
     }

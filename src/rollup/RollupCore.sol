@@ -119,12 +119,12 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     // If the chain RollupCore is deployed on, this will contain the ArbSys.blockNumber() at each node's creation.
     mapping(bytes32 => uint256) internal _assertionCreatedAtArbSysBlock;
 
-    // Message Extraction Layer (MEL) version
-    uint64 public melVersion;
+    // Message Extraction Layer (MEL) current config hash
+    bytes32 public currentMelConfigHash;
 
     // Message Extraction Layer (MEL) config history
     // MELConfig hash => MELConfig
-    mapping (bytes32 => MELConfig) public melConfig;
+    mapping(bytes32 => MELConfig) public melConfig;
 
     function sequencerInbox() public view virtual returns (ISequencerInbox) {
         return ISequencerInbox(bridge.sequencerInbox());
@@ -438,8 +438,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         // validate the provided before state is correct by checking that it's part of the prev assertion hash
         require(
             RollupLib.assertionHash(
-                assertion.beforeStateData.prevPrevAssertionHash,
-                assertion.beforeState
+                assertion.beforeStateData.prevPrevAssertionHash, assertion.beforeState
             ) == prevAssertionHash,
             "INVALID_BEFORE_STATE"
         );
@@ -463,18 +462,19 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
             GlobalState calldata afterGS = assertion.afterState.globalState;
             GlobalState calldata beforeGS = assertion.beforeState.globalState;
             MELState calldata afterMELState = assertion.afterMELState;
-            
+
             // AfterState must have executed at least as many messages as beforeState
             require(afterGS.compareExecutedMessages(beforeGS) >= 0, "INBOX_BACKWARDS");
 
             // Checking the last processed block hash (we won't check for overflowing assertions)
             require(
-                afterMELState.parentChainBlockHash == assertion.beforeStateData.configData.nextParentChainBlockHash,
+                afterMELState.parentChainBlockHash
+                    == assertion.beforeStateData.configData.nextParentChainBlockHash,
                 "BAD_PARENT_CHAIN_BLOCK_HASH"
             );
         }
 
-        // AfterState includes the hash of the MELState up to which messages have been processed
+        // AfterState includes the hash of the MELState up to which messages have been read
         newAssertionHash = RollupLib.assertionHash(prevAssertionHash, assertion.afterState);
 
         // allow an assertion creator to ensure that they're creating their assertion against the expected state

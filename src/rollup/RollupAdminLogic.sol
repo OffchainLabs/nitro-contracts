@@ -463,20 +463,13 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
     /**
      * @inheritdoc IRollupAdmin
      */
-    function setMELConfig(
-        uint16 _melVersion,
-        address _inbox,
-        address _sequencerInbox
-    ) external {
-        // MEL versions can only be increased
-        require(_melVersion > melVersion, "INVALID_MEL_VERSION");
-
-        // Setting the contracts
-        setInbox(IInboxBase(_inbox));
-        setSequencerInbox(_sequencerInbox);
-
-        // Set the new MEL version
-        melVersion = _melVersion;
+    function setMELConfig(uint16 _melVersion, address _inbox, address _sequencerInbox) external {
+        // MEL versions can only be increased, except for the initial version, which must be version 0
+        if (currentMelConfigHash == bytes32(0)) {
+            require(_melVersion == 0, "INVALID_MEL_VERSION");
+        } else {
+            require(_melVersion > melConfig[currentMelConfigHash].melVersion, "INVALID_MEL_VERSION");
+        }
 
         // Save the new MELConfig
         MELConfig memory _melConfig = MELConfig({
@@ -488,6 +481,11 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
 
         bytes32 melConfigHash = keccak256(abi.encode(_melConfig));
         melConfig[melConfigHash] = _melConfig;
+        currentMelConfigHash = melConfigHash;
+
+        // Setting the contracts
+        setInbox(IInboxBase(_inbox));
+        setSequencerInbox(_sequencerInbox);
 
         // Emit event to signal the update to nitro
         emit MELConfigSet(_melVersion, _inbox, _sequencerInbox, uint64(block.number));
