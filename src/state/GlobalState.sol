@@ -92,47 +92,6 @@ library GlobalStateLib {
         );
     }
 
-    function comparePositions(
-        GlobalState calldata a,
-        GlobalState calldata b
-    ) internal pure returns (int256) {
-        uint64 aPos = a.getInboxPosition();
-        uint64 bPos = b.getInboxPosition();
-        if (aPos < bPos) {
-            return -1;
-        } else if (aPos > bPos) {
-            return 1;
-        } else {
-            uint64 aMsg = a.getPositionInMessage();
-            uint64 bMsg = b.getPositionInMessage();
-            if (aMsg < bMsg) {
-                return -1;
-            } else if (aMsg > bMsg) {
-                return 1;
-            } else {
-                return 0;
-            }
-        }
-    }
-
-    function comparePositionsAgainstStartOfBatch(
-        GlobalState calldata a,
-        uint256 bPos
-    ) internal pure returns (int256) {
-        uint64 aPos = a.getInboxPosition();
-        if (aPos < bPos) {
-            return -1;
-        } else if (aPos > bPos) {
-            return 1;
-        } else {
-            if (a.getPositionInMessage() > 0) {
-                return 1;
-            } else {
-                return 0;
-            }
-        }
-    }
-
     function compareExecutedMessages(
         GlobalState calldata a,
         GlobalState calldata b
