@@ -5,7 +5,7 @@
 pragma solidity ^0.8.0;
 
 import "./AssertionState.sol";
-import "./MELState.sol";
+import "../state/MELState.sol";
 
 enum AssertionStatus {
     // No assertion at this index

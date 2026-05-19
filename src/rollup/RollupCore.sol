@@ -9,11 +9,11 @@ import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeab
 
 import "./Assertion.sol";
 import "./RollupLib.sol";
-import "./MELState.sol";
 import "./IRollupEventInbox.sol";
 import "./IRollupCore.sol";
 
 import "../state/Machine.sol";
+import "../state/MELState.sol";
 
 import "../bridge/ISequencerInbox.sol";
 import "../bridge/IBridge.sol";
