@@ -399,12 +399,8 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
 
         assertionChain.validateConfig(prevAssertionHash, prevConfig);
 
-        // TODO(PR 427): OSP contracts are marked as pending work in the PR.
-        // Inbox-position-based checks no longer apply; use type(uint256).max as
-        // a stopgap until OSP is rewired against `nextParentChainBlockHash`.
         ExecutionContext memory execCtx = ExecutionContext({
-            maxInboxMessagesRead: type(uint256).max,
-            bridge: assertionChain.bridge(),
+            maxParentChainBlockHash: prevConfig.nextParentChainBlockHash,
             initialWasmModuleRoot: prevConfig.wasmModuleRoot
         });
 

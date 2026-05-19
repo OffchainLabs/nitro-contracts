@@ -15,6 +15,7 @@ contract OneStepProofEntry is IOneStepProofEntry {
     using MerkleProofLib for MerkleProof;
     using MachineLib for Machine;
     using GlobalStateLib for GlobalState;
+    using MELStateLib for MELState;
     using MultiStackLib for MultiStack;
 
     using ValueStackLib for ValueStack;
@@ -104,9 +105,22 @@ contract OneStepProofEntry is IOneStepProofEntry {
                 GlobalState memory globalState;
                 (globalState, offset) = Deserialize.globalState(proof, offset);
                 require(globalState.hash() == mach.globalStateHash, "BAD_GLOBAL_STATE");
+
+                MELState memory melState;
+                (melState, offset) = Deserialize.melState(proof, offset);
+                require(melState.hash() == globalState.getMELStateHash(), "BAD_MEL_STATE");
+
+                // The machine has finished processing a message and we're at the start of the next execution segment (machineStep == 0).
+                // If the MELState is not at its target (meaning that it hasn't finished extracting messages),
+                // or there are still messages to be processed in MEL, we kickstart the machine.
                 if (
                     mach.status == MachineStatus.FINISHED && machineStep == 0
-                        && globalState.getInboxPosition() < execCtx.maxInboxMessagesRead
+                        && (
+                            // Machine hasn't extracted messages for this assertion (should only happen before the extraction process is started)
+                            melState.parentChainBlockHash != execCtx.maxParentChainBlockHash
+                            // Machine finishes extracting all messages, but hasn't finished executing them yet
+                            || globalState.getMELExecutedMsgCount() < globalState.getMELMsgCount()
+                        )
                 ) {
                     // Kickstart the machine
                     return getStartMachineHash(mach.globalStateHash, execCtx.initialWasmModuleRoot);

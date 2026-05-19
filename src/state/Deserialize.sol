@@ -14,6 +14,7 @@ import "./MerkleProof.sol";
 import "./ModuleMemoryCompact.sol";
 import "./Module.sol";
 import "./GlobalState.sol";
+import "./MELState.sol";
 
 library Deserialize {
     function u8(
@@ -90,6 +91,16 @@ library Deserialize {
         offset = startOffset;
         ret = uint8(proof[offset]) != 0;
         offset++;
+    }
+
+    function addr(
+        bytes calldata proof,
+        uint256 startOffset
+    ) internal pure returns (address ret, uint256 offset) {
+        offset = startOffset;
+        uint256 retInt;
+        (retInt, offset) = u256(proof, offset);
+        ret = address(uint160(retInt));
     }
 
     function value(
@@ -251,6 +262,58 @@ library Deserialize {
         }
 
         state = GlobalState({bytes32Vals: bytes32Vals, u64Vals: u64Vals});
+    }
+    
+    function melState(
+        bytes calldata proof,
+        uint256 startOffset
+    ) internal pure returns (MELState memory state, uint256 offset) {
+        offset = startOffset;
+        uint16 version;
+        uint64 parentChainId;
+        uint64 parentChainBlockNumber;
+        address batchPostingTargetAddress;
+        address delayedMessagePostingTargetAddress;
+        bytes32 parentChainBlockHash;
+        bytes32 parentChainPreviousBlockHash;
+        uint64 batchCount;
+        uint64 msgCount;
+        bytes32 localMsgAccumulator;
+        uint64 delayedMessagesRead;
+        uint64 delayedMessagesSeen;
+        bytes32 delayedMessageInboxAcc;
+        bytes32 delayedMessageOutboxAcc;
+        (version, offset) = u16(proof, offset);
+        (parentChainId, offset) = u64(proof, offset);
+        (parentChainBlockNumber, offset) = u64(proof, offset);
+        (batchPostingTargetAddress, offset) = addr(proof, offset);
+        (delayedMessagePostingTargetAddress, offset) = addr(proof, offset);
+        (parentChainBlockHash, offset) = b32(proof, offset);
+        (parentChainPreviousBlockHash, offset) = b32(proof, offset);
+        (batchCount, offset) = u64(proof, offset);
+        (msgCount, offset) = u64(proof, offset);
+        (localMsgAccumulator, offset) = b32(proof, offset);
+        (delayedMessagesRead, offset) = u64(proof, offset);
+        (delayedMessagesSeen, offset) = u64(proof, offset);
+        (delayedMessageInboxAcc, offset) = b32(proof, offset);
+        (delayedMessageOutboxAcc, offset) = b32(proof, offset);
+
+        state = MELState({
+            version: version,
+            parentChainId: parentChainId,
+            parentChainBlockNumber: parentChainBlockNumber,
+            batchPostingTargetAddress: batchPostingTargetAddress,
+            delayedMessagePostingTargetAddress: delayedMessagePostingTargetAddress,
+            parentChainBlockHash: parentChainBlockHash,
+            parentChainPreviousBlockHash: parentChainPreviousBlockHash,
+            batchCount: batchCount,
+            msgCount: msgCount,
+            localMsgAccumulator: localMsgAccumulator,
+            delayedMessagesRead: delayedMessagesRead,
+            delayedMessagesSeen: delayedMessagesSeen,
+            delayedMessageInboxAcc: delayedMessageInboxAcc,
+            delayedMessageOutboxAcc: delayedMessageOutboxAcc
+        });
     }
 
     function machine(
