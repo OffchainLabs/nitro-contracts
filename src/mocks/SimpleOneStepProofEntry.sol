@@ -45,7 +45,7 @@ contract SimpleOneStepProofEntry is IOneStepProofEntry {
             return beforeHash;
         }
         if (
-            melState.parentChainBlockHash == execCtx.maxParentChainBlockHash
+            melState.parentChainBlockHash == execCtx.targetParentChainBlockHash
             && globalState.getMELExecutedMsgCount() >= globalState.getMELMsgCount()
         ) {
             // We can't continue further because we've executed all messages up to this melState

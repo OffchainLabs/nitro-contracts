@@ -117,7 +117,7 @@ contract OneStepProofEntry is IOneStepProofEntry {
                     mach.status == MachineStatus.FINISHED && machineStep == 0
                         && (
                             // Machine hasn't extracted messages for this assertion (should only happen before the extraction process is started)
-                            melState.parentChainBlockHash != execCtx.maxParentChainBlockHash
+                            melState.parentChainBlockHash != execCtx.targetParentChainBlockHash
                             // Machine finishes extracting all messages, but hasn't finished executing them yet
                             || globalState.getMELExecutedMsgCount() < globalState.getMELMsgCount()
                         )
@@ -201,6 +201,7 @@ contract OneStepProofEntry is IOneStepProofEntry {
             )
                 || (opcode >= Instructions.VALIDATE_CERTIFICATE && opcode <= Instructions.UNLINK_MODULE)
                 || (opcode >= Instructions.NEW_COTHREAD && opcode <= Instructions.SWITCH_COTHREAD)
+                || (opcode == Instructions.GET_END_PARENT_CHAIN_BLOCK_HASH)
         ) {
             prover = proverHostIo;
         } else {

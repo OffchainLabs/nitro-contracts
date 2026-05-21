@@ -400,7 +400,7 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
         assertionChain.validateConfig(prevAssertionHash, prevConfig);
 
         ExecutionContext memory execCtx = ExecutionContext({
-            maxParentChainBlockHash: prevConfig.nextParentChainBlockHash,
+            targetParentChainBlockHash: prevConfig.nextParentChainBlockHash,
             initialWasmModuleRoot: prevConfig.wasmModuleRoot
         });
 
