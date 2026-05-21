@@ -67,7 +67,10 @@ interface IRollupAdmin {
 
     /// @dev MELConfig was set
     event MELConfigSet(
-        uint16 indexed melVersion, address indexed inbox, address indexed sequencerInbox, uint64 activationBlock 
+        uint16 indexed melVersion,
+        address indexed inbox,
+        address indexed sequencerInbox,
+        uint64 activationBlock
     );
 
     function initialize(
@@ -164,7 +167,10 @@ interface IRollupAdmin {
      * @param newBaseStake New base stake to be set. Must be less than current base stake, otherwise use increaseBaseStake
      * @param latestNextParentChainBlockHash The nextParentChainBlockHash of the only pending latestStakedAssertion
      */
-    function decreaseBaseStake(uint256 newBaseStake, bytes32 latestNextParentChainBlockHash) external;
+    function decreaseBaseStake(
+        uint256 newBaseStake,
+        bytes32 latestNextParentChainBlockHash
+    ) external;
 
     /**
      * @notice Increase the base stake required for creating an assertion
@@ -248,9 +254,5 @@ interface IRollupAdmin {
      * @param _inbox new address of the inbox contract
      * @param _sequencerInbox new address of sequencer inbox
      */
-    function setMELConfig(
-        uint16 _melVersion,
-        address _inbox,
-        address _sequencerInbox
-    ) external;
+    function setMELConfig(uint16 _melVersion, address _inbox, address _sequencerInbox) external;
 }

@@ -222,9 +222,7 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
             ) = abi.decode(args.proof, (bytes32[], AssertionStateData, AssertionStateData));
 
             assertionChain.validateAssertionHash(
-                args.claimId,
-                claimStateData.assertionState,
-                claimStateData.prevAssertionHash
+                args.claimId, claimStateData.assertionState, claimStateData.prevAssertionHash
             );
 
             assertionChain.validateAssertionHash(
@@ -372,9 +370,7 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
             ChallengeEdgeLib.levelToType(topEdge.level, NUM_BIGSTEP_LEVEL) == EdgeType.Block;
         if (isBlockLevel && assertionChain.isFirstChild(topEdge.claimId)) {
             assertionChain.validateAssertionHash(
-                topEdge.claimId,
-                claimStateData.assertionState,
-                claimStateData.prevAssertionHash
+                topEdge.claimId, claimStateData.assertionState, claimStateData.prevAssertionHash
             );
             assertionBlocks = assertionChain.getSecondChildCreationBlock(
                 claimStateData.prevAssertionHash
