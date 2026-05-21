@@ -263,7 +263,7 @@ library Deserialize {
 
         state = GlobalState({bytes32Vals: bytes32Vals, u64Vals: u64Vals});
     }
-    
+
     function melState(
         bytes calldata proof,
         uint256 startOffset

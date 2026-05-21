@@ -580,7 +580,7 @@ contract OneStepProverHostIo is IOneStepProver {
     ) internal pure {
         // Pop pointer to leaf from the value stack where the target parent chain block hash will be written to
         uint256 ptr = mach.valueStack.pop().assumeI32();
-        
+
         // Validate the leaf
         if (!mod.moduleMemory.isValidLeaf(ptr)) {
             mach.status = MachineStatus.ERRORED;
@@ -591,12 +591,11 @@ contract OneStepProverHostIo is IOneStepProver {
         uint256 leafIdx = ptr / LEAF_SIZE;
         uint256 proofOffset = 0;
         MerkleProof memory merkleProof;
-        (, , merkleProof) =
-            mod.moduleMemory.proveLeaf(leafIdx, proof, proofOffset);
-        
+        (,, merkleProof) = mod.moduleMemory.proveLeaf(leafIdx, proof, proofOffset);
+
         // Update merkle root
         mod.moduleMemory.merkleRoot =
-                merkleProof.computeRootFromMemory(leafIdx, execCtx.targetParentChainBlockHash);
+            merkleProof.computeRootFromMemory(leafIdx, execCtx.targetParentChainBlockHash);
     }
 
     function executeOneStep(
