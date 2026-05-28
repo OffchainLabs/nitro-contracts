@@ -12,6 +12,7 @@ import "../state/Deserialize.sol";
 import "../state/ModuleMemory.sol";
 import "./IOneStepProver.sol";
 import "./ICustomDAProofValidator.sol";
+import "./IHashProofHelper.sol";
 
 contract OneStepProverHostIo is IOneStepProver {
     using GlobalStateLib for GlobalState;
@@ -30,11 +31,14 @@ contract OneStepProverHostIo is IOneStepProver {
     uint256 private constant CLAIMED_VALID_LEN = 1;
 
     ICustomDAProofValidator public immutable customDAValidator;
+    IHashProofHelper public immutable hashProofHelper;
 
     constructor(
-        address _customDAValidator
+        address _customDAValidator,
+        address _hashProofHelper
     ) {
         customDAValidator = ICustomDAProofValidator(_customDAValidator);
+        hashProofHelper = IHashProofHelper(_hashProofHelper);
     }
 
     function setLeafByte(bytes32 oldLeaf, uint256 idx, uint8 val) internal pure returns (bytes32) {
@@ -150,6 +154,7 @@ contract OneStepProverHostIo is IOneStepProver {
             // The machine is asking for a keccak256 preimage
 
             if (proofType == 0) {
+                // The proof contains the full preimage
                 bytes calldata preimage = proof[proofOffset:];
                 require(keccak256(preimage) == leafContents, "BAD_PREIMAGE");
 
@@ -158,8 +163,18 @@ contract OneStepProverHostIo is IOneStepProver {
                     preimageEnd = preimage.length;
                 }
                 extracted = preimage[preimageOffset:preimageEnd];
+            } else if (proofType == 1) {
+                // The proof contains a part of the preimage, verified by the HashProofHelper contract
+                require(
+                    address(hashProofHelper) != address(0),
+                    "HASH_PROOF_HELPER_NOT_SET"
+                );
+
+                extracted = hashProofHelper.getPreimagePart(
+                    leafContents,
+                    uint64(preimageOffset)
+                );
             } else {
-                // TODO: support proving via an authenticated contract
                 revert("UNKNOWN_PREIMAGE_PROOF");
             }
         } else if (inst.argumentData == 1) {
