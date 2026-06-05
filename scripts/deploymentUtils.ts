@@ -185,7 +185,7 @@ export async function create2(
     data: concat([salt, data]),
     ...overrides,
   })
-  await tx.wait(2)
+  await tx.wait(Number(process.env.CREATE2_CONFIRMATIONS ?? 2))
 
   return fac.attach(address)
 }
