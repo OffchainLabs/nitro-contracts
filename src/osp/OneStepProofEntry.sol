@@ -111,15 +111,13 @@ contract OneStepProofEntry is IOneStepProofEntry {
                 require(melState.hash() == globalState.getMELStateHash(), "BAD_MEL_STATE");
 
                 // The machine has finished processing a message and we're at the start of the next execution segment (machineStep == 0).
-                // If the MELState is not at its target (meaning that it hasn't finished extracting messages),
-                // or there are still messages to be processed in MEL, we kickstart the machine.
+                // If the MELState is not at its target (meaning that it hasn't finished extracting messages, which should only happen before the extraction process is started),
+                // or if all messages were extracted, but there are still messages to be executed in MEL, we kickstart the machine.
                 if (
                     mach.status == MachineStatus.FINISHED && machineStep == 0
                         && (
-                            // Machine hasn't extracted messages for this assertion (should only happen before the extraction process is started)
                             melState.parentChainBlockHash != execCtx.targetParentChainBlockHash
-                            // Machine finishes extracting all messages, but hasn't finished executing them yet
-                            || globalState.getMELExecutedMsgCount() < globalState.getMELMsgCount()
+                                || globalState.getMELExecutedMsgCount() < melState.msgCount
                         )
                 ) {
                     // Kickstart the machine

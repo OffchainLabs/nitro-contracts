@@ -58,18 +58,6 @@ library GlobalStateLib {
         return state.bytes32Vals[3];
     }
 
-    function getInboxPosition(
-        GlobalState memory state
-    ) internal pure returns (uint64) {
-        return state.u64Vals[0];
-    }
-
-    function getPositionInMessage(
-        GlobalState memory state
-    ) internal pure returns (uint64) {
-        return state.u64Vals[1];
-    }
-
     /// @dev Unused. MELState.msgCount should be used instead whenever possible, but this is left here
     ///      to mimic nitro's implementation of GlobalState.
     function getMELMsgCount(

@@ -7,8 +7,9 @@ import {ICustomDAProofValidator} from "../../src/osp/ICustomDAProofValidator.sol
 
 contract OneStepProverHostIoPublic is OneStepProverHostIo {
     constructor(
-        address _customDAValidator
-    ) OneStepProverHostIo(_customDAValidator) {}
+        address _customDAValidator,
+        address _hashProofHelper
+    ) OneStepProverHostIo(_customDAValidator, _hashProofHelper) {}
 
     function executeReadPreImagePublic(
         ExecutionContext calldata context,
@@ -23,9 +24,9 @@ contract OneStepProverHostIoPublic is OneStepProverHostIo {
 
 contract CustomDAProofValidatorMock is ICustomDAProofValidator {
     function validateReadPreimage(
-        bytes32 certHash,
-        uint256 offset,
-        bytes calldata proof
+        bytes32,
+        uint256,
+        bytes calldata
     ) external pure override returns (bytes memory preimageChunk) {
         return new bytes(32);
     }
@@ -56,16 +57,16 @@ contract CustomDAProofValidatorMock is ICustomDAProofValidator {
 
 contract CustomDAProofValidatorBadResponse is ICustomDAProofValidator {
     function validateReadPreimage(
-        bytes32 certHash,
-        uint256 offset,
-        bytes calldata proof
+        bytes32,
+        uint256,
+        bytes calldata
     ) external pure override returns (bytes memory preimageChunk) {
         // Return invalid response (too long)
         return new bytes(33);
     }
 
     function validateCertificate(
-        bytes calldata proof
+        bytes calldata
     ) external pure override returns (bool isValid) {
         // Always return false for this mock
         return false;
@@ -74,16 +75,16 @@ contract CustomDAProofValidatorBadResponse is ICustomDAProofValidator {
 
 contract CustomDAProofValidatorEmptyResponse is ICustomDAProofValidator {
     function validateReadPreimage(
-        bytes32 certHash,
-        uint256 offset,
-        bytes calldata proof
+        bytes32,
+        uint256,
+        bytes calldata
     ) external pure override returns (bytes memory preimageChunk) {
         // Return empty response
         return new bytes(0);
     }
 
     function validateCertificate(
-        bytes calldata proof
+        bytes calldata
     ) external pure override returns (bool isValid) {
         // Always return true for this mock
         return true;
@@ -95,8 +96,9 @@ contract OneStepProverHostIoTest is Test {
     using ValueLib for Value;
     using ValueStackLib for ValueStack;
 
-    ICustomDAProofValidator mockCustomDAProofValidator;
-    address owner = address(0x1234);
+    ICustomDAProofValidator public mockCustomDAProofValidator;
+    IHashProofHelper public mockHashProofHelper = IHashProofHelper(address(0x0));
+    address public owner = address(0x1234);
 
     function setUp() public {
         mockCustomDAProofValidator = new CustomDAProofValidatorMock();
@@ -173,8 +175,9 @@ contract OneStepProverHostIoTest is Test {
 
     function testWrongCertificateHash() public {
         // Deploy OSP with mockCustomDAProofValidator as customDAValidator
-        OneStepProverHostIoPublic ospHostIo =
-            new OneStepProverHostIoPublic(address(mockCustomDAProofValidator));
+        OneStepProverHostIoPublic ospHostIo = new OneStepProverHostIoPublic(
+            address(mockCustomDAProofValidator), address(mockHashProofHelper)
+        );
 
         // Create a different certificate hash that the machine expects
         bytes32 correctCertKeccak256 = keccak256(
@@ -213,8 +216,9 @@ contract OneStepProverHostIoTest is Test {
 
     function testCustomDAValidatorSupported() public {
         // Deploy OSP with mockCustomDAProofValidator as customDAValidator
-        OneStepProverHostIoPublic ospHostIo =
-            new OneStepProverHostIoPublic(address(mockCustomDAProofValidator));
+        OneStepProverHostIoPublic ospHostIo = new OneStepProverHostIoPublic(
+            address(mockCustomDAProofValidator), address(mockHashProofHelper)
+        );
 
         (bytes32 certKeccak256, bytes memory proof) =
             buildFullProof(hex"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20");
@@ -237,7 +241,8 @@ contract OneStepProverHostIoTest is Test {
 
     function testCustomDAValidatorNotSupported() public {
         // Deploy OSP with address(0) as customDAValidator
-        OneStepProverHostIoPublic ospHostIo = new OneStepProverHostIoPublic(address(0));
+        OneStepProverHostIoPublic ospHostIo =
+            new OneStepProverHostIoPublic(address(0), address(mockHashProofHelper));
 
         (bytes32 certKeccak256, bytes memory proof) =
             buildFullProof(hex"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20");
@@ -261,8 +266,9 @@ contract OneStepProverHostIoTest is Test {
 
     function testCustomDAProofTooShort() public {
         // Deploy OSP with mockCustomDAProofValidator as customDAValidator
-        OneStepProverHostIoPublic ospHostIo =
-            new OneStepProverHostIoPublic(address(mockCustomDAProofValidator));
+        OneStepProverHostIoPublic ospHostIo = new OneStepProverHostIoPublic(
+            address(mockCustomDAProofValidator), address(mockHashProofHelper)
+        );
 
         bytes32 certKeccak256 = keccak256("test");
         bytes memory merkleProof = buildMerkleProof(certKeccak256);
@@ -289,8 +295,9 @@ contract OneStepProverHostIoTest is Test {
 
     function testProofTooShortForCert() public {
         // Deploy OSP with mockCustomDAProofValidator as customDAValidator
-        OneStepProverHostIoPublic ospHostIo =
-            new OneStepProverHostIoPublic(address(mockCustomDAProofValidator));
+        OneStepProverHostIoPublic ospHostIo = new OneStepProverHostIoPublic(
+            address(mockCustomDAProofValidator), address(mockHashProofHelper)
+        );
 
         bytes32 certKeccak256 = keccak256("test");
         bytes memory merkleProof = buildMerkleProof(certKeccak256);
@@ -322,8 +329,9 @@ contract OneStepProverHostIoTest is Test {
 
     function testUnknownPreimageProof() public {
         // Deploy OSP with mockCustomDAProofValidator as customDAValidator
-        OneStepProverHostIoPublic ospHostIo =
-            new OneStepProverHostIoPublic(address(mockCustomDAProofValidator));
+        OneStepProverHostIoPublic ospHostIo = new OneStepProverHostIoPublic(
+            address(mockCustomDAProofValidator), address(mockHashProofHelper)
+        );
 
         bytes memory preimage =
             hex"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20";
@@ -354,7 +362,8 @@ contract OneStepProverHostIoTest is Test {
     function testInvalidCustomDAResponseTooLong() public {
         // Deploy OSP with a validator that returns too long response
         CustomDAProofValidatorBadResponse badValidator = new CustomDAProofValidatorBadResponse();
-        OneStepProverHostIoPublic ospHostIo = new OneStepProverHostIoPublic(address(badValidator));
+        OneStepProverHostIoPublic ospHostIo =
+            new OneStepProverHostIoPublic(address(badValidator), address(mockHashProofHelper));
 
         (bytes32 certKeccak256, bytes memory proof) =
             buildFullProof(hex"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20");
@@ -379,7 +388,8 @@ contract OneStepProverHostIoTest is Test {
         // Deploy OSP with a validator that returns empty response
         CustomDAProofValidatorEmptyResponse emptyValidator =
             new CustomDAProofValidatorEmptyResponse();
-        OneStepProverHostIoPublic ospHostIo = new OneStepProverHostIoPublic(address(emptyValidator));
+        OneStepProverHostIoPublic ospHostIo =
+            new OneStepProverHostIoPublic(address(emptyValidator), address(mockHashProofHelper));
 
         (bytes32 certKeccak256, bytes memory proof) =
             buildFullProof(hex"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20");

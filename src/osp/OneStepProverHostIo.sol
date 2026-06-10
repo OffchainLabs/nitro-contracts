@@ -33,10 +33,7 @@ contract OneStepProverHostIo is IOneStepProver {
     ICustomDAProofValidator public immutable customDAValidator;
     IHashProofHelper public immutable hashProofHelper;
 
-    constructor(
-        address _customDAValidator,
-        address _hashProofHelper
-    ) {
+    constructor(address _customDAValidator, address _hashProofHelper) {
         customDAValidator = ICustomDAProofValidator(_customDAValidator);
         hashProofHelper = IHashProofHelper(_hashProofHelper);
     }
@@ -165,15 +162,9 @@ contract OneStepProverHostIo is IOneStepProver {
                 extracted = preimage[preimageOffset:preimageEnd];
             } else if (proofType == 1) {
                 // The proof contains a part of the preimage, verified by the HashProofHelper contract
-                require(
-                    address(hashProofHelper) != address(0),
-                    "HASH_PROOF_HELPER_NOT_SET"
-                );
+                require(address(hashProofHelper) != address(0), "HASH_PROOF_HELPER_NOT_SET");
 
-                extracted = hashProofHelper.getPreimagePart(
-                    leafContents,
-                    uint64(preimageOffset)
-                );
+                extracted = hashProofHelper.getPreimagePart(leafContents, uint64(preimageOffset));
             } else {
                 revert("UNKNOWN_PREIMAGE_PROOF");
             }

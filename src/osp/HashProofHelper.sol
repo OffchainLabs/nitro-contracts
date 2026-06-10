@@ -94,7 +94,7 @@ contract HashProofHelper is IHashProofHelper {
                 state.part.push(data[i]);
             }
         }
-        
+
         // If this is not the final chunk, we can't yet determine the full hash, so we return early
         if (!isFinal) {
             return bytes32(0);
