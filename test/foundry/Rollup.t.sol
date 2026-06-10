@@ -242,8 +242,8 @@ contract RollupTest is Test {
 
         // store the parent chain block information to be used in the next assertion
         // (must be consistent with the the implementation of `initialize` in RollupAdminLogic)
-        firstAssertionParentChainBlockNumber = uint64(block.number);
-        firstAssertionParentChainBlockHash = blockhash(block.number);
+        firstAssertionParentChainBlockNumber = uint64(block.number - 1);
+        firstAssertionParentChainBlockHash = blockhash(block.number - 1);
 
         // check upgrade executor owns proxyAdmin
         address upgradeExecutorExpectedAddress = computeCreateAddress(address(rollupCreator), 4);
@@ -1240,8 +1240,8 @@ contract RollupTest is Test {
 
         AssertionState memory afterState;
         afterState.machineStatus = MachineStatus.FINISHED;
-        afterState.globalState.u64Vals[0] += 1; // increase MsgCount
-        afterState.globalState.u64Vals[1] += 1; // increase ExecutedMsgCount
+        afterState.globalState.u64Vals[0] = beforeState.globalState.u64Vals[0] + 1; // increase MsgCount
+        afterState.globalState.u64Vals[1] = beforeState.globalState.u64Vals[1] + 1; // increase ExecutedMsgCount
         afterState.globalState.bytes32Vals[2] = afterMELState.hash(); // update MEL State hash
         bytes32 expectedAssertionHash = RollupLib.assertionHash({
             parentAssertionHash: beforeAssertionHash,
@@ -1299,8 +1299,8 @@ contract RollupTest is Test {
 
         AssertionState memory afterState;
         afterState.machineStatus = MachineStatus.FINISHED;
-        afterState.globalState.u64Vals[0] += 1; // increase MsgCount
-        afterState.globalState.u64Vals[1] += 1; // increase ExecutedMsgCount
+        afterState.globalState.u64Vals[0] = beforeState.globalState.u64Vals[0] + 1; // increase MsgCount
+        afterState.globalState.u64Vals[1] = beforeState.globalState.u64Vals[1] + 1; // increase ExecutedMsgCount
         afterState.globalState.bytes32Vals[2] = afterMELState.hash(); // update MEL State hash
         bytes32 expectedAssertionHash = RollupLib.assertionHash({
             parentAssertionHash: beforeAssertionHash,
@@ -1674,8 +1674,8 @@ contract RollupTest is Test {
 
         AssertionState memory afterState;
         afterState.machineStatus = MachineStatus.FINISHED;
-        afterState.globalState.u64Vals[0] += 1; // increase MsgCount
-        afterState.globalState.u64Vals[1] += 1; // increase ExecutedMsgCount
+        afterState.globalState.u64Vals[0] = beforeState.globalState.u64Vals[0] + 1; // increase MsgCount
+        afterState.globalState.u64Vals[1] = beforeState.globalState.u64Vals[1] + 1; // increase ExecutedMsgCount
         afterState.globalState.bytes32Vals[2] = afterMELState.hash(); // update MEL State hash
         bytes32 expectedAssertionHash = RollupLib.assertionHash({
             parentAssertionHash: beforeAssertionHash,
