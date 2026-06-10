@@ -70,6 +70,8 @@ library GlobalStateLib {
         return state.u64Vals[1];
     }
 
+    /// @dev Unused. MELState.msgCount should be used instead whenever possible, but this is left here
+    ///      to mimic nitro's implementation of GlobalState.
     function getMELMsgCount(
         GlobalState memory state
     ) internal pure returns (uint64) {

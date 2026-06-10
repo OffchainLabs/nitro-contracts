@@ -74,7 +74,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
             afterStateHash: config.genesisAssertionState.hash()
         });
 
-        bytes32 nextParentChainBlockHash = blockhash(block.number);
+        bytes32 nextParentChainBlockHash = blockhash(block.number - 1);
         AssertionNode memory initialAssertion = AssertionNodeLib.createAssertion(
             true,
             RollupLib.configHash({

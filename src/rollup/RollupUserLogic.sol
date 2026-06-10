@@ -201,13 +201,15 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
             "STAKED_ON_ANOTHER_BRANCH"
         );
 
-        bytes32 newAssertionHash =
+        (bytes32 newAssertionHash, bool overflowAssertion) =
             createNewAssertion(assertion, prevAssertion, expectedAssertionHash);
         _stakerMap[msg.sender].latestStakedAssertion = newAssertionHash;
 
-        uint256 timeSincePrev = block.number - getAssertionStorage(prevAssertion).createdAtBlock;
-        // Verify that assertion meets the minimum Delta time requirement
-        require(timeSincePrev >= minimumAssertionPeriod, "TIME_DELTA");
+        if (!overflowAssertion) {
+            uint256 timeSincePrev = block.number - getAssertionStorage(prevAssertion).createdAtBlock;
+            // Verify that assertion meets the minimum Delta time requirement
+            require(timeSincePrev >= minimumAssertionPeriod, "TIME_DELTA");
+        }
 
         if (!getAssertionStorage(newAssertionHash).isFirstChild) {
             // We assume assertion.beforeStateData is valid here as it will be validated in createNewAssertion
@@ -318,7 +320,7 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
 
         if (status == AssertionStatus.NoAssertion) {
             // If not exists, we create the new assertion
-            bytes32 newAssertionHash =
+            (bytes32 newAssertionHash,) =
                 createNewAssertion(assertion, prevAssertion, expectedAssertionHash);
             if (!getAssertionStorage(newAssertionHash).isFirstChild) {
                 // only 1 of the children can be confirmed and get their stake refunded

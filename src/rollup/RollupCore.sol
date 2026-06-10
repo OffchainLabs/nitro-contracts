@@ -420,7 +420,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         AssertionInputs calldata assertion,
         bytes32 prevAssertionHash,
         bytes32 expectedAssertionHash
-    ) internal returns (bytes32 newAssertionHash) {
+    ) internal returns (bytes32 newAssertionHash, bool overflowAssertion) {
         // Validate the config hash
         RollupLib.validateConfigHash(
             assertion.beforeStateData.configData, getAssertionStorage(prevAssertionHash).configHash
@@ -458,6 +458,10 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
 
         AssertionNode storage prevAssertion = getAssertionStorage(prevAssertionHash);
         {
+            // We want to prevent multiple assertions from being created in the same block, as this would allow them to have the same `nextParentChainBlockHash`,
+            // which would be an already processed block hash by the time the assertions are created.
+            require((block.number - prevAssertion.createdAtBlock) >= 1, "SAME_BLOCK_ASSERTION");
+
             // This new assertion consumes the messages from prevParentChainBlockHash to afterParentChainBlockHash
             GlobalState calldata afterGS = assertion.afterState.globalState;
             GlobalState calldata beforeGS = assertion.beforeState.globalState;
@@ -466,12 +470,23 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
             // AfterState must have executed at least as many messages as beforeState
             require(afterGS.compareExecutedMessages(beforeGS) >= 0, "INBOX_BACKWARDS");
 
-            // Checking the last processed block hash (we won't check for overflowing assertions)
+            // Checking the last processed block hash
             require(
                 afterMELState.parentChainBlockHash
                     == assertion.beforeStateData.configData.nextParentChainBlockHash,
                 "BAD_PARENT_CHAIN_BLOCK_HASH"
             );
+
+            // An overflowing assertion is one where there are still messages left to execute while the machine is in a non-errored terminal state.
+            // This can only happen if the Machine already executed the maximum amount of messages allowed by BoLD
+            if (
+                assertion.afterState.machineStatus != MachineStatus.ERRORED
+                    && (afterMELState.msgCount > afterGS.getMELExecutedMsgCount())
+            ) {
+                overflowAssertion = true;
+                // This shouldn't be necessary, but might as well constrain the assertion to be non-empty
+                require(afterGS.compareExecutedMessages(beforeGS) > 0, "OVERFLOW_STANDSTILL");
+            }
         }
 
         // AfterState includes the hash of the MELState up to which messages have been read

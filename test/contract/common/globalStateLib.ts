@@ -8,6 +8,8 @@ export function hash(state: GlobalStateStruct) {
       'Global state:',
       state.bytes32Vals[0],
       state.bytes32Vals[1],
+      state.bytes32Vals[2],
+      state.bytes32Vals[3],
       state.u64Vals[0],
       state.u64Vals[1],
     ]
