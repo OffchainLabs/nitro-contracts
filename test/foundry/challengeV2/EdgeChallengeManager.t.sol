@@ -6,11 +6,11 @@ pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
 import "./Utils.sol";
-import "../MockAssertionChain.sol";
-import "../../src/challengeV2/EdgeChallengeManager.sol";
+import "../../MockAssertionChain.sol";
+import "../../../src/challengeV2/EdgeChallengeManager.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import "../ERC20Mock.sol";
+import "../../ERC20Mock.sol";
 import "./StateTools.sol";
 
 contract MockOneStepProofEntry is IOneStepProofEntry {
@@ -50,7 +50,7 @@ contract EdgeChallengeManagerTest is Test {
         StateToolsLib.randomState(rand, 4, genesisBlockHash, MachineStatus.FINISHED);
     bytes32 genesisStateHash = StateToolsLib.mockMachineHash(genesisState);
     bytes32 genesisAfterStateHash = genesisState.hash();
-    AssertionStateData genesisStateData = AssertionStateData(genesisState, bytes32(0), bytes32(0));
+    AssertionStateData genesisStateData = AssertionStateData(genesisState, bytes32(0));
 
     uint8 public NUM_BIGSTEP_LEVEL = 3;
     uint256 public START_BLOCK = block.number;
@@ -69,8 +69,7 @@ contract EdgeChallengeManagerTest is Test {
         MerkleTreeAccumulatorLib.root(ProofUtils.expansionFromLeaves(genesisStates(), 0, 1));
 
     uint256 genesisHeight = 2;
-    uint64 inboxMsgCountGenesis = 7;
-    uint64 inboxMsgCountAssertion = 12;
+    bytes32 firstParentChainBlockHash = blockhash(block.number - 1);
 
     bytes32 h1 = rand.hash();
     bytes32 h2 = rand.hash();
@@ -129,7 +128,7 @@ contract EdgeChallengeManagerTest is Test {
         challengeManager.stakeToken().approve(address(challengeManager), type(uint256).max);
 
         genesisAssertionHash = assertionChain.addAssertionUnsafe(
-            0, genesisHeight, inboxMsgCountGenesis, genesisState, 0
+            0, genesisHeight, firstParentChainBlockHash, genesisState, 0
         );
         return (assertionChain, challengeManager, genesisAssertionHash);
     }
@@ -312,13 +311,13 @@ contract EdgeChallengeManagerTest is Test {
 
         AssertionState memory a1State = StateToolsLib.randomState(
             rand,
-            GlobalStateLib.getInboxPosition(genesisState.globalState),
+            GlobalStateLib.getMELExecutedMsgCount(genesisState.globalState),
             h1,
             MachineStatus.FINISHED
         );
         AssertionState memory a2State = StateToolsLib.randomState(
             rand,
-            GlobalStateLib.getInboxPosition(genesisState.globalState),
+            GlobalStateLib.getMELExecutedMsgCount(genesisState.globalState),
             h2,
             MachineStatus.FINISHED
         );
@@ -332,12 +331,16 @@ contract EdgeChallengeManagerTest is Test {
         );
         a2State.endHistoryRoot = MerkleTreeAccumulatorLib.root(a2RandomStatesExp);
 
+        // Roll a few blocks
+        _safeVmRoll(block.number + NUM_BLOCK_WAIT);
+        bytes32 nextParentChainBlockHash = blockhash(block.number - 1);
+
         // add one since heights are zero indexed in the history states
         bytes32 a1 = assertionChain.addAssertion(
-            genesis, genesisHeight + height1, inboxMsgCountAssertion, genesisState, a1State, 0
+            genesis, genesisHeight + height1, nextParentChainBlockHash, genesisState, a1State, 0
         );
         bytes32 a2 = assertionChain.addAssertion(
-            genesis, genesisHeight + height1, inboxMsgCountAssertion, genesisState, a2State, 0
+            genesis, genesisHeight + height1, nextParentChainBlockHash, genesisState, a2State, 0
         );
 
         return EdgeInitData({
@@ -348,14 +351,13 @@ contract EdgeChallengeManagerTest is Test {
             a2: a2,
             a1State: a1State,
             a2State: a2State,
-            a1Data: AssertionStateData(a1State, genesis, bytes32(0)),
-            a2Data: AssertionStateData(a2State, genesis, bytes32(0))
+            a1Data: AssertionStateData(a1State, genesis),
+            a2Data: AssertionStateData(a2State, genesis)
         });
     }
 
     function testWhitelist() public {
-        (MockAssertionChain assertionChain, EdgeChallengeManager challengeManager, bytes32 genesis)
-        = deploy();
+        (MockAssertionChain assertionChain, EdgeChallengeManager challengeManager,) = deploy();
 
         assertionChain.setValidatorWhitelistDisabled(false);
 
@@ -373,7 +375,7 @@ contract EdgeChallengeManagerTest is Test {
 
         AssertionState memory a1State = StateToolsLib.randomState(
             rand,
-            GlobalStateLib.getInboxPosition(genesisState.globalState),
+            GlobalStateLib.getMELExecutedMsgCount(genesisState.globalState),
             h1,
             MachineStatus.FINISHED
         );
@@ -383,8 +385,12 @@ contract EdgeChallengeManagerTest is Test {
         );
         a1State.endHistoryRoot = MerkleTreeAccumulatorLib.root(exp);
 
+        // Roll a few blocks
+        _safeVmRoll(block.number + NUM_BLOCK_WAIT);
+        bytes32 nextParentChainBlockHash = blockhash(block.number - 1);
+
         bytes32 a1 = assertionChain.addAssertion(
-            genesis, genesisHeight + height1, inboxMsgCountAssertion, genesisState, a1State, 0
+            genesis, genesisHeight + height1, nextParentChainBlockHash, genesisState, a1State, 0
         );
 
         vm.expectRevert(abi.encodeWithSelector(AssertionNoSibling.selector));
@@ -401,7 +407,7 @@ contract EdgeChallengeManagerTest is Test {
                 proof: abi.encode(
                     ProofUtils.generateInclusionProof(ProofUtils.rehashed(states), states.length - 1),
                     genesisStateData,
-                    AssertionStateData(a1State, genesisAssertionHash, bytes32(0))
+                    AssertionStateData(a1State, genesisAssertionHash)
                 )
             })
         );
@@ -602,7 +608,7 @@ contract EdgeChallengeManagerTest is Test {
     function testCanConfirmByTime() public {
         (EdgeInitData memory ei,,, bytes32 edgeId) = testCanCreateEdgeWithStake();
 
-        _safeVmRoll(START_BLOCK + challengePeriodBlock);
+        _safeVmRoll(START_BLOCK + NUM_BLOCK_WAIT + challengePeriodBlock);
 
         ei.challengeManager.confirmEdgeByTime(edgeId, ei.a1Data);
 
@@ -704,9 +710,13 @@ contract EdgeChallengeManagerTest is Test {
     function testRevertConfirmAnotherRival() public {
         (EdgeInitData memory ei, bytes32 edge1Id) = testCanConfirmByChildren();
 
+        // Roll a few blocks
+        _safeVmRoll(block.number + NUM_BLOCK_WAIT);
+        bytes32 nextParentChainBlockHash = blockhash(block.number - 1);
+
         AssertionState memory a2State = StateToolsLib.randomState(
             rand,
-            GlobalStateLib.getInboxPosition(genesisState.globalState),
+            GlobalStateLib.getMELExecutedMsgCount(genesisState.globalState),
             h2,
             MachineStatus.FINISHED
         );
@@ -715,7 +725,7 @@ contract EdgeChallengeManagerTest is Test {
         );
         a2State.endHistoryRoot = MerkleTreeAccumulatorLib.root(exp2);
         bytes32 a2 = ei.assertionChain.addAssertion(
-            ei.genesis, genesisHeight + height1, inboxMsgCountAssertion, genesisState, a2State, 0
+            ei.genesis, genesisHeight + height1, nextParentChainBlockHash, genesisState, a2State, 0
         );
 
         bytes32 edge2Id = createLayerZeroEdge(ei.challengeManager, a2, a2State, states2, exp2);
@@ -1645,7 +1655,7 @@ contract EdgeChallengeManagerTest is Test {
         bytes memory typeSpecificProof1 = abi.encode(
             ProofUtils.generateInclusionProof(ProofUtils.rehashed(states), states.length - 1),
             genesisStateData,
-            AssertionStateData(endState, genesisAssertionHash, bytes32(0))
+            AssertionStateData(endState, genesisAssertionHash)
         );
 
         return challengeManager.createLayerZeroEdge(
@@ -2052,7 +2062,9 @@ contract EdgeChallengeManagerTest is Test {
             )
         );
 
-        _safeVmRoll(START_BLOCK + (NUM_BIGSTEP_LEVEL + 2) * (NUM_BLOCK_WAIT) + challengePeriodBlock);
+        _safeVmRoll(
+            START_BLOCK + (NUM_BIGSTEP_LEVEL + 2) * (NUM_BLOCK_WAIT * 2) + challengePeriodBlock
+        );
 
         BisectionChildren[] memory allWinners = toDynamic(local.smallStepBisection.edges1);
         for (uint256 i = 0; i < NUM_BIGSTEP_LEVEL; ++i) {
@@ -2074,7 +2086,7 @@ contract EdgeChallengeManagerTest is Test {
                 requiredStake: 0,
                 challengeManager: address(0),
                 confirmPeriodBlocks: 0,
-                nextInboxPosition: inboxMsgCountGenesis
+                nextParentChainBlockHash: firstParentChainBlockHash
             }),
             ProofUtils.generateInclusionProof(ProofUtils.rehashed(genesisStates()), 0),
             ProofUtils.generateInclusionProof(ProofUtils.rehashed(firstStates), 1)

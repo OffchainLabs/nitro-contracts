@@ -5,8 +5,8 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
-import "../MockAssertionChain.sol";
-import "../../src/challengeV2/EdgeChallengeManager.sol";
+import "../../MockAssertionChain.sol";
+import "../../../src/challengeV2/EdgeChallengeManager.sol";
 import "./Utils.sol";
 
 contract MockOneStepProofEntry is IOneStepProofEntry {
@@ -1362,7 +1362,7 @@ contract EdgeChallengeManagerLibTest is Test {
         uint256 bigStepHeight,
         uint256 smallStepHeight,
         uint256 level
-    ) internal returns (uint256) {
+    ) internal pure returns (uint256) {
         uint256 stepSize = 1;
         uint256 maxLevelIndex = numBigStepLevel + 1;
         for (uint256 i = level; i < maxLevelIndex; i++) {
@@ -1445,8 +1445,7 @@ contract EdgeChallengeManagerLibTest is Test {
             proof: abi.encodePacked(states1[startHeight + 1])
         });
         ExecutionContext memory e = ExecutionContext({
-            maxInboxMessagesRead: 0,
-            bridge: IBridge(address(0)),
+            targetParentChainBlockHash: bytes32(0),
             initialWasmModuleRoot: bytes32(0)
         });
         data.beforeProof = ProofUtils.generateInclusionProof(
@@ -1611,11 +1610,9 @@ contract EdgeChallengeManagerLibTest is Test {
     function randomAssertionState(
         IOneStepProofEntry os
     ) private returns (ExecStateVars memory) {
+        uint64 msgCount = uint64(uint256(rand.hash()));
         AssertionState memory assertionState = AssertionState(
-            GlobalState(
-                [rand.hash(), rand.hash()],
-                [uint64(uint256(rand.hash())), uint64(uint256(rand.hash()))]
-            ),
+            GlobalState([rand.hash(), rand.hash(), rand.hash(), rand.hash()], [msgCount, msgCount]),
             MachineStatus.FINISHED,
             bytes32(0)
         );
@@ -1707,8 +1704,8 @@ contract EdgeChallengeManagerLibTest is Test {
                 ProofUtils.generateInclusionProof(
                     ProofUtils.rehashed(roots.states), expectedEndHeight
                 ),
-                AssertionStateData(ard.startState, bytes32(0), bytes32(0)),
-                AssertionStateData(ard.endState, bytes32(0), bytes32(0))
+                AssertionStateData(ard.startState, bytes32(0)),
+                AssertionStateData(ard.endState, bytes32(0))
             );
             if (mode == 147) {
                 proof = "";
@@ -1995,7 +1992,7 @@ contract EdgeChallengeManagerLibTest is Test {
     AssertionState genesisState =
         StateToolsLib.randomState(rand, 4, genesisBlockHash, MachineStatus.FINISHED);
     bytes32 genesisStateHash = StateToolsLib.mockMachineHash(genesisState);
-    AssertionStateData genesisStateData = AssertionStateData(genesisState, bytes32(0), bytes32(0));
+    AssertionStateData genesisStateData = AssertionStateData(genesisState, bytes32(0));
     bytes32 genesisAssertionHash = rand.hash();
     uint256 height1 = 32;
 
@@ -2017,7 +2014,7 @@ contract EdgeChallengeManagerLibTest is Test {
         bytes memory typeSpecificProof1 = abi.encode(
             ProofUtils.generateInclusionProof(ProofUtils.rehashed(states), states.length - 1),
             genesisStateData,
-            AssertionStateData(endState, genesisAssertionHash, bytes32(0))
+            AssertionStateData(endState, genesisAssertionHash)
         );
         bytes memory prefixProof = abi.encode(
             ProofUtils.expansionFromLeaves(states, 0, 1),
@@ -2300,13 +2297,13 @@ contract EdgeChallengeManagerLibTest is Test {
         bytes32 h2 = rand.hash();
         AssertionState memory a1State = StateToolsLib.randomState(
             rand,
-            GlobalStateLib.getInboxPosition(genesisState.globalState),
+            GlobalStateLib.getMELExecutedMsgCount(genesisState.globalState),
             h1,
             MachineStatus.FINISHED
         );
         AssertionState memory a2State = StateToolsLib.randomState(
             rand,
-            GlobalStateLib.getInboxPosition(genesisState.globalState),
+            GlobalStateLib.getMELExecutedMsgCount(genesisState.globalState),
             h2,
             MachineStatus.FINISHED
         );

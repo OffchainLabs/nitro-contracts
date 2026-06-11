@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import {IAssertionChain} from "../src/challengeV2/IAssertionChain.sol";
 import "../src/bridge/IBridge.sol";
 import "../src/rollup/RollupLib.sol";
-import "./challengeV2/StateTools.sol";
+import "./foundry/challengeV2/StateTools.sol";
 
 struct MockAssertion {
     bytes32 predecessorId;
@@ -36,7 +36,7 @@ contract MockAssertionChain is IAssertionChain {
         return assertions[assertionHash].height != 0;
     }
 
-    function stakeToken() public view returns (address) {
+    function stakeToken() public pure returns (address) {
         return address(0);
     }
 
