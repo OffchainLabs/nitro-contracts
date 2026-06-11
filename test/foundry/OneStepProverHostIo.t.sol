@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 import "../../src/osp/OneStepProverHostIo.sol";
+import "../../src/osp/HashProofHelper.sol";
 import {ICustomDAProofValidator} from "../../src/osp/ICustomDAProofValidator.sol";
 
 contract OneStepProverHostIoPublic is OneStepProverHostIo {
@@ -408,5 +409,195 @@ contract OneStepProverHostIoTest is Test {
 
         vm.expectRevert("INVALID_CUSTOM_DA_RESPONSE");
         ospHostIo.executeReadPreImagePublic(context, mach, mod, inst, proof);
+    }
+
+    // The opcode writes execCtx.targetParentChainBlockHash into the target memory leaf.
+    function testGetEndParentChainBlockHashSuccess() public {
+        OneStepProverHostIoPublic ospHostIo = new OneStepProverHostIoPublic(
+            address(mockCustomDAProofValidator), address(mockHashProofHelper)
+        );
+
+        bytes32 targetHash = keccak256("TARGET_PARENT_CHAIN_BLOCK_HASH");
+
+        ExecutionContext memory context;
+        context.targetParentChainBlockHash = targetHash;
+        Machine memory mach;
+        Module memory mod;
+        Instruction memory inst;
+        inst.opcode = Instructions.GET_END_PARENT_CHAIN_BLOCK_HASH;
+
+        mach.valueStack.push(ValueLib.newI32(0)); // ptr to the destination leaf
+        mod.moduleMemory.size = 32;
+        mod.moduleMemory.merkleRoot = keccak256(abi.encodePacked("Memory leaf:", bytes32(0)));
+        bytes memory proof = buildMerkleProof(bytes32(0));
+
+        (Machine memory resultMach, Module memory resultMod) =
+            ospHostIo.executeOneStep(context, mach, mod, inst, proof);
+
+        assertTrue(resultMach.status == MachineStatus.RUNNING, "machine should still be running");
+        assertEq(
+            resultMod.moduleMemory.merkleRoot,
+            keccak256(abi.encodePacked("Memory leaf:", targetHash)),
+            "target parent chain block hash not written to memory"
+        );
+    }
+
+    // A previously proven preimage part is read from the HashProofHelper into memory.
+    function testReadPreImageHashProofHelperSuccess() public {
+        HashProofHelper hashProofHelper = new HashProofHelper();
+        OneStepProverHostIoPublic ospHostIo = new OneStepProverHostIoPublic(
+            address(mockCustomDAProofValidator), address(hashProofHelper)
+        );
+
+        bytes32 preimageWord = hex"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20";
+        bytes memory preimage = abi.encodePacked(preimageWord);
+        bytes32 fullHash = keccak256(preimage);
+        hashProofHelper.proveWithFullPreimage(preimage, 0);
+
+        ExecutionContext memory context;
+        Machine memory mach;
+        Module memory mod;
+        Instruction memory inst;
+        inst.opcode = Instructions.READ_PRE_IMAGE;
+        inst.argumentData = 0; // keccak256 preimage
+
+        mach.valueStack.push(ValueLib.newI32(0)); // ptr
+        mach.valueStack.push(ValueLib.newI32(0)); // preimageOffset
+        mod.moduleMemory.size = 32;
+        mod.moduleMemory.merkleRoot = keccak256(abi.encodePacked("Memory leaf:", fullHash));
+        bytes memory proof = abi.encodePacked(buildMerkleProof(fullHash), uint8(1)); // proofType 1
+
+        (Machine memory resultMach, Module memory resultMod) =
+            ospHostIo.executeOneStep(context, mach, mod, inst, proof);
+
+        assertTrue(resultMach.status == MachineStatus.RUNNING, "machine should still be running");
+        // the full 32-byte preimage is written into the destination leaf
+        assertEq(
+            resultMod.moduleMemory.merkleRoot,
+            keccak256(abi.encodePacked("Memory leaf:", preimageWord)),
+            "preimage part not written to memory"
+        );
+        // the number of bytes read is pushed onto the stack
+        assertEq(resultMach.valueStack.peek().contents, 32, "wrong bytes-read count");
+    }
+
+    // Requesting a HashProofHelper proof when no helper is configured reverts.
+    function testReadPreImageHashProofHelperNotSet() public {
+        OneStepProverHostIoPublic ospHostIo =
+            new OneStepProverHostIoPublic(address(mockCustomDAProofValidator), address(0));
+
+        bytes32 fullHash = keccak256("UNPROVEN_PREIMAGE");
+
+        ExecutionContext memory context;
+        Machine memory mach;
+        Module memory mod;
+        Instruction memory inst;
+        inst.opcode = Instructions.READ_PRE_IMAGE;
+        inst.argumentData = 0; // keccak256 preimage
+
+        mach.valueStack.push(ValueLib.newI32(0)); // ptr
+        mach.valueStack.push(ValueLib.newI32(0)); // preimageOffset
+        mod.moduleMemory.size = 32;
+        mod.moduleMemory.merkleRoot = keccak256(abi.encodePacked("Memory leaf:", fullHash));
+        bytes memory proof = abi.encodePacked(buildMerkleProof(fullHash), uint8(1)); // proofType 1
+
+        vm.expectRevert("HASH_PROOF_HELPER_NOT_SET");
+        ospHostIo.executeOneStep(context, mach, mod, inst, proof);
+    }
+
+    // Requesting a preimage part that was never proven reverts with NotProven.
+    function testReadPreImageHashProofHelperNotProven() public {
+        HashProofHelper hashProofHelper = new HashProofHelper();
+        OneStepProverHostIoPublic ospHostIo = new OneStepProverHostIoPublic(
+            address(mockCustomDAProofValidator), address(hashProofHelper)
+        );
+
+        bytes32 fullHash = keccak256("UNPROVEN_PREIMAGE");
+
+        ExecutionContext memory context;
+        Machine memory mach;
+        Module memory mod;
+        Instruction memory inst;
+        inst.opcode = Instructions.READ_PRE_IMAGE;
+        inst.argumentData = 0; // keccak256 preimage
+
+        mach.valueStack.push(ValueLib.newI32(0)); // ptr
+        mach.valueStack.push(ValueLib.newI32(0)); // preimageOffset
+        mod.moduleMemory.size = 32;
+        mod.moduleMemory.merkleRoot = keccak256(abi.encodePacked("Memory leaf:", fullHash));
+        bytes memory proof = abi.encodePacked(buildMerkleProof(fullHash), uint8(1)); // proofType 1
+
+        vm.expectRevert(
+            abi.encodeWithSelector(IHashProofHelper.NotProven.selector, fullHash, uint64(0))
+        );
+        ospHostIo.executeOneStep(context, mach, mod, inst, proof);
+    }
+
+    // A preimage too large for one transaction can be uploaded across multiple
+    // proveWithSplitPreimage calls and then read through the prover.
+    function testReadPreImageHashProofHelperSplitPreimage() public {
+        HashProofHelper hashProofHelper = new HashProofHelper();
+        OneStepProverHostIoPublic ospHostIo = new OneStepProverHostIoPublic(
+            address(mockCustomDAProofValidator), address(hashProofHelper)
+        );
+
+        bytes32 preimageWord = hex"0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20";
+        // 200-byte preimage: the leading word we read, followed by pseudo-random filler
+        // (deterministic, derived from keccak so the test stays reproducible).
+        // Uploaded as a 136-byte (round-aligned) chunk and a final 64-byte chunk.
+        bytes memory chunk1 = abi.encodePacked(
+            preimageWord,
+            keccak256("filler-0"),
+            keccak256("filler-1"),
+            keccak256("filler-2"),
+            bytes8(keccak256("filler-3"))
+        ); // 32 + 32 + 32 + 32 + 8 = 136 bytes
+        bytes memory chunk2 = abi.encodePacked(keccak256("filler-4"), keccak256("filler-5")); // 64 bytes
+        bytes memory preimage = abi.encodePacked(chunk1, chunk2);
+
+        hashProofHelper.proveWithSplitPreimage(chunk1, 0, 0); // non-final chunk
+        bytes32 fullHash = hashProofHelper.proveWithSplitPreimage(chunk2, 0, 1); // final chunk
+        assertEq(fullHash, keccak256(preimage), "split-proof hash mismatch");
+
+        ExecutionContext memory context;
+        Machine memory mach;
+        Module memory mod;
+        Instruction memory inst;
+        inst.opcode = Instructions.READ_PRE_IMAGE;
+        inst.argumentData = 0; // keccak256 preimage
+
+        mach.valueStack.push(ValueLib.newI32(0)); // ptr
+        mach.valueStack.push(ValueLib.newI32(0)); // preimageOffset
+        mod.moduleMemory.size = 32;
+        mod.moduleMemory.merkleRoot = keccak256(abi.encodePacked("Memory leaf:", fullHash));
+        bytes memory proof = abi.encodePacked(buildMerkleProof(fullHash), uint8(1)); // proofType 1
+
+        (Machine memory resultMach, Module memory resultMod) =
+            ospHostIo.executeOneStep(context, mach, mod, inst, proof);
+
+        assertTrue(resultMach.status == MachineStatus.RUNNING, "machine should still be running");
+        // the first 32 bytes of the preimage are written into the leaf
+        assertEq(
+            resultMod.moduleMemory.merkleRoot,
+            keccak256(abi.encodePacked("Memory leaf:", preimageWord)),
+            "preimage part not written to memory"
+        );
+        assertEq(resultMach.valueStack.peek().contents, 32, "wrong bytes-read count");
+    }
+
+    // The executable READ_INBOX_MESSAGE host I/O path was removed; the opcode is no longer dispatched.
+    function testReadInboxMessageOpcodeReverts() public {
+        OneStepProverHostIoPublic ospHostIo = new OneStepProverHostIoPublic(
+            address(mockCustomDAProofValidator), address(mockHashProofHelper)
+        );
+
+        ExecutionContext memory context;
+        Machine memory mach;
+        Module memory mod;
+        Instruction memory inst;
+        inst.opcode = Instructions.READ_INBOX_MESSAGE;
+
+        vm.expectRevert("INVALID_HOSTIO_OPCODE");
+        ospHostIo.executeOneStep(context, mach, mod, inst, "");
     }
 }
