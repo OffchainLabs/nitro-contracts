@@ -88,6 +88,9 @@ jobs:
       - name: Run tests
         run: yarn hardhat --network hardhat test test/contract/*.spec.ts
 
+      - name: Run prover tests
+        run: yarn test:prover
+
       - name: Interface compatibility
         run: yarn run test:compatibility
 
