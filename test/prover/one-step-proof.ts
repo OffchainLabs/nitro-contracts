@@ -74,12 +74,6 @@ describe('OneStepProof', function () {
           await deployments.get('OneStepProofEntry')
         ).address
       )
-      const bridge = await ethers.getContractAt(
-        'BridgeStub',
-        (
-          await deployments.get('BridgeStub')
-        ).address
-      )
 
       const promises = []
       const isdone = []
@@ -89,10 +83,9 @@ describe('OneStepProof', function () {
         )
         const proof = proofs[i]
         isdone.push(false)
-        const inboxLimit = 1000000
         const promise = osp
           .proveOneStep(
-            [inboxLimit, bridge.address, ethers.constants.HashZero],
+            [ethers.constants.HashZero, ethers.constants.HashZero],
             i,
             [...Buffer.from(proof.before, 'hex')],
             [...Buffer.from(proof.proof, 'hex')]

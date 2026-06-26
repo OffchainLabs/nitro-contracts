@@ -99,7 +99,7 @@ contract RollupCreatorTest is Test {
         miniStakeValues[1] = 2 ether;
         miniStakeValues[2] = 3 ether;
         AssertionState memory emptyState = AssertionState(
-            GlobalState([bytes32(0), bytes32(0)], [uint64(0), uint64(0)]),
+            GlobalState([bytes32(0), bytes32(0), bytes32(0), bytes32(0)], [uint64(0), uint64(0)]),
             MachineStatus.FINISHED,
             bytes32(0)
         );
@@ -540,7 +540,7 @@ contract RollupCreatorTest is Test {
             new OneStepProver0(),
             new OneStepProverMemory(),
             new OneStepProverMath(),
-            new OneStepProverHostIo(address(0))
+            new OneStepProverHostIo(address(0), address(0))
         );
         challengeManager = new EdgeChallengeManager();
 

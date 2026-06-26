@@ -13,8 +13,6 @@ struct AssertionStateData {
     AssertionState assertionState;
     /// @notice assertion Hash of the prev assertion
     bytes32 prevAssertionHash;
-    /// @notice Inbox accumulator of the assertion
-    bytes32 inboxAcc;
 }
 
 /// @notice Data for creating a layer zero edge
@@ -44,8 +42,6 @@ struct CreateEdgeArgs {
     ///         bytes32[]: Inclusion proof - proof to show that the end state is the last state in the end history root
     ///         AssertionStateData: the before state of the edge
     ///         AssertionStateData: the after state of the edge
-    ///         bytes32 predecessorId: id of the prev assertion
-    ///         bytes32 inboxAcc:  the inbox accumulator of the assertion
     ///         For BigStep and SmallStep edges this is the abi encoding of:
     ///         bytes32: Start state - first state the edge commits to
     ///         bytes32: End state - last state the edge commits to

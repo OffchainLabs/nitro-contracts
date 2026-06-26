@@ -15,6 +15,7 @@ contract OneStepProofEntry is IOneStepProofEntry {
     using MerkleProofLib for MerkleProof;
     using MachineLib for Machine;
     using GlobalStateLib for GlobalState;
+    using MELStateLib for MELState;
     using MultiStackLib for MultiStack;
 
     using ValueStackLib for ValueStack;
@@ -104,9 +105,20 @@ contract OneStepProofEntry is IOneStepProofEntry {
                 GlobalState memory globalState;
                 (globalState, offset) = Deserialize.globalState(proof, offset);
                 require(globalState.hash() == mach.globalStateHash, "BAD_GLOBAL_STATE");
+
+                MELState memory melState;
+                (melState, offset) = Deserialize.melState(proof, offset);
+                require(melState.hash() == globalState.getMELStateHash(), "BAD_MEL_STATE");
+
+                // The machine has finished processing a message and we're at the start of the next execution segment (machineStep == 0).
+                // If the MELState is not at its target (meaning that it hasn't finished extracting messages, which should only happen before the extraction process is started),
+                // or if all messages were extracted, but there are still messages to be executed in MEL, we kickstart the machine.
                 if (
                     mach.status == MachineStatus.FINISHED && machineStep == 0
-                        && globalState.getInboxPosition() < execCtx.maxInboxMessagesRead
+                        && (
+                            melState.parentChainBlockHash != execCtx.targetParentChainBlockHash
+                                || globalState.getMELExecutedMsgCount() < melState.msgCount
+                        )
                 ) {
                     // Kickstart the machine
                     return getStartMachineHash(mach.globalStateHash, execCtx.initialWasmModuleRoot);
@@ -187,6 +199,7 @@ contract OneStepProofEntry is IOneStepProofEntry {
             )
                 || (opcode >= Instructions.VALIDATE_CERTIFICATE && opcode <= Instructions.UNLINK_MODULE)
                 || (opcode >= Instructions.NEW_COTHREAD && opcode <= Instructions.SWITCH_COTHREAD)
+                || (opcode == Instructions.GET_END_PARENT_CHAIN_BLOCK_HASH)
         ) {
             prover = proverHostIo;
         } else {

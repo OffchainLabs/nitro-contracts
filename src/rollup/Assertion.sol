@@ -5,7 +5,7 @@
 pragma solidity ^0.8.0;
 
 import "./AssertionState.sol";
-import "./MELState.sol";
+import "../state/MELState.sol";
 
 enum AssertionStatus {
     // No assertion at this index
@@ -40,8 +40,6 @@ struct AssertionNode {
 struct BeforeStateData {
     // The assertion hash of the prev of the beforeState(prev)
     bytes32 prevPrevAssertionHash;
-    // The sequencer inbox accumulator asserted by the beforeState(prev)
-    bytes32 sequencerBatchAcc;
     // below are the components of config hash
     ConfigData configData;
 }

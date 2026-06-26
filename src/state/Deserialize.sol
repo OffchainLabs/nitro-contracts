@@ -14,6 +14,7 @@ import "./MerkleProof.sol";
 import "./ModuleMemoryCompact.sol";
 import "./Module.sol";
 import "./GlobalState.sol";
+import "./MELState.sol";
 
 library Deserialize {
     function u8(
@@ -90,6 +91,16 @@ library Deserialize {
         offset = startOffset;
         ret = uint8(proof[offset]) != 0;
         offset++;
+    }
+
+    function addr(
+        bytes calldata proof,
+        uint256 startOffset
+    ) internal pure returns (address ret, uint256 offset) {
+        offset = startOffset;
+        uint256 retInt;
+        (retInt, offset) = u256(proof, offset);
+        ret = address(uint160(retInt));
     }
 
     function value(
@@ -251,6 +262,47 @@ library Deserialize {
         }
 
         state = GlobalState({bytes32Vals: bytes32Vals, u64Vals: u64Vals});
+    }
+
+    function melState(
+        bytes calldata proof,
+        uint256 startOffset
+    ) internal pure returns (MELState memory state, uint256 offset) {
+        offset = startOffset;
+
+        // Initialize with dummy values to avoid filling up the stack
+        state = MELState({
+            version: 0,
+            parentChainId: 0,
+            parentChainBlockNumber: 0,
+            batchPostingTargetAddress: address(0),
+            delayedMessagePostingTargetAddress: address(0),
+            parentChainBlockHash: bytes32(0),
+            parentChainPreviousBlockHash: bytes32(0),
+            batchCount: 0,
+            msgCount: 0,
+            localMsgAccumulator: bytes32(0),
+            delayedMessagesRead: 0,
+            delayedMessagesSeen: 0,
+            delayedMessageInboxAcc: bytes32(0),
+            delayedMessageOutboxAcc: bytes32(0)
+        });
+
+        // Fill in the actual values
+        (state.version, offset) = u16(proof, offset);
+        (state.parentChainId, offset) = u64(proof, offset);
+        (state.parentChainBlockNumber, offset) = u64(proof, offset);
+        (state.batchPostingTargetAddress, offset) = addr(proof, offset);
+        (state.delayedMessagePostingTargetAddress, offset) = addr(proof, offset);
+        (state.parentChainBlockHash, offset) = b32(proof, offset);
+        (state.parentChainPreviousBlockHash, offset) = b32(proof, offset);
+        (state.batchCount, offset) = u64(proof, offset);
+        (state.msgCount, offset) = u64(proof, offset);
+        (state.localMsgAccumulator, offset) = b32(proof, offset);
+        (state.delayedMessagesRead, offset) = u64(proof, offset);
+        (state.delayedMessagesSeen, offset) = u64(proof, offset);
+        (state.delayedMessageInboxAcc, offset) = b32(proof, offset);
+        (state.delayedMessageOutboxAcc, offset) = b32(proof, offset);
     }
 
     function machine(
