@@ -9,16 +9,35 @@ import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 
 contract TipCollectionToggler is AccessControlEnumerable {
     ArbOwner internal constant ARB_OWNER = ArbOwner(address(0x70));
+    uint256 internal constant ACTIVATION_DURATION = 2 * 365 days; // 2 years
 
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
-    uint256 public immutable expiryTimestamp;
+    uint256 public expiryTimestamp;
 
     error NotExpired();
+    error NotActivated();
+    error AlreadyActivated();
 
-    constructor(address admin, address manager, uint256 _expiryTimestamp) {
+    event Activated(uint256 expiryTimestamp);
+
+    modifier onlyActivated() {
+        if (expiryTimestamp == 0) {
+            revert NotActivated();
+        }
+        _;
+    }
+
+    constructor(address admin, address manager) {
         _setupRole(DEFAULT_ADMIN_ROLE, admin);
         _setupRole(MANAGER_ROLE, manager);
-        expiryTimestamp = _expiryTimestamp;
+    }
+
+    function activate() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (expiryTimestamp != 0) {
+            revert AlreadyActivated();
+        }
+        expiryTimestamp = block.timestamp + ACTIVATION_DURATION;
+        emit Activated(expiryTimestamp);
     }
 
     /// @notice Removes the contract from the list of chain owners after the expiry timestamp
@@ -33,7 +52,7 @@ contract TipCollectionToggler is AccessControlEnumerable {
     /// @param collectTips If true, transaction tips are collected by the network fee account. If false (default), tips are dropped.
     function setCollectTips(
         bool collectTips
-    ) external onlyRole(MANAGER_ROLE) {
+    ) external onlyRole(MANAGER_ROLE) onlyActivated {
         ARB_OWNER.setCollectTips(collectTips);
     }
 }
