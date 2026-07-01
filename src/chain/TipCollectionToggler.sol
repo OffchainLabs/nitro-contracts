@@ -32,6 +32,7 @@ contract TipCollectionToggler is AccessControlEnumerable {
         _setupRole(MANAGER_ROLE, manager);
     }
 
+    /// @notice Activates the contract for a fixed duration, allowing tip collection to be toggled.
     function activate() external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (expiryTimestamp != 0) {
             revert AlreadyActivated();
@@ -41,7 +42,7 @@ contract TipCollectionToggler is AccessControlEnumerable {
     }
 
     /// @notice Removes the contract from the list of chain owners after the expiry timestamp
-    function revoke() external {
+    function revoke() external onlyActivated {
         if (block.timestamp < expiryTimestamp) {
             revert NotExpired();
         }
