@@ -19,6 +19,7 @@ contract TipCollectionToggler is AccessControlEnumerable {
     error AlreadyActivated();
 
     event Activated(uint256 expiryTimestamp);
+    event CollectTipsUpdated(bool collectTips);
 
     modifier onlyActivated() {
         if (expiryTimestamp == 0) {
@@ -55,5 +56,6 @@ contract TipCollectionToggler is AccessControlEnumerable {
         bool collectTips
     ) external onlyRole(MANAGER_ROLE) onlyActivated {
         ARB_OWNER.setCollectTips(collectTips);
+        emit CollectTipsUpdated(collectTips);
     }
 }
