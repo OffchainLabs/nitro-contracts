@@ -19,6 +19,7 @@ contract TipCollectionToggler is AccessControlEnumerable {
     error AlreadyActivated();
 
     event Activated(uint256 expiryTimestamp);
+    event Revoked();
     event CollectTipsUpdated(bool collectTips);
 
     modifier onlyActivated() {
@@ -48,6 +49,7 @@ contract TipCollectionToggler is AccessControlEnumerable {
             revert NotExpired();
         }
         ARB_OWNER.removeChainOwner(address(this));
+        emit Revoked();
     }
 
     /// @notice Enables or disables tip collection.
