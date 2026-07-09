@@ -106,22 +106,28 @@ contract OneStepProofEntry is IOneStepProofEntry {
                 (globalState, offset) = Deserialize.globalState(proof, offset);
                 require(globalState.hash() == mach.globalStateHash, "BAD_GLOBAL_STATE");
 
-                MELState memory melState;
-                (melState, offset) = Deserialize.melState(proof, offset);
-                require(melState.hash() == globalState.getMELStateHash(), "BAD_MEL_STATE");
+                // Only MEL-enhanced proofs carry a MELState. For non-MEL halted
+                // machines (MELStateHash == 0) the prover serializes the global
+                // state and reads no further, so we must not attempt to read a
+                // MELState here either.
+                if (globalState.getMELStateHash() != bytes32(0)) {
+                    MELState memory melState;
+                    (melState, offset) = Deserialize.melState(proof, offset);
+                    require(melState.hash() == globalState.getMELStateHash(), "BAD_MEL_STATE");
 
-                // The machine has finished processing a message and we're at the start of the next execution segment (machineStep == 0).
-                // If the MELState is not at its target (meaning that it hasn't finished extracting messages, which should only happen before the extraction process is started),
-                // or if all messages were extracted, but there are still messages to be executed in MEL, we kickstart the machine.
-                if (
-                    mach.status == MachineStatus.FINISHED && machineStep == 0
-                        && (
-                            melState.parentChainBlockHash != execCtx.targetParentChainBlockHash
-                                || globalState.getMELExecutedMsgCount() < melState.msgCount
-                        )
-                ) {
-                    // Kickstart the machine
-                    return getStartMachineHash(mach.globalStateHash, execCtx.initialWasmModuleRoot);
+                    // The machine has finished processing a message and we're at the start of the next execution segment (machineStep == 0).
+                    // If the MELState is not at its target (meaning that it hasn't finished extracting messages, which should only happen before the extraction process is started),
+                    // or if all messages were extracted, but there are still messages to be executed in MEL, we kickstart the machine.
+                    if (
+                        mach.status == MachineStatus.FINISHED && machineStep == 0
+                            && (
+                                melState.parentChainBlockHash != execCtx.targetParentChainBlockHash
+                                    || globalState.getMELExecutedMsgCount() < melState.msgCount
+                            )
+                    ) {
+                        // Kickstart the machine
+                        return getStartMachineHash(mach.globalStateHash, execCtx.initialWasmModuleRoot);
+                    }
                 }
                 return mach.hash();
             }
