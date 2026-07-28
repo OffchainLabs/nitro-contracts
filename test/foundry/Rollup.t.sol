@@ -192,7 +192,6 @@ contract RollupTest is Test {
             wasmModuleRoot: WASM_MODULE_ROOT,
             loserStakeEscrow: loserStakeEscrow,
             genesisAssertionState: genesisAssertionState,
-            genesisInboxCount: 0,
             miniStakeValues: miniStakeValues,
             layerZeroBlockEdgeHeight: 2 ** 5,
             layerZeroBigStepEdgeHeight: 2 ** 5,
@@ -325,8 +324,10 @@ contract RollupTest is Test {
         assertionState.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // Sendroot
         assertionState.globalState.bytes32Vals[2] = melState.hash(); // MELState hash
         assertionState.globalState.bytes32Vals[3] = bytes32(0); // MEL NextMsgHash
-        assertionState.globalState.u64Vals[0] = INITIAL_MSG_COUNT; // MsgCount
-        assertionState.globalState.u64Vals[1] = INITIAL_MSG_COUNT; // ExecutedMsgCount
+        assertionState.globalState.u64Vals[0] = 0; // InboxPosition (deprecated)
+        assertionState.globalState.u64Vals[1] = 0; // PositionInMessage (deprecated)
+        assertionState.globalState.u64Vals[2] = INITIAL_MSG_COUNT; // MsgCount
+        assertionState.globalState.u64Vals[3] = INITIAL_MSG_COUNT; // ExecutedMsgCount
 
         return (assertionState, melState);
     }
@@ -647,8 +648,8 @@ contract RollupTest is Test {
 
         AssertionState memory afterState;
         afterState.machineStatus = MachineStatus.FINISHED;
-        afterState.globalState.u64Vals[0] += 1; // increase MsgCount
-        afterState.globalState.u64Vals[1] += 1; // increase ExecutedMsgCount
+        afterState.globalState.u64Vals[2] += 1; // increase MsgCount
+        afterState.globalState.u64Vals[3] += 1; // increase ExecutedMsgCount
         afterState.globalState.bytes32Vals[2] = afterMELState.hash(); // MEL State hash
         bytes32 expectedAssertionHash =
             RollupLib.assertionHash({parentAssertionHash: assertionHash, afterState: afterState});
@@ -1247,8 +1248,8 @@ contract RollupTest is Test {
 
         AssertionState memory afterState;
         afterState.machineStatus = MachineStatus.FINISHED;
-        afterState.globalState.u64Vals[0] = beforeState.globalState.u64Vals[0] + 1; // increase MsgCount
-        afterState.globalState.u64Vals[1] = beforeState.globalState.u64Vals[1] + 1; // increase ExecutedMsgCount
+        afterState.globalState.u64Vals[2] = beforeState.globalState.u64Vals[2] + 1; // increase MsgCount
+        afterState.globalState.u64Vals[3] = beforeState.globalState.u64Vals[3] + 1; // increase ExecutedMsgCount
         afterState.globalState.bytes32Vals[2] = afterMELState.hash(); // update MEL State hash
         bytes32 expectedAssertionHash = RollupLib.assertionHash({
             parentAssertionHash: beforeAssertionHash,
@@ -1306,8 +1307,8 @@ contract RollupTest is Test {
 
         AssertionState memory afterState;
         afterState.machineStatus = MachineStatus.FINISHED;
-        afterState.globalState.u64Vals[0] = beforeState.globalState.u64Vals[0] + 1; // increase MsgCount
-        afterState.globalState.u64Vals[1] = beforeState.globalState.u64Vals[1] + 1; // increase ExecutedMsgCount
+        afterState.globalState.u64Vals[2] = beforeState.globalState.u64Vals[2] + 1; // increase MsgCount
+        afterState.globalState.u64Vals[3] = beforeState.globalState.u64Vals[3] + 1; // increase ExecutedMsgCount
         afterState.globalState.bytes32Vals[2] = afterMELState.hash(); // update MEL State hash
         bytes32 expectedAssertionHash = RollupLib.assertionHash({
             parentAssertionHash: beforeAssertionHash,
@@ -1593,7 +1594,7 @@ contract RollupTest is Test {
         AssertionState memory astate = AssertionState(
             GlobalState(
                 [rand.hash(), rand.hash(), rand.hash(), rand.hash()],
-                [uint64(uint256(rand.hash())), uint64(uint256(rand.hash()))]
+                [uint64(uint256(rand.hash())), uint64(uint256(rand.hash())), uint64(uint256(rand.hash())), uint64(uint256(rand.hash()))]
             ),
             MachineStatus.FINISHED,
             bytes32(0)
@@ -1607,7 +1608,7 @@ contract RollupTest is Test {
         AssertionState memory astate = AssertionState(
             GlobalState(
                 [rand.hash(), rand.hash(), rand.hash(), rand.hash()],
-                [uint64(uint256(rand.hash())), uint64(uint256(rand.hash()))]
+                [uint64(uint256(rand.hash())), uint64(uint256(rand.hash())), uint64(uint256(rand.hash())), uint64(uint256(rand.hash()))]
             ),
             MachineStatus.FINISHED,
             bytes32(0)
@@ -1681,8 +1682,8 @@ contract RollupTest is Test {
 
         AssertionState memory afterState;
         afterState.machineStatus = MachineStatus.FINISHED;
-        afterState.globalState.u64Vals[0] = beforeState.globalState.u64Vals[0] + 1; // increase MsgCount
-        afterState.globalState.u64Vals[1] = beforeState.globalState.u64Vals[1] + 1; // increase ExecutedMsgCount
+        afterState.globalState.u64Vals[2] = beforeState.globalState.u64Vals[2] + 1; // increase MsgCount
+        afterState.globalState.u64Vals[3] = beforeState.globalState.u64Vals[3] + 1; // increase ExecutedMsgCount
         afterState.globalState.bytes32Vals[2] = afterMELState.hash(); // update MEL State hash
         bytes32 expectedAssertionHash = RollupLib.assertionHash({
             parentAssertionHash: beforeAssertionHash,
