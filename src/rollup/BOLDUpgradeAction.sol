@@ -387,7 +387,6 @@ contract BOLDUpgradeAction {
             layerZeroBigStepEdgeHeight: BIGSTEP_LEAF_SIZE,
             layerZeroSmallStepEdgeHeight: SMALLSTEP_LEAF_SIZE,
             genesisAssertionState: genesisAssertionState,
-            genesisInboxCount: inboxMaxCount,
             anyTrustFastConfirmer: address(0), // fast confirmer would be migrated from the old rollup if existed
             numBigStepLevel: NUM_BIGSTEP_LEVEL,
             challengeGracePeriodBlocks: CHALLENGE_GRACE_PERIOD_BLOCKS,
