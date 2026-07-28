@@ -32,8 +32,6 @@ struct Config {
     uint256 layerZeroSmallStepEdgeHeight;
     /// @notice The execution state to be used in the genesis assertion
     AssertionState genesisAssertionState;
-    /// @notice The inbox size at the time the genesis execution state was created
-    uint256 genesisInboxCount;
     address anyTrustFastConfirmer;
     uint8 numBigStepLevel;
     uint64 challengeGracePeriodBlocks;
