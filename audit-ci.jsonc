@@ -1,15 +1,6 @@
 {
-  // Two `resolutions` entries in package.json patch dependencies whose parents pin a
-  // vulnerable range and will never widen it on the Hardhat 2 line:
-  //   hardhat-deploy/axios  -> hardhat-deploy pins axios ^0.21.1 in every release up to
-  //                            1.0.4; the fix only exists in hardhat-deploy 2.x, which
-  //                            requires Hardhat 3. Range is floating (>=0.33.0 <1) so
-  //                            future 0.x backports arrive via a plain lockfile refresh.
-  //   undici                -> both hardhat and @nomicfoundation/hardhat-verify pin
-  //                            ^5.14.0 and share one hoisted copy; the fix needs
-  //                            hardhat-verify 3.x, which requires Hardhat 3.
-  // Both come out as part of a future Hardhat 3 migration. Nothing signals that
-  // automatically, so re-check them whenever either plugin is upgraded.
+  // package.json `resolutions` patch axios (hardhat-deploy pins ^0.21.1) and undici (hardhat
+  // and hardhat-verify pin ^5.14.0). Both fixes need Hardhat 3; drop them on that migration.
   "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
   "low": true,
   "allowlist": [
@@ -33,56 +24,26 @@
     "GHSA-848j-6mx2-7j84",
     // jsdiff has a Denial of Service vulnerability in parsePatch and applyPatch
     "GHSA-73rr-hh4g-fpgx",
-
-    // Everything below is dev tooling that cannot reach an executed code path in this
-    // repo. Each group states the condition that makes it safe -- if that condition stops
-    // holding, the entries must be removed rather than re-justified. audit-ci lists
-    // entries that no longer match anything under "Consider not allowlisting"; delete
-    // whatever it names.
-
-    // lodash code injection via _.template, and prototype pollution in _.unset/_.omit,
-    // reached only through yarn-audit-fix>synp>lodash. That runs solely when a developer
-    // invokes `yarn audit:fix` by hand -- never in CI. yarn-audit-fix 10.1.1 is the latest
-    // release, so no upgrade clears these.
+    // Below: dev tooling with no reachable code path. Delete an entry once its reason stops holding.
+    // lodash injection and prototype pollution; reached only by `yarn audit:fix`, run by hand
     "GHSA-r5fr-rjxr-66jc",
     "GHSA-f23m-r3pf-42rh",
     "GHSA-xxjr-mmjv-4gpg",
-
-    // serialize-javascript RCE and CPU-exhaustion DoS, reached only via mocha's
-    // parallel-worker serialisation. Mocha is not run in parallel here (hardhat.config.ts
-    // sets only `timeout`), so the serialiser is never invoked. The fix is in
-    // serialize-javascript 7, which mocha's ^6 range forbids.
+    // serialize-javascript RCE and DoS; reached only by mocha parallel workers, which are not enabled
     "GHSA-5c6j-r48x-rmvq",
     "GHSA-qj8w-gfj5-8c6v",
-
-    // ws memory-exhaustion DoS and uninitialised memory disclosure, reached only through
-    // ethers' WebSocketProvider. This repo never constructs one -- no WebSocketProvider,
-    // ws:// or wss:// appears in test/, scripts/ or hardhat.config.ts.
+    // ws DoS and memory disclosure; reached only by ethers WebSocketProvider, never constructed here
     "GHSA-96hv-2xvq-fx4p",
     "GHSA-58qx-3vcg-4xpx",
-
-    // adm-zip 4GB allocation from a crafted archive, via hardhat>adm-zip. Used only by
-    // hardhat's solc downloader to unpack compiler archives fetched from
-    // binaries.soliditylang.org and verified by checksum; exploiting it needs a hostile
-    // solc distribution.
+    // adm-zip 4GB allocation; only unpacks checksum-verified solc downloads
     "GHSA-xcpc-8h2w-3j85",
-
-    // tmp path traversal via unsanitised prefix/postfix, through hardhat>solc>tmp and
-    // patch-package>tmp. Both callers pass fixed values that no input can influence.
+    // tmp path traversal; hardhat>solc and patch-package both pass fixed prefixes
     "GHSA-ph9p-34f9-6g65",
-
-    // brace-expansion out-of-memory DoS via minimatch 3's glob expansion. Requires an
-    // attacker-supplied glob; every pattern here originates in config or CLI arguments.
-    // The fix is in brace-expansion 5, which minimatch@3's ^1.1.7 range forbids.
+    // brace-expansion OOM; needs an attacker-supplied glob, all patterns come from config
     "GHSA-mh99-v99m-4gvg",
-
-    // bn.js infinite loop, via solidity-coverage>web3-utils>ethjs-unit>bn.js. Only runs
-    // during coverage, over values produced by this repo's own contracts.
+    // bn.js infinite loop; coverage only, over values from this repo's own contracts
     "GHSA-378v-28hj-76wf",
-
-    // uuid missing buffer bounds check in v3/v5/v6 when `buf` is supplied, via
-    // hardhat>uuid. hardhat calls only uuid v4 and passes no buffer
-    // (internal/cli/analytics.js), so the affected branch is unreachable.
+    // uuid bounds check missing in v3/v5/v6 with `buf`; hardhat calls only v4, no buffer
     "GHSA-w5hq-g745-h8pq"
   ]
 }
