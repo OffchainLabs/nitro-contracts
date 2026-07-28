@@ -48,6 +48,8 @@
     "test:foundry": "FOUNDRY_PROFILE=test forge test --gas-limit 10000000000",
     "test:update": "yarn run test:signatures || yarn run test:storage",
     "test:bytecodes": "hardhat clean && forge clean && hardhat run scripts/compareBytecodes.ts",
+    "test:ai:foundry": "FOUNDRY_PROFILE=test FOUNDRY_TEST=test/ai/foundry forge test --gas-limit 10000000000",
+    "test:ai:hardhat": "DISABLE_GAS_REPORTER=true hardhat --network hardhat test test/ai/hardhat/*.ts",
     "metadatahash": "yarn build:all && hardhat run scripts/printMetadataHashes.ts",
     "upload-4bytes": "forge build && find ./out -type f -name \"*.json\" -exec cast upload-signature {} + | grep -v Duplicated:",
     "postinstall": "patch-package",
