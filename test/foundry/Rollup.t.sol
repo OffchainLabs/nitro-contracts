@@ -1587,7 +1587,12 @@ contract RollupTest is Test {
         AssertionState memory astate = AssertionState(
             GlobalState(
                 [rand.hash(), rand.hash(), rand.hash(), rand.hash()],
-                [uint64(uint256(rand.hash())), uint64(uint256(rand.hash())), uint64(uint256(rand.hash())), uint64(uint256(rand.hash()))]
+                [
+                    uint64(uint256(rand.hash())),
+                    uint64(uint256(rand.hash())),
+                    uint64(uint256(rand.hash())),
+                    uint64(uint256(rand.hash()))
+                ]
             ),
             MachineStatus.FINISHED,
             bytes32(0)
@@ -1601,7 +1606,12 @@ contract RollupTest is Test {
         AssertionState memory astate = AssertionState(
             GlobalState(
                 [rand.hash(), rand.hash(), rand.hash(), rand.hash()],
-                [uint64(uint256(rand.hash())), uint64(uint256(rand.hash())), uint64(uint256(rand.hash())), uint64(uint256(rand.hash()))]
+                [
+                    uint64(uint256(rand.hash())),
+                    uint64(uint256(rand.hash())),
+                    uint64(uint256(rand.hash())),
+                    uint64(uint256(rand.hash()))
+                ]
             ),
             MachineStatus.FINISHED,
             bytes32(0)
