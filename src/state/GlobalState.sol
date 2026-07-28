@@ -92,8 +92,8 @@ library GlobalStateLib {
         return (
             state.bytes32Vals[0] == bytes32(0) && state.bytes32Vals[1] == bytes32(0)
                 && state.bytes32Vals[2] == bytes32(0) && state.bytes32Vals[3] == bytes32(0)
-                && state.u64Vals[0] == 0 && state.u64Vals[1] == 0
-                && state.u64Vals[2] == 0 && state.u64Vals[3] == 0
+                && state.u64Vals[0] == 0 && state.u64Vals[1] == 0 && state.u64Vals[2] == 0
+                && state.u64Vals[3] == 0
         );
     }
 
