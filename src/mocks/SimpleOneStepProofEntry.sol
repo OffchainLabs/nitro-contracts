@@ -34,8 +34,8 @@ contract SimpleOneStepProofEntry is IOneStepProofEntry {
         GlobalState memory globalState;
         uint256 offset;
         (globalState.bytes32Vals[3], offset) = Deserialize.b32(proof, offset); // MELNextMsgHash
-        (globalState.u64Vals[0], offset) = Deserialize.u64(proof, offset); // MELMsgCount
-        (globalState.u64Vals[1], offset) = Deserialize.u64(proof, offset); // MELExecutedMsgCount
+        (globalState.u64Vals[2], offset) = Deserialize.u64(proof, offset); // MELMsgCount
+        (globalState.u64Vals[3], offset) = Deserialize.u64(proof, offset); // MELExecutedMsgCount
 
         MELState memory melState;
         (melState.parentChainBlockHash, offset) = Deserialize.b32(proof, offset);
