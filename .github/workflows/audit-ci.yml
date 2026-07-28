@@ -26,7 +26,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Install node_modules
-        uses: OffchainLabs/actions/node-modules/install@main
+        uses: OffchainLabs/actions/node-modules/install@ed09b0d87a23153e0f95cf69495e0dd8c1997cef  # main as of 2026-07-28
         with:
           cache-key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}-${{ matrix.node-version }}
 
