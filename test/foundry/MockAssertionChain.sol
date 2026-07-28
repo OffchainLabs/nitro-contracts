@@ -2,10 +2,10 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
-import {IAssertionChain} from "../src/challengeV2/IAssertionChain.sol";
-import "../src/bridge/IBridge.sol";
-import "../src/rollup/RollupLib.sol";
-import "./foundry/challengeV2/StateTools.sol";
+import {IAssertionChain} from "../../src/challengeV2/IAssertionChain.sol";
+import "../../src/bridge/IBridge.sol";
+import "../../src/rollup/RollupLib.sol";
+import "./challengeV2/StateTools.sol";
 
 struct MockAssertion {
     bytes32 predecessorId;
@@ -98,10 +98,7 @@ contract MockAssertionChain is IAssertionChain {
         bytes32 predecessorId,
         AssertionState memory afterState
     ) public pure returns (bytes32) {
-        return RollupLib.assertionHash({
-            parentAssertionHash: predecessorId,
-            afterState: afterState
-        });
+        return RollupLib.assertionHash({parentAssertionHash: predecessorId, afterState: afterState});
     }
 
     function childCreated(
