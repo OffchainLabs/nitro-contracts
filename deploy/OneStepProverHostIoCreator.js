@@ -5,9 +5,12 @@ module.exports = async hre => {
 
   await deploy('OneStepProverHostIo', {
     from: deployer,
-    args: [ethers.constants.AddressZero],
+    args: [
+      ethers.constants.AddressZero,
+      (await deployments.get('HashProofHelper')).address,
+    ],
   })
 }
 
 module.exports.tags = ['OneStepProverHostIo']
-module.exports.dependencies = []
+module.exports.dependencies = ['HashProofHelper']

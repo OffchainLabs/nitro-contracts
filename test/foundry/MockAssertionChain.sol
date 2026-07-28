@@ -2,9 +2,9 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
-import {IAssertionChain} from "../src/challengeV2/IAssertionChain.sol";
-import "../src/bridge/IBridge.sol";
-import "../src/rollup/RollupLib.sol";
+import {IAssertionChain} from "../../src/challengeV2/IAssertionChain.sol";
+import "../../src/bridge/IBridge.sol";
+import "../../src/rollup/RollupLib.sol";
 import "./challengeV2/StateTools.sol";
 
 struct MockAssertion {
@@ -36,7 +36,7 @@ contract MockAssertionChain is IAssertionChain {
         return assertions[assertionHash].height != 0;
     }
 
-    function stakeToken() public view returns (address) {
+    function stakeToken() public pure returns (address) {
         return address(0);
     }
 
@@ -98,10 +98,7 @@ contract MockAssertionChain is IAssertionChain {
         bytes32 predecessorId,
         AssertionState memory afterState
     ) public pure returns (bytes32) {
-        return RollupLib.assertionHash({
-            parentAssertionHash: predecessorId,
-            afterState: afterState
-        });
+        return RollupLib.assertionHash({parentAssertionHash: predecessorId, afterState: afterState});
     }
 
     function childCreated(

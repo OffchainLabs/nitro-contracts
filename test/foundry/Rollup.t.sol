@@ -16,7 +16,7 @@ import "../../src/osp/OneStepProverMath.sol";
 import "../../src/osp/OneStepProverHostIo.sol";
 import "../../src/osp/OneStepProofEntry.sol";
 import "../../src/challengeV2/EdgeChallengeManager.sol";
-import "./../challengeV2/Utils.sol";
+import "./challengeV2/Utils.sol";
 
 import "../../src/libraries/Error.sol";
 
@@ -104,6 +104,13 @@ contract RollupTest is Test {
         address bridge,
         address upgradeExecutor,
         address validatorWalletCreator
+    );
+
+    event MELConfigSet(
+        uint16 indexed melVersion,
+        address indexed inbox,
+        address indexed sequencerInbox,
+        uint64 activationBlock
     );
 
     IReader4844 dummyReader4844 = IReader4844(address(137));
@@ -1756,5 +1763,137 @@ contract RollupTest is Test {
         vm.expectRevert("TOO_MANY_PENDING_STAKERS");
         vm.prank(upgradeExecutorAddr);
         adminRollup.decreaseBaseStake(BASE_STAKE - 1, data.nextParentChainBlockHash);
+    }
+
+    // The committed MELState hash in the afterState must match the provided afterMELState.
+    function testRevertInvalidMELState() public {
+        AssertionState memory beforeState;
+        beforeState.machineStatus = MachineStatus.FINISHED;
+        AssertionInputs memory inputs = AssertionInputs({
+            beforeStateData: BeforeStateData({
+                prevPrevAssertionHash: bytes32(0),
+                configData: ConfigData({
+                    wasmModuleRoot: WASM_MODULE_ROOT,
+                    requiredStake: BASE_STAKE,
+                    challengeManager: address(challengeManager),
+                    confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
+                    nextParentChainBlockHash: firstAssertionParentChainBlockHash
+                })
+            }),
+            beforeState: beforeState,
+            afterState: firstState,
+            afterMELState: firstMELState
+        });
+        inputs.afterState.globalState.bytes32Vals[2] = keccak256("CORRUPTED_MEL_HASH");
+
+        vm.prank(validator1);
+        vm.expectRevert("INVALID_MEL_STATE");
+        userRollup.newStakeOnNewAssertion({
+            tokenAmount: BASE_STAKE,
+            assertion: inputs,
+            expectedAssertionHash: bytes32(0),
+            _withdrawalAddress: validator1Withdrawal
+        });
+    }
+
+    // The afterMELState must end on the parent chain block hash committed by the prev config.
+    function testRevertBadParentChainBlockHash() public {
+        AssertionState memory beforeState;
+        beforeState.machineStatus = MachineStatus.FINISHED;
+        AssertionInputs memory inputs = AssertionInputs({
+            beforeStateData: BeforeStateData({
+                prevPrevAssertionHash: bytes32(0),
+                configData: ConfigData({
+                    wasmModuleRoot: WASM_MODULE_ROOT,
+                    requiredStake: BASE_STAKE,
+                    challengeManager: address(challengeManager),
+                    confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
+                    nextParentChainBlockHash: firstAssertionParentChainBlockHash
+                })
+            }),
+            beforeState: beforeState,
+            afterState: firstState,
+            afterMELState: firstMELState
+        });
+        inputs.afterMELState.parentChainBlockHash = keccak256("WRONG_PARENT_CHAIN_BLOCK_HASH");
+        // keep the committed MELState hash consistent so the INVALID_MEL_STATE check passes
+        inputs.afterState.globalState.bytes32Vals[2] = inputs.afterMELState.hash();
+
+        vm.prank(validator1);
+        vm.expectRevert("BAD_PARENT_CHAIN_BLOCK_HASH");
+        userRollup.newStakeOnNewAssertion({
+            tokenAmount: BASE_STAKE,
+            assertion: inputs,
+            expectedAssertionHash: bytes32(0),
+            _withdrawalAddress: validator1Withdrawal
+        });
+    }
+
+    // Two assertions cannot be created in the same block, as they would share the same
+    // nextParentChainBlockHash target.
+    function testRevertSameBlockAssertion() public {
+        (
+            ,
+            AssertionState memory beforeState,
+            MELState memory beforeMELState,
+            bytes32 nextParentChainBlockHash
+        ) = testSuccessCreateAssertion();
+
+        MELState memory afterMELState = beforeMELState;
+        afterMELState.msgCount += 1;
+        afterMELState.parentChainBlockHash = nextParentChainBlockHash;
+
+        AssertionState memory afterState;
+        afterState.machineStatus = MachineStatus.FINISHED;
+        afterState.globalState.u64Vals[0] = beforeState.globalState.u64Vals[0] + 1; // MsgCount
+        afterState.globalState.u64Vals[1] = beforeState.globalState.u64Vals[1] + 1; // ExecutedMsgCount
+        afterState.globalState.bytes32Vals[2] = afterMELState.hash(); // MELState hash
+
+        AssertionInputs memory inputs = AssertionInputs({
+            beforeStateData: BeforeStateData({
+                prevPrevAssertionHash: genesisHash,
+                configData: ConfigData({
+                    wasmModuleRoot: WASM_MODULE_ROOT,
+                    requiredStake: BASE_STAKE,
+                    challengeManager: address(challengeManager),
+                    confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
+                    nextParentChainBlockHash: nextParentChainBlockHash
+                })
+            }),
+            beforeState: beforeState,
+            afterState: afterState,
+            afterMELState: afterMELState
+        });
+
+        // no vm.roll: the second assertion is created in the same block as the first
+        vm.prank(validator1);
+        vm.expectRevert("SAME_BLOCK_ASSERTION");
+        userRollup.stakeOnNewAssertion({assertion: inputs, expectedAssertionHash: bytes32(0)});
+    }
+
+    function testSuccessSetMELConfig() public {
+        address melInbox = address(0xdead01);
+        address melSeqInbox = address(0xdead02);
+
+        vm.expectEmit(true, true, true, true);
+        emit MELConfigSet(0, melInbox, melSeqInbox, uint64(block.number));
+
+        vm.prank(upgradeExecutorAddr);
+        adminRollup.setMELConfig(0, melInbox, melSeqInbox);
+
+        bytes32 melConfigHash = userRollup.currentMelConfigHash();
+        assertTrue(melConfigHash != bytes32(0), "currentMelConfigHash not set");
+
+        (uint64 version, address inbox, address sequencerInbox, uint64 activationBlock) =
+            userRollup.melConfig(melConfigHash);
+        assertEq(uint256(version), 0, "wrong version");
+        assertEq(inbox, melInbox, "wrong stored inbox");
+        assertEq(sequencerInbox, melSeqInbox, "wrong stored sequencerInbox");
+        assertEq(uint256(activationBlock), block.number, "wrong activation block");
+
+        assertEq(address(userRollup.inbox()), melInbox, "inbox pointer not updated");
+        assertEq(
+            address(userRollup.sequencerInbox()), melSeqInbox, "sequencerInbox pointer not updated"
+        );
     }
 }

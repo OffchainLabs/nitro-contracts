@@ -3,33 +3,35 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import "../../src/rollup/RollupProxy.sol";
+import "../../../src/rollup/RollupProxy.sol";
 
-import "../../src/rollup/RollupCore.sol";
-import "../../src/rollup/RollupUserLogic.sol";
-import "../../src/rollup/RollupAdminLogic.sol";
-import "../../src/rollup/RollupCreator.sol";
+import "../../../src/rollup/RollupCore.sol";
+import "../../../src/rollup/RollupUserLogic.sol";
+import "../../../src/rollup/RollupAdminLogic.sol";
+import "../../../src/rollup/RollupCreator.sol";
 
-import "../../src/osp/OneStepProver0.sol";
-import "../../src/osp/OneStepProverMemory.sol";
-import "../../src/osp/OneStepProverMath.sol";
-import "../../src/osp/OneStepProverHostIo.sol";
-import "../../src/osp/OneStepProofEntry.sol";
-import "../../src/challengeV2/EdgeChallengeManager.sol";
+import "../../../src/osp/OneStepProver0.sol";
+import "../../../src/osp/OneStepProverMemory.sol";
+import "../../../src/osp/OneStepProverMath.sol";
+import "../../../src/osp/OneStepProverHostIo.sol";
+import "../../../src/osp/OneStepProofEntry.sol";
+import "../../../src/challengeV2/EdgeChallengeManager.sol";
 import "../challengeV2/Utils.sol";
 
-import "../../src/libraries/Error.sol";
+import "../../../src/libraries/Error.sol";
 
-import "../../src/mocks/TestWETH9.sol";
-import "../../src/mocks/UpgradeExecutorMock.sol";
+import "../../../src/mocks/TestWETH9.sol";
+import "../../../src/mocks/UpgradeExecutorMock.sol";
 
-import "../../src/assertionStakingPool/AssertionStakingPool.sol";
-import "../../src/assertionStakingPool/AssertionStakingPoolCreator.sol";
+import "../../../src/assertionStakingPool/AssertionStakingPool.sol";
+import "../../../src/assertionStakingPool/AssertionStakingPoolCreator.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract AssertionPoolTest is Test {
+    using MELStateLib for MELState;
+
     address constant owner = address(1337);
     address constant sequencer = address(7331);
 
@@ -39,8 +41,11 @@ contract AssertionPoolTest is Test {
     uint256 constant MAX_DATA_SIZE = 117964;
     uint64 constant CHALLENGE_GRACE_PERIOD_BLOCKS = 10;
 
+    uint64 constant INITIAL_MSG_COUNT = 1;
     bytes32 constant FIRST_ASSERTION_BLOCKHASH = keccak256("FIRST_ASSERTION_BLOCKHASH");
     bytes32 constant FIRST_ASSERTION_SENDROOT = keccak256("FIRST_ASSERTION_SENDROOT");
+    bytes32 constant FIRST_ASSERTION_PARENT_CHAIN_BLOCKHASH =
+        keccak256("FIRST_ASSERTION_PARENT_CHAIN_BLOCKHASH");
 
     IERC20 token;
     RollupUserLogic userRollup;
@@ -50,12 +55,12 @@ contract AssertionPoolTest is Test {
     GlobalState emptyGlobalState;
     AssertionState emptyAssertionState =
         AssertionState(emptyGlobalState, MachineStatus.FINISHED, bytes32(0));
-    bytes32 genesisHash = RollupLib.assertionHash({
-        parentAssertionHash: bytes32(0),
-        afterState: emptyAssertionState,
-        inboxAcc: bytes32(0)
-    });
+    bytes32 genesisHash =
+        RollupLib.assertionHash({parentAssertionHash: bytes32(0), afterState: emptyAssertionState});
     AssertionState firstState;
+    MELState firstMELState;
+    uint64 firstAssertionParentChainBlockNumber;
+    bytes32 firstAssertionParentChainBlockHash;
 
     IAssertionStakingPool pool;
 
@@ -74,9 +79,9 @@ contract AssertionPoolTest is Test {
 
     address rollupAddr;
     AssertionInputs assertionInputs;
-    bytes32 assertionHash;
+    bytes32 expectedAssertionHash;
     AssertionState afterState;
-    uint64 inboxcount;
+    MELState afterMELState;
     address upgradeExecutorAddr;
 
     event RollupCreated(
@@ -115,17 +120,27 @@ contract AssertionPoolTest is Test {
         OneStepProver0 oneStepProver = new OneStepProver0();
         OneStepProverMemory oneStepProverMemory = new OneStepProverMemory();
         OneStepProverMath oneStepProverMath = new OneStepProverMath();
-        OneStepProverHostIo oneStepProverHostIo = new OneStepProverHostIo(address(0));
+        OneStepProverHostIo oneStepProverHostIo = new OneStepProverHostIo(address(0), address(0));
         OneStepProofEntry oneStepProofEntry = new OneStepProofEntry(
             oneStepProver, oneStepProverMemory, oneStepProverMath, oneStepProverHostIo
         );
         EdgeChallengeManager edgeChallengeManager = new EdgeChallengeManager();
         BridgeCreator bridgeCreator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
-        RollupCreator rollupCreator = new RollupCreator();
         RollupAdminLogic rollupAdminLogicImpl = new RollupAdminLogic();
         RollupUserLogic rollupUserLogicImpl = new RollupUserLogic();
         DeployHelper deployHelper = new DeployHelper();
         IUpgradeExecutor upgradeExecutorLogic = new UpgradeExecutorMock();
+        RollupCreator rollupCreator = new RollupCreator(
+            address(this),
+            bridgeCreator,
+            oneStepProofEntry,
+            edgeChallengeManager,
+            rollupAdminLogicImpl,
+            rollupUserLogicImpl,
+            upgradeExecutorLogic,
+            address(0),
+            deployHelper
+        );
 
         rollupCreator.setTemplates(
             bridgeCreator,
@@ -137,11 +152,7 @@ contract AssertionPoolTest is Test {
             address(0),
             deployHelper
         );
-        AssertionState memory emptyState = AssertionState(
-            GlobalState([bytes32(0), bytes32(0)], [uint64(0), uint64(0)]),
-            MachineStatus.FINISHED,
-            bytes32(0)
-        );
+        AssertionState memory genesisAssertionState = emptyAssertionState;
         token = new TestWETH9("Test", "TEST");
         IWETH9(address(token)).deposit{value: 21 ether}();
 
@@ -167,8 +178,7 @@ contract AssertionPoolTest is Test {
             stakeToken: address(token),
             wasmModuleRoot: WASM_MODULE_ROOT,
             loserStakeEscrow: address(200001),
-            genesisAssertionState: emptyState,
-            genesisInboxCount: 0,
+            genesisAssertionState: genesisAssertionState,
             miniStakeValues: miniStakeValues,
             layerZeroBlockEdgeHeight: 2 ** 5,
             layerZeroBigStepEdgeHeight: 2 ** 5,
@@ -217,49 +227,44 @@ contract AssertionPoolTest is Test {
         adminRollup.sequencerInbox().setIsBatchPoster(sequencer, true);
         vm.stopPrank();
 
-        firstState.machineStatus = MachineStatus.FINISHED;
-        firstState.globalState.bytes32Vals[0] = FIRST_ASSERTION_BLOCKHASH; // blockhash
-        firstState.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // sendroot
-        firstState.globalState.u64Vals[0] = 1; // inbox count
-        firstState.globalState.u64Vals[1] = 0; // pos in msg
+        // store the parent chain block information to be used in the next assertion
+        // (must be consistent with the the implementation of `initialize` in RollupAdminLogic)
+        firstAssertionParentChainBlockNumber = uint64(block.number - 1);
+        firstAssertionParentChainBlockHash = blockhash(block.number - 1);
+
+        // First assertion to create after the genesis assertion
+        (firstState, firstMELState) = _mockAssertionState();
 
         vm.roll(block.number + 75);
 
-        inboxcount = uint64(_createNewBatch());
         AssertionState memory beforeState;
         beforeState.machineStatus = MachineStatus.FINISHED;
-        afterState.machineStatus = MachineStatus.FINISHED;
-        afterState.globalState.bytes32Vals[0] = FIRST_ASSERTION_BLOCKHASH; // blockhash
-        afterState.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // sendroot
-        afterState.globalState.u64Vals[0] = 1; // inbox count
-        afterState.globalState.u64Vals[1] = 0; // pos in msg
+        afterState = firstState;
+        afterMELState = firstMELState;
 
-        assertionHash = RollupLib.assertionHash({
-            parentAssertionHash: genesisHash,
-            afterState: afterState,
-            inboxAcc: userRollup.bridge().sequencerInboxAccs(0)
-        });
+        expectedAssertionHash =
+            RollupLib.assertionHash({parentAssertionHash: genesisHash, afterState: afterState});
 
         assertionInputs = AssertionInputs({
             beforeStateData: BeforeStateData({
-                sequencerBatchAcc: bytes32(0),
                 prevPrevAssertionHash: bytes32(0),
                 configData: ConfigData({
                     wasmModuleRoot: WASM_MODULE_ROOT,
                     requiredStake: BASE_STAKE,
                     challengeManager: address(challengeManager),
                     confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                    nextInboxPosition: afterState.globalState.u64Vals[0]
+                    nextParentChainBlockHash: firstAssertionParentChainBlockHash
                 })
             }),
             beforeState: beforeState,
-            afterState: afterState
+            afterState: afterState,
+            afterMELState: afterMELState
         });
         aspcreator = new AssertionStakingPoolCreator();
 
         vm.expectRevert(abi.encodeWithSelector(IAssertionStakingPool.EmptyAssertionId.selector));
         pool = aspcreator.createPool(address(rollupAddr), bytes32(0));
-        pool = aspcreator.createPool(address(rollupAddr), assertionHash);
+        pool = aspcreator.createPool(address(rollupAddr), expectedAssertionHash);
 
         token.transfer(staker1, staker1Bal);
         token.transfer(staker2, staker2Bal);
@@ -283,26 +288,41 @@ contract AssertionPoolTest is Test {
         adminRollup.setValidatorWhitelistDisabled(true);
     }
 
-    function _createNewBatch() internal returns (uint256) {
-        uint256 count = userRollup.bridge().sequencerMessageCount();
-        vm.startPrank(sequencer);
-        userRollup.sequencerInbox().addSequencerL2Batch({
-            sequenceNumber: count,
-            data: "",
-            afterDelayedMessagesRead: 1,
-            gasRefunder: IGasRefunder(address(0)),
-            prevMessageCount: 0,
-            newMessageCount: 0
-        });
-        vm.stopPrank();
-        assertEq(userRollup.bridge().sequencerMessageCount(), ++count);
-        return count;
+    function _mockAssertionState() internal view returns (AssertionState memory, MELState memory) {
+        MELState memory melState;
+        melState.version = 0;
+        melState.parentChainId = uint64(block.chainid);
+        melState.parentChainBlockNumber = firstAssertionParentChainBlockNumber;
+        melState.batchPostingTargetAddress = address(0);
+        melState.delayedMessagePostingTargetAddress = address(0);
+        melState.parentChainBlockHash = firstAssertionParentChainBlockHash;
+        melState.parentChainPreviousBlockHash = bytes32(0);
+        melState.batchCount = 1;
+        melState.msgCount = INITIAL_MSG_COUNT;
+        melState.localMsgAccumulator = bytes32(0);
+        melState.delayedMessagesRead = INITIAL_MSG_COUNT;
+        melState.delayedMessagesSeen = INITIAL_MSG_COUNT;
+        melState.delayedMessageInboxAcc = bytes32(0);
+        melState.delayedMessageOutboxAcc = bytes32(0);
+
+        AssertionState memory assertionState;
+        assertionState.machineStatus = MachineStatus.FINISHED;
+        assertionState.globalState.bytes32Vals[0] = FIRST_ASSERTION_BLOCKHASH; // Blockhash
+        assertionState.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // Sendroot
+        assertionState.globalState.bytes32Vals[2] = melState.hash(); // MELState hash
+        assertionState.globalState.bytes32Vals[3] = bytes32(0); // MEL NextMsgHash
+        assertionState.globalState.u64Vals[0] = 0; // InboxPosition (deprecated)
+        assertionState.globalState.u64Vals[1] = 0; // PositionInMessage (deprecated)
+        assertionState.globalState.u64Vals[2] = INITIAL_MSG_COUNT; // MsgCount
+        assertionState.globalState.u64Vals[3] = INITIAL_MSG_COUNT; // ExecutedMsgCount
+
+        return (assertionState, melState);
     }
 
     function testGetPool() external {
         assertEq(
             address(pool),
-            address(aspcreator.getPool(rollupAddr, assertionHash)),
+            address(aspcreator.getPool(rollupAddr, expectedAssertionHash)),
             "getPool returns created pool's expected address"
         );
     }
@@ -353,9 +373,8 @@ contract AssertionPoolTest is Test {
     function _createAndConfirmAssertion() internal {
         _createAssertion();
         vm.roll(userRollup.getAssertion(genesisHash).firstChildBlock + CONFIRM_PERIOD_BLOCKS + 1);
-        bytes32 inboxAccs = userRollup.bridge().sequencerInboxAccs(0);
         userRollup.confirmAssertion(
-            assertionHash,
+            expectedAssertionHash,
             genesisHash,
             firstState,
             bytes32(0),
@@ -364,9 +383,8 @@ contract AssertionPoolTest is Test {
                 requiredStake: BASE_STAKE,
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                nextInboxPosition: firstState.globalState.u64Vals[0]
-            }),
-            inboxAccs
+                nextParentChainBlockHash: firstAssertionParentChainBlockHash
+            })
         );
     }
 
