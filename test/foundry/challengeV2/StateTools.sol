@@ -20,7 +20,7 @@ library StateToolsLib {
         MachineStatus ms
     ) internal returns (AssertionState memory) {
         bytes32[4] memory bytes32Vals = [blockHash, rand.hash(), rand.hash(), rand.hash()];
-        uint64[2] memory u64Vals = [uint64(melMsgCount), uint64(melMsgCount)]; // We assume executedMsgCount == msgCount for simplicity
+        uint64[4] memory u64Vals = [0, 0, uint64(melMsgCount), uint64(melMsgCount)]; // We assume executedMsgCount == msgCount for simplicity
 
         GlobalState memory gs = GlobalState({bytes32Vals: bytes32Vals, u64Vals: u64Vals});
         return AssertionState({globalState: gs, machineStatus: ms, endHistoryRoot: bytes32(0)});

@@ -1612,7 +1612,9 @@ contract EdgeChallengeManagerLibTest is Test {
     ) private returns (ExecStateVars memory) {
         uint64 msgCount = uint64(uint256(rand.hash()));
         AssertionState memory assertionState = AssertionState(
-            GlobalState([rand.hash(), rand.hash(), rand.hash(), rand.hash()], [msgCount, msgCount]),
+            GlobalState(
+                [rand.hash(), rand.hash(), rand.hash(), rand.hash()], [0, 0, msgCount, msgCount]
+            ),
             MachineStatus.FINISHED,
             bytes32(0)
         );
