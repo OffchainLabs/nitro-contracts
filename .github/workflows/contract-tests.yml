@@ -25,9 +25,9 @@ jobs:
           cache: false
 
       - name: Setup node/yarn
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 24
           cache: 'yarn'
           cache-dependency-path: '**/yarn.lock'
 
@@ -55,9 +55,9 @@ jobs:
           cache: false
 
       - name: Setup nodejs
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '24'
           cache: 'yarn'
           cache-dependency-path: '**/yarn.lock'
 
@@ -144,9 +144,9 @@ jobs:
           no-token-bridge: true
 
       - name: Setup nodejs
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 24
           cache: 'yarn'
           cache-dependency-path: '**/yarn.lock'
 
@@ -176,9 +176,9 @@ jobs:
           nitro-testnode-ref: release
 
       - name: Setup node/yarn
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 24
           cache: 'yarn'
           cache-dependency-path: '**/yarn.lock'
 
@@ -209,9 +209,9 @@ jobs:
           nitro-testnode-ref: release
 
       - name: Setup node/yarn
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 24
           cache: 'yarn'
           cache-dependency-path: '**/yarn.lock'
 
@@ -242,9 +242,9 @@ jobs:
           nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
 
       - name: Setup node/yarn
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 24
           cache: 'yarn'
           cache-dependency-path: '**/yarn.lock'
 
