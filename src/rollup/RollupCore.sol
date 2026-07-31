@@ -114,6 +114,10 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     bool public validatorWhitelistDisabled;
     address public anyTrustFastConfirmer;
 
+    // Set once the genesis MEL assertion has been force confirmed; see
+    // forceConfirmGenesisMELAssertionInternal.
+    bool public genesisMELAssertionConfirmed;
+
     // If the chain this RollupCore is deployed on is an Arbitrum chain.
     bool internal immutable _hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
     // If the chain RollupCore is deployed on, this will contain the ArbSys.blockNumber() at each node's creation.
@@ -278,6 +282,67 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
      * @dev This function will validate the parentAssertionHash, confirmState and inboxAcc against the assertionHash
      *          and check if the assertionHash is currently pending. If all checks pass, the assertion will be confirmed.
      */
+    /// @dev Creates and immediately confirms the genesis MEL assertion: a
+    ///      child of the current latest confirmed assertion whose after state
+    ///      commits to the chain's half-filled MEL state — identity fields
+    ///      only (parent chain id and the batch/delayed message posting
+    ///      addresses), built and hashed on chain. The replay machine
+    ///      reconstructs the chain's actual initial MEL state from that
+    ///      commitment. Callable only once, by the rollup owner via
+    ///      RollupAdminLogic.
+    function forceConfirmGenesisMELAssertionInternal(
+        AssertionState calldata parentState,
+        bytes32 grandParentAssertionHash
+    ) internal returns (bytes32) {
+        require(!genesisMELAssertionConfirmed, "MEL_GENESIS_ALREADY_CONFIRMED");
+        genesisMELAssertionConfirmed = true;
+        bytes32 parentHash = _latestConfirmed;
+        require(
+            RollupLib.assertionHash(grandParentAssertionHash, parentState) == parentHash,
+            "INVALID_PARENT_STATE"
+        );
+        MELState memory genesisMELState;
+        genesisMELState.parentChainId = uint64(block.chainid);
+        genesisMELState.batchPostingTargetAddress = address(sequencerInbox());
+        genesisMELState.delayedMessagePostingTargetAddress = address(bridge);
+        AssertionState memory afterState = parentState;
+        afterState.globalState.bytes32Vals[2] = genesisMELState.hash();
+        bytes32 newAssertionHash = RollupLib.assertionHash(parentHash, afterState);
+        bytes32 nextParentChainBlockHash = blockhash(block.number - 1);
+        AssertionNode memory newAssertion = AssertionNodeLib.createAssertion(
+            true,
+            RollupLib.configHash({
+                wasmModuleRoot: wasmModuleRoot,
+                requiredStake: baseStake,
+                challengeManager: address(challengeManager),
+                confirmPeriodBlocks: confirmPeriodBlocks,
+                nextParentChainBlockHash: nextParentChainBlockHash
+            })
+        );
+        getAssertionStorage(parentHash).childCreated();
+        _assertions[newAssertionHash] = newAssertion;
+        AssertionInputs memory assertionInputs;
+        assertionInputs.afterState = afterState;
+        assertionInputs.afterMELState = genesisMELState;
+        emit AssertionCreated(
+            newAssertionHash,
+            parentHash,
+            assertionInputs,
+            nextParentChainBlockHash,
+            wasmModuleRoot,
+            baseStake,
+            address(challengeManager),
+            confirmPeriodBlocks
+        );
+        bytes32 blockHash = afterState.globalState.getBlockHash();
+        bytes32 sendRoot = afterState.globalState.getSendRoot();
+        outbox.updateSendRoot(sendRoot, blockHash);
+        _latestConfirmed = newAssertionHash;
+        _assertions[newAssertionHash].status = AssertionStatus.Confirmed;
+        emit AssertionConfirmed(newAssertionHash, blockHash, sendRoot);
+        return newAssertionHash;
+    }
+
     function confirmAssertionInternal(
         bytes32 assertionHash,
         bytes32 parentAssertionHash,
