@@ -258,6 +258,16 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
     /**
      * @inheritdoc IRollupAdmin
      */
+    function forceConfirmGenesisMELAssertion(
+        AssertionState calldata parentState,
+        bytes32 grandParentAssertionHash
+    ) external override {
+        forceConfirmGenesisMELAssertionInternal(parentState, grandParentAssertionHash);
+    }
+
+    /**
+     * @inheritdoc IRollupAdmin
+     */
     function decreaseBaseStake(
         uint256 newBaseStake,
         bytes32 latestNextParentChainBlockHash

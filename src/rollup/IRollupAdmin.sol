@@ -173,6 +173,20 @@ interface IRollupAdmin {
     ) external;
 
     /**
+     * @notice Create and immediately confirm the genesis MEL assertion: a
+     *         child of the current latest confirmed assertion whose after
+     *         state commits to the chain's half-filled MEL state (identity
+     *         fields only, built and hashed on chain). Callable only once.
+     * @param parentState The latest confirmed assertion's after state
+     * @param grandParentAssertionHash The parent assertion hash of the latest
+     *        confirmed assertion (zero when it is the genesis assertion)
+     */
+    function forceConfirmGenesisMELAssertion(
+        AssertionState calldata parentState,
+        bytes32 grandParentAssertionHash
+    ) external;
+
+    /**
      * @notice Increase the base stake required for creating an assertion
      * @param newBaseStake New base stake to be set. Must be greater than current base stake, otherwise use reduceBaseStake
      */
