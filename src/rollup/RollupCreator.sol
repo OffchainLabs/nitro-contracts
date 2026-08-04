@@ -314,6 +314,11 @@ contract RollupCreator is Ownable {
         uint256 _maxFeePerGas
     ) internal {
         if (_nativeToken == address(0)) {
+            // ETH already held before this call is not part of this deployment and
+            // must not be refunded to the caller. msg.value is what was sent for THIS
+            // createRollup; anything above it is pre-existing and left untouched.
+            uint256 preExistingBalance = address(this).balance - msg.value;
+
             // we need to fund 4 retryable tickets
             uint256 cost =
                 l2FactoriesDeployer.getDeploymentTotalCost(IInboxBase(_inbox), _maxFeePerGas);
@@ -323,7 +328,7 @@ contract RollupCreator is Ownable {
 
             // refund the caller
             // solhint-disable-next-line avoid-low-level-calls
-            (bool sent,) = msg.sender.call{value: address(this).balance}("");
+            (bool sent,) = msg.sender.call{value: address(this).balance - preExistingBalance}("");
             require(sent, "Refund failed");
         } else {
             // Transfer fee token amount needed to pay for retryable fees to the inbox.

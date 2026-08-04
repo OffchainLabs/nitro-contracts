@@ -579,6 +579,54 @@ contract RollupCreatorTest is Test {
             bytes32(uint256(keccak256("eip1967.proxy.implementation.secondary")) - 1);
         return address(uint160(uint256(vm.load(proxy, secondarySlot))));
     }
+
+    /// @notice Pre-existing ETH in the creator must not be swept to the caller's refund.
+    function test_createRollup_refundExcludesPreExistingBalance() public {
+        // Simulate ETH already sitting in the creator before this deployment
+        // (a stray transfer, dust, or leftover from a prior interaction).
+        uint256 stray = 0.5 ether;
+        vm.deal(address(rollupCreator), stray);
+
+        vm.startPrank(deployer);
+
+        Config memory config = _getDefaultConfig();
+
+        uint256 factoryDeploymentFunds = 1 ether;
+        vm.deal(deployer, factoryDeploymentFunds);
+
+        address[] memory batchPosters = new address[](1);
+        batchPosters[0] = makeAddr("batch poster 1");
+        address batchPosterManager = makeAddr("batch poster manager");
+        address[] memory validators = new address[](2);
+        validators[0] = makeAddr("validator1");
+        validators[1] = makeAddr("validator2");
+
+        RollupCreator.RollupDeploymentParams memory deployParams = RollupCreator
+            .RollupDeploymentParams({
+            config: config,
+            batchPosters: batchPosters,
+            validators: validators,
+            maxDataSize: MAX_DATA_SIZE,
+            nativeToken: address(0),
+            deployFactoriesToL2: true,
+            maxFeePerGasForRetryables: MAX_FEE_PER_GAS,
+            batchPosterManager: batchPosterManager,
+            feeTokenPricer: IFeeTokenPricer(address(0)),
+            customOsp: address(0)
+        });
+
+        rollupCreator.createRollup{value: factoryDeploymentFunds}(deployParams);
+
+        vm.stopPrank();
+
+        // The pre-existing balance must remain in the creator, not be refunded to the caller.
+        // Before the fix this is 0 (the whole balance was swept); after the fix it is `stray`.
+        assertEq(
+            address(rollupCreator).balance,
+            stray,
+            "pre-existing balance should stay in the creator, not be swept to the caller"
+        );
+    }
 }
 
 contract ProxyUpgradeAction {
