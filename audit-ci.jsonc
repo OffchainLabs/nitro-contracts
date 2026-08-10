@@ -39,8 +39,6 @@
     "GHSA-xcpc-8h2w-3j85",
     // tmp path traversal; hardhat>solc and patch-package both pass fixed prefixes
     "GHSA-ph9p-34f9-6g65",
-    // brace-expansion OOM; needs an attacker-supplied glob, all patterns come from config
-    "GHSA-mh99-v99m-4gvg",
     // bn.js infinite loop; coverage only, over values from this repo's own contracts
     "GHSA-378v-28hj-76wf",
     // uuid bounds check missing in v3/v5/v6 with `buf`; hardhat calls only v4, no buffer
