@@ -12,8 +12,7 @@ import "../bridge/ISequencerInbox.sol";
 import "../bridge/IBridge.sol";
 
 struct ExecutionContext {
-    uint256 maxInboxMessagesRead;
-    IBridge bridge;
+    bytes32 targetParentChainBlockHash;
     bytes32 initialWasmModuleRoot;
 }
 

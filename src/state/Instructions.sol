@@ -144,7 +144,7 @@ library Instructions {
 
     uint16 internal constant VALIDATE_CERTIFICATE = 0x8019;
     uint16 internal constant READ_PRE_IMAGE = 0x8020;
-    uint16 internal constant READ_INBOX_MESSAGE = 0x8021;
+    uint16 internal constant READ_INBOX_MESSAGE = 0x8021; // Deprecated
     uint16 internal constant HALT_AND_SET_FINISHED = 0x8022;
     uint16 internal constant LINK_MODULE = 0x8023;
     uint16 internal constant UNLINK_MODULE = 0x8024;
@@ -153,8 +153,10 @@ library Instructions {
     uint16 internal constant POP_COTHREAD = 0x8031;
     uint16 internal constant SWITCH_COTHREAD = 0x8032;
 
-    uint256 internal constant INBOX_INDEX_SEQUENCER = 0;
-    uint256 internal constant INBOX_INDEX_DELAYED = 1;
+    uint16 internal constant GET_END_PARENT_CHAIN_BLOCK_HASH = 0x8033;
+
+    uint256 internal constant INBOX_INDEX_SEQUENCER = 0; // Deprecated
+    uint256 internal constant INBOX_INDEX_DELAYED = 1; // Deprecated
 
     function hash(
         Instruction[] memory code

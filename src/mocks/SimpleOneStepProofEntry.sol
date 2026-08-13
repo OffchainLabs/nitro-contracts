@@ -9,6 +9,7 @@ import "../state/Deserialize.sol";
 
 contract SimpleOneStepProofEntry is IOneStepProofEntry {
     using GlobalStateLib for GlobalState;
+    using MELStateLib for MELState;
 
     // End the batch after 2000 steps. This results in 11 blocks for an honest validator.
     // This constant must be synchronized with the one in execution/engine.go
@@ -26,23 +27,33 @@ contract SimpleOneStepProofEntry is IOneStepProofEntry {
         uint256 step,
         bytes32 beforeHash,
         bytes calldata proof
-    ) external view returns (bytes32 afterHash) {
+    ) external pure returns (bytes32 afterHash) {
         if (proof.length == 0) {
             revert("EMPTY_PROOF");
         }
         GlobalState memory globalState;
         uint256 offset;
-        (globalState.u64Vals[0], offset) = Deserialize.u64(proof, offset);
-        (globalState.u64Vals[1], offset) = Deserialize.u64(proof, offset);
-        if (step > 0 && (beforeHash[0] == 0 || globalState.getPositionInMessage() == 0)) {
+        (globalState.bytes32Vals[3], offset) = Deserialize.b32(proof, offset); // MELNextMsgHash
+        (globalState.u64Vals[2], offset) = Deserialize.u64(proof, offset); // MELMsgCount
+        (globalState.u64Vals[3], offset) = Deserialize.u64(proof, offset); // MELExecutedMsgCount
+
+        MELState memory melState;
+        (melState.parentChainBlockHash, offset) = Deserialize.b32(proof, offset);
+
+        if (step > 0 && (beforeHash[0] == 0 || globalState.getMELNextMsgHash() == bytes32(0))) {
             // We end the block when the first byte of the hash hits 0 or we advance a batch
             return beforeHash;
         }
-        if (globalState.getInboxPosition() >= execCtx.maxInboxMessagesRead) {
-            // We can't continue further because we've hit the max inbox messages read
+        if (
+            melState.parentChainBlockHash == execCtx.targetParentChainBlockHash
+                && globalState.getMELExecutedMsgCount() >= melState.msgCount
+        ) {
+            // We can't continue further because we've executed all messages up to this melState
             return beforeHash;
         }
         require(globalState.hash() == beforeHash, "BAD_PROOF");
+
+        // TODO: modify this logic once execution_engine.go is modified
         globalState.u64Vals[1]++;
         if (globalState.u64Vals[1] % STEPS_PER_BATCH == 0) {
             globalState.u64Vals[0]++;
