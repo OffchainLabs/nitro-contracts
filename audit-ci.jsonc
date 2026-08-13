@@ -1,4 +1,6 @@
 {
+  // package.json `resolutions` patch axios (hardhat-deploy pins ^0.21.1) and undici (hardhat
+  // and hardhat-verify pin ^5.14.0). Both fixes need Hardhat 3; drop them on that migration.
   "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
   "low": true,
   "allowlist": [
@@ -10,27 +12,36 @@
     "GHSA-mx2q-35m2-x2rh",
     // OpenZeppelin Contracts's governor proposal creation may be blocked by frontrunning
     "GHSA-5h3x-9wvq-w4m2",
-    // axios cookies data-privacy issue; used only in hardhat-deploy and sol2uml (dev deps)
-    "GHSA-wf5p-g6vw-rhxx",
     //  OpenZeppelin Contracts using MerkleProof multiproofs may allow proving arbitrary leaves for specific trees; unused
     "GHSA-wprv-93r4-jj2p",
     // Open Zeppelin: Base64 encoding may read from potentially dirty memory
     "GHSA-9vx6-7xxf-x967",
-    // Server-Side Request Forgery in axios
-    "GHSA-8hc4-vh64-cxmj",
     // cookie accepts cookie name, path, and domain with out of bounds characters
     "GHSA-pxg6-pf52-xh8x",
-    // axios Requests Vulnerable To Possible SSRF and Credential Leakage via Absolute URL
-    "GHSA-jr5f-v2jv-69x6",
     // tmp allows arbitrary temporary file / directory write via symbolic link `dir` parameter
     "GHSA-52f5-9888-hmc6",
-    // Axios is vulnerable to DoS attack through lack of data size check
-    "GHSA-4hjh-wcwx-xvwj",
     // Elliptic Uses a Cryptographic Primitive with a Risky Implementation
     "GHSA-848j-6mx2-7j84",
     // jsdiff has a Denial of Service vulnerability in parsePatch and applyPatch
     "GHSA-73rr-hh4g-fpgx",
-    // Undici has an unbounded decompression chain in HTTP responses on Node.js Fetch API via Content-Encoding leads to resource exhaustion
-    "GHSA-g9mf-h72j-4rw9"
+    // Below: dev tooling with no reachable code path. Delete an entry once its reason stops holding.
+    // lodash injection and prototype pollution; reached only by `yarn audit:fix`, run by hand
+    "GHSA-r5fr-rjxr-66jc",
+    "GHSA-f23m-r3pf-42rh",
+    "GHSA-xxjr-mmjv-4gpg",
+    // serialize-javascript RCE and DoS; reached only by mocha parallel workers, which are not enabled
+    "GHSA-5c6j-r48x-rmvq",
+    "GHSA-qj8w-gfj5-8c6v",
+    // ws DoS and memory disclosure; reached only by ethers WebSocketProvider, never constructed here
+    "GHSA-96hv-2xvq-fx4p",
+    "GHSA-58qx-3vcg-4xpx",
+    // adm-zip 4GB allocation; only unpacks checksum-verified solc downloads
+    "GHSA-xcpc-8h2w-3j85",
+    // tmp path traversal; hardhat>solc and patch-package both pass fixed prefixes
+    "GHSA-ph9p-34f9-6g65",
+    // bn.js infinite loop; coverage only, over values from this repo's own contracts
+    "GHSA-378v-28hj-76wf",
+    // uuid bounds check missing in v3/v5/v6 with `buf`; hardhat calls only v4, no buffer
+    "GHSA-w5hq-g745-h8pq"
   ]
 }
