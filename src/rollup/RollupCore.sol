@@ -506,8 +506,18 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
             "ASSERTION_SEEN"
         );
 
-        // Next assertion will have to process messages from blocks up to the previous one
-        bytes32 nextParentChainBlockHash = blockhash(block.number - 1);
+        // Next assertion will have to process messages from blocks up to the previous one.
+        // On an Arbitrum host chain, blockhash() resolves against the L1 block hash ring
+        // buffer, so it would pin an L1 hash where afterMELState.parentChainBlockHash is a
+        // hash of this chain's parent -- the equality check above could never pass. ArbSys
+        // gives the parent chain hash; one block back is well inside its 256-block window.
+        bytes32 nextParentChainBlockHash;
+        if (_hostChainIsArbitrum) {
+            ArbSys arbSys = ArbSys(address(100));
+            nextParentChainBlockHash = arbSys.arbBlockHash(arbSys.arbBlockNumber() - 1);
+        } else {
+            nextParentChainBlockHash = blockhash(block.number - 1);
+        }
 
         // state updates
         AssertionNode memory newAssertion = AssertionNodeLib.createAssertion(
