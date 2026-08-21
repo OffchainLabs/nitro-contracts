@@ -482,6 +482,15 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         {
             // We want to prevent multiple assertions from being created in the same block, as this would allow them to have the same `nextParentChainBlockHash`,
             // which would be an already processed block hash by the time the assertions are created.
+            //
+            // On an Arbitrum host chain these are deliberately different units: block.number and
+            // createdAtBlock are L1 block numbers, while _nextParentChainBlockHash() advances with
+            // arbBlockNumber(). That is still sound, and in the safe direction. Every host block
+            // carries exactly one block.number, so two assertions in the same host block always
+            // see the same one and are rejected; many host blocks can share a block.number, so the
+            // check can only reject assertions whose hashes would in fact have differed. It over-
+            // rejects, never under-rejects. The cost is waiting for the next L1 block on a
+            // fast-block host, far below any real assertion cadence.
             require((block.number - prevAssertion.createdAtBlock) >= 1, "SAME_BLOCK_ASSERTION");
 
             // This new assertion consumes the messages from prevParentChainBlockHash to afterParentChainBlockHash
