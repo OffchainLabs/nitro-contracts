@@ -74,7 +74,10 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
             afterStateHash: config.genesisAssertionState.hash()
         });
 
-        bytes32 nextParentChainBlockHash = blockhash(block.number - 1);
+        // Must match createNewAssertion's: this pins the terminal the first post-genesis
+        // assertion has to extend from, and on an Arbitrum host chain blockhash() would pin
+        // an L1 hash that MEL's parentChainBlockHash can never equal.
+        bytes32 nextParentChainBlockHash = _nextParentChainBlockHash();
         AssertionNode memory initialAssertion = AssertionNodeLib.createAssertion(
             true,
             RollupLib.configHash({

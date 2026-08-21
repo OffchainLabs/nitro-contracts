@@ -416,6 +416,28 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         delete _stakerMap[stakerAddress];
     }
 
+    /**
+     * @dev The parent chain block hash to pin as the terminal an assertion's child must
+     *      extend from. Compared against afterMELState.parentChainBlockHash when that child
+     *      is created, so it has to be a hash of *this* chain's parent chain.
+     *
+     *      On an Arbitrum host chain blockhash() resolves against the L1 block hash ring
+     *      buffer, so it would pin an L1 hash where MEL supplies a hash of the host chain's
+     *      parent, and the equality check could never pass. ArbSys gives the right one; a
+     *      single block back is well inside its 256-block window.
+     *
+     *      Used by both createNewAssertion and RollupAdminLogic.initialize — the genesis
+     *      assertion pins the terminal for the first post-genesis assertion, so both have to
+     *      agree or that first assertion cannot be created.
+     */
+    function _nextParentChainBlockHash() internal view returns (bytes32) {
+        if (_hostChainIsArbitrum) {
+            ArbSys arbSys = ArbSys(address(100));
+            return arbSys.arbBlockHash(arbSys.arbBlockNumber() - 1);
+        }
+        return blockhash(block.number - 1);
+    }
+
     function createNewAssertion(
         AssertionInputs calldata assertion,
         bytes32 prevAssertionHash,
@@ -460,6 +482,15 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         {
             // We want to prevent multiple assertions from being created in the same block, as this would allow them to have the same `nextParentChainBlockHash`,
             // which would be an already processed block hash by the time the assertions are created.
+            //
+            // On an Arbitrum host chain these are deliberately different units: block.number and
+            // createdAtBlock are L1 block numbers, while _nextParentChainBlockHash() advances with
+            // arbBlockNumber(). That is still sound, and in the safe direction. Every host block
+            // carries exactly one block.number, so two assertions in the same host block always
+            // see the same one and are rejected; many host blocks can share a block.number, so the
+            // check can only reject assertions whose hashes would in fact have differed. It over-
+            // rejects, never under-rejects. The cost is waiting for the next L1 block on a
+            // fast-block host, far below any real assertion cadence.
             require((block.number - prevAssertion.createdAtBlock) >= 1, "SAME_BLOCK_ASSERTION");
 
             // This new assertion consumes the messages from prevParentChainBlockHash to afterParentChainBlockHash
@@ -507,7 +538,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         );
 
         // Next assertion will have to process messages from blocks up to the previous one
-        bytes32 nextParentChainBlockHash = blockhash(block.number - 1);
+        bytes32 nextParentChainBlockHash = _nextParentChainBlockHash();
 
         // state updates
         AssertionNode memory newAssertion = AssertionNodeLib.createAssertion(
