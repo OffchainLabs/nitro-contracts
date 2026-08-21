@@ -416,6 +416,28 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         delete _stakerMap[stakerAddress];
     }
 
+    /**
+     * @dev The parent chain block hash to pin as the terminal an assertion's child must
+     *      extend from. Compared against afterMELState.parentChainBlockHash when that child
+     *      is created, so it has to be a hash of *this* chain's parent chain.
+     *
+     *      On an Arbitrum host chain blockhash() resolves against the L1 block hash ring
+     *      buffer, so it would pin an L1 hash where MEL supplies a hash of the host chain's
+     *      parent, and the equality check could never pass. ArbSys gives the right one; a
+     *      single block back is well inside its 256-block window.
+     *
+     *      Used by both createNewAssertion and RollupAdminLogic.initialize — the genesis
+     *      assertion pins the terminal for the first post-genesis assertion, so both have to
+     *      agree or that first assertion cannot be created.
+     */
+    function _nextParentChainBlockHash() internal view returns (bytes32) {
+        if (_hostChainIsArbitrum) {
+            ArbSys arbSys = ArbSys(address(100));
+            return arbSys.arbBlockHash(arbSys.arbBlockNumber() - 1);
+        }
+        return blockhash(block.number - 1);
+    }
+
     function createNewAssertion(
         AssertionInputs calldata assertion,
         bytes32 prevAssertionHash,
@@ -506,18 +528,8 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
             "ASSERTION_SEEN"
         );
 
-        // Next assertion will have to process messages from blocks up to the previous one.
-        // On an Arbitrum host chain, blockhash() resolves against the L1 block hash ring
-        // buffer, so it would pin an L1 hash where afterMELState.parentChainBlockHash is a
-        // hash of this chain's parent -- the equality check above could never pass. ArbSys
-        // gives the parent chain hash; one block back is well inside its 256-block window.
-        bytes32 nextParentChainBlockHash;
-        if (_hostChainIsArbitrum) {
-            ArbSys arbSys = ArbSys(address(100));
-            nextParentChainBlockHash = arbSys.arbBlockHash(arbSys.arbBlockNumber() - 1);
-        } else {
-            nextParentChainBlockHash = blockhash(block.number - 1);
-        }
+        // Next assertion will have to process messages from blocks up to the previous one
+        bytes32 nextParentChainBlockHash = _nextParentChainBlockHash();
 
         // state updates
         AssertionNode memory newAssertion = AssertionNodeLib.createAssertion(
