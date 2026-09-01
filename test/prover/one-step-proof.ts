@@ -92,7 +92,7 @@ describe('OneStepProof', function () {
         const inboxLimit = 1000000
         const promise = osp
           .proveOneStep(
-            [inboxLimit, bridge.address],
+            [inboxLimit, bridge.address, ethers.constants.HashZero],
             i,
             [...Buffer.from(proof.before, 'hex')],
             [...Buffer.from(proof.proof, 'hex')]
@@ -143,11 +143,11 @@ describe('OneStepProof', function () {
         readline.clearLine(process.stdout, 0)
         process.stdout.write(
           '\rTesting ' +
-            file +
-            ' Waiting for: ' +
-            String(stillWaiting.length) +
-            '/' +
-            String(isdone.length)
+          file +
+          ' Waiting for: ' +
+          String(stillWaiting.length) +
+          '/' +
+          String(isdone.length)
         )
         if (stillWaiting.length < 10) {
           process.stdout.write(': ')
