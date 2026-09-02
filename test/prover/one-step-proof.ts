@@ -143,11 +143,11 @@ describe('OneStepProof', function () {
         readline.clearLine(process.stdout, 0)
         process.stdout.write(
           '\rTesting ' +
-          file +
-          ' Waiting for: ' +
-          String(stillWaiting.length) +
-          '/' +
-          String(isdone.length)
+            file +
+            ' Waiting for: ' +
+            String(stillWaiting.length) +
+            '/' +
+            String(isdone.length)
         )
         if (stillWaiting.length < 10) {
           process.stdout.write(': ')
