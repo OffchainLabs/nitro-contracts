@@ -5,15 +5,18 @@
 pragma solidity ^0.8.0;
 
 struct GlobalState {
-    bytes32[2] bytes32Vals;
-    uint64[2] u64Vals;
+    // BlockHash, SendRoot, MELState hash and NextMsg hash
+    bytes32[4] bytes32Vals;
+    // Batch (InboxPosition), PositionInBatch (PositionInMessage), -- deprecated after MEL
+    // MsgCount and ExecutedMsgCount
+    uint64[4] u64Vals;
 }
 
 library GlobalStateLib {
     using GlobalStateLib for GlobalState;
 
-    uint16 internal constant BYTES32_VALS_NUM = 2;
-    uint16 internal constant U64_VALS_NUM = 2;
+    uint16 internal constant BYTES32_VALS_NUM = 4;
+    uint16 internal constant U64_VALS_NUM = 4;
 
     function hash(
         GlobalState memory state
@@ -23,8 +26,12 @@ library GlobalStateLib {
                 "Global state:",
                 state.bytes32Vals[0],
                 state.bytes32Vals[1],
+                state.bytes32Vals[2],
+                state.bytes32Vals[3],
                 state.u64Vals[0],
-                state.u64Vals[1]
+                state.u64Vals[1],
+                state.u64Vals[2],
+                state.u64Vals[3]
             )
         );
     }
@@ -41,6 +48,18 @@ library GlobalStateLib {
         return state.bytes32Vals[1];
     }
 
+    function getMELStateHash(
+        GlobalState memory state
+    ) internal pure returns (bytes32) {
+        return state.bytes32Vals[2];
+    }
+
+    function getMELNextMsgHash(
+        GlobalState memory state
+    ) internal pure returns (bytes32) {
+        return state.bytes32Vals[3];
+    }
+
     function getInboxPosition(
         GlobalState memory state
     ) internal pure returns (uint64) {
@@ -53,53 +72,43 @@ library GlobalStateLib {
         return state.u64Vals[1];
     }
 
+    /// @dev Unused. MELState.msgCount should be used instead whenever possible, but this is left here
+    ///      to mimic nitro's implementation of GlobalState.
+    function getMELMsgCount(
+        GlobalState memory state
+    ) internal pure returns (uint64) {
+        return state.u64Vals[2];
+    }
+
+    function getMELExecutedMsgCount(
+        GlobalState memory state
+    ) internal pure returns (uint64) {
+        return state.u64Vals[3];
+    }
+
     function isEmpty(
         GlobalState calldata state
     ) internal pure returns (bool) {
         return (
             state.bytes32Vals[0] == bytes32(0) && state.bytes32Vals[1] == bytes32(0)
-                && state.u64Vals[0] == 0 && state.u64Vals[1] == 0
+                && state.bytes32Vals[2] == bytes32(0) && state.bytes32Vals[3] == bytes32(0)
+                && state.u64Vals[0] == 0 && state.u64Vals[1] == 0 && state.u64Vals[2] == 0
+                && state.u64Vals[3] == 0
         );
     }
 
-    function comparePositions(
+    function compareExecutedMessages(
         GlobalState calldata a,
         GlobalState calldata b
     ) internal pure returns (int256) {
-        uint64 aPos = a.getInboxPosition();
-        uint64 bPos = b.getInboxPosition();
+        uint64 aPos = a.getMELExecutedMsgCount();
+        uint64 bPos = b.getMELExecutedMsgCount();
         if (aPos < bPos) {
             return -1;
         } else if (aPos > bPos) {
             return 1;
         } else {
-            uint64 aMsg = a.getPositionInMessage();
-            uint64 bMsg = b.getPositionInMessage();
-            if (aMsg < bMsg) {
-                return -1;
-            } else if (aMsg > bMsg) {
-                return 1;
-            } else {
-                return 0;
-            }
-        }
-    }
-
-    function comparePositionsAgainstStartOfBatch(
-        GlobalState calldata a,
-        uint256 bPos
-    ) internal pure returns (int256) {
-        uint64 aPos = a.getInboxPosition();
-        if (aPos < bPos) {
-            return -1;
-        } else if (aPos > bPos) {
-            return 1;
-        } else {
-            if (a.getPositionInMessage() > 0) {
-                return 1;
-            } else {
-                return 0;
-            }
+            return 0;
         }
     }
 }

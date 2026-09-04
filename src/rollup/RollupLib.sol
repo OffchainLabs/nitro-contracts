@@ -20,23 +20,22 @@ library RollupLib {
 
     // The `assertionHash` contains all the information needed to determine an assertion's validity.
     // This helps protect validators against reorgs by letting them bind their assertion to the current chain state.
+    // `afterState` includes a hash of the MELState up to which messages have been processed.
     function assertionHash(
         bytes32 parentAssertionHash,
-        AssertionState memory afterState,
-        bytes32 inboxAcc
+        AssertionState memory afterState
     ) internal pure returns (bytes32) {
         // we can no longer have `hasSibling` in the assertion hash as it would allow identical assertions
-        return assertionHash(parentAssertionHash, afterState.hash(), inboxAcc);
+        return assertionHash(parentAssertionHash, afterState.hash());
     }
 
     // Takes in a hash of the afterState instead of the afterState itself
     function assertionHash(
         bytes32 parentAssertionHash,
-        bytes32 afterStateHash,
-        bytes32 inboxAcc
+        bytes32 afterStateHash
     ) internal pure returns (bytes32) {
         // we can no longer have `hasSibling` in the assertion hash as it would allow identical assertions
-        return keccak256(abi.encodePacked(parentAssertionHash, afterStateHash, inboxAcc));
+        return keccak256(abi.encodePacked(parentAssertionHash, afterStateHash));
     }
 
     // All these should be emited in AssertionCreated event
@@ -45,7 +44,7 @@ library RollupLib {
         uint256 requiredStake,
         address challengeManager,
         uint64 confirmPeriodBlocks,
-        uint64 nextInboxPosition
+        bytes32 nextParentChainBlockHash
     ) internal pure returns (bytes32) {
         return keccak256(
             abi.encodePacked(
@@ -53,7 +52,7 @@ library RollupLib {
                 requiredStake,
                 challengeManager,
                 confirmPeriodBlocks,
-                nextInboxPosition
+                nextParentChainBlockHash
             )
         );
     }
@@ -69,7 +68,7 @@ library RollupLib {
                     configData.requiredStake,
                     configData.challengeManager,
                     configData.confirmPeriodBlocks,
-                    configData.nextInboxPosition
+                    configData.nextParentChainBlockHash
                 ),
             "CONFIG_HASH_MISMATCH"
         );

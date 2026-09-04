@@ -69,18 +69,12 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
         anyTrustFastConfirmer = config.anyTrustFastConfirmer;
 
         bytes32 parentAssertionHash = bytes32(0);
-        bytes32 inboxAcc = bytes32(0);
         bytes32 genesisHash = RollupLib.assertionHash({
             parentAssertionHash: parentAssertionHash,
-            afterStateHash: config.genesisAssertionState.hash(),
-            inboxAcc: inboxAcc
+            afterStateHash: config.genesisAssertionState.hash()
         });
 
-        uint256 currentInboxCount = bridge.sequencerMessageCount();
-        // ensure to move the inbox forward by at least one message
-        if (currentInboxCount == config.genesisInboxCount) {
-            currentInboxCount += 1;
-        }
+        bytes32 nextParentChainBlockHash = blockhash(block.number - 1);
         AssertionNode memory initialAssertion = AssertionNodeLib.createAssertion(
             true,
             RollupLib.configHash({
@@ -88,7 +82,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
                 requiredStake: baseStake,
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: confirmPeriodBlocks,
-                nextInboxPosition: uint64(currentInboxCount)
+                nextParentChainBlockHash: nextParentChainBlockHash
             })
         );
         initializeCore(initialAssertion, genesisHash);
@@ -99,8 +93,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
             genesisHash,
             parentAssertionHash,
             assertionInputs,
-            inboxAcc,
-            currentInboxCount,
+            nextParentChainBlockHash,
             wasmModuleRoot,
             baseStake,
             address(challengeManager),
@@ -267,7 +260,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      */
     function decreaseBaseStake(
         uint256 newBaseStake,
-        uint64 latestNextInboxPosition
+        bytes32 latestNextParentChainBlockHash
     ) external override {
         require(newBaseStake < baseStake, "BASE_STAKE_NOT_DECREASED");
 
@@ -292,7 +285,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
             requiredStake: baseStake,
             challengeManager: address(challengeManager),
             confirmPeriodBlocks: confirmPeriodBlocks,
-            nextInboxPosition: uint64(latestNextInboxPosition)
+            nextParentChainBlockHash: latestNextParentChainBlockHash
         });
 
         uint256 pendingCount = 0;
@@ -313,7 +306,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
                     requiredStake: newBaseStake,
                     challengeManager: address(challengeManager),
                     confirmPeriodBlocks: confirmPeriodBlocks,
-                    nextInboxPosition: uint64(latestNextInboxPosition)
+                    nextParentChainBlockHash: latestNextParentChainBlockHash
                 });
 
                 pendingCount++;
@@ -376,11 +369,10 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
     function forceConfirmAssertion(
         bytes32 assertionHash,
         bytes32 parentAssertionHash,
-        AssertionState calldata confirmState,
-        bytes32 inboxAcc
+        AssertionState calldata confirmState
     ) external override whenPaused {
         // this skip deadline, prev, challenge validations
-        confirmAssertionInternal(assertionHash, parentAssertionHash, confirmState, inboxAcc);
+        confirmAssertionInternal(assertionHash, parentAssertionHash, confirmState);
         emit AssertionForceConfirmed(assertionHash);
         // previously: emit OwnerFunctionCalled(24);
     }
@@ -414,7 +406,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      */
     function setSequencerInbox(
         address _sequencerInbox
-    ) external override {
+    ) public {
         bridge.setSequencerInbox(_sequencerInbox);
         emit SequencerInboxSet(_sequencerInbox);
         // previously: emit OwnerFunctionCalled(27);
@@ -426,7 +418,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      */
     function setInbox(
         IInboxBase newInbox
-    ) external {
+    ) public {
         inbox = newInbox;
         emit InboxSet(address(newInbox));
         // previously: emit OwnerFunctionCalled(28);
@@ -466,5 +458,36 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
         challengeManager = IEdgeChallengeManager(_challengeManager);
         emit ChallengeManagerSet(_challengeManager);
         // previously: emit OwnerFunctionCalled(32);
+    }
+
+    /**
+     * @inheritdoc IRollupAdmin
+     */
+    function setMELConfig(uint16 _melVersion, address _inbox, address _sequencerInbox) external {
+        // MEL versions can only be increased, except for the initial version, which must be version 0
+        if (currentMelConfigHash == bytes32(0)) {
+            require(_melVersion == 0, "INVALID_MEL_VERSION");
+        } else {
+            require(_melVersion > melConfig[currentMelConfigHash].melVersion, "INVALID_MEL_VERSION");
+        }
+
+        // Save the new MELConfig
+        MELConfig memory _melConfig = MELConfig({
+            melVersion: _melVersion,
+            inbox: _inbox,
+            sequencerInbox: _sequencerInbox,
+            activationBlockNumber: uint64(block.number)
+        });
+
+        bytes32 melConfigHash = keccak256(abi.encode(_melConfig));
+        melConfig[melConfigHash] = _melConfig;
+        currentMelConfigHash = melConfigHash;
+
+        // Setting the contracts
+        setInbox(IInboxBase(_inbox));
+        setSequencerInbox(_sequencerInbox);
+
+        // Emit event to signal the update to nitro
+        emit MELConfigSet(_melVersion, _inbox, _sequencerInbox, uint64(block.number));
     }
 }

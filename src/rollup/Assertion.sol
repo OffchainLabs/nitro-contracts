@@ -5,6 +5,7 @@
 pragma solidity ^0.8.0;
 
 import "./AssertionState.sol";
+import "../state/MELState.sol";
 
 enum AssertionStatus {
     // No assertion at this index
@@ -39,8 +40,6 @@ struct AssertionNode {
 struct BeforeStateData {
     // The assertion hash of the prev of the beforeState(prev)
     bytes32 prevPrevAssertionHash;
-    // The sequencer inbox accumulator asserted by the beforeState(prev)
-    bytes32 sequencerBatchAcc;
     // below are the components of config hash
     ConfigData configData;
 }
@@ -50,6 +49,7 @@ struct AssertionInputs {
     BeforeStateData beforeStateData;
     AssertionState beforeState;
     AssertionState afterState;
+    MELState afterMELState;
 }
 
 struct ConfigData {
@@ -57,7 +57,8 @@ struct ConfigData {
     uint256 requiredStake;
     address challengeManager;
     uint64 confirmPeriodBlocks;
-    uint64 nextInboxPosition;
+    // The next assertion should process parent chain blocks up to this one
+    bytes32 nextParentChainBlockHash;
 }
 
 /**
