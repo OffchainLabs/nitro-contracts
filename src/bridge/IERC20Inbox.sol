@@ -19,6 +19,13 @@ interface IERC20Inbox is IInboxBase {
     ) external returns (uint256);
 
     /**
+     * @notice Deposit native token from L1 to L2 to the specified destination address. The destination is never aliased.
+     * @dev This does not trigger the fallback function when receiving in the L2 side.
+     *      Look into retryable tickets if you are interested in this functionality.
+     */
+    function depositERC20(address to, uint256 amount) external returns (uint256);
+
+    /**
      * @notice Put a message in the L2 inbox that can be reexecuted for some fixed amount of time if it reverts
      * @dev all tokenTotalFeeAmount will be deposited to callValueRefundAddress on L2
      * @dev Gas limit and maxFeePerGas should not be set to 1 as that is used to trigger the RetryableData error
