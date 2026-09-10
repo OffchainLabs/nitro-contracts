@@ -37,52 +37,30 @@ contract InboxTest is AbsInboxTest {
         assertEq((PausableUpgradeable(address(inbox))).paused(), false, "Invalid paused state");
     }
 
-    function test_depositEth_FromEOA() public {
+    function _depositEth(
+        address sender,
+        address origin,
+        address to,
+        bool useTo,
+        address expectedDest,
+        uint256 expectedDelayedMessageCount
+    ) internal {
         uint256 depositAmount = 2 ether;
 
         uint256 bridgeEthBalanceBefore = address(bridge).balance;
-        uint256 userEthBalanceBefore = address(user).balance;
-
-        // expect event
-        vm.expectEmit(true, true, true, true);
-        emit InboxMessageDelivered(0, abi.encodePacked(user, depositAmount));
-
-        // deposit tokens -> tx.origin == msg.sender
-        vm.prank(user, user);
-        ethInbox.depositEth{value: depositAmount}();
-
-        //// checks
-
-        uint256 bridgeEthBalanceAfter = address(bridge).balance;
-        assertEq(
-            bridgeEthBalanceAfter - bridgeEthBalanceBefore,
-            depositAmount,
-            "Invalid bridge eth balance"
-        );
-
-        uint256 userEthBalanceAfter = address(user).balance;
-        assertEq(
-            userEthBalanceBefore - userEthBalanceAfter, depositAmount, "Invalid user eth balance"
-        );
-
-        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
-    }
-
-    function test_depositEth_FromContract() public {
-        uint256 depositAmount = 1.2 ether;
-
-        uint256 bridgeEthBalanceBefore = address(bridge).balance;
-        uint256 userEthBalanceBefore = address(user).balance;
+        uint256 userEthBalanceBefore = address(sender).balance;
 
         // expect event
         vm.expectEmit(true, true, true, true);
         emit InboxMessageDelivered(
-            0, abi.encodePacked(AddressAliasHelper.applyL1ToL2Alias(user), depositAmount)
+            expectedDelayedMessageCount - 1, abi.encodePacked(expectedDest, depositAmount)
         );
 
-        // deposit tokens -> tx.origin != msg.sender
-        vm.prank(user);
-        ethInbox.depositEth{value: depositAmount}();
+        // deposit tokens -> tx.origin == msg.sender
+        vm.prank(sender, origin);
+        useTo
+            ? ethInbox.depositEth{value: depositAmount}(to)
+            : ethInbox.depositEth{value: depositAmount}();
 
         //// checks
 
@@ -93,12 +71,58 @@ contract InboxTest is AbsInboxTest {
             "Invalid bridge eth balance"
         );
 
-        uint256 userEthBalanceAfter = address(user).balance;
+        uint256 userEthBalanceAfter = address(sender).balance;
         assertEq(
-            userEthBalanceBefore - userEthBalanceAfter, depositAmount, "Invalid eth token balance"
+            userEthBalanceBefore - userEthBalanceAfter, depositAmount, "Invalid user eth balance"
         );
 
-        assertEq(bridge.delayedMessageCount(), 1, "Invalid delayed message count");
+        assertEq(
+            bridge.delayedMessageCount(),
+            expectedDelayedMessageCount,
+            "Invalid delayed message count"
+        );
+    }
+
+    function test_depositEth_FromEOA() public {
+        _depositEth({
+            sender: user,
+            origin: user,
+            to: address(0),
+            useTo: false,
+            expectedDest: user,
+            expectedDelayedMessageCount: 1
+        });
+    }
+
+    function test_depositEth_FromContract() public {
+        _depositEth({
+            sender: user,
+            origin: tx.origin,
+            to: address(0),
+            useTo: false,
+            expectedDest: AddressAliasHelper.applyL1ToL2Alias(user),
+            expectedDelayedMessageCount: 1
+        });
+    }
+
+    function test_depositEth_WithDest() public {
+        _depositEth({
+            sender: user,
+            origin: user,
+            to: address(1234),
+            useTo: true,
+            expectedDest: address(1234),
+            expectedDelayedMessageCount: 1
+        });
+
+        _depositEth({
+            sender: user,
+            origin: tx.origin,
+            to: address(4321),
+            useTo: true,
+            expectedDest: address(4321),
+            expectedDelayedMessageCount: 2
+        });
     }
 
     function test_depositEth_revert_EthTransferFails() public {
