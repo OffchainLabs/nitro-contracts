@@ -20,7 +20,7 @@ interface NodeInterface {
      * @param to destination L2 contract address
      * @param l2CallValue call value for retryable L2 message
      * @param excessFeeRefundAddress the address which receives the difference between execution fee paid and the actual execution cost
-     * @param callValueRefundAddress l2Callvalue gets credited here on L2 if retryable txn times out or gets cancelled
+     * @param callValueRefundAddress l2Callvalue gets credited here on L2 if retryable txn times out or gets cancelled. This address acts as the ticket's beneficiary on L2 with permission to cancel the retryable ticket.
      * @param data ABI encoded data of L2 message
      */
     function estimateRetryableTicket(
