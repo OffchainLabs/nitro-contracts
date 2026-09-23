@@ -134,9 +134,10 @@ contract ERC20Inbox is AbsInbox, IERC20Inbox {
             IERC20(nativeToken).safeTransferFrom(msg.sender, address(this), diff);
         }
 
-        return IERC20Bridge(address(bridge)).enqueueDelayedMessage(
-            kind, AddressAliasHelper.applyL1ToL2Alias(sender), messageDataHash, tokenAmount
-        );
+        return IERC20Bridge(address(bridge))
+            .enqueueDelayedMessage(
+                kind, AddressAliasHelper.applyL1ToL2Alias(sender), messageDataHash, tokenAmount
+            );
     }
 
     /// @inheritdoc AbsInbox

@@ -25,7 +25,11 @@ contract ResourceConstraintManager is AccessControlEnumerable {
     error PricingExponentTooHigh(uint64 pricingExponent);
     error NotExpired();
 
-    constructor(address admin, address manager, uint256 _expiryTimestamp) {
+    constructor(
+        address admin,
+        address manager,
+        uint256 _expiryTimestamp
+    ) {
         _setupRole(DEFAULT_ADMIN_ROLE, admin);
         _setupRole(MANAGER_ROLE, manager);
         expiryTimestamp = _expiryTimestamp;
@@ -70,8 +74,8 @@ contract ResourceConstraintManager is AccessControlEnumerable {
             // for instance
             // if n = 10, and we check with precision 1 against threshold 8, then the real exponent might actually be up to 18
             // if n = 10, and we check with precision 1000 against threshold 8000, then the real exponent might actually be up to 8010 / 1000
-            pricingExponent +=
-                (startingBacklogValue * 1000) / (gasTargetPerSec * adjustmentWindowSecs);
+            pricingExponent += (startingBacklogValue * 1000)
+                / (gasTargetPerSec * adjustmentWindowSecs);
         }
 
         // this calculated pricing exponent will by used by nitro to calculate the gas price

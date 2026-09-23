@@ -60,7 +60,8 @@ hex_underscore = "remove"
 single_line_statement_blocks = "preserve"
 override_spacing = false
 wrap_comments = false
-ignore = []
+# Precompile interfaces are maintained in their own repository.
+ignore = ['src/precompiles/**']
 contract_new_lines = false
 sort_imports = false
 

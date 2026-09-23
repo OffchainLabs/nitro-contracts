@@ -25,7 +25,10 @@ library BalanceLib {
     ///         past the withdrawal round.
     /// @param bal The balance to query
     /// @param round The round to check the balance in
-    function balanceAtRound(Balance storage bal, uint64 round) internal view returns (uint256) {
+    function balanceAtRound(
+        Balance storage bal,
+        uint64 round
+    ) internal view returns (uint256) {
         return bal.balance - withdrawableBalanceAtRound(bal, round);
     }
 
@@ -45,7 +48,10 @@ library BalanceLib {
     ///         Will cancel a withdrawal if called after a withdrawal has been initiated
     /// @param bal The balance info
     /// @param amount The amount to increase the balance by
-    function increase(Balance storage bal, uint256 amount) internal {
+    function increase(
+        Balance storage bal,
+        uint256 amount
+    ) internal {
         // no point increasing if no amount is being supplied
         if (amount == 0) {
             revert ZeroAmount();
@@ -71,7 +77,11 @@ library BalanceLib {
     /// @param round The round to check withdrawals against. A withdrawal after this round will be ignored
     ///              and the balance reduced anyway, withdrawals before or on this round will be respected
     ///              and the reduce will revert
-    function reduce(Balance storage bal, uint256 amount, uint64 round) internal {
+    function reduce(
+        Balance storage bal,
+        uint256 amount,
+        uint64 round
+    ) internal {
         uint256 balRnd = balanceAtRound(bal, round);
         // we add a zero check since it's possible for the amount to be zero
         // but even in that case the user must have some balance
@@ -93,7 +103,10 @@ library BalanceLib {
     ///         balance, but an auctioneer will know not to accept there bids in the mean time
     /// @param bal The balance to iniate a reduction on
     /// @param round The round that the withdrawal will be available in. Cannot be specified as the max round
-    function initiateWithdrawal(Balance storage bal, uint64 round) internal {
+    function initiateWithdrawal(
+        Balance storage bal,
+        uint64 round
+    ) internal {
         if (bal.balance == 0) {
             revert ZeroAmount();
         }
@@ -117,7 +130,10 @@ library BalanceLib {
     ///         Can only be called two round after the withdrawal was initiated.
     /// @param bal The balance to finalize
     /// @param round The round to check whether withdrawal is valid in. Usually the current round. Cannot be max round.
-    function finalizeWithdrawal(Balance storage bal, uint64 round) internal returns (uint256) {
+    function finalizeWithdrawal(
+        Balance storage bal,
+        uint64 round
+    ) internal returns (uint256) {
         if (round == type(uint64).max) {
             // we use max round to specify that a withdrawal is not taking place
             // so we dont allow it as a withdrawal round. In practice max round should never

@@ -104,9 +104,7 @@ interface IBridge {
         uint256 afterDelayedMessagesRead,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    )
-        external
-        returns (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc);
+    ) external returns (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc);
 
     /**
      * @dev Allows the sequencer inbox to submit a delayed message of the batchPostingReport type
@@ -125,9 +123,15 @@ interface IBridge {
         address _sequencerInbox
     ) external;
 
-    function setDelayedInbox(address inbox, bool enabled) external;
+    function setDelayedInbox(
+        address inbox,
+        bool enabled
+    ) external;
 
-    function setOutbox(address inbox, bool enabled) external;
+    function setOutbox(
+        address inbox,
+        bool enabled
+    ) external;
 
     function updateRollupAddress(
         IOwnable _rollup

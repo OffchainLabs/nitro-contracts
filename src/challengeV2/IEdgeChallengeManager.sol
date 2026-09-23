@@ -102,7 +102,10 @@ interface IEdgeChallengeManager {
     ///         Revert when the edge's timer cache is already equal to or above maximumCachedTime.
     /// @param edgeId            The id of the edge to update
     /// @param maximumCachedTime The maximum amount of cached time allowed on the edge (β∗)
-    function updateTimerCacheByChildren(bytes32 edgeId, uint256 maximumCachedTime) external;
+    function updateTimerCacheByChildren(
+        bytes32 edgeId,
+        uint256 maximumCachedTime
+    ) external;
 
     /// @notice Given a one step fork edge and an edge with matching claim id,
     ///         set the one step fork edge's timer cache to its timeUnrivaled + claiming edge's timer cache.
