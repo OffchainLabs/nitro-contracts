@@ -20,9 +20,7 @@ contract DelayBufferableTest is Test {
         futureSeconds: 32 * 2 * 12
     });
     BufferConfig configBufferable = BufferConfig({
-        threshold: 60 * 60 * 2 / 12,
-        max: 24 * 60 * 60 / 12 * 2,
-        replenishRateInBasis: 714
+        threshold: 60 * 60 * 2 / 12, max: 24 * 60 * 60 / 12 * 2, replenishRateInBasis: 714
     });
 
     using DelayBuffer for BufferData;

@@ -24,7 +24,10 @@ contract UniswapV2TwapPricer is IFeeTokenPricer {
     FixedPoint.uq112x112 public price0Average;
     FixedPoint.uq112x112 public price1Average;
 
-    constructor(IUniswapV2Pair _pair, address _weth) {
+    constructor(
+        IUniswapV2Pair _pair,
+        address _weth
+    ) {
         pair = _pair;
         address token0 = _pair.token0();
         address token1 = _pair.token1();

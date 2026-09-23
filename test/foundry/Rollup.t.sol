@@ -69,9 +69,7 @@ contract RollupTest is Test {
     AssertionState emptyAssertionState =
         AssertionState(emptyGlobalState, MachineStatus.FINISHED, bytes32(0));
     bytes32 genesisHash = RollupLib.assertionHash({
-        parentAssertionHash: bytes32(0),
-        afterState: emptyAssertionState,
-        inboxAcc: bytes32(0)
+        parentAssertionHash: bytes32(0), afterState: emptyAssertionState, inboxAcc: bytes32(0)
     });
     AssertionState firstState;
 
@@ -93,7 +91,9 @@ contract RollupTest is Test {
     BridgeCreator.BridgeTemplates ethBasedTemplates = BridgeCreator.BridgeTemplates({
         bridge: new Bridge(),
         sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false),
-        delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, true),
+        delayBufferableSequencerInbox: new SequencerInbox(
+            MAX_DATA_SIZE, dummyReader4844, false, true
+        ),
         inbox: new Inbox(MAX_DATA_SIZE),
         rollupEventInbox: new RollupEventInbox(),
         outbox: new Outbox()
@@ -101,7 +101,9 @@ contract RollupTest is Test {
     BridgeCreator.BridgeTemplates erc20BasedTemplates = BridgeCreator.BridgeTemplates({
         bridge: new ERC20Bridge(),
         sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
-        delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, true),
+        delayBufferableSequencerInbox: new SequencerInbox(
+            MAX_DATA_SIZE, dummyReader4844, true, true
+        ),
         inbox: new ERC20Inbox(MAX_DATA_SIZE),
         rollupEventInbox: new ERC20RollupEventInbox(),
         outbox: new ERC20Outbox()
@@ -1096,12 +1098,13 @@ contract RollupTest is Test {
 
         vm.roll(userRollup.getAssertion(genesisHash).firstChildBlock + CONFIRM_PERIOD_BLOCKS + 1);
         vm.warp(block.timestamp + CONFIRM_PERIOD_BLOCKS * 15);
-        userRollup.challengeManager().confirmEdgeByTime(
-            data.e1Id,
-            AssertionStateData(
-                data.afterState1, genesisHash, userRollup.bridge().sequencerInboxAccs(0)
-            )
-        );
+        userRollup.challengeManager()
+            .confirmEdgeByTime(
+                data.e1Id,
+                AssertionStateData(
+                    data.afterState1, genesisHash, userRollup.bridge().sequencerInboxAccs(0)
+                )
+            );
         bytes32 inboxAcc = userRollup.bridge().sequencerInboxAccs(0);
         vm.roll(block.number + userRollup.challengeGracePeriodBlocks());
         vm.prank(validator1);
@@ -1127,12 +1130,13 @@ contract RollupTest is Test {
 
         vm.roll(userRollup.getAssertion(genesisHash).firstChildBlock + CONFIRM_PERIOD_BLOCKS + 1);
         vm.warp(block.timestamp + CONFIRM_PERIOD_BLOCKS * 15);
-        userRollup.challengeManager().confirmEdgeByTime(
-            data.e1Id,
-            AssertionStateData(
-                data.afterState1, genesisHash, userRollup.bridge().sequencerInboxAccs(0)
-            )
-        );
+        userRollup.challengeManager()
+            .confirmEdgeByTime(
+                data.e1Id,
+                AssertionStateData(
+                    data.afterState1, genesisHash, userRollup.bridge().sequencerInboxAccs(0)
+                )
+            );
         bytes32 inboxAcc = userRollup.bridge().sequencerInboxAccs(0);
         vm.roll(block.number + userRollup.challengeGracePeriodBlocks() - 1);
         vm.prank(validator1);
@@ -1271,9 +1275,7 @@ contract RollupTest is Test {
         afterState.globalState.u64Vals[0] = prevInboxCount;
         bytes32 inboxAcc = userRollup.bridge().sequencerInboxAccs(1); // 1 because we moved the position within message
         bytes32 expectedAssertionHash2 = RollupLib.assertionHash({
-            parentAssertionHash: prevHash,
-            afterState: afterState,
-            inboxAcc: inboxAcc
+            parentAssertionHash: prevHash, afterState: afterState, inboxAcc: inboxAcc
         });
         bytes32 prevInboxAcc = userRollup.bridge().sequencerInboxAccs(0);
         vm.roll(block.number + 75);
@@ -1427,8 +1429,7 @@ contract RollupTest is Test {
         }
         vm.prank(by);
         userRollup.fastConfirmNewAssertion({
-            assertion: assertion,
-            expectedAssertionHash: expectedAssertionHash
+            assertion: assertion, expectedAssertionHash: expectedAssertionHash
         });
         if (bytes(err).length == 0) {
             assertEq(userRollup.latestConfirmed(), expectedAssertionHash);
@@ -1454,8 +1455,7 @@ contract RollupTest is Test {
         vm.expectRevert("NOT_PENDING");
         vm.prank(anyTrustFastConfirmer);
         userRollup.fastConfirmNewAssertion({
-            assertion: assertion,
-            expectedAssertionHash: expectedAssertionHash
+            assertion: assertion, expectedAssertionHash: expectedAssertionHash
         });
     }
 
@@ -1694,9 +1694,7 @@ contract RollupTest is Test {
         );
         // genesis hash
         bytes32 genesisAssertionHash = RollupLib.assertionHash({
-            parentAssertionHash: bytes32(0),
-            afterState: emptyState,
-            inboxAcc: bytes32(0)
+            parentAssertionHash: bytes32(0), afterState: emptyState, inboxAcc: bytes32(0)
         });
 
         bytes32 expectedAssertionHash = RollupLib.assertionHash({
