@@ -2,11 +2,11 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
-import {IAssertionChain} from "../src/challengeV2/IAssertionChain.sol";
-import {IEdgeChallengeManager} from "../src/challengeV2/IEdgeChallengeManager.sol";
-import "../src/bridge/IBridge.sol";
-import "../src/rollup/RollupLib.sol";
-import "./challengeV2/StateTools.sol";
+import {IAssertionChain} from "../../../src/challengeV2/IAssertionChain.sol";
+import {IEdgeChallengeManager} from "../../../src/challengeV2/IEdgeChallengeManager.sol";
+import "../../../src/bridge/IBridge.sol";
+import "../../../src/rollup/RollupLib.sol";
+import "./../challengeV2/StateTools.sol";
 
 struct MockAssertion {
     bytes32 predecessorId;
