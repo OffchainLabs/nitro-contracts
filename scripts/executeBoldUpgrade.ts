@@ -545,6 +545,7 @@ async function checkInitialAssertion(
     challengeManager: newEdgeChallengeManager.address,
     confirmPeriodBlocks: config.settings.confirmPeriodBlocks,
     nextInboxPosition: currentInboxCount,
+    nextParentChainBlockHash: ethers.constants.HashZero,
   })
 
   return {

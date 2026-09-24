@@ -76,7 +76,8 @@ contract MockAssertionChain is IAssertionChain {
                 requiredStake: configData.requiredStake,
                 challengeManager: configData.challengeManager,
                 confirmPeriodBlocks: configData.confirmPeriodBlocks,
-                nextInboxPosition: configData.nextInboxPosition
+                nextInboxPosition: configData.nextInboxPosition,
+                nextParentChainBlockHash: configData.nextParentChainBlockHash
             }) == assertions[assertionHash].configHash,
             "BAD_CONFIG"
         );
@@ -139,7 +140,8 @@ contract MockAssertionChain is IAssertionChain {
                 requiredStake: baseStake,
                 challengeManager: challengeManager,
                 confirmPeriodBlocks: confirmPeriodBlocks,
-                nextInboxPosition: nextInboxPosition
+                nextInboxPosition: nextInboxPosition,
+                nextParentChainBlockHash: bytes32(0)
             })
         });
         childCreated(predecessorId);
