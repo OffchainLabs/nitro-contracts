@@ -25,8 +25,7 @@ interface IRollupUser is IRollupCore, IOwnable {
         bytes32 prevAssertionHash,
         AssertionState calldata confirmState,
         bytes32 winningEdgeId,
-        ConfigData calldata prevConfig,
-        bytes32 inboxAcc
+        ConfigData calldata prevConfig
     ) external;
 
     function stakeOnNewAssertion(

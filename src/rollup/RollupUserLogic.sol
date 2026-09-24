@@ -77,8 +77,7 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         bytes32 prevAssertionHash,
         AssertionState calldata confirmState,
         bytes32 winningEdgeId,
-        ConfigData calldata prevConfig,
-        bytes32 inboxAcc
+        ConfigData calldata prevConfig
     ) external onlyValidator(msg.sender) whenNotPaused {
         /*
         * To confirm an assertion, the following must be true:
@@ -124,7 +123,7 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
             );
         }
 
-        confirmAssertionInternal(assertionHash, prevAssertionHash, confirmState, inboxAcc);
+        confirmAssertionInternal(assertionHash, prevAssertionHash, confirmState);
     }
 
     /**
@@ -146,14 +145,12 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
      * @notice Computes the hash of an assertion
      * @param state The execution state for the assertion
      * @param prevAssertionHash The hash of the assertion's parent
-     * @param inboxAcc The inbox batch accumulator
      */
     function computeAssertionHash(
         bytes32 prevAssertionHash,
-        AssertionState calldata state,
-        bytes32 inboxAcc
+        AssertionState calldata state
     ) external pure returns (bytes32) {
-        return RollupLib.assertionHash(prevAssertionHash, state, inboxAcc);
+        return RollupLib.assertionHash(prevAssertionHash, state);
     }
 
     /**
@@ -191,9 +188,7 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         require(baseStake >= assertion.beforeStateData.configData.requiredStake, "STAKE_TOO_LOW");
 
         bytes32 prevAssertion = RollupLib.assertionHash(
-            assertion.beforeStateData.prevPrevAssertionHash,
-            assertion.beforeState,
-            assertion.beforeStateData.sequencerBatchAcc
+            assertion.beforeStateData.prevPrevAssertionHash, assertion.beforeState
         );
         getAssertionStorage(prevAssertion).requireExists();
 
@@ -293,12 +288,11 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
     function fastConfirmAssertion(
         bytes32 assertionHash,
         bytes32 parentAssertionHash,
-        AssertionState calldata confirmState,
-        bytes32 inboxAcc
+        AssertionState calldata confirmState
     ) public whenNotPaused {
         require(msg.sender == anyTrustFastConfirmer, "NOT_FAST_CONFIRMER");
         // this skip deadline, prev, challenge validations
-        confirmAssertionInternal(assertionHash, parentAssertionHash, confirmState, inboxAcc);
+        confirmAssertionInternal(assertionHash, parentAssertionHash, confirmState);
     }
 
     /**
@@ -320,9 +314,7 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         AssertionStatus status = getAssertionStorage(expectedAssertionHash).status;
 
         bytes32 prevAssertion = RollupLib.assertionHash(
-            assertion.beforeStateData.prevPrevAssertionHash,
-            assertion.beforeState,
-            assertion.beforeStateData.sequencerBatchAcc
+            assertion.beforeStateData.prevPrevAssertionHash, assertion.beforeState
         );
         getAssertionStorage(prevAssertion).requireExists();
 
@@ -341,12 +333,7 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         }
 
         // This would revert if the assertion is already confirmed
-        fastConfirmAssertion(
-            expectedAssertionHash,
-            prevAssertion,
-            assertion.afterState,
-            bridge.sequencerInboxAccs(assertion.afterState.globalState.getInboxPosition() - 1)
-        );
+        fastConfirmAssertion(expectedAssertionHash, prevAssertion, assertion.afterState);
     }
 
     function owner() external view returns (address) {

@@ -222,17 +222,13 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
             ) = abi.decode(args.proof, (bytes32[], AssertionStateData, AssertionStateData));
 
             assertionChain.validateAssertionHash(
-                args.claimId,
-                claimStateData.assertionState,
-                claimStateData.prevAssertionHash,
-                claimStateData.inboxAcc
+                args.claimId, claimStateData.assertionState, claimStateData.prevAssertionHash
             );
 
             assertionChain.validateAssertionHash(
                 claimStateData.prevAssertionHash,
                 predecessorStateData.assertionState,
-                predecessorStateData.prevAssertionHash,
-                predecessorStateData.inboxAcc
+                predecessorStateData.prevAssertionHash
             );
 
             if (args.endHistoryRoot != claimStateData.assertionState.endHistoryRoot) {
@@ -374,10 +370,7 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
             ChallengeEdgeLib.levelToType(topEdge.level, NUM_BIGSTEP_LEVEL) == EdgeType.Block;
         if (isBlockLevel && assertionChain.isFirstChild(topEdge.claimId)) {
             assertionChain.validateAssertionHash(
-                topEdge.claimId,
-                claimStateData.assertionState,
-                claimStateData.prevAssertionHash,
-                claimStateData.inboxAcc
+                topEdge.claimId, claimStateData.assertionState, claimStateData.prevAssertionHash
             );
             assertionBlocks = assertionChain.getSecondChildCreationBlock(
                 claimStateData.prevAssertionHash
@@ -402,8 +395,11 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
 
         assertionChain.validateConfig(prevAssertionHash, prevConfig);
 
+        // TODO(PR 427): OSP contracts are marked as pending work in the PR.
+        // Inbox-position-based checks no longer apply; use type(uint256).max as
+        // a stopgap until OSP is rewired against `nextParentChainBlockHash`.
         ExecutionContext memory execCtx = ExecutionContext({
-            maxInboxMessagesRead: prevConfig.nextInboxPosition,
+            maxInboxMessagesRead: type(uint256).max,
             bridge: assertionChain.bridge(),
             initialWasmModuleRoot: prevConfig.wasmModuleRoot
         });

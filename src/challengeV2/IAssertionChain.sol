@@ -15,8 +15,7 @@ interface IAssertionChain {
     function validateAssertionHash(
         bytes32 assertionHash,
         AssertionState calldata state,
-        bytes32 prevAssertionHash,
-        bytes32 inboxAcc
+        bytes32 prevAssertionHash
     ) external view;
     function validateConfig(bytes32 assertionHash, ConfigData calldata configData) external view;
     function getFirstChildCreationBlock(

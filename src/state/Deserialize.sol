@@ -240,8 +240,8 @@ library Deserialize {
         offset = startOffset;
 
         // using constant ints for array size requires newer solidity
-        bytes32[2] memory bytes32Vals;
-        uint64[2] memory u64Vals;
+        bytes32[4] memory bytes32Vals;
+        uint64[4] memory u64Vals;
 
         for (uint8 i = 0; i < GlobalStateLib.BYTES32_VALS_NUM; i++) {
             (bytes32Vals[i], offset) = b32(proof, offset);
@@ -249,6 +249,7 @@ library Deserialize {
         for (uint8 i = 0; i < GlobalStateLib.U64_VALS_NUM; i++) {
             (u64Vals[i], offset) = u64(proof, offset);
         }
+
         state = GlobalState({bytes32Vals: bytes32Vals, u64Vals: u64Vals});
     }
 
