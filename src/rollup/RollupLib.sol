@@ -45,15 +45,30 @@ library RollupLib {
         uint256 requiredStake,
         address challengeManager,
         uint64 confirmPeriodBlocks,
-        uint64 nextInboxPosition
+        uint64 nextInboxPosition,
+        bytes32 nextParentChainBlockHash
     ) internal pure returns (bytes32) {
+        // Zero keeps the pre-MEL preimage so config hashes stored before MEL remain valid
+        // TODO: remove this block once MEL is enabled and no legacy config hash needs validation
+        if (nextParentChainBlockHash == bytes32(0)) {
+            return keccak256(
+                abi.encodePacked(
+                    wasmModuleRoot,
+                    requiredStake,
+                    challengeManager,
+                    confirmPeriodBlocks,
+                    nextInboxPosition
+                )
+            );
+        }
         return keccak256(
             abi.encodePacked(
                 wasmModuleRoot,
                 requiredStake,
                 challengeManager,
                 confirmPeriodBlocks,
-                nextInboxPosition
+                nextInboxPosition,
+                nextParentChainBlockHash
             )
         );
     }
@@ -69,7 +84,8 @@ library RollupLib {
                     configData.requiredStake,
                     configData.challengeManager,
                     configData.confirmPeriodBlocks,
-                    configData.nextInboxPosition
+                    configData.nextInboxPosition,
+                    configData.nextParentChainBlockHash
                 ),
             "CONFIG_HASH_MISMATCH"
         );
