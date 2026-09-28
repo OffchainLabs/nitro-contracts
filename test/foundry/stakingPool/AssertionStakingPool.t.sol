@@ -248,7 +248,8 @@ contract AssertionPoolTest is Test {
                     requiredStake: BASE_STAKE,
                     challengeManager: address(challengeManager),
                     confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                    nextInboxPosition: afterState.globalState.u64Vals[0]
+                    nextInboxPosition: afterState.globalState.u64Vals[0],
+                    nextParentChainBlockHash: bytes32(0)
                 })
             }),
             beforeState: beforeState,
@@ -363,7 +364,8 @@ contract AssertionPoolTest is Test {
                 requiredStake: BASE_STAKE,
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                nextInboxPosition: firstState.globalState.u64Vals[0]
+                nextInboxPosition: firstState.globalState.u64Vals[0],
+                nextParentChainBlockHash: bytes32(0)
             }),
             inboxAccs
         );
