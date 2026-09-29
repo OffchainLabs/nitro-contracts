@@ -158,8 +158,9 @@ interface IRollupAdmin {
      *         new smaller amount, and using it to create a child of the latest pending assertion. This will make the old staker inactive and withdrawable.
      * @param newBaseStake New base stake to be set. Must be less than current base stake, otherwise use increaseBaseStake
      * @param latestNextInboxPosition The nextInboxPosition of the only pending latestStakedAssertion
+     * @param latestNextParentChainBlockHash The nextParentChainBlockHash of the only pending latestStakedAssertion
      */
-    function decreaseBaseStake(uint256 newBaseStake, uint64 latestNextInboxPosition) external;
+    function decreaseBaseStake(uint256 newBaseStake, uint64 latestNextInboxPosition, bytes32 latestNextParentChainBlockHash) external;
 
     /**
      * @notice Increase the base stake required for creating an assertion

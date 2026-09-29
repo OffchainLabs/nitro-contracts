@@ -340,12 +340,23 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
             }
         }
 
+        // Position zero has no accumulator entry; use zero, as `createNewAssertion` does. For any other
+        // position the entry exists: `INBOX_PAST_END` bounded the position when the assertion was created
+        // and the accumulator array is append-only.
+        uint256 afterInboxPosition = assertion.afterState.globalState.getInboxPosition();
+        bytes32 inboxAcc;
+        if (afterInboxPosition == 0) {
+            inboxAcc = bytes32(0);
+        } else {
+            inboxAcc = bridge.sequencerInboxAccs(afterInboxPosition - 1);
+        }
+
         // This would revert if the assertion is already confirmed
         fastConfirmAssertion(
             expectedAssertionHash,
             prevAssertion,
             assertion.afterState,
-            bridge.sequencerInboxAccs(assertion.afterState.globalState.getInboxPosition() - 1)
+            inboxAcc
         );
     }
 

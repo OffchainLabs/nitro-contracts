@@ -10,9 +10,10 @@ import "./MultiStack.sol";
 import "./StackFrame.sol";
 
 enum MachineStatus {
-    RUNNING,
-    FINISHED,
-    ERRORED
+    RUNNING, // Machine is running
+    FINISHED, // Machine finished execution of one run
+    ERRORED, // Machine finished execution and encountered an error
+    DONE // Machine has completed all execution
 }
 
 struct Machine {
@@ -63,6 +64,8 @@ library MachineLib {
             return keccak256(abi.encodePacked("Machine finished:", mach.globalStateHash));
         } else if (mach.status == MachineStatus.ERRORED) {
             return keccak256(abi.encodePacked("Machine errored:", mach.globalStateHash));
+        } else if (mach.status == MachineStatus.DONE) {
+            return keccak256(abi.encodePacked("Machine done:", mach.globalStateHash));
         } else {
             revert("BAD_MACH_STATUS");
         }
