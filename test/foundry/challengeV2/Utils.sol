@@ -41,7 +41,10 @@ contract Random {
 }
 
 library Logger {
-    function bytes32Array(string memory name, bytes32[] memory arr) internal view {
+    function bytes32Array(
+        string memory name,
+        bytes32[] memory arr
+    ) internal view {
         console.log(name);
         for (uint256 i = 0; i < arr.length; i++) {
             console.logBytes32(arr[i]);
