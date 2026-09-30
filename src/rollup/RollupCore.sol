@@ -452,14 +452,6 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
 
         AssertionNode storage prevAssertion = getAssertionStorage(prevAssertionHash);
 
-        // A child created in the same block as its parent would record the same `nextParentChainBlockHash`
-        // as its parent. Requiring a later block keeps each assertion's pin strictly after its parent's.
-        if (_hostChainIsArbitrum) {
-            require (ArbSys(address(100)).arbBlockNumber() - _assertionCreatedAtArbSysBlock[prevAssertionHash] >= 1, "SAME_BLOCK_ASSERTION");
-        } else {
-            require((block.number - prevAssertion.createdAtBlock) >= 1, "SAME_BLOCK_ASSERTION");
-        }
-
         // `nextInboxPosition` will be set to the current inbox position in the Bridge contract. However, the next
         // assertion will process the messages up to the batch posted in the previous block (prev.nextParentChainBlockHash).
         // This means that the next assertion might not reach `nextInboxPosition`, but it must never go past it.
