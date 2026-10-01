@@ -52,7 +52,7 @@ contract SimpleOneStepProofEntry is IOneStepProofEntry {
     ) external pure override returns (bytes32) {
         require(
             execState.machineStatus == MachineStatus.DONE
-                || execState.machineStatus == MachineStatus.DONE,
+                || execState.machineStatus == MachineStatus.FINISHED,
             "BAD_MACHINE_STATUS"
         );
         return execState.globalState.hash();
