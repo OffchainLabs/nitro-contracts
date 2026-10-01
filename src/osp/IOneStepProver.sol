@@ -8,13 +8,12 @@ import "../state/Machine.sol";
 import "../state/Module.sol";
 import "../state/Instructions.sol";
 import "../state/GlobalState.sol";
-import "../bridge/ISequencerInbox.sol";
-import "../bridge/IBridge.sol";
 
 struct ExecutionContext {
-    uint256 maxInboxMessagesRead;
-    IBridge bridge;
     bytes32 initialWasmModuleRoot;
+    bytes32 targetParentChainBlockHash;
+    address melConfig;
+    bool assertionStart;
 }
 
 abstract contract IOneStepProver {
