@@ -65,7 +65,10 @@ library DelayBuffer {
     /// @notice Applies update to buffer data
     /// @param self The delay buffer data
     /// @param blockNumber The update block number
-    function update(BufferData storage self, uint64 blockNumber) internal {
+    function update(
+        BufferData storage self,
+        uint64 blockNumber
+    ) internal {
         self.bufferBlocks = calcPendingBuffer(self, blockNumber);
 
         // store a new starting reference point

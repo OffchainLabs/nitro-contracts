@@ -15,7 +15,10 @@ abstract contract GasRefundEnabled {
     /// @dev this refunds the sender for execution costs of the tx
     /// calldata costs are only refunded if `msg.sender == tx.origin` to guarantee the value refunded relates to charging
     /// for the `tx.input`. this avoids a possible attack where you generate large calldata from a contract and get over-refunded
-    modifier refundsGas(IGasRefunder gasRefunder, IReader4844 reader4844) {
+    modifier refundsGas(
+        IGasRefunder gasRefunder,
+        IReader4844 reader4844
+    ) {
         uint256 startGasLeft = gasleft();
         _;
         if (address(gasRefunder) != address(0)) {
@@ -38,8 +41,8 @@ abstract contract GasRefundEnabled {
                     try reader4844.getDataHashes() returns (bytes32[] memory dataHashes) {
                         if (dataHashes.length != 0) {
                             uint256 blobBasefee = reader4844.getBlobBaseFee();
-                            startGasLeft +=
-                                (dataHashes.length * gasPerBlob * blobBasefee) / block.basefee;
+                            startGasLeft += (dataHashes.length * gasPerBlob * blobBasefee)
+                                / block.basefee;
                         }
                     } catch {}
                 }

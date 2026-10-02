@@ -12,7 +12,10 @@ import "./Utils.sol";
 contract ArrayUtilsLibTest is Test {
     Random random = new Random();
 
-    function areEqual(bytes32[] memory a, bytes32[] memory b) internal {
+    function areEqual(
+        bytes32[] memory a,
+        bytes32[] memory b
+    ) internal {
         assertEq(a.length, b.length, "Len unequal");
 
         for (uint256 i = 0; i < a.length; i++) {

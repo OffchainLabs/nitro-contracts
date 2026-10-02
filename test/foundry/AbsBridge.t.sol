@@ -33,8 +33,7 @@ abstract contract AbsBridgeTest is Test {
         uint256 afterDelayedMessagesRead = 0;
         uint256 prevMessageCount = 0;
         uint256 newMessageCount = 15;
-        (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc) = bridge
-            .enqueueSequencerMessage(
+        (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc) = bridge.enqueueSequencerMessage(
             dataHash, afterDelayedMessagesRead, prevMessageCount, newMessageCount
         );
 
@@ -68,8 +67,7 @@ abstract contract AbsBridgeTest is Test {
         uint256 afterDelayedMessagesRead = 2;
         uint256 prevMessageCount = 0;
         uint256 newMessageCount = 15;
-        (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc) = bridge
-            .enqueueSequencerMessage(
+        (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc) = bridge.enqueueSequencerMessage(
             dataHash, afterDelayedMessagesRead, prevMessageCount, newMessageCount
         );
 
@@ -107,8 +105,7 @@ abstract contract AbsBridgeTest is Test {
         uint256 afterDelayedMessagesRead = 3;
         uint256 prevMessageCount = 10;
         uint256 newMessageCount = 20;
-        (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc) = bridge
-            .enqueueSequencerMessage(
+        (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc) = bridge.enqueueSequencerMessage(
             dataHash, afterDelayedMessagesRead, prevMessageCount, newMessageCount
         );
 

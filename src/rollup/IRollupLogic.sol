@@ -59,7 +59,10 @@ interface IRollupUser is IRollupCore, IOwnable {
         address withdrawalAddress
     ) external;
 
-    function newStake(uint256 tokenAmount, address withdrawalAddress) external;
+    function newStake(
+        uint256 tokenAmount,
+        address withdrawalAddress
+    ) external;
 
     function addToDeposit(
         address stakerAddress,

@@ -57,9 +57,8 @@ contract MockRollupEventInbox is IRollupEventInbox, IDelayedMessageProvider, Del
         }
         bytes memory initMsg =
             abi.encodePacked(chainId, initMsgVersion, currentDataCost, chainConfig);
-        uint256 num = IEthBridge(address(bridge)).enqueueDelayedMessage(
-            INITIALIZATION_MSG_TYPE, address(0), keccak256(initMsg)
-        );
+        uint256 num = IEthBridge(address(bridge))
+            .enqueueDelayedMessage(INITIALIZATION_MSG_TYPE, address(0), keccak256(initMsg));
         emit InboxMessageDelivered(num, initMsg);
     }
 }

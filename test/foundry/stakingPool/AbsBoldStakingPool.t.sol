@@ -7,7 +7,10 @@ import "../../../src/assertionStakingPool/AbsBoldStakingPool.sol";
 import "../../../src/mocks/TestWETH9.sol";
 
 contract FundsHolder {
-    function withdraw(IERC20 stakeToken, uint256 amount) external {
+    function withdraw(
+        IERC20 stakeToken,
+        uint256 amount
+    ) external {
         stakeToken.transfer(msg.sender, amount);
     }
 }

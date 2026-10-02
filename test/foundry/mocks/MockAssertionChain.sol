@@ -69,7 +69,10 @@ contract MockAssertionChain is IAssertionChain {
         return assertions[assertionHash].secondChildCreationBlock;
     }
 
-    function validateConfig(bytes32 assertionHash, ConfigData calldata configData) external view {
+    function validateConfig(
+        bytes32 assertionHash,
+        ConfigData calldata configData
+    ) external view {
         require(
             RollupLib.configHash({
                 wasmModuleRoot: configData.wasmModuleRoot,
@@ -175,7 +178,10 @@ contract MockAssertionChain is IAssertionChain {
         validatorWhitelistDisabled = x;
     }
 
-    function setIsValidator(address user, bool x) external {
+    function setIsValidator(
+        address user,
+        bool x
+    ) external {
         isValidator[user] = x;
     }
 
