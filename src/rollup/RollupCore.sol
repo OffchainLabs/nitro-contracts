@@ -589,7 +589,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     function genesisAssertionHash() external pure returns (bytes32) {
         GlobalState memory emptyGlobalState;
         AssertionState memory emptyAssertionState =
-            AssertionState(emptyGlobalState, MachineStatus.FINISHED, bytes32(0));
+            AssertionState(emptyGlobalState, MachineStatus.DONE, bytes32(0));
         bytes32 parentAssertionHash = bytes32(0);
         bytes32 inboxAcc = bytes32(0);
         return RollupLib.assertionHash({

@@ -100,7 +100,7 @@ contract RollupCreatorTest is Test {
         miniStakeValues[2] = 3 ether;
         AssertionState memory emptyState = AssertionState(
             GlobalState([bytes32(0), bytes32(0)], [uint64(0), uint64(0)]),
-            MachineStatus.FINISHED,
+            MachineStatus.DONE,
             bytes32(0)
         );
         return Config({

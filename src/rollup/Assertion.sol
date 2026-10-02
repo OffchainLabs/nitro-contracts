@@ -57,7 +57,7 @@ struct ConfigData {
     uint256 requiredStake;
     address challengeManager;
     uint64 confirmPeriodBlocks;
-    uint64 nextInboxPosition; // Deprecated, will be removed in future versions, kept for now to serve as an upper bound
+    uint64 nextInboxPosition; // Deprecated, will be removed in a future version, kept for now to maintain compatibility
     bytes32 nextParentChainBlockHash; // Anchor for next assertion
 }
 

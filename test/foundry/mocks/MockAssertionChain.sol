@@ -37,7 +37,7 @@ contract MockAssertionChain is IAssertionChain {
         return assertions[assertionHash].height != 0;
     }
 
-    function stakeToken() public view returns (address) {
+    function stakeToken() public pure returns (address) {
         return address(0);
     }
 
@@ -45,7 +45,7 @@ contract MockAssertionChain is IAssertionChain {
         bytes32 assertionHash,
         AssertionState calldata state,
         bytes32 prevAssertionHash,
-        bytes32 inboxAcc
+        bytes32
     ) external view {
         require(assertionExists(assertionHash), "Assertion does not exist");
         // TODO: HN: This is not how the real assertion chain calculate assertion hash
@@ -122,6 +122,7 @@ contract MockAssertionChain is IAssertionChain {
         bytes32 predecessorId,
         uint256 height,
         uint64 nextInboxPosition,
+        bytes32 nextParentChainBlockHash,
         AssertionState memory afterState,
         bytes32 successionChallenge
     ) public returns (bytes32) {
@@ -141,7 +142,7 @@ contract MockAssertionChain is IAssertionChain {
                 challengeManager: challengeManager,
                 confirmPeriodBlocks: confirmPeriodBlocks,
                 nextInboxPosition: nextInboxPosition,
-                nextParentChainBlockHash: bytes32(0)
+                nextParentChainBlockHash: nextParentChainBlockHash
             })
         });
         childCreated(predecessorId);
@@ -152,6 +153,7 @@ contract MockAssertionChain is IAssertionChain {
         bytes32 predecessorId,
         uint256 height,
         uint64 nextInboxPosition,
+        bytes32 nextParentChainBlockHash,
         AssertionState memory beforeState,
         AssertionState memory afterState,
         bytes32 successionChallenge
@@ -167,7 +169,7 @@ contract MockAssertionChain is IAssertionChain {
         );
 
         return addAssertionUnsafe(
-            predecessorId, height, nextInboxPosition, afterState, successionChallenge
+            predecessorId, height, nextInboxPosition, nextParentChainBlockHash, afterState, successionChallenge
         );
     }
 
