@@ -13,6 +13,7 @@ enum MachineStatus {
     RUNNING, // Machine is running
     FINISHED, // Machine finished execution of one run
     ERRORED, // Machine finished execution and encountered an error
+    TOO_FAR, // Machine has gone too far in execution (unused in contracts)
     DONE // Machine has completed all execution
 }
 
