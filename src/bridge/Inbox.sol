@@ -208,9 +208,14 @@ contract Inbox is AbsInbox, IInbox {
             dest = AddressAliasHelper.applyL1ToL2Alias(msg.sender);
         }
 
-        return _deliverMessage(
-            L1MessageType_ethDeposit, msg.sender, abi.encodePacked(dest, msg.value), msg.value
-        );
+        return _depositEth(dest);
+    }
+
+    /// @inheritdoc IInbox
+    function depositEth(
+        address to
+    ) external payable whenNotPaused onlyAllowed returns (uint256) {
+        return _depositEth(to);
     }
 
     /// @notice deprecated in favour of depositEth with no parameters
@@ -312,6 +317,14 @@ contract Inbox is AbsInbox, IInbox {
     ) public view override(AbsInbox, IInboxBase) returns (uint256) {
         // Use current block basefee if baseFee parameter is 0
         return (1400 + 6 * dataLength) * (baseFee == 0 ? block.basefee : baseFee);
+    }
+
+    function _depositEth(
+        address dest
+    ) internal returns (uint256) {
+        return _deliverMessage(
+            L1MessageType_ethDeposit, msg.sender, abi.encodePacked(dest, msg.value), msg.value
+        );
     }
 
     function _deliverToBridge(
