@@ -265,11 +265,11 @@ library Deserialize {
                 if (statusU8 == 0) {
                     status = MachineStatus.RUNNING;
                 } else if (statusU8 == 1) {
-                    status = MachineStatus.YIELDED;
+                    status = MachineStatus.FINISHED;
                 } else if (statusU8 == 2) {
                     status = MachineStatus.ERRORED;
                 } else if (statusU8 == 4) {
-                    status = MachineStatus.FINISHED;
+                    status = MachineStatus.YIELDED;
                 } else {
                     revert("UNKNOWN_MACH_STATUS");
                 }

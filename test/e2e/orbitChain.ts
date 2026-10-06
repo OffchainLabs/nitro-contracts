@@ -820,7 +820,7 @@ describe('Orbit Chain', () => {
         bytes32Vals: [ethers.constants.HashZero, ethers.constants.HashZero],
         u64Vals: [ethers.BigNumber.from('0'), ethers.BigNumber.from('0')],
       },
-      machineStatus: 4, // FINISHED
+      machineStatus: 1, // FINISHED
       endHistoryRoot: ethers.constants.HashZero,
     }
 
