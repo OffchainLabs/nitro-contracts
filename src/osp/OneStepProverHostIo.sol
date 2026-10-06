@@ -376,6 +376,16 @@ contract OneStepProverHostIo is IOneStepProver {
         return isValid;
     }
 
+    function executeHaltAndSetYielded(
+        ExecutionContext calldata,
+        Machine memory mach,
+        Module memory,
+        Instruction calldata,
+        bytes calldata
+    ) internal pure {
+        mach.status = MachineStatus.YIELDED;
+    }
+
     function executeHaltAndSetFinished(
         ExecutionContext calldata,
         Machine memory mach,
@@ -384,16 +394,6 @@ contract OneStepProverHostIo is IOneStepProver {
         bytes calldata
     ) internal pure {
         mach.status = MachineStatus.FINISHED;
-    }
-
-    function executeHaltAndSetDone(
-        ExecutionContext calldata,
-        Machine memory mach,
-        Module memory,
-        Instruction calldata,
-        bytes calldata
-    ) internal pure {
-        mach.status = MachineStatus.DONE;
     }
 
     function isPowerOfTwo(
@@ -669,8 +669,8 @@ contract OneStepProverHostIo is IOneStepProver {
             impl = executeReadPreImage;
         } else if (opcode == Instructions.HALT_AND_SET_FINISHED) {
             impl = executeHaltAndSetFinished;
-        } else if (opcode == Instructions.HALT_AND_SET_DONE) {
-            impl = executeHaltAndSetDone;
+        } else if (opcode == Instructions.HALT_AND_SET_YIELDED) {
+            impl = executeHaltAndSetYielded;
         } else if (opcode == Instructions.LINK_MODULE) {
             impl = executeLinkModule;
         } else if (opcode == Instructions.UNLINK_MODULE) {

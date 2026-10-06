@@ -154,7 +154,7 @@ library Instructions {
     uint16 internal constant SWITCH_COTHREAD = 0x8032;
 
     uint16 internal constant GET_PARENT_CHAIN_INPUT = 0x8033;
-    uint16 internal constant HALT_AND_SET_DONE = 0x8034;
+    uint16 internal constant HALT_AND_SET_YIELDED = 0x8034;
 
     uint256 internal constant PARENT_CHAIN_INFO_INDEX_TARGET_BLOCK_HASH = 0;
     uint256 internal constant PARENT_CHAIN_INFO_INDEX_MEL_CONFIG = 1;
