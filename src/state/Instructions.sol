@@ -144,7 +144,7 @@ library Instructions {
 
     uint16 internal constant VALIDATE_CERTIFICATE = 0x8019;
     uint16 internal constant READ_PRE_IMAGE = 0x8020;
-    uint16 internal constant READ_INBOX_MESSAGE = 0x8021;       // Removed, reverts with "INVALID_HOSTIO_OPCODE"
+    uint16 internal constant READ_INBOX_MESSAGE = 0x8021; // Removed, reverts with "INVALID_HOSTIO_OPCODE"
     uint16 internal constant HALT_AND_SET_FINISHED = 0x8022;
     uint16 internal constant LINK_MODULE = 0x8023;
     uint16 internal constant UNLINK_MODULE = 0x8024;

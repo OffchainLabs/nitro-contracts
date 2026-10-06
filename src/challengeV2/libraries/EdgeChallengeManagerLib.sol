@@ -831,7 +831,10 @@ library EdgeChallengeManagerLib {
         store.edges[edgeId].totalTimeUnrivaledCache = type(uint64).max;
     }
 
-    function isAssertionStart(EdgeStore storage store, bytes32 levelOneEdgeId) internal view returns (bool) {
+    function isAssertionStart(
+        EdgeStore storage store,
+        bytes32 levelOneEdgeId
+    ) internal view returns (bool) {
         bytes32 blockEdgeId = store.firstRivals[store.edges[levelOneEdgeId].originId];
         return store.edges[blockEdgeId].startHeight == 0;
     }

@@ -121,7 +121,11 @@ contract HashProofHelper is IHashProofHelper {
      * @param data The next chunk of preimage bytes to absorb
      * @param isFinal If true, pads and processes the final block
      */
-    function keccakUpdate(KeccakState storage state, bytes calldata data, bool isFinal) internal {
+    function keccakUpdate(
+        KeccakState storage state,
+        bytes calldata data,
+        bool isFinal
+    ) internal {
         state.length += data.length;
         while (true) {
             if (data.length == 0 && !isFinal) {

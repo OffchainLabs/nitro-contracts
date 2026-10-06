@@ -626,16 +626,16 @@ contract OneStepProverHostIo is IOneStepProver {
         uint256 leafIdx = ptr / LEAF_SIZE;
         uint256 proofOffset = 0;
         MerkleProof memory merkleProof;
-        (,, merkleProof) =
-            mod.moduleMemory.proveLeaf(leafIdx, proof, proofOffset);
-        
+        (,, merkleProof) = mod.moduleMemory.proveLeaf(leafIdx, proof, proofOffset);
+
         // Update merkle root
         if (inst.argumentData == Instructions.PARENT_CHAIN_INFO_INDEX_TARGET_BLOCK_HASH) {
             mod.moduleMemory.merkleRoot =
                 merkleProof.computeRootFromMemory(leafIdx, execCtx.targetParentChainBlockHash);
         } else if (inst.argumentData == Instructions.PARENT_CHAIN_INFO_INDEX_MEL_CONFIG) {
-            mod.moduleMemory.merkleRoot =
-                merkleProof.computeRootFromMemory(leafIdx, bytes32(uint256(uint160(execCtx.melConfig))));
+            mod.moduleMemory.merkleRoot = merkleProof.computeRootFromMemory(
+                leafIdx, bytes32(uint256(uint160(execCtx.melConfig)))
+            );
         } else {
             mach.status = MachineStatus.ERRORED;
             return;
