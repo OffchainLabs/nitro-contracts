@@ -106,7 +106,7 @@ contract OneStepProofEntry is IOneStepProofEntry {
                 GlobalState memory globalState;
                 (globalState, offset) = Deserialize.globalState(proof, offset);
                 require(globalState.hash() == mach.globalStateHash, "BAD_GLOBAL_STATE");
-                
+
                 // Machine is restarted if either it's starting a new run (status == YIELDED and step == 0) or it's finished (status coming from the previous assertion) and starting a new assertion (status == FINISHED, assertionStart == true, and step == 0)
                 if (
                     (mach.status == MachineStatus.YIELDED && machineStep == 0)
