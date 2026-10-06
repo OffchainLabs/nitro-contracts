@@ -22,7 +22,11 @@ abstract contract TradeTracker is IFeeTokenPricer, IGasRefunder {
     error InsufficientThisChainTokenReserve(address batchPoster);
     error InsufficientChildChainTokenReserve(address batchPoster);
 
-    constructor(uint8 _childTokenDecimals, uint256 _calldataCost, address _sequencerInbox) {
+    constructor(
+        uint8 _childTokenDecimals,
+        uint256 _calldataCost,
+        address _sequencerInbox
+    ) {
         childTokenDecimals = _childTokenDecimals;
         calldataCost = _calldataCost;
         sequencerInbox = _sequencerInbox;
@@ -45,7 +49,10 @@ abstract contract TradeTracker is IFeeTokenPricer, IGasRefunder {
     ///         but it is likely that the batchposter will be trusted to report the correct trade price.
     /// @param thisChainTokensPurchased The number of this chain tokens purchased
     /// @param childChainTokensPaid The number of child chain tokens purchased
-    function recordTrade(uint256 thisChainTokensPurchased, uint256 childChainTokensPaid) internal {
+    function recordTrade(
+        uint256 thisChainTokensPurchased,
+        uint256 childChainTokensPaid
+    ) internal {
         thisChainTokenReserve += thisChainTokensPurchased;
         childChainTokenReserve += scaleTo18Decimals(childChainTokensPaid);
     }

@@ -72,7 +72,10 @@ interface IInboxBase is IDelayedMessageProvider {
     function unpause() external;
 
     /// @notice add or remove users from allowList
-    function setAllowList(address[] memory user, bool[] memory val) external;
+    function setAllowList(
+        address[] memory user,
+        bool[] memory val
+    ) external;
 
     /// @notice enable or disable allowList
     function setAllowListEnabled(
@@ -87,7 +90,10 @@ interface IInboxBase is IDelayedMessageProvider {
     /// @notice check if allowList is enabled
     function allowListEnabled() external view returns (bool);
 
-    function initialize(IBridge _bridge, ISequencerInbox _sequencerInbox) external;
+    function initialize(
+        IBridge _bridge,
+        ISequencerInbox _sequencerInbox
+    ) external;
 
     /// @notice returns the current admin
     function getProxyAdmin() external view returns (address);

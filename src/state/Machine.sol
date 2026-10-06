@@ -11,10 +11,10 @@ import "./StackFrame.sol";
 
 enum MachineStatus {
     RUNNING, // Machine is running
-    FINISHED, // Machine finished execution of one run
+    YIELDED, // Machine finished execution of one run, but there's still work to do to finish the assertion
     ERRORED, // Machine finished execution and encountered an error
     TOO_FAR, // Machine has gone too far in execution (unused in contracts)
-    DONE // Machine has completed all execution
+    FINISHED // Machine has completed all execution for the assertion
 }
 
 struct Machine {
@@ -44,10 +44,10 @@ library MachineLib {
     ) internal pure returns (bytes32) {
         // Warning: the non-running hashes are replicated in Challenge
         if (mach.status == MachineStatus.RUNNING) {
-            bytes32 valueMultiHash =
-                mach.valueMultiStack.hash(mach.valueStack.hash(), mach.recoveryPc != NO_RECOVERY_PC);
-            bytes32 frameMultiHash =
-                mach.frameMultiStack.hash(mach.frameStack.hash(), mach.recoveryPc != NO_RECOVERY_PC);
+            bytes32 valueMultiHash = mach.valueMultiStack
+            .hash(mach.valueStack.hash(), mach.recoveryPc != NO_RECOVERY_PC);
+            bytes32 frameMultiHash = mach.frameMultiStack
+            .hash(mach.frameStack.hash(), mach.recoveryPc != NO_RECOVERY_PC);
             bytes memory preimage = abi.encodePacked(
                 "Machine running:",
                 valueMultiHash,
@@ -65,8 +65,8 @@ library MachineLib {
             return keccak256(abi.encodePacked("Machine finished:", mach.globalStateHash));
         } else if (mach.status == MachineStatus.ERRORED) {
             return keccak256(abi.encodePacked("Machine errored:", mach.globalStateHash));
-        } else if (mach.status == MachineStatus.DONE) {
-            return keccak256(abi.encodePacked("Machine done:", mach.globalStateHash));
+        } else if (mach.status == MachineStatus.YIELDED) {
+            return keccak256(abi.encodePacked("Machine yielded:", mach.globalStateHash));
         } else {
             revert("BAD_MACH_STATUS");
         }
@@ -90,7 +90,10 @@ library MachineLib {
         mach.valueStack.overwrite(newActiveValue);
     }
 
-    function setPcFromData(Machine memory mach, uint256 data) internal pure returns (bool) {
+    function setPcFromData(
+        Machine memory mach,
+        uint256 data
+    ) internal pure returns (bool) {
         if (data >> 96 != 0) {
             return false;
         }
@@ -111,7 +114,10 @@ library MachineLib {
         return true;
     }
 
-    function setRecoveryFromPc(Machine memory mach, uint32 offset) internal pure returns (bool) {
+    function setRecoveryFromPc(
+        Machine memory mach,
+        uint32 offset
+    ) internal pure returns (bool) {
         if (mach.recoveryPc != NO_RECOVERY_PC) {
             return false;
         }
@@ -124,7 +130,10 @@ library MachineLib {
         return true;
     }
 
-    function setPc(Machine memory mach, Value memory pc) internal pure {
+    function setPc(
+        Machine memory mach,
+        Value memory pc
+    ) internal pure {
         if (pc.valueType == ValueType.REF_NULL) {
             mach.status = MachineStatus.ERRORED;
             return;

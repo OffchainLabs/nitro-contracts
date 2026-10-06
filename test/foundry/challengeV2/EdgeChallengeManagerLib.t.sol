@@ -40,7 +40,7 @@ contract MockOneStepProofEntry is IOneStepProofEntry {
     function getMachineHash(
         ExecutionState calldata execState
     ) external pure override returns (bytes32) {
-        require(execState.machineStatus == MachineStatus.DONE, "BAD_MACHINE_STATUS");
+        require(execState.machineStatus == MachineStatus.FINISHED, "BAD_MACHINE_STATUS");
         return GlobalStateLib.hash(execState.globalState);
     }
 }
@@ -106,7 +106,10 @@ contract EdgeChallengeManagerLibAccess {
         return store.hasRival(edgeId);
     }
 
-    function setFirstRival(bytes32 edgeId, bytes32 firstRival) public {
+    function setFirstRival(
+        bytes32 edgeId,
+        bytes32 firstRival
+    ) public {
         store.firstRivals[edgeId] = firstRival;
     }
 
@@ -128,11 +131,17 @@ contract EdgeChallengeManagerLibAccess {
         return store.timeUnrivaledTotal(edgeId);
     }
 
-    function updateTimerCacheByChildren(bytes32 edgeId, uint256 maximumCachedTime) public {
+    function updateTimerCacheByChildren(
+        bytes32 edgeId,
+        uint256 maximumCachedTime
+    ) public {
         store.updateTimerCacheByChildren(edgeId, maximumCachedTime);
     }
 
-    function mandatoryBisectionHeight(uint256 start, uint256 end) public pure returns (uint256) {
+    function mandatoryBisectionHeight(
+        uint256 start,
+        uint256 end
+    ) public pure returns (uint256) {
         return EdgeChallengeManagerLib.mandatoryBisectionHeight(start, end);
     }
 
@@ -156,7 +165,10 @@ contract EdgeChallengeManagerLibAccess {
         return EdgeChallengeManagerLib.setConfirmedRival(store, edgeId);
     }
 
-    function setClaimId(bytes32 edgeId, bytes32 claimId) public {
+    function setClaimId(
+        bytes32 edgeId,
+        bytes32 claimId
+    ) public {
         store.get(edgeId).claimId = claimId;
     }
 
@@ -166,11 +178,17 @@ contract EdgeChallengeManagerLibAccess {
         return store.confirmedRivals[mutualId];
     }
 
-    function setLevel(bytes32 edgeId, uint8 level) public {
+    function setLevel(
+        bytes32 edgeId,
+        uint8 level
+    ) public {
         store.get(edgeId).level = level;
     }
 
-    function nextEdgeLevel(uint8 level, uint8 numBigStepLevel) public pure returns (uint8) {
+    function nextEdgeLevel(
+        uint8 level,
+        uint8 numBigStepLevel
+    ) public pure returns (uint8) {
         return EdgeChallengeManagerLib.nextEdgeLevel(level, numBigStepLevel);
     }
 
@@ -180,11 +198,18 @@ contract EdgeChallengeManagerLibAccess {
         return store.firstRivals[mutualId];
     }
 
-    function hasMadeLayerZeroRival(address account, bytes32 mutualId) public view returns (bool) {
+    function hasMadeLayerZeroRival(
+        address account,
+        bytes32 mutualId
+    ) public view returns (bool) {
         return store.hasMadeLayerZeroRival[account][mutualId];
     }
 
-    function setHasMadeLayerZeroRival(address account, bytes32 mutualId, bool x) public {
+    function setHasMadeLayerZeroRival(
+        address account,
+        bytes32 mutualId,
+        bool x
+    ) public {
         store.hasMadeLayerZeroRival[account][mutualId] = x;
     }
 
@@ -832,31 +857,29 @@ contract EdgeChallengeManagerLibTest is Test {
 
         assertEq(
             store.get(edge1.idMem()).lowerChildId,
-            (
-                ChallengeEdgeLib.newChildEdge(
-                    edge1.originId,
-                    edge1.startHistoryRoot,
-                    edge1.startHeight,
-                    bisectionRoot1,
-                    bisectionPoint,
-                    edge1.level
-                )
-            ).idMem(),
+            (ChallengeEdgeLib.newChildEdge(
+                        edge1.originId,
+                        edge1.startHistoryRoot,
+                        edge1.startHeight,
+                        bisectionRoot1,
+                        bisectionPoint,
+                        edge1.level
+                    ))
+                .idMem(),
             "Lower child id"
         );
 
         assertEq(
             store.get(edge1.idMem()).upperChildId,
-            (
-                ChallengeEdgeLib.newChildEdge(
-                    edge1.originId,
-                    bisectionRoot1,
-                    bisectionPoint,
-                    edge1.endHistoryRoot,
-                    edge1.endHeight,
-                    edge1.level
-                )
-            ).idMem(),
+            (ChallengeEdgeLib.newChildEdge(
+                        edge1.originId,
+                        bisectionRoot1,
+                        bisectionPoint,
+                        edge1.endHistoryRoot,
+                        edge1.endHeight,
+                        edge1.level
+                    ))
+                .idMem(),
             "Lower child id"
         );
 
@@ -870,31 +893,29 @@ contract EdgeChallengeManagerLibTest is Test {
 
         assertEq(
             store.get(edge2.idMem()).lowerChildId,
-            (
-                ChallengeEdgeLib.newChildEdge(
-                    edge2.originId,
-                    edge2.startHistoryRoot,
-                    edge2.startHeight,
-                    bisectionRoot2,
-                    bisectionPoint,
-                    edge2.level
-                )
-            ).idMem(),
+            (ChallengeEdgeLib.newChildEdge(
+                        edge2.originId,
+                        edge2.startHistoryRoot,
+                        edge2.startHeight,
+                        bisectionRoot2,
+                        bisectionPoint,
+                        edge2.level
+                    ))
+                .idMem(),
             "Lower child id"
         );
 
         assertEq(
             store.get(edge2.idMem()).upperChildId,
-            (
-                ChallengeEdgeLib.newChildEdge(
-                    edge2.originId,
-                    bisectionRoot2,
-                    bisectionPoint,
-                    edge2.endHistoryRoot,
-                    edge2.endHeight,
-                    edge2.level
-                )
-            ).idMem(),
+            (ChallengeEdgeLib.newChildEdge(
+                        edge2.originId,
+                        bisectionRoot2,
+                        bisectionPoint,
+                        edge2.endHistoryRoot,
+                        edge2.endHeight,
+                        edge2.level
+                    ))
+                .idMem(),
             "Lower child id"
         );
 
@@ -926,31 +947,29 @@ contract EdgeChallengeManagerLibTest is Test {
 
         assertEq(
             store.get(edge1.idMem()).lowerChildId,
-            (
-                ChallengeEdgeLib.newChildEdge(
-                    edge1.originId,
-                    edge1.startHistoryRoot,
-                    edge1.startHeight,
-                    bisectionRoot1,
-                    bisectionPoint,
-                    edge1.level
-                )
-            ).idMem(),
+            (ChallengeEdgeLib.newChildEdge(
+                        edge1.originId,
+                        edge1.startHistoryRoot,
+                        edge1.startHeight,
+                        bisectionRoot1,
+                        bisectionPoint,
+                        edge1.level
+                    ))
+                .idMem(),
             "Lower child id"
         );
 
         assertEq(
             store.get(edge1.idMem()).upperChildId,
-            (
-                ChallengeEdgeLib.newChildEdge(
-                    edge1.originId,
-                    bisectionRoot1,
-                    bisectionPoint,
-                    edge1.endHistoryRoot,
-                    edge1.endHeight,
-                    edge1.level
-                )
-            ).idMem(),
+            (ChallengeEdgeLib.newChildEdge(
+                        edge1.originId,
+                        bisectionRoot1,
+                        bisectionPoint,
+                        edge1.endHistoryRoot,
+                        edge1.endHeight,
+                        edge1.level
+                    ))
+                .idMem(),
             "Lower child id"
         );
 
@@ -964,31 +983,29 @@ contract EdgeChallengeManagerLibTest is Test {
 
         assertEq(
             store.get(edge2.idMem()).lowerChildId,
-            (
-                ChallengeEdgeLib.newChildEdge(
-                    edge2.originId,
-                    edge2.startHistoryRoot,
-                    edge2.startHeight,
-                    bisectionRoot2,
-                    bisectionPoint,
-                    edge2.level
-                )
-            ).idMem(),
+            (ChallengeEdgeLib.newChildEdge(
+                        edge2.originId,
+                        edge2.startHistoryRoot,
+                        edge2.startHeight,
+                        bisectionRoot2,
+                        bisectionPoint,
+                        edge2.level
+                    ))
+                .idMem(),
             "Lower child id"
         );
 
         assertEq(
             store.get(edge2.idMem()).upperChildId,
-            (
-                ChallengeEdgeLib.newChildEdge(
-                    edge2.originId,
-                    bisectionRoot2,
-                    bisectionPoint,
-                    edge2.endHistoryRoot,
-                    edge2.endHeight,
-                    edge2.level
-                )
-            ).idMem(),
+            (ChallengeEdgeLib.newChildEdge(
+                        edge2.originId,
+                        bisectionRoot2,
+                        bisectionPoint,
+                        edge2.endHistoryRoot,
+                        edge2.endHeight,
+                        edge2.level
+                    ))
+                .idMem(),
             "Lower child id"
         );
 
@@ -1441,8 +1458,7 @@ contract EdgeChallengeManagerLibTest is Test {
             store.add(data.e2);
         }
         OneStepData memory d = OneStepData({
-            beforeHash: states1[startHeight],
-            proof: abi.encodePacked(states1[startHeight + 1])
+            beforeHash: states1[startHeight], proof: abi.encodePacked(states1[startHeight + 1])
         });
         ExecutionContext memory e = ExecutionContext({
             initialWasmModuleRoot: bytes32(0),
@@ -1617,7 +1633,7 @@ contract EdgeChallengeManagerLibTest is Test {
                 [rand.hash(), rand.hash()],
                 [uint64(uint256(rand.hash())), uint64(uint256(rand.hash()))]
             ),
-            MachineStatus.DONE,
+            MachineStatus.FINISHED,
             bytes32(0)
         );
 
@@ -1994,7 +2010,7 @@ contract EdgeChallengeManagerLibTest is Test {
 
     bytes32 genesisBlockHash = rand.hash();
     AssertionState genesisState =
-        StateToolsLib.randomState(rand, 4, genesisBlockHash, MachineStatus.DONE);
+        StateToolsLib.randomState(rand, 4, genesisBlockHash, MachineStatus.FINISHED);
     bytes32 genesisStateHash = StateToolsLib.mockMachineHash(genesisState);
     AssertionStateData genesisStateData = AssertionStateData(genesisState, bytes32(0), bytes32(0));
     bytes32 genesisAssertionHash = rand.hash();
@@ -2039,7 +2055,8 @@ contract EdgeChallengeManagerLibTest is Test {
             expectedEndHeight,
             numBigStepLevel,
             false
-        ).edgeId;
+        )
+        .edgeId;
     }
 
     struct BisectionChildren {
@@ -2086,8 +2103,9 @@ contract EdgeChallengeManagerLibTest is Test {
         winningEdges[4] = bisect(
             winningEdges[5].lowerChildId, args.winningLeaves, 16, args.winningLeaves.length - 1
         );
-        losingEdges[4] =
-            bisect(losingEdges[5].lowerChildId, args.losingLeaves, 16, args.losingLeaves.length - 1);
+        losingEdges[4] = bisect(
+            losingEdges[5].lowerChildId, args.losingLeaves, 16, args.losingLeaves.length - 1
+        );
 
         // height 8
         winningEdges[3] = bisect(winningEdges[4].lowerChildId, args.winningLeaves, 8, 16);
@@ -2215,7 +2233,8 @@ contract EdgeChallengeManagerLibTest is Test {
                     edgeInclusionProof
                 );
             }
-            edge1Id = store.createLayerZeroEdge(
+            edge1Id =
+            store.createLayerZeroEdge(
                 CreateEdgeArgs({
                     level: args.eType,
                     endHistoryRoot: MerkleTreeAccumulatorLib.root(exp1),
@@ -2234,7 +2253,8 @@ contract EdgeChallengeManagerLibTest is Test {
                 32,
                 1,
                 false
-            ).edgeId;
+            )
+            .edgeId;
         }
 
         vm.roll(block.number + 1);
@@ -2263,7 +2283,8 @@ contract EdgeChallengeManagerLibTest is Test {
                     edgeInclusionProof
                 );
             }
-            edge2Id = store.createLayerZeroEdge(
+            edge2Id =
+            store.createLayerZeroEdge(
                 CreateEdgeArgs({
                     level: args.eType,
                     endHistoryRoot: MerkleTreeAccumulatorLib.root(exp2),
@@ -2282,7 +2303,8 @@ contract EdgeChallengeManagerLibTest is Test {
                 32,
                 1,
                 false
-            ).edgeId;
+            )
+            .edgeId;
         }
 
         vm.roll(block.number + 2);
@@ -2303,13 +2325,13 @@ contract EdgeChallengeManagerLibTest is Test {
             rand,
             GlobalStateLib.getInboxPosition(genesisState.globalState),
             h1,
-            MachineStatus.DONE
+            MachineStatus.FINISHED
         );
         AssertionState memory a2State = StateToolsLib.randomState(
             rand,
             GlobalStateLib.getInboxPosition(genesisState.globalState),
             h2,
-            MachineStatus.DONE
+            MachineStatus.FINISHED
         );
 
         (

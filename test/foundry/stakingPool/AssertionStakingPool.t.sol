@@ -51,11 +51,9 @@ contract AssertionPoolTest is Test {
 
     GlobalState emptyGlobalState;
     AssertionState emptyAssertionState =
-        AssertionState(emptyGlobalState, MachineStatus.DONE, bytes32(0));
+        AssertionState(emptyGlobalState, MachineStatus.FINISHED, bytes32(0));
     bytes32 genesisHash = RollupLib.assertionHash({
-        parentAssertionHash: bytes32(0),
-        afterState: emptyAssertionState,
-        inboxAcc: bytes32(0)
+        parentAssertionHash: bytes32(0), afterState: emptyAssertionState, inboxAcc: bytes32(0)
     });
     AssertionState firstState;
     bytes32 firstAssertionParentChainBlockHash;
@@ -100,7 +98,9 @@ contract AssertionPoolTest is Test {
     BridgeCreator.BridgeTemplates ethBasedTemplates = BridgeCreator.BridgeTemplates({
         bridge: new Bridge(),
         sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false),
-        delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, true),
+        delayBufferableSequencerInbox: new SequencerInbox(
+            MAX_DATA_SIZE, dummyReader4844, false, true
+        ),
         inbox: new Inbox(MAX_DATA_SIZE),
         rollupEventInbox: new RollupEventInbox(),
         outbox: new Outbox()
@@ -108,7 +108,9 @@ contract AssertionPoolTest is Test {
     BridgeCreator.BridgeTemplates erc20BasedTemplates = BridgeCreator.BridgeTemplates({
         bridge: new ERC20Bridge(),
         sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
-        delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
+        delayBufferableSequencerInbox: new SequencerInbox(
+            MAX_DATA_SIZE, dummyReader4844, true, false
+        ),
         inbox: new ERC20Inbox(MAX_DATA_SIZE),
         rollupEventInbox: new ERC20RollupEventInbox(),
         outbox: new ERC20Outbox()
@@ -219,7 +221,7 @@ contract AssertionPoolTest is Test {
         // (must be consistent with the the implementation of `initialize` in RollupAdminLogic)
         firstAssertionParentChainBlockHash = bytes32(0);
 
-        firstState.machineStatus = MachineStatus.DONE;
+        firstState.machineStatus = MachineStatus.FINISHED;
         firstState.globalState.bytes32Vals[0] = FIRST_ASSERTION_BLOCKHASH; // blockhash
         firstState.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // sendroot
         firstState.globalState.u64Vals[0] = 1; // inbox count
@@ -229,8 +231,8 @@ contract AssertionPoolTest is Test {
 
         inboxcount = uint64(_createNewBatch());
         AssertionState memory beforeState;
-        beforeState.machineStatus = MachineStatus.DONE;
-        afterState.machineStatus = MachineStatus.DONE;
+        beforeState.machineStatus = MachineStatus.FINISHED;
+        afterState.machineStatus = MachineStatus.FINISHED;
         afterState.globalState.bytes32Vals[0] = FIRST_ASSERTION_BLOCKHASH; // blockhash
         afterState.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // sendroot
         afterState.globalState.u64Vals[0] = 1; // inbox count

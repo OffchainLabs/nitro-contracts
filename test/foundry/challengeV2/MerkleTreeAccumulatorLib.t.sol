@@ -23,7 +23,10 @@ contract MerkleTreeAccumulatorLibTest is Test {
         return newArr;
     }
 
-    function eq(bytes32[] memory arr1, bytes32[] memory arr2) internal pure {
+    function eq(
+        bytes32[] memory arr1,
+        bytes32[] memory arr2
+    ) internal pure {
         require(keccak256(abi.encode(arr1)) == keccak256(abi.encode(arr2)), "Arrays not equal");
     }
 
@@ -69,7 +72,10 @@ contract MerkleTreeAccumulatorLibTest is Test {
         return (lowExpansion, highExpansion, difference);
     }
 
-    function proveVerify(uint256 startSize, uint256 endSize) internal {
+    function proveVerify(
+        uint256 startSize,
+        uint256 endSize
+    ) internal {
         bytes32[] memory leaves = random.hashes(endSize);
         (bytes32[] memory lowExp, bytes32[] memory highExp, bytes32[] memory diff) =
             expansionsFromLeaves(leaves, startSize);
@@ -125,7 +131,10 @@ contract MerkleTreeAccumulatorLibTest is Test {
         return expansion;
     }
 
-    function hashTogether(bytes32 a, bytes32 b) internal pure returns (bytes32) {
+    function hashTogether(
+        bytes32 a,
+        bytes32 b
+    ) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(a, b));
     }
 
@@ -684,7 +693,10 @@ contract MerkleTreeAccumulatorLibTest is Test {
         );
     }
 
-    function verifyInclusion(uint256 index, uint256 treeSize) internal {
+    function verifyInclusion(
+        uint256 index,
+        uint256 treeSize
+    ) internal {
         bytes32[] memory leaves = random.hashes(treeSize);
         bytes32[] memory re = ProofUtils.rehashed(leaves);
         bytes32[] memory me = ProofUtils.expansionFromLeaves(leaves, 0, leaves.length);

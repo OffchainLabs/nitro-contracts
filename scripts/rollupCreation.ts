@@ -318,7 +318,7 @@ async function _getDevRollupConfig(
       bytes32Vals: [ethers.constants.HashZero, ethers.constants.HashZero],
       u64Vals: [ethers.BigNumber.from('0'), ethers.BigNumber.from('0')],
     },
-    machineStatus: 1, // FINISHED
+    machineStatus: 4, // FINISHED
     endHistoryRoot: ethers.constants.HashZero,
   }
 

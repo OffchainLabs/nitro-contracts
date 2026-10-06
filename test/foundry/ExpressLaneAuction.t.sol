@@ -4,7 +4,8 @@ pragma solidity ^0.8.0;
 import "forge-std/Test.sol";
 import "../../src/express-lane-auction/ExpressLaneAuction.sol";
 import {
-    ERC20Burnable, IERC20
+    ERC20Burnable,
+    IERC20
 } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
@@ -73,25 +74,17 @@ contract ExpressLaneAuctionTest is Test {
     TestBidder[4] bidders;
 
     function setUp() public {
-        bidders[0] =
-            TestBidder({privKey: 137, addr: vm.addr(137), elc: vm.addr(138), amount: roundDuration});
+        bidders[0] = TestBidder({
+            privKey: 137, addr: vm.addr(137), elc: vm.addr(138), amount: roundDuration
+        });
         bidders[1] = TestBidder({
-            privKey: 139,
-            addr: vm.addr(139),
-            elc: vm.addr(140),
-            amount: roundDuration * 3
+            privKey: 139, addr: vm.addr(139), elc: vm.addr(140), amount: roundDuration * 3
         });
         bidders[2] = TestBidder({
-            privKey: 140,
-            addr: vm.addr(140),
-            elc: vm.addr(141),
-            amount: roundDuration * 4
+            privKey: 140, addr: vm.addr(140), elc: vm.addr(141), amount: roundDuration * 4
         });
         bidders[3] = TestBidder({
-            privKey: 142,
-            addr: vm.addr(142),
-            elc: vm.addr(143),
-            amount: roundDuration * 5
+            privKey: 142, addr: vm.addr(142), elc: vm.addr(143), amount: roundDuration * 5
         });
     }
 
@@ -153,7 +146,10 @@ contract ExpressLaneAuctionTest is Test {
         });
     }
 
-    function testRoundTimingInit(IExpressLaneAuction auction, MockERC20 token) internal {
+    function testRoundTimingInit(
+        IExpressLaneAuction auction,
+        MockERC20 token
+    ) internal {
         InitArgs memory rdArgs = createArgs(address(token));
         rdArgs._roundTimingInfo.auctionClosingSeconds = roundDuration / 2;
         rdArgs._roundTimingInfo.reserveSubmissionSeconds = roundDuration * 2 + 1;
@@ -858,7 +854,10 @@ contract ExpressLaneAuctionTest is Test {
         vm.stopPrank();
     }
 
-    function sign(uint256 privKey, bytes32 h) internal pure returns (bytes memory) {
+    function sign(
+        uint256 privKey,
+        bytes32 h
+    ) internal pure returns (bytes memory) {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privKey, h);
         return abi.encodePacked(r, s, v);
     }
@@ -1224,14 +1223,15 @@ contract ExpressLaneAuctionTest is Test {
     function testCannotResolveWrongContract() public {
         ResolveSetup memory rs = deployDepositAndBids();
 
-        (, bytes memory res) = address(rs.auction).delegatecall(
-            abi.encodeWithSelector(
-                rs.auction.getBidHash.selector,
-                rs.biddingForRound,
-                bidders[1].elc,
-                bidders[1].amount / 2
-            )
-        );
+        (, bytes memory res) = address(rs.auction)
+            .delegatecall(
+                abi.encodeWithSelector(
+                    rs.auction.getBidHash.selector,
+                    rs.biddingForRound,
+                    bidders[1].elc,
+                    bidders[1].amount / 2
+                )
+            );
         bytes32 h1 = bytes32(res);
 
         Bid memory bid1 = Bid({
@@ -1251,14 +1251,15 @@ contract ExpressLaneAuctionTest is Test {
         );
         rs.auction.resolveMultiBidAuction(bid1, rs.bid0);
 
-        (, res) = address(rs.auction).delegatecall(
-            abi.encodeWithSelector(
-                rs.auction.getBidHash.selector,
-                rs.biddingForRound,
-                bidders[0].elc,
-                bidders[0].amount / 2
-            )
-        );
+        (, res) = address(rs.auction)
+            .delegatecall(
+                abi.encodeWithSelector(
+                    rs.auction.getBidHash.selector,
+                    rs.biddingForRound,
+                    bidders[0].elc,
+                    bidders[0].amount / 2
+                )
+            );
         bytes32 h0 = bytes32(res);
         Bid memory bid0 = Bid({
             amount: bidders[0].amount / 2,
@@ -1429,9 +1430,11 @@ contract ExpressLaneAuctionTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(
                 InsufficientBalanceAcc.selector,
-                rs.auction.getBidHash(
-                    rs.auction.currentRound() + 1, bidders[3].elc, bidders[3].amount / 4
-                ).recover(bid34[1].signature),
+                rs.auction
+                    .getBidHash(
+                        rs.auction.currentRound() + 1, bidders[3].elc, bidders[3].amount / 4
+                    )
+                    .recover(bid34[1].signature),
                 bidders[3].amount / 4,
                 0
             )

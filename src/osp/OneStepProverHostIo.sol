@@ -41,7 +41,11 @@ contract OneStepProverHostIo is IOneStepProver {
         hashProofHelper = IHashProofHelper(_hashProofHelper);
     }
 
-    function setLeafByte(bytes32 oldLeaf, uint256 idx, uint8 val) internal pure returns (bytes32) {
+    function setLeafByte(
+        bytes32 oldLeaf,
+        uint256 idx,
+        uint8 val
+    ) internal pure returns (bytes32) {
         require(idx < LEAF_SIZE, "BAD_SET_LEAF_BYTE_IDX");
         // Take into account that we are casting the leaf to a big-endian integer
         uint256 leafShift = (LEAF_SIZE - 1 - idx) * 8;
@@ -87,7 +91,10 @@ contract OneStepProverHostIo is IOneStepProver {
         }
     }
 
-    function executeGetU64(Machine memory mach, GlobalState memory state) internal pure {
+    function executeGetU64(
+        Machine memory mach,
+        GlobalState memory state
+    ) internal pure {
         uint32 idx = mach.valueStack.pop().assumeI32();
 
         if (idx >= GlobalStateLib.U64_VALS_NUM) {
@@ -98,7 +105,10 @@ contract OneStepProverHostIo is IOneStepProver {
         mach.valueStack.push(ValueLib.newI64(state.u64Vals[idx]));
     }
 
-    function executeSetU64(Machine memory mach, GlobalState memory state) internal pure {
+    function executeSetU64(
+        Machine memory mach,
+        GlobalState memory state
+    ) internal pure {
         uint64 val = mach.valueStack.pop().assumeI64();
         uint32 idx = mach.valueStack.pop().assumeI32();
 
@@ -116,7 +126,11 @@ contract OneStepProverHostIo is IOneStepProver {
 
     // Computes b**e % m
     // Really pure but the Solidity compiler sees the staticcall and requires view
-    function modExp256(uint256 b, uint256 e, uint256 m) internal view returns (uint256) {
+    function modExp256(
+        uint256 b,
+        uint256 e,
+        uint256 m
+    ) internal view returns (uint256) {
         bytes memory modExpInput = abi.encode(32, 32, 32, b, e, m);
         (bool modexpSuccess, bytes memory modExpOutput) = address(0x05).staticcall(modExpInput);
         require(modexpSuccess, "MODEXP_FAILED");
@@ -520,7 +534,10 @@ contract OneStepProverHostIo is IOneStepProver {
         mach.valueMultiStack.pushNew();
     }
 
-    function provePopCothread(MultiStack memory multi, bytes calldata proof) internal pure {
+    function provePopCothread(
+        MultiStack memory multi,
+        bytes calldata proof
+    ) internal pure {
         uint256 proofOffset = 0;
         bytes32 newInactiveCoThread;
         bytes32 newRemaining;
