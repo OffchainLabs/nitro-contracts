@@ -341,7 +341,10 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
     }
 
     /// @inheritdoc IEdgeChallengeManager
-    function updateTimerCacheByChildren(bytes32 edgeId, uint256 maximumCachedTime) public {
+    function updateTimerCacheByChildren(
+        bytes32 edgeId,
+        uint256 maximumCachedTime
+    ) public {
         (bool updated, uint256 newValue) =
             store.updateTimerCacheByChildren(edgeId, maximumCachedTime);
         if (updated) emit TimerCacheUpdated(edgeId, newValue);
@@ -360,7 +363,10 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
     }
 
     /// @inheritdoc IEdgeChallengeManager
-    function confirmEdgeByTime(bytes32 edgeId, AssertionStateData calldata claimStateData) public {
+    function confirmEdgeByTime(
+        bytes32 edgeId,
+        AssertionStateData calldata claimStateData
+    ) public {
         ChallengeEdge storage topEdge = store.get(edgeId);
         if (!topEdge.isLayerZero()) {
             revert EdgeNotLayerZero(topEdge.id(), topEdge.staker, topEdge.claimId);

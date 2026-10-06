@@ -40,5 +40,8 @@ interface IERC20Bridge is IBridge {
 
     // ---------- initializer ----------
 
-    function initialize(IOwnable rollup_, address nativeToken_) external;
+    function initialize(
+        IOwnable rollup_,
+        address nativeToken_
+    ) external;
 }

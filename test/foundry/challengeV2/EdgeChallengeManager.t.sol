@@ -307,8 +307,11 @@ contract EdgeChallengeManagerTest is Test {
     bytes32[] a2RandomStatesExp;
 
     function deployAndInit() internal returns (EdgeInitData memory) {
-        (MockAssertionChain assertionChain, EdgeChallengeManager challengeManager, bytes32 genesis)
-        = deploy();
+        (
+            MockAssertionChain assertionChain,
+            EdgeChallengeManager challengeManager,
+            bytes32 genesis
+        ) = deploy();
 
         AssertionState memory a1State = StateToolsLib.randomState(
             rand,
@@ -354,8 +357,11 @@ contract EdgeChallengeManagerTest is Test {
     }
 
     function testWhitelist() public {
-        (MockAssertionChain assertionChain, EdgeChallengeManager challengeManager, bytes32 genesis)
-        = deploy();
+        (
+            MockAssertionChain assertionChain,
+            EdgeChallengeManager challengeManager,
+            bytes32 genesis
+        ) = deploy();
 
         assertionChain.setValidatorWhitelistDisabled(false);
 
@@ -368,8 +374,11 @@ contract EdgeChallengeManagerTest is Test {
     }
 
     function testRevertBlockNoFork() public {
-        (MockAssertionChain assertionChain, EdgeChallengeManager challengeManager, bytes32 genesis)
-        = deploy();
+        (
+            MockAssertionChain assertionChain,
+            EdgeChallengeManager challengeManager,
+            bytes32 genesis
+        ) = deploy();
 
         AssertionState memory a1State = StateToolsLib.randomState(
             rand,
@@ -399,7 +408,9 @@ contract EdgeChallengeManagerTest is Test {
                     ProofUtils.generatePrefixProof(1, ArrayUtilsLib.slice(states, 1, states.length))
                 ),
                 proof: abi.encode(
-                    ProofUtils.generateInclusionProof(ProofUtils.rehashed(states), states.length - 1),
+                    ProofUtils.generateInclusionProof(
+                        ProofUtils.rehashed(states), states.length - 1
+                    ),
                     genesisStateData,
                     AssertionStateData(a1State, genesisAssertionHash, bytes32(0))
                 )
@@ -414,23 +425,28 @@ contract EdgeChallengeManagerTest is Test {
         bytes32[] memory exp = a1RandomStatesExp;
 
         vm.expectRevert(abi.encodeWithSelector(InvalidEndHeight.selector, 1, 32));
-        ei.challengeManager.createLayerZeroEdge(
-            CreateEdgeArgs({
-                level: 0,
-                endHistoryRoot: MerkleTreeAccumulatorLib.root(exp),
-                endHeight: 1,
-                claimId: ei.a1,
-                prefixProof: abi.encode(
-                    ProofUtils.expansionFromLeaves(states, 0, 1),
-                    ProofUtils.generatePrefixProof(1, ArrayUtilsLib.slice(states, 1, states.length))
-                ),
-                proof: abi.encode(
-                    ProofUtils.generateInclusionProof(ProofUtils.rehashed(states), states.length - 1),
-                    genesisStateData,
-                    ei.a1Data
-                )
-            })
-        );
+        ei.challengeManager
+            .createLayerZeroEdge(
+                CreateEdgeArgs({
+                    level: 0,
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(exp),
+                    endHeight: 1,
+                    claimId: ei.a1,
+                    prefixProof: abi.encode(
+                        ProofUtils.expansionFromLeaves(states, 0, 1),
+                        ProofUtils.generatePrefixProof(
+                            1, ArrayUtilsLib.slice(states, 1, states.length)
+                        )
+                    ),
+                    proof: abi.encode(
+                        ProofUtils.generateInclusionProof(
+                            ProofUtils.rehashed(states), states.length - 1
+                        ),
+                        genesisStateData,
+                        ei.a1Data
+                    )
+                })
+            );
     }
 
     function testRevertBlockNoProof() public {
@@ -440,19 +456,22 @@ contract EdgeChallengeManagerTest is Test {
         bytes32[] memory exp = a1RandomStatesExp;
 
         vm.expectRevert(abi.encodeWithSelector(EmptyEdgeSpecificProof.selector));
-        ei.challengeManager.createLayerZeroEdge(
-            CreateEdgeArgs({
-                level: 0,
-                endHistoryRoot: MerkleTreeAccumulatorLib.root(exp),
-                endHeight: height1,
-                claimId: ei.a1,
-                prefixProof: abi.encode(
-                    ProofUtils.expansionFromLeaves(states, 0, 1),
-                    ProofUtils.generatePrefixProof(1, ArrayUtilsLib.slice(states, 1, states.length))
-                ),
-                proof: ""
-            })
-        );
+        ei.challengeManager
+            .createLayerZeroEdge(
+                CreateEdgeArgs({
+                    level: 0,
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(exp),
+                    endHeight: height1,
+                    claimId: ei.a1,
+                    prefixProof: abi.encode(
+                        ProofUtils.expansionFromLeaves(states, 0, 1),
+                        ProofUtils.generatePrefixProof(
+                            1, ArrayUtilsLib.slice(states, 1, states.length)
+                        )
+                    ),
+                    proof: ""
+                })
+            );
     }
 
     function testRevertBlockInvalidProof() public {
@@ -462,23 +481,26 @@ contract EdgeChallengeManagerTest is Test {
         bytes32[] memory exp = a1RandomStatesExp;
 
         vm.expectRevert("Invalid inclusion proof");
-        ei.challengeManager.createLayerZeroEdge(
-            CreateEdgeArgs({
-                level: 0,
-                endHistoryRoot: MerkleTreeAccumulatorLib.root(exp),
-                endHeight: height1,
-                claimId: ei.a1,
-                prefixProof: abi.encode(
-                    ProofUtils.expansionFromLeaves(states, 0, 1),
-                    ProofUtils.generatePrefixProof(1, ArrayUtilsLib.slice(states, 1, states.length))
-                ),
-                proof: abi.encode(
-                    ProofUtils.generateInclusionProof(ProofUtils.rehashed(states), 0),
-                    genesisStateData,
-                    ei.a1Data
-                )
-            })
-        );
+        ei.challengeManager
+            .createLayerZeroEdge(
+                CreateEdgeArgs({
+                    level: 0,
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(exp),
+                    endHeight: height1,
+                    claimId: ei.a1,
+                    prefixProof: abi.encode(
+                        ProofUtils.expansionFromLeaves(states, 0, 1),
+                        ProofUtils.generatePrefixProof(
+                            1, ArrayUtilsLib.slice(states, 1, states.length)
+                        )
+                    ),
+                    proof: abi.encode(
+                        ProofUtils.generateInclusionProof(ProofUtils.rehashed(states), 0),
+                        genesisStateData,
+                        ei.a1Data
+                    )
+                })
+            );
     }
 
     function testRevertInvalidHash() public {
@@ -488,23 +510,26 @@ contract EdgeChallengeManagerTest is Test {
         bytes32[] memory exp = a1RandomStatesExp;
 
         vm.expectRevert("INVALID_ASSERTION_HASH");
-        ei.challengeManager.createLayerZeroEdge(
-            CreateEdgeArgs({
-                level: 0,
-                endHistoryRoot: MerkleTreeAccumulatorLib.root(exp),
-                endHeight: height1,
-                claimId: ei.a2,
-                prefixProof: abi.encode(
-                    ProofUtils.expansionFromLeaves(states, 0, 1),
-                    ProofUtils.generatePrefixProof(1, ArrayUtilsLib.slice(states, 1, states.length))
-                ),
-                proof: abi.encode(
-                    ProofUtils.generateInclusionProof(ProofUtils.rehashed(states), 0),
-                    genesisStateData,
-                    ei.a1Data
-                )
-            })
-        );
+        ei.challengeManager
+            .createLayerZeroEdge(
+                CreateEdgeArgs({
+                    level: 0,
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(exp),
+                    endHeight: height1,
+                    claimId: ei.a2,
+                    prefixProof: abi.encode(
+                        ProofUtils.expansionFromLeaves(states, 0, 1),
+                        ProofUtils.generatePrefixProof(
+                            1, ArrayUtilsLib.slice(states, 1, states.length)
+                        )
+                    ),
+                    proof: abi.encode(
+                        ProofUtils.generateInclusionProof(ProofUtils.rehashed(states), 0),
+                        genesisStateData,
+                        ei.a1Data
+                    )
+                })
+            );
     }
 
     function testRevertInvalidHashPrev() public {
@@ -514,23 +539,28 @@ contract EdgeChallengeManagerTest is Test {
         bytes32[] memory exp = a1RandomStatesExp;
 
         vm.expectRevert("INVALID_ASSERTION_HASH");
-        ei.challengeManager.createLayerZeroEdge(
-            CreateEdgeArgs({
-                level: 0,
-                endHistoryRoot: MerkleTreeAccumulatorLib.root(exp),
-                endHeight: height1,
-                claimId: ei.a1,
-                prefixProof: abi.encode(
-                    ProofUtils.expansionFromLeaves(states, 0, 1),
-                    ProofUtils.generatePrefixProof(1, ArrayUtilsLib.slice(states, 1, states.length))
-                ),
-                proof: abi.encode(
-                    ProofUtils.generateInclusionProof(ProofUtils.rehashed(states), states.length - 1),
-                    ei.a2Data,
-                    ei.a1Data
-                )
-            })
-        );
+        ei.challengeManager
+            .createLayerZeroEdge(
+                CreateEdgeArgs({
+                    level: 0,
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(exp),
+                    endHeight: height1,
+                    claimId: ei.a1,
+                    prefixProof: abi.encode(
+                        ProofUtils.expansionFromLeaves(states, 0, 1),
+                        ProofUtils.generatePrefixProof(
+                            1, ArrayUtilsLib.slice(states, 1, states.length)
+                        )
+                    ),
+                    proof: abi.encode(
+                        ProofUtils.generateInclusionProof(
+                            ProofUtils.rehashed(states), states.length - 1
+                        ),
+                        ei.a2Data,
+                        ei.a1Data
+                    )
+                })
+            );
     }
 
     function testCanCreateEdgeWithStake()
@@ -544,23 +574,28 @@ contract EdgeChallengeManagerTest is Test {
 
         IERC20 stakeToken = ei.challengeManager.stakeToken();
         uint256 beforeBalance = stakeToken.balanceOf(address(this));
-        bytes32 edgeId = ei.challengeManager.createLayerZeroEdge(
-            CreateEdgeArgs({
-                level: 0,
-                endHistoryRoot: MerkleTreeAccumulatorLib.root(exp),
-                endHeight: height1,
-                claimId: ei.a1,
-                prefixProof: abi.encode(
-                    ProofUtils.expansionFromLeaves(states, 0, 1),
-                    ProofUtils.generatePrefixProof(1, ArrayUtilsLib.slice(states, 1, states.length))
-                ),
-                proof: abi.encode(
-                    ProofUtils.generateInclusionProof(ProofUtils.rehashed(states), states.length - 1),
-                    genesisStateData,
-                    ei.a1Data
-                )
-            })
-        );
+        bytes32 edgeId = ei.challengeManager
+            .createLayerZeroEdge(
+                CreateEdgeArgs({
+                    level: 0,
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(exp),
+                    endHeight: height1,
+                    claimId: ei.a1,
+                    prefixProof: abi.encode(
+                        ProofUtils.expansionFromLeaves(states, 0, 1),
+                        ProofUtils.generatePrefixProof(
+                            1, ArrayUtilsLib.slice(states, 1, states.length)
+                        )
+                    ),
+                    proof: abi.encode(
+                        ProofUtils.generateInclusionProof(
+                            ProofUtils.rehashed(states), states.length - 1
+                        ),
+                        genesisStateData,
+                        ei.a1Data
+                    )
+                })
+            );
         uint256 afterBalance = stakeToken.balanceOf(address(this));
         assertEq(beforeBalance - afterBalance, ei.challengeManager.stakeAmounts(0), "Staked");
 
@@ -568,21 +603,27 @@ contract EdgeChallengeManagerTest is Test {
         assertEq(ei.challengeManager.edgeExists(edgeId), true, "Edge exists");
         ChallengeEdge memory edge = ei.challengeManager.getEdge(edgeId);
         assertEq(
-            ei.challengeManager.calculateMutualId(
-                edge.level, edge.originId, edge.startHeight, edge.startHistoryRoot, edge.endHeight
-            ),
+            ei.challengeManager
+                .calculateMutualId(
+                    edge.level,
+                    edge.originId,
+                    edge.startHeight,
+                    edge.startHistoryRoot,
+                    edge.endHeight
+                ),
             edge.mutualIdMem(),
             "Mutual id"
         );
         assertEq(
-            ei.challengeManager.calculateEdgeId(
-                edge.level,
-                edge.originId,
-                edge.startHeight,
-                edge.startHistoryRoot,
-                edge.endHeight,
-                edge.endHistoryRoot
-            ),
+            ei.challengeManager
+                .calculateEdgeId(
+                    edge.level,
+                    edge.originId,
+                    edge.startHeight,
+                    edge.startHistoryRoot,
+                    edge.endHeight,
+                    edge.endHistoryRoot
+                ),
             edge.idMem(),
             "Mutual id"
         );
@@ -650,27 +691,28 @@ contract EdgeChallengeManagerTest is Test {
         {
             bytes32[] memory states2 = a2RandomStates;
             bytes32[] memory exp2 = a2RandomStatesExp;
-            bytes32 edge2Id = ei.challengeManager.createLayerZeroEdge(
-                CreateEdgeArgs({
-                    level: 0,
-                    endHistoryRoot: MerkleTreeAccumulatorLib.root(exp2),
-                    endHeight: height1,
-                    claimId: ei.a2,
-                    prefixProof: abi.encode(
-                        ProofUtils.expansionFromLeaves(states2, 0, 1),
-                        ProofUtils.generatePrefixProof(
-                            1, ArrayUtilsLib.slice(states2, 1, states2.length)
-                        )
-                    ),
-                    proof: abi.encode(
-                        ProofUtils.generateInclusionProof(
-                            ProofUtils.rehashed(states2), states2.length - 1
+            bytes32 edge2Id = ei.challengeManager
+                .createLayerZeroEdge(
+                    CreateEdgeArgs({
+                        level: 0,
+                        endHistoryRoot: MerkleTreeAccumulatorLib.root(exp2),
+                        endHeight: height1,
+                        claimId: ei.a2,
+                        prefixProof: abi.encode(
+                            ProofUtils.expansionFromLeaves(states2, 0, 1),
+                            ProofUtils.generatePrefixProof(
+                                1, ArrayUtilsLib.slice(states2, 1, states2.length)
+                            )
                         ),
-                        genesisStateData,
-                        ei.a2Data
-                    )
-                })
-            );
+                        proof: abi.encode(
+                            ProofUtils.generateInclusionProof(
+                                ProofUtils.rehashed(states2), states2.length - 1
+                            ),
+                            genesisStateData,
+                            ei.a2Data
+                        )
+                    })
+                );
 
             _safeVmRoll(block.number + NUM_BLOCK_WAIT);
             assertEq(ei.challengeManager.timeUnrivaled(edge1Id), NUM_BLOCK_UNRIVALED, "Edge1 timer");
@@ -714,9 +756,15 @@ contract EdgeChallengeManagerTest is Test {
             genesisStates(), StateToolsLib.mockMachineHash(a2State), height1
         );
         a2State.endHistoryRoot = MerkleTreeAccumulatorLib.root(exp2);
-        bytes32 a2 = ei.assertionChain.addAssertion(
-            ei.genesis, genesisHeight + height1, inboxMsgCountAssertion, genesisState, a2State, 0
-        );
+        bytes32 a2 = ei.assertionChain
+            .addAssertion(
+                ei.genesis,
+                genesisHeight + height1,
+                inboxMsgCountAssertion,
+                genesisState,
+                a2State,
+                0
+            );
 
         bytes32 edge2Id = createLayerZeroEdge(ei.challengeManager, a2, a2State, states2, exp2);
 
@@ -905,8 +953,7 @@ contract EdgeChallengeManagerTest is Test {
     function testRevertEmptyPrefixProof() public {
         EdgeInitData memory ei = deployAndInit();
 
-        (bytes32[] memory states1,, BisectionChildren[6] memory edges1,) =
-        createBlockEdgesAndBisectToFork(
+        (bytes32[] memory states1,, BisectionChildren[6] memory edges1,) = createBlockEdgesAndBisectToFork(
             CreateBlockEdgesBisectArgs(
                 ei.challengeManager,
                 ei.a1,
@@ -925,23 +972,23 @@ contract EdgeChallengeManagerTest is Test {
             appendRandomStatesBetween(genesisStates(), states1[1], height1);
 
         vm.expectRevert(abi.encodeWithSelector(EmptyPrefixProof.selector));
-        ei.challengeManager.createLayerZeroEdge(
-            CreateEdgeArgs({
-                level: 1,
-                endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
-                endHeight: height1,
-                claimId: edges1[0].lowerChildId,
-                prefixProof: "",
-                proof: generateEdgeProof(states1, bigStepStates)
-            })
-        );
+        ei.challengeManager
+            .createLayerZeroEdge(
+                CreateEdgeArgs({
+                    level: 1,
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
+                    endHeight: height1,
+                    claimId: edges1[0].lowerChildId,
+                    prefixProof: "",
+                    proof: generateEdgeProof(states1, bigStepStates)
+                })
+            );
     }
 
     function testRevertInvalidPrefixProof() public {
         EdgeInitData memory ei = deployAndInit();
 
-        (bytes32[] memory states1,, BisectionChildren[6] memory edges1,) =
-        createBlockEdgesAndBisectToFork(
+        (bytes32[] memory states1,, BisectionChildren[6] memory edges1,) = createBlockEdgesAndBisectToFork(
             CreateBlockEdgesBisectArgs(
                 ei.challengeManager,
                 ei.a1,
@@ -960,26 +1007,28 @@ contract EdgeChallengeManagerTest is Test {
             appendRandomStatesBetween(genesisStates(), states1[1], height1);
 
         vm.expectRevert("Post expansion root not equal post");
-        ei.challengeManager.createLayerZeroEdge(
-            CreateEdgeArgs({
-                level: 1,
-                endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
-                endHeight: height1,
-                claimId: edges1[0].lowerChildId,
-                prefixProof: abi.encode(
-                    ProofUtils.expansionFromLeaves(states1, 0, 1),
-                    ProofUtils.generatePrefixProof(1, ArrayUtilsLib.slice(states1, 1, states1.length))
-                ),
-                proof: generateEdgeProof(states1, bigStepStates)
-            })
-        );
+        ei.challengeManager
+            .createLayerZeroEdge(
+                CreateEdgeArgs({
+                    level: 1,
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
+                    endHeight: height1,
+                    claimId: edges1[0].lowerChildId,
+                    prefixProof: abi.encode(
+                        ProofUtils.expansionFromLeaves(states1, 0, 1),
+                        ProofUtils.generatePrefixProof(
+                            1, ArrayUtilsLib.slice(states1, 1, states1.length)
+                        )
+                    ),
+                    proof: generateEdgeProof(states1, bigStepStates)
+                })
+            );
     }
 
     function testRevertSubChallengeNotOneStepFork() public {
         EdgeInitData memory ei = deployAndInit();
 
-        (bytes32[] memory states1,, BisectionChildren[6] memory edges1,) =
-        createBlockEdgesAndBisectToFork(
+        (bytes32[] memory states1,, BisectionChildren[6] memory edges1,) = createBlockEdgesAndBisectToFork(
             CreateBlockEdgesBisectArgs(
                 ei.challengeManager,
                 ei.a1,
@@ -1000,28 +1049,28 @@ contract EdgeChallengeManagerTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(ClaimEdgeNotLengthOneRival.selector, edges1[0].lowerChildId)
         );
-        ei.challengeManager.createLayerZeroEdge(
-            CreateEdgeArgs({
-                level: 1,
-                endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
-                endHeight: height1,
-                claimId: edges1[0].lowerChildId,
-                prefixProof: abi.encode(
-                    ProofUtils.expansionFromLeaves(bigStepStates, 0, 1),
-                    ProofUtils.generatePrefixProof(
-                        1, ArrayUtilsLib.slice(bigStepStates, 1, bigStepStates.length)
-                    )
-                ),
-                proof: generateEdgeProof(states1, bigStepStates)
-            })
-        );
+        ei.challengeManager
+            .createLayerZeroEdge(
+                CreateEdgeArgs({
+                    level: 1,
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
+                    endHeight: height1,
+                    claimId: edges1[0].lowerChildId,
+                    prefixProof: abi.encode(
+                        ProofUtils.expansionFromLeaves(bigStepStates, 0, 1),
+                        ProofUtils.generatePrefixProof(
+                            1, ArrayUtilsLib.slice(bigStepStates, 1, bigStepStates.length)
+                        )
+                    ),
+                    proof: generateEdgeProof(states1, bigStepStates)
+                })
+            );
     }
 
     function testRevertSubChallengeNoProof() public {
         EdgeInitData memory ei = deployAndInit();
 
-        (bytes32[] memory states1,, BisectionChildren[6] memory edges1,) =
-        createBlockEdgesAndBisectToFork(
+        (bytes32[] memory states1,, BisectionChildren[6] memory edges1,) = createBlockEdgesAndBisectToFork(
             CreateBlockEdgesBisectArgs(
                 ei.challengeManager,
                 ei.a1,
@@ -1040,28 +1089,28 @@ contract EdgeChallengeManagerTest is Test {
             appendRandomStatesBetween(genesisStates(), states1[1], height1);
 
         vm.expectRevert(abi.encodeWithSelector(EmptyEdgeSpecificProof.selector));
-        ei.challengeManager.createLayerZeroEdge(
-            CreateEdgeArgs({
-                level: 1,
-                endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
-                endHeight: height1,
-                claimId: edges1[0].lowerChildId,
-                prefixProof: abi.encode(
-                    ProofUtils.expansionFromLeaves(bigStepStates, 0, 1),
-                    ProofUtils.generatePrefixProof(
-                        1, ArrayUtilsLib.slice(bigStepStates, 1, bigStepStates.length)
-                    )
-                ),
-                proof: ""
-            })
-        );
+        ei.challengeManager
+            .createLayerZeroEdge(
+                CreateEdgeArgs({
+                    level: 1,
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
+                    endHeight: height1,
+                    claimId: edges1[0].lowerChildId,
+                    prefixProof: abi.encode(
+                        ProofUtils.expansionFromLeaves(bigStepStates, 0, 1),
+                        ProofUtils.generatePrefixProof(
+                            1, ArrayUtilsLib.slice(bigStepStates, 1, bigStepStates.length)
+                        )
+                    ),
+                    proof: ""
+                })
+            );
     }
 
     function testRevertSubChallengeInvalidStartClaimProof() public {
         EdgeInitData memory ei = deployAndInit();
 
-        (bytes32[] memory states1,, BisectionChildren[6] memory edges1,) =
-        createBlockEdgesAndBisectToFork(
+        (bytes32[] memory states1,, BisectionChildren[6] memory edges1,) = createBlockEdgesAndBisectToFork(
             CreateBlockEdgesBisectArgs(
                 ei.challengeManager,
                 ei.a1,
@@ -1087,34 +1136,34 @@ contract EdgeChallengeManagerTest is Test {
         );
 
         vm.expectRevert("Invalid inclusion proof");
-        ei.challengeManager.createLayerZeroEdge(
-            CreateEdgeArgs({
-                level: 1,
-                endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
-                endHeight: height1,
-                claimId: edges1[0].lowerChildId,
-                prefixProof: abi.encode(
-                    ProofUtils.expansionFromLeaves(bigStepStates, 0, 1),
-                    ProofUtils.generatePrefixProof(
-                        1, ArrayUtilsLib.slice(bigStepStates, 1, bigStepStates.length)
+        ei.challengeManager
+            .createLayerZeroEdge(
+                CreateEdgeArgs({
+                    level: 1,
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
+                    endHeight: height1,
+                    claimId: edges1[0].lowerChildId,
+                    prefixProof: abi.encode(
+                        ProofUtils.expansionFromLeaves(bigStepStates, 0, 1),
+                        ProofUtils.generatePrefixProof(
+                            1, ArrayUtilsLib.slice(bigStepStates, 1, bigStepStates.length)
+                        )
+                    ),
+                    proof: abi.encode(
+                        states1[0],
+                        states1[1],
+                        claimEndInclusionProof,
+                        claimEndInclusionProof,
+                        edgeInclusionProof
                     )
-                ),
-                proof: abi.encode(
-                    states1[0],
-                    states1[1],
-                    claimEndInclusionProof,
-                    claimEndInclusionProof,
-                    edgeInclusionProof
-                )
-            })
-        );
+                })
+            );
     }
 
     function testRevertSubChallengeInvalidEndClaimProof() public {
         EdgeInitData memory ei = deployAndInit();
 
-        (bytes32[] memory states1,, BisectionChildren[6] memory edges1,) =
-        createBlockEdgesAndBisectToFork(
+        (bytes32[] memory states1,, BisectionChildren[6] memory edges1,) = createBlockEdgesAndBisectToFork(
             CreateBlockEdgesBisectArgs(
                 ei.challengeManager,
                 ei.a1,
@@ -1140,34 +1189,34 @@ contract EdgeChallengeManagerTest is Test {
         );
 
         vm.expectRevert("Invalid inclusion proof");
-        ei.challengeManager.createLayerZeroEdge(
-            CreateEdgeArgs({
-                level: 1,
-                endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
-                endHeight: height1,
-                claimId: edges1[0].lowerChildId,
-                prefixProof: abi.encode(
-                    ProofUtils.expansionFromLeaves(bigStepStates, 0, 1),
-                    ProofUtils.generatePrefixProof(
-                        1, ArrayUtilsLib.slice(bigStepStates, 1, bigStepStates.length)
+        ei.challengeManager
+            .createLayerZeroEdge(
+                CreateEdgeArgs({
+                    level: 1,
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
+                    endHeight: height1,
+                    claimId: edges1[0].lowerChildId,
+                    prefixProof: abi.encode(
+                        ProofUtils.expansionFromLeaves(bigStepStates, 0, 1),
+                        ProofUtils.generatePrefixProof(
+                            1, ArrayUtilsLib.slice(bigStepStates, 1, bigStepStates.length)
+                        )
+                    ),
+                    proof: abi.encode(
+                        states1[0],
+                        states1[1],
+                        claimStartInclusionProof,
+                        claimStartInclusionProof,
+                        edgeInclusionProof
                     )
-                ),
-                proof: abi.encode(
-                    states1[0],
-                    states1[1],
-                    claimStartInclusionProof,
-                    claimStartInclusionProof,
-                    edgeInclusionProof
-                )
-            })
-        );
+                })
+            );
     }
 
     function testRevertSubChallengeInvalidEdgeProof() public {
         EdgeInitData memory ei = deployAndInit();
 
-        (bytes32[] memory states1,, BisectionChildren[6] memory edges1,) =
-        createBlockEdgesAndBisectToFork(
+        (bytes32[] memory states1,, BisectionChildren[6] memory edges1,) = createBlockEdgesAndBisectToFork(
             CreateBlockEdgesBisectArgs(
                 ei.challengeManager,
                 ei.a1,
@@ -1193,34 +1242,34 @@ contract EdgeChallengeManagerTest is Test {
         );
 
         vm.expectRevert("Invalid inclusion proof");
-        ei.challengeManager.createLayerZeroEdge(
-            CreateEdgeArgs({
-                level: 1,
-                endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
-                endHeight: height1,
-                claimId: edges1[0].lowerChildId,
-                prefixProof: abi.encode(
-                    ProofUtils.expansionFromLeaves(bigStepStates, 0, 1),
-                    ProofUtils.generatePrefixProof(
-                        1, ArrayUtilsLib.slice(bigStepStates, 1, bigStepStates.length)
+        ei.challengeManager
+            .createLayerZeroEdge(
+                CreateEdgeArgs({
+                    level: 1,
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
+                    endHeight: height1,
+                    claimId: edges1[0].lowerChildId,
+                    prefixProof: abi.encode(
+                        ProofUtils.expansionFromLeaves(bigStepStates, 0, 1),
+                        ProofUtils.generatePrefixProof(
+                            1, ArrayUtilsLib.slice(bigStepStates, 1, bigStepStates.length)
+                        )
+                    ),
+                    proof: abi.encode(
+                        states1[0],
+                        states1[1],
+                        claimStartInclusionProof,
+                        claimEndInclusionProof,
+                        claimStartInclusionProof
                     )
-                ),
-                proof: abi.encode(
-                    states1[0],
-                    states1[1],
-                    claimStartInclusionProof,
-                    claimEndInclusionProof,
-                    claimStartInclusionProof
-                )
-            })
-        );
+                })
+            );
     }
 
     function testRevertBigStepInvalidHeight() public {
         EdgeInitData memory ei = deployAndInit();
 
-        (bytes32[] memory states1,, BisectionChildren[6] memory edges1,) =
-        createBlockEdgesAndBisectToFork(
+        (bytes32[] memory states1,, BisectionChildren[6] memory edges1,) = createBlockEdgesAndBisectToFork(
             CreateBlockEdgesBisectArgs(
                 ei.challengeManager,
                 ei.a1,
@@ -1239,21 +1288,22 @@ contract EdgeChallengeManagerTest is Test {
             appendRandomStatesBetween(genesisStates(), states1[1], height1);
 
         vm.expectRevert(abi.encodeWithSelector(InvalidEndHeight.selector, 1, 32));
-        ei.challengeManager.createLayerZeroEdge(
-            CreateEdgeArgs({
-                level: 1,
-                endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
-                endHeight: 1,
-                claimId: edges1[0].lowerChildId,
-                prefixProof: abi.encode(
-                    ProofUtils.expansionFromLeaves(bigStepStates, 0, 1),
-                    ProofUtils.generatePrefixProof(
-                        1, ArrayUtilsLib.slice(bigStepStates, 1, bigStepStates.length)
-                    )
-                ),
-                proof: generateEdgeProof(states1, bigStepStates)
-            })
-        );
+        ei.challengeManager
+            .createLayerZeroEdge(
+                CreateEdgeArgs({
+                    level: 1,
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
+                    endHeight: 1,
+                    claimId: edges1[0].lowerChildId,
+                    prefixProof: abi.encode(
+                        ProofUtils.expansionFromLeaves(bigStepStates, 0, 1),
+                        ProofUtils.generatePrefixProof(
+                            1, ArrayUtilsLib.slice(bigStepStates, 1, bigStepStates.length)
+                        )
+                    ),
+                    proof: generateEdgeProof(states1, bigStepStates)
+                })
+            );
     }
 
     function testRevertBigStepInvalidClaimType() public {
@@ -1286,21 +1336,22 @@ contract EdgeChallengeManagerTest is Test {
             (bigStepStates1, bigStepExp1) =
                 appendRandomStatesBetween(genesisStates(), states1[1], height1);
 
-            edge1BigStepId = ei.challengeManager.createLayerZeroEdge(
-                CreateEdgeArgs({
-                    level: 1,
-                    endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp1),
-                    endHeight: height1,
-                    claimId: edges1[0].lowerChildId,
-                    prefixProof: abi.encode(
-                        ProofUtils.expansionFromLeaves(bigStepStates1, 0, 1),
-                        ProofUtils.generatePrefixProof(
-                            1, ArrayUtilsLib.slice(bigStepStates1, 1, bigStepStates1.length)
-                        )
-                    ),
-                    proof: generateEdgeProof(states1, bigStepStates1)
-                })
-            );
+            edge1BigStepId = ei.challengeManager
+                .createLayerZeroEdge(
+                    CreateEdgeArgs({
+                        level: 1,
+                        endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp1),
+                        endHeight: height1,
+                        claimId: edges1[0].lowerChildId,
+                        prefixProof: abi.encode(
+                            ProofUtils.expansionFromLeaves(bigStepStates1, 0, 1),
+                            ProofUtils.generatePrefixProof(
+                                1, ArrayUtilsLib.slice(bigStepStates1, 1, bigStepStates1.length)
+                            )
+                        ),
+                        proof: generateEdgeProof(states1, bigStepStates1)
+                    })
+                );
         }
 
         bytes32[] memory bigStepStates2;
@@ -1310,21 +1361,22 @@ contract EdgeChallengeManagerTest is Test {
             (bigStepStates2, bigStepExp2) =
                 appendRandomStatesBetween(genesisStates(), states2[1], height1);
 
-            edge2BigStepId = ei.challengeManager.createLayerZeroEdge(
-                CreateEdgeArgs({
-                    level: 1,
-                    endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp2),
-                    endHeight: height1,
-                    claimId: edges2[0].lowerChildId,
-                    prefixProof: abi.encode(
-                        ProofUtils.expansionFromLeaves(bigStepStates2, 0, 1),
-                        ProofUtils.generatePrefixProof(
-                            1, ArrayUtilsLib.slice(bigStepStates2, 1, bigStepStates2.length)
-                        )
-                    ),
-                    proof: generateEdgeProof(states2, bigStepStates2)
-                })
-            );
+            edge2BigStepId = ei.challengeManager
+                .createLayerZeroEdge(
+                    CreateEdgeArgs({
+                        level: 1,
+                        endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp2),
+                        endHeight: height1,
+                        claimId: edges2[0].lowerChildId,
+                        prefixProof: abi.encode(
+                            ProofUtils.expansionFromLeaves(bigStepStates2, 0, 1),
+                            ProofUtils.generatePrefixProof(
+                                1, ArrayUtilsLib.slice(bigStepStates2, 1, bigStepStates2.length)
+                            )
+                        ),
+                        proof: generateEdgeProof(states2, bigStepStates2)
+                    })
+                );
         }
 
         (BisectionChildren[6] memory bigstepedges1,) = bisectToForkOnly(
@@ -1346,29 +1398,29 @@ contract EdgeChallengeManagerTest is Test {
                 appendRandomStatesBetween(genesisStates(), bigStepStates1[1], height1);
 
             vm.expectRevert(abi.encodeWithSelector(ClaimEdgeInvalidLevel.selector, 1, 1));
-            edge1SmallStepId = ei.challengeManager.createLayerZeroEdge(
-                CreateEdgeArgs({
-                    level: 1,
-                    endHistoryRoot: MerkleTreeAccumulatorLib.root(smallStepExp1),
-                    endHeight: 1,
-                    claimId: bigstepedges1[0].lowerChildId,
-                    prefixProof: abi.encode(
-                        ProofUtils.expansionFromLeaves(smallStepStates1, 0, 1),
-                        ProofUtils.generatePrefixProof(
-                            1, ArrayUtilsLib.slice(smallStepStates1, 1, smallStepStates1.length)
-                        )
-                    ),
-                    proof: generateEdgeProof(bigStepStates1, smallStepStates1)
-                })
-            );
+            edge1SmallStepId = ei.challengeManager
+                .createLayerZeroEdge(
+                    CreateEdgeArgs({
+                        level: 1,
+                        endHistoryRoot: MerkleTreeAccumulatorLib.root(smallStepExp1),
+                        endHeight: 1,
+                        claimId: bigstepedges1[0].lowerChildId,
+                        prefixProof: abi.encode(
+                            ProofUtils.expansionFromLeaves(smallStepStates1, 0, 1),
+                            ProofUtils.generatePrefixProof(
+                                1, ArrayUtilsLib.slice(smallStepStates1, 1, smallStepStates1.length)
+                            )
+                        ),
+                        proof: generateEdgeProof(bigStepStates1, smallStepStates1)
+                    })
+                );
         }
     }
 
     function testRevertSmallStepInvalidClaimType() public {
         EdgeInitData memory ei = deployAndInit();
 
-        (bytes32[] memory states1,, BisectionChildren[6] memory edges1,) =
-        createBlockEdgesAndBisectToFork(
+        (bytes32[] memory states1,, BisectionChildren[6] memory edges1,) = createBlockEdgesAndBisectToFork(
             CreateBlockEdgesBisectArgs(
                 ei.challengeManager,
                 ei.a1,
@@ -1391,21 +1443,22 @@ contract EdgeChallengeManagerTest is Test {
                 appendRandomStatesBetween(genesisStates(), states1[1], height1);
 
             vm.expectRevert(abi.encodeWithSelector(ClaimEdgeInvalidLevel.selector, 2, 0));
-            edge1BigStepId = ei.challengeManager.createLayerZeroEdge(
-                CreateEdgeArgs({
-                    level: 2,
-                    endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp1),
-                    endHeight: height1,
-                    claimId: edges1[0].lowerChildId,
-                    prefixProof: abi.encode(
-                        ProofUtils.expansionFromLeaves(bigStepStates1, 0, 1),
-                        ProofUtils.generatePrefixProof(
-                            1, ArrayUtilsLib.slice(bigStepStates1, 1, bigStepStates1.length)
-                        )
-                    ),
-                    proof: generateEdgeProof(states1, bigStepStates1)
-                })
-            );
+            edge1BigStepId = ei.challengeManager
+                .createLayerZeroEdge(
+                    CreateEdgeArgs({
+                        level: 2,
+                        endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp1),
+                        endHeight: height1,
+                        claimId: edges1[0].lowerChildId,
+                        prefixProof: abi.encode(
+                            ProofUtils.expansionFromLeaves(bigStepStates1, 0, 1),
+                            ProofUtils.generatePrefixProof(
+                                1, ArrayUtilsLib.slice(bigStepStates1, 1, bigStepStates1.length)
+                            )
+                        ),
+                        proof: generateEdgeProof(states1, bigStepStates1)
+                    })
+                );
         }
     }
 
@@ -1439,21 +1492,22 @@ contract EdgeChallengeManagerTest is Test {
             (bigStepStates1, bigStepExp1) =
                 appendRandomStatesBetween(genesisStates(), states1[1], height1);
 
-            edge1BigStepId = ei.challengeManager.createLayerZeroEdge(
-                CreateEdgeArgs({
-                    level: 1,
-                    endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp1),
-                    endHeight: height1,
-                    claimId: edges1[0].lowerChildId,
-                    prefixProof: abi.encode(
-                        ProofUtils.expansionFromLeaves(bigStepStates1, 0, 1),
-                        ProofUtils.generatePrefixProof(
-                            1, ArrayUtilsLib.slice(bigStepStates1, 1, bigStepStates1.length)
-                        )
-                    ),
-                    proof: generateEdgeProof(states1, bigStepStates1)
-                })
-            );
+            edge1BigStepId = ei.challengeManager
+                .createLayerZeroEdge(
+                    CreateEdgeArgs({
+                        level: 1,
+                        endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp1),
+                        endHeight: height1,
+                        claimId: edges1[0].lowerChildId,
+                        prefixProof: abi.encode(
+                            ProofUtils.expansionFromLeaves(bigStepStates1, 0, 1),
+                            ProofUtils.generatePrefixProof(
+                                1, ArrayUtilsLib.slice(bigStepStates1, 1, bigStepStates1.length)
+                            )
+                        ),
+                        proof: generateEdgeProof(states1, bigStepStates1)
+                    })
+                );
         }
 
         bytes32[] memory bigStepStates2;
@@ -1463,21 +1517,22 @@ contract EdgeChallengeManagerTest is Test {
             (bigStepStates2, bigStepExp2) =
                 appendRandomStatesBetween(genesisStates(), states2[1], height1);
 
-            edge2BigStepId = ei.challengeManager.createLayerZeroEdge(
-                CreateEdgeArgs({
-                    level: 1,
-                    endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp2),
-                    endHeight: height1,
-                    claimId: edges2[0].lowerChildId,
-                    prefixProof: abi.encode(
-                        ProofUtils.expansionFromLeaves(bigStepStates2, 0, 1),
-                        ProofUtils.generatePrefixProof(
-                            1, ArrayUtilsLib.slice(bigStepStates2, 1, bigStepStates2.length)
-                        )
-                    ),
-                    proof: generateEdgeProof(states2, bigStepStates2)
-                })
-            );
+            edge2BigStepId = ei.challengeManager
+                .createLayerZeroEdge(
+                    CreateEdgeArgs({
+                        level: 1,
+                        endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp2),
+                        endHeight: height1,
+                        claimId: edges2[0].lowerChildId,
+                        prefixProof: abi.encode(
+                            ProofUtils.expansionFromLeaves(bigStepStates2, 0, 1),
+                            ProofUtils.generatePrefixProof(
+                                1, ArrayUtilsLib.slice(bigStepStates2, 1, bigStepStates2.length)
+                            )
+                        ),
+                        proof: generateEdgeProof(states2, bigStepStates2)
+                    })
+                );
         }
 
         (BisectionChildren[6] memory bigstepedges1,) = bisectToForkOnly(
@@ -1499,21 +1554,22 @@ contract EdgeChallengeManagerTest is Test {
                 appendRandomStatesBetween(genesisStates(), bigStepStates1[1], height1);
 
             vm.expectRevert(abi.encodeWithSelector(InvalidEndHeight.selector, 1, 32));
-            edge1SmallStepId = ei.challengeManager.createLayerZeroEdge(
-                CreateEdgeArgs({
-                    level: 2,
-                    endHistoryRoot: MerkleTreeAccumulatorLib.root(smallStepExp1),
-                    endHeight: 1,
-                    claimId: bigstepedges1[0].lowerChildId,
-                    prefixProof: abi.encode(
-                        ProofUtils.expansionFromLeaves(smallStepStates1, 0, 1),
-                        ProofUtils.generatePrefixProof(
-                            1, ArrayUtilsLib.slice(smallStepStates1, 1, smallStepStates1.length)
-                        )
-                    ),
-                    proof: generateEdgeProof(bigStepStates1, smallStepStates1)
-                })
-            );
+            edge1SmallStepId = ei.challengeManager
+                .createLayerZeroEdge(
+                    CreateEdgeArgs({
+                        level: 2,
+                        endHistoryRoot: MerkleTreeAccumulatorLib.root(smallStepExp1),
+                        endHeight: 1,
+                        claimId: bigstepedges1[0].lowerChildId,
+                        prefixProof: abi.encode(
+                            ProofUtils.expansionFromLeaves(smallStepStates1, 0, 1),
+                            ProofUtils.generatePrefixProof(
+                                1, ArrayUtilsLib.slice(smallStepStates1, 1, smallStepStates1.length)
+                            )
+                        ),
+                        proof: generateEdgeProof(bigStepStates1, smallStepStates1)
+                    })
+                );
         }
     }
 
@@ -1521,8 +1577,7 @@ contract EdgeChallengeManagerTest is Test {
         EdgeInitData memory ei = deployAndInit();
 
         (
-            bytes32[] memory states1,
-            ,
+            bytes32[] memory states1,,
             BisectionChildren[6] memory edges1,
             BisectionChildren[6] memory edges2
         ) = createBlockEdgesAndBisectToFork(
@@ -1543,21 +1598,22 @@ contract EdgeChallengeManagerTest is Test {
         (bytes32[] memory bigStepStates, bytes32[] memory bigStepExp) =
             appendRandomStatesBetween(genesisStates(), states1[1], height1);
 
-        bytes32 edge1BigStepId = ei.challengeManager.createLayerZeroEdge(
-            CreateEdgeArgs({
-                level: 1,
-                endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
-                endHeight: height1,
-                claimId: edges1[0].lowerChildId,
-                prefixProof: abi.encode(
-                    ProofUtils.expansionFromLeaves(bigStepStates, 0, 1),
-                    ProofUtils.generatePrefixProof(
-                        1, ArrayUtilsLib.slice(bigStepStates, 1, bigStepStates.length)
-                    )
-                ),
-                proof: generateEdgeProof(states1, bigStepStates)
-            })
-        );
+        bytes32 edge1BigStepId = ei.challengeManager
+            .createLayerZeroEdge(
+                CreateEdgeArgs({
+                    level: 1,
+                    endHistoryRoot: MerkleTreeAccumulatorLib.root(bigStepExp),
+                    endHeight: height1,
+                    claimId: edges1[0].lowerChildId,
+                    prefixProof: abi.encode(
+                        ProofUtils.expansionFromLeaves(bigStepStates, 0, 1),
+                        ProofUtils.generatePrefixProof(
+                            1, ArrayUtilsLib.slice(bigStepStates, 1, bigStepStates.length)
+                        )
+                    ),
+                    proof: generateEdgeProof(states1, bigStepStates)
+                })
+            );
 
         _safeVmRoll(block.number + challengePeriodBlock);
 
@@ -1568,24 +1624,23 @@ contract EdgeChallengeManagerTest is Test {
         vm.expectRevert(
             abi.encodeWithSelector(EdgeClaimMismatch.selector, edges1[0].lowerChildId, bytes32(0))
         );
-        ei.challengeManager.updateTimerCacheByClaim(
-            edges1[0].lowerChildId, edges1[0].lowerChildId, challengePeriodBlock
-        );
+        ei.challengeManager
+            .updateTimerCacheByClaim(
+                edges1[0].lowerChildId, edges1[0].lowerChildId, challengePeriodBlock
+            );
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 EdgeClaimMismatch.selector, edges2[0].lowerChildId, edges1[0].lowerChildId
             )
         );
-        ei.challengeManager.updateTimerCacheByClaim(
-            edges2[0].lowerChildId, edge1BigStepId, challengePeriodBlock
-        );
+        ei.challengeManager
+            .updateTimerCacheByClaim(edges2[0].lowerChildId, edge1BigStepId, challengePeriodBlock);
 
         vm.expectEmit(true, false, false, true);
         emit TimerCacheUpdated(edges1[0].lowerChildId, challengePeriodBlock);
-        ei.challengeManager.updateTimerCacheByClaim(
-            edges1[0].lowerChildId, edge1BigStepId, challengePeriodBlock
-        );
+        ei.challengeManager
+            .updateTimerCacheByClaim(edges1[0].lowerChildId, edge1BigStepId, challengePeriodBlock);
         ei.challengeManager.updateTimerCacheByChildren(edges1[0].upperChildId, challengePeriodBlock);
 
         vm.expectEmit(true, false, false, true);
@@ -1676,16 +1731,18 @@ contract EdgeChallengeManagerTest is Test {
     {
         bytes32[] memory states1 = args.endStates1;
         bytes32[] memory exp1 = args.endStates1exp;
-        bytes32 edge1Id =
-            createLayerZeroEdge(args.challengeManager, args.claim1Id, args.endState1, states1, exp1);
+        bytes32 edge1Id = createLayerZeroEdge(
+            args.challengeManager, args.claim1Id, args.endState1, states1, exp1
+        );
 
         _safeVmRoll(block.number + NUM_BLOCK_UNRIVALED);
         assertEq(args.challengeManager.timeUnrivaled(edge1Id), NUM_BLOCK_UNRIVALED, "Edge1 timer");
 
         bytes32[] memory states2 = args.endStates2;
         bytes32[] memory exp2 = args.endStates2exp;
-        bytes32 edge2Id =
-            createLayerZeroEdge(args.challengeManager, args.claim2Id, args.endState2, states2, exp2);
+        bytes32 edge2Id = createLayerZeroEdge(
+            args.challengeManager, args.claim2Id, args.endState2, states2, exp2
+        );
 
         _safeVmRoll(block.number + NUM_BLOCK_WAIT);
 
@@ -1723,21 +1780,22 @@ contract EdgeChallengeManagerTest is Test {
                     edgeInclusionProof
                 );
             }
-            edge1Id = args.challengeManager.createLayerZeroEdge(
-                CreateEdgeArgs({
-                    level: args.eType,
-                    endHistoryRoot: MerkleTreeAccumulatorLib.root(exp1),
-                    endHeight: height1,
-                    claimId: args.claim1Id,
-                    prefixProof: abi.encode(
-                        ProofUtils.expansionFromLeaves(states1, 0, 1),
-                        ProofUtils.generatePrefixProof(
-                            1, ArrayUtilsLib.slice(states1, 1, states1.length)
-                        )
-                    ),
-                    proof: typeSpecificProof1
-                })
-            );
+            edge1Id = args.challengeManager
+                .createLayerZeroEdge(
+                    CreateEdgeArgs({
+                        level: args.eType,
+                        endHistoryRoot: MerkleTreeAccumulatorLib.root(exp1),
+                        endHeight: height1,
+                        claimId: args.claim1Id,
+                        prefixProof: abi.encode(
+                            ProofUtils.expansionFromLeaves(states1, 0, 1),
+                            ProofUtils.generatePrefixProof(
+                                1, ArrayUtilsLib.slice(states1, 1, states1.length)
+                            )
+                        ),
+                        proof: typeSpecificProof1
+                    })
+                );
         }
 
         _safeVmRoll(block.number + NUM_BLOCK_UNRIVALED);
@@ -1765,21 +1823,22 @@ contract EdgeChallengeManagerTest is Test {
                     edgeInclusionProof
                 );
             }
-            edge2Id = args.challengeManager.createLayerZeroEdge(
-                CreateEdgeArgs({
-                    level: args.eType,
-                    endHistoryRoot: MerkleTreeAccumulatorLib.root(exp2),
-                    endHeight: height1,
-                    claimId: args.claim2Id,
-                    prefixProof: abi.encode(
-                        ProofUtils.expansionFromLeaves(states2, 0, 1),
-                        ProofUtils.generatePrefixProof(
-                            1, ArrayUtilsLib.slice(states2, 1, states2.length)
-                        )
-                    ),
-                    proof: typeSpecificProof2
-                })
-            );
+            edge2Id = args.challengeManager
+                .createLayerZeroEdge(
+                    CreateEdgeArgs({
+                        level: args.eType,
+                        endHistoryRoot: MerkleTreeAccumulatorLib.root(exp2),
+                        endHeight: height1,
+                        claimId: args.claim2Id,
+                        prefixProof: abi.encode(
+                            ProofUtils.expansionFromLeaves(states2, 0, 1),
+                            ProofUtils.generatePrefixProof(
+                                1, ArrayUtilsLib.slice(states2, 1, states2.length)
+                            )
+                        ),
+                        proof: typeSpecificProof2
+                    })
+                );
         }
 
         _safeVmRoll(block.number + NUM_BLOCK_WAIT);
@@ -1848,118 +1907,90 @@ contract EdgeChallengeManagerTest is Test {
         BisectionChildren[] memory allWinners =
             concat(concat(toDynamic(ssbd.edges1), toDynamic(bsbd.edges1)), toDynamic(blockEdges1));
 
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[0].lowerChildId, challengePeriodBlock
-        );
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[0].upperChildId, challengePeriodBlock
-        );
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[0].lowerChildId, challengePeriodBlock);
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[0].upperChildId, challengePeriodBlock);
 
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[1].lowerChildId, challengePeriodBlock
-        );
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[1].upperChildId, challengePeriodBlock
-        );
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[1].lowerChildId, challengePeriodBlock);
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[1].upperChildId, challengePeriodBlock);
 
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[2].lowerChildId, challengePeriodBlock
-        );
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[2].upperChildId, challengePeriodBlock
-        );
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[2].lowerChildId, challengePeriodBlock);
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[2].upperChildId, challengePeriodBlock);
 
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[3].lowerChildId, challengePeriodBlock
-        );
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[3].upperChildId, challengePeriodBlock
-        );
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[3].lowerChildId, challengePeriodBlock);
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[3].upperChildId, challengePeriodBlock);
 
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[4].lowerChildId, challengePeriodBlock
-        );
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[4].upperChildId, challengePeriodBlock
-        );
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[4].lowerChildId, challengePeriodBlock);
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[4].upperChildId, challengePeriodBlock);
 
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[5].lowerChildId, challengePeriodBlock
-        );
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[5].lowerChildId, challengePeriodBlock);
 
-        ei.challengeManager.updateTimerCacheByClaim(
-            allWinners[6].lowerChildId, allWinners[5].lowerChildId, challengePeriodBlock
-        );
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[6].upperChildId, challengePeriodBlock
-        );
+        ei.challengeManager
+            .updateTimerCacheByClaim(
+                allWinners[6].lowerChildId, allWinners[5].lowerChildId, challengePeriodBlock
+            );
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[6].upperChildId, challengePeriodBlock);
 
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[7].lowerChildId, challengePeriodBlock
-        );
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[7].upperChildId, challengePeriodBlock
-        );
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[7].lowerChildId, challengePeriodBlock);
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[7].upperChildId, challengePeriodBlock);
 
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[8].lowerChildId, challengePeriodBlock
-        );
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[8].upperChildId, challengePeriodBlock
-        );
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[8].lowerChildId, challengePeriodBlock);
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[8].upperChildId, challengePeriodBlock);
 
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[9].lowerChildId, challengePeriodBlock
-        );
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[9].upperChildId, challengePeriodBlock
-        );
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[9].lowerChildId, challengePeriodBlock);
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[9].upperChildId, challengePeriodBlock);
 
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[10].lowerChildId, challengePeriodBlock
-        );
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[10].upperChildId, challengePeriodBlock
-        );
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[10].lowerChildId, challengePeriodBlock);
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[10].upperChildId, challengePeriodBlock);
 
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[11].lowerChildId, challengePeriodBlock
-        );
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[11].lowerChildId, challengePeriodBlock);
 
-        ei.challengeManager.updateTimerCacheByClaim(
-            allWinners[12].lowerChildId, allWinners[11].lowerChildId, challengePeriodBlock
-        );
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[12].upperChildId, challengePeriodBlock
-        );
+        ei.challengeManager
+            .updateTimerCacheByClaim(
+                allWinners[12].lowerChildId, allWinners[11].lowerChildId, challengePeriodBlock
+            );
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[12].upperChildId, challengePeriodBlock);
 
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[13].lowerChildId, challengePeriodBlock
-        );
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[13].upperChildId, challengePeriodBlock
-        );
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[13].lowerChildId, challengePeriodBlock);
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[13].upperChildId, challengePeriodBlock);
 
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[14].lowerChildId, challengePeriodBlock
-        );
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[14].upperChildId, challengePeriodBlock
-        );
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[14].lowerChildId, challengePeriodBlock);
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[14].upperChildId, challengePeriodBlock);
 
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[15].lowerChildId, challengePeriodBlock
-        );
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[15].upperChildId, challengePeriodBlock
-        );
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[15].lowerChildId, challengePeriodBlock);
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[15].upperChildId, challengePeriodBlock);
 
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[16].lowerChildId, challengePeriodBlock
-        );
-        ei.challengeManager.updateTimerCacheByChildren(
-            allWinners[16].upperChildId, challengePeriodBlock
-        );
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[16].lowerChildId, challengePeriodBlock);
+        ei.challengeManager
+            .updateTimerCacheByChildren(allWinners[16].upperChildId, challengePeriodBlock);
 
         ei.challengeManager.confirmEdgeByTime(allWinners[17].lowerChildId, ei.a1Data);
 
@@ -1993,20 +2024,20 @@ contract EdgeChallengeManagerTest is Test {
         CanConfirmByOneStepData memory local;
 
         (local.blockStates1, local.blockStates2, local.blockEdges1, local.blockEdges2) =
-        createBlockEdgesAndBisectToFork(
-            CreateBlockEdgesBisectArgs(
-                ei.challengeManager,
-                ei.a1,
-                ei.a2,
-                ei.a1State,
-                ei.a2State,
-                false,
-                a1RandomStates,
-                a1RandomStatesExp,
-                a2RandomStates,
-                a2RandomStatesExp
-            )
-        );
+            createBlockEdgesAndBisectToFork(
+                CreateBlockEdgesBisectArgs(
+                    ei.challengeManager,
+                    ei.a1,
+                    ei.a2,
+                    ei.a1State,
+                    ei.a2State,
+                    false,
+                    a1RandomStates,
+                    a1RandomStatesExp,
+                    a2RandomStates,
+                    a2RandomStatesExp
+                )
+            );
 
         local.bigStepBisections[0] = createMachineEdgesAndBisectToFork(
             CreateMachineEdgesBisectArgs(

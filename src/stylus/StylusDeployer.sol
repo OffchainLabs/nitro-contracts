@@ -106,7 +106,10 @@ contract StylusDeployer {
     ///         can be sure that wherever they encourter this address it was initialized with the same data and value
     /// @param salt A user supplied salt
     /// @param initData The init data that will be used to init the deployed contract
-    function initSalt(bytes32 salt, bytes calldata initData) public pure returns (bytes32) {
+    function initSalt(
+        bytes32 salt,
+        bytes calldata initData
+    ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(salt, initData));
     }
 
@@ -131,7 +134,10 @@ contract StylusDeployer {
 
     /// @notice Deploy the a contract with the supplied bytecode.
     ///         Will create2 if the supplied salt is non zero
-    function deployContract(bytes memory bytecode, bytes32 salt) internal returns (address) {
+    function deployContract(
+        bytes memory bytecode,
+        bytes32 salt
+    ) internal returns (address) {
         if (bytecode.length == 0) {
             revert EmptyBytecode();
         }

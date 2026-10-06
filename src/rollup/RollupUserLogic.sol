@@ -202,7 +202,8 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         // b) its last staked assertion have a child
         bytes32 lastAssertion = latestStakedAssertion(msg.sender);
         require(
-            lastAssertion == prevAssertion || getAssertionStorage(lastAssertion).firstChildBlock > 0,
+            lastAssertion == prevAssertion
+                || getAssertionStorage(lastAssertion).firstChildBlock > 0,
             "STAKED_ON_ANOTHER_BRANCH"
         );
 
@@ -221,9 +222,8 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
             // only 1 of the children can be confirmed and get their stake refunded
             // so we send the other children's stake to the loserStakeEscrow
             // NOTE: if the losing staker have staked more than requiredStake, the excess stake will be stuck
-            IERC20(stakeToken).safeTransfer(
-                loserStakeEscrow, assertion.beforeStateData.configData.requiredStake
-            );
+            IERC20(stakeToken)
+                .safeTransfer(loserStakeEscrow, assertion.beforeStateData.configData.requiredStake);
         }
     }
 
@@ -334,9 +334,10 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
                 // only 1 of the children can be confirmed and get their stake refunded
                 // so we send the other children's stake to the loserStakeEscrow
                 // NOTE: if the losing staker have staked more than requiredStake, the excess stake will be stuck
-                IERC20(stakeToken).safeTransfer(
-                    loserStakeEscrow, assertion.beforeStateData.configData.requiredStake
-                );
+                IERC20(stakeToken)
+                    .safeTransfer(
+                        loserStakeEscrow, assertion.beforeStateData.configData.requiredStake
+                    );
             }
         }
 
@@ -392,7 +393,10 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
      * @param tokenAmount Amount to stake (can be zero)
      * @param _withdrawalAddress The address the send the stake back upon withdrawal
      */
-    function newStake(uint256 tokenAmount, address _withdrawalAddress) external whenNotPaused {
+    function newStake(
+        uint256 tokenAmount,
+        address _withdrawalAddress
+    ) external whenNotPaused {
         require(_withdrawalAddress != address(0), "EMPTY_WITHDRAWAL_ADDRESS");
         // _newStake makes sure the validator is whitelisted if the whitelist is enabled
         _newStake(tokenAmount, _withdrawalAddress);
