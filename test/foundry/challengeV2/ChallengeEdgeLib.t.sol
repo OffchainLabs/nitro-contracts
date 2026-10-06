@@ -134,7 +134,10 @@ contract ChallengeEdgeLibAccess {
         return ChallengeEdgeLib.length(storageEdge);
     }
 
-    function setChildren(bytes32 lowerChildId, bytes32 upperChildId) public {
+    function setChildren(
+        bytes32 lowerChildId,
+        bytes32 upperChildId
+    ) public {
         return ChallengeEdgeLib.setChildren(storageEdge, lowerChildId, upperChildId);
     }
 

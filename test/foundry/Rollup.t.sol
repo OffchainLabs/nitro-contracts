@@ -126,7 +126,9 @@ contract RollupTest is Test {
     BridgeCreator.BridgeTemplates ethBasedTemplates = BridgeCreator.BridgeTemplates({
         bridge: new Bridge(),
         sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false),
-        delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, true),
+        delayBufferableSequencerInbox: new SequencerInbox(
+            MAX_DATA_SIZE, dummyReader4844, false, true
+        ),
         inbox: new Inbox(MAX_DATA_SIZE),
         rollupEventInbox: new RollupEventInbox(),
         outbox: new Outbox()
@@ -134,7 +136,9 @@ contract RollupTest is Test {
     BridgeCreator.BridgeTemplates erc20BasedTemplates = BridgeCreator.BridgeTemplates({
         bridge: new ERC20Bridge(),
         sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
-        delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, true),
+        delayBufferableSequencerInbox: new SequencerInbox(
+            MAX_DATA_SIZE, dummyReader4844, true, true
+        ),
         inbox: new ERC20Inbox(MAX_DATA_SIZE),
         rollupEventInbox: new ERC20RollupEventInbox(),
         outbox: new ERC20Outbox()
@@ -1476,8 +1480,7 @@ contract RollupTest is Test {
         }
         vm.prank(by);
         userRollup.fastConfirmNewAssertion({
-            assertion: assertion,
-            expectedAssertionHash: expectedAssertionHash
+            assertion: assertion, expectedAssertionHash: expectedAssertionHash
         });
         if (bytes(err).length == 0) {
             assertEq(userRollup.latestConfirmed(), expectedAssertionHash);
@@ -1503,8 +1506,7 @@ contract RollupTest is Test {
         vm.expectRevert("NOT_PENDING");
         vm.prank(anyTrustFastConfirmer);
         userRollup.fastConfirmNewAssertion({
-            assertion: assertion,
-            expectedAssertionHash: expectedAssertionHash
+            assertion: assertion, expectedAssertionHash: expectedAssertionHash
         });
     }
 
