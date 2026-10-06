@@ -2097,20 +2097,21 @@ contract EdgeChallengeManagerTest is Test {
         firstStates[0] = local.smallStepBisection.states1[0];
         firstStates[1] = local.smallStepBisection.states1[1];
 
-        ei.challengeManager.confirmEdgeByOneStepProof(
-            allWinners[0].lowerChildId,
-            OneStepData({beforeHash: firstStates[0], proof: abi.encodePacked(firstStates[1])}),
-            ConfigData({
-                wasmModuleRoot: bytes32(0),
-                requiredStake: 0,
-                challengeManager: address(0),
-                confirmPeriodBlocks: 0,
-                nextInboxPosition: inboxMsgCountGenesis,
-                nextParentChainBlockHash: bytes32(0)
-            }),
-            ProofUtils.generateInclusionProof(ProofUtils.rehashed(genesisStates()), 0),
-            ProofUtils.generateInclusionProof(ProofUtils.rehashed(firstStates), 1)
-        );
+        ei.challengeManager
+            .confirmEdgeByOneStepProof(
+                allWinners[0].lowerChildId,
+                OneStepData({beforeHash: firstStates[0], proof: abi.encodePacked(firstStates[1])}),
+                ConfigData({
+                    wasmModuleRoot: bytes32(0),
+                    requiredStake: 0,
+                    challengeManager: address(0),
+                    confirmPeriodBlocks: 0,
+                    nextInboxPosition: inboxMsgCountGenesis,
+                    nextParentChainBlockHash: bytes32(0)
+                }),
+                ProofUtils.generateInclusionProof(ProofUtils.rehashed(genesisStates()), 0),
+                ProofUtils.generateInclusionProof(ProofUtils.rehashed(firstStates), 1)
+            );
 
         _updateTimers(ei, allWinners);
 
