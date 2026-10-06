@@ -74,12 +74,8 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
         });
 
         uint256 currentInboxCount = bridge.sequencerMessageCount();
-        // ensure to move the inbox forward by at least one message
-        if (currentInboxCount == config.genesisInboxCount) {
-            currentInboxCount += 1;
-        }
 
-        // MEL anchor for next assertion, zero and excluded from configHash until MEL is enabled
+        // Anchor for next assertion, zero to signal the replay binary that no work should be done for next assertion
         bytes32 nextParentChainBlockHash = bytes32(0);
 
         AssertionNode memory initialAssertion = AssertionNodeLib.createAssertion(
@@ -276,12 +272,10 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      */
     function decreaseBaseStake(
         uint256 newBaseStake,
-        uint64 latestNextInboxPosition
+        uint64 latestNextInboxPosition,
+        bytes32 latestNextParentChainBlockHash
     ) external override {
         require(newBaseStake < baseStake, "BASE_STAKE_NOT_DECREASED");
-
-        // MEL anchor is zero and excluded from configHash until MEL is enabled
-        bytes32 nextParentChainBlockHash = bytes32(0);
 
         // if we're decreasing the stake we need to be more careful not to allow a malicious party
         // to withdraw some (up to the difference between baseStake and newBaseStake) honest funds from this contract
@@ -305,7 +299,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
             challengeManager: address(challengeManager),
             confirmPeriodBlocks: confirmPeriodBlocks,
             nextInboxPosition: uint64(latestNextInboxPosition),
-            nextParentChainBlockHash: nextParentChainBlockHash
+            nextParentChainBlockHash: latestNextParentChainBlockHash
         });
 
         uint256 pendingCount = 0;
@@ -327,7 +321,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
                     challengeManager: address(challengeManager),
                     confirmPeriodBlocks: confirmPeriodBlocks,
                     nextInboxPosition: uint64(latestNextInboxPosition),
-                    nextParentChainBlockHash: nextParentChainBlockHash
+                    nextParentChainBlockHash: latestNextParentChainBlockHash
                 });
 
                 pendingCount++;

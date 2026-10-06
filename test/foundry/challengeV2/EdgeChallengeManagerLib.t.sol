@@ -1379,7 +1379,7 @@ contract EdgeChallengeManagerLibTest is Test {
         uint256 bigStepHeight,
         uint256 smallStepHeight,
         uint256 level
-    ) internal returns (uint256) {
+    ) internal pure returns (uint256) {
         uint256 stepSize = 1;
         uint256 maxLevelIndex = numBigStepLevel + 1;
         for (uint256 i = level; i < maxLevelIndex; i++) {

@@ -428,11 +428,12 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
             assertion.beforeStateData.configData, getAssertionStorage(prevAssertionHash).configHash
         );
 
-        // reading inbox messages always terminates in either a finished or errored state
-        // although the challenge protocol that any invalid terminal state will be proven incorrect
+        // Replay binary runs always terminates in either a YIELDED, FINISHED or ERRORED state.
+        // Although the challenge protocol makes sure that any invalid terminal state will be proven incorrect
         // we can do a quick sanity check here
         require(
-            assertion.afterState.machineStatus == MachineStatus.FINISHED
+            assertion.afterState.machineStatus == MachineStatus.YIELDED
+                || assertion.afterState.machineStatus == MachineStatus.FINISHED
                 || assertion.afterState.machineStatus == MachineStatus.ERRORED,
             "BAD_AFTER_STATUS"
         );
@@ -451,11 +452,18 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         // If it reaches an errored state it must be corrected by an administrator
         // This will involve updating the wasm root and creating an alternative assertion
         // that consumes the correct number of inbox messages, and correctly transitions to the
-        // FINISHED state so that normal progress can continue
-        require(assertion.beforeState.machineStatus == MachineStatus.FINISHED, "BAD_PREV_STATUS");
+        // YIELDED or FINISHED state so that normal progress can continue
+        require(
+            assertion.beforeState.machineStatus == MachineStatus.YIELDED
+                || assertion.beforeState.machineStatus == MachineStatus.FINISHED,
+            "BAD_PREV_STATUS"
+        );
 
         AssertionNode storage prevAssertion = getAssertionStorage(prevAssertionHash);
-        // Required inbox position through which the next assertion (the one after this new assertion) must consume
+
+        // `nextInboxPosition` will be set to the current inbox position in the Bridge contract. However, the next
+        // assertion will process the messages up to the batch posted in the previous block (prev.nextParentChainBlockHash).
+        // This means that the next assertion might not reach `nextInboxPosition`, but it must never go past it.
         uint256 nextInboxPosition;
         bytes32 sequencerBatchAcc;
         {
@@ -464,30 +472,30 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
             GlobalState calldata beforeGS = assertion.beforeState.globalState;
 
             // there are 3 kinds of assertions that can be made. Assertions must be made when they fill the maximum number
-            // of blocks, or when they process all messages up to prev.nextInboxPosition. When they fill the max
+            // of blocks, or when they extract and process all messages up to prev.nextParentChainBlockHash. When they fill the max
             // blocks, but dont manage to process all messages, we call this an "overflow" assertion.
             // 1. ERRORED assertion
             //    The machine finished in an ERRORED state. This can happen with processing any
             //    messages, or moving the position in the message.
-            // 2. FINISHED assertion that did not overflow
-            //    The machine finished as normal, and fully processed all the messages up to prev.nextInboxPosition.
-            //    In this case the inbox position must equal prev.nextInboxPosition and position in message must be 0
-            // 3. FINISHED assertion that did overflow
-            //    The machine finished as normal, but didn't process all messages in the inbox.
-            //    The inbox can be anywhere between the previous assertion's position and the nextInboxPosition, exclusive.
+            // 2. FINISHED assertion
+            //    The machine finished as normal, and fully processed all the messages extracted up to prev.nextParentChainBlockHash
+            // 3. YIELDED assertion, which overflows
+            //    The machine finished as normal, but didn't process all extracted messages
 
-            //    All types of assertion must have inbox position in the range prev.inboxPosition <= x <= prev.nextInboxPosition
+            // Assertions may not have moved the inbox position if no messages are present in the range of processed parent chain blocks.
+            // These are known as "empty assertions"
+
+            // In any case, assertions will never move the inbox position backwards.
             require(afterGS.comparePositions(beforeGS) >= 0, "INBOX_BACKWARDS");
+
+            // Ensure that the assertion does not move the inbox position past `nextInboxPosition`
             int256 afterStateCmpMaxInbox = afterGS.comparePositionsAgainstStartOfBatch(
                 assertion.beforeStateData.configData.nextInboxPosition
             );
             require(afterStateCmpMaxInbox <= 0, "INBOX_TOO_FAR");
 
-            if (
-                assertion.afterState.machineStatus != MachineStatus.ERRORED
-                    && afterStateCmpMaxInbox < 0
-            ) {
-                // If we didn't reach the target next inbox position, this is an overflow assertion.
+            if (assertion.afterState.machineStatus == MachineStatus.YIELDED) {
+                // If the Machine ended with a YIELDED state, this is an overflow assertion.
                 overflowAssertion = true;
                 // This shouldn't be necessary, but might as well constrain the assertion to be non-empty
                 require(afterGS.comparePositions(beforeGS) > 0, "OVERFLOW_STANDSTILL");
@@ -501,38 +509,30 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
             );
 
             // under normal circumstances prev.nextInboxPosition is guaranteed to exist
-            // because we populate it from bridge.sequencerMessageCount(). However, when
-            // the inbox message count doesnt change we artificially increase it by 1 as explained below
-            // in this case we need to ensure when the assertion is made the inbox messages are available
+            // because we populate it from bridge.sequencerMessageCount(). However, in pre-MEL, when
+            // the inbox message count didn't change we artificially increased it by 1
+            // in this case we need to ensure when the child of a pre-MEL assertion is made the inbox messages are available
             // to ensure that a valid assertion can actually be made.
             require(
                 assertion.beforeStateData.configData.nextInboxPosition <= currentInboxPosition,
                 "INBOX_NOT_POPULATED"
             );
 
-            // The next assertion must consume all the messages that are currently found in the inbox
+            // We don't need to increase the current inbox position by one, since we allow for "empty assertions"
+            nextInboxPosition = currentInboxPosition;
+
+            // Position zero has no accumulator entry: nothing has been consumed yet, so use zero, as the
+            // genesis assertion hash does. Only descendants of a position-zero parent can reach this branch,
+            // since the inbox position never moves backwards.
             uint256 afterInboxPosition = afterGS.getInboxPosition();
-            if (afterInboxPosition == currentInboxPosition) {
-                // No new messages have been added to the inbox since the last assertion
-                // In this case if we set the next inbox position to the current one we would be insisting that
-                // the next assertion process no messages. So instead we increment the next inbox position to current
-                // plus one, so that the next assertion will process exactly one message.
-                // Thus, no assertion can be empty (except the genesis assertion, which is created
-                // via a different codepath).
-                nextInboxPosition = currentInboxPosition + 1;
+            if (afterInboxPosition == 0) {
+                sequencerBatchAcc = bytes32(0);
             } else {
-                nextInboxPosition = currentInboxPosition;
+                // Fetch the inbox accumulator for this message count. Fetching this and checking against it
+                // allows the assertion creator to ensure they're creating an assertion against the expected
+                // inbox messages
+                sequencerBatchAcc = bridge.sequencerInboxAccs(afterInboxPosition - 1);
             }
-
-            // only the genesis assertion processes no messages, and that assertion is created
-            // when we initialize this contract. Therefore, all assertions created here should have a non
-            // zero inbox position.
-            require(afterInboxPosition != 0, "EMPTY_INBOX_COUNT");
-
-            // Fetch the inbox accumulator for this message count. Fetching this and checking against it
-            // allows the assertion creator to ensure they're creating an assertion against the expected
-            // inbox messages
-            sequencerBatchAcc = bridge.sequencerInboxAccs(afterInboxPosition - 1);
         }
 
         newAssertionHash =
@@ -552,8 +552,8 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
             "ASSERTION_SEEN"
         );
 
-        // MEL anchor for next assertion, zero and excluded from configHash until MEL is enabled
-        bytes32 nextParentChainBlockHash = bytes32(0);
+        // Anchor for next assertion
+        bytes32 nextParentChainBlockHash = getNextParentChainBlockHash();
 
         // state updates
         AssertionNode memory newAssertion = AssertionNodeLib.createAssertion(
@@ -676,5 +676,18 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         bool isLatestConfirmed = lastestAssertion == latestConfirmed();
         bool haveChild = getAssertionStorage(lastestAssertion).firstChildBlock > 0;
         require(isLatestConfirmed || haveChild, "STAKE_ACTIVE");
+    }
+
+    /**
+     * @dev The parent chain block hash whose state the children of the new assertion will read.
+     *      On an Arbitrum host chain blockhash() returns a pseudo-random value rather than the
+     *      host chain's block hash, so the hash is taken from ArbSys instead.
+     */
+    function getNextParentChainBlockHash() internal view returns (bytes32) {
+        if (_hostChainIsArbitrum) {
+            ArbSys arbSys = ArbSys(address(100));
+            return arbSys.arbBlockHash(arbSys.arbBlockNumber() - 1);
+        }
+        return blockhash(block.number - 1);
     }
 }
