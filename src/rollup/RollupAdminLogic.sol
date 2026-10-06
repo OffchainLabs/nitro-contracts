@@ -78,6 +78,10 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
         if (currentInboxCount == config.genesisInboxCount) {
             currentInboxCount += 1;
         }
+
+        // MEL anchor for next assertion, zero and excluded from configHash until MEL is enabled
+        bytes32 nextParentChainBlockHash = bytes32(0);
+
         AssertionNode memory initialAssertion = AssertionNodeLib.createAssertion(
             true,
             RollupLib.configHash({
@@ -85,7 +89,8 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
                 requiredStake: baseStake,
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: confirmPeriodBlocks,
-                nextInboxPosition: uint64(currentInboxCount)
+                nextInboxPosition: uint64(currentInboxCount),
+                nextParentChainBlockHash: nextParentChainBlockHash
             })
         );
         initializeCore(initialAssertion, genesisHash);
@@ -98,6 +103,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
             assertionInputs,
             inboxAcc,
             currentInboxCount,
+            nextParentChainBlockHash,
             wasmModuleRoot,
             baseStake,
             address(challengeManager),
@@ -274,6 +280,9 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
     ) external override {
         require(newBaseStake < baseStake, "BASE_STAKE_NOT_DECREASED");
 
+        // MEL anchor is zero and excluded from configHash until MEL is enabled
+        bytes32 nextParentChainBlockHash = bytes32(0);
+
         // if we're decreasing the stake we need to be more careful not to allow a malicious party
         // to withdraw some (up to the difference between baseStake and newBaseStake) honest funds from this contract
         // The sequence of events is as follows:
@@ -295,7 +304,8 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
             requiredStake: baseStake,
             challengeManager: address(challengeManager),
             confirmPeriodBlocks: confirmPeriodBlocks,
-            nextInboxPosition: uint64(latestNextInboxPosition)
+            nextInboxPosition: uint64(latestNextInboxPosition),
+            nextParentChainBlockHash: nextParentChainBlockHash
         });
 
         uint256 pendingCount = 0;
@@ -316,7 +326,8 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
                     requiredStake: newBaseStake,
                     challengeManager: address(challengeManager),
                     confirmPeriodBlocks: confirmPeriodBlocks,
-                    nextInboxPosition: uint64(latestNextInboxPosition)
+                    nextInboxPosition: uint64(latestNextInboxPosition),
+                    nextParentChainBlockHash: nextParentChainBlockHash
                 });
 
                 pendingCount++;

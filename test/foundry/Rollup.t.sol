@@ -87,6 +87,19 @@ contract RollupTest is Test {
         address validatorWalletCreator
     );
 
+    event AssertionCreated(
+        bytes32 indexed assertionHash,
+        bytes32 indexed parentAssertionHash,
+        AssertionInputs assertion,
+        bytes32 afterInboxBatchAcc,
+        uint256 inboxMaxCount,
+        bytes32 nextParentChainBlockHash,
+        bytes32 wasmModuleRoot,
+        uint256 requiredStake,
+        address challengeManager,
+        uint64 confirmPeriodBlocks
+    );
+
     IReader4844 dummyReader4844 = IReader4844(address(137));
     BridgeCreator.BridgeTemplates ethBasedTemplates = BridgeCreator.BridgeTemplates({
         bridge: new Bridge(),
@@ -323,7 +336,8 @@ contract RollupTest is Test {
                 requiredStake: BASE_STAKE,
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                nextInboxPosition: firstState.globalState.u64Vals[0]
+                nextInboxPosition: firstState.globalState.u64Vals[0],
+                nextParentChainBlockHash: bytes32(0)
             }),
             inboxAccs
         );
@@ -384,7 +398,8 @@ contract RollupTest is Test {
                         requiredStake: BASE_STAKE,
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                        nextInboxPosition: afterState.globalState.u64Vals[0]
+                        nextInboxPosition: afterState.globalState.u64Vals[0],
+                        nextParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState,
@@ -395,6 +410,84 @@ contract RollupTest is Test {
         });
 
         return (expectedAssertionHash, afterState, inboxcount);
+    }
+
+    function testValidateConfigZeroNextParentChainBlockHash() public view {
+        userRollup.validateConfig(
+            genesisHash,
+            ConfigData({
+                wasmModuleRoot: WASM_MODULE_ROOT,
+                requiredStake: BASE_STAKE,
+                challengeManager: address(challengeManager),
+                confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
+                nextInboxPosition: 1,
+                nextParentChainBlockHash: bytes32(0)
+            })
+        );
+    }
+
+    function testRevertValidateConfigNonZeroNextParentChainBlockHash() public {
+        vm.expectRevert("CONFIG_HASH_MISMATCH");
+        userRollup.validateConfig(
+            genesisHash,
+            ConfigData({
+                wasmModuleRoot: WASM_MODULE_ROOT,
+                requiredStake: BASE_STAKE,
+                challengeManager: address(challengeManager),
+                confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
+                nextInboxPosition: 1,
+                nextParentChainBlockHash: keccak256("NON_ZERO")
+            })
+        );
+    }
+
+    function testAssertionCreatedEmitsZeroNextParentChainBlockHash() public {
+        _createNewBatch();
+        AssertionState memory beforeState;
+        beforeState.machineStatus = MachineStatus.FINISHED;
+        AssertionState memory afterState;
+        afterState.machineStatus = MachineStatus.FINISHED;
+        afterState.globalState.bytes32Vals[0] = FIRST_ASSERTION_BLOCKHASH;
+        afterState.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT;
+        afterState.globalState.u64Vals[0] = 1;
+        AssertionInputs memory assertion = AssertionInputs({
+            beforeStateData: BeforeStateData({
+                sequencerBatchAcc: bytes32(0),
+                prevPrevAssertionHash: bytes32(0),
+                configData: ConfigData({
+                    wasmModuleRoot: WASM_MODULE_ROOT,
+                    requiredStake: BASE_STAKE,
+                    challengeManager: address(challengeManager),
+                    confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
+                    nextInboxPosition: 1,
+                    nextParentChainBlockHash: bytes32(0)
+                })
+            }),
+            beforeState: beforeState,
+            afterState: afterState
+        });
+        bytes32 inboxAcc = userRollup.bridge().sequencerInboxAccs(0);
+
+        vm.expectEmit(true, true, false, true);
+        emit AssertionCreated(
+            RollupLib.assertionHash(genesisHash, afterState, inboxAcc),
+            genesisHash,
+            assertion,
+            inboxAcc,
+            2,
+            bytes32(0),
+            WASM_MODULE_ROOT,
+            BASE_STAKE,
+            address(challengeManager),
+            CONFIRM_PERIOD_BLOCKS
+        );
+        vm.prank(validator1);
+        userRollup.newStakeOnNewAssertion({
+            tokenAmount: BASE_STAKE,
+            assertion: assertion,
+            expectedAssertionHash: bytes32(0),
+            _withdrawalAddress: validator1Withdrawal
+        });
     }
 
     function testSuccessCreateAssertionUsingAddToDeposit()
@@ -439,7 +532,8 @@ contract RollupTest is Test {
                         requiredStake: BASE_STAKE,
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                        nextInboxPosition: afterState.globalState.u64Vals[0]
+                        nextInboxPosition: afterState.globalState.u64Vals[0],
+                        nextParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState,
@@ -517,7 +611,8 @@ contract RollupTest is Test {
                         requiredStake: BASE_STAKE,
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                        nextInboxPosition: afterState.globalState.u64Vals[0]
+                        nextInboxPosition: afterState.globalState.u64Vals[0],
+                        nextParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState,
@@ -566,7 +661,8 @@ contract RollupTest is Test {
                         requiredStake: BASE_STAKE,
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                        nextInboxPosition: afterState.globalState.u64Vals[0]
+                        nextInboxPosition: afterState.globalState.u64Vals[0],
+                        nextParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState,
@@ -601,7 +697,8 @@ contract RollupTest is Test {
                         requiredStake: BASE_STAKE,
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                        nextInboxPosition: afterState.globalState.u64Vals[0]
+                        nextInboxPosition: afterState.globalState.u64Vals[0],
+                        nextParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState,
@@ -624,7 +721,8 @@ contract RollupTest is Test {
                         requiredStake: BASE_STAKE,
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                        nextInboxPosition: afterState.globalState.u64Vals[0]
+                        nextInboxPosition: afterState.globalState.u64Vals[0],
+                        nextParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState,
@@ -664,7 +762,8 @@ contract RollupTest is Test {
                         requiredStake: BASE_STAKE,
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                        nextInboxPosition: afterState.globalState.u64Vals[0]
+                        nextInboxPosition: afterState.globalState.u64Vals[0],
+                        nextParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState,
@@ -700,7 +799,8 @@ contract RollupTest is Test {
                         requiredStake: BASE_STAKE,
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                        nextInboxPosition: afterState2.globalState.u64Vals[0]
+                        nextInboxPosition: afterState2.globalState.u64Vals[0],
+                        nextParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: afterState,
@@ -765,7 +865,8 @@ contract RollupTest is Test {
                         requiredStake: BASE_STAKE,
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                        nextInboxPosition: afterState.globalState.u64Vals[0]
+                        nextInboxPosition: afterState.globalState.u64Vals[0],
+                        nextParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState,
@@ -812,7 +913,8 @@ contract RollupTest is Test {
                         requiredStake: BASE_STAKE,
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                        nextInboxPosition: afterState2.globalState.u64Vals[0]
+                        nextInboxPosition: afterState2.globalState.u64Vals[0],
+                        nextParentChainBlockHash: bytes32(0)
                     })
                 }),
                 afterState: afterState2
@@ -868,7 +970,8 @@ contract RollupTest is Test {
                         requiredStake: BASE_STAKE,
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                        nextInboxPosition: afterState3.globalState.u64Vals[0]
+                        nextInboxPosition: afterState3.globalState.u64Vals[0],
+                        nextParentChainBlockHash: bytes32(0)
                     })
                 }),
                 afterState: afterState3
@@ -894,7 +997,8 @@ contract RollupTest is Test {
                 requiredStake: BASE_STAKE,
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                nextInboxPosition: firstState.globalState.u64Vals[0]
+                nextInboxPosition: firstState.globalState.u64Vals[0],
+                nextParentChainBlockHash: bytes32(0)
             }),
             inboxAccs
         );
@@ -919,7 +1023,8 @@ contract RollupTest is Test {
                 requiredStake: BASE_STAKE,
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                nextInboxPosition: firstState.globalState.u64Vals[0]
+                nextInboxPosition: firstState.globalState.u64Vals[0],
+                nextParentChainBlockHash: bytes32(0)
             }),
             inboxAccs
         );
@@ -980,7 +1085,8 @@ contract RollupTest is Test {
                 requiredStake: BASE_STAKE,
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                nextInboxPosition: firstState.globalState.u64Vals[0]
+                nextInboxPosition: firstState.globalState.u64Vals[0],
+                nextParentChainBlockHash: bytes32(0)
             }),
             inboxAccs
         );
@@ -1118,7 +1224,8 @@ contract RollupTest is Test {
                 requiredStake: BASE_STAKE,
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                nextInboxPosition: firstState.globalState.u64Vals[0]
+                nextInboxPosition: firstState.globalState.u64Vals[0],
+                nextParentChainBlockHash: bytes32(0)
             }),
             inboxAcc
         );
@@ -1151,7 +1258,8 @@ contract RollupTest is Test {
                 requiredStake: BASE_STAKE,
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                nextInboxPosition: firstState.globalState.u64Vals[0]
+                nextInboxPosition: firstState.globalState.u64Vals[0],
+                nextParentChainBlockHash: bytes32(0)
             }),
             inboxAcc
         );
@@ -1290,7 +1398,8 @@ contract RollupTest is Test {
                         requiredStake: BASE_STAKE,
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                        nextInboxPosition: afterState.globalState.u64Vals[0]
+                        nextInboxPosition: afterState.globalState.u64Vals[0],
+                        nextParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState,
@@ -1330,7 +1439,8 @@ contract RollupTest is Test {
                         requiredStake: BASE_STAKE,
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                        nextInboxPosition: afterState.globalState.u64Vals[0]
+                        nextInboxPosition: afterState.globalState.u64Vals[0],
+                        nextParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState,
@@ -1407,7 +1517,8 @@ contract RollupTest is Test {
                     requiredStake: BASE_STAKE,
                     challengeManager: address(challengeManager),
                     confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                    nextInboxPosition: afterState.globalState.u64Vals[0]
+                    nextInboxPosition: afterState.globalState.u64Vals[0],
+                    nextParentChainBlockHash: bytes32(0)
                 })
             }),
             beforeState: beforeState,
@@ -1620,6 +1731,57 @@ contract RollupTest is Test {
         );
     }
 
+    function testConfigHash() public {
+        bytes32 wasmModuleRoot = rand.hash();
+        uint256 requiredStake = uint256(rand.hash());
+        address challengeManager = rand.addr();
+        uint64 confirmPeriodBlocks = uint64(uint256(rand.hash()));
+        uint64 nextInboxPosition = uint64(uint256(rand.hash()));
+        bytes32 nextParentChainBlockHash = rand.hash();
+
+        assertEq(
+            RollupLib.configHash(
+                wasmModuleRoot,
+                requiredStake,
+                challengeManager,
+                confirmPeriodBlocks,
+                nextInboxPosition,
+                bytes32(0)
+            ),
+            keccak256(
+                abi.encodePacked(
+                    wasmModuleRoot,
+                    requiredStake,
+                    challengeManager,
+                    confirmPeriodBlocks,
+                    nextInboxPosition
+                )
+            ),
+            "Unexpected hash with zero nextParentChainBlockHash"
+        );
+        assertEq(
+            RollupLib.configHash(
+                wasmModuleRoot,
+                requiredStake,
+                challengeManager,
+                confirmPeriodBlocks,
+                nextInboxPosition,
+                nextParentChainBlockHash
+            ),
+            keccak256(
+                abi.encodePacked(
+                    wasmModuleRoot,
+                    requiredStake,
+                    challengeManager,
+                    confirmPeriodBlocks,
+                    nextInboxPosition,
+                    nextParentChainBlockHash
+                )
+            ),
+            "Unexpected hash with non-zero nextParentChainBlockHash"
+        );
+    }
+
     function testIncreaseBaseStake() public {
         assertEq(adminRollup.baseStake(), BASE_STAKE, "Invalid before base stake");
 
@@ -1719,7 +1881,8 @@ contract RollupTest is Test {
                         requiredStake: BASE_STAKE - 1,
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                        nextInboxPosition: 2
+                        nextInboxPosition: 2,
+                        nextParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState,
@@ -1763,7 +1926,8 @@ contract RollupTest is Test {
                         requiredStake: BASE_STAKE,
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                        nextInboxPosition: 1
+                        nextInboxPosition: 1,
+                        nextParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState3,

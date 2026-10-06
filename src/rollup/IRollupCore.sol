@@ -29,6 +29,7 @@ interface IRollupCore is IAssertionChain {
         AssertionInputs assertion,
         bytes32 afterInboxBatchAcc,
         uint256 inboxMaxCount,
+        bytes32 nextParentChainBlockHash,
         bytes32 wasmModuleRoot,
         uint256 requiredStake,
         address challengeManager,
