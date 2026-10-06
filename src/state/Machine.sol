@@ -11,10 +11,10 @@ import "./StackFrame.sol";
 
 enum MachineStatus {
     RUNNING, // Machine is running
-    YIELDED, // Machine finished execution of one run, but there's still work to do to finish the assertion
+    FINISHED, // Machine has completed all execution for the assertion
     ERRORED, // Machine finished execution and encountered an error
     TOO_FAR, // Machine has gone too far in execution (unused in contracts)
-    FINISHED // Machine has completed all execution for the assertion
+    YIELDED  // Machine finished execution of one run, but there's still work to do to finish the assertion
 }
 
 struct Machine {
