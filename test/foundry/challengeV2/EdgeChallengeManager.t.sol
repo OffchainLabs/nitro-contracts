@@ -342,10 +342,22 @@ contract EdgeChallengeManagerTest is Test {
 
         // add one since heights are zero indexed in the history states
         bytes32 a1 = assertionChain.addAssertion(
-            genesis, genesisHeight + height1, inboxMsgCountAssertion, nextParentChainBlockHash, genesisState, a1State, 0
+            genesis,
+            genesisHeight + height1,
+            inboxMsgCountAssertion,
+            nextParentChainBlockHash,
+            genesisState,
+            a1State,
+            0
         );
         bytes32 a2 = assertionChain.addAssertion(
-            genesis, genesisHeight + height1, inboxMsgCountAssertion, nextParentChainBlockHash, genesisState, a2State, 0
+            genesis,
+            genesisHeight + height1,
+            inboxMsgCountAssertion,
+            nextParentChainBlockHash,
+            genesisState,
+            a2State,
+            0
         );
 
         return EdgeInitData({
@@ -362,8 +374,7 @@ contract EdgeChallengeManagerTest is Test {
     }
 
     function testWhitelist() public {
-        (MockAssertionChain assertionChain, EdgeChallengeManager challengeManager, )
-        = deploy();
+        (MockAssertionChain assertionChain, EdgeChallengeManager challengeManager,) = deploy();
 
         assertionChain.setValidatorWhitelistDisabled(false);
 
@@ -399,7 +410,13 @@ contract EdgeChallengeManagerTest is Test {
         bytes32 nextParentChainBlockHash = blockhash(block.number - 1);
 
         bytes32 a1 = assertionChain.addAssertion(
-            genesis, genesisHeight + height1, inboxMsgCountAssertion, nextParentChainBlockHash, genesisState, a1State, 0
+            genesis,
+            genesisHeight + height1,
+            inboxMsgCountAssertion,
+            nextParentChainBlockHash,
+            genesisState,
+            a1State,
+            0
         );
 
         vm.expectRevert(abi.encodeWithSelector(AssertionNoSibling.selector));
@@ -766,9 +783,16 @@ contract EdgeChallengeManagerTest is Test {
             genesisStates(), StateToolsLib.mockMachineHash(a2State), height1
         );
         a2State.endHistoryRoot = MerkleTreeAccumulatorLib.root(exp2);
-        bytes32 a2 = ei.assertionChain.addAssertion(
-            ei.genesis, genesisHeight + height1, inboxMsgCountAssertion, nextParentChainBlockHash, genesisState, a2State, 0
-        );
+        bytes32 a2 = ei.assertionChain
+            .addAssertion(
+                ei.genesis,
+                genesisHeight + height1,
+                inboxMsgCountAssertion,
+                nextParentChainBlockHash,
+                genesisState,
+                a2State,
+                0
+            );
 
         bytes32 edge2Id = createLayerZeroEdge(ei.challengeManager, a2, a2State, states2, exp2);
 
@@ -2087,7 +2111,9 @@ contract EdgeChallengeManagerTest is Test {
             )
         );
 
-        _safeVmRoll(START_BLOCK + (NUM_BIGSTEP_LEVEL + 2) * (NUM_BLOCK_WAIT * 2) + challengePeriodBlock);
+        _safeVmRoll(
+            START_BLOCK + (NUM_BIGSTEP_LEVEL + 2) * (NUM_BLOCK_WAIT * 2) + challengePeriodBlock
+        );
 
         BisectionChildren[] memory allWinners = toDynamic(local.smallStepBisection.edges1);
         for (uint256 i = 0; i < NUM_BIGSTEP_LEVEL; ++i) {
@@ -2101,20 +2127,21 @@ contract EdgeChallengeManagerTest is Test {
         firstStates[0] = local.smallStepBisection.states1[0];
         firstStates[1] = local.smallStepBisection.states1[1];
 
-        ei.challengeManager.confirmEdgeByOneStepProof(
-            allWinners[0].lowerChildId,
-            OneStepData({beforeHash: firstStates[0], proof: abi.encodePacked(firstStates[1])}),
-            ConfigData({
-                wasmModuleRoot: bytes32(0),
-                requiredStake: 0,
-                challengeManager: address(0),
-                confirmPeriodBlocks: 0,
-                nextInboxPosition: inboxMsgCountGenesis,
-                nextParentChainBlockHash: firstParentChainBlockHash
-            }),
-            ProofUtils.generateInclusionProof(ProofUtils.rehashed(genesisStates()), 0),
-            ProofUtils.generateInclusionProof(ProofUtils.rehashed(firstStates), 1)
-        );
+        ei.challengeManager
+            .confirmEdgeByOneStepProof(
+                allWinners[0].lowerChildId,
+                OneStepData({beforeHash: firstStates[0], proof: abi.encodePacked(firstStates[1])}),
+                ConfigData({
+                    wasmModuleRoot: bytes32(0),
+                    requiredStake: 0,
+                    challengeManager: address(0),
+                    confirmPeriodBlocks: 0,
+                    nextInboxPosition: inboxMsgCountGenesis,
+                    nextParentChainBlockHash: firstParentChainBlockHash
+                }),
+                ProofUtils.generateInclusionProof(ProofUtils.rehashed(genesisStates()), 0),
+                ProofUtils.generateInclusionProof(ProofUtils.rehashed(firstStates), 1)
+            );
 
         _updateTimers(ei, allWinners);
 

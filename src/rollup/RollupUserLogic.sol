@@ -353,12 +353,7 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         }
 
         // This would revert if the assertion is already confirmed
-        fastConfirmAssertion(
-            expectedAssertionHash,
-            prevAssertion,
-            assertion.afterState,
-            inboxAcc
-        );
+        fastConfirmAssertion(expectedAssertionHash, prevAssertion, assertion.afterState, inboxAcc);
     }
 
     function owner() external view returns (address) {

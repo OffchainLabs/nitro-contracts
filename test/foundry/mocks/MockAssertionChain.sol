@@ -172,7 +172,12 @@ contract MockAssertionChain is IAssertionChain {
         );
 
         return addAssertionUnsafe(
-            predecessorId, height, nextInboxPosition, nextParentChainBlockHash, afterState, successionChallenge
+            predecessorId,
+            height,
+            nextInboxPosition,
+            nextParentChainBlockHash,
+            afterState,
+            successionChallenge
         );
     }
 

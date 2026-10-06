@@ -679,10 +679,10 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     }
 
     /**
-    * @dev The parent chain block hash whose state the children of the new assertion will read.
-    *      On an Arbitrum host chain blockhash() returns a pseudo-random value rather than the
-    *      host chain's block hash, so the hash is taken from ArbSys instead.
-    */
+     * @dev The parent chain block hash whose state the children of the new assertion will read.
+     *      On an Arbitrum host chain blockhash() returns a pseudo-random value rather than the
+     *      host chain's block hash, so the hash is taken from ArbSys instead.
+     */
     function getNextParentChainBlockHash() internal view returns (bytes32) {
         if (_hostChainIsArbitrum) {
             ArbSys arbSys = ArbSys(address(100));
