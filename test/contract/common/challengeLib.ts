@@ -3,10 +3,10 @@ import { solidityKeccak256 } from 'ethers/lib/utils'
 
 export enum MachineStatus {
   RUNNING = 0,
-  YIELDED = 1,
+  FINISHED = 1,
   ERRORED = 2,
   TOO_FAR = 3, // Unused
-  FINISHED = 4,
+  YIELDED = 4,
 }
 
 export function machineHash(machineStatus: BigNumber, globalStateHash: string) {
