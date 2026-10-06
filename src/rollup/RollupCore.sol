@@ -419,11 +419,11 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
             assertion.beforeStateData.configData, getAssertionStorage(prevAssertionHash).configHash
         );
 
-        // Replay binary runs always terminates in either a DONE, FINISHED or ERRORED state.
+        // Replay binary runs always terminates in either a YIELDED, FINISHED or ERRORED state.
         // Although the challenge protocol makes sure that any invalid terminal state will be proven incorrect
         // we can do a quick sanity check here
         require(
-            assertion.afterState.machineStatus == MachineStatus.DONE
+            assertion.afterState.machineStatus == MachineStatus.YIELDED
                 || assertion.afterState.machineStatus == MachineStatus.FINISHED
                 || assertion.afterState.machineStatus == MachineStatus.ERRORED,
             "BAD_AFTER_STATUS"
@@ -443,9 +443,9 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         // If it reaches an errored state it must be corrected by an administrator
         // This will involve updating the wasm root and creating an alternative assertion
         // that consumes the correct number of inbox messages, and correctly transitions to the
-        // DONE or FINISHED state so that normal progress can continue
+        // YIELDED or FINISHED state so that normal progress can continue
         require(
-            assertion.beforeState.machineStatus == MachineStatus.DONE
+            assertion.beforeState.machineStatus == MachineStatus.YIELDED
                 || assertion.beforeState.machineStatus == MachineStatus.FINISHED,
             "BAD_PREV_STATUS"
         );
@@ -468,9 +468,9 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
             // 1. ERRORED assertion
             //    The machine finished in an ERRORED state. This can happen with processing any
             //    messages, or moving the position in the message.
-            // 2. DONE assertion
+            // 2. FINISHED assertion
             //    The machine finished as normal, and fully processed all the messages extracted up to prev.nextParentChainBlockHash
-            // 3. FINISHED assertion, which overflows
+            // 3. YIELDED assertion, which overflows
             //    The machine finished as normal, but didn't process all extracted messages
 
             // Assertions may not have moved the inbox position if no messages are present in the range of processed parent chain blocks.
@@ -485,8 +485,8 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
             );
             require(afterStateCmpMaxInbox <= 0, "INBOX_TOO_FAR");
 
-            if (assertion.afterState.machineStatus == MachineStatus.FINISHED) {
-                // If the Machine ended with a FINISHED state, this is an overflow assertion.
+            if (assertion.afterState.machineStatus == MachineStatus.YIELDED) {
+                // If the Machine ended with a YIELDED state, this is an overflow assertion.
                 overflowAssertion = true;
                 // This shouldn't be necessary, but might as well constrain the assertion to be non-empty
                 require(afterGS.comparePositions(beforeGS) > 0, "OVERFLOW_STANDSTILL");
@@ -589,7 +589,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     function genesisAssertionHash() external pure returns (bytes32) {
         GlobalState memory emptyGlobalState;
         AssertionState memory emptyAssertionState =
-            AssertionState(emptyGlobalState, MachineStatus.DONE, bytes32(0));
+            AssertionState(emptyGlobalState, MachineStatus.FINISHED, bytes32(0));
         bytes32 parentAssertionHash = bytes32(0);
         bytes32 inboxAcc = bytes32(0);
         return RollupLib.assertionHash({

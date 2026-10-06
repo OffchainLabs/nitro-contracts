@@ -71,7 +71,7 @@ contract RollupTest is Test {
     // Start with an empty global state
     GlobalState emptyGlobalState;
     AssertionState genesisAssertionState =
-        AssertionState(emptyGlobalState, MachineStatus.DONE, bytes32(0));
+        AssertionState(emptyGlobalState, MachineStatus.FINISHED, bytes32(0));
     bytes32 genesisAssertionHash = RollupLib.assertionHash({
         parentAssertionHash: bytes32(0),
         afterState: genesisAssertionState,
@@ -82,7 +82,7 @@ contract RollupTest is Test {
     // First (empty) assertion after genesis (will not consume any batches)
     GlobalState postGenesisGlobalState = emptyGlobalState;
     AssertionState postGenesisAssertionState =
-        AssertionState(postGenesisGlobalState, MachineStatus.DONE, bytes32(0));
+        AssertionState(postGenesisGlobalState, MachineStatus.FINISHED, bytes32(0));
     bytes32 postGenesisAssertionHash = RollupLib.assertionHash({
         parentAssertionHash: genesisAssertionHash,
         afterState: postGenesisAssertionState,
@@ -357,7 +357,7 @@ contract RollupTest is Test {
         firstAssertionGlobalState.u64Vals[0] = inboxCount; // inbox count
         firstAssertionGlobalState.u64Vals[1] = 0; // pos in msg
 
-        firstAssertionState = AssertionState(firstAssertionGlobalState, MachineStatus.DONE, bytes32(0));
+        firstAssertionState = AssertionState(firstAssertionGlobalState, MachineStatus.FINISHED, bytes32(0));
     }
 
     function _createNewBatch() internal returns (uint256) {
@@ -746,7 +746,7 @@ contract RollupTest is Test {
             testSuccessCreateAssertion();
         
         AssertionState memory afterState;
-        afterState.machineStatus = MachineStatus.DONE;
+        afterState.machineStatus = MachineStatus.FINISHED;
         afterState.globalState.bytes32Vals[0] = FIRST_ASSERTION_BLOCKHASH; // blockhash
         afterState.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // sendroot
         afterState.globalState.u64Vals[0] = inboxcount; // inbox count
@@ -808,7 +808,7 @@ contract RollupTest is Test {
         // Assertion created on top of post-genesis assertion
         AssertionState memory beforeState = postGenesisAssertionState;
         AssertionState memory afterState;
-        afterState.machineStatus = MachineStatus.DONE;
+        afterState.machineStatus = MachineStatus.FINISHED;
         afterState.globalState.bytes32Vals[0] = FIRST_ASSERTION_BLOCKHASH; // blockhash
         afterState.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // sendroot
         afterState.globalState.u64Vals[0] = uint64(initialInboxCount); // inbox count
@@ -846,7 +846,7 @@ contract RollupTest is Test {
 
         // Second assertion, also created on top of post-genesis assertion
         AssertionState memory afterState2;
-        afterState2.machineStatus = MachineStatus.DONE;
+        afterState2.machineStatus = MachineStatus.FINISHED;
         afterState2.globalState.bytes32Vals[0] =
             keccak256(abi.encodePacked(FIRST_ASSERTION_BLOCKHASH)); // blockhash
         afterState2.globalState.bytes32Vals[1] =
@@ -1309,7 +1309,7 @@ contract RollupTest is Test {
             testSuccessCreateAssertion();
 
         AssertionState memory afterState;
-        afterState.machineStatus = MachineStatus.DONE;
+        afterState.machineStatus = MachineStatus.FINISHED;
         afterState.globalState.bytes32Vals[0] = FIRST_ASSERTION_BLOCKHASH; // blockhash
         afterState.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // sendroot
         afterState.globalState.u64Vals[0] = inboxCount; // inbox count
@@ -1355,7 +1355,7 @@ contract RollupTest is Test {
         userRollup.reduceDeposit(1);
 
         AssertionState memory afterState;
-        afterState.machineStatus = MachineStatus.DONE;
+        afterState.machineStatus = MachineStatus.FINISHED;
         afterState.globalState.bytes32Vals[0] = FIRST_ASSERTION_BLOCKHASH; // blockhash
         afterState.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // sendroot
         afterState.globalState.u64Vals[0] = inboxCount; // inbox count
@@ -1441,7 +1441,7 @@ contract RollupTest is Test {
         // Assertion created on top of post-genesis assertion
         AssertionState memory beforeState = postGenesisAssertionState;
         AssertionState memory afterState;
-        afterState.machineStatus = MachineStatus.DONE;
+        afterState.machineStatus = MachineStatus.FINISHED;
         afterState.globalState.bytes32Vals[0] = FIRST_ASSERTION_BLOCKHASH; // blockhash
         afterState.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // sendroot
         afterState.globalState.u64Vals[0] = uint64(initialInboxCount); // inbox count
@@ -1645,7 +1645,7 @@ contract RollupTest is Test {
                 [rand.hash(), rand.hash()],
                 [uint64(uint256(rand.hash())), uint64(uint256(rand.hash()))]
             ),
-            MachineStatus.DONE,
+            MachineStatus.FINISHED,
             bytes32(0)
         );
         bytes32 expectedHash = keccak256(abi.encode(astate));
@@ -1659,7 +1659,7 @@ contract RollupTest is Test {
                 [rand.hash(), rand.hash()],
                 [uint64(uint256(rand.hash())), uint64(uint256(rand.hash()))]
             ),
-            MachineStatus.DONE,
+            MachineStatus.FINISHED,
             bytes32(0)
         );
         bytes32 inboxAcc = rand.hash();
@@ -1776,7 +1776,7 @@ contract RollupTest is Test {
 
         _createNewBatch();
         AssertionState memory afterState;
-        afterState.machineStatus = MachineStatus.DONE;
+        afterState.machineStatus = MachineStatus.FINISHED;
         afterState.globalState.bytes32Vals[0] = FIRST_ASSERTION_BLOCKHASH; // blockhash
         afterState.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // sendroot
         afterState.globalState.u64Vals[0] = nextInboxPosition; // inbox count
@@ -1821,7 +1821,7 @@ contract RollupTest is Test {
     function createStakeTooLowAssertion() public {
         // trying to create an assertion with the post-genesis as parent will fail with stake too low
         AssertionState memory afterState;
-        afterState.machineStatus = MachineStatus.DONE;
+        afterState.machineStatus = MachineStatus.FINISHED;
         afterState.globalState.bytes32Vals[0] =
             keccak256(abi.encodePacked(FIRST_ASSERTION_BLOCKHASH)); // blockhash
         afterState.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // sendroot

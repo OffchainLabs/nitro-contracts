@@ -51,7 +51,7 @@ contract AssertionPoolTest is Test {
 
     GlobalState emptyGlobalState;
     AssertionState emptyAssertionState =
-        AssertionState(emptyGlobalState, MachineStatus.DONE, bytes32(0));
+        AssertionState(emptyGlobalState, MachineStatus.FINISHED, bytes32(0));
     bytes32 genesisHash = RollupLib.assertionHash({
         parentAssertionHash: bytes32(0),
         afterState: emptyAssertionState,
@@ -219,7 +219,7 @@ contract AssertionPoolTest is Test {
         // (must be consistent with the the implementation of `initialize` in RollupAdminLogic)
         firstAssertionParentChainBlockHash = bytes32(0);
 
-        firstState.machineStatus = MachineStatus.DONE;
+        firstState.machineStatus = MachineStatus.FINISHED;
         firstState.globalState.bytes32Vals[0] = FIRST_ASSERTION_BLOCKHASH; // blockhash
         firstState.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // sendroot
         firstState.globalState.u64Vals[0] = 1; // inbox count
@@ -229,8 +229,8 @@ contract AssertionPoolTest is Test {
 
         inboxcount = uint64(_createNewBatch());
         AssertionState memory beforeState;
-        beforeState.machineStatus = MachineStatus.DONE;
-        afterState.machineStatus = MachineStatus.DONE;
+        beforeState.machineStatus = MachineStatus.FINISHED;
+        afterState.machineStatus = MachineStatus.FINISHED;
         afterState.globalState.bytes32Vals[0] = FIRST_ASSERTION_BLOCKHASH; // blockhash
         afterState.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // sendroot
         afterState.globalState.u64Vals[0] = 1; // inbox count

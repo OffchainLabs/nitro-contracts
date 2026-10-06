@@ -33,7 +33,7 @@ contract MockOneStepProofEntry is IOneStepProofEntry {
     function getMachineHash(
         ExecutionState calldata execState
     ) external pure override returns (bytes32) {
-        require(execState.machineStatus == MachineStatus.DONE, "BAD_MACHINE_STATUS");
+        require(execState.machineStatus == MachineStatus.FINISHED, "BAD_MACHINE_STATUS");
         return GlobalStateLib.hash(execState.globalState);
     }
 }
@@ -47,7 +47,7 @@ contract EdgeChallengeManagerTest is Test {
     Random rand = new Random();
     bytes32 genesisBlockHash = rand.hash();
     AssertionState genesisState =
-        StateToolsLib.randomState(rand, 4, genesisBlockHash, MachineStatus.DONE);
+        StateToolsLib.randomState(rand, 4, genesisBlockHash, MachineStatus.FINISHED);
     bytes32 genesisStateHash = StateToolsLib.mockMachineHash(genesisState);
     bytes32 genesisAfterStateHash = genesisState.hash();
     AssertionStateData genesisStateData = AssertionStateData(genesisState, bytes32(0), bytes32(0));
@@ -315,13 +315,13 @@ contract EdgeChallengeManagerTest is Test {
             rand,
             GlobalStateLib.getInboxPosition(genesisState.globalState),
             h1,
-            MachineStatus.DONE
+            MachineStatus.FINISHED
         );
         AssertionState memory a2State = StateToolsLib.randomState(
             rand,
             GlobalStateLib.getInboxPosition(genesisState.globalState),
             h2,
-            MachineStatus.DONE
+            MachineStatus.FINISHED
         );
 
         (a1RandomStates, a1RandomStatesExp) = appendRandomStatesBetween(
@@ -380,7 +380,7 @@ contract EdgeChallengeManagerTest is Test {
             rand,
             GlobalStateLib.getInboxPosition(genesisState.globalState),
             h1,
-            MachineStatus.DONE
+            MachineStatus.FINISHED
         );
 
         (bytes32[] memory states, bytes32[] memory exp) = appendRandomStatesBetween(
@@ -721,7 +721,7 @@ contract EdgeChallengeManagerTest is Test {
             rand,
             GlobalStateLib.getInboxPosition(genesisState.globalState),
             h2,
-            MachineStatus.DONE
+            MachineStatus.FINISHED
         );
         (bytes32[] memory states2, bytes32[] memory exp2) = appendRandomStatesBetween(
             genesisStates(), StateToolsLib.mockMachineHash(a2State), height1
