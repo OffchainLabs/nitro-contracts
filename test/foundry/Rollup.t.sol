@@ -8,6 +8,7 @@ import "../../src/rollup/RollupProxy.sol";
 import "../../src/rollup/RollupCore.sol";
 import "../../src/rollup/RollupUserLogic.sol";
 import "../../src/rollup/RollupAdminLogic.sol";
+import "../../src/rollup/MELConfig.sol";
 import "../../src/rollup/RollupCreator.sol";
 
 import "../../src/osp/OneStepProver0.sol";
@@ -100,6 +101,7 @@ contract RollupTest is Test {
         address outbox,
         address rollupEventInbox,
         address challengeManager,
+        address melConfig,
         address adminProxy,
         address sequencerInbox,
         address bridge,
@@ -155,6 +157,7 @@ contract RollupTest is Test {
         BridgeCreator bridgeCreator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
         RollupAdminLogic rollupAdminLogicImpl = new RollupAdminLogic();
         RollupUserLogic rollupUserLogicImpl = new RollupUserLogic();
+        MelConfig melConfigLogic = new MelConfig();
         DeployHelper deployHelper = new DeployHelper();
         IUpgradeExecutor upgradeExecutorLogic = new UpgradeExecutorMock();
         RollupCreator rollupCreator = new RollupCreator(
@@ -164,6 +167,7 @@ contract RollupTest is Test {
             edgeChallengeManager,
             rollupAdminLogicImpl,
             rollupUserLogicImpl,
+            melConfigLogic,
             upgradeExecutorLogic,
             address(0),
             deployHelper
@@ -221,6 +225,7 @@ contract RollupTest is Test {
             address(0),
             address(0),
             address(0),
+            address(0),
             address(0)
         );
 
@@ -253,7 +258,7 @@ contract RollupTest is Test {
         assertFalse(userRollup.validatorWhitelistDisabled());
 
         // check upgrade executor owns proxyAdmin
-        address upgradeExecutorExpectedAddress = computeCreateAddress(address(rollupCreator), 4);
+        address upgradeExecutorExpectedAddress = computeCreateAddress(address(rollupCreator), 5);
         upgradeExecutorAddr = userRollup.owner();
         assertEq(upgradeExecutorAddr, upgradeExecutorExpectedAddress, "Invalid proxyAdmin's owner");
 

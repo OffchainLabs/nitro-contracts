@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import {IAssertionChain} from "../../../src/challengeV2/IAssertionChain.sol";
 import {IEdgeChallengeManager} from "../../../src/challengeV2/IEdgeChallengeManager.sol";
 import "../../../src/bridge/IBridge.sol";
+import {IMelConfig} from "../../../src/rollup/MELConfig.sol";
 import "../../../src/rollup/RollupLib.sol";
 import "./../challengeV2/StateTools.sol";
 
@@ -23,6 +24,7 @@ struct MockAssertion {
 contract MockAssertionChain is IAssertionChain {
     mapping(bytes32 => MockAssertion) assertions;
     IBridge public bridge; // TODO: set bridge in this mock
+    IMelConfig public melConfig;
     bytes32 public wasmModuleRoot;
     uint256 public baseStake;
     address public challengeManager;
