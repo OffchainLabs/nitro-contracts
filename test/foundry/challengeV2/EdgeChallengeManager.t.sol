@@ -2044,11 +2044,9 @@ contract EdgeChallengeManagerTest is Test {
         BisectionData smallStepBisection;
     }
 
-    function testCanConfirmByOneStep()
-        public
-        returns (EdgeInitData memory, BisectionChildren[] memory)
-    {
-        EdgeInitData memory ei = deployAndInit();
+    function _bisectToOneStep(
+        EdgeInitData memory ei
+    ) internal returns (BisectionChildren[] memory allWinners, bytes32[] memory firstStates) {
         CanConfirmByOneStepData memory local;
 
         (local.blockStates1, local.blockStates2, local.blockEdges1, local.blockEdges2) =
@@ -2115,7 +2113,7 @@ contract EdgeChallengeManagerTest is Test {
             START_BLOCK + (NUM_BIGSTEP_LEVEL + 2) * (NUM_BLOCK_WAIT * 2) + challengePeriodBlock
         );
 
-        BisectionChildren[] memory allWinners = toDynamic(local.smallStepBisection.edges1);
+        allWinners = toDynamic(local.smallStepBisection.edges1);
         for (uint256 i = 0; i < NUM_BIGSTEP_LEVEL; ++i) {
             allWinners = concat(
                 allWinners, toDynamic(local.bigStepBisections[NUM_BIGSTEP_LEVEL - i - 1].edges1)
@@ -2123,13 +2121,19 @@ contract EdgeChallengeManagerTest is Test {
         }
         allWinners = concat(allWinners, toDynamic(local.blockEdges1));
 
-        bytes32[] memory firstStates = new bytes32[](2);
+        firstStates = new bytes32[](2);
         firstStates[0] = local.smallStepBisection.states1[0];
         firstStates[1] = local.smallStepBisection.states1[1];
+    }
 
+    function _confirmByOneStep(
+        EdgeInitData memory ei,
+        bytes32 edgeId,
+        bytes32[] memory firstStates
+    ) internal {
         ei.challengeManager
             .confirmEdgeByOneStepProof(
-                allWinners[0].lowerChildId,
+                edgeId,
                 OneStepData({beforeHash: firstStates[0], proof: abi.encodePacked(firstStates[1])}),
                 ConfigData({
                     wasmModuleRoot: bytes32(0),
@@ -2142,6 +2146,16 @@ contract EdgeChallengeManagerTest is Test {
                 ProofUtils.generateInclusionProof(ProofUtils.rehashed(genesisStates()), 0),
                 ProofUtils.generateInclusionProof(ProofUtils.rehashed(firstStates), 1)
             );
+    }
+
+    function testCanConfirmByOneStep()
+        public
+        returns (EdgeInitData memory, BisectionChildren[] memory)
+    {
+        EdgeInitData memory ei = deployAndInit();
+        (BisectionChildren[] memory allWinners, bytes32[] memory firstStates) = _bisectToOneStep(ei);
+
+        _confirmByOneStep(ei, allWinners[0].lowerChildId, firstStates);
 
         _updateTimers(ei, allWinners);
 
@@ -2153,6 +2167,29 @@ contract EdgeChallengeManagerTest is Test {
         );
 
         return (ei, allWinners);
+    }
+
+    // The execution context handed to the OSP must carry the assertion chain's MelConfig
+    function testConfirmByOneStepPassesMelConfigToOsp() public {
+        EdgeInitData memory ei = deployAndInit();
+        (BisectionChildren[] memory allWinners, bytes32[] memory firstStates) = _bisectToOneStep(ei);
+
+        address melConfig = makeAddr("melConfig");
+        ei.assertionChain.setMelConfig(IMelConfig(melConfig));
+
+        vm.expectCall(
+            address(ei.challengeManager.oneStepProofEntry()),
+            abi.encodeWithSelector(
+                IOneStepProofEntry.proveOneStep.selector,
+                ExecutionContext({
+                    initialWasmModuleRoot: bytes32(0),
+                    targetParentChainBlockHash: firstParentChainBlockHash,
+                    melConfig: melConfig,
+                    assertionStart: true // the proven edge starts at machine step 0 of the assertion
+                })
+            )
+        );
+        _confirmByOneStep(ei, allWinners[0].lowerChildId, firstStates);
     }
 
     /// @dev gracefully handle revert when updating timer cache

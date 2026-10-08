@@ -189,6 +189,12 @@ contract MockAssertionChain is IAssertionChain {
         validatorWhitelistDisabled = x;
     }
 
+    function setMelConfig(
+        IMelConfig x
+    ) external {
+        melConfig = x;
+    }
+
     function setIsValidator(
         address user,
         bool x

@@ -1970,4 +1970,49 @@ contract RollupTest is Test {
             BASE_STAKE - 1, uint64(data.newInboxCount), data.nextParentChainBlockHash
         );
     }
+
+    uint256 constant MEL_CONFIG_SLOT = 125;
+
+    function _deployMelConfig(
+        address bridge
+    ) internal returns (MelConfig) {
+        MelConfig melConfig = new MelConfig();
+        melConfig.initialize(0, bridge);
+        return melConfig;
+    }
+
+    // Simulates a chain deployed before MEL, whose rollup has no bound MelConfig
+    function _clearMelConfig() internal {
+        vm.store(address(userRollup), bytes32(MEL_CONFIG_SLOT), bytes32(0));
+        assertEq(address(userRollup.melConfig()), address(0));
+    }
+
+    function testSuccessPostUpgradeInit() public {
+        _clearMelConfig();
+        MelConfig melConfig = _deployMelConfig(address(userRollup.bridge()));
+
+        RollupAdminLogic newAdminLogicImpl = new RollupAdminLogic();
+        vm.prank(upgradeExecutorAddr);
+        adminRollup.upgradeToAndCall(
+            address(newAdminLogicImpl),
+            abi.encodeCall(IRollupAdmin.postUpgradeInit, (address(melConfig)))
+        );
+
+        assertEq(address(userRollup.melConfig()), address(melConfig));
+        assertEq(
+            address(uint160(uint256(vm.load(address(userRollup), _IMPLEMENTATION_PRIMARY_SLOT)))),
+            address(newAdminLogicImpl)
+        );
+    }
+
+    function testRevertPostUpgradeInitBridgeMismatch() public {
+        _clearMelConfig();
+        MelConfig melConfig = _deployMelConfig(address(1234));
+
+        vm.prank(upgradeExecutorAddr);
+        vm.expectRevert("MELCONFIG_BRIDGE_NOT_MATCH");
+        adminRollup.postUpgradeInit(address(melConfig));
+
+        assertEq(address(userRollup.melConfig()), address(0));
+    }
 }
