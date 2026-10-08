@@ -71,10 +71,6 @@ interface IRollupAdmin {
     ) external;
 
     /**
-     * @notice Perform post-upgrade initialization for the rollup admin logic
-     * @param _melConfig Address of the new MelConfig contract
-     */
-    /**
      * @notice Bind the rollup's MelConfig after upgrading to this logic. Must be called in the same transaction as the upgrade.
      * @param  _melConfig Address of the deployed and initialized MelConfig
      */

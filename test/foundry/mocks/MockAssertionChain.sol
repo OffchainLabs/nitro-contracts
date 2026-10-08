@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import {IAssertionChain} from "../../../src/challengeV2/IAssertionChain.sol";
 import {IEdgeChallengeManager} from "../../../src/challengeV2/IEdgeChallengeManager.sol";
 import "../../../src/bridge/IBridge.sol";
-import {IMelConfig} from "../../../src/rollup/MELConfig.sol";
+import {IMelConfig} from "../../../src/rollup/MelConfig.sol";
 import "../../../src/rollup/RollupLib.sol";
 import "./../challengeV2/StateTools.sol";
 

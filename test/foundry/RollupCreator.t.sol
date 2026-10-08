@@ -6,7 +6,7 @@ import "./util/TestUtil.sol";
 import "../../src/rollup/RollupCreator.sol";
 import "../../src/rollup/RollupAdminLogic.sol";
 import "../../src/rollup/RollupUserLogic.sol";
-import "../../src/rollup/MELConfig.sol";
+import "../../src/rollup/MelConfig.sol";
 import "../../src/rollup/ValidatorWalletCreator.sol";
 import "../../src/challengeV2/EdgeChallengeManager.sol";
 import "../../src/osp/OneStepProver0.sol";
