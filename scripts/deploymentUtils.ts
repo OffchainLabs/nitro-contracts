@@ -60,6 +60,7 @@ export async function verifyContract(
     OneStepProverMath: 'src/osp/OneStepProverMath.sol:OneStepProverMath',
     OneStepProverHostIo: 'src/osp/OneStepProverHostIo.sol:OneStepProverHostIo',
     OneStepProofEntry: 'src/osp/OneStepProofEntry.sol:OneStepProofEntry',
+    MelConfig: 'src/rollup/MelConfig.sol:MelConfig',
   }[contractName]
 
   try {
@@ -409,6 +410,13 @@ export async function deployAllContracts(
     verify,
     true
   )
+  const melConfig = await deployContract(
+    'MelConfig',
+    signer,
+    [],
+    verify,
+    true
+  )
   const upgradeExecutor = await create2(
     (
       await ethers.getContractFactory(
@@ -447,6 +455,7 @@ export async function deployAllContracts(
       challengeManager.address,
       rollupAdmin.address,
       rollupUser.address,
+      melConfig.address,
       upgradeExecutor.address,
       validatorWalletCreator.address,
       deployHelper.address,
