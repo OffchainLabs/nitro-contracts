@@ -168,7 +168,6 @@ contract AssertionPoolTest is Test {
             wasmModuleRoot: WASM_MODULE_ROOT,
             loserStakeEscrow: address(200001),
             genesisAssertionState: emptyState,
-            genesisInboxCount: 0,
             miniStakeValues: miniStakeValues,
             layerZeroBlockEdgeHeight: 2 ** 5,
             layerZeroBigStepEdgeHeight: 2 ** 5,

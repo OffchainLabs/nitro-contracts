@@ -334,7 +334,6 @@ async function _getDevRollupConfig(
     minimumAssertionPeriod: 1, // was 5
     validatorAfkBlocks: 201600,
     genesisAssertionState: genesisAssertionState,
-    genesisInboxCount: 0,
     miniStakeValues: [4, 2, 1],
     layerZeroBlockEdgeHeight: 2 ** 26,
     layerZeroBigStepEdgeHeight: 2 ** 19,
