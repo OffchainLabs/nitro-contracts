@@ -44,6 +44,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
 
         validatorWalletCreator = connectedContracts.validatorWalletCreator;
         challengeManager = connectedContracts.challengeManager;
+        melConfig = connectedContracts.melConfig;
 
         confirmPeriodBlocks = config.confirmPeriodBlocks;
         chainId = config.chainId;
@@ -110,6 +111,16 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
         }
 
         emit RollupInitialized(config.wasmModuleRoot, config.chainId);
+    }
+
+    function postUpgradeInit(
+        address _melConfig
+    ) external override onlyProxy {
+        require(address(melConfig) == address(0), "MELCONFIG_ALREADY_SET");
+        melConfig = IMelConfig(_melConfig);
+
+        // We verify that the bridge set in MelConfig matches the one in the Rollup
+        require(melConfig.bridge() == address(bridge), "MELCONFIG_BRIDGE_NOT_MATCH");
     }
 
     /**

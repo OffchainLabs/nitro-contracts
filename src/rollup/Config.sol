@@ -12,6 +12,7 @@ import "../bridge/IOutbox.sol";
 import "../bridge/IInboxBase.sol";
 import "./IRollupEventInbox.sol";
 import "./IRollupLogic.sol";
+import "./IMelConfig.sol";
 import "../challengeV2/IEdgeChallengeManager.sol";
 
 struct Config {
@@ -50,4 +51,5 @@ struct ContractDependencies {
     address rollupAdminLogic; // this cannot be IRollupAdmin because of circular dependencies
     IRollupUser rollupUserLogic;
     address validatorWalletCreator;
+    IMelConfig melConfig;
 }

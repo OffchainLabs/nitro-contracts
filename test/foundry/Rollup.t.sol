@@ -8,6 +8,7 @@ import "../../src/rollup/RollupProxy.sol";
 import "../../src/rollup/RollupCore.sol";
 import "../../src/rollup/RollupUserLogic.sol";
 import "../../src/rollup/RollupAdminLogic.sol";
+import "../../src/rollup/MelConfig.sol";
 import "../../src/rollup/RollupCreator.sol";
 
 import "../../src/osp/OneStepProver0.sol";
@@ -100,6 +101,7 @@ contract RollupTest is Test {
         address outbox,
         address rollupEventInbox,
         address challengeManager,
+        address melConfig,
         address adminProxy,
         address sequencerInbox,
         address bridge,
@@ -155,6 +157,7 @@ contract RollupTest is Test {
         BridgeCreator bridgeCreator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
         RollupAdminLogic rollupAdminLogicImpl = new RollupAdminLogic();
         RollupUserLogic rollupUserLogicImpl = new RollupUserLogic();
+        MelConfig melConfigLogic = new MelConfig();
         DeployHelper deployHelper = new DeployHelper();
         IUpgradeExecutor upgradeExecutorLogic = new UpgradeExecutorMock();
         RollupCreator rollupCreator = new RollupCreator(
@@ -164,6 +167,7 @@ contract RollupTest is Test {
             edgeChallengeManager,
             rollupAdminLogicImpl,
             rollupUserLogicImpl,
+            melConfigLogic,
             upgradeExecutorLogic,
             address(0),
             deployHelper
@@ -220,6 +224,7 @@ contract RollupTest is Test {
             address(0),
             address(0),
             address(0),
+            address(0),
             address(0)
         );
 
@@ -252,7 +257,7 @@ contract RollupTest is Test {
         assertFalse(userRollup.validatorWhitelistDisabled());
 
         // check upgrade executor owns proxyAdmin
-        address upgradeExecutorExpectedAddress = computeCreateAddress(address(rollupCreator), 4);
+        address upgradeExecutorExpectedAddress = computeCreateAddress(address(rollupCreator), 5);
         upgradeExecutorAddr = userRollup.owner();
         assertEq(upgradeExecutorAddr, upgradeExecutorExpectedAddress, "Invalid proxyAdmin's owner");
 
@@ -1963,5 +1968,50 @@ contract RollupTest is Test {
         adminRollup.decreaseBaseStake(
             BASE_STAKE - 1, uint64(data.newInboxCount), data.nextParentChainBlockHash
         );
+    }
+
+    uint256 constant MEL_CONFIG_SLOT = 125;
+
+    function _deployMelConfig(
+        address bridge
+    ) internal returns (MelConfig) {
+        MelConfig melConfig = new MelConfig();
+        melConfig.initialize(0, bridge);
+        return melConfig;
+    }
+
+    // Simulates a chain deployed before MEL, whose rollup has no bound MelConfig
+    function _clearMelConfig() internal {
+        vm.store(address(userRollup), bytes32(MEL_CONFIG_SLOT), bytes32(0));
+        assertEq(address(userRollup.melConfig()), address(0));
+    }
+
+    function testSuccessPostUpgradeInit() public {
+        _clearMelConfig();
+        MelConfig melConfig = _deployMelConfig(address(userRollup.bridge()));
+
+        RollupAdminLogic newAdminLogicImpl = new RollupAdminLogic();
+        vm.prank(upgradeExecutorAddr);
+        adminRollup.upgradeToAndCall(
+            address(newAdminLogicImpl),
+            abi.encodeCall(IRollupAdmin.postUpgradeInit, (address(melConfig)))
+        );
+
+        assertEq(address(userRollup.melConfig()), address(melConfig));
+        assertEq(
+            address(uint160(uint256(vm.load(address(userRollup), _IMPLEMENTATION_PRIMARY_SLOT)))),
+            address(newAdminLogicImpl)
+        );
+    }
+
+    function testRevertPostUpgradeInitBridgeMismatch() public {
+        _clearMelConfig();
+        MelConfig melConfig = _deployMelConfig(address(1234));
+
+        vm.prank(upgradeExecutorAddr);
+        vm.expectRevert("MELCONFIG_BRIDGE_NOT_MATCH");
+        adminRollup.postUpgradeInit(address(melConfig));
+
+        assertEq(address(userRollup.melConfig()), address(0));
     }
 }
