@@ -106,9 +106,13 @@ contract OneStepProofEntry is IOneStepProofEntry {
                 GlobalState memory globalState;
                 (globalState, offset) = Deserialize.globalState(proof, offset);
                 require(globalState.hash() == mach.globalStateHash, "BAD_GLOBAL_STATE");
+
+                // Machine is restarted if either it's starting a new run (status == YIELDED and step == 0) or it's finished (status coming from the previous assertion) and starting a new assertion (status == FINISHED, assertionStart == true, and step == 0)
                 if (
-                    mach.status == MachineStatus.FINISHED && machineStep == 0
-                        && globalState.getInboxPosition() < execCtx.maxInboxMessagesRead
+                    (mach.status == MachineStatus.YIELDED && machineStep == 0)
+                        || (mach.status == MachineStatus.FINISHED
+                            && execCtx.assertionStart
+                            && machineStep == 0)
                 ) {
                     // Kickstart the machine
                     return getStartMachineHash(mach.globalStateHash, execCtx.initialWasmModuleRoot);
@@ -181,6 +185,8 @@ contract OneStepProofEntry is IOneStepProofEntry {
                 || (opcode >= Instructions.VALIDATE_CERTIFICATE
                     && opcode <= Instructions.UNLINK_MODULE)
                 || (opcode >= Instructions.NEW_COTHREAD && opcode <= Instructions.SWITCH_COTHREAD)
+                || (opcode >= Instructions.GET_PARENT_CHAIN_INPUT
+                    && opcode <= Instructions.HALT_AND_SET_YIELDED)
         ) {
             prover = proverHostIo;
         } else {

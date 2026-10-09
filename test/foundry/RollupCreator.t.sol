@@ -120,7 +120,6 @@ contract RollupCreatorTest is Test {
             wasmModuleRoot: keccak256("wasm"),
             loserStakeEscrow: address(200),
             genesisAssertionState: emptyState,
-            genesisInboxCount: 0,
             miniStakeValues: miniStakeValues,
             layerZeroBlockEdgeHeight: 2 ** 5,
             layerZeroBigStepEdgeHeight: 2 ** 5,
@@ -547,7 +546,7 @@ contract RollupCreatorTest is Test {
             new OneStepProver0(),
             new OneStepProverMemory(),
             new OneStepProverMath(),
-            new OneStepProverHostIo(address(0))
+            new OneStepProverHostIo(address(0), address(0))
         );
         challengeManager = new EdgeChallengeManager();
 

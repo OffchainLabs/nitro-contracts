@@ -409,9 +409,10 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
         assertionChain.validateConfig(prevAssertionHash, prevConfig);
 
         ExecutionContext memory execCtx = ExecutionContext({
-            maxInboxMessagesRead: prevConfig.nextInboxPosition,
-            bridge: assertionChain.bridge(),
-            initialWasmModuleRoot: prevConfig.wasmModuleRoot
+            initialWasmModuleRoot: prevConfig.wasmModuleRoot,
+            targetParentChainBlockHash: prevConfig.nextParentChainBlockHash,
+            melConfig: address(assertionChain),
+            assertionStart: false
         });
 
         store.confirmEdgeByOneStepProof(

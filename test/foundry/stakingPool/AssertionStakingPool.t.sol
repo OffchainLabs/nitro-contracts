@@ -120,7 +120,7 @@ contract AssertionPoolTest is Test {
         OneStepProver0 oneStepProver = new OneStepProver0();
         OneStepProverMemory oneStepProverMemory = new OneStepProverMemory();
         OneStepProverMath oneStepProverMath = new OneStepProverMath();
-        OneStepProverHostIo oneStepProverHostIo = new OneStepProverHostIo(address(0));
+        OneStepProverHostIo oneStepProverHostIo = new OneStepProverHostIo(address(0), address(0));
         OneStepProofEntry oneStepProofEntry = new OneStepProofEntry(
             oneStepProver, oneStepProverMemory, oneStepProverMath, oneStepProverHostIo
         );
@@ -168,7 +168,6 @@ contract AssertionPoolTest is Test {
             wasmModuleRoot: WASM_MODULE_ROOT,
             loserStakeEscrow: address(200001),
             genesisAssertionState: emptyState,
-            genesisInboxCount: 0,
             miniStakeValues: miniStakeValues,
             layerZeroBlockEdgeHeight: 2 ** 5,
             layerZeroBigStepEdgeHeight: 2 ** 5,

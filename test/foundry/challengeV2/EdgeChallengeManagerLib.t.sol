@@ -1461,7 +1461,10 @@ contract EdgeChallengeManagerLibTest is Test {
             beforeHash: states1[startHeight], proof: abi.encodePacked(states1[startHeight + 1])
         });
         ExecutionContext memory e = ExecutionContext({
-            maxInboxMessagesRead: 0, bridge: IBridge(address(0)), initialWasmModuleRoot: bytes32(0)
+            initialWasmModuleRoot: bytes32(0),
+            targetParentChainBlockHash: bytes32(0),
+            melConfig: address(0),
+            assertionStart: false
         });
         data.beforeProof = ProofUtils.generateInclusionProof(
             ProofUtils.rehashed(ArrayUtilsLib.slice(states1, 0, startHeight + 1)), startHeight
