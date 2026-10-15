@@ -258,7 +258,7 @@ contract AssertionPoolTest is Test {
                     challengeManager: address(challengeManager),
                     confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                     nextInboxPosition: afterState.globalState.u64Vals[0],
-                    nextParentChainBlockHash: firstAssertionParentChainBlockHash
+                    targetParentChainBlockHash: firstAssertionParentChainBlockHash
                 })
             }),
             beforeState: beforeState,
@@ -374,7 +374,7 @@ contract AssertionPoolTest is Test {
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                 nextInboxPosition: firstState.globalState.u64Vals[0],
-                nextParentChainBlockHash: firstAssertionParentChainBlockHash
+                targetParentChainBlockHash: firstAssertionParentChainBlockHash
             }),
             inboxAccs
         );
