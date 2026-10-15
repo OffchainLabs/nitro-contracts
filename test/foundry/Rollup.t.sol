@@ -49,7 +49,7 @@ contract RollupTest is Test {
     uint256 constant MAX_DATA_SIZE = 117964;
     uint64 constant CHALLENGE_GRACE_PERIOD_BLOCKS = 10;
 
-    bytes32 constant GENESIS_NEXT_PARENT_CHAIN_BLOCKHASH = bytes32(0);
+    bytes32 constant GENESIS_TARGET_PARENT_CHAIN_BLOCKHASH = bytes32(0);
     bytes32 constant FIRST_ASSERTION_BLOCKHASH = keccak256("FIRST_ASSERTION_BLOCKHASH");
     bytes32 constant FIRST_ASSERTION_SENDROOT = keccak256("FIRST_ASSERTION_SENDROOT");
 
@@ -303,7 +303,7 @@ contract RollupTest is Test {
         // Create a new batch
         // (in a regular chain, a batch will be posted before creating the postGenesis assertion)
         uint64 inboxCount = uint64(_createNewBatch());
-        vm.roll(block.number + 2); // Advance two blocks since the batch must be older than the nextParentChainBlockHash
+        vm.roll(block.number + 2); // Advance two blocks since the batch must be older than the targetParentChainBlockHash
 
         // Create the first assertion (consumes no batches)
         genesisConfigData = ConfigData({
@@ -312,7 +312,7 @@ contract RollupTest is Test {
             challengeManager: address(challengeManager),
             confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
             nextInboxPosition: 1, // Initialization batch is posted before creating the genesis assertion
-            nextParentChainBlockHash: GENESIS_NEXT_PARENT_CHAIN_BLOCKHASH
+            targetParentChainBlockHash: GENESIS_TARGET_PARENT_CHAIN_BLOCKHASH
         });
         (bytes32 expectedAssertionHash, bytes32 parentAssertionHash) = _createAssertion(
             BeforeStateData({
@@ -333,7 +333,7 @@ contract RollupTest is Test {
             challengeManager: address(challengeManager),
             confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
             nextInboxPosition: inboxCount,
-            nextParentChainBlockHash: blockhash(block.number - 1)
+            targetParentChainBlockHash: blockhash(block.number - 1)
         });
 
         // Confirm it so new assertions can be created on top of it
@@ -521,7 +521,7 @@ contract RollupTest is Test {
 
     // Assumed it's called after the genesis and post-genesis assertions have been created.
     //
-    // Returns (expectedAssertionHash, afterState, inboxcount, nextParentChainBlockHash, parentAssertionHash)
+    // Returns (expectedAssertionHash, afterState, inboxcount, targetParentChainBlockHash, parentAssertionHash)
     function testSuccessCreateAssertion()
         public
         returns (bytes32, AssertionState memory, uint64, bytes32, bytes32)
@@ -542,29 +542,29 @@ contract RollupTest is Test {
 
         assertEq(parentAssertionHash, postGenesisAssertionHash);
 
-        bytes32 nextParentChainBlockHash = blockhash(block.number - 1);
+        bytes32 targetParentChainBlockHash = blockhash(block.number - 1);
 
         return (
             assertionHash,
             firstAssertionState,
             inboxcount,
-            nextParentChainBlockHash,
+            targetParentChainBlockHash,
             postGenesisAssertionHash
         );
     }
 
-    function testValidateConfigZeroNextParentChainBlockHash() public view {
+    function testValidateConfigZeroTargetParentChainBlockHash() public view {
         userRollup.validateConfig(genesisAssertionHash, genesisConfigData);
     }
 
-    function testRevertValidateConfigNonZeroNextParentChainBlockHash() public {
+    function testRevertValidateConfigNonZeroTargetParentChainBlockHash() public {
         ConfigData memory modifiedGenesisConfigData = genesisConfigData;
-        modifiedGenesisConfigData.nextParentChainBlockHash = keccak256("NON_ZERO");
+        modifiedGenesisConfigData.targetParentChainBlockHash = keccak256("NON_ZERO");
         vm.expectRevert("CONFIG_HASH_MISMATCH");
         userRollup.validateConfig(genesisAssertionHash, modifiedGenesisConfigData);
     }
 
-    function testAssertionCreatedEmitsNextParentChainBlockHash() public {
+    function testAssertionCreatedEmitsTargetParentChainBlockHash() public {
         bytes32 inboxAcc =
             userRollup.bridge().sequencerInboxAccs(firstAssertionState.globalState.u64Vals[0] - 1);
 
@@ -758,7 +758,7 @@ contract RollupTest is Test {
             bytes32 assertionHash,
             AssertionState memory assertionState,
             uint64 inboxcount,
-            bytes32 nextParentChainBlockHash,
+            bytes32 targetParentChainBlockHash,
             bytes32 parentAssertionHash
         ) = testSuccessCreateAssertion();
 
@@ -793,7 +793,7 @@ contract RollupTest is Test {
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                         nextInboxPosition: afterState.globalState.u64Vals[0],
-                        nextParentChainBlockHash: nextParentChainBlockHash
+                        targetParentChainBlockHash: targetParentChainBlockHash
                     })
                 }),
                 beforeState: assertionState,
@@ -905,7 +905,7 @@ contract RollupTest is Test {
 
         assertEq(userRollup.getAssertion(postGenesisAssertionHash).secondChildBlock, block.number);
 
-        bytes32 nextParentChainBlockHash = blockhash(block.number - 1);
+        bytes32 targetParentChainBlockHash = blockhash(block.number - 1);
 
         return (
             beforeState,
@@ -915,7 +915,7 @@ contract RollupTest is Test {
             newInboxCount,
             expectedAssertionHash,
             expectedAssertionHash2,
-            nextParentChainBlockHash
+            targetParentChainBlockHash
         );
     }
 
@@ -931,7 +931,7 @@ contract RollupTest is Test {
             data.newInboxCount,
             data.assertionHash,
             data.assertionHash2,
-            data.nextParentChainBlockHash
+            data.targetParentChainBlockHash
         ) = testSuccessCreateSecondChild();
         AssertionState memory afterState3 = data.afterState2;
         afterState3.endHistoryRoot = keccak256(abi.encode(afterState3.endHistoryRoot));
@@ -991,7 +991,7 @@ contract RollupTest is Test {
             bytes32 assertionHash,
             AssertionState memory assertionState,
             uint64 inboxcount,
-            bytes32 nextParentChainBlockHash,
+            bytes32 targetParentChainBlockHash,
             bytes32 parentAssertionHash
         ) = testSuccessCreateAssertion();
         bytes32 inboxAcc =
@@ -1009,7 +1009,7 @@ contract RollupTest is Test {
             postGenesisConfigData,
             inboxAcc
         );
-        return (assertionHash, assertionState, inboxcount, nextParentChainBlockHash);
+        return (assertionHash, assertionState, inboxcount, targetParentChainBlockHash);
     }
 
     function testSuccessRemoveWhitelistAfterValidatorAfk() public {
@@ -1080,7 +1080,7 @@ contract RollupTest is Test {
         bytes32 e1Id;
         bytes32 assertionHash;
         bytes32 assertionHash2;
-        bytes32 nextParentChainBlockHash;
+        bytes32 targetParentChainBlockHash;
     }
 
     function testSuccessCreateChallenge() public returns (SuccessCreateChallengeData memory data) {
@@ -1092,7 +1092,7 @@ contract RollupTest is Test {
             data.newInboxCount,
             data.assertionHash,
             data.assertionHash2,
-            data.nextParentChainBlockHash
+            data.targetParentChainBlockHash
         ) = testSuccessCreateSecondChild();
 
         bytes32 root = MerkleTreeAccumulatorLib.root(
@@ -1356,7 +1356,7 @@ contract RollupTest is Test {
             bytes32 prevAssertionHash,
             AssertionState memory beforeState,
             uint64 inboxCount,
-            bytes32 nextParentChainBlockHash,
+            bytes32 targetParentChainBlockHash,
             bytes32 prevParentAssertionHash
         ) = testSuccessCreateAssertion();
 
@@ -1388,7 +1388,7 @@ contract RollupTest is Test {
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                         nextInboxPosition: afterState.globalState.u64Vals[0],
-                        nextParentChainBlockHash: nextParentChainBlockHash
+                        targetParentChainBlockHash: targetParentChainBlockHash
                     })
                 }),
                 beforeState: beforeState,
@@ -1404,7 +1404,7 @@ contract RollupTest is Test {
             bytes32 prevAssertionHash,
             AssertionState memory beforeState,
             uint64 inboxCount,
-            bytes32 nextParentChainBlockHash
+            bytes32 targetParentChainBlockHash
         ) = testSuccessConfirmUnchallengedAssertions();
 
         vm.prank(validator1);
@@ -1439,7 +1439,7 @@ contract RollupTest is Test {
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                         nextInboxPosition: inboxCount,
-                        nextParentChainBlockHash: nextParentChainBlockHash
+                        targetParentChainBlockHash: targetParentChainBlockHash
                     })
                 }),
                 beforeState: beforeState,
@@ -1746,7 +1746,7 @@ contract RollupTest is Test {
         address _challengeManager = rand.addr();
         uint64 _confirmPeriodBlocks = uint64(uint256(rand.hash()));
         uint64 _nextInboxPosition = uint64(uint256(rand.hash()));
-        bytes32 _nextParentChainBlockHash = rand.hash();
+        bytes32 _targetParentChainBlockHash = rand.hash();
 
         assertEq(
             RollupLib.configHash(
@@ -1775,7 +1775,7 @@ contract RollupTest is Test {
                 _challengeManager,
                 _confirmPeriodBlocks,
                 _nextInboxPosition,
-                _nextParentChainBlockHash
+                _targetParentChainBlockHash
             ),
             keccak256(
                 abi.encodePacked(
@@ -1784,7 +1784,7 @@ contract RollupTest is Test {
                     _challengeManager,
                     _confirmPeriodBlocks,
                     _nextInboxPosition,
-                    _nextParentChainBlockHash
+                    _targetParentChainBlockHash
                 )
             ),
             "Unexpected hash with non-zero targetParentChainBlockHash"
@@ -1818,7 +1818,7 @@ contract RollupTest is Test {
         adminRollup.decreaseBaseStake(
             BASE_STAKE - 1,
             postGenesisConfigData.nextInboxPosition,
-            postGenesisConfigData.nextParentChainBlockHash
+            postGenesisConfigData.targetParentChainBlockHash
         );
 
         vm.expectRevert("BASE_STAKE_NOT_DECREASED");
@@ -1826,7 +1826,7 @@ contract RollupTest is Test {
         adminRollup.decreaseBaseStake(
             BASE_STAKE + 1,
             postGenesisConfigData.nextInboxPosition,
-            postGenesisConfigData.nextParentChainBlockHash
+            postGenesisConfigData.targetParentChainBlockHash
         );
 
         vm.expectRevert("BASE_STAKE_NOT_DECREASED");
@@ -1834,7 +1834,7 @@ contract RollupTest is Test {
         adminRollup.decreaseBaseStake(
             BASE_STAKE,
             postGenesisConfigData.nextInboxPosition,
-            postGenesisConfigData.nextParentChainBlockHash
+            postGenesisConfigData.targetParentChainBlockHash
         );
 
         vm.startPrank(upgradeExecutorAddr);
@@ -1843,7 +1843,7 @@ contract RollupTest is Test {
         adminRollup.decreaseBaseStake(
             BASE_STAKE - 1,
             postGenesisConfigData.nextInboxPosition,
-            postGenesisConfigData.nextParentChainBlockHash
+            postGenesisConfigData.targetParentChainBlockHash
         );
         adminRollup.setValidatorWhitelistDisabled(false);
         vm.stopPrank();
@@ -1853,14 +1853,14 @@ contract RollupTest is Test {
         adminRollup.decreaseBaseStake(
             BASE_STAKE - 1,
             postGenesisConfigData.nextInboxPosition,
-            postGenesisConfigData.nextParentChainBlockHash
+            postGenesisConfigData.targetParentChainBlockHash
         );
 
         (
             bytes32 assertionHash,
             AssertionState memory assertionState,
             uint64 nextInboxPosition,
-            bytes32 nextParentChainBlockHash,
+            bytes32 targetParentChainBlockHash,
             bytes32 parentAssertionHash
         ) = testSuccessCreateAssertion();
         vm.prank(upgradeExecutorAddr);
@@ -1868,11 +1868,11 @@ contract RollupTest is Test {
         adminRollup.decreaseBaseStake(
             BASE_STAKE - 1,
             postGenesisConfigData.nextInboxPosition,
-            postGenesisConfigData.nextParentChainBlockHash
+            postGenesisConfigData.targetParentChainBlockHash
         );
 
         vm.prank(upgradeExecutorAddr);
-        adminRollup.decreaseBaseStake(BASE_STAKE - 1, nextInboxPosition, nextParentChainBlockHash);
+        adminRollup.decreaseBaseStake(BASE_STAKE - 1, nextInboxPosition, targetParentChainBlockHash);
 
         _createNewBatch();
         AssertionState memory afterState;
@@ -1906,7 +1906,7 @@ contract RollupTest is Test {
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                         nextInboxPosition: nextInboxPosition,
-                        nextParentChainBlockHash: nextParentChainBlockHash
+                        targetParentChainBlockHash: targetParentChainBlockHash
                     })
                 }),
                 beforeState: assertionState,
@@ -1962,7 +1962,7 @@ contract RollupTest is Test {
         vm.expectRevert("TOO_MANY_PENDING_STAKERS");
         vm.prank(upgradeExecutorAddr);
         adminRollup.decreaseBaseStake(
-            BASE_STAKE - 1, uint64(data.newInboxCount), data.nextParentChainBlockHash
+            BASE_STAKE - 1, uint64(data.newInboxCount), data.targetParentChainBlockHash
         );
     }
 }
