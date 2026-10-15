@@ -840,7 +840,6 @@ describe('Orbit Chain', () => {
       minimumAssertionPeriod: 75,
       validatorAfkBlocks: 201600,
       genesisAssertionState: genesisAssertionState, // AssertionState
-      genesisInboxCount: 0,
       miniStakeValues: [
         ethers.utils.parseEther('1'),
         ethers.utils.parseEther('1'),

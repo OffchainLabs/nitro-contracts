@@ -797,6 +797,8 @@ library EdgeChallengeManagerLib {
                 // the step size at each level is the product of the heights at all succeeding levels
                 stepSize *= bigStepHeight;
             }
+
+            execCtx.assertionStart = isAssertionStart(store, cursor);
         }
 
         // the state in the onestep data must be committed to by the startHistoryRoot
@@ -827,5 +829,13 @@ library EdgeChallengeManagerLib {
         setConfirmedRival(store, edgeId);
 
         store.edges[edgeId].totalTimeUnrivaledCache = type(uint64).max;
+    }
+
+    function isAssertionStart(
+        EdgeStore storage store,
+        bytes32 levelOneEdgeId
+    ) internal view returns (bool) {
+        bytes32 blockEdgeId = store.firstRivals[store.edges[levelOneEdgeId].originId];
+        return store.edges[blockEdgeId].startHeight == 0;
     }
 }
