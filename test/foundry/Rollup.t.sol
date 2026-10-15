@@ -93,7 +93,7 @@ contract RollupTest is Test {
         AssertionInputs assertion,
         bytes32 afterInboxBatchAcc,
         uint256 inboxMaxCount,
-        bytes32 nextParentChainBlockHash,
+        bytes32 targetParentChainBlockHash,
         bytes32 wasmModuleRoot,
         uint256 requiredStake,
         address challengeManager,
@@ -337,7 +337,7 @@ contract RollupTest is Test {
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                 nextInboxPosition: firstState.globalState.u64Vals[0],
-                nextParentChainBlockHash: bytes32(0)
+                targetParentChainBlockHash: bytes32(0)
             }),
             inboxAccs
         );
@@ -399,7 +399,7 @@ contract RollupTest is Test {
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                         nextInboxPosition: afterState.globalState.u64Vals[0],
-                        nextParentChainBlockHash: bytes32(0)
+                        targetParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState,
@@ -412,7 +412,7 @@ contract RollupTest is Test {
         return (expectedAssertionHash, afterState, inboxcount);
     }
 
-    function testValidateConfigZeroNextParentChainBlockHash() public view {
+    function testValidateConfigZeroTargetParentChainBlockHash() public view {
         userRollup.validateConfig(
             genesisHash,
             ConfigData({
@@ -421,12 +421,12 @@ contract RollupTest is Test {
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                 nextInboxPosition: 1,
-                nextParentChainBlockHash: bytes32(0)
+                targetParentChainBlockHash: bytes32(0)
             })
         );
     }
 
-    function testRevertValidateConfigNonZeroNextParentChainBlockHash() public {
+    function testRevertValidateConfigNonZeroTargetParentChainBlockHash() public {
         vm.expectRevert("CONFIG_HASH_MISMATCH");
         userRollup.validateConfig(
             genesisHash,
@@ -436,12 +436,12 @@ contract RollupTest is Test {
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                 nextInboxPosition: 1,
-                nextParentChainBlockHash: keccak256("NON_ZERO")
+                targetParentChainBlockHash: keccak256("NON_ZERO")
             })
         );
     }
 
-    function testAssertionCreatedEmitsZeroNextParentChainBlockHash() public {
+    function testAssertionCreatedEmitsZeroTargetParentChainBlockHash() public {
         _createNewBatch();
         AssertionState memory beforeState;
         beforeState.machineStatus = MachineStatus.FINISHED;
@@ -460,7 +460,7 @@ contract RollupTest is Test {
                     challengeManager: address(challengeManager),
                     confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                     nextInboxPosition: 1,
-                    nextParentChainBlockHash: bytes32(0)
+                    targetParentChainBlockHash: bytes32(0)
                 })
             }),
             beforeState: beforeState,
@@ -533,7 +533,7 @@ contract RollupTest is Test {
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                         nextInboxPosition: afterState.globalState.u64Vals[0],
-                        nextParentChainBlockHash: bytes32(0)
+                        targetParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState,
@@ -612,7 +612,7 @@ contract RollupTest is Test {
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                         nextInboxPosition: afterState.globalState.u64Vals[0],
-                        nextParentChainBlockHash: bytes32(0)
+                        targetParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState,
@@ -662,7 +662,7 @@ contract RollupTest is Test {
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                         nextInboxPosition: afterState.globalState.u64Vals[0],
-                        nextParentChainBlockHash: bytes32(0)
+                        targetParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState,
@@ -698,7 +698,7 @@ contract RollupTest is Test {
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                         nextInboxPosition: afterState.globalState.u64Vals[0],
-                        nextParentChainBlockHash: bytes32(0)
+                        targetParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState,
@@ -722,7 +722,7 @@ contract RollupTest is Test {
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                         nextInboxPosition: afterState.globalState.u64Vals[0],
-                        nextParentChainBlockHash: bytes32(0)
+                        targetParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState,
@@ -763,7 +763,7 @@ contract RollupTest is Test {
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                         nextInboxPosition: afterState.globalState.u64Vals[0],
-                        nextParentChainBlockHash: bytes32(0)
+                        targetParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState,
@@ -800,7 +800,7 @@ contract RollupTest is Test {
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                         nextInboxPosition: afterState2.globalState.u64Vals[0],
-                        nextParentChainBlockHash: bytes32(0)
+                        targetParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: afterState,
@@ -866,7 +866,7 @@ contract RollupTest is Test {
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                         nextInboxPosition: afterState.globalState.u64Vals[0],
-                        nextParentChainBlockHash: bytes32(0)
+                        targetParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState,
@@ -914,7 +914,7 @@ contract RollupTest is Test {
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                         nextInboxPosition: afterState2.globalState.u64Vals[0],
-                        nextParentChainBlockHash: bytes32(0)
+                        targetParentChainBlockHash: bytes32(0)
                     })
                 }),
                 afterState: afterState2
@@ -971,7 +971,7 @@ contract RollupTest is Test {
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                         nextInboxPosition: afterState3.globalState.u64Vals[0],
-                        nextParentChainBlockHash: bytes32(0)
+                        targetParentChainBlockHash: bytes32(0)
                     })
                 }),
                 afterState: afterState3
@@ -998,7 +998,7 @@ contract RollupTest is Test {
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                 nextInboxPosition: firstState.globalState.u64Vals[0],
-                nextParentChainBlockHash: bytes32(0)
+                targetParentChainBlockHash: bytes32(0)
             }),
             inboxAccs
         );
@@ -1024,7 +1024,7 @@ contract RollupTest is Test {
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                 nextInboxPosition: firstState.globalState.u64Vals[0],
-                nextParentChainBlockHash: bytes32(0)
+                targetParentChainBlockHash: bytes32(0)
             }),
             inboxAccs
         );
@@ -1086,7 +1086,7 @@ contract RollupTest is Test {
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                 nextInboxPosition: firstState.globalState.u64Vals[0],
-                nextParentChainBlockHash: bytes32(0)
+                targetParentChainBlockHash: bytes32(0)
             }),
             inboxAccs
         );
@@ -1225,7 +1225,7 @@ contract RollupTest is Test {
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                 nextInboxPosition: firstState.globalState.u64Vals[0],
-                nextParentChainBlockHash: bytes32(0)
+                targetParentChainBlockHash: bytes32(0)
             }),
             inboxAcc
         );
@@ -1259,7 +1259,7 @@ contract RollupTest is Test {
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                 nextInboxPosition: firstState.globalState.u64Vals[0],
-                nextParentChainBlockHash: bytes32(0)
+                targetParentChainBlockHash: bytes32(0)
             }),
             inboxAcc
         );
@@ -1399,7 +1399,7 @@ contract RollupTest is Test {
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                         nextInboxPosition: afterState.globalState.u64Vals[0],
-                        nextParentChainBlockHash: bytes32(0)
+                        targetParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState,
@@ -1440,7 +1440,7 @@ contract RollupTest is Test {
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                         nextInboxPosition: afterState.globalState.u64Vals[0],
-                        nextParentChainBlockHash: bytes32(0)
+                        targetParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState,
@@ -1518,7 +1518,7 @@ contract RollupTest is Test {
                     challengeManager: address(challengeManager),
                     confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                     nextInboxPosition: afterState.globalState.u64Vals[0],
-                    nextParentChainBlockHash: bytes32(0)
+                    targetParentChainBlockHash: bytes32(0)
                 })
             }),
             beforeState: beforeState,
@@ -1737,7 +1737,7 @@ contract RollupTest is Test {
         address challengeManager = rand.addr();
         uint64 confirmPeriodBlocks = uint64(uint256(rand.hash()));
         uint64 nextInboxPosition = uint64(uint256(rand.hash()));
-        bytes32 nextParentChainBlockHash = rand.hash();
+        bytes32 targetParentChainBlockHash = rand.hash();
 
         assertEq(
             RollupLib.configHash(
@@ -1757,7 +1757,7 @@ contract RollupTest is Test {
                     nextInboxPosition
                 )
             ),
-            "Unexpected hash with zero nextParentChainBlockHash"
+            "Unexpected hash with zero targetParentChainBlockHash"
         );
         assertEq(
             RollupLib.configHash(
@@ -1766,7 +1766,7 @@ contract RollupTest is Test {
                 challengeManager,
                 confirmPeriodBlocks,
                 nextInboxPosition,
-                nextParentChainBlockHash
+                targetParentChainBlockHash
             ),
             keccak256(
                 abi.encodePacked(
@@ -1775,10 +1775,10 @@ contract RollupTest is Test {
                     challengeManager,
                     confirmPeriodBlocks,
                     nextInboxPosition,
-                    nextParentChainBlockHash
+                    targetParentChainBlockHash
                 )
             ),
-            "Unexpected hash with non-zero nextParentChainBlockHash"
+            "Unexpected hash with non-zero targetParentChainBlockHash"
         );
     }
 
@@ -1882,7 +1882,7 @@ contract RollupTest is Test {
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                         nextInboxPosition: 2,
-                        nextParentChainBlockHash: bytes32(0)
+                        targetParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState,
@@ -1927,7 +1927,7 @@ contract RollupTest is Test {
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
                         nextInboxPosition: 1,
-                        nextParentChainBlockHash: bytes32(0)
+                        targetParentChainBlockHash: bytes32(0)
                     })
                 }),
                 beforeState: beforeState3,

@@ -553,7 +553,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         );
 
         // MEL anchor for next assertion, zero and excluded from configHash until MEL is enabled
-        bytes32 nextParentChainBlockHash = bytes32(0);
+        bytes32 targetParentChainBlockHash = bytes32(0);
 
         // state updates
         AssertionNode memory newAssertion = AssertionNodeLib.createAssertion(
@@ -564,7 +564,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: confirmPeriodBlocks,
                 nextInboxPosition: uint64(nextInboxPosition),
-                nextParentChainBlockHash: nextParentChainBlockHash
+                targetParentChainBlockHash: targetParentChainBlockHash
             })
         );
 
@@ -579,7 +579,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
             assertion,
             sequencerBatchAcc,
             nextInboxPosition,
-            nextParentChainBlockHash,
+            targetParentChainBlockHash,
             wasmModuleRoot,
             baseStake,
             address(challengeManager),
