@@ -113,7 +113,7 @@ contract RollupTest is Test {
         AssertionInputs assertion,
         bytes32 afterInboxBatchAcc,
         uint256 inboxMaxCount,
-        bytes32 nextParentChainBlockHash,
+        bytes32 targetParentChainBlockHash,
         bytes32 wasmModuleRoot,
         uint256 requiredStake,
         address challengeManager,
@@ -1766,7 +1766,7 @@ contract RollupTest is Test {
                     _nextInboxPosition
                 )
             ),
-            "Unexpected hash with zero nextParentChainBlockHash"
+            "Unexpected hash with zero targetParentChainBlockHash"
         );
         assertEq(
             RollupLib.configHash(
@@ -1787,7 +1787,7 @@ contract RollupTest is Test {
                     _nextParentChainBlockHash
                 )
             ),
-            "Unexpected hash with non-zero nextParentChainBlockHash"
+            "Unexpected hash with non-zero targetParentChainBlockHash"
         );
     }
 

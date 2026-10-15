@@ -80,7 +80,7 @@ contract MockAssertionChain is IAssertionChain {
                 challengeManager: configData.challengeManager,
                 confirmPeriodBlocks: configData.confirmPeriodBlocks,
                 nextInboxPosition: configData.nextInboxPosition,
-                nextParentChainBlockHash: configData.nextParentChainBlockHash
+                targetParentChainBlockHash: configData.targetParentChainBlockHash
             }) == assertions[assertionHash].configHash,
             "BAD_CONFIG"
         );
@@ -125,7 +125,7 @@ contract MockAssertionChain is IAssertionChain {
         bytes32 predecessorId,
         uint256 height,
         uint64 nextInboxPosition,
-        bytes32 nextParentChainBlockHash,
+        bytes32 targetParentChainBlockHash,
         AssertionState memory afterState,
         bytes32 successionChallenge
     ) public returns (bytes32) {
@@ -145,7 +145,7 @@ contract MockAssertionChain is IAssertionChain {
                 challengeManager: challengeManager,
                 confirmPeriodBlocks: confirmPeriodBlocks,
                 nextInboxPosition: nextInboxPosition,
-                nextParentChainBlockHash: nextParentChainBlockHash
+                targetParentChainBlockHash: targetParentChainBlockHash
             })
         });
         childCreated(predecessorId);
@@ -156,7 +156,7 @@ contract MockAssertionChain is IAssertionChain {
         bytes32 predecessorId,
         uint256 height,
         uint64 nextInboxPosition,
-        bytes32 nextParentChainBlockHash,
+        bytes32 targetParentChainBlockHash,
         AssertionState memory beforeState,
         AssertionState memory afterState,
         bytes32 successionChallenge
@@ -175,7 +175,7 @@ contract MockAssertionChain is IAssertionChain {
             predecessorId,
             height,
             nextInboxPosition,
-            nextParentChainBlockHash,
+            targetParentChainBlockHash,
             afterState,
             successionChallenge
         );

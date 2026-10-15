@@ -2137,7 +2137,7 @@ contract EdgeChallengeManagerTest is Test {
                     challengeManager: address(0),
                     confirmPeriodBlocks: 0,
                     nextInboxPosition: inboxMsgCountGenesis,
-                    nextParentChainBlockHash: firstParentChainBlockHash
+                    targetParentChainBlockHash: firstParentChainBlockHash
                 }),
                 ProofUtils.generateInclusionProof(ProofUtils.rehashed(genesisStates()), 0),
                 ProofUtils.generateInclusionProof(ProofUtils.rehashed(firstStates), 1)

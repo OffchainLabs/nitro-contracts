@@ -553,7 +553,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         );
 
         // Anchor for next assertion
-        bytes32 nextParentChainBlockHash = getNextParentChainBlockHash();
+        bytes32 targetParentChainBlockHash = getNextParentChainBlockHash();
 
         // state updates
         AssertionNode memory newAssertion = AssertionNodeLib.createAssertion(
@@ -564,7 +564,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: confirmPeriodBlocks,
                 nextInboxPosition: uint64(nextInboxPosition),
-                nextParentChainBlockHash: nextParentChainBlockHash
+                targetParentChainBlockHash: targetParentChainBlockHash
             })
         );
 
@@ -579,7 +579,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
             assertion,
             sequencerBatchAcc,
             nextInboxPosition,
-            nextParentChainBlockHash,
+            targetParentChainBlockHash,
             wasmModuleRoot,
             baseStake,
             address(challengeManager),
