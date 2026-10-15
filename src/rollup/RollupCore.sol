@@ -462,7 +462,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         AssertionNode storage prevAssertion = getAssertionStorage(prevAssertionHash);
 
         // `nextInboxPosition` will be set to the current inbox position in the Bridge contract. However, the next
-        // assertion will process the messages up to the batch posted in the previous block (prev.nextParentChainBlockHash).
+        // assertion will process the messages up to the batch posted in the previous block (prev.targetParentChainBlockHash).
         // This means that the next assertion might not reach `nextInboxPosition`, but it must never go past it.
         uint256 nextInboxPosition;
         bytes32 sequencerBatchAcc;
@@ -472,13 +472,13 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
             GlobalState calldata beforeGS = assertion.beforeState.globalState;
 
             // there are 3 kinds of assertions that can be made. Assertions must be made when they fill the maximum number
-            // of blocks, or when they extract and process all messages up to prev.nextParentChainBlockHash. When they fill the max
+            // of blocks, or when they extract and process all messages up to prev.targetParentChainBlockHash. When they fill the max
             // blocks, but dont manage to process all messages, we call this an "overflow" assertion.
             // 1. ERRORED assertion
             //    The machine finished in an ERRORED state. This can happen with processing any
             //    messages, or moving the position in the message.
             // 2. FINISHED assertion
-            //    The machine finished as normal, and fully processed all the messages extracted up to prev.nextParentChainBlockHash
+            //    The machine finished as normal, and fully processed all the messages extracted up to prev.targetParentChainBlockHash
             // 3. YIELDED assertion, which overflows
             //    The machine finished as normal, but didn't process all extracted messages
 
@@ -553,7 +553,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         );
 
         // Anchor for next assertion
-        bytes32 nextParentChainBlockHash = getNextParentChainBlockHash();
+        bytes32 targetParentChainBlockHash = getTargetParentChainBlockHash();
 
         // state updates
         AssertionNode memory newAssertion = AssertionNodeLib.createAssertion(
@@ -564,7 +564,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: confirmPeriodBlocks,
                 nextInboxPosition: uint64(nextInboxPosition),
-                nextParentChainBlockHash: nextParentChainBlockHash
+                targetParentChainBlockHash: targetParentChainBlockHash
             })
         );
 
@@ -579,7 +579,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
             assertion,
             sequencerBatchAcc,
             nextInboxPosition,
-            nextParentChainBlockHash,
+            targetParentChainBlockHash,
             wasmModuleRoot,
             baseStake,
             address(challengeManager),
@@ -683,7 +683,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
      *      On an Arbitrum host chain blockhash() returns a pseudo-random value rather than the
      *      host chain's block hash, so the hash is taken from ArbSys instead.
      */
-    function getNextParentChainBlockHash() internal view returns (bytes32) {
+    function getTargetParentChainBlockHash() internal view returns (bytes32) {
         if (_hostChainIsArbitrum) {
             ArbSys arbSys = ArbSys(address(100));
             return arbSys.arbBlockHash(arbSys.arbBlockNumber() - 1);
