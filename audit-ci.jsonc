@@ -35,8 +35,18 @@
     // ws DoS and memory disclosure; reached only by ethers WebSocketProvider, never constructed here
     "GHSA-96hv-2xvq-fx4p",
     "GHSA-58qx-3vcg-4xpx",
-    // adm-zip 4GB allocation; only unpacks checksum-verified solc downloads
+    // adm-zip; hardhat unzips only checksum-verified solc downloads, on Windows. Fix needs Hardhat 3
     "GHSA-xcpc-8h2w-3j85",
+    "GHSA-7q85-xj36-vmfc",
+    "GHSA-rcw4-f5rp-g42v",
+    "GHSA-j5f4-cc29-5x44",
+    "GHSA-p634-w6r4-rjp2",
+    "GHSA-c6fg-446q-cg94",
+    "GHSA-8238-w5pm-2374",
+    // braces nested-brace DoS, no fix released; patterns are this repo's own globs
+    "GHSA-vfj7-8cjw-p6xm",
+    // sprintf-js unbounded precision DoS, no fix released; reached only by js-yaml's CLI, never run
+    "GHSA-hp3w-g68c-fv3c",
     // tmp path traversal; hardhat>solc and patch-package both pass fixed prefixes
     "GHSA-ph9p-34f9-6g65",
     // bn.js infinite loop; coverage only, over values from this repo's own contracts
