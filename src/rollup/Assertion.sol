@@ -57,9 +57,33 @@ struct ConfigData {
     uint256 requiredStake;
     address challengeManager;
     uint64 confirmPeriodBlocks;
-    uint64 nextInboxPosition;
     // MEL anchor for next assertion, zero and excluded from configHash until MEL is enabled
     bytes32 targetParentChainBlockHash;
+}
+
+// Legacy configuration data structure for pre-MEL assertions
+struct LegacyConfigData {
+    bytes32 wasmModuleRoot;
+    uint256 requiredStake;
+    address challengeManager;
+    uint64 confirmPeriodBlocks;
+    uint64 nextInboxPosition;
+}
+
+struct LegacyBeforeStateData {
+    // The assertion hash of the prev of the beforeState(prev)
+    bytes32 prevPrevAssertionHash;
+    // The sequencer inbox accumulator asserted by the beforeState(prev)
+    bytes32 sequencerBatchAcc;
+    // below are the components of config hash
+    LegacyConfigData configData;
+}
+
+struct LegacyAssertionInputs {
+    // Additional data used to validate the before state
+    LegacyBeforeStateData beforeStateData;
+    AssertionState beforeState;
+    AssertionState afterState;
 }
 
 /**

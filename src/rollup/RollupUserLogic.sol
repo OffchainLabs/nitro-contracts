@@ -67,19 +67,16 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         validatorWhitelistDisabled = true;
     }
 
-    /**
-     * @notice Confirm a unresolved assertion
-     * @param confirmState The state to confirm
-     * @param winningEdgeId The winning edge if a challenge is started
-     */
-    function confirmAssertion(
+    function _confirmAssertionImpl(
         bytes32 assertionHash,
         bytes32 prevAssertionHash,
         AssertionState calldata confirmState,
         bytes32 winningEdgeId,
-        ConfigData calldata prevConfig,
+        uint256 confirmPeriodBlocks,
+        address challengeManager,
+        bool isChallenged,
         bytes32 inboxAcc
-    ) external onlyValidator(msg.sender) whenNotPaused {
+    ) internal {
         /*
         * To confirm an assertion, the following must be true:
         * 1. The assertion must be pending
@@ -95,23 +92,16 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         // The assertion's must exists and be pending and will be validated in RollupCore.confirmAssertionInternal
         AssertionNode storage assertion = getAssertionStorage(assertionHash);
 
-        // prevAssertionHash is user supplied, but will be validated in RollupCore.confirmAssertionInternal
-        AssertionNode storage prevAssertion = getAssertionStorage(prevAssertionHash);
-        RollupLib.validateConfigHash(prevConfig, prevAssertion.configHash);
-
         // Check that deadline has passed
-        require(
-            block.number >= assertion.createdAtBlock + prevConfig.confirmPeriodBlocks,
-            "BEFORE_DEADLINE"
-        );
+        require(block.number >= assertion.createdAtBlock + confirmPeriodBlocks, "BEFORE_DEADLINE");
 
         // Check that prev is latest confirmed
         require(prevAssertionHash == latestConfirmed(), "PREV_NOT_LATEST_CONFIRMED");
 
-        if (prevAssertion.secondChildBlock > 0) {
+        if (isChallenged) {
             // if the prev has more than 1 child, check if this assertion is the challenge winner
             ChallengeEdge memory winningEdge =
-                IEdgeChallengeManager(prevConfig.challengeManager).getEdge(winningEdgeId);
+                IEdgeChallengeManager(challengeManager).getEdge(winningEdgeId);
             require(winningEdge.claimId == assertionHash, "NOT_WINNER");
             require(winningEdge.status == EdgeStatus.Confirmed, "EDGE_NOT_CONFIRMED");
             require(winningEdge.confirmedAtBlock != 0, "ZERO_CONFIRMED_AT_BLOCK");
@@ -125,6 +115,59 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         }
 
         confirmAssertionInternal(assertionHash, prevAssertionHash, confirmState, inboxAcc);
+    }
+
+    /**
+     * @notice Confirm a unresolved assertion
+     * @param confirmState The state to confirm
+     * @param winningEdgeId The winning edge if a challenge is started
+     */
+    function confirmAssertion(
+        bytes32 assertionHash,
+        bytes32 prevAssertionHash,
+        AssertionState calldata confirmState,
+        bytes32 winningEdgeId,
+        ConfigData calldata prevConfig,
+        bytes32 inboxAcc
+    ) external onlyValidator(msg.sender) whenNotPaused {
+        // prevAssertionHash is user supplied, but will be validated in RollupCore.confirmAssertionInternal
+        AssertionNode storage prevAssertion = getAssertionStorage(prevAssertionHash);
+        RollupLib.validateConfigHash(prevConfig, prevAssertion.configHash);
+
+        _confirmAssertionImpl(
+            assertionHash,
+            prevAssertionHash,
+            confirmState,
+            winningEdgeId,
+            prevConfig.confirmPeriodBlocks,
+            prevConfig.challengeManager,
+            prevAssertion.secondChildBlock > 0,
+            inboxAcc
+        );
+    }
+
+    function confirmAssertion(
+        bytes32 assertionHash,
+        bytes32 prevAssertionHash,
+        AssertionState calldata confirmState,
+        bytes32 winningEdgeId,
+        LegacyConfigData calldata prevConfig,
+        bytes32 inboxAcc
+    ) external onlyValidator(msg.sender) whenNotPaused {
+        // prevAssertionHash is user supplied, but will be validated in RollupCore.confirmAssertionInternal
+        AssertionNode storage prevAssertion = getAssertionStorage(prevAssertionHash);
+        RollupLib.validateConfigHash(prevConfig, prevAssertion.configHash);
+
+        _confirmAssertionImpl(
+            assertionHash,
+            prevAssertionHash,
+            confirmState,
+            winningEdgeId,
+            prevConfig.confirmPeriodBlocks,
+            prevConfig.challengeManager,
+            prevAssertion.secondChildBlock > 0,
+            inboxAcc
+        );
     }
 
     /**
@@ -156,15 +199,13 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         return RollupLib.assertionHash(prevAssertionHash, state, inboxAcc);
     }
 
-    /**
-     * @notice Create a new assertion and move stake onto it
-     * @param assertion The assertion data
-     * @param expectedAssertionHash The hash of the assertion being created (protects against reorgs)
-     */
-    function stakeOnNewAssertion(
-        AssertionInputs calldata assertion,
+    function _checkAssertionAndStakingInformation(
+        AssertionState calldata beforeState,
+        bytes32 prevPrevAssertionHash,
+        bytes32 sequencerBatchAcc,
+        uint256 requiredStake,
         bytes32 expectedAssertionHash
-    ) public onlyValidator(msg.sender) whenNotPaused {
+    ) internal view returns (bytes32) {
         // Early revert on duplicated assertion if expectedAssertionHash is set
         require(
             expectedAssertionHash == bytes32(0)
@@ -179,22 +220,16 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         // the staker may have more than enough stake, and the entire stake will be locked
         // we cannot do a refund here because the staker may be staker on an unconfirmed ancestor that requires more stake
         // excess stake can be removed by calling reduceDeposit when the staker is inactive
-        require(
-            amountStaked(msg.sender) >= assertion.beforeStateData.configData.requiredStake,
-            "INSUFFICIENT_STAKE"
-        );
+        require(amountStaked(msg.sender) >= requiredStake, "INSUFFICIENT_STAKE");
 
         // the new assertion will be created with requiredStake equal to the baseStake
         // however, for the reasons explained in RollupAdminLogic.decreaseBaseStake we cannot allow an assertion to be created
         // base stake than it's prev. In order to reduce the base stake the config hash of the latest assertion
         // must be overridden, this occurs in the RollupAdminLogic.decreaseBaseStake function
-        require(baseStake >= assertion.beforeStateData.configData.requiredStake, "STAKE_TOO_LOW");
+        require(baseStake >= requiredStake, "STAKE_TOO_LOW");
 
-        bytes32 prevAssertion = RollupLib.assertionHash(
-            assertion.beforeStateData.prevPrevAssertionHash,
-            assertion.beforeState,
-            assertion.beforeStateData.sequencerBatchAcc
-        );
+        bytes32 prevAssertion =
+            RollupLib.assertionHash(prevPrevAssertionHash, beforeState, sequencerBatchAcc);
         getAssertionStorage(prevAssertion).requireExists();
 
         // Staker can create new assertion only if
@@ -207,12 +242,20 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
             "STAKED_ON_ANOTHER_BRANCH"
         );
 
-        (bytes32 newAssertionHash, bool overflowAssertion) =
-            createNewAssertion(assertion, prevAssertion, expectedAssertionHash);
+        return prevAssertion;
+    }
+
+    function _completeAssertionCreation(
+        bytes32 newAssertionHash,
+        bytes32 parentAssertionHash,
+        uint256 requiredStake,
+        bool overflowAssertion
+    ) internal {
         _stakerMap[msg.sender].latestStakedAssertion = newAssertionHash;
 
         if (!overflowAssertion) {
-            uint256 timeSincePrev = block.number - getAssertionStorage(prevAssertion).createdAtBlock;
+            uint256 timeSincePrev =
+                block.number - getAssertionStorage(parentAssertionHash).createdAtBlock;
             // Verify that assertion meets the minimum Delta time requirement
             require(timeSincePrev >= minimumAssertionPeriod, "TIME_DELTA");
         }
@@ -222,9 +265,64 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
             // only 1 of the children can be confirmed and get their stake refunded
             // so we send the other children's stake to the loserStakeEscrow
             // NOTE: if the losing staker have staked more than requiredStake, the excess stake will be stuck
-            IERC20(stakeToken)
-                .safeTransfer(loserStakeEscrow, assertion.beforeStateData.configData.requiredStake);
+            IERC20(stakeToken).safeTransfer(loserStakeEscrow, requiredStake);
         }
+    }
+
+    /**
+     * @notice Create a new assertion and move stake onto it
+     * @param assertion The assertion data
+     * @param expectedAssertionHash The hash of the assertion being created (protects against reorgs)
+     */
+    function stakeOnNewAssertion(
+        AssertionInputs calldata assertion,
+        bytes32 expectedAssertionHash
+    ) public onlyValidator(msg.sender) whenNotPaused {
+        bytes32 parentAssertionHash = _checkAssertionAndStakingInformation(
+            assertion.beforeState,
+            assertion.beforeStateData.prevPrevAssertionHash,
+            assertion.beforeStateData.sequencerBatchAcc,
+            assertion.beforeStateData.configData.requiredStake,
+            expectedAssertionHash
+        );
+
+        (bytes32 newAssertionHash, bool overflowAssertion) =
+            createNewAssertion(assertion, parentAssertionHash, expectedAssertionHash);
+
+        _completeAssertionCreation(
+            newAssertionHash,
+            parentAssertionHash,
+            assertion.beforeStateData.configData.requiredStake,
+            overflowAssertion
+        );
+    }
+
+    /**
+     * @notice Create a new assertion and move stake onto it
+     * @param assertion The legacy assertion data
+     * @param expectedAssertionHash The hash of the assertion being created (protects against reorgs)
+     */
+    function stakeOnNewAssertion(
+        LegacyAssertionInputs calldata assertion,
+        bytes32 expectedAssertionHash
+    ) public onlyValidator(msg.sender) whenNotPaused {
+        bytes32 parentAssertionHash = _checkAssertionAndStakingInformation(
+            assertion.beforeState,
+            assertion.beforeStateData.prevPrevAssertionHash,
+            assertion.beforeStateData.sequencerBatchAcc,
+            assertion.beforeStateData.configData.requiredStake,
+            expectedAssertionHash
+        );
+
+        (bytes32 newAssertionHash, bool overflowAssertion) =
+            createNewAssertion(assertion, parentAssertionHash, expectedAssertionHash);
+
+        _completeAssertionCreation(
+            newAssertionHash,
+            parentAssertionHash,
+            assertion.beforeStateData.configData.requiredStake,
+            overflowAssertion
+        );
     }
 
     /**
@@ -301,6 +399,41 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         confirmAssertionInternal(assertionHash, parentAssertionHash, confirmState, inboxAcc);
     }
 
+    function _fastConfirmNewAssertionChecks(
+        AssertionState calldata beforeState,
+        bytes32 prevPrevAssertionHash,
+        bytes32 prevSequencerBatchAcc,
+        bytes32 expectedAssertionHash
+    ) internal view returns (AssertionStatus status, bytes32 prevAssertion) {
+        // Must supply expectedAssertionHash to fastConfirmNewAssertion
+        require(expectedAssertionHash != bytes32(0), "EXPECTED_ASSERTION_HASH");
+        status = getAssertionStorage(expectedAssertionHash).status;
+
+        prevAssertion =
+            RollupLib.assertionHash(prevPrevAssertionHash, beforeState, prevSequencerBatchAcc);
+        getAssertionStorage(prevAssertion).requireExists();
+    }
+
+    function _fastConfirmNewAssertionConfirmationImpl(
+        uint256 afterInboxPosition,
+        bytes32 expectedAssertionHash,
+        bytes32 prevAssertion,
+        AssertionState calldata afterState
+    ) internal {
+        // Position zero has no accumulator entry; use zero, as `createNewAssertion` does. For any other
+        // position the entry exists: `INBOX_PAST_END` bounded the position when the assertion was created
+        // and the accumulator array is append-only.
+        bytes32 inboxAcc;
+        if (afterInboxPosition == 0) {
+            inboxAcc = bytes32(0);
+        } else {
+            inboxAcc = bridge.sequencerInboxAccs(afterInboxPosition - 1);
+        }
+
+        // This would revert if the assertion is already confirmed
+        fastConfirmAssertion(expectedAssertionHash, prevAssertion, afterState, inboxAcc);
+    }
+
     /**
      * @notice This allow the anyTrustFastConfirmer to immediately create and confirm an assertion
      *         the anyTrustFastConfirmer is supposed to be set only on an AnyTrust chain to
@@ -315,16 +448,12 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         AssertionInputs calldata assertion,
         bytes32 expectedAssertionHash
     ) external whenNotPaused {
-        // Must supply expectedAssertionHash to fastConfirmNewAssertion
-        require(expectedAssertionHash != bytes32(0), "EXPECTED_ASSERTION_HASH");
-        AssertionStatus status = getAssertionStorage(expectedAssertionHash).status;
-
-        bytes32 prevAssertion = RollupLib.assertionHash(
-            assertion.beforeStateData.prevPrevAssertionHash,
+        (AssertionStatus status, bytes32 prevAssertion) = _fastConfirmNewAssertionChecks(
             assertion.beforeState,
-            assertion.beforeStateData.sequencerBatchAcc
+            assertion.beforeStateData.prevPrevAssertionHash,
+            assertion.beforeStateData.sequencerBatchAcc,
+            expectedAssertionHash
         );
-        getAssertionStorage(prevAssertion).requireExists();
 
         if (status == AssertionStatus.NoAssertion) {
             // If not exists, we create the new assertion
@@ -341,19 +470,46 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
             }
         }
 
-        // Position zero has no accumulator entry; use zero, as `createNewAssertion` does. For any other
-        // position the entry exists: `INBOX_PAST_END` bounded the position when the assertion was created
-        // and the accumulator array is append-only.
-        uint256 afterInboxPosition = assertion.afterState.globalState.getInboxPosition();
-        bytes32 inboxAcc;
-        if (afterInboxPosition == 0) {
-            inboxAcc = bytes32(0);
-        } else {
-            inboxAcc = bridge.sequencerInboxAccs(afterInboxPosition - 1);
+        _fastConfirmNewAssertionConfirmationImpl(
+            assertion.afterState.globalState.getInboxPosition(),
+            expectedAssertionHash,
+            prevAssertion,
+            assertion.afterState
+        );
+    }
+
+    function fastConfirmNewAssertion(
+        LegacyAssertionInputs calldata assertion,
+        bytes32 expectedAssertionHash
+    ) external whenNotPaused {
+        (AssertionStatus status, bytes32 prevAssertion) = _fastConfirmNewAssertionChecks(
+            assertion.beforeState,
+            assertion.beforeStateData.prevPrevAssertionHash,
+            assertion.beforeStateData.sequencerBatchAcc,
+            expectedAssertionHash
+        );
+
+        if (status == AssertionStatus.NoAssertion) {
+            // If not exists, we create the new assertion
+            (bytes32 newAssertionHash,) =
+                createNewAssertion(assertion, prevAssertion, expectedAssertionHash);
+            if (!getAssertionStorage(newAssertionHash).isFirstChild) {
+                // only 1 of the children can be confirmed and get their stake refunded
+                // so we send the other children's stake to the loserStakeEscrow
+                // NOTE: if the losing staker have staked more than requiredStake, the excess stake will be stuck
+                IERC20(stakeToken)
+                    .safeTransfer(
+                        loserStakeEscrow, assertion.beforeStateData.configData.requiredStake
+                    );
+            }
         }
 
-        // This would revert if the assertion is already confirmed
-        fastConfirmAssertion(expectedAssertionHash, prevAssertion, assertion.afterState, inboxAcc);
+        _fastConfirmNewAssertionConfirmationImpl(
+            assertion.afterState.globalState.getInboxPosition(),
+            expectedAssertionHash,
+            prevAssertion,
+            assertion.afterState
+        );
     }
 
     function owner() external view returns (address) {
@@ -382,6 +538,39 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
     function newStakeOnNewAssertion(
         uint256 tokenAmount,
         AssertionInputs calldata assertion,
+        bytes32 expectedAssertionHash,
+        address _withdrawalAddress
+    ) public {
+        require(_withdrawalAddress != address(0), "EMPTY_WITHDRAWAL_ADDRESS");
+        // _newStake makes sure the validator is whitelisted if the whitelist is enabled
+        _newStake(tokenAmount, _withdrawalAddress);
+        stakeOnNewAssertion(assertion, expectedAssertionHash);
+        /// @dev This is an external call, safe because it's at the end of the function
+        receiveTokens(tokenAmount);
+    }
+
+    /**
+     * @notice Deprecated, use the function with `withdrawalAddress` instead
+     *         Using this default `withdrawalAddress` to msg.sender
+     */
+    function newStakeOnNewAssertion(
+        uint256 tokenAmount,
+        LegacyAssertionInputs calldata assertion,
+        bytes32 expectedAssertionHash
+    ) external {
+        newStakeOnNewAssertion(tokenAmount, assertion, expectedAssertionHash, msg.sender);
+    }
+
+    /**
+     * @notice Create a new stake on a new assertion
+     * @param tokenAmount Amount of the rollups staking token to stake
+     * @param assertion Assertion describing the state change between the old assertion and the new one
+     * @param expectedAssertionHash Assertion hash of the assertion that will be created
+     * @param _withdrawalAddress The address the send the stake back upon withdrawal
+     */
+    function newStakeOnNewAssertion(
+        uint256 tokenAmount,
+        LegacyAssertionInputs calldata assertion,
         bytes32 expectedAssertionHash,
         address _withdrawalAddress
     ) public {
