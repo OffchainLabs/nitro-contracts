@@ -60,6 +60,7 @@ export async function verifyContract(
     OneStepProverMath: 'src/osp/OneStepProverMath.sol:OneStepProverMath',
     OneStepProverHostIo: 'src/osp/OneStepProverHostIo.sol:OneStepProverHostIo',
     OneStepProofEntry: 'src/osp/OneStepProofEntry.sol:OneStepProofEntry',
+    MelConfig: 'src/rollup/MelConfig.sol:MelConfig',
   }[contractName]
 
   try {
@@ -201,6 +202,15 @@ export async function deployOneStepProofEntry(
   proverHostIo: Contract
   osp: Contract
 }> {
+  console.log('Deploying HashProofHelper contract...')
+  const hashProofHelper = await deployContract(
+    'HashProofHelper',
+    signer,
+    [],
+    verify,
+    true
+  )
+
   console.log('Deploying OneStepProver contracts...')
   const prover0 = await deployContract(
     'OneStepProver0',
@@ -226,7 +236,7 @@ export async function deployOneStepProofEntry(
   const proverHostIo = await deployContract(
     'OneStepProverHostIo',
     signer,
-    [customDAValidator],
+    [customDAValidator, hashProofHelper.address],
     verify,
     true
   )
@@ -400,6 +410,13 @@ export async function deployAllContracts(
     verify,
     true
   )
+  const melConfig = await deployContract(
+    'MelConfig',
+    signer,
+    [],
+    verify,
+    true
+  )
   const upgradeExecutor = await create2(
     (
       await ethers.getContractFactory(
@@ -438,6 +455,7 @@ export async function deployAllContracts(
       challengeManager.address,
       rollupAdmin.address,
       rollupUser.address,
+      melConfig.address,
       upgradeExecutor.address,
       validatorWalletCreator.address,
       deployHelper.address,

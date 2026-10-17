@@ -44,6 +44,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
 
         validatorWalletCreator = connectedContracts.validatorWalletCreator;
         challengeManager = connectedContracts.challengeManager;
+        melConfig = connectedContracts.melConfig;
 
         confirmPeriodBlocks = config.confirmPeriodBlocks;
         chainId = config.chainId;
@@ -74,10 +75,10 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
         });
 
         uint256 currentInboxCount = bridge.sequencerMessageCount();
-        // ensure to move the inbox forward by at least one message
-        if (currentInboxCount == config.genesisInboxCount) {
-            currentInboxCount += 1;
-        }
+
+        // MEL anchor for next assertion, zero and excluded from configHash until MEL is enabled
+        bytes32 targetParentChainBlockHash = bytes32(0);
+
         AssertionNode memory initialAssertion = AssertionNodeLib.createAssertion(
             true,
             RollupLib.configHash({
@@ -85,7 +86,8 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
                 requiredStake: baseStake,
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: confirmPeriodBlocks,
-                nextInboxPosition: uint64(currentInboxCount)
+                nextInboxPosition: uint64(currentInboxCount),
+                targetParentChainBlockHash: targetParentChainBlockHash
             })
         );
         initializeCore(initialAssertion, genesisHash);
@@ -98,6 +100,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
             assertionInputs,
             inboxAcc,
             currentInboxCount,
+            targetParentChainBlockHash,
             wasmModuleRoot,
             baseStake,
             address(challengeManager),
@@ -108,6 +111,16 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
         }
 
         emit RollupInitialized(config.wasmModuleRoot, config.chainId);
+    }
+
+    function postUpgradeInit(
+        address _melConfig
+    ) external override onlyProxy {
+        require(address(melConfig) == address(0), "MELCONFIG_ALREADY_SET");
+        melConfig = IMelConfig(_melConfig);
+
+        // We verify that the bridge set in MelConfig matches the one in the Rollup
+        require(melConfig.bridge() == address(bridge), "MELCONFIG_BRIDGE_NOT_MATCH");
     }
 
     /**
@@ -270,7 +283,8 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      */
     function decreaseBaseStake(
         uint256 newBaseStake,
-        uint64 latestNextInboxPosition
+        uint64 latestNextInboxPosition,
+        bytes32 latestTargetParentChainBlockHash
     ) external override {
         require(newBaseStake < baseStake, "BASE_STAKE_NOT_DECREASED");
 
@@ -295,7 +309,8 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
             requiredStake: baseStake,
             challengeManager: address(challengeManager),
             confirmPeriodBlocks: confirmPeriodBlocks,
-            nextInboxPosition: uint64(latestNextInboxPosition)
+            nextInboxPosition: uint64(latestNextInboxPosition),
+            targetParentChainBlockHash: latestTargetParentChainBlockHash
         });
 
         uint256 pendingCount = 0;
@@ -316,7 +331,8 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
                     requiredStake: newBaseStake,
                     challengeManager: address(challengeManager),
                     confirmPeriodBlocks: confirmPeriodBlocks,
-                    nextInboxPosition: uint64(latestNextInboxPosition)
+                    nextInboxPosition: uint64(latestNextInboxPosition),
+                    targetParentChainBlockHash: latestTargetParentChainBlockHash
                 });
 
                 pendingCount++;
