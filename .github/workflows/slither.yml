@@ -3,6 +3,9 @@ name: Slither Analysis
 on:
   workflow_dispatch:
   pull_request:
+  push:
+    branches:
+      - ci/foundry-update
 
 jobs:
   analyze:

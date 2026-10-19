@@ -1,0 +1,140 @@
+name: Foundry Update
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      latest: ${{ steps.versions.outputs.latest }}
+      skip: ${{ steps.versions.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compare pinned Foundry against latest stable
+        id: versions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pinned=$(grep -ohE 'version: v[0-9]+\.[0-9]+\.[0-9]+' .github/workflows/*.yml | sort -u)
+          latest=$(gh api repos/foundry-rs/foundry/releases/latest --jq .tag_name | sed 's/^v//')
+          open=$(gh pr list --head ci/foundry-update --json title --jq '.[].title')
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          if [ "$pinned" = "version: v$latest" ] || [ "$open" = "Bump Foundry to v$latest" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  # Runs the new Foundry and other third-party code, so it gets no deploy key
+  prepare:
+    needs: check
+    if: needs.check.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      LATEST: ${{ needs.check.outputs.latest }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Bump pinned Foundry
+        run: |
+          sed -i -E "s/version: v[0-9]+\.[0-9]+\.[0-9]+$/version: v$LATEST/" .github/workflows/*.yml
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v${{ needs.check.outputs.latest }}
+          cache: false
+
+      - name: Setup node/yarn
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'yarn'
+          cache-dependency-path: '**/yarn.lock'
+
+      - name: Install packages
+        run: yarn
+
+      - name: Format and regenerate storage and signatures
+        run: |
+          forge fmt
+          yarn test:storage || true
+          yarn test:signatures || true
+
+      - name: Run Slither
+        id: slither
+        uses: crytic/slither-action@v0.4.0
+        continue-on-error: true
+        with:
+          fail-on: medium
+          slither-args: --skip-assembly
+
+      - name: Save patch and PR body
+        env:
+          SLITHER: ${{ steps.slither.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          mkdir "$RUNNER_TEMP/foundry-update"
+          git diff > "$RUNNER_TEMP/foundry-update/changes.patch"
+          {
+            echo "Bumps Foundry to [v$LATEST](https://github.com/foundry-rs/foundry/releases/tag/v$LATEST), with \`forge fmt\` and regenerated storage and signature files. Opened by the [Foundry Update workflow]($RUN_URL)."
+            if [ "$SLITHER" = failure ]; then
+              echo
+              echo "### Slither triage database needs updating"
+              echo
+              echo "\`forge fmt\` moved code that \`slither.db.json\` refers to, so Slither reports findings that were already triaged. Before merging:"
+              echo
+              echo "1. \`git checkout ci/foundry-update && foundryup --install $LATEST\`"
+              echo "2. Run \`yarn slither-triage\` and hide the Medium and High findings that the Slither check on this PR reports. Each should match an existing entry apart from its line numbers. Treat any that don't as new findings"
+              echo "3. Commit \`slither.db.json\` and push"
+            fi
+          } > "$RUNNER_TEMP/foundry-update/body.md"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: foundry-update
+          path: ${{ runner.temp }}/foundry-update
+
+  # Pushes with a deploy key because pushes made with GITHUB_TOKEN don't trigger CI
+  publish:
+    needs: [check, prepare]
+    runs-on: ubuntu-latest
+    environment: foundry-update
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ssh-key: ${{ secrets.FOUNDRY_UPDATE_DEPLOY_KEY }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: foundry-update
+          path: ${{ runner.temp }}/foundry-update
+
+      - name: Push branch and open PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: Bump Foundry to v${{ needs.check.outputs.latest }}
+        run: |
+          git apply "$RUNNER_TEMP/foundry-update/changes.patch"
+          git switch -c ci/foundry-update
+          git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -am "$TITLE"
+          git push --force origin ci/foundry-update
+          if [ "$(gh pr list --head ci/foundry-update --json number --jq length)" = 0 ]; then
+            gh pr create --base "$GITHUB_REF_NAME" --head ci/foundry-update --title "$TITLE" --body-file "$RUNNER_TEMP/foundry-update/body.md"
+          else
+            gh pr edit ci/foundry-update --title "$TITLE" --body-file "$RUNNER_TEMP/foundry-update/body.md"
+          fi
