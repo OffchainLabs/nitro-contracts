@@ -592,58 +592,6 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         return (newAssertionHash, overflowAssertion);
     }
 
-    // beforeState is pre-MEL
-    // afterState is post-MEL
-    function createNewAssertion(
-        LegacyAssertionInputs calldata assertion,
-        bytes32 prevAssertionHash,
-        bytes32 expectedAssertionHash
-    ) internal returns (bytes32 newAssertionHash, bool overflowAssertion) {
-        // Validate the config hash
-        RollupLib.validateConfigHash(
-            assertion.beforeStateData.configData, getAssertionStorage(prevAssertionHash).configHash
-        );
-
-        // Legacy only checks
-        int256 afterStateCmpMaxInbox =
-            assertion.afterState.globalState
-                .comparePositionsAgainstStartOfBatch(
-                    assertion.beforeStateData.configData.nextInboxPosition
-                );
-        require(afterStateCmpMaxInbox <= 0, "INBOX_TOO_FAR");
-        require(
-            assertion.beforeStateData.configData.nextInboxPosition
-                <= bridge.sequencerMessageCount(),
-            "INBOX_NOT_POPULATED"
-        );
-
-        bytes32 sequencerBatchAcc;
-        bytes32 targetParentChainBlockHash;
-        (newAssertionHash, overflowAssertion, sequencerBatchAcc, targetParentChainBlockHash) =
-            _createAssertionInternal(
-                assertion.beforeState,
-                assertion.afterState,
-                prevAssertionHash,
-                assertion.beforeStateData.prevPrevAssertionHash,
-                assertion.beforeStateData.sequencerBatchAcc,
-                expectedAssertionHash
-            );
-
-        emit AssertionCreated(
-            newAssertionHash,
-            prevAssertionHash,
-            assertion,
-            sequencerBatchAcc,
-            targetParentChainBlockHash,
-            wasmModuleRoot,
-            baseStake,
-            address(challengeManager),
-            confirmPeriodBlocks
-        );
-
-        return (newAssertionHash, overflowAssertion);
-    }
-
     /**
      * @notice Returns an empty genesis assertion hash
      * @dev In chains that were created with a non-empty genesis state, this function
@@ -689,13 +637,6 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     function validateConfig(
         bytes32 assertionHash,
         ConfigData calldata configData
-    ) external view {
-        RollupLib.validateConfigHash(configData, getAssertionStorage(assertionHash).configHash);
-    }
-
-    function validateConfig(
-        bytes32 assertionHash,
-        LegacyConfigData calldata configData
     ) external view {
         RollupLib.validateConfigHash(configData, getAssertionStorage(assertionHash).configHash);
     }

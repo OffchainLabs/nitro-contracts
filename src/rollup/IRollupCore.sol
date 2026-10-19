@@ -26,18 +26,6 @@ interface IRollupCore is IAssertionChain {
     event AssertionCreated(
         bytes32 indexed assertionHash,
         bytes32 indexed parentAssertionHash,
-        LegacyAssertionInputs assertion,
-        bytes32 afterInboxBatchAcc,
-        bytes32 targetParentChainBlockHash,
-        bytes32 wasmModuleRoot,
-        uint256 requiredStake,
-        address challengeManager,
-        uint64 confirmPeriodBlocks
-    );
-
-    event AssertionCreated(
-        bytes32 indexed assertionHash,
-        bytes32 indexed parentAssertionHash,
         AssertionInputs assertion,
         bytes32 afterInboxBatchAcc,
         bytes32 targetParentChainBlockHash,

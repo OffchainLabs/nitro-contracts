@@ -74,40 +74,4 @@ library RollupLib {
             "CONFIG_HASH_MISMATCH"
         );
     }
-
-    // Legacy
-    function legacyConfigHash(
-        bytes32 wasmModuleRoot,
-        uint256 requiredStake,
-        address challengeManager,
-        uint64 confirmPeriodBlocks,
-        uint64 nextInboxPosition
-    ) internal pure returns (bytes32) {
-        return keccak256(
-            abi.encodePacked(
-                wasmModuleRoot,
-                requiredStake,
-                challengeManager,
-                confirmPeriodBlocks,
-                nextInboxPosition
-            )
-        );
-    }
-
-    function validateConfigHash(
-        LegacyConfigData calldata configData,
-        bytes32 _configHash
-    ) internal pure {
-        require(
-            _configHash
-                == legacyConfigHash(
-                    configData.wasmModuleRoot,
-                    configData.requiredStake,
-                    configData.challengeManager,
-                    configData.confirmPeriodBlocks,
-                    configData.nextInboxPosition
-                ),
-            "CONFIG_HASH_MISMATCH"
-        );
-    }
 }

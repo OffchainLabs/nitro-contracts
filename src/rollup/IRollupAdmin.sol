@@ -188,12 +188,6 @@ interface IRollupAdmin {
         bytes32 expectedAssertionHash
     ) external;
 
-    function forceCreateAssertion(
-        bytes32 prevAssertionHash,
-        LegacyAssertionInputs calldata assertion,
-        bytes32 expectedAssertionHash
-    ) external;
-
     function forceConfirmAssertion(
         bytes32 assertionHash,
         bytes32 parentAssertionHash,
