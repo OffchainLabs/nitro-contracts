@@ -6,5 +6,5 @@ runs:
   steps:
     - uses: foundry-rs/foundry-toolchain@v1
       with:
-        version: v1.8.3
+        version: v1.8.5
         cache: false
