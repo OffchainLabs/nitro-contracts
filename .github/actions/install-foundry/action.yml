@@ -1,15 +1,10 @@
 name: Install Foundry
-description: Install the Foundry release pinned in .foundry-version
+description: Install the pinned Foundry release
 
 runs:
   using: composite
   steps:
-    - name: Read pinned version
-      id: version
-      shell: bash
-      run: echo "version=$(cat .foundry-version)" >> "$GITHUB_OUTPUT"
-
     - uses: foundry-rs/foundry-toolchain@v1
       with:
-        version: ${{ steps.version.outputs.version }}
+        version: v1.8.3
         cache: false
