@@ -49,7 +49,7 @@ contract RollupTest is Test {
     uint256 constant MAX_DATA_SIZE = 117964;
     uint64 constant CHALLENGE_GRACE_PERIOD_BLOCKS = 10;
 
-    bytes32 constant GENESIS_TARGET_PARENT_CHAIN_BLOCKHASH = bytes32(0);
+    bytes32 constant GENESIS_ASSERTION_TARGET_PARENT_CHAIN_BLOCK_HASH = keccak256("genesis");
     bytes32 constant FIRST_ASSERTION_BLOCKHASH = keccak256("FIRST_ASSERTION_BLOCKHASH");
     bytes32 constant FIRST_ASSERTION_SENDROOT = keccak256("FIRST_ASSERTION_SENDROOT");
 
@@ -311,7 +311,7 @@ contract RollupTest is Test {
             challengeManager: address(challengeManager),
             confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
             nextInboxPosition: 1, // Initialization batch is posted before creating the genesis assertion
-            targetParentChainBlockHash: GENESIS_TARGET_PARENT_CHAIN_BLOCKHASH
+            targetParentChainBlockHash: GENESIS_ASSERTION_TARGET_PARENT_CHAIN_BLOCK_HASH
         });
         (bytes32 expectedAssertionHash, bytes32 parentAssertionHash) = _createAssertion(
             BeforeStateData({
