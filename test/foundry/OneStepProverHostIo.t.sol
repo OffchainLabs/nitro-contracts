@@ -413,7 +413,7 @@ contract OneStepProverHostIoTest is Test {
         Module memory mod;
         Instruction memory inst;
         inst.opcode = Instructions.GET_PARENT_CHAIN_INPUT;
-        inst.argumentData = Instructions.PARENT_CHAIN_INFO_INDEX_TARGET_BLOCK_HASH;
+        inst.argumentData = Instructions.PARENT_CHAIN_INPUT_INDEX_TARGET_BLOCK_HASH;
 
         mach.valueStack.push(ValueLib.newI32(0)); // ptr to the destination leaf
         mod.moduleMemory.size = 32;
@@ -445,7 +445,7 @@ contract OneStepProverHostIoTest is Test {
         Module memory mod;
         Instruction memory inst;
         inst.opcode = Instructions.GET_PARENT_CHAIN_INPUT;
-        inst.argumentData = Instructions.PARENT_CHAIN_INFO_INDEX_MEL_CONFIG;
+        inst.argumentData = Instructions.PARENT_CHAIN_INPUT_INDEX_MEL_CONFIG;
 
         mach.valueStack.push(ValueLib.newI32(0)); // ptr to the destination leaf
         mod.moduleMemory.size = 32;
