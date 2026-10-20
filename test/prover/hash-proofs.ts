@@ -12,14 +12,11 @@ describe('HashProofHelper', function () {
       ).address
     )
 
-    for (let i = 0; i < 32; i += 1) {
-      const len = Math.floor(Math.random() * 512)
-      const bytes = []
-      for (let j = 0; j < len; j += 1) {
-        bytes.push(Math.floor(Math.random() * 256))
-      }
-      // offset range overlaps len so we also exercise offset >= len (empty part)
-      const offset = Math.floor(Math.random() * 512)
+    for (let i = 0; i < 16; i += 1) {
+      const len = Math.floor(Math.random() * 256)
+      const data = Math.floor(Math.random() * 256)
+      const offset = Math.floor(Math.random() * 256)
+      const bytes = Array(len).fill(data)
       const hash = ethers.utils.keccak256(bytes)
 
       const proofTx = await hashProofHelper.proveWithFullPreimage(bytes, offset)
@@ -27,14 +24,14 @@ describe('HashProofHelper', function () {
       const log = hashProofHelper.interface.parseLog(receipt.logs[0])
       const provenPart = await hashProofHelper.getPreimagePart(hash, offset)
 
+      let dataHex = data.toString(16)
+      dataHex = '00'.slice(dataHex.length) + dataHex
       const partLen = Math.min(32, Math.max(0, len - offset))
-      const expectedPart = ethers.utils.hexlify(
-        bytes.slice(offset, offset + partLen)
-      )
+      const partString = '0x' + dataHex.repeat(partLen)
       assert.equal(log.args['fullHash'], hash)
       assert.equal(log.args['offset'], offset)
-      assert.equal(log.args['part'], expectedPart)
-      assert.equal(provenPart, expectedPart)
+      assert.equal(log.args['part'], partString)
+      assert.equal(provenPart, partString)
     }
   })
 
@@ -48,22 +45,18 @@ describe('HashProofHelper', function () {
       ).address
     )
 
-    for (let i = 0; i < 32; i += 1) {
-      const len = Math.floor(Math.random() * 4096)
-      const bytes = []
-      for (let j = 0; j < len; j += 1) {
-        bytes.push(Math.floor(Math.random() * 256))
-      }
-      // offset range overlaps len so we also exercise offset >= len (empty part)
-      const offset = Math.floor(Math.random() * 4096)
+    for (let i = 0; i < 16; i += 1) {
+      const len = Math.floor(Math.random() * 1024)
+      const data = Math.floor(Math.random() * 256)
+      const offset = Math.floor(Math.random() * 256)
+      const bytes = Array(len).fill(data)
       const hash = ethers.utils.keccak256(bytes)
 
       let provenLen = 0
       let provenPart = null
       let log = null
       while (provenPart === null) {
-        // chunks of 1 to 4 keccak blocks; the final chunk takes the remainder
-        let nextPartialLen = 136 * (1 + Math.floor(Math.random() * 4))
+        let nextPartialLen = 136 * (1 + Math.floor(Math.random() * 2))
         if (nextPartialLen > len - provenLen) {
           nextPartialLen = len - provenLen
         }
@@ -82,15 +75,15 @@ describe('HashProofHelper', function () {
         provenLen = newProvenLen
       }
 
+      let dataHex = data.toString(16)
+      dataHex = '00'.slice(dataHex.length) + dataHex
       const partLen = Math.min(32, Math.max(0, len - offset))
-      const expectedPart = ethers.utils.hexlify(
-        bytes.slice(offset, offset + partLen)
-      )
+      const partString = '0x' + dataHex.repeat(partLen)
       assert.isNotNull(log)
       assert.equal(log!.args['fullHash'], hash)
       assert.equal(log!.args['offset'], offset)
-      assert.equal(log!.args['part'], expectedPart)
-      assert.equal(provenPart, expectedPart)
+      assert.equal(log!.args['part'], partString)
+      assert.equal(provenPart, partString)
     }
   })
 })

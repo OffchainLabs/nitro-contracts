@@ -12,7 +12,6 @@ import "../state/Deserialize.sol";
 import "../state/ModuleMemory.sol";
 import "./IOneStepProver.sol";
 import "./ICustomDAProofValidator.sol";
-import "./IHashProofHelper.sol";
 
 contract OneStepProverHostIo is IOneStepProver {
     using GlobalStateLib for GlobalState;
@@ -31,14 +30,11 @@ contract OneStepProverHostIo is IOneStepProver {
     uint256 private constant CLAIMED_VALID_LEN = 1;
 
     ICustomDAProofValidator public immutable customDAValidator;
-    IHashProofHelper public immutable hashProofHelper;
 
     constructor(
-        address _customDAValidator,
-        address _hashProofHelper
+        address _customDAValidator
     ) {
         customDAValidator = ICustomDAProofValidator(_customDAValidator);
-        hashProofHelper = IHashProofHelper(_hashProofHelper);
     }
 
     function setLeafByte(
@@ -177,11 +173,6 @@ contract OneStepProverHostIo is IOneStepProver {
                     preimageEnd = preimage.length;
                 }
                 extracted = preimage[preimageOffset:preimageEnd];
-            } else if (proofType == 1) {
-                // The proof contains a part of the preimage, verified by the HashProofHelper contract
-                require(address(hashProofHelper) != address(0), "HASH_PROOF_HELPER_NOT_SET");
-
-                extracted = hashProofHelper.getPreimagePart(leafContents, uint64(preimageOffset));
             } else {
                 // TODO: support proving via an authenticated contract
                 revert("UNKNOWN_PREIMAGE_PROOF");
