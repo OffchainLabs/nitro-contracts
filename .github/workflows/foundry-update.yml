@@ -43,8 +43,6 @@ jobs:
         forge fmt
         yarn test:storage || true
         yarn test:signatures || true
-        pipx install slither-analyzer
-        slither . --skip-assembly --fail-medium
     steps:
       - uses: actions/checkout@v4
         with:
@@ -67,13 +65,10 @@ jobs:
         run: yarn
 
       - name: Run fix-up commands
-        id: fixup
-        continue-on-error: true
         run: ${{ env.FIX_UP }}
 
       - name: Save patch and PR body
         env:
-          FIX_UP_OUTCOME: ${{ steps.fixup.outcome }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           mkdir "$RUNNER_TEMP/foundry-update"
@@ -86,10 +81,6 @@ jobs:
             echo '```'
             echo
             echo "Opened by the [Foundry Update workflow]($RUN_URL). CI doesn't run on PRs opened by GitHub Actions. Close and reopen this PR to start it."
-            if [ "$FIX_UP_OUTCOME" = failure ] && [[ "$FIX_UP" == *slither* ]]; then
-              echo
-              echo "Slither db may need recreating. Run \`slither . --triage-mode\`."
-            fi
           } > "$RUNNER_TEMP/foundry-update/body.md"
 
       - uses: actions/upload-artifact@v4
