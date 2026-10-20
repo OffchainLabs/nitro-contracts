@@ -6,117 +6,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  check:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-    outputs:
-      latest: ${{ steps.versions.outputs.latest }}
-      skip: ${{ steps.versions.outputs.skip }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Compare pinned Foundry against latest stable
-        id: versions
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          latest=$(gh api repos/foundry-rs/foundry/releases/latest --jq .tag_name)
-          open=$(gh pr list --head ci/foundry-update --json title --jq '.[].title')
-          echo "latest=$latest" >> "$GITHUB_OUTPUT"
-          pinned=$(grep -oE "v[0-9]+\.[0-9]+\.[0-9]+" .github/actions/install-foundry/action.yml)
-          if [ "$pinned" = "$latest" ] || [ "$open" = "Bump Foundry to $latest" ]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          fi
-
-  # Runs the new Foundry and other third-party code, so it only gets a read-only token
-  prepare:
-    needs: check
-    if: needs.check.outputs.skip != 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    env:
-      LATEST: ${{ needs.check.outputs.latest }}
-      FIX_UP: |-
-        forge fmt
-        yarn test:storage || true
-        yarn test:signatures || true
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Bump pinned Foundry
-        run: sed -i -E "s/v[0-9]+\.[0-9]+\.[0-9]+/$LATEST/" .github/actions/install-foundry/action.yml
-
-      - name: Install Foundry
-        uses: ./.github/actions/install-foundry
-
-      - name: Setup node/yarn
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: 'yarn'
-          cache-dependency-path: '**/yarn.lock'
-
-      - name: Install packages
-        run: yarn
-
-      - name: Run fix-up commands
-        run: ${{ env.FIX_UP }}
-
-      - name: Save patch and PR body
-        env:
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          mkdir "$RUNNER_TEMP/foundry-update"
-          git diff > "$RUNNER_TEMP/foundry-update/changes.patch"
-          {
-            echo "Bumps Foundry to [$LATEST](https://github.com/foundry-rs/foundry/releases/tag/$LATEST) and runs:"
-            echo
-            echo '```'
-            echo "$FIX_UP"
-            echo '```'
-            echo
-            echo "Opened by the [Foundry Update workflow]($RUN_URL). CI doesn't run on PRs opened by GitHub Actions. Close and reopen this PR to start it."
-          } > "$RUNNER_TEMP/foundry-update/body.md"
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: foundry-update
-          path: ${{ runner.temp }}/foundry-update
-
-  # Pushes and PRs made with GITHUB_TOKEN don't trigger CI. A person closing and
-  # reopening the PR does
-  publish:
-    needs: [check, prepare]
-    runs-on: ubuntu-latest
+  foundry-update:
+    uses: OffchainLabs/actions/.github/workflows/foundry-update.yml@main
     permissions:
       contents: write
       pull-requests: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: foundry-update
-          path: ${{ runner.temp }}/foundry-update
-
-      - name: Push branch and open PR
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TITLE: Bump Foundry to ${{ needs.check.outputs.latest }}
-        run: |
-          git apply "$RUNNER_TEMP/foundry-update/changes.patch"
-          git switch -c ci/foundry-update
-          git -c user.name='github-actions[bot]' \
-              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-              commit -am "$TITLE"
-          git push --force origin ci/foundry-update
-          if [ "$(gh pr list --head ci/foundry-update --json number --jq length)" = 0 ]; then
-            gh pr create --base "$GITHUB_REF_NAME" --head ci/foundry-update --reviewer yahgwai --title "$TITLE" --body-file "$RUNNER_TEMP/foundry-update/body.md"
-          else
-            gh pr edit ci/foundry-update --title "$TITLE" --body-file "$RUNNER_TEMP/foundry-update/body.md"
-          fi
+    with:
+      reviewer: yahgwai
+      fix-up: |
+        forge fmt
+        yarn test:storage || true
+        yarn test:signatures || true
