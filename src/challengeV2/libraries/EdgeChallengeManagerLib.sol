@@ -798,7 +798,7 @@ library EdgeChallengeManagerLib {
                 stepSize *= bigStepHeight;
             }
 
-            execCtx.assertionStart = isAssertionStart(store, cursor);
+            execCtx.isFirstBlock = isFirstBlock(store, cursor);
         }
 
         // the state in the onestep data must be committed to by the startHistoryRoot
@@ -831,7 +831,7 @@ library EdgeChallengeManagerLib {
         store.edges[edgeId].totalTimeUnrivaledCache = type(uint64).max;
     }
 
-    function isAssertionStart(
+    function isFirstBlock(
         EdgeStore storage store,
         bytes32 levelOneEdgeId
     ) internal view returns (bool) {

@@ -412,7 +412,7 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
             initialWasmModuleRoot: prevConfig.wasmModuleRoot,
             targetParentChainBlockHash: prevConfig.targetParentChainBlockHash,
             melConfig: address(assertionChain),
-            assertionStart: false
+            isFirstBlock: false
         });
 
         store.confirmEdgeByOneStepProof(
