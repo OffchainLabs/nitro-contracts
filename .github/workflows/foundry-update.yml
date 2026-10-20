@@ -39,6 +39,12 @@ jobs:
       contents: read
     env:
       LATEST: ${{ needs.check.outputs.latest }}
+      FIX_UP: |-
+        forge fmt
+        yarn test:storage || true
+        yarn test:signatures || true
+        pipx install slither-analyzer
+        slither . --skip-assembly --fail-medium
     steps:
       - uses: actions/checkout@v4
         with:
@@ -60,40 +66,29 @@ jobs:
       - name: Install packages
         run: yarn
 
-      - name: Format and regenerate storage and signatures
-        run: |
-          forge fmt
-          yarn test:storage || true
-          yarn test:signatures || true
-
-      - name: Run Slither
-        id: slither
-        uses: crytic/slither-action@v0.4.0
+      - name: Run fix-up commands
+        id: fixup
         continue-on-error: true
-        with:
-          fail-on: medium
-          slither-args: --skip-assembly
+        run: ${{ env.FIX_UP }}
 
       - name: Save patch and PR body
         env:
-          SLITHER: ${{ steps.slither.outcome }}
+          FIX_UP_OUTCOME: ${{ steps.fixup.outcome }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           mkdir "$RUNNER_TEMP/foundry-update"
           git diff > "$RUNNER_TEMP/foundry-update/changes.patch"
           {
-            echo "Bumps Foundry to [$LATEST](https://github.com/foundry-rs/foundry/releases/tag/$LATEST), with \`forge fmt\` and regenerated storage and signature files. Opened by the [Foundry Update workflow]($RUN_URL)."
+            echo "Bumps Foundry to [$LATEST](https://github.com/foundry-rs/foundry/releases/tag/$LATEST) and runs:"
             echo
-            echo "CI doesn't run on PRs opened by GitHub Actions. Close and reopen this PR to start it."
-            if [ "$SLITHER" = failure ]; then
+            echo '```'
+            echo "$FIX_UP"
+            echo '```'
+            echo
+            echo "Opened by the [Foundry Update workflow]($RUN_URL). CI doesn't run on PRs opened by GitHub Actions. Close and reopen this PR to start it."
+            if [ "$FIX_UP_OUTCOME" = failure ] && [[ "$FIX_UP" == *slither* ]]; then
               echo
-              echo "### Slither triage database needs updating"
-              echo
-              echo "\`forge fmt\` moved code that \`slither.db.json\` refers to, so Slither reports findings that were already triaged. Before merging:"
-              echo
-              echo "1. \`git checkout ci/foundry-update && foundryup --install $LATEST\`"
-              echo "2. Run \`yarn slither-triage\` and hide the Medium and High findings that the Slither check on this PR reports. Each should match an existing entry apart from its line numbers. Treat any that don't as new findings"
-              echo "3. Commit \`slither.db.json\` and push"
+              echo "Slither db may need recreating. Run \`slither . --triage-mode\`."
             fi
           } > "$RUNNER_TEMP/foundry-update/body.md"
 
