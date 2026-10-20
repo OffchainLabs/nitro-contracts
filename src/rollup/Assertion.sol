@@ -57,7 +57,7 @@ struct ConfigData {
     uint256 requiredStake;
     address challengeManager;
     uint64 confirmPeriodBlocks;
-    // MEL anchor for next assertion, zero and excluded from configHash until MEL is enabled
+    // MEL anchor for next assertion
     bytes32 targetParentChainBlockHash;
 }
 

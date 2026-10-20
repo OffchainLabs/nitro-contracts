@@ -41,7 +41,7 @@ abstract contract RollupCoreTransition is RollupCore, IRollupCoreTransition {
         bytes32 sequencerBatchAcc;
         bytes32 targetParentChainBlockHash;
         (newAssertionHash, overflowAssertion, sequencerBatchAcc, targetParentChainBlockHash) =
-            _createAssertionInternal(
+            createAssertionInternal(
                 assertion.beforeState,
                 assertion.afterState,
                 prevAssertionHash,

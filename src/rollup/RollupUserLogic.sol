@@ -67,7 +67,7 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         validatorWhitelistDisabled = true;
     }
 
-    function _confirmAssertionImpl(
+    function _confirmAssertion(
         bytes32 assertionHash,
         bytes32 prevAssertionHash,
         AssertionState calldata confirmState,
@@ -134,7 +134,7 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         AssertionNode storage prevAssertion = getAssertionStorage(prevAssertionHash);
         RollupLib.validateConfigHash(prevConfig, prevAssertion.configHash);
 
-        _confirmAssertionImpl(
+        _confirmAssertion(
             assertionHash,
             prevAssertionHash,
             confirmState,
@@ -175,7 +175,7 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         return RollupLib.assertionHash(prevAssertionHash, state, inboxAcc);
     }
 
-    function _checkAssertionAndStakingInformation(
+    function _prepareStakeOnNewAssertion(
         AssertionState calldata beforeState,
         bytes32 prevPrevAssertionHash,
         bytes32 sequencerBatchAcc,
@@ -221,7 +221,7 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         return prevAssertion;
     }
 
-    function _completeAssertionCreation(
+    function _finishStakeOnNewAssertion(
         bytes32 newAssertionHash,
         bytes32 parentAssertionHash,
         uint256 requiredStake,
@@ -254,7 +254,7 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         AssertionInputs calldata assertion,
         bytes32 expectedAssertionHash
     ) public onlyValidator(msg.sender) whenNotPaused {
-        bytes32 parentAssertionHash = _checkAssertionAndStakingInformation(
+        bytes32 parentAssertionHash = _prepareStakeOnNewAssertion(
             assertion.beforeState,
             assertion.beforeStateData.prevPrevAssertionHash,
             assertion.beforeStateData.sequencerBatchAcc,
@@ -265,7 +265,7 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         (bytes32 newAssertionHash, bool overflowAssertion) =
             createNewAssertion(assertion, parentAssertionHash, expectedAssertionHash);
 
-        _completeAssertionCreation(
+        _finishStakeOnNewAssertion(
             newAssertionHash,
             parentAssertionHash,
             assertion.beforeStateData.configData.requiredStake,
@@ -347,7 +347,7 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         confirmAssertionInternal(assertionHash, parentAssertionHash, confirmState, inboxAcc);
     }
 
-    function _fastConfirmNewAssertionChecks(
+    function _prepareFastConfirmNewAssertion(
         AssertionState calldata beforeState,
         bytes32 prevPrevAssertionHash,
         bytes32 prevSequencerBatchAcc,
@@ -362,7 +362,7 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         getAssertionStorage(prevAssertion).requireExists();
     }
 
-    function _fastConfirmNewAssertionConfirmationImpl(
+    function _finishFastConfirmNewAssertion(
         uint256 afterInboxPosition,
         bytes32 expectedAssertionHash,
         bytes32 prevAssertion,
@@ -396,7 +396,7 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
         AssertionInputs calldata assertion,
         bytes32 expectedAssertionHash
     ) external whenNotPaused {
-        (AssertionStatus status, bytes32 prevAssertion) = _fastConfirmNewAssertionChecks(
+        (AssertionStatus status, bytes32 prevAssertion) = _prepareFastConfirmNewAssertion(
             assertion.beforeState,
             assertion.beforeStateData.prevPrevAssertionHash,
             assertion.beforeStateData.sequencerBatchAcc,
@@ -418,7 +418,7 @@ contract RollupUserLogic is RollupCore, UUPSNotUpgradeable, IRollupUser {
             }
         }
 
-        _fastConfirmNewAssertionConfirmationImpl(
+        _finishFastConfirmNewAssertion(
             assertion.afterState.globalState.getInboxPosition(),
             expectedAssertionHash,
             prevAssertion,

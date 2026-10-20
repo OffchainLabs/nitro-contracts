@@ -418,7 +418,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         delete _stakerMap[stakerAddress];
     }
 
-    function _createAssertionInternal(
+    function createAssertionInternal(
         AssertionState calldata beforeState,
         AssertionState calldata afterState,
         bytes32 prevAssertionHash,
@@ -568,7 +568,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         bytes32 sequencerBatchAcc;
         bytes32 targetParentChainBlockHash;
         (newAssertionHash, overflowAssertion, sequencerBatchAcc, targetParentChainBlockHash) =
-            _createAssertionInternal(
+            createAssertionInternal(
                 assertion.beforeState,
                 assertion.afterState,
                 prevAssertionHash,

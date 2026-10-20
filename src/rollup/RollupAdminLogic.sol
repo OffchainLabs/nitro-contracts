@@ -73,7 +73,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
             inboxAcc: inboxAcc
         });
 
-        // MEL anchor for next assertion, zero and excluded from configHash until MEL is enabled
+        // MEL anchor for next assertion
         bytes32 targetParentChainBlockHash = bytes32(0);
 
         AssertionNode memory initialAssertion = AssertionNodeLib.createAssertion(

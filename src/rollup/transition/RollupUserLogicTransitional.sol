@@ -31,7 +31,7 @@ contract RollupUserLogicTransitional is
         AssertionNode storage prevAssertion = getAssertionStorage(prevAssertionHash);
         LegacyRollupLib.validateConfigHash(prevConfig, prevAssertion.configHash);
 
-        _confirmAssertionImpl(
+        _confirmAssertion(
             assertionHash,
             prevAssertionHash,
             confirmState,
@@ -52,7 +52,7 @@ contract RollupUserLogicTransitional is
         LegacyAssertionInputs calldata assertion,
         bytes32 expectedAssertionHash
     ) public onlyValidator(msg.sender) whenNotPaused {
-        bytes32 parentAssertionHash = _checkAssertionAndStakingInformation(
+        bytes32 parentAssertionHash = _prepareStakeOnNewAssertion(
             assertion.beforeState,
             assertion.beforeStateData.prevPrevAssertionHash,
             assertion.beforeStateData.sequencerBatchAcc,
@@ -63,7 +63,7 @@ contract RollupUserLogicTransitional is
         (bytes32 newAssertionHash, bool overflowAssertion) =
             createNewAssertion(assertion, parentAssertionHash, expectedAssertionHash);
 
-        _completeAssertionCreation(
+        _finishStakeOnNewAssertion(
             newAssertionHash,
             parentAssertionHash,
             assertion.beforeStateData.configData.requiredStake,
@@ -75,7 +75,7 @@ contract RollupUserLogicTransitional is
         LegacyAssertionInputs calldata assertion,
         bytes32 expectedAssertionHash
     ) external whenNotPaused {
-        (AssertionStatus status, bytes32 prevAssertion) = _fastConfirmNewAssertionChecks(
+        (AssertionStatus status, bytes32 prevAssertion) = _prepareFastConfirmNewAssertion(
             assertion.beforeState,
             assertion.beforeStateData.prevPrevAssertionHash,
             assertion.beforeStateData.sequencerBatchAcc,
@@ -97,7 +97,7 @@ contract RollupUserLogicTransitional is
             }
         }
 
-        _fastConfirmNewAssertionConfirmationImpl(
+        _finishFastConfirmNewAssertion(
             assertion.afterState.globalState.getInboxPosition(),
             expectedAssertionHash,
             prevAssertion,
