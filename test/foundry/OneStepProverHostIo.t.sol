@@ -463,6 +463,34 @@ contract OneStepProverHostIoTest is Test {
         );
     }
 
+    // An index this OSP does not know writes the all-0xff ABSENT leaf, matching the prover.
+    function testGetParentChainInputUnknownIndexWritesAbsent() public {
+        OneStepProverHostIoPublic ospHostIo =
+            new OneStepProverHostIoPublic(address(mockCustomDAProofValidator));
+
+        ExecutionContext memory context;
+        Machine memory mach;
+        Module memory mod;
+        Instruction memory inst;
+        inst.opcode = Instructions.GET_PARENT_CHAIN_INPUT;
+        inst.argumentData = 2;
+
+        mach.valueStack.push(ValueLib.newI32(0));
+        mod.moduleMemory.size = 32;
+        mod.moduleMemory.merkleRoot = keccak256(abi.encodePacked("Memory leaf:", bytes32(0)));
+        bytes memory proof = buildMerkleProof(bytes32(0));
+
+        (Machine memory resultMach, Module memory resultMod) =
+            ospHostIo.executeOneStep(context, mach, mod, inst, proof);
+
+        assertTrue(resultMach.status == MachineStatus.RUNNING, "machine should still be running");
+        assertEq(
+            resultMod.moduleMemory.merkleRoot,
+            keccak256(abi.encodePacked("Memory leaf:", Instructions.PARENT_CHAIN_INPUT_ABSENT)),
+            "absent sentinel not written to memory"
+        );
+    }
+
     // The executable READ_INBOX_MESSAGE host I/O path was removed; the opcode is no longer dispatched.
     function testReadInboxMessageOpcodeReverts() public {
         OneStepProverHostIoPublic ospHostIo =

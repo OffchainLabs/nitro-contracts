@@ -159,6 +159,10 @@ library Instructions {
     uint256 internal constant PARENT_CHAIN_INPUT_INDEX_TARGET_BLOCK_HASH = 0;
     uint256 internal constant PARENT_CHAIN_INPUT_INDEX_MEL_CONFIG = 1;
 
+    // Sentinel value indicating the absence of a parent chain input, due to using an unknown index
+    // Must match the prover's ParentChainInput::ABSENT
+    bytes32 internal constant PARENT_CHAIN_INPUT_ABSENT = bytes32(type(uint256).max);
+
     function hash(
         Instruction[] memory code
     ) internal pure returns (bytes32) {

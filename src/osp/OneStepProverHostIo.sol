@@ -628,8 +628,14 @@ contract OneStepProverHostIo is IOneStepProver {
                 leafIdx, bytes32(uint256(uint160(execCtx.melConfig)))
             );
         } else {
-            mach.status = MachineStatus.ERRORED;
-            return;
+            // Instead of erroring if the index is unknown, we serve the all-0xff ABSENT leaf the prover serves
+            // This allows for potential future indices to be added without breaking the replay binary that runs
+            // against an OSP set of contracts that doesn't know them yet (the binary would identify the absence
+            // of the input and handle it accordingly).
+            // Additionally, the index is an instruction immediate fixed when the replay binary is compiled, so
+            // it can never be a bad runtime argument.
+            mod.moduleMemory.merkleRoot =
+                merkleProof.computeRootFromMemory(leafIdx, Instructions.PARENT_CHAIN_INPUT_ABSENT);
         }
     }
 
