@@ -202,15 +202,6 @@ export async function deployOneStepProofEntry(
   proverHostIo: Contract
   osp: Contract
 }> {
-  console.log('Deploying HashProofHelper contract...')
-  const hashProofHelper = await deployContract(
-    'HashProofHelper',
-    signer,
-    [],
-    verify,
-    true
-  )
-
   console.log('Deploying OneStepProver contracts...')
   const prover0 = await deployContract(
     'OneStepProver0',
@@ -236,7 +227,7 @@ export async function deployOneStepProofEntry(
   const proverHostIo = await deployContract(
     'OneStepProverHostIo',
     signer,
-    [customDAValidator, hashProofHelper.address],
+    [customDAValidator],
     verify,
     true
   )

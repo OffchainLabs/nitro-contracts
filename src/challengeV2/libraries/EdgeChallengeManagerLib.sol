@@ -799,7 +799,7 @@ library EdgeChallengeManagerLib {
             }
 
             // Determine if this edge is the start of an assertion
-            execCtx.assertionStart = isAssertionStart(store, cursor);
+            execCtx.isFirstBlock = isFirstBlock(store, cursor);
         }
 
         // the state in the onestep data must be committed to by the startHistoryRoot
@@ -840,7 +840,7 @@ library EdgeChallengeManagerLib {
     ///      A true result identifies the first block-level interval.
     /// @param store The edge store containing all edges and rival data
     /// @param levelOneEdgeId The ID of the level-one edge to check
-    function isAssertionStart(
+    function isFirstBlock(
         EdgeStore storage store,
         bytes32 levelOneEdgeId
     ) internal view returns (bool) {

@@ -12,7 +12,6 @@ import "../state/Deserialize.sol";
 import "../state/ModuleMemory.sol";
 import "./IOneStepProver.sol";
 import "./ICustomDAProofValidator.sol";
-import "./IHashProofHelper.sol";
 
 contract OneStepProverHostIo is IOneStepProver {
     using GlobalStateLib for GlobalState;
@@ -31,14 +30,11 @@ contract OneStepProverHostIo is IOneStepProver {
     uint256 private constant CLAIMED_VALID_LEN = 1;
 
     ICustomDAProofValidator public immutable customDAValidator;
-    IHashProofHelper public immutable hashProofHelper;
 
     constructor(
-        address _customDAValidator,
-        address _hashProofHelper
+        address _customDAValidator
     ) {
         customDAValidator = ICustomDAProofValidator(_customDAValidator);
-        hashProofHelper = IHashProofHelper(_hashProofHelper);
     }
 
     function setLeafByte(
@@ -177,11 +173,6 @@ contract OneStepProverHostIo is IOneStepProver {
                     preimageEnd = preimage.length;
                 }
                 extracted = preimage[preimageOffset:preimageEnd];
-            } else if (proofType == 1) {
-                // The proof contains a part of the preimage, verified by the HashProofHelper contract
-                require(address(hashProofHelper) != address(0), "HASH_PROOF_HELPER_NOT_SET");
-
-                extracted = hashProofHelper.getPreimagePart(leafContents, uint64(preimageOffset));
             } else {
                 // TODO: support proving via an authenticated contract
                 revert("UNKNOWN_PREIMAGE_PROOF");
@@ -629,16 +620,22 @@ contract OneStepProverHostIo is IOneStepProver {
         (,, merkleProof) = mod.moduleMemory.proveLeaf(leafIdx, proof, proofOffset);
 
         // Update merkle root
-        if (inst.argumentData == Instructions.PARENT_CHAIN_INFO_INDEX_TARGET_BLOCK_HASH) {
+        if (inst.argumentData == Instructions.PARENT_CHAIN_INPUT_INDEX_TARGET_BLOCK_HASH) {
             mod.moduleMemory.merkleRoot =
                 merkleProof.computeRootFromMemory(leafIdx, execCtx.targetParentChainBlockHash);
-        } else if (inst.argumentData == Instructions.PARENT_CHAIN_INFO_INDEX_MEL_CONFIG) {
+        } else if (inst.argumentData == Instructions.PARENT_CHAIN_INPUT_INDEX_MEL_CONFIG) {
             mod.moduleMemory.merkleRoot = merkleProof.computeRootFromMemory(
                 leafIdx, bytes32(uint256(uint160(execCtx.melConfig)))
             );
         } else {
-            mach.status = MachineStatus.ERRORED;
-            return;
+            // Instead of erroring if the index is unknown, we serve the all-0xff ABSENT leaf the prover serves
+            // This allows for potential future indices to be added without breaking the replay binary that runs
+            // against an OSP set of contracts that doesn't know them yet (the binary would identify the absence
+            // of the input and handle it accordingly).
+            // Additionally, the index is an instruction immediate fixed when the replay binary is compiled, so
+            // it can never be a bad runtime argument.
+            mod.moduleMemory.merkleRoot =
+                merkleProof.computeRootFromMemory(leafIdx, Instructions.PARENT_CHAIN_INPUT_ABSENT);
         }
     }
 

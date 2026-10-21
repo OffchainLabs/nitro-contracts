@@ -42,8 +42,7 @@ contract AssertionPoolTest is Test {
 
     bytes32 constant FIRST_ASSERTION_BLOCKHASH = keccak256("FIRST_ASSERTION_BLOCKHASH");
     bytes32 constant FIRST_ASSERTION_SENDROOT = keccak256("FIRST_ASSERTION_SENDROOT");
-    bytes32 constant FIRST_ASSERTION_PARENT_CHAIN_BLOCKHASH =
-        keccak256("FIRST_ASSERTION_PARENT_CHAIN_BLOCKHASH");
+    bytes32 constant GENESIS_ASSERTION_TARGET_PARENT_CHAIN_BLOCK_HASH = keccak256("genesis");
 
     IERC20 token;
     RollupUserLogic userRollup;
@@ -122,7 +121,7 @@ contract AssertionPoolTest is Test {
         OneStepProver0 oneStepProver = new OneStepProver0();
         OneStepProverMemory oneStepProverMemory = new OneStepProverMemory();
         OneStepProverMath oneStepProverMath = new OneStepProverMath();
-        OneStepProverHostIo oneStepProverHostIo = new OneStepProverHostIo(address(0), address(0));
+        OneStepProverHostIo oneStepProverHostIo = new OneStepProverHostIo(address(0));
         OneStepProofEntry oneStepProofEntry = new OneStepProofEntry(
             oneStepProver, oneStepProverMemory, oneStepProverMath, oneStepProverHostIo
         );
@@ -223,7 +222,7 @@ contract AssertionPoolTest is Test {
 
         // store the parent chain block information to be used in the next assertion
         // (must be consistent with the the implementation of `initialize` in RollupAdminLogic)
-        firstAssertionParentChainBlockHash = bytes32(0);
+        firstAssertionParentChainBlockHash = GENESIS_ASSERTION_TARGET_PARENT_CHAIN_BLOCK_HASH;
 
         firstState.machineStatus = MachineStatus.FINISHED;
         firstState.globalState.bytes32Vals[0] = FIRST_ASSERTION_BLOCKHASH; // blockhash

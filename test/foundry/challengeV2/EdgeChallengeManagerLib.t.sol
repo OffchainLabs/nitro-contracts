@@ -1464,7 +1464,7 @@ contract EdgeChallengeManagerLibTest is Test {
             initialWasmModuleRoot: bytes32(0),
             targetParentChainBlockHash: bytes32(0),
             melConfig: address(0),
-            assertionStart: false
+            isFirstBlock: false
         });
         data.beforeProof = ProofUtils.generateInclusionProof(
             ProofUtils.rehashed(ArrayUtilsLib.slice(states1, 0, startHeight + 1)), startHeight

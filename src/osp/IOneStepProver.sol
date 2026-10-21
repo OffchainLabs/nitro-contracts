@@ -13,7 +13,7 @@ struct ExecutionContext {
     bytes32 initialWasmModuleRoot;
     bytes32 targetParentChainBlockHash;
     address melConfig;
-    bool assertionStart;
+    bool isFirstBlock;
 }
 
 abstract contract IOneStepProver {

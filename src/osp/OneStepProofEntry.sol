@@ -107,11 +107,26 @@ contract OneStepProofEntry is IOneStepProofEntry {
                 (globalState, offset) = Deserialize.globalState(proof, offset);
                 require(globalState.hash() == mach.globalStateHash, "BAD_GLOBAL_STATE");
 
-                // Machine is restarted if either it's starting a new run (status == YIELDED and step == 0) or it's finished (status coming from the previous assertion) and starting a new assertion (status == FINISHED, assertionStart == true, and step == 0)
+                // Machine is restarted based on its status, the step it's currently at, and whether it's the first
+                // block (run of the Machine) of a new assertion.
+                //
+                // In the following cases, the machine will restart:
+                // - If the machine is YIELDED and it's in the first step of any block, it means the machine is
+                //   starting a new run within the assertion (this also applies for overflowing assertions)
+                // - If the machine is FINISHED and it's in the first step of the first block of a new assertion,
+                //   it means the machine is starting a new assertion, where its status is coming from the previous
+                //   assertion's final state
+                //
+                // In the following cases, the machine will NOT restart:
+                // - If the machine is YIELDED and it's NOT in the first step, it means it finished the current run:
+                //   wait until it's in the first step of the next run
+                // - If the machine is FINISHED and it's NOT in the first step of the first block of a new assertion,
+                //   it means the machine finished processing the current assertion
+                // - If the machine is ERRORED, it means the machine encountered an error and will not restart
                 if (
                     (mach.status == MachineStatus.YIELDED && machineStep == 0)
                         || (mach.status == MachineStatus.FINISHED
-                            && execCtx.assertionStart
+                            && execCtx.isFirstBlock
                             && machineStep == 0)
                 ) {
                     // Kickstart the machine
