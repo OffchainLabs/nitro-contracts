@@ -2185,7 +2185,7 @@ contract EdgeChallengeManagerTest is Test {
                     initialWasmModuleRoot: bytes32(0),
                     targetParentChainBlockHash: firstParentChainBlockHash,
                     melConfig: melConfig,
-                    assertionStart: true // the proven edge starts at machine step 0 of the assertion
+                    isFirstBlock: true // the proven edge starts at machine step 0 of the assertion
                 })
             )
         );
