@@ -11,6 +11,7 @@ import "../precompiles/ArbGasInfo.sol";
 import "../libraries/ArbitrumChecker.sol";
 import "../bridge/IDelayedMessageProvider.sol";
 import "../libraries/DelegateCallAware.sol";
+import "../libraries/ContractVersion.sol";
 import {AlreadyInit, HadZeroInit, RollupNotChanged} from "../libraries/Error.sol";
 
 /**
@@ -19,7 +20,8 @@ import {AlreadyInit, HadZeroInit, RollupNotChanged} from "../libraries/Error.sol
 abstract contract AbsRollupEventInbox is
     IRollupEventInbox,
     IDelayedMessageProvider,
-    DelegateCallAware
+    DelegateCallAware,
+    ContractVersion
 {
     IBridge public override bridge;
     address public override rollup;

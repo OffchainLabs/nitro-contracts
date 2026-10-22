@@ -8,10 +8,11 @@ import "../state/Deserialize.sol";
 import "../state/Machine.sol";
 import "../state/MerkleProof.sol";
 import "../state/MultiStack.sol";
+import "../libraries/ContractVersion.sol";
 import "./IOneStepProver.sol";
 import "./IOneStepProofEntry.sol";
 
-contract OneStepProofEntry is IOneStepProofEntry {
+contract OneStepProofEntry is IOneStepProofEntry, ContractVersion {
     using MerkleProofLib for MerkleProof;
     using MachineLib for Machine;
     using GlobalStateLib for GlobalState;

@@ -6,8 +6,9 @@
 pragma solidity >=0.6.9 <0.9.0;
 
 import "./IOwnable.sol";
+import "../libraries/IContractVersion.sol";
 
-interface IBridge {
+interface IBridge is IContractVersion {
     /// @dev This is an instruction to offchain readers to inform them where to look
     ///      for sequencer inbox batch data. This is not the type of data (eg. das, brotli encoded, or blob versioned hash)
     ///      and this enum is not used in the state transition function, rather it informs an offchain

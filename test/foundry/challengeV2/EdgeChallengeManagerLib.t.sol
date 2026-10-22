@@ -7,9 +7,10 @@ pragma solidity ^0.8.17;
 import "forge-std/Test.sol";
 import "../mocks/MockAssertionChain.sol";
 import "../../../src/challengeV2/EdgeChallengeManager.sol";
+import "../../../src/libraries/ContractVersion.sol";
 import "./Utils.sol";
 
-contract MockOneStepProofEntry is IOneStepProofEntry {
+contract MockOneStepProofEntry is IOneStepProofEntry, ContractVersion {
     using GlobalStateLib for GlobalState;
 
     constructor(

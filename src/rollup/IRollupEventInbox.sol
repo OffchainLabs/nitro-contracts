@@ -5,8 +5,9 @@
 pragma solidity ^0.8.0;
 
 import "../bridge/IBridge.sol";
+import "../libraries/IContractVersion.sol";
 
-interface IRollupEventInbox {
+interface IRollupEventInbox is IContractVersion {
     function bridge() external view returns (IBridge);
 
     function initialize(

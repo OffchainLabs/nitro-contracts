@@ -11,8 +11,9 @@ import "../bridge/IInboxBase.sol";
 import "./IRollupEventInbox.sol";
 import "../challengeV2/IEdgeChallengeManager.sol";
 import "../challengeV2/IAssertionChain.sol";
+import "../libraries/IContractVersion.sol";
 
-interface IRollupCore is IAssertionChain {
+interface IRollupCore is IAssertionChain, IContractVersion {
     struct Staker {
         uint256 amountStaked;
         bytes32 latestStakedAssertion;

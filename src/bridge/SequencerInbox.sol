@@ -51,6 +51,7 @@ import "../libraries/DelegateCallAware.sol";
 import {IGasRefunder} from "../libraries/IGasRefunder.sol";
 import {GasRefundEnabled} from "../libraries/GasRefundEnabled.sol";
 import "../libraries/ArbitrumChecker.sol";
+import "../libraries/ContractVersion.sol";
 import {IERC20Bridge} from "./IERC20Bridge.sol";
 import "./DelayBuffer.sol";
 
@@ -61,7 +62,7 @@ import "./DelayBuffer.sol";
  *         in the delayed inbox (Bridge.sol). If items in the delayed inbox are not included by a
  *         sequencer within a time limit they can be force included into the rollup inbox by anyone.
  */
-contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox {
+contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox, ContractVersion {
     using DelayBuffer for BufferData;
 
     uint256 public totalDelayedMessagesRead;

@@ -9,6 +9,7 @@ import "../bridge/IEthBridge.sol";
 import "../bridge/IDelayedMessageProvider.sol";
 import "../precompiles/ArbGasInfo.sol";
 import "../libraries/DelegateCallAware.sol";
+import "../libraries/ContractVersion.sol";
 import "../libraries/ArbitrumChecker.sol";
 import {INITIALIZATION_MSG_TYPE} from "../libraries/MessageTypes.sol";
 import {AlreadyInit, HadZeroInit} from "../libraries/Error.sol";
@@ -16,7 +17,12 @@ import {AlreadyInit, HadZeroInit} from "../libraries/Error.sol";
 /**
  * @title The inbox for rollup protocol events
  */
-contract MockRollupEventInbox is IRollupEventInbox, IDelayedMessageProvider, DelegateCallAware {
+contract MockRollupEventInbox is
+    IRollupEventInbox,
+    IDelayedMessageProvider,
+    DelegateCallAware,
+    ContractVersion
+{
     IBridge public override bridge;
     address public override rollup;
 

@@ -7,12 +7,13 @@ pragma solidity >=0.6.9 <0.9.0;
 pragma experimental ABIEncoderV2;
 
 import "../libraries/IGasRefunder.sol";
+import "../libraries/IContractVersion.sol";
 import "./IDelayedMessageProvider.sol";
 import "./IBridge.sol";
 import "./Messages.sol";
 import "./DelayBufferTypes.sol";
 
-interface ISequencerInbox is IDelayedMessageProvider {
+interface ISequencerInbox is IDelayedMessageProvider, IContractVersion {
     /// @notice The maximum amount of time variatin between a message being posted on the L1 and being executed on the L2
     /// @param delayBlocks The max amount of blocks in the past that a message can be received on L2
     /// @param futureBlocks The max amount of blocks in the future that a message can be received on L2

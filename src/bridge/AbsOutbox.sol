@@ -20,11 +20,12 @@ import "./IBridge.sol";
 import "./IOutbox.sol";
 import "../libraries/MerkleLib.sol";
 import "../libraries/DelegateCallAware.sol";
+import "../libraries/ContractVersion.sol";
 
 /// @dev this error is thrown since certain functions are only expected to be used in simulations, not in actual txs
 error SimulationOnlyEntrypoint();
 
-abstract contract AbsOutbox is DelegateCallAware, IOutbox {
+abstract contract AbsOutbox is DelegateCallAware, IOutbox, ContractVersion {
     address public rollup; // the rollup contract
     IBridge public bridge; // the bridge contract
 

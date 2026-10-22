@@ -6,6 +6,7 @@ pragma solidity ^0.8.0;
 
 import "./IOneStepProver.sol";
 import "../state/Machine.sol";
+import "../libraries/IContractVersion.sol";
 
 library OneStepProofEntryLib {
     uint256 internal constant MAX_STEPS = 1 << 43;
@@ -16,7 +17,7 @@ struct ExecutionState {
     MachineStatus machineStatus;
 }
 
-interface IOneStepProofEntry {
+interface IOneStepProofEntry is IContractVersion {
     function getStartMachineHash(
         bytes32 globalStateHash,
         bytes32 wasmModuleRoot

@@ -19,6 +19,7 @@ import "../bridge/IBridge.sol";
 import "../bridge/IEthBridge.sol";
 import "../bridge/Messages.sol";
 import "../libraries/DelegateCallAware.sol";
+import "../libraries/ContractVersion.sol";
 
 /**
  * @title Staging ground for incoming and outgoing messages
@@ -27,7 +28,7 @@ import "../libraries/DelegateCallAware.sol";
  * Since the escrow is held here, this contract also contains a list of allowed
  * outboxes that can make calls from here and withdraw this escrow.
  */
-contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
+contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge, ContractVersion {
     using AddressUpgradeable for address;
 
     struct InOutInfo {

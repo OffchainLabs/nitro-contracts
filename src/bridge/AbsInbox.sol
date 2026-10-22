@@ -27,6 +27,8 @@ import {
     L2MessageType_unsignedEOATx,
     L2_MSG
 } from "../libraries/MessageTypes.sol";
+import "../libraries/ContractVersion.sol";
+
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/StorageSlotUpgradeable.sol";
@@ -36,7 +38,7 @@ import "@openzeppelin/contracts-upgradeable/utils/StorageSlotUpgradeable.sol";
  * @notice Messages created via this inbox are enqueued in the delayed accumulator
  * to await inclusion in the SequencerInbox
  */
-abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase {
+abstract contract AbsInbox is DelegateCallAware, PausableUpgradeable, IInboxBase, ContractVersion {
     /// @dev Storage slot with the admin of the contract.
     /// This is the keccak-256 hash of "eip1967.proxy.admin" subtracted by 1.
     bytes32 internal constant _ADMIN_SLOT =

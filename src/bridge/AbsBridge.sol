@@ -21,6 +21,7 @@ import "./Messages.sol";
 import "../libraries/DelegateCallAware.sol";
 
 import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
+import "../libraries/ContractVersion.sol";
 
 /**
  * @title Staging ground for incoming and outgoing messages
@@ -28,7 +29,7 @@ import {L1MessageType_batchPostingReport} from "../libraries/MessageTypes.sol";
  * Since the escrow is held here, this contract also contains a list of allowed
  * outboxes that can make calls from here and withdraw this escrow.
  */
-abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
+abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge, ContractVersion {
     using AddressUpgradeable for address;
 
     struct InOutInfo {

@@ -6,8 +6,9 @@ pragma solidity ^0.8.17;
 
 import "../challengeV2/IEdgeChallengeManager.sol";
 import "../state/Deserialize.sol";
+import "../libraries/ContractVersion.sol";
 
-contract SimpleOneStepProofEntry is IOneStepProofEntry {
+contract SimpleOneStepProofEntry is IOneStepProofEntry, ContractVersion {
     using GlobalStateLib for GlobalState;
 
     // End the batch after 2000 steps. This results in 11 blocks for an honest validator.

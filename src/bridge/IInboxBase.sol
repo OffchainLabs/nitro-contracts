@@ -8,8 +8,9 @@ pragma solidity >=0.6.9 <0.9.0;
 import "./IBridge.sol";
 import "./IDelayedMessageProvider.sol";
 import "./ISequencerInbox.sol";
+import "../libraries/IContractVersion.sol";
 
-interface IInboxBase is IDelayedMessageProvider {
+interface IInboxBase is IDelayedMessageProvider, IContractVersion {
     function bridge() external view returns (IBridge);
 
     function sequencerInbox() external view returns (ISequencerInbox);

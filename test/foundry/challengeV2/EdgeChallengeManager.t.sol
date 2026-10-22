@@ -8,12 +8,13 @@ import "forge-std/Test.sol";
 import "./Utils.sol";
 import "../mocks/MockAssertionChain.sol";
 import "../../../src/challengeV2/EdgeChallengeManager.sol";
+import "../../../src/libraries/ContractVersion.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "../mocks/ERC20Mock.sol";
 import "./StateTools.sol";
 
-contract MockOneStepProofEntry is IOneStepProofEntry {
+contract MockOneStepProofEntry is IOneStepProofEntry, ContractVersion {
     function getStartMachineHash(
         bytes32 globalStateHash,
         bytes32 wasmModuleRoot

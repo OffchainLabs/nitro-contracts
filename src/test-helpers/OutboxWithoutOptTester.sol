@@ -17,8 +17,9 @@ import "../bridge/IBridge.sol";
 import "../bridge/IOutbox.sol";
 import "../libraries/MerkleLib.sol";
 import "../libraries/DelegateCallAware.sol";
+import "../libraries/ContractVersion.sol";
 
-contract OutboxWithoutOptTester is DelegateCallAware, IOutbox {
+contract OutboxWithoutOptTester is DelegateCallAware, IOutbox, ContractVersion {
     address public rollup; // the rollup contract
     IBridge public bridge; // the bridge contract
 

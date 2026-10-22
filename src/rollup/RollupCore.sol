@@ -19,8 +19,9 @@ import "../bridge/IBridge.sol";
 import "../bridge/IOutbox.sol";
 import "../challengeV2/IEdgeChallengeManager.sol";
 import "../libraries/ArbitrumChecker.sol";
+import "../libraries/ContractVersion.sol";
 
-abstract contract RollupCore is IRollupCore, PausableUpgradeable {
+abstract contract RollupCore is IRollupCore, PausableUpgradeable, ContractVersion {
     using AssertionNodeLib for AssertionNode;
     using GlobalStateLib for GlobalState;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;

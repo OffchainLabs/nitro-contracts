@@ -18,8 +18,9 @@ import {
     L2MessageType_unsignedEOATx,
     L2MessageType_unsignedContractTx
 } from "../libraries/MessageTypes.sol";
+import "../libraries/ContractVersion.sol";
 
-contract InboxStub is IInboxBase, IInbox {
+contract InboxStub is IInboxBase, IInbox, ContractVersion {
     IBridge public override bridge;
     ISequencerInbox public override sequencerInbox;
 

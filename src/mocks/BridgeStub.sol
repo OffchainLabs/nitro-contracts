@@ -6,11 +6,12 @@ pragma solidity ^0.8.0;
 
 import "./InboxStub.sol";
 import {BadSequencerMessageNumber} from "../libraries/Error.sol";
+import "../libraries/ContractVersion.sol";
 
 import "../bridge/IBridge.sol";
 import "../bridge/IEthBridge.sol";
 
-contract BridgeStub is IBridge, IEthBridge {
+contract BridgeStub is IBridge, IEthBridge, ContractVersion {
     struct InOutInfo {
         uint256 index;
         bool allowed;

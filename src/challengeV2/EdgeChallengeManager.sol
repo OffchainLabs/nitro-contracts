@@ -9,6 +9,7 @@ import "./libraries/UintUtilsLib.sol";
 import "./IEdgeChallengeManager.sol";
 import "./libraries/EdgeChallengeManagerLib.sol";
 import "../libraries/Constants.sol";
+import "../libraries/ContractVersion.sol";
 import "../state/Machine.sol";
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -22,7 +23,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 ///         believe in. These edges are then bisected, reducing the size of the disagreement with each bisection, and narrowing in on the
 ///         exact point of disagreement. Eventually, at step size 1, the step can be proved on-chain directly proving that the related assertion
 ///         must be invalid.
-contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
+contract EdgeChallengeManager is IEdgeChallengeManager, Initializable, ContractVersion {
     using EdgeChallengeManagerLib for EdgeStore;
     using ChallengeEdgeLib for ChallengeEdge;
     using SafeERC20 for IERC20;

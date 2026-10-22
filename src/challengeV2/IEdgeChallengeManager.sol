@@ -6,10 +6,11 @@ pragma solidity ^0.8.0;
 
 import "./IAssertionChain.sol";
 import "./libraries/Structs.sol";
+import "../libraries/IContractVersion.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title EdgeChallengeManager interface
-interface IEdgeChallengeManager {
+interface IEdgeChallengeManager is IContractVersion {
     /// @notice Initialize the EdgeChallengeManager. EdgeChallengeManagers are upgradeable
     ///         so use the initializer paradigm
     /// @param _assertionChain              The assertion chain contract

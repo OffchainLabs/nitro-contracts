@@ -6,8 +6,9 @@
 pragma solidity >=0.6.9 <0.9.0;
 
 import "./IBridge.sol";
+import "../libraries/IContractVersion.sol";
 
-interface IOutbox {
+interface IOutbox is IContractVersion {
     event SendRootUpdated(bytes32 indexed outputRoot, bytes32 indexed l2BlockHash);
     event OutBoxTransactionExecuted(
         address indexed to, address indexed l2Sender, uint256 indexed zero, uint256 transactionIndex
