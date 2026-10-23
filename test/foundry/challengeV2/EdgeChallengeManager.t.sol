@@ -130,7 +130,7 @@ contract EdgeChallengeManagerTest is Test {
         challengeManager.stakeToken().approve(address(challengeManager), type(uint256).max);
 
         genesisAssertionHash = assertionChain.addAssertionUnsafe(
-            0, genesisHeight, inboxMsgCountGenesis, firstParentChainBlockHash, genesisState, 0
+            0, genesisHeight, firstParentChainBlockHash, genesisState, 0
         );
         return (assertionChain, challengeManager, genesisAssertionHash);
     }
@@ -342,22 +342,10 @@ contract EdgeChallengeManagerTest is Test {
 
         // add one since heights are zero indexed in the history states
         bytes32 a1 = assertionChain.addAssertion(
-            genesis,
-            genesisHeight + height1,
-            inboxMsgCountAssertion,
-            targetParentChainBlockHash,
-            genesisState,
-            a1State,
-            0
+            genesis, genesisHeight + height1, targetParentChainBlockHash, genesisState, a1State, 0
         );
         bytes32 a2 = assertionChain.addAssertion(
-            genesis,
-            genesisHeight + height1,
-            inboxMsgCountAssertion,
-            targetParentChainBlockHash,
-            genesisState,
-            a2State,
-            0
+            genesis, genesisHeight + height1, targetParentChainBlockHash, genesisState, a2State, 0
         );
 
         return EdgeInitData({
@@ -410,13 +398,7 @@ contract EdgeChallengeManagerTest is Test {
         bytes32 targetParentChainBlockHash = blockhash(block.number - 1);
 
         bytes32 a1 = assertionChain.addAssertion(
-            genesis,
-            genesisHeight + height1,
-            inboxMsgCountAssertion,
-            targetParentChainBlockHash,
-            genesisState,
-            a1State,
-            0
+            genesis, genesisHeight + height1, targetParentChainBlockHash, genesisState, a1State, 0
         );
 
         vm.expectRevert(abi.encodeWithSelector(AssertionNoSibling.selector));
@@ -787,7 +769,6 @@ contract EdgeChallengeManagerTest is Test {
             .addAssertion(
                 ei.genesis,
                 genesisHeight + height1,
-                inboxMsgCountAssertion,
                 targetParentChainBlockHash,
                 genesisState,
                 a2State,
@@ -2136,7 +2117,6 @@ contract EdgeChallengeManagerTest is Test {
                     requiredStake: 0,
                     challengeManager: address(0),
                     confirmPeriodBlocks: 0,
-                    nextInboxPosition: inboxMsgCountGenesis,
                     targetParentChainBlockHash: firstParentChainBlockHash
                 }),
                 ProofUtils.generateInclusionProof(ProofUtils.rehashed(genesisStates()), 0),
