@@ -144,7 +144,7 @@ library Instructions {
 
     uint16 internal constant VALIDATE_CERTIFICATE = 0x8019;
     uint16 internal constant READ_PRE_IMAGE = 0x8020;
-    uint16 internal constant READ_INBOX_MESSAGE = 0x8021;
+    uint16 internal constant READ_INBOX_MESSAGE = 0x8021; // Removed, reverts with "INVALID_HOSTIO_OPCODE"
     uint16 internal constant HALT_AND_SET_FINISHED = 0x8022;
     uint16 internal constant LINK_MODULE = 0x8023;
     uint16 internal constant UNLINK_MODULE = 0x8024;
@@ -153,8 +153,15 @@ library Instructions {
     uint16 internal constant POP_COTHREAD = 0x8031;
     uint16 internal constant SWITCH_COTHREAD = 0x8032;
 
-    uint256 internal constant INBOX_INDEX_SEQUENCER = 0;
-    uint256 internal constant INBOX_INDEX_DELAYED = 1;
+    uint16 internal constant GET_PARENT_CHAIN_INPUT = 0x8033;
+    uint16 internal constant HALT_AND_SET_YIELDED = 0x8034;
+
+    uint256 internal constant PARENT_CHAIN_INPUT_INDEX_TARGET_BLOCK_HASH = 0;
+    uint256 internal constant PARENT_CHAIN_INPUT_INDEX_MEL_CONFIG = 1;
+
+    // Sentinel value indicating the absence of a parent chain input, due to using an unknown index
+    // Must match the prover's ParentChainInput::ABSENT
+    bytes32 internal constant PARENT_CHAIN_INPUT_ABSENT = bytes32(type(uint256).max);
 
     function hash(
         Instruction[] memory code

@@ -12,6 +12,7 @@ import "../bridge/IOutbox.sol";
 import "../bridge/IInboxBase.sol";
 import "./IRollupEventInbox.sol";
 import "./IRollupLogic.sol";
+import "./IMelConfig.sol";
 import "../challengeV2/IEdgeChallengeManager.sol";
 
 struct Config {
@@ -32,8 +33,6 @@ struct Config {
     uint256 layerZeroSmallStepEdgeHeight;
     /// @notice The execution state to be used in the genesis assertion
     AssertionState genesisAssertionState;
-    /// @notice The inbox size at the time the genesis execution state was created
-    uint256 genesisInboxCount;
     address anyTrustFastConfirmer;
     uint8 numBigStepLevel;
     uint64 challengeGracePeriodBlocks;
@@ -52,4 +51,5 @@ struct ContractDependencies {
     address rollupAdminLogic; // this cannot be IRollupAdmin because of circular dependencies
     IRollupUser rollupUserLogic;
     address validatorWalletCreator;
+    IMelConfig melConfig;
 }

@@ -45,6 +45,20 @@ const solidity: SolidityConfig = {
         optimizer: { ...commonSetting.optimizer, runs: 20 },
       },
     },
+    'src/rollup/transition/RollupUserLogicTransitional.sol': {
+      version: '0.8.17',
+      settings: {
+        ...commonSetting,
+        optimizer: { ...commonSetting.optimizer, runs: 20 },
+      },
+    },
+    'src/rollup/transition/RollupAdminLogicTransitional.sol': {
+      version: '0.8.17',
+      settings: {
+        ...commonSetting,
+        optimizer: { ...commonSetting.optimizer, runs: 20 },
+      },
+    },
     'src/challengeV2/EdgeChallengeManager.sol': {
       version: '0.8.17',
       settings: {
