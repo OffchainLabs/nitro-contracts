@@ -342,20 +342,10 @@ contract EdgeChallengeManagerTest is Test {
 
         // add one since heights are zero indexed in the history states
         bytes32 a1 = assertionChain.addAssertion(
-            genesis,
-            genesisHeight + height1,
-            targetParentChainBlockHash,
-            genesisState,
-            a1State,
-            0
+            genesis, genesisHeight + height1, targetParentChainBlockHash, genesisState, a1State, 0
         );
         bytes32 a2 = assertionChain.addAssertion(
-            genesis,
-            genesisHeight + height1,
-            targetParentChainBlockHash,
-            genesisState,
-            a2State,
-            0
+            genesis, genesisHeight + height1, targetParentChainBlockHash, genesisState, a2State, 0
         );
 
         return EdgeInitData({
@@ -408,12 +398,7 @@ contract EdgeChallengeManagerTest is Test {
         bytes32 targetParentChainBlockHash = blockhash(block.number - 1);
 
         bytes32 a1 = assertionChain.addAssertion(
-            genesis,
-            genesisHeight + height1,
-            targetParentChainBlockHash,
-            genesisState,
-            a1State,
-            0
+            genesis, genesisHeight + height1, targetParentChainBlockHash, genesisState, a1State, 0
         );
 
         vm.expectRevert(abi.encodeWithSelector(AssertionNoSibling.selector));

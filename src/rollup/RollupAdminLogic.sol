@@ -15,7 +15,8 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
     using AssertionStateLib for AssertionState;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
-    bytes32 private constant GENESIS_ASSERTION_TARGET_PARENT_CHAIN_BLOCK_HASH = keccak256("genesis");
+    bytes32 private constant GENESIS_ASSERTION_TARGET_PARENT_CHAIN_BLOCK_HASH =
+        keccak256("genesis");
 
     function initialize(
         Config calldata config,

@@ -1758,30 +1758,24 @@ contract RollupTest is Test {
 
         vm.expectRevert();
         adminRollup.decreaseBaseStake(
-            BASE_STAKE - 1,
-            postGenesisConfigData.targetParentChainBlockHash
+            BASE_STAKE - 1, postGenesisConfigData.targetParentChainBlockHash
         );
 
         vm.expectRevert("BASE_STAKE_NOT_DECREASED");
         vm.prank(upgradeExecutorAddr);
         adminRollup.decreaseBaseStake(
-            BASE_STAKE + 1,
-            postGenesisConfigData.targetParentChainBlockHash
+            BASE_STAKE + 1, postGenesisConfigData.targetParentChainBlockHash
         );
 
         vm.expectRevert("BASE_STAKE_NOT_DECREASED");
         vm.prank(upgradeExecutorAddr);
-        adminRollup.decreaseBaseStake(
-            BASE_STAKE,
-            postGenesisConfigData.targetParentChainBlockHash
-        );
+        adminRollup.decreaseBaseStake(BASE_STAKE, postGenesisConfigData.targetParentChainBlockHash);
 
         vm.startPrank(upgradeExecutorAddr);
         adminRollup.setValidatorWhitelistDisabled(true);
         vm.expectRevert("DECREASE_ONLY_FOR_PERMISSIONED_CHAINS");
         adminRollup.decreaseBaseStake(
-            BASE_STAKE - 1,
-            postGenesisConfigData.targetParentChainBlockHash
+            BASE_STAKE - 1, postGenesisConfigData.targetParentChainBlockHash
         );
         adminRollup.setValidatorWhitelistDisabled(false);
         vm.stopPrank();
@@ -1789,8 +1783,7 @@ contract RollupTest is Test {
         vm.expectRevert("PENDING_ASSERTION_NOT_UPDATED");
         vm.prank(upgradeExecutorAddr);
         adminRollup.decreaseBaseStake(
-            BASE_STAKE - 1,
-            postGenesisConfigData.targetParentChainBlockHash
+            BASE_STAKE - 1, postGenesisConfigData.targetParentChainBlockHash
         );
 
         (
@@ -1803,8 +1796,7 @@ contract RollupTest is Test {
         vm.prank(upgradeExecutorAddr);
         vm.expectRevert("EXPIRED_CONFIG_HASH");
         adminRollup.decreaseBaseStake(
-            BASE_STAKE - 1,
-            postGenesisConfigData.targetParentChainBlockHash
+            BASE_STAKE - 1, postGenesisConfigData.targetParentChainBlockHash
         );
 
         vm.prank(upgradeExecutorAddr);
@@ -1896,8 +1888,6 @@ contract RollupTest is Test {
         userRollup.getAssertion(data.assertionHash);
         vm.expectRevert("TOO_MANY_PENDING_STAKERS");
         vm.prank(upgradeExecutorAddr);
-        adminRollup.decreaseBaseStake(
-            BASE_STAKE - 1, data.targetParentChainBlockHash
-        );
+        adminRollup.decreaseBaseStake(BASE_STAKE - 1, data.targetParentChainBlockHash);
     }
 }
