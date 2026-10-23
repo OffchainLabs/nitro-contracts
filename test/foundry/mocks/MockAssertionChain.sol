@@ -37,7 +37,7 @@ contract MockAssertionChain is IAssertionChain {
         return assertions[assertionHash].height != 0;
     }
 
-    function stakeToken() public view returns (address) {
+    function stakeToken() public pure returns (address) {
         return address(0);
     }
 
@@ -45,7 +45,7 @@ contract MockAssertionChain is IAssertionChain {
         bytes32 assertionHash,
         AssertionState calldata state,
         bytes32 prevAssertionHash,
-        bytes32 inboxAcc
+        bytes32
     ) external view {
         require(assertionExists(assertionHash), "Assertion does not exist");
         // TODO: HN: This is not how the real assertion chain calculate assertion hash
@@ -79,7 +79,6 @@ contract MockAssertionChain is IAssertionChain {
                 requiredStake: configData.requiredStake,
                 challengeManager: configData.challengeManager,
                 confirmPeriodBlocks: configData.confirmPeriodBlocks,
-                nextInboxPosition: configData.nextInboxPosition,
                 targetParentChainBlockHash: configData.targetParentChainBlockHash
             }) == assertions[assertionHash].configHash,
             "BAD_CONFIG"
@@ -124,7 +123,7 @@ contract MockAssertionChain is IAssertionChain {
     function addAssertionUnsafe(
         bytes32 predecessorId,
         uint256 height,
-        uint64 nextInboxPosition,
+        bytes32 targetParentChainBlockHash,
         AssertionState memory afterState,
         bytes32 successionChallenge
     ) public returns (bytes32) {
@@ -143,8 +142,7 @@ contract MockAssertionChain is IAssertionChain {
                 requiredStake: baseStake,
                 challengeManager: challengeManager,
                 confirmPeriodBlocks: confirmPeriodBlocks,
-                nextInboxPosition: nextInboxPosition,
-                targetParentChainBlockHash: bytes32(0)
+                targetParentChainBlockHash: targetParentChainBlockHash
             })
         });
         childCreated(predecessorId);
@@ -154,7 +152,7 @@ contract MockAssertionChain is IAssertionChain {
     function addAssertion(
         bytes32 predecessorId,
         uint256 height,
-        uint64 nextInboxPosition,
+        bytes32 targetParentChainBlockHash,
         AssertionState memory beforeState,
         AssertionState memory afterState,
         bytes32 successionChallenge
@@ -170,7 +168,7 @@ contract MockAssertionChain is IAssertionChain {
         );
 
         return addAssertionUnsafe(
-            predecessorId, height, nextInboxPosition, afterState, successionChallenge
+            predecessorId, height, targetParentChainBlockHash, afterState, successionChallenge
         );
     }
 

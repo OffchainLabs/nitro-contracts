@@ -15,6 +15,9 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
     using AssertionStateLib for AssertionState;
     using EnumerableSetUpgradeable for EnumerableSetUpgradeable.AddressSet;
 
+    bytes32 private constant GENESIS_ASSERTION_TARGET_PARENT_CHAIN_BLOCK_HASH =
+        keccak256("genesis");
+
     function initialize(
         Config calldata config,
         ContractDependencies calldata connectedContracts
@@ -73,14 +76,8 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
             inboxAcc: inboxAcc
         });
 
-        uint256 currentInboxCount = bridge.sequencerMessageCount();
-        // ensure to move the inbox forward by at least one message
-        if (currentInboxCount == config.genesisInboxCount) {
-            currentInboxCount += 1;
-        }
-
-        // MEL anchor for next assertion, zero and excluded from configHash until MEL is enabled
-        bytes32 targetParentChainBlockHash = bytes32(0);
+        // MEL anchor for next assertion
+        bytes32 targetParentChainBlockHash = GENESIS_ASSERTION_TARGET_PARENT_CHAIN_BLOCK_HASH;
 
         AssertionNode memory initialAssertion = AssertionNodeLib.createAssertion(
             true,
@@ -89,7 +86,6 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
                 requiredStake: baseStake,
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: confirmPeriodBlocks,
-                nextInboxPosition: uint64(currentInboxCount),
                 targetParentChainBlockHash: targetParentChainBlockHash
             })
         );
@@ -102,7 +98,6 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
             parentAssertionHash,
             assertionInputs,
             inboxAcc,
-            currentInboxCount,
             targetParentChainBlockHash,
             wasmModuleRoot,
             baseStake,
@@ -276,12 +271,9 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      */
     function decreaseBaseStake(
         uint256 newBaseStake,
-        uint64 latestNextInboxPosition
+        bytes32 latestTargetParentChainBlockHash
     ) external override {
         require(newBaseStake < baseStake, "BASE_STAKE_NOT_DECREASED");
-
-        // MEL anchor is zero and excluded from configHash until MEL is enabled
-        bytes32 targetParentChainBlockHash = bytes32(0);
 
         // if we're decreasing the stake we need to be more careful not to allow a malicious party
         // to withdraw some (up to the difference between baseStake and newBaseStake) honest funds from this contract
@@ -304,8 +296,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
             requiredStake: baseStake,
             challengeManager: address(challengeManager),
             confirmPeriodBlocks: confirmPeriodBlocks,
-            nextInboxPosition: uint64(latestNextInboxPosition),
-            targetParentChainBlockHash: targetParentChainBlockHash
+            targetParentChainBlockHash: latestTargetParentChainBlockHash
         });
 
         uint256 pendingCount = 0;
@@ -326,8 +317,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
                     requiredStake: newBaseStake,
                     challengeManager: address(challengeManager),
                     confirmPeriodBlocks: confirmPeriodBlocks,
-                    nextInboxPosition: uint64(latestNextInboxPosition),
-                    targetParentChainBlockHash: targetParentChainBlockHash
+                    targetParentChainBlockHash: latestTargetParentChainBlockHash
                 });
 
                 pendingCount++;

@@ -41,6 +41,7 @@ contract AssertionPoolTest is Test {
 
     bytes32 constant FIRST_ASSERTION_BLOCKHASH = keccak256("FIRST_ASSERTION_BLOCKHASH");
     bytes32 constant FIRST_ASSERTION_SENDROOT = keccak256("FIRST_ASSERTION_SENDROOT");
+    bytes32 constant GENESIS_ASSERTION_TARGET_PARENT_CHAIN_BLOCK_HASH = keccak256("genesis");
 
     IERC20 token;
     RollupUserLogic userRollup;
@@ -54,6 +55,7 @@ contract AssertionPoolTest is Test {
         parentAssertionHash: bytes32(0), afterState: emptyAssertionState, inboxAcc: bytes32(0)
     });
     AssertionState firstState;
+    bytes32 firstAssertionParentChainBlockHash;
 
     IAssertionStakingPool pool;
 
@@ -138,11 +140,7 @@ contract AssertionPoolTest is Test {
             address(0),
             deployHelper
         );
-        AssertionState memory emptyState = AssertionState(
-            GlobalState([bytes32(0), bytes32(0)], [uint64(0), uint64(0)]),
-            MachineStatus.FINISHED,
-            bytes32(0)
-        );
+        AssertionState memory emptyState = emptyAssertionState;
         token = new TestWETH9("Test", "TEST");
         IWETH9(address(token)).deposit{value: 21 ether}();
 
@@ -218,6 +216,10 @@ contract AssertionPoolTest is Test {
         adminRollup.sequencerInbox().setIsBatchPoster(sequencer, true);
         vm.stopPrank();
 
+        // store the parent chain block information to be used in the next assertion
+        // (must be consistent with the the implementation of `initialize` in RollupAdminLogic)
+        firstAssertionParentChainBlockHash = GENESIS_ASSERTION_TARGET_PARENT_CHAIN_BLOCK_HASH;
+
         firstState.machineStatus = MachineStatus.FINISHED;
         firstState.globalState.bytes32Vals[0] = FIRST_ASSERTION_BLOCKHASH; // blockhash
         firstState.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // sendroot
@@ -250,8 +252,7 @@ contract AssertionPoolTest is Test {
                     requiredStake: BASE_STAKE,
                     challengeManager: address(challengeManager),
                     confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                    nextInboxPosition: afterState.globalState.u64Vals[0],
-                    targetParentChainBlockHash: bytes32(0)
+                    targetParentChainBlockHash: firstAssertionParentChainBlockHash
                 })
             }),
             beforeState: beforeState,
@@ -366,8 +367,7 @@ contract AssertionPoolTest is Test {
                 requiredStake: BASE_STAKE,
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                nextInboxPosition: firstState.globalState.u64Vals[0],
-                targetParentChainBlockHash: bytes32(0)
+                targetParentChainBlockHash: firstAssertionParentChainBlockHash
             }),
             inboxAccs
         );
