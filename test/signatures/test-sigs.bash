@@ -3,8 +3,11 @@ output_dir="./test/signatures"
 PIDS=()
 CHANGED=0
 
+CONTRACTS="Bridge Inbox Outbox RollupCore RollupUserLogic RollupAdminLogic SequencerInbox EdgeChallengeManager ERC20Bridge ERC20Inbox ERC20Outbox BridgeCreator DeployHelper RollupCreator OneStepProofEntry OneStepProverHostIo OneStepProverMemory OneStepProverMath OneStepProver0 CacheManager ERC20MigrationOutbox MelConfig"
+TRANSITION_CONTRACTS="RollupCoreTransition RollupUserLogicTransitional RollupAdminLogicTransitional"
+
 forge build
-for CONTRACTNAME in Bridge Inbox Outbox RollupCore RollupUserLogic RollupAdminLogic SequencerInbox EdgeChallengeManager ERC20Bridge ERC20Inbox ERC20Outbox BridgeCreator DeployHelper RollupCreator OneStepProofEntry OneStepProverHostIo OneStepProverMemory OneStepProverMath OneStepProver0 CacheManager ERC20MigrationOutbox MelConfig
+for CONTRACTNAME in $CONTRACTS $TRANSITION_CONTRACTS
 do
     (
         echo "Checking for signature changes in $CONTRACTNAME"

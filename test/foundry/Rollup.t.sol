@@ -114,7 +114,6 @@ contract RollupTest is Test {
         bytes32 indexed parentAssertionHash,
         AssertionInputs assertion,
         bytes32 afterInboxBatchAcc,
-        uint256 inboxMaxCount,
         bytes32 targetParentChainBlockHash,
         bytes32 wasmModuleRoot,
         uint256 requiredStake,
@@ -315,7 +314,6 @@ contract RollupTest is Test {
             requiredStake: BASE_STAKE,
             challengeManager: address(challengeManager),
             confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-            nextInboxPosition: 1, // Initialization batch is posted before creating the genesis assertion
             targetParentChainBlockHash: GENESIS_ASSERTION_TARGET_PARENT_CHAIN_BLOCK_HASH
         });
         (bytes32 expectedAssertionHash, bytes32 parentAssertionHash) = _createAssertion(
@@ -336,7 +334,6 @@ contract RollupTest is Test {
             requiredStake: BASE_STAKE,
             challengeManager: address(challengeManager),
             confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-            nextInboxPosition: inboxCount,
             targetParentChainBlockHash: blockhash(block.number - 1)
         });
 
@@ -586,7 +583,6 @@ contract RollupTest is Test {
                 afterState: firstAssertionState
             }),
             inboxAcc,
-            2,
             blockhash(block.number - 1),
             WASM_MODULE_ROOT,
             BASE_STAKE,
@@ -796,7 +792,6 @@ contract RollupTest is Test {
                         requiredStake: BASE_STAKE,
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                        nextInboxPosition: afterState.globalState.u64Vals[0],
                         targetParentChainBlockHash: targetParentChainBlockHash
                     })
                 }),
@@ -1391,7 +1386,6 @@ contract RollupTest is Test {
                         requiredStake: BASE_STAKE,
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                        nextInboxPosition: afterState.globalState.u64Vals[0],
                         targetParentChainBlockHash: targetParentChainBlockHash
                     })
                 }),
@@ -1442,7 +1436,6 @@ contract RollupTest is Test {
                         requiredStake: BASE_STAKE,
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                        nextInboxPosition: inboxCount,
                         targetParentChainBlockHash: targetParentChainBlockHash
                     })
                 }),
@@ -1744,57 +1737,6 @@ contract RollupTest is Test {
         );
     }
 
-    function testConfigHash() public {
-        bytes32 _wasmModuleRoot = rand.hash();
-        uint256 _requiredStake = uint256(rand.hash());
-        address _challengeManager = rand.addr();
-        uint64 _confirmPeriodBlocks = uint64(uint256(rand.hash()));
-        uint64 _nextInboxPosition = uint64(uint256(rand.hash()));
-        bytes32 _targetParentChainBlockHash = rand.hash();
-
-        assertEq(
-            RollupLib.configHash(
-                _wasmModuleRoot,
-                _requiredStake,
-                _challengeManager,
-                _confirmPeriodBlocks,
-                _nextInboxPosition,
-                bytes32(0)
-            ),
-            keccak256(
-                abi.encodePacked(
-                    _wasmModuleRoot,
-                    _requiredStake,
-                    _challengeManager,
-                    _confirmPeriodBlocks,
-                    _nextInboxPosition
-                )
-            ),
-            "Unexpected hash with zero targetParentChainBlockHash"
-        );
-        assertEq(
-            RollupLib.configHash(
-                _wasmModuleRoot,
-                _requiredStake,
-                _challengeManager,
-                _confirmPeriodBlocks,
-                _nextInboxPosition,
-                _targetParentChainBlockHash
-            ),
-            keccak256(
-                abi.encodePacked(
-                    _wasmModuleRoot,
-                    _requiredStake,
-                    _challengeManager,
-                    _confirmPeriodBlocks,
-                    _nextInboxPosition,
-                    _targetParentChainBlockHash
-                )
-            ),
-            "Unexpected hash with non-zero targetParentChainBlockHash"
-        );
-    }
-
     function testIncreaseBaseStake() public {
         assertEq(adminRollup.baseStake(), BASE_STAKE, "Invalid before base stake");
 
@@ -1820,34 +1762,24 @@ contract RollupTest is Test {
 
         vm.expectRevert();
         adminRollup.decreaseBaseStake(
-            BASE_STAKE - 1,
-            postGenesisConfigData.nextInboxPosition,
-            postGenesisConfigData.targetParentChainBlockHash
+            BASE_STAKE - 1, postGenesisConfigData.targetParentChainBlockHash
         );
 
         vm.expectRevert("BASE_STAKE_NOT_DECREASED");
         vm.prank(upgradeExecutorAddr);
         adminRollup.decreaseBaseStake(
-            BASE_STAKE + 1,
-            postGenesisConfigData.nextInboxPosition,
-            postGenesisConfigData.targetParentChainBlockHash
+            BASE_STAKE + 1, postGenesisConfigData.targetParentChainBlockHash
         );
 
         vm.expectRevert("BASE_STAKE_NOT_DECREASED");
         vm.prank(upgradeExecutorAddr);
-        adminRollup.decreaseBaseStake(
-            BASE_STAKE,
-            postGenesisConfigData.nextInboxPosition,
-            postGenesisConfigData.targetParentChainBlockHash
-        );
+        adminRollup.decreaseBaseStake(BASE_STAKE, postGenesisConfigData.targetParentChainBlockHash);
 
         vm.startPrank(upgradeExecutorAddr);
         adminRollup.setValidatorWhitelistDisabled(true);
         vm.expectRevert("DECREASE_ONLY_FOR_PERMISSIONED_CHAINS");
         adminRollup.decreaseBaseStake(
-            BASE_STAKE - 1,
-            postGenesisConfigData.nextInboxPosition,
-            postGenesisConfigData.targetParentChainBlockHash
+            BASE_STAKE - 1, postGenesisConfigData.targetParentChainBlockHash
         );
         adminRollup.setValidatorWhitelistDisabled(false);
         vm.stopPrank();
@@ -1855,9 +1787,7 @@ contract RollupTest is Test {
         vm.expectRevert("PENDING_ASSERTION_NOT_UPDATED");
         vm.prank(upgradeExecutorAddr);
         adminRollup.decreaseBaseStake(
-            BASE_STAKE - 1,
-            postGenesisConfigData.nextInboxPosition,
-            postGenesisConfigData.targetParentChainBlockHash
+            BASE_STAKE - 1, postGenesisConfigData.targetParentChainBlockHash
         );
 
         (
@@ -1870,13 +1800,11 @@ contract RollupTest is Test {
         vm.prank(upgradeExecutorAddr);
         vm.expectRevert("EXPIRED_CONFIG_HASH");
         adminRollup.decreaseBaseStake(
-            BASE_STAKE - 1,
-            postGenesisConfigData.nextInboxPosition,
-            postGenesisConfigData.targetParentChainBlockHash
+            BASE_STAKE - 1, postGenesisConfigData.targetParentChainBlockHash
         );
 
         vm.prank(upgradeExecutorAddr);
-        adminRollup.decreaseBaseStake(BASE_STAKE - 1, nextInboxPosition, targetParentChainBlockHash);
+        adminRollup.decreaseBaseStake(BASE_STAKE - 1, targetParentChainBlockHash);
 
         _createNewBatch();
         AssertionState memory afterState;
@@ -1909,7 +1837,6 @@ contract RollupTest is Test {
                         requiredStake: BASE_STAKE - 1,
                         challengeManager: address(challengeManager),
                         confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
-                        nextInboxPosition: nextInboxPosition,
                         targetParentChainBlockHash: targetParentChainBlockHash
                     })
                 }),
@@ -1930,7 +1857,7 @@ contract RollupTest is Test {
         afterState.globalState.bytes32Vals[0] =
             keccak256(abi.encodePacked(FIRST_ASSERTION_BLOCKHASH)); // blockhash
         afterState.globalState.bytes32Vals[1] = FIRST_ASSERTION_SENDROOT; // sendroot
-        afterState.globalState.u64Vals[0] = postGenesisConfigData.nextInboxPosition; // inbox count
+        afterState.globalState.u64Vals[0] = firstAssertionGlobalState.u64Vals[0]; // inbox count
         afterState.globalState.u64Vals[1] = 0; // pos in msg
 
         bytes32 expectedAssertionHash = RollupLib.assertionHash({
@@ -1965,9 +1892,7 @@ contract RollupTest is Test {
         userRollup.getAssertion(data.assertionHash);
         vm.expectRevert("TOO_MANY_PENDING_STAKERS");
         vm.prank(upgradeExecutorAddr);
-        adminRollup.decreaseBaseStake(
-            BASE_STAKE - 1, uint64(data.newInboxCount), data.targetParentChainBlockHash
-        );
+        adminRollup.decreaseBaseStake(BASE_STAKE - 1, data.targetParentChainBlockHash);
     }
 
     uint256 constant MEL_CONFIG_SLOT = 125;

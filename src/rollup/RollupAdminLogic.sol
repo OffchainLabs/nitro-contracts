@@ -77,9 +77,7 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
             inboxAcc: inboxAcc
         });
 
-        uint256 currentInboxCount = bridge.sequencerMessageCount();
-
-        // MEL anchor for next assertion, zero and excluded from configHash until MEL is enabled
+        // MEL anchor for next assertion
         bytes32 targetParentChainBlockHash = GENESIS_ASSERTION_TARGET_PARENT_CHAIN_BLOCK_HASH;
 
         AssertionNode memory initialAssertion = AssertionNodeLib.createAssertion(
@@ -89,7 +87,6 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
                 requiredStake: baseStake,
                 challengeManager: address(challengeManager),
                 confirmPeriodBlocks: confirmPeriodBlocks,
-                nextInboxPosition: uint64(currentInboxCount),
                 targetParentChainBlockHash: targetParentChainBlockHash
             })
         );
@@ -102,7 +99,6 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
             parentAssertionHash,
             assertionInputs,
             inboxAcc,
-            currentInboxCount,
             targetParentChainBlockHash,
             wasmModuleRoot,
             baseStake,
@@ -286,7 +282,6 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      */
     function decreaseBaseStake(
         uint256 newBaseStake,
-        uint64 latestNextInboxPosition,
         bytes32 latestTargetParentChainBlockHash
     ) external override {
         require(newBaseStake < baseStake, "BASE_STAKE_NOT_DECREASED");
@@ -312,7 +307,6 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
             requiredStake: baseStake,
             challengeManager: address(challengeManager),
             confirmPeriodBlocks: confirmPeriodBlocks,
-            nextInboxPosition: uint64(latestNextInboxPosition),
             targetParentChainBlockHash: latestTargetParentChainBlockHash
         });
 
@@ -334,7 +328,6 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
                     requiredStake: newBaseStake,
                     challengeManager: address(challengeManager),
                     confirmPeriodBlocks: confirmPeriodBlocks,
-                    nextInboxPosition: uint64(latestNextInboxPosition),
                     targetParentChainBlockHash: latestTargetParentChainBlockHash
                 });
 

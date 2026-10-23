@@ -171,12 +171,10 @@ interface IRollupAdmin {
      *         After decreasing the base stake the current staker will still have full stake locked up. They can release it by creating a new staker with the
      *         new smaller amount, and using it to create a child of the latest pending assertion. This will make the old staker inactive and withdrawable.
      * @param newBaseStake New base stake to be set. Must be less than current base stake, otherwise use increaseBaseStake
-     * @param latestNextInboxPosition The nextInboxPosition of the only pending latestStakedAssertion
      * @param latestTargetParentChainBlockHash The targetParentChainBlockHash of the only pending latestStakedAssertion
      */
     function decreaseBaseStake(
         uint256 newBaseStake,
-        uint64 latestNextInboxPosition,
         bytes32 latestTargetParentChainBlockHash
     ) external;
 
