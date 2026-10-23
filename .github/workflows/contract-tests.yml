@@ -67,11 +67,11 @@ jobs:
           version: v1.8.3
           cache: false
 
-      - name: Check Contracts Format
-        run: forge fmt --check
-
       - name: Install dependencies
         run: yarn install
+
+      - name: Check Format
+        run: yarn format:check
 
       - name: Lint Contracts
         run: yarn solhint
@@ -87,7 +87,7 @@ jobs:
 
       - name: Run tests
         run: yarn hardhat --network hardhat test test/contract/*.spec.ts
-      
+
       - name: Run prover tests
         run: yarn test:prover
 
