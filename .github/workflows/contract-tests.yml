@@ -67,8 +67,8 @@ jobs:
           version: v1.8.3
           cache: false
 
-      - name: Check Contracts Format
-        run: forge fmt --check
+      - name: Check Format
+        run: yarn format:check
 
       - name: Install dependencies
         run: yarn install
