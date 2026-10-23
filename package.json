@@ -32,7 +32,7 @@
     "solhint": "solhint -f table src/**/*.sol",
     "prettier:solidity": "prettier --write src/**/*.sol",
     "format": "forge fmt && prettier './**/*.{js,json,md,ts,yml}' --write && yarn run lint:test --fix",
-    "format:check": "forge fmt --check && prettier './**/*.{js,json,md,ts,yml}' --check",
+    "format:check": "forge fmt --check && yarn run prettier './**/*.{js,json,md,ts,yml}' --check",
     "build:0.6": "INTERFACE_TESTER_SOLC_VERSION=0.6.9 yarn run build",
     "build:0.7": "INTERFACE_TESTER_SOLC_VERSION=0.7.0 yarn run build",
     "test": "DISABLE_GAS_REPORTER=true hardhat --network hardhat test test/contract/*.spec.ts",
