@@ -79,7 +79,6 @@ contract MockAssertionChain is IAssertionChain {
                 requiredStake: configData.requiredStake,
                 challengeManager: configData.challengeManager,
                 confirmPeriodBlocks: configData.confirmPeriodBlocks,
-                nextInboxPosition: configData.nextInboxPosition,
                 targetParentChainBlockHash: configData.targetParentChainBlockHash
             }) == assertions[assertionHash].configHash,
             "BAD_CONFIG"
@@ -124,7 +123,6 @@ contract MockAssertionChain is IAssertionChain {
     function addAssertionUnsafe(
         bytes32 predecessorId,
         uint256 height,
-        uint64 nextInboxPosition,
         bytes32 targetParentChainBlockHash,
         AssertionState memory afterState,
         bytes32 successionChallenge
@@ -144,7 +142,6 @@ contract MockAssertionChain is IAssertionChain {
                 requiredStake: baseStake,
                 challengeManager: challengeManager,
                 confirmPeriodBlocks: confirmPeriodBlocks,
-                nextInboxPosition: nextInboxPosition,
                 targetParentChainBlockHash: targetParentChainBlockHash
             })
         });
@@ -155,7 +152,6 @@ contract MockAssertionChain is IAssertionChain {
     function addAssertion(
         bytes32 predecessorId,
         uint256 height,
-        uint64 nextInboxPosition,
         bytes32 targetParentChainBlockHash,
         AssertionState memory beforeState,
         AssertionState memory afterState,
@@ -174,7 +170,6 @@ contract MockAssertionChain is IAssertionChain {
         return addAssertionUnsafe(
             predecessorId,
             height,
-            nextInboxPosition,
             targetParentChainBlockHash,
             afterState,
             successionChallenge
