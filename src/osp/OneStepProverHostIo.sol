@@ -12,8 +12,6 @@ import "../state/Deserialize.sol";
 import "../state/ModuleMemory.sol";
 import "./IOneStepProver.sol";
 import "./ICustomDAProofValidator.sol";
-import "../bridge/Messages.sol";
-import "../bridge/IBridge.sol";
 
 contract OneStepProverHostIo is IOneStepProver {
     using GlobalStateLib for GlobalState;
@@ -26,9 +24,6 @@ contract OneStepProverHostIo is IOneStepProver {
     using StackFrameLib for StackFrameWindow;
 
     uint256 private constant LEAF_SIZE = 32;
-    uint256 private constant INBOX_NUM = 2;
-    uint64 private constant INBOX_HEADER_LEN = 40;
-    uint64 private constant DELAYED_HEADER_LEN = 112 + 1;
 
     // CustomDA proof format constants
     uint256 private constant CERT_SIZE_LEN = 8;
@@ -169,6 +164,7 @@ contract OneStepProverHostIo is IOneStepProver {
             // The machine is asking for a keccak256 preimage
 
             if (proofType == 0) {
+                // The proof contains the full preimage
                 bytes calldata preimage = proof[proofOffset:];
                 require(keccak256(preimage) == leafContents, "BAD_PREIMAGE");
 
@@ -371,122 +367,14 @@ contract OneStepProverHostIo is IOneStepProver {
         return isValid;
     }
 
-    function validateSequencerInbox(
-        ExecutionContext calldata execCtx,
-        uint64 msgIndex,
-        bytes calldata message
-    ) internal view returns (bool) {
-        require(message.length >= INBOX_HEADER_LEN, "BAD_SEQINBOX_PROOF");
-
-        uint64 afterDelayedMsg;
-        (afterDelayedMsg,) = Deserialize.u64(message, 32);
-        bytes32 messageHash = keccak256(message);
-        bytes32 beforeAcc;
-        bytes32 delayedAcc;
-
-        if (msgIndex > 0) {
-            beforeAcc = execCtx.bridge.sequencerInboxAccs(msgIndex - 1);
-        }
-        if (afterDelayedMsg > 0) {
-            delayedAcc = execCtx.bridge.delayedInboxAccs(afterDelayedMsg - 1);
-        }
-        bytes32 acc = keccak256(abi.encodePacked(beforeAcc, messageHash, delayedAcc));
-        require(acc == execCtx.bridge.sequencerInboxAccs(msgIndex), "BAD_SEQINBOX_MESSAGE");
-        return true;
-    }
-
-    function validateDelayedInbox(
-        ExecutionContext calldata execCtx,
-        uint64 msgIndex,
-        bytes calldata message
-    ) internal view returns (bool) {
-        require(message.length >= DELAYED_HEADER_LEN, "BAD_DELAYED_PROOF");
-
-        bytes32 beforeAcc;
-
-        if (msgIndex > 0) {
-            beforeAcc = execCtx.bridge.delayedInboxAccs(msgIndex - 1);
-        }
-
-        bytes32 messageDataHash = keccak256(message[DELAYED_HEADER_LEN:]);
-        bytes1 kind = message[0];
-        uint256 sender;
-        (sender,) = Deserialize.u256(message, 1);
-
-        bytes32 messageHash = keccak256(
-            abi.encodePacked(kind, uint160(sender), message[33:DELAYED_HEADER_LEN], messageDataHash)
-        );
-        bytes32 acc = Messages.accumulateInboxMessage(beforeAcc, messageHash);
-
-        require(acc == execCtx.bridge.delayedInboxAccs(msgIndex), "BAD_DELAYED_MESSAGE");
-        return true;
-    }
-
-    function executeReadInboxMessage(
-        ExecutionContext calldata execCtx,
+    function executeHaltAndSetYielded(
+        ExecutionContext calldata,
         Machine memory mach,
-        Module memory mod,
-        Instruction calldata inst,
-        bytes calldata proof
-    ) internal view {
-        uint256 messageOffset = mach.valueStack.pop().assumeI32();
-        uint256 ptr = mach.valueStack.pop().assumeI32();
-        uint256 msgIndex = mach.valueStack.pop().assumeI64();
-        if (
-            inst.argumentData == Instructions.INBOX_INDEX_SEQUENCER
-                && msgIndex >= execCtx.maxInboxMessagesRead
-        ) {
-            mach.status = MachineStatus.ERRORED;
-            return;
-        }
-
-        if (ptr + 32 > mod.moduleMemory.size || ptr % LEAF_SIZE != 0) {
-            mach.status = MachineStatus.ERRORED;
-            return;
-        }
-
-        uint256 leafIdx = ptr / LEAF_SIZE;
-        uint256 proofOffset = 0;
-        bytes32 leafContents;
-        MerkleProof memory merkleProof;
-        (leafContents, proofOffset, merkleProof) =
-            mod.moduleMemory.proveLeaf(leafIdx, proof, proofOffset);
-
-        {
-            // TODO: support proving via an authenticated contract
-            require(proof[proofOffset] == 0, "UNKNOWN_INBOX_PROOF");
-            proofOffset++;
-
-            function(ExecutionContext calldata, uint64, bytes calldata) internal view returns (bool)
-                inboxValidate;
-
-            bool success;
-            if (inst.argumentData == Instructions.INBOX_INDEX_SEQUENCER) {
-                inboxValidate = validateSequencerInbox;
-            } else if (inst.argumentData == Instructions.INBOX_INDEX_DELAYED) {
-                inboxValidate = validateDelayedInbox;
-            } else {
-                mach.status = MachineStatus.ERRORED;
-                return;
-            }
-            success = inboxValidate(execCtx, uint64(msgIndex), proof[proofOffset:]);
-            if (!success) {
-                mach.status = MachineStatus.ERRORED;
-                return;
-            }
-        }
-
-        require(proof.length >= proofOffset, "BAD_MESSAGE_PROOF");
-        uint256 messageLength = proof.length - proofOffset;
-
-        uint32 i = 0;
-        for (; i < 32 && messageOffset + i < messageLength; i++) {
-            leafContents =
-                setLeafByte(leafContents, i, uint8(proof[proofOffset + messageOffset + i]));
-        }
-
-        mod.moduleMemory.merkleRoot = merkleProof.computeRootFromMemory(leafIdx, leafContents);
-        mach.valueStack.push(ValueLib.newI32(i));
+        Module memory,
+        Instruction calldata,
+        bytes calldata
+    ) internal pure {
+        mach.status = MachineStatus.YIELDED;
     }
 
     function executeHaltAndSetFinished(
@@ -711,6 +599,46 @@ contract OneStepProverHostIo is IOneStepProver {
         mach.switchCoThreadStacks();
     }
 
+    function executeGetParentChainInput(
+        ExecutionContext calldata execCtx,
+        Machine memory mach,
+        Module memory mod,
+        Instruction calldata inst,
+        bytes calldata proof
+    ) internal pure {
+        uint256 ptr = mach.valueStack.pop().assumeI32();
+
+        // Validate the leaf
+        if (!mod.moduleMemory.isValidLeaf(ptr)) {
+            mach.status = MachineStatus.ERRORED;
+            return;
+        }
+
+        uint256 leafIdx = ptr / LEAF_SIZE;
+        uint256 proofOffset = 0;
+        MerkleProof memory merkleProof;
+        (,, merkleProof) = mod.moduleMemory.proveLeaf(leafIdx, proof, proofOffset);
+
+        // Update merkle root
+        if (inst.argumentData == Instructions.PARENT_CHAIN_INPUT_INDEX_TARGET_BLOCK_HASH) {
+            mod.moduleMemory.merkleRoot =
+                merkleProof.computeRootFromMemory(leafIdx, execCtx.targetParentChainBlockHash);
+        } else if (inst.argumentData == Instructions.PARENT_CHAIN_INPUT_INDEX_MEL_CONFIG) {
+            mod.moduleMemory.merkleRoot = merkleProof.computeRootFromMemory(
+                leafIdx, bytes32(uint256(uint160(execCtx.melConfig)))
+            );
+        } else {
+            // Instead of erroring if the index is unknown, we serve the all-0xff ABSENT leaf the prover serves
+            // This allows for potential future indices to be added without breaking the replay binary that runs
+            // against an OSP set of contracts that doesn't know them yet (the binary would identify the absence
+            // of the input and handle it accordingly).
+            // Additionally, the index is an instruction immediate fixed when the replay binary is compiled, so
+            // it can never be a bad runtime argument.
+            mod.moduleMemory.merkleRoot =
+                merkleProof.computeRootFromMemory(leafIdx, Instructions.PARENT_CHAIN_INPUT_ABSENT);
+        }
+    }
+
     function executeOneStep(
         ExecutionContext calldata execCtx,
         Machine calldata startMach,
@@ -736,10 +664,10 @@ contract OneStepProverHostIo is IOneStepProver {
             impl = executeValidatePreimage;
         } else if (opcode == Instructions.READ_PRE_IMAGE) {
             impl = executeReadPreImage;
-        } else if (opcode == Instructions.READ_INBOX_MESSAGE) {
-            impl = executeReadInboxMessage;
         } else if (opcode == Instructions.HALT_AND_SET_FINISHED) {
             impl = executeHaltAndSetFinished;
+        } else if (opcode == Instructions.HALT_AND_SET_YIELDED) {
+            impl = executeHaltAndSetYielded;
         } else if (opcode == Instructions.LINK_MODULE) {
             impl = executeLinkModule;
         } else if (opcode == Instructions.UNLINK_MODULE) {
@@ -750,8 +678,10 @@ contract OneStepProverHostIo is IOneStepProver {
             impl = executePopCoThread;
         } else if (opcode == Instructions.SWITCH_COTHREAD) {
             impl = executeSwitchCoThread;
+        } else if (opcode == Instructions.GET_PARENT_CHAIN_INPUT) {
+            impl = executeGetParentChainInput;
         } else {
-            revert("INVALID_MEMORY_OPCODE");
+            revert("INVALID_HOSTIO_OPCODE");
         }
 
         impl(execCtx, mach, mod, inst, proof);
