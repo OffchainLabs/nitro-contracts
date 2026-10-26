@@ -35,33 +35,38 @@ export async function verifyContract(
   constructorArguments: any[] = [],
   contractPathAndName?: string // optional
 ): Promise<void> {
-  contractPathAndName = contractPathAndName ?? {
-    Bridge: 'src/bridge/Bridge.sol:Bridge',
-    SequencerInbox: 'src/bridge/SequencerInbox.sol:SequencerInbox',
-    Inbox: 'src/bridge/Inbox.sol:Inbox',
-    Outbox: 'src/bridge/Outbox.sol:Outbox',
-    ERC20Bridge: 'src/bridge/ERC20Bridge.sol:ERC20Bridge',
-    ERC20Inbox: 'src/bridge/ERC20Inbox.sol:ERC20Inbox',
-    ERC20Outbox: 'src/bridge/ERC20Outbox.sol:ERC20Outbox',
-    RollupEventInbox: 'src/rollup/RollupEventInbox.sol:RollupEventInbox',
-    ERC20RollupEventInbox:
-      'src/rollup/ERC20RollupEventInbox.sol:ERC20RollupEventInbox',
-    RollupAdminLogic: 'src/rollup/RollupAdminLogic.sol:RollupAdminLogic',
-    RollupUserLogic: 'src/rollup/RollupUserLogic.sol:RollupUserLogic',
-    BridgeCreator: 'src/rollup/BridgeCreator.sol:BridgeCreator',
-    EdgeChallengeManager:
-      'src/challengeV2/EdgeChallengeManager.sol:EdgeChallengeManager',
-    ValidatorWalletCreator: 'src/rollup/ValidatorWalletCreator.sol:ValidatorWalletCreator',
-    DeployHelper: 'src/rollup/DeployHelper.sol:DeployHelper',
-    RollupProxy: 'src/rollup/RollupProxy.sol:RollupProxy',
-    RollupCreator: 'src/rollup/RollupCreator.sol:RollupCreator',
-    OneStepProver0: 'src/osp/OneStepProver0.sol:OneStepProver0',
-    OneStepProverMemory: 'src/osp/OneStepProverMemory.sol:OneStepProverMemory',
-    OneStepProverMath: 'src/osp/OneStepProverMath.sol:OneStepProverMath',
-    OneStepProverHostIo: 'src/osp/OneStepProverHostIo.sol:OneStepProverHostIo',
-    OneStepProofEntry: 'src/osp/OneStepProofEntry.sol:OneStepProofEntry',
-    MelConfig: 'src/rollup/MelConfig.sol:MelConfig',
-  }[contractName]
+  contractPathAndName =
+    contractPathAndName ??
+    {
+      Bridge: 'src/bridge/Bridge.sol:Bridge',
+      SequencerInbox: 'src/bridge/SequencerInbox.sol:SequencerInbox',
+      Inbox: 'src/bridge/Inbox.sol:Inbox',
+      Outbox: 'src/bridge/Outbox.sol:Outbox',
+      ERC20Bridge: 'src/bridge/ERC20Bridge.sol:ERC20Bridge',
+      ERC20Inbox: 'src/bridge/ERC20Inbox.sol:ERC20Inbox',
+      ERC20Outbox: 'src/bridge/ERC20Outbox.sol:ERC20Outbox',
+      RollupEventInbox: 'src/rollup/RollupEventInbox.sol:RollupEventInbox',
+      ERC20RollupEventInbox:
+        'src/rollup/ERC20RollupEventInbox.sol:ERC20RollupEventInbox',
+      RollupAdminLogic: 'src/rollup/RollupAdminLogic.sol:RollupAdminLogic',
+      RollupUserLogic: 'src/rollup/RollupUserLogic.sol:RollupUserLogic',
+      BridgeCreator: 'src/rollup/BridgeCreator.sol:BridgeCreator',
+      EdgeChallengeManager:
+        'src/challengeV2/EdgeChallengeManager.sol:EdgeChallengeManager',
+      ValidatorWalletCreator:
+        'src/rollup/ValidatorWalletCreator.sol:ValidatorWalletCreator',
+      DeployHelper: 'src/rollup/DeployHelper.sol:DeployHelper',
+      RollupProxy: 'src/rollup/RollupProxy.sol:RollupProxy',
+      RollupCreator: 'src/rollup/RollupCreator.sol:RollupCreator',
+      OneStepProver0: 'src/osp/OneStepProver0.sol:OneStepProver0',
+      OneStepProverMemory:
+        'src/osp/OneStepProverMemory.sol:OneStepProverMemory',
+      OneStepProverMath: 'src/osp/OneStepProverMath.sol:OneStepProverMath',
+      OneStepProverHostIo:
+        'src/osp/OneStepProverHostIo.sol:OneStepProverHostIo',
+      OneStepProofEntry: 'src/osp/OneStepProofEntry.sol:OneStepProofEntry',
+      MelConfig: 'src/rollup/MelConfig.sol:MelConfig',
+    }[contractName]
 
   try {
     if (process.env.DISABLE_VERIFICATION === 'true') return
@@ -403,13 +408,7 @@ export async function deployAllContracts(
     verify,
     true
   )
-  const melConfig = await deployContract(
-    'MelConfig',
-    signer,
-    [],
-    verify,
-    true
-  )
+  const melConfig = await deployContract('MelConfig', signer, [], verify, true)
   const upgradeExecutor = await create2(
     (
       await ethers.getContractFactory(
