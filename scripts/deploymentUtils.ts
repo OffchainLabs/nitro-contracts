@@ -35,32 +35,37 @@ export async function verifyContract(
   constructorArguments: any[] = [],
   contractPathAndName?: string // optional
 ): Promise<void> {
-  contractPathAndName = contractPathAndName ?? {
-    Bridge: 'src/bridge/Bridge.sol:Bridge',
-    SequencerInbox: 'src/bridge/SequencerInbox.sol:SequencerInbox',
-    Inbox: 'src/bridge/Inbox.sol:Inbox',
-    Outbox: 'src/bridge/Outbox.sol:Outbox',
-    ERC20Bridge: 'src/bridge/ERC20Bridge.sol:ERC20Bridge',
-    ERC20Inbox: 'src/bridge/ERC20Inbox.sol:ERC20Inbox',
-    ERC20Outbox: 'src/bridge/ERC20Outbox.sol:ERC20Outbox',
-    RollupEventInbox: 'src/rollup/RollupEventInbox.sol:RollupEventInbox',
-    ERC20RollupEventInbox:
-      'src/rollup/ERC20RollupEventInbox.sol:ERC20RollupEventInbox',
-    RollupAdminLogic: 'src/rollup/RollupAdminLogic.sol:RollupAdminLogic',
-    RollupUserLogic: 'src/rollup/RollupUserLogic.sol:RollupUserLogic',
-    BridgeCreator: 'src/rollup/BridgeCreator.sol:BridgeCreator',
-    EdgeChallengeManager:
-      'src/challengeV2/EdgeChallengeManager.sol:EdgeChallengeManager',
-    ValidatorWalletCreator: 'src/rollup/ValidatorWalletCreator.sol:ValidatorWalletCreator',
-    DeployHelper: 'src/rollup/DeployHelper.sol:DeployHelper',
-    RollupProxy: 'src/rollup/RollupProxy.sol:RollupProxy',
-    RollupCreator: 'src/rollup/RollupCreator.sol:RollupCreator',
-    OneStepProver0: 'src/osp/OneStepProver0.sol:OneStepProver0',
-    OneStepProverMemory: 'src/osp/OneStepProverMemory.sol:OneStepProverMemory',
-    OneStepProverMath: 'src/osp/OneStepProverMath.sol:OneStepProverMath',
-    OneStepProverHostIo: 'src/osp/OneStepProverHostIo.sol:OneStepProverHostIo',
-    OneStepProofEntry: 'src/osp/OneStepProofEntry.sol:OneStepProofEntry',
-  }[contractName]
+  contractPathAndName =
+    contractPathAndName ??
+    {
+      Bridge: 'src/bridge/Bridge.sol:Bridge',
+      SequencerInbox: 'src/bridge/SequencerInbox.sol:SequencerInbox',
+      Inbox: 'src/bridge/Inbox.sol:Inbox',
+      Outbox: 'src/bridge/Outbox.sol:Outbox',
+      ERC20Bridge: 'src/bridge/ERC20Bridge.sol:ERC20Bridge',
+      ERC20Inbox: 'src/bridge/ERC20Inbox.sol:ERC20Inbox',
+      ERC20Outbox: 'src/bridge/ERC20Outbox.sol:ERC20Outbox',
+      RollupEventInbox: 'src/rollup/RollupEventInbox.sol:RollupEventInbox',
+      ERC20RollupEventInbox:
+        'src/rollup/ERC20RollupEventInbox.sol:ERC20RollupEventInbox',
+      RollupAdminLogic: 'src/rollup/RollupAdminLogic.sol:RollupAdminLogic',
+      RollupUserLogic: 'src/rollup/RollupUserLogic.sol:RollupUserLogic',
+      BridgeCreator: 'src/rollup/BridgeCreator.sol:BridgeCreator',
+      EdgeChallengeManager:
+        'src/challengeV2/EdgeChallengeManager.sol:EdgeChallengeManager',
+      ValidatorWalletCreator:
+        'src/rollup/ValidatorWalletCreator.sol:ValidatorWalletCreator',
+      DeployHelper: 'src/rollup/DeployHelper.sol:DeployHelper',
+      RollupProxy: 'src/rollup/RollupProxy.sol:RollupProxy',
+      RollupCreator: 'src/rollup/RollupCreator.sol:RollupCreator',
+      OneStepProver0: 'src/osp/OneStepProver0.sol:OneStepProver0',
+      OneStepProverMemory:
+        'src/osp/OneStepProverMemory.sol:OneStepProverMemory',
+      OneStepProverMath: 'src/osp/OneStepProverMath.sol:OneStepProverMath',
+      OneStepProverHostIo:
+        'src/osp/OneStepProverHostIo.sol:OneStepProverHostIo',
+      OneStepProofEntry: 'src/osp/OneStepProofEntry.sol:OneStepProofEntry',
+    }[contractName]
 
   try {
     if (process.env.DISABLE_VERIFICATION === 'true') return
@@ -264,20 +269,22 @@ export async function deployAllContracts(
 
   const ethBridge = await deployContract('Bridge', signer, [], verify, true)
 
-  let reader4844: string;
+  let reader4844: string
   if (isOnArb) reader4844 = ethers.constants.AddressZero
-  else if (!isOnL1) reader4844 = '0x000000000000000000000000000000000000dead' // dead address
-  else reader4844 = (
-    await create2(
-      new ContractFactory(
-        IReader4844__factory.abi,
-        Reader4844Bytecode,
-        signer
-      ),
-      [],
-      ethers.constants.HashZero
-    )
-  ).address
+  else if (!isOnL1)
+    reader4844 = '0x000000000000000000000000000000000000dead' // dead address
+  else
+    reader4844 = (
+      await create2(
+        new ContractFactory(
+          IReader4844__factory.abi,
+          Reader4844Bytecode,
+          signer
+        ),
+        [],
+        ethers.constants.HashZero
+      )
+    ).address
 
   const ethSequencerInbox = await deployContract(
     'SequencerInbox',
