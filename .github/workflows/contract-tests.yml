@@ -19,10 +19,7 @@ jobs:
           submodules: recursive
 
       - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: v1.8.3
-          cache: false
+        uses: ./.github/actions/install-foundry
 
       - name: Setup node/yarn
         uses: actions/setup-node@v4
@@ -49,10 +46,7 @@ jobs:
           submodules: recursive
 
       - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: v1.8.3
-          cache: false
+        uses: ./.github/actions/install-foundry
 
       - name: Setup nodejs
         uses: actions/setup-node@v4
@@ -62,10 +56,7 @@ jobs:
           cache-dependency-path: '**/yarn.lock'
 
       - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: v1.8.3
-          cache: false
+        uses: ./.github/actions/install-foundry
 
       - name: Install dependencies
         run: yarn install
@@ -136,10 +127,7 @@ jobs:
           submodules: recursive
 
       - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: v1.8.3
-          cache: false
+        uses: ./.github/actions/install-foundry
 
       - uses: OffchainLabs/actions/run-nitro-test-node@main
         with:
@@ -269,10 +257,7 @@ jobs:
   #         submodules: recursive
 
   #     - name: Install Foundry
-  #       uses: foundry-rs/foundry-toolchain@v1
-  #       with:
-  #         version: v1.8.3
-  #         cache: false
+  #       uses: ./.github/actions/install-foundry
 
   #     - name: Setup node/yarn
   #       uses: actions/setup-node@v3
