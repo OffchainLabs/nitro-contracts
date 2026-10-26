@@ -265,20 +265,22 @@ export async function deployAllContracts(
 
   const ethBridge = await deployContract('Bridge', signer, [], verify, true)
 
-  let reader4844: string;
+  let reader4844: string
   if (isOnArb) reader4844 = ethers.constants.AddressZero
-  else if (!isOnL1) reader4844 = '0x000000000000000000000000000000000000dead' // dead address
-  else reader4844 = (
-    await create2(
-      new ContractFactory(
-        IReader4844__factory.abi,
-        Reader4844Bytecode,
-        signer
-      ),
-      [],
-      ethers.constants.HashZero
-    )
-  ).address
+  else if (!isOnL1)
+    reader4844 = '0x000000000000000000000000000000000000dead' // dead address
+  else
+    reader4844 = (
+      await create2(
+        new ContractFactory(
+          IReader4844__factory.abi,
+          Reader4844Bytecode,
+          signer
+        ),
+        [],
+        ethers.constants.HashZero
+      )
+    ).address
 
   const ethSequencerInbox = await deployContract(
     'SequencerInbox',

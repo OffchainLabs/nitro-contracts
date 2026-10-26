@@ -1,6 +1,10 @@
 import { ethers } from 'hardhat'
 import '@nomiclabs/hardhat-ethers'
-import { deployAllContracts, _isRunningOnArbitrum, _isRunningOnL1 } from './deploymentUtils'
+import {
+  deployAllContracts,
+  _isRunningOnArbitrum,
+  _isRunningOnL1,
+} from './deploymentUtils'
 import { maxDataSize as defaultMaxDataSize } from './config'
 
 import { ArbSys__factory } from '../build/types'
