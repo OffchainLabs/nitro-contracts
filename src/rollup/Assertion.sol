@@ -57,7 +57,8 @@ struct ConfigData {
     uint256 requiredStake;
     address challengeManager;
     uint64 confirmPeriodBlocks;
-    uint64 nextInboxPosition;
+    // MEL anchor for next assertion
+    bytes32 targetParentChainBlockHash;
 }
 
 /**

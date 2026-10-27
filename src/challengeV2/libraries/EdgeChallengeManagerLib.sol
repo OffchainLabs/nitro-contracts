@@ -797,6 +797,9 @@ library EdgeChallengeManagerLib {
                 // the step size at each level is the product of the heights at all succeeding levels
                 stepSize *= bigStepHeight;
             }
+
+            // Determine if this edge is the start of an assertion
+            execCtx.isFirstBlock = isFirstBlock(store, cursor);
         }
 
         // the state in the onestep data must be committed to by the startHistoryRoot
@@ -827,5 +830,23 @@ library EdgeChallengeManagerLib {
         setConfirmedRival(store, edgeId);
 
         store.edges[edgeId].totalTimeUnrivaledCache = type(uint64).max;
+    }
+
+    /// @notice Checks whether the given level-one edge belongs to the first block-level interval of an assertion.
+    /// @dev `confirmEdgeByOneStepProof` reaches level one (BigStep) by repeatedly following
+    ///      originId, the mutualId of the rivals at the immediately coarser level, through
+    ///      store.firstRivals to obtain an edgeId at that level.
+    ///      This function makes one final hop from level one to the block level.
+    ///      A true result identifies the first block-level interval.
+    /// @param store The edge store containing all edges and rival data
+    /// @param levelOneEdgeId The ID of the level-one edge to check
+    function isFirstBlock(
+        EdgeStore storage store,
+        bytes32 levelOneEdgeId
+    ) internal view returns (bool) {
+        // originId identifies the group of rival block edges enclosing this level-one edge
+        // Any rival can be used here because they all have the same startHeight
+        bytes32 blockEdgeId = store.firstRivals[store.edges[levelOneEdgeId].originId];
+        return store.edges[blockEdgeId].startHeight == 0;
     }
 }

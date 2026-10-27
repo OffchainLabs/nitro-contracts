@@ -1379,7 +1379,7 @@ contract EdgeChallengeManagerLibTest is Test {
         uint256 bigStepHeight,
         uint256 smallStepHeight,
         uint256 level
-    ) internal returns (uint256) {
+    ) internal pure returns (uint256) {
         uint256 stepSize = 1;
         uint256 maxLevelIndex = numBigStepLevel + 1;
         for (uint256 i = level; i < maxLevelIndex; i++) {
@@ -1461,7 +1461,10 @@ contract EdgeChallengeManagerLibTest is Test {
             beforeHash: states1[startHeight], proof: abi.encodePacked(states1[startHeight + 1])
         });
         ExecutionContext memory e = ExecutionContext({
-            maxInboxMessagesRead: 0, bridge: IBridge(address(0)), initialWasmModuleRoot: bytes32(0)
+            initialWasmModuleRoot: bytes32(0),
+            targetParentChainBlockHash: bytes32(0),
+            melConfig: address(0),
+            isFirstBlock: false
         });
         data.beforeProof = ProofUtils.generateInclusionProof(
             ProofUtils.rehashed(ArrayUtilsLib.slice(states1, 0, startHeight + 1)), startHeight
