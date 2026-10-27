@@ -14,7 +14,10 @@ contract SimpleTradeTracker is TradeTracker {
         address _sequencerInbox
     ) TradeTracker(6, 16, _sequencerInbox) {}
 
-    function trade(uint256 thisChainTokens, uint256 childChainTokens) public {
+    function trade(
+        uint256 thisChainTokens,
+        uint256 childChainTokens
+    ) public {
         recordTrade(thisChainTokens, childChainTokens);
     }
 }
@@ -85,10 +88,9 @@ contract TrackerTest is Test {
         uint256 thisChainTokensUsed =
             (gasUsed + calldataSize * tradeTracker.calldataCost()) * block.basefee;
         uint256 childChainTokensUsed = thisChainTokensUsed * exchangeRateBefore / 1e18;
-        uint256 thisChainReserveAfter = (
-            (10000 + gasUsed - 1000 + calldataSize * tradeTracker.calldataCost()) * block.basefee
-                - thisChainTokensUsed
-        );
+        uint256 thisChainReserveAfter =
+            ((10000 + gasUsed - 1000 + calldataSize * tradeTracker.calldataCost()) * block.basefee
+                - thisChainTokensUsed);
         uint256 childChainReserveAfter =
             (20 * 10 ** tradeTracker.childTokenDecimals() * 1e12) - childChainTokensUsed;
         uint256 exchangeRateAfter = childChainReserveAfter * 1e18 / thisChainReserveAfter;

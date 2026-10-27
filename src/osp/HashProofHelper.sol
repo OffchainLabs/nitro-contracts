@@ -96,7 +96,11 @@ contract HashProofHelper {
         delete keccakStates[msg.sender];
     }
 
-    function keccakUpdate(KeccakState storage state, bytes calldata data, bool isFinal) internal {
+    function keccakUpdate(
+        KeccakState storage state,
+        bytes calldata data,
+        bool isFinal
+    ) internal {
         state.length += data.length;
         while (true) {
             if (data.length == 0 && !isFinal) {

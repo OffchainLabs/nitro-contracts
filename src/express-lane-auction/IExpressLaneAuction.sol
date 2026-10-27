@@ -4,10 +4,12 @@ pragma solidity ^0.8.0;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {RoundTimingInfo} from "./RoundTimingInfo.sol";
 import {ELCRound} from "./ELCRound.sol";
-import {IAccessControlEnumerableUpgradeable} from
-    "@openzeppelin/contracts-upgradeable/access/IAccessControlEnumerableUpgradeable.sol";
-import {IERC165Upgradeable} from
-    "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
+import {
+    IAccessControlEnumerableUpgradeable
+} from "@openzeppelin/contracts-upgradeable/access/IAccessControlEnumerableUpgradeable.sol";
+import {
+    IERC165Upgradeable
+} from "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
 
 /// @notice A bid to control the express lane for a specific round
 struct Bid {
@@ -330,7 +332,10 @@ interface IExpressLaneAuction is IAccessControlEnumerableUpgradeable, IERC165Upg
     ///         Will revert if a round from the past is supplied
     /// @param account The specified account
     /// @param round The round to query the balance at
-    function balanceOfAtRound(address account, uint64 round) external view returns (uint256);
+    function balanceOfAtRound(
+        address account,
+        uint64 round
+    ) external view returns (uint256);
 
     /// @notice The amount of balance that can currently be withdrawn via the finalize method
     ///         This balance only increases current round + 2 after a withdrawal is initiated
