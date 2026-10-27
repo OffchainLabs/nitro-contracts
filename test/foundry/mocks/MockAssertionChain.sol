@@ -2,11 +2,11 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
-import {IAssertionChain} from "../src/challengeV2/IAssertionChain.sol";
-import {IEdgeChallengeManager} from "../src/challengeV2/IEdgeChallengeManager.sol";
-import "../src/bridge/IBridge.sol";
-import "../src/rollup/RollupLib.sol";
-import "./challengeV2/StateTools.sol";
+import {IAssertionChain} from "../../../src/challengeV2/IAssertionChain.sol";
+import {IEdgeChallengeManager} from "../../../src/challengeV2/IEdgeChallengeManager.sol";
+import "../../../src/bridge/IBridge.sol";
+import "../../../src/rollup/RollupLib.sol";
+import "./../challengeV2/StateTools.sol";
 
 struct MockAssertion {
     bytes32 predecessorId;
@@ -69,7 +69,10 @@ contract MockAssertionChain is IAssertionChain {
         return assertions[assertionHash].secondChildCreationBlock;
     }
 
-    function validateConfig(bytes32 assertionHash, ConfigData calldata configData) external view {
+    function validateConfig(
+        bytes32 assertionHash,
+        ConfigData calldata configData
+    ) external view {
         require(
             RollupLib.configHash({
                 wasmModuleRoot: configData.wasmModuleRoot,
@@ -175,7 +178,10 @@ contract MockAssertionChain is IAssertionChain {
         validatorWhitelistDisabled = x;
     }
 
-    function setIsValidator(address user, bool x) external {
+    function setIsValidator(
+        address user,
+        bool x
+    ) external {
         isValidator[user] = x;
     }
 

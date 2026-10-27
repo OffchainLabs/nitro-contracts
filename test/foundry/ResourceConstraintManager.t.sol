@@ -263,8 +263,7 @@ contract ResourceConstraintManagerTest is Test {
         ArbMultiGasConstraintsTypes.WeightedResource[] memory resources =
             new ArbMultiGasConstraintsTypes.WeightedResource[](1);
         resources[0] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation,
-            weight: 1
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation, weight: 1
         });
         return _createMultiGasConstraintWithResources(
             targetPerSec, adjustmentWindowSecs, backlog, resources
@@ -291,12 +290,10 @@ contract ResourceConstraintManagerTest is Test {
         ArbMultiGasConstraintsTypes.WeightedResource[] memory resources2 =
             new ArbMultiGasConstraintsTypes.WeightedResource[](2);
         resources2[0] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth,
-            weight: 2
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth, weight: 2
         });
         resources2[1] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.StorageAccessRead,
-            weight: 3
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.StorageAccessRead, weight: 3
         });
         multipleConstraints[1] =
             _createMultiGasConstraintWithResources(50_000_000, 1000, 1, resources2);
@@ -305,12 +302,10 @@ contract ResourceConstraintManagerTest is Test {
         ArbMultiGasConstraintsTypes.WeightedResource[] memory resources3 =
             new ArbMultiGasConstraintsTypes.WeightedResource[](2);
         resources3[0] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.SingleDim,
-            weight: 1
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.SingleDim, weight: 1
         });
         resources3[1] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.WasmComputation,
-            weight: 5
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.WasmComputation, weight: 5
         });
         multipleConstraints[2] =
             _createMultiGasConstraintWithResources(100_000_000, 86400, 10000, resources3);
@@ -363,12 +358,10 @@ contract ResourceConstraintManagerTest is Test {
         ArbMultiGasConstraintsTypes.WeightedResource[] memory resources =
             new ArbMultiGasConstraintsTypes.WeightedResource[](2);
         resources[0] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation,
-            weight: 2
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation, weight: 2
         });
         resources[1] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth,
-            weight: 1
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth, weight: 1
         });
 
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory multiResourceConstraints =
@@ -579,12 +572,10 @@ contract ResourceConstraintManagerTest is Test {
         ArbMultiGasConstraintsTypes.WeightedResource[] memory resources1 =
             new ArbMultiGasConstraintsTypes.WeightedResource[](2);
         resources1[0] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation,
-            weight: 1
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation, weight: 1
         });
         resources1[1] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation,
-            weight: 2
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation, weight: 2
         });
 
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraints1 =
@@ -605,20 +596,16 @@ contract ResourceConstraintManagerTest is Test {
         ArbMultiGasConstraintsTypes.WeightedResource[] memory resources2 =
             new ArbMultiGasConstraintsTypes.WeightedResource[](4);
         resources2[0] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation,
-            weight: 1
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation, weight: 1
         });
         resources2[1] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth,
-            weight: 3
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth, weight: 3
         });
         resources2[2] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth,
-            weight: 4
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth, weight: 4
         });
         resources2[3] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.StorageAccessRead,
-            weight: 2
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.StorageAccessRead, weight: 2
         });
 
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraints2 =
@@ -638,12 +625,10 @@ contract ResourceConstraintManagerTest is Test {
         ArbMultiGasConstraintsTypes.WeightedResource[] memory resources3 =
             new ArbMultiGasConstraintsTypes.WeightedResource[](2);
         resources3[0] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation,
-            weight: 1
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation, weight: 1
         });
         resources3[1] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation,
-            weight: 2
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation, weight: 2
         });
 
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraints3 =
@@ -664,8 +649,7 @@ contract ResourceConstraintManagerTest is Test {
         ArbMultiGasConstraintsTypes.WeightedResource[] memory resources =
             new ArbMultiGasConstraintsTypes.WeightedResource[](1);
         resources[0] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.Unknown,
-            weight: 1
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.Unknown, weight: 1
         });
 
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraints =
@@ -687,12 +671,10 @@ contract ResourceConstraintManagerTest is Test {
         ArbMultiGasConstraintsTypes.WeightedResource[] memory resources =
             new ArbMultiGasConstraintsTypes.WeightedResource[](2);
         resources[0] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation,
-            weight: 0
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation, weight: 0
         });
         resources[1] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth,
-            weight: 0
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth, weight: 0
         });
 
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraints =
@@ -724,12 +706,10 @@ contract ResourceConstraintManagerTest is Test {
         ArbMultiGasConstraintsTypes.WeightedResource[] memory mixedResources =
             new ArbMultiGasConstraintsTypes.WeightedResource[](2);
         mixedResources[0] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation,
-            weight: 1
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation, weight: 1
         });
         mixedResources[1] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth,
-            weight: 0
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth, weight: 0
         });
 
         constraints[0] = _createMultiGasConstraintWithResources(10_000_000, 100, 1, mixedResources);
@@ -750,12 +730,10 @@ contract ResourceConstraintManagerTest is Test {
         ArbMultiGasConstraintsTypes.WeightedResource[] memory resources =
             new ArbMultiGasConstraintsTypes.WeightedResource[](2);
         resources[0] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth,
-            weight: 1
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth, weight: 1
         });
         resources[1] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation,
-            weight: 2
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation, weight: 2
         });
 
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraints =
@@ -775,16 +753,13 @@ contract ResourceConstraintManagerTest is Test {
         ArbMultiGasConstraintsTypes.WeightedResource[] memory resources2 =
             new ArbMultiGasConstraintsTypes.WeightedResource[](3);
         resources2[0] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation,
-            weight: 1
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation, weight: 1
         });
         resources2[1] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.StorageAccessRead,
-            weight: 2
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.StorageAccessRead, weight: 2
         });
         resources2[2] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth,
-            weight: 3
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth, weight: 3
         });
 
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraints2 =
@@ -804,12 +779,10 @@ contract ResourceConstraintManagerTest is Test {
         ArbMultiGasConstraintsTypes.WeightedResource[] memory resources3 =
             new ArbMultiGasConstraintsTypes.WeightedResource[](2);
         resources3[0] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth,
-            weight: 1
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.HistoryGrowth, weight: 1
         });
         resources3[1] = ArbMultiGasConstraintsTypes.WeightedResource({
-            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation,
-            weight: 2
+            resource: ArbMultiGasConstraintsTypes.ResourceKind.Computation, weight: 2
         });
 
         ArbMultiGasConstraintsTypes.ResourceConstraint[] memory constraints3 =

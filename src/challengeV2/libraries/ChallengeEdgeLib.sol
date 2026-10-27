@@ -125,17 +125,19 @@ library ChallengeEdgeLib {
     function mutualId(
         ChallengeEdge storage ce
     ) internal view returns (bytes32) {
-        return mutualIdComponent(
-            ce.level, ce.originId, ce.startHeight, ce.startHistoryRoot, ce.endHeight
-        );
+        return
+            mutualIdComponent(
+                ce.level, ce.originId, ce.startHeight, ce.startHistoryRoot, ce.endHeight
+            );
     }
 
     function mutualIdMem(
         ChallengeEdge memory ce
     ) internal pure returns (bytes32) {
-        return mutualIdComponent(
-            ce.level, ce.originId, ce.startHeight, ce.startHistoryRoot, ce.endHeight
-        );
+        return
+            mutualIdComponent(
+                ce.level, ce.originId, ce.startHeight, ce.startHistoryRoot, ce.endHeight
+            );
     }
 
     /// @notice The id of an edge. Edges are uniquely identified by their id, and commit to the same information
