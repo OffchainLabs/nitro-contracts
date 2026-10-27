@@ -411,7 +411,7 @@ contract EdgeChallengeManager is IEdgeChallengeManager, Initializable {
         ExecutionContext memory execCtx = ExecutionContext({
             initialWasmModuleRoot: prevConfig.wasmModuleRoot,
             targetParentChainBlockHash: prevConfig.targetParentChainBlockHash,
-            melConfig: address(assertionChain),
+            melConfig: address(assertionChain.melConfig()),
             isFirstBlock: false
         });
 
