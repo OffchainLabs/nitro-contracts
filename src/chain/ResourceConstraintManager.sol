@@ -13,13 +13,13 @@ contract ResourceConstraintManager is AccessControlEnumerable {
     // Constraint parameters boundaries
     uint256 public constant MAX_SINGLE_GAS_CONSTRAINTS = 10;
     uint256 public constant MAX_MULTI_GAS_CONSTRAINTS = 100;
-    uint64 public constant MIN_SINGLE_DIM_GAS_TARGET_PER_SEC = 7_000_000;   // 7M gas/sec
+    uint64 public constant MIN_SINGLE_DIM_GAS_TARGET_PER_SEC = 7_000_000; // 7M gas/sec
     uint64 public constant MAX_SINGLE_DIM_GAS_TARGET_PER_SEC = 100_000_000; // 100M gas/sec
-    uint64 public constant MIN_MULTI_DIM_GAS_TARGET_PER_SEC = 10_000_000;   // 10M gas/sec
-    uint64 public constant MAX_MULTI_DIM_GAS_TARGET_PER_SEC = 500_000_000;  // 500M gas/sec
-    uint32 public constant MIN_ADJUSTMENT_WINDOW_SECS = 5;                  // 5 seconds (valid for both single-dimension and multi-dimension models)
-    uint32 public constant MAX_SINGLE_DIM_ADJUSTMENT_WINDOW_SECS = 86400;   // 24 hours
-    uint32 public constant MAX_MULTI_DIM_ADJUSTMENT_WINDOW_SECS = 604800;   // 7 days
+    uint64 public constant MIN_MULTI_DIM_GAS_TARGET_PER_SEC = 10_000_000; // 10M gas/sec
+    uint64 public constant MAX_MULTI_DIM_GAS_TARGET_PER_SEC = 500_000_000; // 500M gas/sec
+    uint32 public constant MIN_ADJUSTMENT_WINDOW_SECS = 5; // 5 seconds (valid for both single-dimension and multi-dimension models)
+    uint32 public constant MAX_SINGLE_DIM_ADJUSTMENT_WINDOW_SECS = 86400; // 24 hours
+    uint32 public constant MAX_MULTI_DIM_ADJUSTMENT_WINDOW_SECS = 604800; // 7 days
     uint64 public constant MAX_PRICING_EXPONENT = 8000; // scaled by 1000 to allow for fractional exponents
 
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
@@ -82,7 +82,8 @@ contract ResourceConstraintManager is AccessControlEnumerable {
             uint64 adjustmentWindowSecs = constraints[i][1];
             uint64 startingBacklogValue = constraints[i][2];
             if (
-                gasTargetPerSec < MIN_SINGLE_DIM_GAS_TARGET_PER_SEC || gasTargetPerSec > MAX_SINGLE_DIM_GAS_TARGET_PER_SEC
+                gasTargetPerSec < MIN_SINGLE_DIM_GAS_TARGET_PER_SEC
+                    || gasTargetPerSec > MAX_SINGLE_DIM_GAS_TARGET_PER_SEC
             ) {
                 revert InvalidTarget(gasTargetPerSec, adjustmentWindowSecs, startingBacklogValue);
             }
@@ -98,8 +99,8 @@ contract ResourceConstraintManager is AccessControlEnumerable {
             // for instance
             // if n = 10, and we check with precision 1 against threshold 8, then the real exponent might actually be up to 18
             // if n = 10, and we check with precision 1000 against threshold 8000, then the real exponent might actually be up to 8010 / 1000
-            pricingExponent +=
-                (startingBacklogValue * 1000) / (gasTargetPerSec * adjustmentWindowSecs);
+            pricingExponent += (startingBacklogValue * 1000)
+                / (gasTargetPerSec * adjustmentWindowSecs);
         }
 
         // this calculated pricing exponent will be used by nitro to calculate the gas price
@@ -141,7 +142,10 @@ contract ResourceConstraintManager is AccessControlEnumerable {
             uint64 targetPerSec = constraints[i].targetPerSec;
             uint32 adjustmentWindowSecs = constraints[i].adjustmentWindowSecs;
             uint64 startingBacklogValue = constraints[i].backlog;
-            if (targetPerSec < MIN_MULTI_DIM_GAS_TARGET_PER_SEC || targetPerSec > MAX_MULTI_DIM_GAS_TARGET_PER_SEC) {
+            if (
+                targetPerSec < MIN_MULTI_DIM_GAS_TARGET_PER_SEC
+                    || targetPerSec > MAX_MULTI_DIM_GAS_TARGET_PER_SEC
+            ) {
                 revert InvalidTarget(targetPerSec, adjustmentWindowSecs, startingBacklogValue);
             }
             if (
@@ -195,8 +199,9 @@ contract ResourceConstraintManager is AccessControlEnumerable {
                 for (uint256 j = 0; j < nResources; ++j) {
                     uint8 kind = uint8(constraints[i].resources[j].resource);
                     uint64 weight = constraints[i].resources[j].weight;
-                    pricingExponents[kind] +=
-                        uint64(uint256(startingBacklogValue) * uint256(weight) * 1000 / divisor);
+                    pricingExponents[
+                        kind
+                    ] += uint64(uint256(startingBacklogValue) * uint256(weight) * 1000 / divisor);
 
                     // this calculated pricing exponent will be used by nitro to calculate the gas price
                     // we check that the pricing exponent is below some reasonable number to avoid setting the gas price astronomically high
