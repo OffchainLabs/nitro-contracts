@@ -11,11 +11,18 @@ struct ValueArray {
 }
 
 library ValueArrayLib {
-    function get(ValueArray memory arr, uint256 index) internal pure returns (Value memory) {
+    function get(
+        ValueArray memory arr,
+        uint256 index
+    ) internal pure returns (Value memory) {
         return arr.inner[index];
     }
 
-    function set(ValueArray memory arr, uint256 index, Value memory val) internal pure {
+    function set(
+        ValueArray memory arr,
+        uint256 index,
+        Value memory val
+    ) internal pure {
         arr.inner[index] = val;
     }
 
@@ -25,7 +32,10 @@ library ValueArrayLib {
         return arr.inner.length;
     }
 
-    function push(ValueArray memory arr, Value memory val) internal pure {
+    function push(
+        ValueArray memory arr,
+        Value memory val
+    ) internal pure {
         Value[] memory newInner = new Value[](arr.inner.length + 1);
         for (uint256 i = 0; i < arr.inner.length; i++) {
             newInner[i] = arr.inner[i];

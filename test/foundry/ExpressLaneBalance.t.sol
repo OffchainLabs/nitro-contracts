@@ -36,7 +36,10 @@ contract BalanceImp {
         return bal.increase(amount);
     }
 
-    function reduce(uint256 amount, uint64 round) external {
+    function reduce(
+        uint256 amount,
+        uint64 round
+    ) external {
         return bal.reduce(amount, round);
     }
 
@@ -54,7 +57,10 @@ contract BalanceImp {
 }
 
 contract ExpressLaneBalanceTest is Test {
-    function checkBal(BalanceImp b, Balance memory expectedBalance) internal {
+    function checkBal(
+        BalanceImp b,
+        Balance memory expectedBalance
+    ) internal {
         (uint256 balance, uint64 withdrawalRound) = b.bal();
         assertEq(balance, expectedBalance.balance);
         assertEq(withdrawalRound, expectedBalance.withdrawalRound);
