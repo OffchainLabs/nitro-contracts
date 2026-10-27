@@ -5,11 +5,18 @@ export enum MachineStatus {
   RUNNING = 0,
   FINISHED = 1,
   ERRORED = 2,
+  TOO_FAR = 3, // Unused
+  YIELDED = 4,
 }
 
 export function machineHash(machineStatus: BigNumber, globalStateHash: string) {
   const machineStatusNum = machineStatus.toNumber()
-  if (machineStatusNum === MachineStatus.FINISHED) {
+  if (machineStatusNum === MachineStatus.YIELDED) {
+    return solidityKeccak256(
+      ['string', 'bytes32'],
+      ['Machine yielded:', globalStateHash]
+    )
+  } else if (machineStatusNum === MachineStatus.FINISHED) {
     return solidityKeccak256(
       ['string', 'bytes32'],
       ['Machine finished:', globalStateHash]

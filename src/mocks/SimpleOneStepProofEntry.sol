@@ -22,7 +22,7 @@ contract SimpleOneStepProofEntry is IOneStepProofEntry {
     }
 
     function proveOneStep(
-        ExecutionContext calldata execCtx,
+        ExecutionContext calldata,
         uint256 step,
         bytes32 beforeHash,
         bytes calldata proof
@@ -36,10 +36,6 @@ contract SimpleOneStepProofEntry is IOneStepProofEntry {
         (globalState.u64Vals[1], offset) = Deserialize.u64(proof, offset);
         if (step > 0 && (beforeHash[0] == 0 || globalState.getPositionInMessage() == 0)) {
             // We end the block when the first byte of the hash hits 0 or we advance a batch
-            return beforeHash;
-        }
-        if (globalState.getInboxPosition() >= execCtx.maxInboxMessagesRead) {
-            // We can't continue further because we've hit the max inbox messages read
             return beforeHash;
         }
         require(globalState.hash() == beforeHash, "BAD_PROOF");
