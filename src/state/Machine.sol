@@ -10,9 +10,11 @@ import "./MultiStack.sol";
 import "./StackFrame.sol";
 
 enum MachineStatus {
-    RUNNING,
-    FINISHED,
-    ERRORED
+    RUNNING, // Machine is running
+    FINISHED, // Machine has completed all execution for the assertion
+    ERRORED, // Machine finished execution and encountered an error
+    TOO_FAR, // Machine has gone too far in execution (unused in contracts)
+    YIELDED // Machine finished execution of one run, but there's still work to do to finish the assertion
 }
 
 struct Machine {
@@ -63,6 +65,8 @@ library MachineLib {
             return keccak256(abi.encodePacked("Machine finished:", mach.globalStateHash));
         } else if (mach.status == MachineStatus.ERRORED) {
             return keccak256(abi.encodePacked("Machine errored:", mach.globalStateHash));
+        } else if (mach.status == MachineStatus.YIELDED) {
+            return keccak256(abi.encodePacked("Machine yielded:", mach.globalStateHash));
         } else {
             revert("BAD_MACH_STATUS");
         }

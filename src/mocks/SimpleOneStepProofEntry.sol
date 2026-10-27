@@ -26,7 +26,7 @@ contract SimpleOneStepProofEntry is IOneStepProofEntry {
         uint256 step,
         bytes32 beforeHash,
         bytes calldata proof
-    ) external view returns (bytes32 afterHash) {
+    ) external pure returns (bytes32 afterHash) {
         if (proof.length == 0) {
             revert("EMPTY_PROOF");
         }
@@ -54,7 +54,11 @@ contract SimpleOneStepProofEntry is IOneStepProofEntry {
     function getMachineHash(
         ExecutionState calldata execState
     ) external pure override returns (bytes32) {
-        require(execState.machineStatus == MachineStatus.FINISHED, "BAD_MACHINE_STATUS");
+        require(
+            execState.machineStatus == MachineStatus.YIELDED
+                || execState.machineStatus == MachineStatus.FINISHED,
+            "BAD_MACHINE_STATUS"
+        );
         return execState.globalState.hash();
     }
 }

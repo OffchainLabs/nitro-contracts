@@ -78,6 +78,8 @@ contract OneStepProofEntry is IOneStepProofEntry {
             return keccak256(abi.encodePacked("Machine finished:", execState.globalState.hash()));
         } else if (execState.machineStatus == MachineStatus.ERRORED) {
             return keccak256(abi.encodePacked("Machine errored:", execState.globalState.hash()));
+        } else if (execState.machineStatus == MachineStatus.YIELDED) {
+            return keccak256(abi.encodePacked("Machine yielded:", execState.globalState.hash()));
         } else {
             revert("BAD_MACHINE_STATUS");
         }

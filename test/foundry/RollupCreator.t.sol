@@ -120,7 +120,6 @@ contract RollupCreatorTest is Test {
             wasmModuleRoot: keccak256("wasm"),
             loserStakeEscrow: address(200),
             genesisAssertionState: emptyState,
-            genesisInboxCount: 0,
             miniStakeValues: miniStakeValues,
             layerZeroBlockEdgeHeight: 2 ** 5,
             layerZeroBigStepEdgeHeight: 2 ** 5,
