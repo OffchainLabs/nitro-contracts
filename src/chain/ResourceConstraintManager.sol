@@ -37,7 +37,10 @@ contract ResourceConstraintManager is AccessControlEnumerable {
     error PricingExponentTooHigh(uint64 pricingExponent);
     error NotExpired();
 
-    constructor(address admin, address manager) {
+    constructor(
+        address admin,
+        address manager
+    ) {
         _setupRole(DEFAULT_ADMIN_ROLE, admin);
         _setupRole(MANAGER_ROLE, manager);
     }
