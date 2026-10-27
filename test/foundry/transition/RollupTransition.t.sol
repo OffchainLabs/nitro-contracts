@@ -159,7 +159,6 @@ contract RollupTransitionTestBase is Test {
             wasmModuleRoot: WASM_MODULE_ROOT,
             loserStakeEscrow: loserStakeEscrow,
             genesisAssertionState: genesisAssertionState,
-            genesisInboxCount: 0,
             miniStakeValues: miniStakeValues,
             layerZeroBlockEdgeHeight: 2 ** 5,
             layerZeroBigStepEdgeHeight: 2 ** 5,
