@@ -181,8 +181,9 @@ contract ResourceConstraintManager is AccessControlEnumerable {
                 for (uint256 j = 0; j < nResources; ++j) {
                     uint8 kind = uint8(constraints[i].resources[j].resource);
                     uint64 weight = constraints[i].resources[j].weight;
-                    pricingExponents[kind] +=
-                        uint64(uint256(startingBacklogValue) * uint256(weight) * 1000 / divisor);
+                    pricingExponents[
+                        kind
+                    ] += uint64(uint256(startingBacklogValue) * uint256(weight) * 1000 / divisor);
 
                     // this calculated pricing exponent will be used by nitro to calculate the gas price
                     // we check that the pricing exponent is below some reasonable number to avoid setting the gas price astronomically high
