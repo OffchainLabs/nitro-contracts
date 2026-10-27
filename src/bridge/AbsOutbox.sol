@@ -103,7 +103,10 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         rollup = newRollup;
     }
 
-    function updateSendRoot(bytes32 root, bytes32 l2BlockHash) external {
+    function updateSendRoot(
+        bytes32 root,
+        bytes32 l2BlockHash
+    ) external {
         if (msg.sender != rollup) revert NotRollup(msg.sender, rollup);
         roots[root] = l2BlockHash;
         emit SendRootUpdated(root, l2BlockHash);
@@ -232,7 +235,10 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         return (spentIndex, bitOffset, replay);
     }
 
-    function _isSpent(uint256 bitOffset, bytes32 replay) internal pure returns (bool) {
+    function _isSpent(
+        uint256 bitOffset,
+        bytes32 replay
+    ) internal pure returns (bool) {
         return ((replay >> bitOffset) & bytes32(uint256(1))) != bytes32(0);
     }
 
@@ -244,7 +250,11 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         return _isSpent(bitOffset, replay);
     }
 
-    function recordOutputAsSpent(bytes32[] memory proof, uint256 index, bytes32 item) internal {
+    function recordOutputAsSpent(
+        bytes32[] memory proof,
+        uint256 index,
+        bytes32 item
+    ) internal {
         if (proof.length >= 256) revert ProofTooLong(proof.length);
         if (index >= 2 ** proof.length) revert PathNotMinimal(index, 2 ** proof.length);
 
@@ -258,7 +268,11 @@ abstract contract AbsOutbox is DelegateCallAware, IOutbox {
         spent[spentIndex] = (replay | bytes32(1 << bitOffset));
     }
 
-    function executeBridgeCall(address to, uint256 value, bytes memory data) internal {
+    function executeBridgeCall(
+        address to,
+        uint256 value,
+        bytes memory data
+    ) internal {
         (bool success, bytes memory returndata) = bridge.executeCall(to, value, data);
         if (!success) {
             if (returndata.length > 0) {

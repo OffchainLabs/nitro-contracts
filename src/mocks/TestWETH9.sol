@@ -15,7 +15,10 @@ interface IWETH9 {
 }
 
 contract TestWETH9 is ERC20, IWETH9 {
-    constructor(string memory name_, string memory symbol_) ERC20(name_, symbol_) {}
+    constructor(
+        string memory name_,
+        string memory symbol_
+    ) ERC20(name_, symbol_) {}
 
     function deposit() external payable override {
         _mint(msg.sender, msg.value);

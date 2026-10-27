@@ -29,7 +29,10 @@ contract UpgradeExecutorMock is
     /// @notice Initialise the upgrade executor
     /// @param admin The admin who can update other roles, and itself - ADMIN_ROLE
     /// @param executors Can call the execute function - EXECUTOR_ROLE
-    function initialize(address admin, address[] memory executors) public initializer {
+    function initialize(
+        address admin,
+        address[] memory executors
+    ) public initializer {
         require(admin != address(0), "UpgradeExecutor: zero admin");
 
         __AccessControl_init();
@@ -52,9 +55,10 @@ contract UpgradeExecutorMock is
         bytes memory upgradeCallData
     ) public payable onlyRole(EXECUTOR_ROLE) nonReentrant {
         // OZ Address library check if the address is a contract and bubble up inner revert reason
-        address(upgrade).functionDelegateCall(
-            upgradeCallData, "UpgradeExecutor: inner delegate call failed without reason"
-        );
+        address(upgrade)
+            .functionDelegateCall(
+                upgradeCallData, "UpgradeExecutor: inner delegate call failed without reason"
+            );
 
         emit UpgradeExecuted(upgrade, msg.value, upgradeCallData);
     }
@@ -66,9 +70,10 @@ contract UpgradeExecutorMock is
         bytes memory targetCallData
     ) public payable onlyRole(EXECUTOR_ROLE) nonReentrant {
         // OZ Address library check if the address is a contract and bubble up inner revert reason
-        address(target).functionCallWithValue(
-            targetCallData, msg.value, "UpgradeExecutor: inner call failed without reason"
-        );
+        address(target)
+            .functionCallWithValue(
+                targetCallData, msg.value, "UpgradeExecutor: inner call failed without reason"
+            );
 
         emit TargetCallExecuted(target, msg.value, targetCallData);
     }

@@ -39,11 +39,17 @@ library ValueStackLib {
         return stack.proved.pop();
     }
 
-    function push(ValueStack memory stack, Value memory val) internal pure {
+    function push(
+        ValueStack memory stack,
+        Value memory val
+    ) internal pure {
         return stack.proved.push(val);
     }
 
-    function overwrite(ValueStack memory stack, bytes32 root) internal pure {
+    function overwrite(
+        ValueStack memory stack,
+        bytes32 root
+    ) internal pure {
         stack.remainingHash = root;
         delete stack.proved;
     }

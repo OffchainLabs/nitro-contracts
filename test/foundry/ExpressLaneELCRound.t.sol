@@ -26,13 +26,19 @@ contract LatestELCRoundsImp {
         return rounds.resolvedRound(round);
     }
 
-    function setResolvedRound(uint64 round, address expressLaneController) public {
+    function setResolvedRound(
+        uint64 round,
+        address expressLaneController
+    ) public {
         rounds.setResolvedRound(round, expressLaneController);
     }
 }
 
 contract ExpressLaneELCRoundTest is Test {
-    function assertEq(ELCRound memory actual, ELCRound memory expected) internal {
+    function assertEq(
+        ELCRound memory actual,
+        ELCRound memory expected
+    ) internal {
         assertEq(actual.expressLaneController, expected.expressLaneController, "elc address");
         assertEq(actual.round, expected.round, "elc round");
     }
