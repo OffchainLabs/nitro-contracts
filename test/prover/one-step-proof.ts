@@ -92,7 +92,7 @@ describe('OneStepProof', function () {
         const inboxLimit = 1000000
         const promise = osp
           .proveOneStep(
-            [inboxLimit, bridge.address],
+            [inboxLimit, bridge.address, ethers.constants.HashZero],
             i,
             [...Buffer.from(proof.before, 'hex')],
             [...Buffer.from(proof.proof, 'hex')]

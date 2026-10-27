@@ -376,7 +376,10 @@ library EdgeChallengeManagerLib {
     ///         but they have a different endHistoryRoot. Rival edges have the same mutualId
     /// @param store    The edge store containing the edge
     /// @param edgeId   The edge if to test if it is unrivaled
-    function hasRival(EdgeStore storage store, bytes32 edgeId) internal view returns (bool) {
+    function hasRival(
+        EdgeStore storage store,
+        bytes32 edgeId
+    ) internal view returns (bool) {
         if (!store.edges[edgeId].exists()) {
             revert EdgeNotExists(edgeId);
         }
@@ -521,7 +524,10 @@ library EdgeChallengeManagerLib {
 
     /// @notice Given a start and an endpoint determine the bisection height
     /// @dev    Returns the highest power of 2 in the differing lower bits of start and end
-    function mandatoryBisectionHeight(uint256 start, uint256 end) internal pure returns (uint256) {
+    function mandatoryBisectionHeight(
+        uint256 start,
+        uint256 end
+    ) internal pure returns (uint256) {
         if (end - start < 2) {
             revert HeightDiffLtTwo(start, end);
         }
@@ -625,7 +631,10 @@ library EdgeChallengeManagerLib {
     /// @notice Store that an edge has been confirmed. Recorded against the mutual id
     ///         so that rivals can look up rival confirmed edges
     /// @dev    Checks that a rival edge has not already been confirmed
-    function setConfirmedRival(EdgeStore storage store, bytes32 edgeId) internal {
+    function setConfirmedRival(
+        EdgeStore storage store,
+        bytes32 edgeId
+    ) internal {
         bytes32 mutualId = store.edges[edgeId].mutualId();
         bytes32 confirmedRivalId = store.confirmedRivals[mutualId];
         if (confirmedRivalId != bytes32(0)) {
@@ -637,7 +646,10 @@ library EdgeChallengeManagerLib {
     /// @notice Returns the sub edge level of the provided edge level
     /// @param level            The edge level to fetch the next of
     /// @param numBigStepLevel  The number of big step levels in this challenge
-    function nextEdgeLevel(uint8 level, uint8 numBigStepLevel) internal pure returns (uint8) {
+    function nextEdgeLevel(
+        uint8 level,
+        uint8 numBigStepLevel
+    ) internal pure returns (uint8) {
         uint8 nextLevel = level + 1;
 
         // levelToType throws an error when level is not a valid type

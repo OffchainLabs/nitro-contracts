@@ -135,7 +135,7 @@ contract DeployHelper {
         uint256 maxFeePerGas
     ) public view returns (uint256) {
         uint256 submissionCost = inbox.calculateRetryableSubmissionFee(0, block.basefee);
-        return NICK_CREATE2_VALUE + ERC2470_VALUE + ZOLTU_VALUE + ERC1820_VALUE
-            + 4 * (submissionCost + GASLIMIT * maxFeePerGas);
+        return NICK_CREATE2_VALUE + ERC2470_VALUE + ZOLTU_VALUE + ERC1820_VALUE + 4
+            * (submissionCost + GASLIMIT * maxFeePerGas);
     }
 }
