@@ -155,37 +155,29 @@ contract OneStepProofEntry is IOneStepProofEntry {
             prover = proverMem;
         } else if (
             (opcode == Instructions.I32_EQZ || opcode == Instructions.I64_EQZ)
-                || (
-                    opcode >= Instructions.I32_RELOP_BASE
-                        && opcode <= Instructions.I32_RELOP_BASE + Instructions.IRELOP_LAST
-                )
-                || (
-                    opcode >= Instructions.I32_UNOP_BASE
-                        && opcode <= Instructions.I32_UNOP_BASE + Instructions.IUNOP_LAST
-                ) || (opcode >= Instructions.I32_ADD && opcode <= Instructions.I32_ROTR)
-                || (
-                    opcode >= Instructions.I64_RELOP_BASE
-                        && opcode <= Instructions.I64_RELOP_BASE + Instructions.IRELOP_LAST
-                )
-                || (
-                    opcode >= Instructions.I64_UNOP_BASE
-                        && opcode <= Instructions.I64_UNOP_BASE + Instructions.IUNOP_LAST
-                ) || (opcode >= Instructions.I64_ADD && opcode <= Instructions.I64_ROTR)
+                || (opcode >= Instructions.I32_RELOP_BASE
+                    && opcode <= Instructions.I32_RELOP_BASE + Instructions.IRELOP_LAST)
+                || (opcode >= Instructions.I32_UNOP_BASE
+                    && opcode <= Instructions.I32_UNOP_BASE + Instructions.IUNOP_LAST)
+                || (opcode >= Instructions.I32_ADD && opcode <= Instructions.I32_ROTR)
+                || (opcode >= Instructions.I64_RELOP_BASE
+                    && opcode <= Instructions.I64_RELOP_BASE + Instructions.IRELOP_LAST)
+                || (opcode >= Instructions.I64_UNOP_BASE
+                    && opcode <= Instructions.I64_UNOP_BASE + Instructions.IUNOP_LAST)
+                || (opcode >= Instructions.I64_ADD && opcode <= Instructions.I64_ROTR)
                 || (opcode == Instructions.I32_WRAP_I64)
-                || (opcode == Instructions.I64_EXTEND_I32_S || opcode == Instructions.I64_EXTEND_I32_U)
+                || (opcode == Instructions.I64_EXTEND_I32_S
+                    || opcode == Instructions.I64_EXTEND_I32_U)
                 || (opcode >= Instructions.I32_EXTEND_8S && opcode <= Instructions.I64_EXTEND_32S)
-                || (
-                    opcode >= Instructions.I32_REINTERPRET_F32
-                        && opcode <= Instructions.F64_REINTERPRET_I64
-                )
+                || (opcode >= Instructions.I32_REINTERPRET_F32
+                    && opcode <= Instructions.F64_REINTERPRET_I64)
         ) {
             prover = proverMath;
         } else if (
-            (
-                opcode >= Instructions.GET_GLOBAL_STATE_BYTES32
-                    && opcode <= Instructions.SET_GLOBAL_STATE_U64
-            )
-                || (opcode >= Instructions.VALIDATE_CERTIFICATE && opcode <= Instructions.UNLINK_MODULE)
+            (opcode >= Instructions.GET_GLOBAL_STATE_BYTES32
+                    && opcode <= Instructions.SET_GLOBAL_STATE_U64)
+                || (opcode >= Instructions.VALIDATE_CERTIFICATE
+                    && opcode <= Instructions.UNLINK_MODULE)
                 || (opcode >= Instructions.NEW_COTHREAD && opcode <= Instructions.SWITCH_COTHREAD)
         ) {
             prover = proverHostIo;

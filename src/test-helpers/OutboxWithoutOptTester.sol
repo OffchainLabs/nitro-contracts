@@ -55,7 +55,10 @@ contract OutboxWithoutOptTester is DelegateCallAware, IOutbox {
 
     function postUpgradeInit() external {}
 
-    function updateSendRoot(bytes32 root, bytes32 l2BlockHash) external override {
+    function updateSendRoot(
+        bytes32 root,
+        bytes32 l2BlockHash
+    ) external override {
         //if (msg.sender != rollup) revert NotRollup(msg.sender, rollup);  //test only!!!
         roots[root] = l2BlockHash;
         emit SendRootUpdated(root, l2BlockHash);
@@ -176,7 +179,11 @@ contract OutboxWithoutOptTester is DelegateCallAware, IOutbox {
         return bytes32(index);
     }
 
-    function executeBridgeCall(address to, uint256 value, bytes memory data) internal {
+    function executeBridgeCall(
+        address to,
+        uint256 value,
+        bytes memory data
+    ) internal {
         (bool success, bytes memory returndata) = bridge.executeCall(to, value, data);
         if (!success) {
             if (returndata.length > 0) {

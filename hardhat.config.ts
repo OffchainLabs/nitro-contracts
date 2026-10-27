@@ -191,7 +191,7 @@ module.exports = {
     apiKey: process.env['ETHERSCAN_API_KEY'],
     sourcify: {
       // Doesn't need an API key
-      enabled: true
+      enabled: true,
     },
     customChains: [
       {

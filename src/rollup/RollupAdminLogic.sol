@@ -31,18 +31,15 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
 
         // dont need to connect and initialize the event inbox if it's already been initialized
         if (!bridge.allowedDelayedInboxes(address(connectedContracts.rollupEventInbox))) {
-            connectedContracts.bridge.setDelayedInbox(
-                address(connectedContracts.rollupEventInbox), true
-            );
-            connectedContracts.rollupEventInbox.rollupInitialized(
-                config.chainId, config.chainConfig, config.dataCostEstimate
-            );
+            connectedContracts.bridge
+                .setDelayedInbox(address(connectedContracts.rollupEventInbox), true);
+            connectedContracts.rollupEventInbox
+                .rollupInitialized(config.chainId, config.chainConfig, config.dataCostEstimate);
         }
 
         if (connectedContracts.sequencerInbox.totalDelayedMessagesRead() == 0) {
-            connectedContracts.sequencerInbox.addSequencerL2Batch(
-                0, "", 1, IGasRefunder(address(0)), 0, 1
-            );
+            connectedContracts.sequencerInbox
+                .addSequencerL2Batch(0, "", 1, IGasRefunder(address(0)), 0, 1);
         }
 
         validatorWalletCreator = connectedContracts.validatorWalletCreator;
@@ -149,7 +146,10 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      * @param _inbox Inbox contract to add or remove
      * @param _enabled New status of inbox
      */
-    function setDelayedInbox(address _inbox, bool _enabled) external override {
+    function setDelayedInbox(
+        address _inbox,
+        bool _enabled
+    ) external override {
         bridge.setDelayedInbox(address(_inbox), _enabled);
         emit DelayedInboxSet(address(_inbox), _enabled);
         // previously: emit OwnerFunctionCalled(2);
@@ -196,7 +196,10 @@ contract RollupAdminLogic is RollupCore, IRollupAdmin, DoubleLogicUUPSUpgradeabl
      * @param _validator addresses to set in the whitelist
      * @param _val value to set in the whitelist for corresponding address
      */
-    function setValidator(address[] calldata _validator, bool[] calldata _val) external override {
+    function setValidator(
+        address[] calldata _validator,
+        bool[] calldata _val
+    ) external override {
         require(_validator.length > 0, "EMPTY_ARRAY");
         require(_validator.length == _val.length, "WRONG_LENGTH");
 

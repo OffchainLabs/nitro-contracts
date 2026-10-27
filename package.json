@@ -32,10 +32,12 @@
     "solhint": "solhint -f table src/**/*.sol",
     "prettier:solidity": "prettier --write src/**/*.sol",
     "format": "forge fmt && prettier './**/*.{js,json,md,ts,yml}' --write && yarn run lint:test --fix",
+    "format:check": "forge fmt --check && prettier './**/*.{js,json,md,ts,yml}' --check",
     "build:0.6": "INTERFACE_TESTER_SOLC_VERSION=0.6.9 yarn run build",
     "build:0.7": "INTERFACE_TESTER_SOLC_VERSION=0.7.0 yarn run build",
     "test": "DISABLE_GAS_REPORTER=true hardhat --network hardhat test test/contract/*.spec.ts",
     "test:4844": "DISABLE_GAS_REPORTER=true hardhat --network hardhat test test/contract/*.spec.4844.ts",
+    "test:prover": "DISABLE_GAS_REPORTER=true hardhat --network hardhat test test/prover/*.ts",
     "test:compatibility": "yarn run build:0.6 && yarn run build:0.7",
     "test:storage": "./test/storage/test.bash",
     "test:signatures": "./test/signatures/test-sigs.bash",
@@ -45,7 +47,7 @@
     "test:e2e:stylus": "hardhat test test/e2e/stylusDeployer.ts",
     "test:upgrade": "./scripts/testUpgrade.bash",
     "test:foundry": "FOUNDRY_PROFILE=test forge test --gas-limit 10000000000",
-    "test:update": "yarn run test:signatures || yarn run test:storage",
+    "test:update": "yarn run test:signatures && yarn run test:storage",
     "test:bytecodes": "hardhat clean && forge clean && hardhat run scripts/compareBytecodes.ts",
     "metadatahash": "yarn build:all && hardhat run scripts/printMetadataHashes.ts",
     "upload-4bytes": "forge build && find ./out -type f -name \"*.json\" -exec cast upload-signature {} + | grep -v Duplicated:",
@@ -108,5 +110,9 @@
     "typechain": "^8.3.2",
     "typescript": "^4.9.5",
     "yarn-audit-fix": "^10.1.1"
+  },
+  "resolutions": {
+    "hardhat-deploy/axios": ">=0.33.0 <1",
+    "undici": "^6.27.0"
   }
 }

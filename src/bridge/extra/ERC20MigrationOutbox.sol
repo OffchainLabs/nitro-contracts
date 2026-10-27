@@ -20,7 +20,10 @@ contract ERC20MigrationOutbox is IERC20MigrationOutbox {
     address public immutable nativeToken;
     address public immutable destination;
 
-    constructor(IERC20Bridge _bridge, address _destination) {
+    constructor(
+        IERC20Bridge _bridge,
+        address _destination
+    ) {
         if (_destination == address(0)) {
             revert InvalidDestination();
         }
