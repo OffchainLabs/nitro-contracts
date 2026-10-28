@@ -9,21 +9,25 @@ import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 
 contract ResourceConstraintManager is AccessControlEnumerable {
     ArbOwner internal constant ARB_OWNER = ArbOwner(address(0x70));
+    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
-    // Constraint parameters boundaries
+    // Single dimensional gas constraints boundaries
+    // Source: https://forum.arbitrum.foundation/t/aip-raise-the-gas-target-min-l2-base-fee-implement-improvements-to-the-pricing-algorithm/30182
     uint256 public constant MAX_SINGLE_GAS_CONSTRAINTS = 10;
-    uint256 public constant MAX_MULTI_GAS_CONSTRAINTS = 100;
     uint64 public constant MIN_SINGLE_DIM_GAS_TARGET_PER_SEC = 7_000_000; // 7M gas/sec
     uint64 public constant MAX_SINGLE_DIM_GAS_TARGET_PER_SEC = 100_000_000; // 100M gas/sec
-    uint64 public constant MIN_MULTI_DIM_GAS_TARGET_PER_SEC = 1_000_000; // 1M gas/sec
-    uint64 public constant MAX_MULTI_DIM_GAS_TARGET_PER_SEC = 500_000_000; // 500M gas/sec
     uint32 public constant MIN_SINGLE_DIM_ADJUSTMENT_WINDOW_SECS = 5; // 5 seconds
     uint32 public constant MAX_SINGLE_DIM_ADJUSTMENT_WINDOW_SECS = 86_400; // 24 hours
+
+    // Multi dimensional gas constraints boundaries
+    // Source: https://forum.arbitrum.foundation/t/constitutional-aip-arbos-61-elara/30601#p-75843-h-1-dynamic-pricing-formally-multidimensional-gas-pricing-3
+    uint256 public constant MAX_MULTI_GAS_CONSTRAINTS = 100;
+    uint64 public constant MIN_MULTI_DIM_GAS_TARGET_PER_SEC = 1_000_000; // 1M gas/sec
+    uint64 public constant MAX_MULTI_DIM_GAS_TARGET_PER_SEC = 500_000_000; // 500M gas/sec
     uint32 public constant MIN_MULTI_DIM_ADJUSTMENT_WINDOW_SECS = 1; // 1 second
     uint32 public constant MAX_MULTI_DIM_ADJUSTMENT_WINDOW_SECS = 2_592_000; // 30 days
     uint64 public constant MAX_PRICING_EXPONENT = 8000; // scaled by 1000 to allow for fractional exponents
 
-    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     uint256 public constant TWO_YEARS_IN_SECONDS = 365 days * 2;
     uint256 public expiryTimestamp;
 
