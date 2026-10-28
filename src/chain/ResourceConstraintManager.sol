@@ -113,7 +113,8 @@ contract ResourceConstraintManager is AccessControlEnumerable {
     function setMultiGasPricingConstraints(
         ArbMultiGasConstraintsTypes.ResourceConstraint[] calldata constraints
     ) external onlyRole(MANAGER_ROLE) {
-        // If zero constraints are provided, the chain uses the single-constraint pricing model
+        // If zero constraints are provided, the chain uses the constraints set via setGasPricingConstraints,
+        // or the legacy single-constraint pricing model if none are set
         // Each constraint adds a small amount of overhead to the gas cost of each transaction and block, so we limit the number of constraints that can be set
         uint256 nConstraints = constraints.length;
         if (nConstraints > MAX_MULTI_GAS_CONSTRAINTS) {
