@@ -48,7 +48,7 @@ contract ResourceConstraintManager is AccessControlEnumerable {
     /// @notice Sets the expiry timestamp for the current manager contract if it has not been set already.
     ///        This is called at the beginning of the setGasPricingConstraints and setMultiGasPricingConstraints functions
     ///        to ensure that this contract can only be used for 2 years from the moment it is first used.
-    function setExpiryTimestamp() internal {
+    function _setExpiryTimestamp() internal {
         if (expiryTimestamp == 0) {
             expiryTimestamp = block.timestamp + TWO_YEARS_IN_SECONDS;
         }
@@ -72,7 +72,7 @@ contract ResourceConstraintManager is AccessControlEnumerable {
         uint64[3][] calldata constraints
     ) external onlyRole(MANAGER_ROLE) {
         // Set the expiry timestamp in the first call to either `set` function
-        setExpiryTimestamp();
+        _setExpiryTimestamp();
 
         // If zero constraints are provided, the chain uses the single-constraint pricing model
         uint256 nConstraints = constraints.length;
@@ -129,7 +129,7 @@ contract ResourceConstraintManager is AccessControlEnumerable {
         ArbMultiGasConstraintsTypes.ResourceConstraint[] calldata constraints
     ) external onlyRole(MANAGER_ROLE) {
         // Set the expiry timestamp in the first call to either `set` function
-        setExpiryTimestamp();
+        _setExpiryTimestamp();
 
         // If zero constraints are provided, the chain uses the constraints set via setGasPricingConstraints,
         // or the legacy single-constraint pricing model if none are set
