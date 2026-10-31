@@ -47,7 +47,7 @@
     "GHSA-vfj7-8cjw-p6xm",
     // sprintf-js unbounded precision DoS, no fix released; reached only by js-yaml's CLI, never run
     "GHSA-hp3w-g68c-fv3c",
-    // tmp path traversal; hardhat>solc and patch-package both pass fixed prefixes
+    // tmp path traversal; hardhat>solc passes fixed prefixes
     "GHSA-ph9p-34f9-6g65",
     // bn.js infinite loop; coverage only, over values from this repo's own contracts
     "GHSA-378v-28hj-76wf",
