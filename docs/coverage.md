@@ -87,6 +87,17 @@ FOUNDRY_PROFILE=test forge coverage --report debug
 
 Passing `--report` replaces the configured report list, so this run prints the list and writes no `lcov.info`.
 
+### Example
+
+Every cell in the terminal table is a percentage followed by the covered and total counts:
+
+```text
+| File                                            | % Lines        | % Statements   | % Branches   | % Funcs       |
+| src/assertionStakingPool/AbsBoldStakingPool.sol | 89.47% (17/19) | 86.67% (13/15) | 33.33% (1/3) | 100.00% (4/4) |
+```
+
+In this row every function was called and all but two lines ran. The three branches are the three `if (...) revert` guards in the contract, and only one of them was ever triggered. The two uncovered lines are the other two `revert` statements. Low branch coverage next to high line coverage usually means exactly this: the happy paths are tested and the error paths are not.
+
 ## 5. Improving coverage
 
 Coverage is a map of what tests do not reach, not a target to chase. When a file you changed shows uncovered lines:
