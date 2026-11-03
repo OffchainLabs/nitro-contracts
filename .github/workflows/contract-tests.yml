@@ -248,7 +248,7 @@ jobs:
 
       - name: Install Foundry
         uses: ./.github/actions/install-foundry
-      
+
       - name: Setup node/yarn
         uses: actions/setup-node@v4
         with:
@@ -270,6 +270,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./lcov.info
+          fail_ci_if_error: true
           disable_search: true
           flags: foundry
           cleanup: true
