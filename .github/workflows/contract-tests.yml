@@ -261,9 +261,6 @@ jobs:
 
       - name: Run coverage
         run: yarn coverage:ci
-        env:
-          # "Foundry coverage run" in ASCII
-          FOUNDRY_FUZZ_SEED: '0x666f756e64727920636f7665726167652072756e'
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
