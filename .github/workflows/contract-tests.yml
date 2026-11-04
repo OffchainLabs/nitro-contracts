@@ -103,17 +103,6 @@ jobs:
           directory: './src'
           exceptions_file: './test/unused-errors/exceptions.txt'
 
-      - name: Run coverage
-        run: yarn hardhat coverage --testfiles "test/contract/*.spec.ts"
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2
-        with:
-          fail_ci_if_error: false
-          files: ./contracts/coverage.json
-          verbose: false
-          token: ${{ secrets.CODECOV_TOKEN }}
-
       - name: Upload 4bytes
         continue-on-error: true
         run: yarn upload-4bytes
@@ -248,33 +237,38 @@ jobs:
       - name: Run e2e tests
         run: yarn test:e2e
 
-  # bold-upgrade:
-  #   name: BOLD upgrade test
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         submodules: recursive
+  coverage:
+    name: Coverage (Foundry)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-  #     - name: Install Foundry
-  #       uses: ./.github/actions/install-foundry
+      - name: Install Foundry
+        uses: ./.github/actions/install-foundry
 
-  #     - name: Setup node/yarn
-  #       uses: actions/setup-node@v3
-  #       with:
-  #         node-version: 18
-  #         cache: 'yarn'
-  #         cache-dependency-path: '**/yarn.lock'
+      - name: Setup node/yarn
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'yarn'
+          cache-dependency-path: '**/yarn.lock'
 
-  #     - name: Install packages
-  #       run: yarn
+      - name: Install packages
+        run: yarn
 
-  #     - name: Compile contracts
-  #       run: yarn build:all
+      - name: Run coverage
+        run: yarn coverage:ci
 
-  #     - name: Copy .env
-  #       run: |
-  #         cp ./.env-sample ./.env
-
-  #     - name: Test upgrade
-  #       run: L1_RPC=${{ secrets.L1_RPC || 'https://rpc.ankr.com/eth' }} yarn test:upgrade
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          version: v11.3.2
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./lcov.info
+          fail_ci_if_error: true
+          disable_search: true
+          flags: foundry
+          cleanup: true

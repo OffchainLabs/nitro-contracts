@@ -11,5 +11,9 @@ forge-cache/
 out/
 .env
 .DS_Store
-lcov.info
 output_directory
+
+# Coverage resources
+coverage
+coverage.json
+lcov.info
