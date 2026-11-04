@@ -20,33 +20,33 @@ const commonSetting = {
     enabled: true,
     runs: 2000, // default value, can be overridden
   },
-  evmVersion: 'london',
+  evmVersion: 'cancun',
 }
 
 const solidity: SolidityConfig = {
   compilers: [
     {
-      version: '0.8.17',
+      version: '0.8.30',
       settings: { ...commonSetting },
     },
   ],
   overrides: {
     'src/rollup/RollupUserLogic.sol': {
-      version: '0.8.17',
+      version: '0.8.30',
       settings: {
         ...commonSetting,
         optimizer: { ...commonSetting.optimizer, runs: 20 },
       },
     },
     'src/rollup/RollupAdminLogic.sol': {
-      version: '0.8.17',
+      version: '0.8.30',
       settings: {
         ...commonSetting,
         optimizer: { ...commonSetting.optimizer, runs: 20 },
       },
     },
     'src/challengeV2/EdgeChallengeManager.sol': {
-      version: '0.8.17',
+      version: '0.8.30',
       settings: {
         ...commonSetting,
         optimizer: { ...commonSetting.optimizer, runs: 200 },
