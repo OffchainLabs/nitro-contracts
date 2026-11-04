@@ -4,6 +4,8 @@ on:
   pull_request:
     types: [opened, reopened, synchronize, labeled, unlabeled]
 
+permissions: {}
+
 jobs:
   awaiting_release_check:
     name: Awaiting release check
