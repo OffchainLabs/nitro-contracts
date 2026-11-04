@@ -6,7 +6,8 @@ Some contract changes, such as small quality-of-life fixes, aren't worth a relea
 
 1. Open the PR against `develop` and get it reviewed.
 2. Add the `awaiting-release` label.
-3. In the PR description, say when it should be included, for example "with the next release that changes the Outbox".
+
+Optionally, say in the PR description when it should be included, for example "with the next release that changes the Outbox".
 
 ## Preparing a release
 
