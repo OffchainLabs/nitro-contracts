@@ -185,7 +185,7 @@ contract BridgeTester is Initializable, DelegateCallAware, IBridge, IEthBridge {
         // rather than reverting on failure as well as allow contract and non-contract calls
         // solhint-disable-next-line avoid-low-level-calls
         (success, returnData) = to.call{value: value}(data);
-        
+
         activeOutbox = prevOutbox;
         emit BridgeCallTriggered(msg.sender, to, value, data);
     }
