@@ -102,7 +102,7 @@
     "postinstall-postinstall": "^2.1.0",
     "prettier": "^2.8.8",
     "prettier-plugin-solidity": "^1.4.2",
-    "solhint": "^3.6.2",
+    "solhint": "^5.0.5",
     "solhint-plugin-prettier": "^0.1.0",
     "solidity-coverage": "^0.8.14",
     "ts-node": "^10.9.2",

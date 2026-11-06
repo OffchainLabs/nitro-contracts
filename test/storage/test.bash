@@ -10,6 +10,11 @@ do
         echo "Checking for storage changes in $CONTRACTNAME"
         [ -f "$output_dir/$CONTRACTNAME" ] && mv "$output_dir/$CONTRACTNAME" "$output_dir/$CONTRACTNAME-old"
         forge inspect "$CONTRACTNAME" storage > "$output_dir/$CONTRACTNAME"
+        # transient variables get slots by declaration order, so their order must survive upgrades too
+        if [[ $(forge inspect "$CONTRACTNAME" transientStorageLayout --json | jq '.storage | length') != 0 ]]; then
+            printf '\nTransient storage:\n' >> "$output_dir/$CONTRACTNAME"
+            forge inspect "$CONTRACTNAME" transientStorageLayout >> "$output_dir/$CONTRACTNAME"
+        fi
         diff "$output_dir/$CONTRACTNAME-old" "$output_dir/$CONTRACTNAME"
         if [[ $? != "0" ]]; then
             exit 1
