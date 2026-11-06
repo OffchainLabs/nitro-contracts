@@ -17,8 +17,14 @@ contract EthVault {
         uint256 _version
     ) external payable {
         version = _version;
-        IBridge bridge = IBridge(msg.sender);
-        outboxCaller = bridge.activeOutbox();
+    }
+
+    /// @dev Also records the bridge's active outbox, so the caller must be the bridge
+    function setVersionAndRecordOutbox(
+        uint256 _version
+    ) external payable {
+        version = _version;
+        outboxCaller = IBridge(msg.sender).activeOutbox();
     }
 
     function justRevert() external payable {

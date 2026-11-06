@@ -203,7 +203,8 @@ contract BridgeTest is AbsBridgeTest {
         // call params
         uint256 newVaultVersion = 7;
         uint256 withdrawalAmount = 3 ether;
-        bytes memory data = abi.encodeWithSelector(EthVault.setVersion.selector, newVaultVersion);
+        bytes memory data =
+            abi.encodeWithSelector(EthVault.setVersionAndRecordOutbox.selector, newVaultVersion);
 
         // expect event
         vm.expectEmit(true, true, true, true);
