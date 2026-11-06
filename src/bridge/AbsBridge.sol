@@ -43,7 +43,7 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
     address[] public allowedOutboxList;
 
     /// @notice Deprecated in place of transient storage
-    /// @dev After deprecation value in this slot will be type(uint256).max,
+    /// @dev After deprecation value in this slot will be address(type(uint160).max),
     ///      but slot will not be used or accessible in any way.
     address internal __activeOutbox;
 
