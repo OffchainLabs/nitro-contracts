@@ -48,7 +48,11 @@ contract OneStepProverMath is IOneStepProver {
         return uint64(a);
     }
 
-    function i64RelOp(uint64 a, uint64 b, uint16 relop) internal pure returns (bool) {
+    function i64RelOp(
+        uint64 a,
+        uint64 b,
+        uint16 relop
+    ) internal pure returns (bool) {
         if (relop == Instructions.IRELOP_EQ) {
             return (a == b);
         } else if (relop == Instructions.IRELOP_NE) {
@@ -119,7 +123,11 @@ contract OneStepProverMath is IOneStepProver {
         mach.valueStack.push(ValueLib.newBoolean(res));
     }
 
-    function genericIUnOp(uint64 a, uint16 unop, uint16 bits) internal pure returns (uint32) {
+    function genericIUnOp(
+        uint64 a,
+        uint16 unop,
+        uint16 bits
+    ) internal pure returns (uint32) {
         require(bits == 32 || bits == 64, "WRONG USE OF genericUnOp");
         if (unop == Instructions.IUNOP_CLZ) {
             /* curbits is one-based to keep with unsigned mathematics */
@@ -178,22 +186,34 @@ contract OneStepProverMath is IOneStepProver {
         mach.valueStack.push(ValueLib.newI64(res));
     }
 
-    function rotl32(uint32 a, uint32 b) internal pure returns (uint32) {
+    function rotl32(
+        uint32 a,
+        uint32 b
+    ) internal pure returns (uint32) {
         b %= 32;
         return (a << b) | (a >> (32 - b));
     }
 
-    function rotl64(uint64 a, uint64 b) internal pure returns (uint64) {
+    function rotl64(
+        uint64 a,
+        uint64 b
+    ) internal pure returns (uint64) {
         b %= 64;
         return (a << b) | (a >> (64 - b));
     }
 
-    function rotr32(uint32 a, uint32 b) internal pure returns (uint32) {
+    function rotr32(
+        uint32 a,
+        uint32 b
+    ) internal pure returns (uint32) {
         b %= 32;
         return (a >> b) | (a << (32 - b));
     }
 
-    function rotr64(uint64 a, uint64 b) internal pure returns (uint64) {
+    function rotr64(
+        uint64 a,
+        uint64 b
+    ) internal pure returns (uint64) {
         b %= 64;
         return (a >> b) | (a << (64 - b));
     }
@@ -466,9 +486,8 @@ contract OneStepProverMath is IOneStepProver {
 
         uint16 opcode = inst.opcode;
 
-        function(Machine memory, Module memory, Instruction calldata, bytes calldata)
-            internal
-            pure impl;
+        function(Machine memory, Module memory, Instruction calldata, bytes calldata) internal pure
+            impl;
         if (opcode == Instructions.I32_EQZ || opcode == Instructions.I64_EQZ) {
             impl = executeEqz;
         } else if (

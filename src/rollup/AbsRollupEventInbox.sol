@@ -50,11 +50,17 @@ abstract contract AbsRollupEventInbox is
 
     function rollupInitialized(
         uint256 chainId,
-        string calldata chainConfig
+        string calldata chainConfig,
+        uint256 dataCostEstimate
     ) external override onlyRollup {
         require(bytes(chainConfig).length > 0, "EMPTY_CHAIN_CONFIG");
         uint8 initMsgVersion = 1;
-        uint256 currentDataCost = _currentDataCostToReport();
+        uint256 currentDataCost;
+        if (dataCostEstimate != 0) {
+            currentDataCost = dataCostEstimate;
+        } else {
+            currentDataCost = _currentDataCostToReport();
+        }
         bytes memory initMsg =
             abi.encodePacked(chainId, initMsgVersion, currentDataCost, chainConfig);
         uint256 num = _enqueueInitializationMsg(initMsg);

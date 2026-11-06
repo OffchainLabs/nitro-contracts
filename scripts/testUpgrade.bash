@@ -1,5 +1,8 @@
 #!/bin/bash
 
+ANVILFORK=true
+export ANVILFORK
+
 anvil --fork-url $L1_RPC > /dev/null &
 
 anvil_pid=$!

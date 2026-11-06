@@ -13,6 +13,8 @@ import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.so
 import "@openzeppelin/contracts/access/Ownable.sol";
 import {DeployHelper} from "./DeployHelper.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {OneStepProofEntry, IOneStepProofEntry, IOneStepProver} from "../osp/OneStepProofEntry.sol";
+import {OneStepProverHostIo} from "../osp/OneStepProverHostIo.sol";
 
 contract RollupCreator is Ownable {
     using SafeERC20 for IERC20;
@@ -41,6 +43,8 @@ contract RollupCreator is Ownable {
         uint256 maxFeePerGasForRetryables;
         address[] batchPosters;
         address batchPosterManager;
+        IFeeTokenPricer feeTokenPricer;
+        address customOsp;
     }
 
     BridgeCreator public bridgeCreator;
@@ -54,7 +58,29 @@ contract RollupCreator is Ownable {
 
     DeployHelper public l2FactoriesDeployer;
 
-    constructor() Ownable() {}
+    constructor(
+        address initialOwner,
+        BridgeCreator _bridgeCreator,
+        IOneStepProofEntry _osp,
+        IEdgeChallengeManager _challengeManagerLogic,
+        IRollupAdmin _rollupAdminLogic,
+        IRollupUser _rollupUserLogic,
+        IUpgradeExecutor _upgradeExecutorLogic,
+        address _validatorWalletCreator,
+        DeployHelper _l2FactoriesDeployer
+    ) Ownable() {
+        setTemplates(
+            _bridgeCreator,
+            _osp,
+            _challengeManagerLogic,
+            _rollupAdminLogic,
+            _rollupUserLogic,
+            _upgradeExecutorLogic,
+            _validatorWalletCreator,
+            _l2FactoriesDeployer
+        );
+        _transferOwnership(initialOwner);
+    }
 
     // creator receives back excess fees (for deploying L2 factories) so it can refund the caller
     receive() external payable {}
@@ -68,7 +94,7 @@ contract RollupCreator is Ownable {
         IUpgradeExecutor _upgradeExecutorLogic,
         address _validatorWalletCreator,
         DeployHelper _l2FactoriesDeployer
-    ) external onlyOwner {
+    ) public onlyOwner {
         bridgeCreator = _bridgeCreator;
         osp = _osp;
         challengeManagerTemplate = _challengeManagerLogic;
@@ -84,7 +110,8 @@ contract RollupCreator is Ownable {
     function createChallengeManager(
         address rollupAddr,
         address proxyAdminAddr,
-        Config memory config
+        Config memory config,
+        address customOsp
     ) internal returns (IEdgeChallengeManager) {
         IEdgeChallengeManager challengeManager = IEdgeChallengeManager(
             address(
@@ -97,7 +124,7 @@ contract RollupCreator is Ownable {
         challengeManager.initialize({
             _assertionChain: IAssertionChain(rollupAddr),
             _challengePeriodBlocks: config.confirmPeriodBlocks,
-            _oneStepProofEntry: osp,
+            _oneStepProofEntry: customOsp == address(0) ? osp : IOneStepProofEntry(customOsp),
             layerZeroBlockEdgeHeight: config.layerZeroBlockEdgeHeight,
             layerZeroBigStepEdgeHeight: config.layerZeroBigStepEdgeHeight,
             layerZeroSmallStepEdgeHeight: config.layerZeroSmallStepEdgeHeight,
@@ -131,6 +158,8 @@ contract RollupCreator is Ownable {
      *          - maxFeePerGasForRetryables price bid for L2 execution.
      *          - batchPosters  The list of batch poster addresses, not used when set to empty list
      *          - batchPosterManager The address which has the ability to rotate batch poster keys
+     *          - feeTokenPricer Fee token pricer contract for converting custom fee token to ETH
+     *          - customOsp Custom OSP address, if set to address(0) the default OSP will be used
      * @return The address of the newly created rollup
      */
     function createRollup(
@@ -142,8 +171,7 @@ contract RollupCreator is Ownable {
                 ,
                 ISequencerInbox ethSequencerInbox,
                 ISequencerInbox ethDelayBufferableSequencerInbox,
-                IInboxBase ethInbox,
-                ,
+                IInboxBase ethInbox,,
             ) = bridgeCreator.ethBasedTemplates();
             require(
                 deployParams.maxDataSize == ethSequencerInbox.maxDataSize(),
@@ -159,8 +187,7 @@ contract RollupCreator is Ownable {
                 ,
                 ISequencerInbox erc20SequencerInbox,
                 ISequencerInbox erc20DelayBufferableSequencerInbox,
-                IInboxBase erc20Inbox,
-                ,
+                IInboxBase erc20Inbox,,
             ) = bridgeCreator.erc20BasedTemplates();
             require(
                 deployParams.maxDataSize == erc20SequencerInbox.maxDataSize(),
@@ -186,11 +213,13 @@ contract RollupCreator is Ownable {
             address(rollup),
             deployParams.nativeToken,
             deployParams.config.sequencerInboxMaxTimeVariation,
-            deployParams.config.bufferConfig
+            deployParams.config.bufferConfig,
+            deployParams.feeTokenPricer
         );
 
-        IEdgeChallengeManager challengeManager =
-            createChallengeManager(address(rollup), address(proxyAdmin), deployParams.config);
+        IEdgeChallengeManager challengeManager = createChallengeManager(
+            address(rollup), address(proxyAdmin), deployParams.config, deployParams.customOsp
+        );
 
         // deploy and init upgrade executor
         address upgradeExecutor = _deployUpgradeExecutor(deployParams.config.owner, proxyAdmin);

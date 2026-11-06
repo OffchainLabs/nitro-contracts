@@ -60,7 +60,7 @@ contract RollupEventInboxTest is AbsRollupEventInboxTest {
         emit InboxMessageDelivered(0, expectedInitMsg);
 
         vm.prank(rollup);
-        rollupEventInbox.rollupInitialized(chainId, chainConfig);
+        rollupEventInbox.rollupInitialized(chainId, chainConfig, 0);
     }
 
     function test_rollupInitialized_ArbitrumHosted() public {
@@ -106,6 +106,6 @@ contract RollupEventInboxTest is AbsRollupEventInboxTest {
         emit InboxMessageDelivered(0, expectedInitMsg);
 
         vm.prank(rollup);
-        rollupEventInbox.rollupInitialized(chainId, chainConfig);
+        rollupEventInbox.rollupInitialized(chainId, chainConfig, 0);
     }
 }

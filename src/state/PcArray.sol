@@ -9,11 +9,18 @@ struct PcArray {
 }
 
 library PcArrayLib {
-    function get(PcArray memory arr, uint256 index) internal pure returns (uint32) {
+    function get(
+        PcArray memory arr,
+        uint256 index
+    ) internal pure returns (uint32) {
         return arr.inner[index];
     }
 
-    function set(PcArray memory arr, uint256 index, uint32 val) internal pure {
+    function set(
+        PcArray memory arr,
+        uint256 index,
+        uint32 val
+    ) internal pure {
         arr.inner[index] = val;
     }
 
@@ -23,7 +30,10 @@ library PcArrayLib {
         return arr.inner.length;
     }
 
-    function push(PcArray memory arr, uint32 val) internal pure {
+    function push(
+        PcArray memory arr,
+        uint32 val
+    ) internal pure {
         uint32[] memory newInner = new uint32[](arr.inner.length + 1);
         for (uint256 i = 0; i < arr.inner.length; i++) {
             newInner[i] = arr.inner[i];

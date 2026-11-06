@@ -170,11 +170,18 @@ library CryptographyPrimitives {
         return a;
     }
 
-    function rightRotate(uint32 x, uint32 n) internal pure returns (uint32) {
+    function rightRotate(
+        uint32 x,
+        uint32 n
+    ) internal pure returns (uint32) {
         return ((x) >> (n)) | ((x) << (32 - (n)));
     }
 
-    function ch(uint32 e, uint32 f, uint32 g) internal pure returns (uint32) {
+    function ch(
+        uint32 e,
+        uint32 f,
+        uint32 g
+    ) internal pure returns (uint32) {
         return ((e & f) ^ ((~e) & g));
     }
 
@@ -281,11 +288,11 @@ library CryptographyPrimitives {
             uint32 maj;
 
             for (i = 0; i < 64; i++) {
-                s1 =
-                    rightRotate(state[4], 6) ^ rightRotate(state[4], 11) ^ rightRotate(state[4], 25);
+                s1 = rightRotate(state[4], 6) ^ rightRotate(state[4], 11)
+                    ^ rightRotate(state[4], 25);
                 temp1 = state[7] + s1 + ch(state[4], state[5], state[6]) + k[i] + w[i];
-                s0 =
-                    rightRotate(state[0], 2) ^ rightRotate(state[0], 13) ^ rightRotate(state[0], 22);
+                s0 = rightRotate(state[0], 2) ^ rightRotate(state[0], 13)
+                    ^ rightRotate(state[0], 22);
 
                 maj = (state[0] & (state[1] ^ state[2])) ^ (state[1] & state[2]);
                 temp2 = s0 + maj;

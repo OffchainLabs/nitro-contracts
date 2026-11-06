@@ -32,7 +32,10 @@ interface IOutbox {
     // solhint-disable-next-line func-name-mixedcase
     function OUTBOX_VERSION() external view returns (uint128); // the outbox version
 
-    function updateSendRoot(bytes32 sendRoot, bytes32 l2BlockHash) external;
+    function updateSendRoot(
+        bytes32 sendRoot,
+        bytes32 l2BlockHash
+    ) external;
 
     function updateRollupAddress() external;
 

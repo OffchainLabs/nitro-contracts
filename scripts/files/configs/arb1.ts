@@ -29,6 +29,8 @@ export const arb1: Config = {
     stakeAmt: parseEther('3600'),
     miniStakeAmounts: [parseEther('0'), parseEther('555'), parseEther('79')],
     chainId: 42161,
+    minimumAssertionPeriod: 75,
+    validatorAfkBlocks: 201600,
     disableValidatorWhitelist: true,
     blockLeafSize: 2 ** 26,
     bigStepLeafSize: 2 ** 19,

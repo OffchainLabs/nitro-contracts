@@ -4,7 +4,7 @@
 
 pragma solidity ^0.8.0;
 
-import "../../challengeV2/EdgeChallengeManager.sol";
+import "../../challengeV2/IEdgeChallengeManager.sol";
 import "./IAbsBoldStakingPool.sol";
 
 interface IEdgeStakingPool is IAbsBoldStakingPool {

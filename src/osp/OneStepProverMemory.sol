@@ -19,7 +19,11 @@ contract OneStepProverMemory is IOneStepProver {
     uint256 private constant LEAF_SIZE = 32;
     uint64 private constant PAGE_SIZE = 65536;
 
-    function setLeafByte(bytes32 oldLeaf, uint256 idx, uint8 val) internal pure returns (bytes32) {
+    function setLeafByte(
+        bytes32 oldLeaf,
+        uint256 idx,
+        uint8 val
+    ) internal pure returns (bytes32) {
         require(idx < LEAF_SIZE, "BAD_SET_LEAF_BYTE_IDX");
         // Take into account that we are casting the leaf to a big-endian integer
         uint256 leafShift = (LEAF_SIZE - 1 - idx) * 8;
@@ -250,9 +254,8 @@ contract OneStepProverMemory is IOneStepProver {
 
         uint16 opcode = inst.opcode;
 
-        function(Machine memory, Module memory, Instruction calldata, bytes calldata)
-            internal
-            pure impl;
+        function(Machine memory, Module memory, Instruction calldata, bytes calldata) internal pure
+            impl;
         if (opcode >= Instructions.I32_LOAD && opcode <= Instructions.I64_LOAD32_U) {
             impl = executeMemoryLoad;
         } else if (opcode >= Instructions.I32_STORE && opcode <= Instructions.I64_STORE32) {

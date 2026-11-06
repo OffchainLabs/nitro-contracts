@@ -12,7 +12,7 @@ import "../bridge/IOutbox.sol";
 import "../bridge/IInboxBase.sol";
 import "./IRollupEventInbox.sol";
 import "./IRollupLogic.sol";
-import "../challengeV2/EdgeChallengeManager.sol";
+import "../challengeV2/IEdgeChallengeManager.sol";
 
 struct Config {
     uint64 confirmPeriodBlocks;
@@ -23,6 +23,8 @@ struct Config {
     address loserStakeEscrow;
     uint256 chainId;
     string chainConfig;
+    uint256 minimumAssertionPeriod;
+    uint64 validatorAfkBlocks;
     uint256[] miniStakeValues;
     ISequencerInbox.MaxTimeVariation sequencerInboxMaxTimeVariation;
     uint256 layerZeroBlockEdgeHeight;
@@ -36,6 +38,8 @@ struct Config {
     uint8 numBigStepLevel;
     uint64 challengeGracePeriodBlocks;
     BufferConfig bufferConfig;
+    /// @notice Parent chain's base fee estimate for rollup initialization, if 0 block.basefee will be used
+    uint256 dataCostEstimate;
 }
 
 struct ContractDependencies {

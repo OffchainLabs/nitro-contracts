@@ -182,9 +182,11 @@ contract CacheManager is Initializable, DelegateCallAware {
 
     /// @notice Sends all revenue to the network fee account.
     function sweepFunds() external {
-        (bool success, bytes memory data) =
-        // solhint-disable-next-line avoid-low-level-calls
-         ARB_OWNER_PUBLIC.getNetworkFeeAccount().call{value: address(this).balance}("");
+        (
+            bool success,
+            bytes memory data
+            // solhint-disable-next-line avoid-low-level-calls
+        ) = ARB_OWNER_PUBLIC.getNetworkFeeAccount().call{value: address(this).balance}("");
         if (!success) {
             assembly {
                 revert(add(data, 32), mload(data))
@@ -286,7 +288,10 @@ contract CacheManager is Initializable, DelegateCallAware {
     }
 
     /// @dev Clears the entry at the given index
-    function _deleteEntry(uint192 bid, uint64 index) internal {
+    function _deleteEntry(
+        uint192 bid,
+        uint64 index
+    ) internal {
         Entry memory entry = entries[index];
         ARB_WASM_CACHE.evictCodehash(entry.code);
         queueSize -= entry.size;
@@ -303,7 +308,10 @@ contract CacheManager is Initializable, DelegateCallAware {
     }
 
     /// @dev Creates a packed bid item
-    function _packBid(uint192 bid, uint64 index) internal pure returns (uint256) {
+    function _packBid(
+        uint192 bid,
+        uint64 index
+    ) internal pure returns (uint256) {
         return (uint256(bid) << 64) | uint256(index);
     }
 

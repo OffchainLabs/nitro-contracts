@@ -6,7 +6,6 @@ pragma solidity ^0.8.0;
 
 import "./AbsBoldStakingPool.sol";
 import "./interfaces/IEdgeStakingPool.sol";
-import "../challengeV2/EdgeChallengeManager.sol";
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -35,7 +34,7 @@ contract EdgeStakingPool is AbsBoldStakingPool, IEdgeStakingPool {
     constructor(
         address _challengeManager,
         bytes32 _edgeId
-    ) AbsBoldStakingPool(address(EdgeChallengeManager(_challengeManager).stakeToken())) {
+    ) AbsBoldStakingPool(address(IEdgeChallengeManager(_challengeManager).stakeToken())) {
         if (_edgeId == bytes32(0)) {
             revert EmptyEdgeId();
         }
@@ -47,9 +46,9 @@ contract EdgeStakingPool is AbsBoldStakingPool, IEdgeStakingPool {
     function createEdge(
         CreateEdgeArgs calldata args
     ) external {
-        uint256 requiredStake = EdgeChallengeManager(challengeManager).stakeAmounts(args.level);
+        uint256 requiredStake = IEdgeChallengeManager(challengeManager).stakeAmounts(args.level);
         IERC20(stakeToken).safeIncreaseAllowance(address(challengeManager), requiredStake);
-        bytes32 newEdgeId = EdgeChallengeManager(challengeManager).createLayerZeroEdge(args);
+        bytes32 newEdgeId = IEdgeChallengeManager(challengeManager).createLayerZeroEdge(args);
         if (newEdgeId != edgeId) {
             revert IncorrectEdgeId(newEdgeId, edgeId);
         }

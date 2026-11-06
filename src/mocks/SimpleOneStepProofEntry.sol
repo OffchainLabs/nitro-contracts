@@ -4,7 +4,7 @@
 //
 pragma solidity ^0.8.17;
 
-import "../challengeV2/EdgeChallengeManager.sol";
+import "../challengeV2/IEdgeChallengeManager.sol";
 import "../state/Deserialize.sol";
 
 contract SimpleOneStepProofEntry is IOneStepProofEntry {

@@ -8,7 +8,6 @@ import "@openzeppelin/contracts-upgradeable/utils/Create2Upgradeable.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "./RollupProxy.sol";
 import "./RollupLib.sol";
-import "./RollupAdminLogic.sol";
 
 struct Node {
     // Hash of the state of the chain as of this node
@@ -63,6 +62,12 @@ interface IOldRollup {
         bytes32 wasmModuleRoot,
         uint256 inboxMaxCount
     );
+
+    function paused() external view returns (bool);
+    function isZombie(
+        address staker
+    ) external view returns (bool);
+    function withdrawStakerFunds() external returns (uint256);
 
     function wasmModuleRoot() external view returns (bytes32);
     function latestConfirmed() external view returns (uint64);
@@ -122,7 +127,11 @@ contract StateHashPreImageLookup {
         );
     }
 
-    function set(bytes32 h, ExecutionState calldata executionState, uint256 inboxMaxCount) public {
+    function set(
+        bytes32 h,
+        ExecutionState calldata executionState,
+        uint256 inboxMaxCount
+    ) public {
         require(h == stateHash(executionState, inboxMaxCount), "Invalid hash");
         preImages[h] = abi.encode(executionState, inboxMaxCount);
         emit HashSet(h, executionState, inboxMaxCount);
@@ -133,65 +142,6 @@ contract StateHashPreImageLookup {
     ) public view returns (ExecutionState memory executionState, uint256 inboxMaxCount) {
         (executionState, inboxMaxCount) = abi.decode(preImages[h], (ExecutionState, uint256));
         require(inboxMaxCount != 0, "Hash not yet set");
-    }
-}
-
-/// @title  Forwards calls to the rollup so that they can be interpreted as a user
-/// @notice In the upgrade executor we need to access functions on the rollup
-///         but since the upgrade executor is the admin it will always be forwarded to the
-///         rollup admin logic. We create a separate forwarder contract here that just relays
-///         information, since it's not the admin it can access rollup user logic.
-contract RollupReader is IOldRollup {
-    IOldRollup public immutable rollup;
-
-    constructor(
-        IOldRollup _rollup
-    ) {
-        rollup = _rollup;
-    }
-
-    function wasmModuleRoot() external view returns (bytes32) {
-        return rollup.wasmModuleRoot();
-    }
-
-    function latestConfirmed() external view returns (uint64) {
-        return rollup.latestConfirmed();
-    }
-
-    function getNode(
-        uint64 nodeNum
-    ) external view returns (Node memory) {
-        return rollup.getNode(nodeNum);
-    }
-
-    function getStakerAddress(
-        uint64 stakerNum
-    ) external view returns (address) {
-        return rollup.getStakerAddress(stakerNum);
-    }
-
-    function stakerCount() external view returns (uint64) {
-        return rollup.stakerCount();
-    }
-
-    function getStaker(
-        address staker
-    ) external view returns (OldStaker memory) {
-        return rollup.getStaker(staker);
-    }
-
-    function isValidator(
-        address validator
-    ) external view returns (bool) {
-        return rollup.isValidator(validator);
-    }
-
-    function validatorWalletCreator() external view returns (address) {
-        return rollup.validatorWalletCreator();
-    }
-
-    function anyTrustFastConfirmer() external view returns (address) {
-        return rollup.anyTrustFastConfirmer();
     }
 }
 
@@ -216,6 +166,7 @@ contract ConstantArrayStorage {
 /// @notice Requires implementation contracts to be pre-deployed and provided in the constructor
 ///         Also requires a lookup contract to be provided that contains the pre-image of the state hash
 ///         that is in the latest confirmed assertion in the current rollup.
+///         The old rollup should be on v1.1.0 or later to allow stake withdrawals after the upgrade
 contract BOLDUpgradeAction {
     using AssertionStateLib for AssertionState;
 
@@ -237,6 +188,9 @@ contract BOLDUpgradeAction {
     address public immutable STAKE_TOKEN;
     uint256 public immutable STAKE_AMOUNT;
     uint256 public immutable CHAIN_ID;
+    uint256 public immutable MINIMUM_ASSERTION_PERIOD;
+    uint64 public immutable VALIDATOR_AFK_BLOCKS;
+
     bool public immutable DISABLE_VALIDATOR_WHITELIST;
     uint64 public immutable CHALLENGE_GRACE_PERIOD_BLOCKS;
     address public immutable MINI_STAKE_AMOUNTS_STORAGE;
@@ -255,7 +209,6 @@ contract BOLDUpgradeAction {
     ProxyAdmin public immutable PROXY_ADMIN_SEQUENCER_INBOX;
     ProxyAdmin public immutable PROXY_ADMIN_INBOX;
     StateHashPreImageLookup public immutable PREIMAGE_LOOKUP;
-    RollupReader public immutable ROLLUP_READER;
 
     // new contract implementations
     address public immutable IMPL_BRIDGE;
@@ -263,8 +216,6 @@ contract BOLDUpgradeAction {
     address public immutable IMPL_INBOX;
     address public immutable IMPL_REI;
     address public immutable IMPL_OUTBOX;
-    // the old rollup, but with whenNotPaused protection removed from stake withdrawal functions
-    address public immutable IMPL_PATCHED_OLD_ROLLUP_USER;
     address public immutable IMPL_NEW_ROLLUP_USER;
     address public immutable IMPL_NEW_ROLLUP_ADMIN;
     address public immutable IMPL_CHALLENGE_MANAGER;
@@ -278,6 +229,8 @@ contract BOLDUpgradeAction {
         uint256 stakeAmt;
         uint256[] miniStakeAmounts;
         uint256 chainId;
+        uint256 minimumAssertionPeriod;
+        uint64 validatorAfkBlocks;
         bool disableValidatorWhitelist;
         uint256 blockLeafSize;
         uint256 bigStepLeafSize;
@@ -303,7 +256,6 @@ contract BOLDUpgradeAction {
         address inbox;
         address rei;
         address outbox;
-        address oldRollupUser;
         address newRollupUser;
         address newRollupAdmin;
         address challengeManager;
@@ -341,19 +293,19 @@ contract BOLDUpgradeAction {
         PROXY_ADMIN_SEQUENCER_INBOX = ProxyAdmin(proxyAdmins.seqInbox);
         PROXY_ADMIN_INBOX = ProxyAdmin(proxyAdmins.inbox);
         PREIMAGE_LOOKUP = new StateHashPreImageLookup();
-        ROLLUP_READER = new RollupReader(contracts.rollup);
 
         IMPL_BRIDGE = implementations.bridge;
         IMPL_SEQUENCER_INBOX = implementations.seqInbox;
         IMPL_INBOX = implementations.inbox;
         IMPL_REI = implementations.rei;
         IMPL_OUTBOX = implementations.outbox;
-        IMPL_PATCHED_OLD_ROLLUP_USER = implementations.oldRollupUser;
         IMPL_NEW_ROLLUP_USER = implementations.newRollupUser;
         IMPL_NEW_ROLLUP_ADMIN = implementations.newRollupAdmin;
         IMPL_CHALLENGE_MANAGER = implementations.challengeManager;
 
         CHAIN_ID = settings.chainId;
+        MINIMUM_ASSERTION_PERIOD = settings.minimumAssertionPeriod;
+        VALIDATOR_AFK_BLOCKS = settings.validatorAfkBlocks;
         CONFIRM_PERIOD_BLOCKS = settings.confirmPeriodBlocks;
         CHALLENGE_PERIOD_BLOCKS = settings.challengePeriodBlocks;
         STAKE_TOKEN = settings.stakeToken;
@@ -376,15 +328,15 @@ contract BOLDUpgradeAction {
     function cleanupOldRollup() private {
         IOldRollupAdmin(address(OLD_ROLLUP)).pause();
 
-        uint64 stakerCount = ROLLUP_READER.stakerCount();
+        uint64 stakerCount = OLD_ROLLUP.stakerCount();
         // since we for-loop these stakers we set an arbitrary limit - we dont
         // expect any instances to have close to this number of stakers
         if (stakerCount > 50) {
             stakerCount = 50;
         }
         for (uint64 i = 0; i < stakerCount;) {
-            address stakerAddr = ROLLUP_READER.getStakerAddress(i);
-            OldStaker memory staker = ROLLUP_READER.getStaker(stakerAddr);
+            address stakerAddr = OLD_ROLLUP.getStakerAddress(i);
+            OldStaker memory staker = OLD_ROLLUP.getStaker(stakerAddr);
             if (staker.isStaked && staker.currentChallenge == 0) {
                 address[] memory stakersToRefund = new address[](1);
                 stakersToRefund[0] = stakerAddr;
@@ -395,11 +347,6 @@ contract BOLDUpgradeAction {
                 i++;
             }
         }
-
-        // upgrade the rollup to one that allows validators to withdraw even whilst paused
-        DoubleLogicUUPSUpgradeable(address(OLD_ROLLUP)).upgradeSecondaryTo(
-            IMPL_PATCHED_OLD_ROLLUP_USER
-        );
     }
 
     /// @dev    Create a config for the new rollup - fetches the latest confirmed
@@ -407,7 +354,7 @@ contract BOLDUpgradeAction {
     function createConfig() private view returns (Config memory) {
         // fetch the assertion associated with the latest confirmed state
         bytes32 latestConfirmedStateHash =
-            ROLLUP_READER.getNode(ROLLUP_READER.latestConfirmed()).stateHash;
+            OLD_ROLLUP.getNode(OLD_ROLLUP.latestConfirmed()).stateHash;
         (ExecutionState memory genesisExecState, uint256 inboxMaxCount) =
             PREIMAGE_LOOKUP.get(latestConfirmedStateHash);
 
@@ -431,11 +378,13 @@ contract BOLDUpgradeAction {
             confirmPeriodBlocks: CONFIRM_PERIOD_BLOCKS,
             stakeToken: STAKE_TOKEN,
             baseStake: STAKE_AMOUNT,
-            wasmModuleRoot: ROLLUP_READER.wasmModuleRoot(),
+            wasmModuleRoot: OLD_ROLLUP.wasmModuleRoot(),
             owner: address(this), // upgrade executor is the owner
             loserStakeEscrow: EXCESS_STAKE_RECEIVER, // additional funds get sent to the l1 timelock
             chainId: CHAIN_ID,
             chainConfig: "", // we can use an empty chain config it wont be used in the rollup initialization because we check if the rei is already connected there
+            minimumAssertionPeriod: MINIMUM_ASSERTION_PERIOD,
+            validatorAfkBlocks: VALIDATOR_AFK_BLOCKS,
             miniStakeValues: ConstantArrayStorage(MINI_STAKE_AMOUNTS_STORAGE).array(),
             sequencerInboxMaxTimeVariation: maxTimeVariation,
             layerZeroBlockEdgeHeight: BLOCK_LEAF_SIZE,
@@ -446,7 +395,8 @@ contract BOLDUpgradeAction {
             anyTrustFastConfirmer: address(0), // fast confirmer would be migrated from the old rollup if existed
             numBigStepLevel: NUM_BIGSTEP_LEVEL,
             challengeGracePeriodBlocks: CHALLENGE_GRACE_PERIOD_BLOCKS,
-            bufferConfig: bufferConfig
+            bufferConfig: bufferConfig,
+            dataCostEstimate: 0
         });
     }
 
@@ -483,29 +433,16 @@ contract BOLDUpgradeAction {
                 IMPL_SEQUENCER_INBOX,
                 abi.encodeCall(
                     ISeqInboxPostUpgradeInit.postUpgradeInit,
-                    (
-                        BufferConfig({
+                    (BufferConfig({
                             max: MAX,
                             threshold: THRESHOLD,
                             replenishRateInBasis: REPLENISH_RATE_IN_BASIS
-                        })
-                    )
+                        }))
                 )
             );
         } else {
             PROXY_ADMIN_SEQUENCER_INBOX.upgrade(sequencerInbox, IMPL_SEQUENCER_INBOX);
         }
-
-        // verify
-        require(
-            PROXY_ADMIN_SEQUENCER_INBOX.getProxyImplementation(sequencerInbox)
-                == IMPL_SEQUENCER_INBOX,
-            "DelayBuffer: new seq inbox implementation not set"
-        );
-        require(
-            ISequencerInbox(SEQ_INBOX).isDelayBufferable() == IS_DELAY_BUFFERABLE,
-            "DelayBuffer: isDelayBufferable not set"
-        );
 
         (uint256 delayBlocks, uint256 futureBlocks, uint256 delaySeconds, uint256 futureSeconds) =
             ISequencerInbox(SEQ_INBOX).maxTimeVariation();
@@ -519,24 +456,39 @@ contract BOLDUpgradeAction {
 
         delayBlocks = implDelayBlocks > delayBlocks ? implDelayBlocks : delayBlocks;
 
-        ISequencerInbox(SEQ_INBOX).setMaxTimeVariation(
-            ISequencerInbox.MaxTimeVariation({
-                delayBlocks: delayBlocks,
-                delaySeconds: delaySeconds,
-                futureBlocks: futureBlocks,
-                futureSeconds: futureSeconds
-            })
-        );
-
-        // verify
-        (uint256 _delayBlocks, uint256 _futureBlocks, uint256 _delaySeconds, uint256 _futureSeconds)
-        = ISequencerInbox(SEQ_INBOX).maxTimeVariation();
-        require(_delayBlocks == delayBlocks, "DelayBuffer: delayBlocks not set");
-        require(_delaySeconds == delaySeconds, "DelayBuffer: delaySeconds not set");
-        require(_futureBlocks == futureBlocks, "DelayBuffer: futureBlocks not set");
-        require(_futureSeconds == futureSeconds, "DelayBuffer: futureSeconds not set");
+        ISequencerInbox(SEQ_INBOX)
+            .setMaxTimeVariation(
+                ISequencerInbox.MaxTimeVariation({
+                    delayBlocks: delayBlocks,
+                    delaySeconds: delaySeconds,
+                    futureBlocks: futureBlocks,
+                    futureSeconds: futureSeconds
+                })
+            );
 
         ISequencerInbox(SEQ_INBOX).updateRollupAddress();
+    }
+
+    function expectedRollupAddress(
+        address deployer,
+        uint256 chainId
+    ) public pure returns (address) {
+        bytes32 rollupSalt = keccak256(abi.encode(chainId));
+        return Create2Upgradeable.computeAddress(
+            rollupSalt, keccak256(type(RollupProxy).creationCode), deployer
+        );
+    }
+
+    function validateRollupDeployedAtAddress(
+        address rollupAddress,
+        address deployer,
+        uint256 chainId
+    ) external view {
+        require(
+            (rollupAddress.code.length > 0)
+                && expectedRollupAddress(deployer, chainId) == rollupAddress,
+            "ADDR_MISMATCH"
+        );
     }
 
     function perform(
@@ -570,18 +522,18 @@ contract BOLDUpgradeAction {
             challengeManager: challengeManager,
             rollupAdminLogic: IMPL_NEW_ROLLUP_ADMIN,
             rollupUserLogic: IRollupUser(IMPL_NEW_ROLLUP_USER),
-            validatorWalletCreator: ROLLUP_READER.validatorWalletCreator()
+            validatorWalletCreator: OLD_ROLLUP.validatorWalletCreator()
         });
 
         // upgrade the surrounding contracts eg bridge, outbox, seq inbox, rollup event inbox
         // to set of the new rollup address
-        bytes32 rollupSalt = keccak256(abi.encode(config));
-        address expectedRollupAddress =
-            Create2Upgradeable.computeAddress(rollupSalt, keccak256(type(RollupProxy).creationCode));
-        upgradeSurroundingContracts(expectedRollupAddress);
+        // this is different from the typical salt, it is ok because the caller should deploy the upgrade only once for each chainid
+        bytes32 rollupSalt = keccak256(abi.encode(config.chainId));
+        address _expectedRollupAddress = expectedRollupAddress(address(this), config.chainId);
+        upgradeSurroundingContracts(_expectedRollupAddress);
 
         challengeManager.initialize({
-            _assertionChain: IAssertionChain(expectedRollupAddress),
+            _assertionChain: IAssertionChain(_expectedRollupAddress),
             _challengePeriodBlocks: CHALLENGE_PERIOD_BLOCKS,
             _oneStepProofEntry: OSP,
             layerZeroBlockEdgeHeight: config.layerZeroBlockEdgeHeight,
@@ -594,7 +546,7 @@ contract BOLDUpgradeAction {
         });
 
         RollupProxy rollup = new RollupProxy{salt: rollupSalt}();
-        require(address(rollup) == expectedRollupAddress, "UNEXPCTED_ROLLUP_ADDR");
+        require(address(rollup) == _expectedRollupAddress, "UNEXPCTED_ROLLUP_ADDR");
 
         // initialize the rollup with this contract as owner to set batch poster and validators
         // it will transfer the ownership back to the actual owner later
@@ -606,7 +558,7 @@ contract BOLDUpgradeAction {
         if (validators.length != 0) {
             bool[] memory _vals = new bool[](validators.length);
             for (uint256 i = 0; i < validators.length; i++) {
-                require(ROLLUP_READER.isValidator(validators[i]), "UNEXPECTED_NEW_VALIDATOR");
+                require(OLD_ROLLUP.isValidator(validators[i]), "UNEXPECTED_NEW_VALIDATOR");
                 _vals[i] = true;
             }
             IRollupAdmin(address(rollup)).setValidator(validators, _vals);
@@ -616,7 +568,7 @@ contract BOLDUpgradeAction {
         }
 
         // anyTrustFastConfirmer only exists since v2.0.0, but the old rollup can be on an older version
-        try ROLLUP_READER.anyTrustFastConfirmer() returns (address anyTrustFastConfirmer) {
+        try OLD_ROLLUP.anyTrustFastConfirmer() returns (address anyTrustFastConfirmer) {
             if (anyTrustFastConfirmer != address(0)) {
                 IRollupAdmin(address(rollup)).setAnyTrustFastConfirmer(anyTrustFastConfirmer);
             }
@@ -626,6 +578,6 @@ contract BOLDUpgradeAction {
 
         IRollupAdmin(address(rollup)).setOwner(actualOwner);
 
-        emit RollupMigrated(expectedRollupAddress, address(challengeManager));
+        emit RollupMigrated(_expectedRollupAddress, address(challengeManager));
     }
 }

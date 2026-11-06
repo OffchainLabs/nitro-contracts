@@ -1,4 +1,4 @@
-import { ethers, run, getNamedAccounts } from 'hardhat'
+import { ethers, run, deployments } from 'hardhat'
 import fs from 'fs'
 import assert from 'assert'
 import readline from 'readline'
@@ -6,10 +6,19 @@ import readline from 'readline'
 const PARALLEL = 128
 
 async function sendTestMessages() {
-  const { deployer } = await getNamedAccounts()
-  const inbox = await ethers.getContract('InboxStub', deployer)
-  const seqInbox = await ethers.getContract('SequencerInboxStub', deployer)
-  const msgRoot = '../arbitrator/prover/test-cases/rust/data/'
+  const inbox = await ethers.getContractAt(
+    'InboxStub',
+    (
+      await deployments.get('InboxStub')
+    ).address
+  )
+  const seqInbox = await ethers.getContractAt(
+    'SequencerInboxStub',
+    (
+      await deployments.get('SequencerInboxStub')
+    ).address
+  )
+  const msgRoot = '../crates/prover/test-cases/rust/data/'
   const gasOpts = {
     gasLimit: ethers.utils.hexlify(250000),
     gasPrice: ethers.utils.parseUnits('5', 'gwei'),
@@ -59,8 +68,18 @@ describe('OneStepProof', function () {
   for (const [path, file] of proofs) {
     it('Should pass ' + file + ' proofs', async function () {
       const proofs = JSON.parse(fs.readFileSync(path).toString('utf8'))
-      const osp = await ethers.getContract('OneStepProofEntry')
-      const bridge = await ethers.getContract('BridgeStub')
+      const osp = await ethers.getContractAt(
+        'OneStepProofEntry',
+        (
+          await deployments.get('OneStepProofEntry')
+        ).address
+      )
+      const bridge = await ethers.getContractAt(
+        'BridgeStub',
+        (
+          await deployments.get('BridgeStub')
+        ).address
+      )
 
       const promises = []
       const isdone = []
@@ -73,7 +92,7 @@ describe('OneStepProof', function () {
         const inboxLimit = 1000000
         const promise = osp
           .proveOneStep(
-            [inboxLimit, bridge.address],
+            [inboxLimit, bridge.address, ethers.constants.HashZero],
             i,
             [...Buffer.from(proof.before, 'hex')],
             [...Buffer.from(proof.proof, 'hex')]

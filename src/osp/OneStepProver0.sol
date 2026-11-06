@@ -257,8 +257,9 @@ contract OneStepProver0 is IOneStepProver {
                 bytes32 recomputed =
                     keccak256(abi.encodePacked("Call indirect:", tableIdx, wantedFuncTypeHash));
                 require(recomputed == bytes32(inst.argumentData), "BAD_CALL_INDIRECT_DATA");
-                recomputed =
-                    tableMerkleProof.computeRootFromTable(tableIdx, tableType, tableSize, elemsRoot);
+                recomputed = tableMerkleProof.computeRootFromTable(
+                    tableIdx, tableType, tableSize, elemsRoot
+                );
                 require(recomputed == mod.tablesMerkleRoot, "BAD_TABLES_ROOT");
 
                 // Check if the table access is out of bounds
@@ -468,9 +469,8 @@ contract OneStepProver0 is IOneStepProver {
 
         uint16 opcode = inst.opcode;
 
-        function(Machine memory, Module memory, Instruction calldata, bytes calldata)
-            internal
-            pure impl;
+        function(Machine memory, Module memory, Instruction calldata, bytes calldata) internal pure
+            impl;
         if (opcode == Instructions.UNREACHABLE) {
             impl = executeUnreachable;
         } else if (opcode == Instructions.NOP) {

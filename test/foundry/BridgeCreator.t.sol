@@ -11,14 +11,15 @@ import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 
 contract BridgeCreatorTest is Test {
     BridgeCreator public creator;
-    address public owner = address(100);
     uint256 public constant MAX_DATA_SIZE = 117_964;
     IReader4844 dummyReader4844 = IReader4844(address(137));
 
     BridgeCreator.BridgeTemplates ethBasedTemplates = BridgeCreator.BridgeTemplates({
         bridge: new Bridge(),
         sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false),
-        delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, true),
+        delayBufferableSequencerInbox: new SequencerInbox(
+            MAX_DATA_SIZE, dummyReader4844, false, true
+        ),
         inbox: new Inbox(MAX_DATA_SIZE),
         rollupEventInbox: new RollupEventInbox(),
         outbox: new Outbox()
@@ -26,14 +27,15 @@ contract BridgeCreatorTest is Test {
     BridgeCreator.BridgeTemplates erc20BasedTemplates = BridgeCreator.BridgeTemplates({
         bridge: new ERC20Bridge(),
         sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
-        delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, true),
+        delayBufferableSequencerInbox: new SequencerInbox(
+            MAX_DATA_SIZE, dummyReader4844, true, true
+        ),
         inbox: new ERC20Inbox(MAX_DATA_SIZE),
         rollupEventInbox: new ERC20RollupEventInbox(),
         outbox: new ERC20Outbox()
     });
 
     function setUp() public {
-        vm.prank(owner);
         creator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
     }
 
@@ -50,11 +52,7 @@ contract BridgeCreatorTest is Test {
         return templates;
     }
 
-    function getErc20BasedTemplates()
-        internal
-        view
-        returns (BridgeCreator.BridgeTemplates memory)
-    {
+    function getErc20BasedTemplates() internal view returns (BridgeCreator.BridgeTemplates memory) {
         BridgeCreator.BridgeTemplates memory templates;
         (
             templates.bridge,
@@ -91,38 +89,6 @@ contract BridgeCreatorTest is Test {
         assertEq(getErc20BasedTemplates(), erc20BasedTemplates);
     }
 
-    function test_updateTemplates() public {
-        BridgeCreator.BridgeTemplates memory templs = BridgeCreator.BridgeTemplates({
-            bridge: Bridge(address(200)),
-            sequencerInbox: SequencerInbox(address(201)),
-            delayBufferableSequencerInbox: SequencerInbox(address(202)),
-            inbox: Inbox(address(203)),
-            rollupEventInbox: RollupEventInbox(address(204)),
-            outbox: Outbox(address(205))
-        });
-
-        vm.prank(owner);
-        creator.updateTemplates(templs);
-
-        assertEq(getEthBasedTemplates(), templs);
-    }
-
-    function test_updateERC20Templates() public {
-        BridgeCreator.BridgeTemplates memory templs = BridgeCreator.BridgeTemplates({
-            bridge: ERC20Bridge(address(400)),
-            sequencerInbox: SequencerInbox(address(401)),
-            delayBufferableSequencerInbox: SequencerInbox(address(402)),
-            inbox: ERC20Inbox(address(403)),
-            rollupEventInbox: ERC20RollupEventInbox(address(404)),
-            outbox: ERC20Outbox(address(405))
-        });
-
-        vm.prank(owner);
-        creator.updateERC20Templates(templs);
-
-        assertEq(getErc20BasedTemplates(), templs);
-    }
-
     function test_createEthBridge() public {
         address proxyAdmin = address(300);
         address rollup = address(301);
@@ -130,12 +96,12 @@ contract BridgeCreatorTest is Test {
         ISequencerInbox.MaxTimeVariation memory timeVars =
             ISequencerInbox.MaxTimeVariation(10, 20, 30, 40);
         BufferConfig memory bufferConfig = BufferConfig({
-            threshold: type(uint64).max,
-            max: type(uint64).max,
-            replenishRateInBasis: 0
+            threshold: type(uint64).max, max: type(uint64).max, replenishRateInBasis: 0
         });
-        BridgeCreator.BridgeContracts memory contracts =
-            creator.createBridge(proxyAdmin, rollup, nativeToken, timeVars, bufferConfig);
+
+        BridgeCreator.BridgeContracts memory contracts = creator.createBridge(
+            proxyAdmin, rollup, nativeToken, timeVars, bufferConfig, IFeeTokenPricer(address(0))
+        );
         (
             IBridge bridge,
             ISequencerInbox seqInbox,
@@ -157,12 +123,17 @@ contract BridgeCreatorTest is Test {
         // seqInbox
         assertEq(address(seqInbox.bridge()), address(bridge), "Invalid bridge ref");
         assertEq(address(seqInbox.rollup()), rollup, "Invalid rollup ref");
-        (uint256 _delayBlocks, uint256 _futureBlocks, uint256 _delaySeconds, uint256 _futureSeconds)
-        = seqInbox.maxTimeVariation();
+        (
+            uint256 _delayBlocks,
+            uint256 _futureBlocks,
+            uint256 _delaySeconds,
+            uint256 _futureSeconds
+        ) = seqInbox.maxTimeVariation();
         assertEq(_delayBlocks, timeVars.delayBlocks, "Invalid delayBlocks");
         assertEq(_futureBlocks, timeVars.futureBlocks, "Invalid futureBlocks");
         assertEq(_delaySeconds, timeVars.delaySeconds, "Invalid delaySeconds");
         assertEq(_futureSeconds, timeVars.futureSeconds, "Invalid futureSeconds");
+        assertEq(address(seqInbox.feeTokenPricer()), address(0), "Invalid fee token pricer");
 
         // inbox
         assertEq(address(inbox.bridge()), address(bridge), "Invalid bridge ref");
@@ -184,33 +155,26 @@ contract BridgeCreatorTest is Test {
     }
 
     function test_createERC20Bridge() public {
-        address proxyAdmin = address(300);
         address rollup = address(301);
         address nativeToken =
             address(new ERC20PresetFixedSupply("Appchain Token", "App", 1_000_000, address(this)));
         ISequencerInbox.MaxTimeVariation memory timeVars =
             ISequencerInbox.MaxTimeVariation(10, 20, 30, 40);
+        address feeTokenPricer = makeAddr("feeTokenPricer");
         BufferConfig memory bufferConfig = BufferConfig({
-            threshold: type(uint64).max,
-            max: type(uint64).max,
-            replenishRateInBasis: 0
+            threshold: type(uint64).max, max: type(uint64).max, replenishRateInBasis: 0
         });
 
-        BridgeCreator.BridgeContracts memory contracts =
-            creator.createBridge(proxyAdmin, rollup, nativeToken, timeVars, bufferConfig);
-        (
-            IBridge bridge,
-            ISequencerInbox seqInbox,
-            IInboxBase inbox,
-            IRollupEventInbox eventInbox,
-            IOutbox outbox
-        ) = (
-            contracts.bridge,
-            contracts.sequencerInbox,
-            contracts.inbox,
-            contracts.rollupEventInbox,
-            contracts.outbox
+        BridgeCreator.BridgeContracts memory contracts = creator.createBridge(
+            address(300),
+            rollup,
+            nativeToken,
+            timeVars,
+            bufferConfig,
+            IFeeTokenPricer(feeTokenPricer)
         );
+        (IBridge bridge, IInboxBase inbox, IRollupEventInbox eventInbox, IOutbox outbox) =
+            (contracts.bridge, contracts.inbox, contracts.rollupEventInbox, contracts.outbox);
 
         // bridge
         assertEq(address(bridge.rollup()), rollup, "Invalid rollup ref");
@@ -222,18 +186,31 @@ contract BridgeCreatorTest is Test {
         assertEq(bridge.activeOutbox(), address(0), "Invalid activeOutbox ref");
 
         // seqInbox
-        assertEq(address(seqInbox.bridge()), address(bridge), "Invalid bridge ref");
-        assertEq(address(seqInbox.rollup()), rollup, "Invalid rollup ref");
-        (uint256 _delayBlocks, uint256 _futureBlocks, uint256 _delaySeconds, uint256 _futureSeconds)
-        = seqInbox.maxTimeVariation();
+        assertEq(address(contracts.sequencerInbox.bridge()), address(bridge), "Invalid bridge ref");
+        assertEq(address(contracts.sequencerInbox.rollup()), rollup, "Invalid rollup ref");
+        (
+            uint256 _delayBlocks,
+            uint256 _futureBlocks,
+            uint256 _delaySeconds,
+            uint256 _futureSeconds
+        ) = contracts.sequencerInbox.maxTimeVariation();
         assertEq(_delayBlocks, timeVars.delayBlocks, "Invalid delayBlocks");
         assertEq(_futureBlocks, timeVars.futureBlocks, "Invalid futureBlocks");
         assertEq(_delaySeconds, timeVars.delaySeconds, "Invalid delaySeconds");
         assertEq(_futureSeconds, timeVars.futureSeconds, "Invalid futureSeconds");
+        assertEq(
+            address(contracts.sequencerInbox.feeTokenPricer()),
+            feeTokenPricer,
+            "Invalid fee token pricer"
+        );
 
         // inbox
         assertEq(address(inbox.bridge()), address(bridge), "Invalid bridge ref");
-        assertEq(address(inbox.sequencerInbox()), address(seqInbox), "Invalid seqInbox ref");
+        assertEq(
+            address(inbox.sequencerInbox()),
+            address(contracts.sequencerInbox),
+            "Invalid seqInbox ref"
+        );
         assertEq(inbox.allowListEnabled(), false, "Invalid allowListEnabled");
         assertEq(AbsInbox(address(inbox)).paused(), false, "Invalid paused status");
 
@@ -244,5 +221,33 @@ contract BridgeCreatorTest is Test {
         // outbox
         assertEq(address(outbox.bridge()), address(bridge), "Invalid bridge ref");
         assertEq(address(outbox.rollup()), rollup, "Invalid rollup ref");
+    }
+
+    function test_canOnlyDeployOnce() external {
+        address proxyAdmin = address(300);
+        address rollup = address(301);
+        address nativeToken =
+            address(new ERC20PresetFixedSupply("Appchain Token", "App", 1_000_000, address(this)));
+        ISequencerInbox.MaxTimeVariation memory timeVars =
+            ISequencerInbox.MaxTimeVariation(10, 20, 30, 40);
+        BufferConfig memory bufferConfig = BufferConfig({
+            threshold: type(uint64).max, max: type(uint64).max, replenishRateInBasis: 0
+        });
+
+        creator.createBridge(
+            proxyAdmin, rollup, nativeToken, timeVars, bufferConfig, IFeeTokenPricer(address(0))
+        );
+
+        // can only deploy once from the same address and config
+        vm.expectRevert();
+        creator.createBridge(
+            proxyAdmin, rollup, nativeToken, timeVars, bufferConfig, IFeeTokenPricer(address(0))
+        );
+
+        // can deploy from a different address
+        vm.prank(address(101));
+        creator.createBridge(
+            proxyAdmin, rollup, nativeToken, timeVars, bufferConfig, IFeeTokenPricer(address(0))
+        );
     }
 }

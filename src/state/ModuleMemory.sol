@@ -32,11 +32,17 @@ library ModuleMemoryLib {
         require(recomputedRoot == mem.merkleRoot, "WRONG_MEM_ROOT");
     }
 
-    function isValidLeaf(ModuleMemory memory mem, uint256 pointer) internal pure returns (bool) {
+    function isValidLeaf(
+        ModuleMemory memory mem,
+        uint256 pointer
+    ) internal pure returns (bool) {
         return pointer + 32 <= mem.size && pointer % LEAF_SIZE == 0;
     }
 
-    function pullLeafByte(bytes32 leaf, uint256 idx) internal pure returns (uint8) {
+    function pullLeafByte(
+        bytes32 leaf,
+        uint256 idx
+    ) internal pure returns (uint8) {
         require(idx < LEAF_SIZE, "BAD_PULL_LEAF_BYTE_IDX");
         // Take into account that we are casting the leaf to a big-endian integer
         uint256 leafShift = (LEAF_SIZE - 1 - idx) * 8;

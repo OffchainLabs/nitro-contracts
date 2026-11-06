@@ -1,4 +1,4 @@
-import '@nomiclabs/hardhat-waffle'
+import '@nomicfoundation/hardhat-chai-matchers'
 import 'hardhat-deploy'
 import '@nomiclabs/hardhat-ethers'
 import '@nomicfoundation/hardhat-verify'
@@ -7,57 +7,61 @@ import 'solidity-coverage'
 import 'hardhat-gas-reporter'
 import 'hardhat-contract-sizer'
 import 'hardhat-ignore-warnings'
-// import '@tovarishfin/hardhat-yul';
 import dotenv from 'dotenv'
+import { SolidityConfig } from 'hardhat/types'
 
 dotenv.config()
 
-const solidity = {
+const SOLC_VERSION = '0.8.30'
+
+const commonSetting = {
+  metadata: {
+    bytecodeHash: 'none',
+  },
+  optimizer: {
+    enabled: true,
+    runs: 2000, // default value, can be overridden
+  },
+  evmVersion: 'cancun',
+}
+
+const solidity: SolidityConfig = {
   compilers: [
     {
-      version: '0.8.28',
-      settings: {
-        evmVersion: 'cancun',
-        optimizer: {
-          enabled: true,
-          runs: 2000,
-        },
-      },
+      version: SOLC_VERSION,
+      settings: { ...commonSetting },
     },
   ],
   overrides: {
     'src/rollup/RollupUserLogic.sol': {
-      version: '0.8.17',
+      version: SOLC_VERSION,
       settings: {
-        optimizer: {
-          enabled: true,
-          runs: 20,
-        },
+        ...commonSetting,
+        optimizer: { ...commonSetting.optimizer, runs: 20 },
+      },
+    },
+    'src/rollup/RollupAdminLogic.sol': {
+      version: SOLC_VERSION,
+      settings: {
+        ...commonSetting,
+        optimizer: { ...commonSetting.optimizer, runs: 20 },
       },
     },
     'src/challengeV2/EdgeChallengeManager.sol': {
-      version: '0.8.17',
+      version: SOLC_VERSION,
       settings: {
-        optimizer: {
-          enabled: true,
-          runs: 200,
-        },
-      },
-    },
-    'src/mocks/HostioTest.sol': {
-      version: '0.8.24',
-      settings: {
-        optimizer: {
-          enabled: true,
-          runs: 100,
-        },
-        evmVersion: 'cancun',
+        ...commonSetting,
+        optimizer: { ...commonSetting.optimizer, runs: 200 },
       },
     },
   },
 }
 
 if (process.env['INTERFACE_TESTER_SOLC_VERSION']) {
+  console.log(
+    'Running in interface tester mode with solc version',
+    process.env['INTERFACE_TESTER_SOLC_VERSION']
+  )
   solidity.compilers.push({
     version: process.env['INTERFACE_TESTER_SOLC_VERSION'],
     settings: {
@@ -78,16 +82,6 @@ if (process.env['INTERFACE_TESTER_SOLC_VERSION']) {
             runs: 100,
           },
         },
-      },
-    },
-    'src/mocks/HostioTest.sol': {
-      version: '0.8.24',
-      settings: {
-        optimizer: {
-          enabled: true,
-          runs: 100,
-        },
-        evmVersion: 'cancun',
       },
     },
   }
@@ -185,36 +179,37 @@ module.exports = {
         ? [process.env['DEVNET_PRIVKEY']]
         : [],
     },
+    custom: {
+      url: process.env['CUSTOM_RPC_URL'] || 'N/A',
+      accounts: process.env['CUSTOM_PRIVKEY']
+        ? [process.env['CUSTOM_PRIVKEY']]
+        : [],
+    },
     geth: {
       url: 'http://localhost:8545',
     },
   },
   etherscan: {
-    apiKey: {
-      mainnet: process.env['ETHERSCAN_API_KEY'],
-      sepolia: process.env['ETHERSCAN_API_KEY'],
-      holesky: process.env['ETHERSCAN_API_KEY'],
-      arbitrumOne: process.env['ARBISCAN_API_KEY'],
-      nova: process.env['NOVA_ARBISCAN_API_KEY'],
-      arbSepolia: process.env['ARBISCAN_API_KEY'],
-      base: process.env['BASESCAN_API_KEY'],
-      baseSepolia: process.env['BASESCAN_API_KEY'],
+    apiKey: process.env['ETHERSCAN_API_KEY'],
+    sourcify: {
+      // Doesn't need an API key
+      enabled: true,
     },
     customChains: [
       {
         network: 'nova',
         chainId: 42170,
         urls: {
-          apiURL: 'https://api-nova.arbiscan.io/api',
+          apiURL: 'https://api.etherscan.io/v2/api',
           browserURL: 'https://nova.arbiscan.io/',
         },
       },
       {
-        network: 'arbSepolia',
-        chainId: 421614,
+        network: 'custom',
+        chainId: process.env['CUSTOM_CHAINID'],
         urls: {
-          apiURL: 'https://api-sepolia.arbiscan.io/api',
-          browserURL: 'https://sepolia.arbiscan.io/',
+          apiURL: process.env['CUSTOM_ETHERSCAN_API_URL'],
+          browserURL: process.env['CUSTOM_ETHERSCAN_BROWSER_URL'],
         },
       },
     ],
@@ -231,5 +226,8 @@ module.exports = {
   },
   contractSizer: {
     strict: true,
+  },
+  sourcify: {
+    enabled: true,
   },
 }

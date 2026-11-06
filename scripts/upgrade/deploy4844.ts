@@ -28,6 +28,7 @@ async function main() {
     signer,
     [maxDataSize, reader4844.address, isUsingFeeToken],
     false,
+    true,
     overrides
   )
   // SequencerInbox logic do not need to be initialized
@@ -36,6 +37,7 @@ async function main() {
     signer,
     [],
     false,
+    true,
     overrides
   )
   const proverMem = await deployContract(
@@ -43,6 +45,7 @@ async function main() {
     signer,
     [],
     false,
+    true,
     overrides
   )
   const proverMath = await deployContract(
@@ -50,13 +53,15 @@ async function main() {
     signer,
     [],
     false,
+    true,
     overrides
   )
   const proverHostIo = await deployContract(
     'OneStepProverHostIo',
     signer,
-    [],
+    [ethers.constants.AddressZero],
     false,
+    true,
     overrides
   )
   const osp: Contract = await deployContract(
@@ -69,6 +74,7 @@ async function main() {
       proverHostIo.address,
     ],
     false,
+    true,
     overrides
   )
   const challengeManager = await deployContract(
@@ -76,6 +82,7 @@ async function main() {
     signer,
     [],
     false,
+    true,
     overrides
   )
   // ChallengeManager logic do not need to be initialized
@@ -89,7 +96,9 @@ async function main() {
   await verifyContract('OneStepProver0', prover0.address, [])
   await verifyContract('OneStepProverMemory', proverMem.address, [])
   await verifyContract('OneStepProverMath', proverMath.address, [])
-  await verifyContract('OneStepProverHostIo', proverHostIo.address, [])
+  await verifyContract('OneStepProverHostIo', proverHostIo.address, [
+    ethers.constants.AddressZero,
+  ])
   await verifyContract('OneStepProofEntry', osp.address, [
     prover0.address,
     proverMem.address,

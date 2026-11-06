@@ -21,7 +21,10 @@ contract MessageTester {
         );
     }
 
-    function accumulateInboxMessage(bytes32 inbox, bytes32 message) public pure returns (bytes32) {
+    function accumulateInboxMessage(
+        bytes32 inbox,
+        bytes32 message
+    ) public pure returns (bytes32) {
         return Messages.accumulateInboxMessage(inbox, message);
     }
 }

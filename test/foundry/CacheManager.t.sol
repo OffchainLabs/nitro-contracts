@@ -64,9 +64,9 @@ contract CacheManagerTest is Test {
         for (uint256 epoch = 0; epoch < 4; epoch++) {
             for (uint256 round = 0; round < 512; round++) {
                 // roll one of 256 random programs
-                address program = programs[uint256(
-                    keccak256(abi.encodePacked("code", epoch, round))
-                ) % programs.length];
+                address program = programs[
+                    uint256(keccak256(abi.encodePacked("code", epoch, round))) % programs.length
+                ];
                 bytes32 codehash = program.codehash;
 
                 vm.warp(block.timestamp + 1); // move time forward to test decay and make bid unique

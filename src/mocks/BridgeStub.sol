@@ -147,7 +147,10 @@ contract BridgeStub is IBridge, IEthBridge {
         (success, returnData) = to.call{value: value}(data);
     }
 
-    function setDelayedInbox(address inbox, bool enabled) external override {
+    function setDelayedInbox(
+        address inbox,
+        bool enabled
+    ) external override {
         InOutInfo storage info = allowedDelayedInboxesMap[inbox];
         bool alreadyEnabled = info.allowed;
         emit InboxToggle(inbox, enabled);
@@ -166,7 +169,11 @@ contract BridgeStub is IBridge, IEthBridge {
         }
     }
 
-    function setOutbox(address, /* outbox */ bool /* enabled*/ ) external pure override {
+    function setOutbox(
+        address,
+        /* outbox */
+        bool /* enabled*/
+    ) external pure override {
         revert("NOT_IMPLEMENTED");
     }
 

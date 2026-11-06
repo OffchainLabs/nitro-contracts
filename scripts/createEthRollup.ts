@@ -4,6 +4,7 @@ import { createRollup } from './rollupCreation'
 
 async function main() {
   const feeToken = ethers.constants.AddressZero
+  const feeTokenPricer = ethers.constants.AddressZero
   const rollupCreatorAddress = process.env.ROLLUP_CREATOR_ADDRESS
   if (!rollupCreatorAddress) {
     throw new Error('ROLLUP_CREATOR_ADDRESS not set')
@@ -14,6 +15,11 @@ async function main() {
     throw new Error('STAKE_TOKEN_ADDRESS not set')
   }
 
+  let customOsp = process.env.CUSTOM_OSP_ADDRESS as string
+  if (!customOsp) {
+    customOsp = ethers.constants.AddressZero
+  }
+
   const [signer] = await ethers.getSigners()
 
   await createRollup(
@@ -21,7 +27,9 @@ async function main() {
     false,
     rollupCreatorAddress,
     feeToken,
-    stakeTokenAddress
+    feeTokenPricer,
+    stakeTokenAddress,
+    customOsp
   )
 }
 

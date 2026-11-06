@@ -9,6 +9,7 @@ import {
   setupSequencerInbox,
   mineBlocks,
   forceIncludeMessages,
+  seqInterface,
 } from './testHelpers'
 
 describe('SequencerInboxDelayBufferable', async () => {
@@ -252,7 +253,10 @@ describe('SequencerInboxDelayBufferable', async () => {
         seqReportedMessageSubCount.add(20),
         { gasLimit: 10000000 }
       )
-    await expect(tx).to.be.revertedWith('DelayProofRequired')
+    await expect(tx).to.be.revertedWithCustomError(
+      { interface: seqInterface },
+      'DelayProofRequired'
+    )
 
     let nextDelayedMsg = delayedInboxPending.pop()
     await mineBlocks(delayConfig.threshold.toNumber() - 100, 12)
@@ -480,7 +484,10 @@ describe('SequencerInboxDelayBufferable', async () => {
         seqReportedMessageSubCount.add(30),
         { gasLimit: 10000000 }
       )
-    await expect(txn).to.be.revertedWith('DelayProofRequired')
+    await expect(txn).to.be.revertedWithCustomError(
+      { interface: seqInterface },
+      'DelayProofRequired'
+    )
 
     await (
       await sequencerInbox
@@ -793,7 +800,10 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
         seqReportedMessageSubCount.add(20),
         { gasLimit: 10000000 }
       )
-    await expect(tx).to.be.revertedWith('DelayProofRequired')
+    await expect(tx).to.be.revertedWithCustomError(
+      { interface: seqInterface },
+      'DelayProofRequired'
+    )
 
     let nextDelayedMsg = delayedInboxPending.pop()
     await mineBlocks(delayConfig.threshold.toNumber() - 100, 12)
@@ -993,7 +1003,10 @@ describe('SequencerInboxDelayBufferableBlobMock', async () => {
         seqReportedMessageSubCount.add(30),
         { gasLimit: 10000000 }
       )
-    await expect(txn).to.be.revertedWith('DelayProofRequired')
+    await expect(txn).to.be.revertedWithCustomError(
+      { interface: seqInterface },
+      'DelayProofRequired'
+    )
 
     await (
       await sequencerInbox

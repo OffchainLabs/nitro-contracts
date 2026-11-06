@@ -91,7 +91,10 @@ interface IRollupAdmin {
      * @param _inbox Inbox contract to add or remove
      * @param _enabled New status of inbox
      */
-    function setDelayedInbox(address _inbox, bool _enabled) external;
+    function setDelayedInbox(
+        address _inbox,
+        bool _enabled
+    ) external;
 
     /**
      * @notice Pause interaction with the rollup contract
@@ -110,7 +113,10 @@ interface IRollupAdmin {
      * @param _validator addresses to set in the whitelist
      * @param _val value to set in the whitelist for corresponding address
      */
-    function setValidator(address[] memory _validator, bool[] memory _val) external;
+    function setValidator(
+        address[] memory _validator,
+        bool[] memory _val
+    ) external;
 
     /**
      * @notice Set a new owner address for the rollup proxy
@@ -150,10 +156,25 @@ interface IRollupAdmin {
     ) external;
 
     /**
-     * @notice Set base stake required for an assertion
-     * @param newBaseStake maximum avmgas to be used per block
+     * @notice Decrease the base stake required for creating an assertion
+     * @dev    Can only be called on permissioned chains with whitelist enabled
+     *         Can only be called when there is exactly one stake on a pending assertion - this ensures a linear chain of assertions
+     *         Cannot be called immediately after genesis since there are no pending assertions
+     *         After decreasing the base stake the current staker will still have full stake locked up. They can release it by creating a new staker with the
+     *         new smaller amount, and using it to create a child of the latest pending assertion. This will make the old staker inactive and withdrawable.
+     * @param newBaseStake New base stake to be set. Must be less than current base stake, otherwise use increaseBaseStake
+     * @param latestNextInboxPosition The nextInboxPosition of the only pending latestStakedAssertion
      */
-    function setBaseStake(
+    function decreaseBaseStake(
+        uint256 newBaseStake,
+        uint64 latestNextInboxPosition
+    ) external;
+
+    /**
+     * @notice Increase the base stake required for creating an assertion
+     * @param newBaseStake New base stake to be set. Must be greater than current base stake, otherwise use reduceBaseStake
+     */
+    function increaseBaseStake(
         uint256 newBaseStake
     ) external;
 

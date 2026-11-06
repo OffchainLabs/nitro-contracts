@@ -142,6 +142,7 @@ library Instructions {
     uint16 internal constant GET_GLOBAL_STATE_U64 = 0x8012;
     uint16 internal constant SET_GLOBAL_STATE_U64 = 0x8013;
 
+    uint16 internal constant VALIDATE_CERTIFICATE = 0x8019;
     uint16 internal constant READ_PRE_IMAGE = 0x8020;
     uint16 internal constant READ_INBOX_MESSAGE = 0x8021;
     uint16 internal constant HALT_AND_SET_FINISHED = 0x8022;
@@ -163,7 +164,8 @@ library Instructions {
         assembly {
             // Represents the string "Instructions:", which we place after the length word.
             mstore(
-                add(data, 32), 0x496e737472756374696f6e733a00000000000000000000000000000000000000
+                add(data, 32),
+                0x496e737472756374696f6e733a00000000000000000000000000000000000000
             )
         }
 

@@ -17,7 +17,7 @@ import "../state/Machine.sol";
 import "../bridge/ISequencerInbox.sol";
 import "../bridge/IBridge.sol";
 import "../bridge/IOutbox.sol";
-import "../challengeV2/EdgeChallengeManager.sol";
+import "../challengeV2/IEdgeChallengeManager.sol";
 import "../libraries/ArbitrumChecker.sol";
 
 abstract contract RollupCore is IRollupCore, PausableUpgradeable {
@@ -171,7 +171,7 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
      */
     function getStakerAddress(
         uint64 stakerNum
-    ) external view override returns (address) {
+    ) public view override returns (address) {
         return _stakerList[stakerNum];
     }
 
@@ -324,7 +324,10 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
      * @param stakerAddress Address of the staker to increase the stake of
      * @param amountAdded Amount of stake to add to the staker
      */
-    function increaseStakeBy(address stakerAddress, uint256 amountAdded) internal {
+    function increaseStakeBy(
+        address stakerAddress,
+        uint256 amountAdded
+    ) internal {
         Staker storage staker = _stakerMap[stakerAddress];
         uint256 initialStaked = staker.amountStaked;
         uint256 finalStaked = initialStaked + amountAdded;
@@ -338,7 +341,10 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
      * @param target Amount of stake to leave with the staker
      * @return Amount of value released from the stake
      */
-    function reduceStakeTo(address stakerAddress, uint256 target) internal returns (uint256) {
+    function reduceStakeTo(
+        address stakerAddress,
+        uint256 target
+    ) internal returns (uint256) {
         Staker storage staker = _stakerMap[stakerAddress];
         address _withdrawalAddress = staker.withdrawalAddress;
         uint256 current = staker.amountStaked;
@@ -385,7 +391,10 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
      * @notice Increase the withdrawable funds for the given address
      * @param account Address of the account to add withdrawable funds to
      */
-    function increaseWithdrawableFunds(address account, uint256 amount) internal {
+    function increaseWithdrawableFunds(
+        address account,
+        uint256 amount
+    ) internal {
         uint256 initialWithdrawable = _withdrawableFunds[account];
         uint256 finalWithdrawable = initialWithdrawable + amount;
         _withdrawableFunds[account] = finalWithdrawable;
@@ -576,6 +585,11 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         }
     }
 
+    /**
+     * @notice Returns an empty genesis assertion hash
+     * @dev In chains that were created with a non-empty genesis state, this function
+     *      will return a different value than the actual genesis assertion hash.
+     */
     function genesisAssertionHash() external pure returns (bytes32) {
         GlobalState memory emptyGlobalState;
         AssertionState memory emptyAssertionState =
@@ -613,7 +627,10 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
         );
     }
 
-    function validateConfig(bytes32 assertionHash, ConfigData calldata configData) external view {
+    function validateConfig(
+        bytes32 assertionHash,
+        ConfigData calldata configData
+    ) external view {
         RollupLib.validateConfigHash(configData, getAssertionStorage(assertionHash).configHash);
     }
 

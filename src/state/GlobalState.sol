@@ -56,10 +56,8 @@ library GlobalStateLib {
     function isEmpty(
         GlobalState calldata state
     ) internal pure returns (bool) {
-        return (
-            state.bytes32Vals[0] == bytes32(0) && state.bytes32Vals[1] == bytes32(0)
-                && state.u64Vals[0] == 0 && state.u64Vals[1] == 0
-        );
+        return (state.bytes32Vals[0] == bytes32(0) && state.bytes32Vals[1] == bytes32(0)
+                && state.u64Vals[0] == 0 && state.u64Vals[1] == 0);
     }
 
     function comparePositions(

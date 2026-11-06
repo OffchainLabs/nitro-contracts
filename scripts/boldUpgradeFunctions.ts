@@ -1,249 +1,19 @@
-import { BigNumber, Contract, ContractFactory, ethers, Signer } from 'ethers'
+import { BigNumber, ethers, Signer } from 'ethers'
 import {
   BOLDUpgradeAction__factory,
-  Bridge__factory,
-  EdgeChallengeManager__factory,
-  OneStepProofEntry__factory,
-  OneStepProver0__factory,
-  OneStepProverHostIo__factory,
-  OneStepProverMath__factory,
-  OneStepProverMemory__factory,
-  Outbox__factory,
-  RollupAdminLogic__factory,
-  RollupEventInbox__factory,
-  RollupReader__factory,
-  RollupUserLogic__factory,
   SequencerInbox__factory,
-  Inbox__factory,
   StateHashPreImageLookup__factory,
-  IReader4844__factory,
+  IOldRollup__factory,
 } from '../build/types'
-import { bytecode as Reader4844Bytecode } from '../out/yul/Reader4844.yul/Reader4844.json'
 import { DeployedContracts, Config } from './boldUpgradeCommon'
 import { AssertionStateStruct } from '../build/types/src/challengeV2/IAssertionChain'
-// taken from https://github.com/OffchainLabs/nitro-contracts/blob/210e5b3bc96a513d276deaba90399130a60131d5/src/rollup/RollupUserLogic.sol
-import {
-  abi as OldRollupAbi,
-  bytecode as OldRollupBytecode,
-} from '@arbitrum/nitro-contracts-2.0.0/build/contracts/src/rollup/RollupUserLogic.sol/RollupUserLogic.json'
 import { verifyContract } from './deploymentUtils'
-
-export const deployDependencies = async (
-  signer: Signer,
-  maxDataSize: number,
-  isUsingFeeToken: boolean,
-  isDelayBufferable: boolean,
-  log: boolean = false,
-  verify: boolean = true
-): Promise<
-  Omit<DeployedContracts, 'boldAction' | 'preImageHashLookup' | 'rollupReader'>
-> => {
-  const bridgeFac = new Bridge__factory(signer)
-  const bridge = await bridgeFac.deploy()
-  if (log) {
-    console.log(`Bridge implementation deployed at: ${bridge.address}`)
-  }
-  if (verify) {
-    await bridge.deployTransaction.wait(5)
-    await verifyContract(
-      'Bridge',
-      bridge.address,
-      [],
-      'src/bridge/Bridge.sol:Bridge'
-    )
-  }
-
-  const contractFactory = new ContractFactory(
-    IReader4844__factory.abi,
-    Reader4844Bytecode,
-    signer
-  )
-  const reader4844 = await contractFactory.deploy()
-  await reader4844.deployed()
-  console.log(`Reader4844 deployed at ${reader4844.address}`)
-
-  const seqInboxFac = new SequencerInbox__factory(signer)
-  const seqInbox = await seqInboxFac.deploy(
-    maxDataSize,
-    reader4844.address,
-    isUsingFeeToken,
-    isDelayBufferable
-  )
-  if (log) {
-    console.log(
-      `Sequencer inbox implementation deployed at: ${seqInbox.address}`
-    )
-  }
-  if (verify) {
-    await seqInbox.deployTransaction.wait(5)
-    await verifyContract('SequencerInbox', seqInbox.address, [
-      maxDataSize,
-      reader4844.address,
-      isUsingFeeToken,
-      isDelayBufferable,
-    ])
-  }
-
-  const reiFac = new RollupEventInbox__factory(signer)
-  const rei = await reiFac.deploy()
-  if (log) {
-    console.log(`Rollup event inbox implementation deployed at: ${rei.address}`)
-  }
-  if (verify) {
-    await rei.deployTransaction.wait(5)
-    await verifyContract('RollupEventInbox', rei.address, [])
-  }
-
-  const outboxFac = new Outbox__factory(signer)
-  const outbox = await outboxFac.deploy()
-  if (log) {
-    console.log(`Outbox implementation deployed at: ${outbox.address}`)
-  }
-  if (verify) {
-    await outbox.deployTransaction.wait(5)
-    await verifyContract('Outbox', outbox.address, [])
-  }
-
-  const inboxFac = new Inbox__factory(signer)
-  const inbox = await inboxFac.deploy(maxDataSize)
-  if (log) {
-    console.log(`Inbox implementation deployed at: ${inbox.address}`)
-  }
-  if (verify) {
-    await inbox.deployTransaction.wait(5)
-    await verifyContract('Inbox', inbox.address, [maxDataSize])
-  }
-
-  const oldRollupUserFac = new ContractFactory(
-    OldRollupAbi,
-    OldRollupBytecode,
-    signer
-  )
-  const oldRollupUser = await oldRollupUserFac.deploy()
-  if (log) {
-    console.log(`Old rollup user logic deployed at: ${oldRollupUser.address}`)
-  }
-  if (verify) {
-    await oldRollupUser.deployTransaction.wait(5)
-    await verifyContract('OldRollupUserLogic', oldRollupUser.address, [])
-  }
-
-  const newRollupUserFac = new RollupUserLogic__factory(signer)
-  const newRollupUser = await newRollupUserFac.deploy()
-  if (log) {
-    console.log(`New rollup user logic deployed at: ${newRollupUser.address}`)
-  }
-  if (verify) {
-    await newRollupUser.deployTransaction.wait(5)
-    await verifyContract('RollupUserLogic', newRollupUser.address, [])
-  }
-
-  const newRollupAdminFac = new RollupAdminLogic__factory(signer)
-  const newRollupAdmin = await newRollupAdminFac.deploy()
-  if (log) {
-    console.log(`New rollup admin logic deployed at: ${newRollupAdmin.address}`)
-  }
-  if (verify) {
-    await newRollupAdmin.deployTransaction.wait(5)
-    await verifyContract('RollupAdminLogic', newRollupAdmin.address, [])
-  }
-
-  const challengeManagerFac = new EdgeChallengeManager__factory(signer)
-  const challengeManager = await challengeManagerFac.deploy()
-  if (log) {
-    console.log(`Challenge manager deployed at: ${challengeManager.address}`)
-  }
-  if (verify) {
-    await challengeManager.deployTransaction.wait(5)
-    await verifyContract('EdgeChallengeManager', challengeManager.address, [])
-  }
-
-  const prover0Fac = new OneStepProver0__factory(signer)
-  const prover0 = await prover0Fac.deploy()
-  await prover0.deployed()
-  if (log) {
-    console.log(`Prover0 deployed at: ${prover0.address}`)
-  }
-  if (verify) {
-    await prover0.deployTransaction.wait(5)
-    await verifyContract('OneStepProver0', prover0.address, [])
-  }
-
-  const proverMemFac = new OneStepProverMemory__factory(signer)
-  const proverMem = await proverMemFac.deploy()
-  await proverMem.deployed()
-  if (log) {
-    console.log(`Prover mem deployed at: ${proverMem.address}`)
-  }
-  if (verify) {
-    await proverMem.deployTransaction.wait(5)
-    await verifyContract('OneStepProverMemory', proverMem.address, [])
-  }
-
-  const proverMathFac = new OneStepProverMath__factory(signer)
-  const proverMath = await proverMathFac.deploy()
-  await proverMath.deployed()
-  if (log) {
-    console.log(`Prover math deployed at: ${proverMath.address}`)
-  }
-  if (verify) {
-    await proverMath.deployTransaction.wait(5)
-    await verifyContract('OneStepProverMath', proverMath.address, [])
-  }
-
-  const proverHostIoFac = new OneStepProverHostIo__factory(signer)
-  const proverHostIo = await proverHostIoFac.deploy()
-  await proverHostIo.deployed()
-  if (log) {
-    console.log(`Prover host io deployed at: ${proverHostIo.address}`)
-  }
-  if (verify) {
-    await proverHostIo.deployTransaction.wait(5)
-    await verifyContract('OneStepProverHostIo', proverHostIo.address, [])
-  }
-
-  const proofEntryFac = new OneStepProofEntry__factory(signer)
-  const proofEntry = await proofEntryFac.deploy(
-    prover0.address,
-    proverMem.address,
-    proverMath.address,
-    proverHostIo.address
-  )
-  await proofEntry.deployed()
-  if (log) {
-    console.log(`Proof entry deployed at: ${proofEntry.address}`)
-  }
-  if (verify) {
-    await proofEntry.deployTransaction.wait(5)
-    await verifyContract('OneStepProofEntry', proofEntry.address, [
-      prover0.address,
-      proverMem.address,
-      proverMath.address,
-      proverHostIo.address,
-    ])
-  }
-
-  return {
-    bridge: bridge.address,
-    seqInbox: seqInbox.address,
-    rei: rei.address,
-    outbox: outbox.address,
-    inbox: inbox.address,
-    oldRollupUser: oldRollupUser.address,
-    newRollupUser: newRollupUser.address,
-    newRollupAdmin: newRollupAdmin.address,
-    challengeManager: challengeManager.address,
-    prover0: prover0.address,
-    proverMem: proverMem.address,
-    proverMath: proverMath.address,
-    proverHostIo: proverHostIo.address,
-    osp: proofEntry.address,
-  }
-}
+import { CreatorTemplates } from './files/templatesV3.1'
 
 export const deployBoldUpgrade = async (
   wallet: Signer,
   config: Config,
+  contractTemplates: CreatorTemplates,
   log: boolean = false,
   verify: boolean = true
 ): Promise<DeployedContracts> => {
@@ -252,19 +22,35 @@ export const deployBoldUpgrade = async (
     wallet
   )
   const isUsingFeeToken = await sequencerInbox.isUsingFeeToken()
-  const deployed = await deployDependencies(
-    wallet,
-    config.settings.maxDataSize,
-    isUsingFeeToken,
-    config.settings.isDelayBufferable,
-    log,
-    verify
-  )
+
+  // Bridge, SequencerInbox, DelayBufferableSequencerInbox, Inbox, RollupEventInbox, Outbox
+  const bridgeContractTemplates = isUsingFeeToken
+    ? contractTemplates.erc20
+    : contractTemplates.eth
+
+  const templates: Omit<
+    DeployedContracts,
+    'boldAction' | 'preImageHashLookup'
+  > = {
+    bridge: bridgeContractTemplates.bridge,
+    seqInbox: config.settings.isDelayBufferable
+      ? bridgeContractTemplates.delayBufferableSequencerInbox
+      : bridgeContractTemplates.sequencerInbox,
+    rei: bridgeContractTemplates.rollupEventInbox,
+    outbox: bridgeContractTemplates.outbox,
+    inbox: bridgeContractTemplates.inbox,
+    newRollupUser: contractTemplates.rollupUserLogic,
+    newRollupAdmin: contractTemplates.rollupAdminLogic,
+    challengeManager: contractTemplates.challengeManagerTemplate,
+    osp: contractTemplates.osp,
+  }
+
+  // Deploying BoLDUpgradeAction
   const fac = new BOLDUpgradeAction__factory(wallet)
   const boldUpgradeAction = await fac.deploy(
-    { ...config.contracts, osp: deployed.osp },
+    { ...config.contracts, osp: templates.osp },
     config.proxyAdmins,
-    deployed,
+    templates,
     config.settings
   )
   if (log) {
@@ -273,16 +59,17 @@ export const deployBoldUpgrade = async (
   if (verify) {
     await boldUpgradeAction.deployTransaction.wait(5)
     await verifyContract('BOLDUpgradeAction', boldUpgradeAction.address, [
-      { ...config.contracts, osp: deployed.osp },
+      { ...config.contracts, osp: templates.osp },
       config.proxyAdmins,
-      deployed,
+      templates,
       config.settings,
     ])
   }
+
+  // Final result
   const deployedAndBold = {
-    ...deployed,
+    ...templates,
     boldAction: boldUpgradeAction.address,
-    rollupReader: await boldUpgradeAction.ROLLUP_READER(),
     preImageHashLookup: await boldUpgradeAction.PREIMAGE_LOOKUP(),
   }
 
@@ -292,18 +79,17 @@ export const deployBoldUpgrade = async (
 export const populateLookup = async (
   wallet: Signer,
   rollupAddr: string,
-  preImageHashLookupAddr: string,
-  rollupReaderAddr: string
+  preImageHashLookupAddr: string
 ) => {
-  const oldRollup = new Contract(rollupAddr, OldRollupAbi, wallet.provider)
-  const latestConfirmed: number = await oldRollup.latestConfirmed()
+  const oldRollup = IOldRollup__factory.connect(rollupAddr, wallet)
 
+  const latestConfirmed = await oldRollup.latestConfirmed()
   let latestConfirmedLog
   let toBlock = await wallet.provider!.getBlockNumber()
   for (let i = 0; i < 100; i++) {
     latestConfirmedLog = await wallet.provider!.getLogs({
       address: rollupAddr,
-      fromBlock: toBlock - 1000,
+      fromBlock: toBlock >= 1000 ? toBlock - 1000 : 0,
       toBlock: toBlock,
       topics: [
         oldRollup.interface.getEventTopic('NodeCreated'),
@@ -311,7 +97,13 @@ export const populateLookup = async (
       ],
     })
     if (latestConfirmedLog.length == 1) break
+    if (toBlock == 0) {
+      throw new Error('Could not find latest confirmed node')
+    }
     toBlock -= 1000
+    if (toBlock < 0) {
+      toBlock = 0
+    }
   }
 
   if (!latestConfirmedLog || latestConfirmedLog.length != 1) {
@@ -328,11 +120,8 @@ export const populateLookup = async (
     preImageHashLookupAddr,
     wallet
   )
-  const oldRollupReader = RollupReader__factory.connect(
-    rollupReaderAddr,
-    wallet
-  )
-  const node = await oldRollupReader.getNode(latestConfirmed)
+
+  const node = await oldRollup.getNode(latestConfirmed)
   const stateHash = await lookup.stateHash(afterState, inboxCount)
   if (node.stateHash != stateHash) {
     throw new Error(`State hash mismatch ${node.stateHash} != ${stateHash}}`)

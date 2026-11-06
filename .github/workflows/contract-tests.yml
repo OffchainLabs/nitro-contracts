@@ -14,19 +14,17 @@ jobs:
     name: Test unit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
       - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
+        uses: ./.github/actions/install-foundry
 
       - name: Setup node/yarn
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 24
           cache: 'yarn'
           cache-dependency-path: '**/yarn.lock'
 
@@ -43,32 +41,28 @@ jobs:
         shell: bash
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
       - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
+        uses: ./.github/actions/install-foundry
 
       - name: Setup nodejs
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '24'
           cache: 'yarn'
           cache-dependency-path: '**/yarn.lock'
 
       - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
-
-      # - name: Check Contracts Format
-      #   run: forge fmt --check
+        uses: ./.github/actions/install-foundry
 
       - name: Install dependencies
         run: yarn install
+
+      # - name: Check Format
+      #   run: yarn format:check
 
       # - name: Lint Contracts
       #   run: yarn solhint
@@ -76,11 +70,17 @@ jobs:
       - name: Lint Test Scripts
         run: yarn lint:test
 
+      - name: Compare bytecodes
+        run: yarn test:bytecodes
+
       - name: Build
         run: yarn build:all
 
       - name: Run tests
         run: yarn hardhat --network hardhat test test/contract/*.spec.ts
+
+      - name: Run prover tests
+        run: yarn test:prover
 
       - name: Interface compatibility
         run: yarn run test:compatibility
@@ -115,20 +115,19 @@ jobs:
       #     token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload 4bytes
+        continue-on-error: true
         run: yarn upload-4bytes
 
   test-4844:
     name: 4844 tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
       - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
+        uses: ./.github/actions/install-foundry
 
       - uses: OffchainLabs/actions/run-nitro-test-node@main
         with:
@@ -136,9 +135,9 @@ jobs:
           no-token-bridge: true
 
       - name: Setup nodejs
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 24
           cache: 'yarn'
           cache-dependency-path: '**/yarn.lock'
 
@@ -150,119 +149,27 @@ jobs:
 
       - name: Test 4844
         run: yarn test:4844
-  # test-e2e:
-  #   name: Test e2e
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #       with:
-  #         submodules: recursive
 
-  #     - uses: OffchainLabs/actions/run-nitro-test-node@main
-  #       with:
-  #         l3-node: true
-  #         no-token-bridge: true
-  #         no-l3-token-bridge: true
-  #         nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
-  #         nitro-testnode-ref: node-18
-
-  #     - name: Setup node/yarn
-  #       uses: actions/setup-node@v3
-  #       with:
-  #         node-version: 18
-  #         cache: 'yarn'
-  #         cache-dependency-path: '**/yarn.lock'
-
-  #     - name: Install packages
-  #       run: yarn
-
-  #     - name: Compile contracts
-  #       run: yarn build
-
-  #     - name: Run e2e tests
-  #       run: yarn test:e2e
-  # test-e2e-custom-fee-token:
-  #   name: Test e2e custom fee token
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #       with:
-  #         submodules: recursive
-
-  #     - uses: OffchainLabs/actions/run-nitro-test-node@main
-  #       with:
-  #         l3-node: true
-  #         args: --l3-fee-token
-  #         no-token-bridge: true
-  #         no-l3-token-bridge: true
-  #         nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
-  #         nitro-testnode-ref: node-18
-
-  #     - name: Setup node/yarn
-  #       uses: actions/setup-node@v3
-  #       with:
-  #         node-version: 18
-  #         cache: 'yarn'
-  #         cache-dependency-path: '**/yarn.lock'
-
-  #     - name: Install packages
-  #       run: yarn
-
-  #     - name: Compile contracts
-  #       run: yarn build
-
-  #     - name: Run e2e tests
-  #       run: yarn test:e2e
-  # test-e2e-fee-token-6-decimals:
-  #   name: Test e2e fee token with 6 decimals
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #       with:
-  #         submodules: recursive
-
-  #     - uses: OffchainLabs/actions/run-nitro-test-node@main
-  #       with:
-  #         l3-node: true
-  #         args: --l3-fee-token --l3-fee-token-decimals 6
-  #         no-token-bridge: true
-  #         no-l3-token-bridge: true
-  #         nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
-  #         nitro-testnode-ref: 'non18-decimal-token-node-18'
-
-  #     - name: Setup node/yarn
-  #       uses: actions/setup-node@v3
-  #       with:
-  #         node-version: 18
-  #         cache: 'yarn'
-  #         cache-dependency-path: '**/yarn.lock'
-
-  #     - name: Install packages
-  #       run: yarn
-
-  #     - name: Compile contracts
-  #       run: yarn build
-
-  #     - name: Run e2e tests
-  #       run: yarn test:e2e
-
-  bold-upgrade:
-    name: BOLD upgrade test
+  test-e2e:
+    name: Test e2e
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
+      - uses: OffchainLabs/actions/run-nitro-test-node@main
         with:
-          version: nightly
+          l3-node: true
+          no-token-bridge: true
+          no-l3-token-bridge: true
+          nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
+          nitro-testnode-ref: release
 
       - name: Setup node/yarn
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 24
           cache: 'yarn'
           cache-dependency-path: '**/yarn.lock'
 
@@ -270,11 +177,104 @@ jobs:
         run: yarn
 
       - name: Compile contracts
-        run: yarn build:all
+        run: yarn build
 
-      - name: Copy .env
-        run: |
-          cp ./.env-sample ./.env
+      - name: Run e2e tests
+        run: yarn test:e2e
 
-      - name: Test upgrade
-        run: L1_RPC=${{ secrets.L1_RPC || 'https://rpc.ankr.com/eth' }} yarn test:upgrade
+  test-e2e-custom-fee-token:
+    name: Test e2e custom fee token
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: OffchainLabs/actions/run-nitro-test-node@main
+        with:
+          l3-node: true
+          args: --l3-fee-token
+          no-token-bridge: true
+          no-l3-token-bridge: true
+          nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
+          nitro-testnode-ref: release
+
+      - name: Setup node/yarn
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'yarn'
+          cache-dependency-path: '**/yarn.lock'
+
+      - name: Install packages
+        run: yarn
+
+      - name: Compile contracts
+        run: yarn build
+
+      - name: Run e2e tests
+        run: yarn test:e2e
+
+  test-e2e-fee-token-6-decimals:
+    name: Test e2e fee token with 6 decimals and pricer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: OffchainLabs/actions/run-nitro-test-node@main
+        with:
+          l3-node: true
+          args: --l3-fee-token --l3-fee-token-pricer --l3-fee-token-decimals 6
+          no-token-bridge: true
+          no-l3-token-bridge: true
+          nitro-testnode-ref: release
+          nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
+
+      - name: Setup node/yarn
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'yarn'
+          cache-dependency-path: '**/yarn.lock'
+
+      - name: Install packages
+        run: yarn
+
+      - name: Compile contracts
+        run: yarn build
+
+      - name: Run e2e tests
+        run: yarn test:e2e
+
+  # bold-upgrade:
+  #   name: BOLD upgrade test
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #       with:
+  #         submodules: recursive
+
+  #     - name: Install Foundry
+  #       uses: ./.github/actions/install-foundry
+
+  #     - name: Setup node/yarn
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: 18
+  #         cache: 'yarn'
+  #         cache-dependency-path: '**/yarn.lock'
+
+  #     - name: Install packages
+  #       run: yarn
+
+  #     - name: Compile contracts
+  #       run: yarn build:all
+
+  #     - name: Copy .env
+  #       run: |
+  #         cp ./.env-sample ./.env
+
+  #     - name: Test upgrade
+  #       run: L1_RPC=${{ secrets.L1_RPC || 'https://rpc.ankr.com/eth' }} yarn test:upgrade

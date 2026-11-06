@@ -115,8 +115,8 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
         }
         sequencerReportedSubMessageCount = newMessageCount;
         seqMessageIndex = sequencerInboxAccs.length;
-        if (sequencerInboxAccs.length > 0) {
-            beforeAcc = sequencerInboxAccs[sequencerInboxAccs.length - 1];
+        if (seqMessageIndex > 0) {
+            beforeAcc = sequencerInboxAccs[seqMessageIndex - 1];
         }
         if (afterDelayedMessagesRead > 0) {
             delayedAcc = delayedInboxAccs[afterDelayedMessagesRead - 1];
@@ -213,7 +213,10 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
         emit SequencerInboxUpdated(_sequencerInbox);
     }
 
-    function setDelayedInbox(address inbox, bool enabled) external onlyRollupOrOwner {
+    function setDelayedInbox(
+        address inbox,
+        bool enabled
+    ) external onlyRollupOrOwner {
         InOutInfo storage info = allowedDelayedInboxesMap[inbox];
         bool alreadyEnabled = info.allowed;
         emit InboxToggle(inbox, enabled);
@@ -232,7 +235,10 @@ abstract contract AbsBridge is Initializable, DelegateCallAware, IBridge {
         }
     }
 
-    function setOutbox(address outbox, bool enabled) external onlyRollupOrOwner {
+    function setOutbox(
+        address outbox,
+        bool enabled
+    ) external onlyRollupOrOwner {
         if (outbox == address(0)) revert InvalidOutboxSet(outbox);
 
         InOutInfo storage info = allowedOutboxesMap[outbox];

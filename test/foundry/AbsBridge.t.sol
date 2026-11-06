@@ -33,8 +33,7 @@ abstract contract AbsBridgeTest is Test {
         uint256 afterDelayedMessagesRead = 0;
         uint256 prevMessageCount = 0;
         uint256 newMessageCount = 15;
-        (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc) = bridge
-            .enqueueSequencerMessage(
+        (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc) = bridge.enqueueSequencerMessage(
             dataHash, afterDelayedMessagesRead, prevMessageCount, newMessageCount
         );
 
@@ -68,8 +67,7 @@ abstract contract AbsBridgeTest is Test {
         uint256 afterDelayedMessagesRead = 2;
         uint256 prevMessageCount = 0;
         uint256 newMessageCount = 15;
-        (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc) = bridge
-            .enqueueSequencerMessage(
+        (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc) = bridge.enqueueSequencerMessage(
             dataHash, afterDelayedMessagesRead, prevMessageCount, newMessageCount
         );
 
@@ -107,8 +105,7 @@ abstract contract AbsBridgeTest is Test {
         uint256 afterDelayedMessagesRead = 3;
         uint256 prevMessageCount = 10;
         uint256 newMessageCount = 20;
-        (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc) = bridge
-            .enqueueSequencerMessage(
+        (uint256 seqMessageIndex, bytes32 beforeAcc, bytes32 delayedAcc, bytes32 acc) = bridge.enqueueSequencerMessage(
             dataHash, afterDelayedMessagesRead, prevMessageCount, newMessageCount
         );
 
@@ -455,6 +452,27 @@ abstract contract AbsBridgeTest is Test {
             )
         );
         AbsBridge(address(bridge)).setSequencerReportedSubMessageCount(123);
+    }
+
+    function test_updateRollupAddress() public {
+        vm.prank(rollup);
+        bridge.updateRollupAddress(IOwnable(address(1337)));
+        assertEq(address(bridge.rollup()), address(1337), "Invalid rollup");
+    }
+
+    function test_updateRollupAddress_revert_NotOwner() public {
+        vm.mockCall(
+            address(rollup),
+            0,
+            abi.encodeWithSelector(IOwnable.owner.selector),
+            abi.encode(address(1337))
+        );
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                NotRollupOrOwner.selector, address(this), address(rollup), address(1337)
+            )
+        );
+        bridge.updateRollupAddress(IOwnable(address(1234)));
     }
 
     /**

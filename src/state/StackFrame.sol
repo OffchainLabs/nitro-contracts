@@ -59,7 +59,10 @@ library StackFrameLib {
         window.proved = new StackFrame[](0);
     }
 
-    function push(StackFrameWindow memory window, StackFrame memory frame) internal pure {
+    function push(
+        StackFrameWindow memory window,
+        StackFrame memory frame
+    ) internal pure {
         StackFrame[] memory newProved = new StackFrame[](window.proved.length + 1);
         for (uint256 i = 0; i < window.proved.length; i++) {
             newProved[i] = window.proved[i];
@@ -68,7 +71,10 @@ library StackFrameLib {
         window.proved = newProved;
     }
 
-    function overwrite(StackFrameWindow memory window, bytes32 root) internal pure {
+    function overwrite(
+        StackFrameWindow memory window,
+        bytes32 root
+    ) internal pure {
         window.remainingHash = root;
         delete window.proved;
     }
