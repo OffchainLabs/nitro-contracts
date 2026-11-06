@@ -14,8 +14,7 @@ import {
     NotSequencerInbox,
     NotOutbox,
     InvalidOutboxSet,
-    BadSequencerMessageNumber,
-    BadPostUpgradeInit
+    BadSequencerMessageNumber
 } from "../libraries/Error.sol";
 import "./IBridge.sol";
 import "./Messages.sol";
