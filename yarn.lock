@@ -2755,10 +2755,10 @@ hardhat-ignore-warnings@^0.2.12:
     node-interval-tree "^2.0.1"
     solidity-comments "^0.0.2"
 
-hardhat@^2.22.19:
-  version "2.29.0"
-  resolved "https://registry.yarnpkg.com/hardhat/-/hardhat-2.29.0.tgz#c1d85fc99a40416602381de2f3a5f0f99c8a6607"
-  integrity sha512-tsj5mCSjDCFOhGfBl4vwqDEcwdlES9VUzRWfdrwvEVhus6D8W6u+WfUKRLLwFhKGS/8lKPoXGsjYWPXl3CCpOg==
+hardhat@^2.26.4:
+  version "2.29.1"
+  resolved "https://registry.yarnpkg.com/hardhat/-/hardhat-2.29.1.tgz#9baabe3e0b49ccf36b8231e6297fc1e687708c0c"
+  integrity sha512-BVPE15F9+gWH5Eof7aAhprXTi05mNHwn32fwIKMeMFqrkU3Jun1f7NubXsJ0SOeMqu0mchF6KkW7rx1CHinlWw==
   dependencies:
     "@ethereumjs/util" "^9.1.0"
     "@ethersproject/abi" "^5.1.2"
