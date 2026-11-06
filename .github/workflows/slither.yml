@@ -18,6 +18,7 @@ jobs:
         with:
           sarif: results.sarif
           fail-on: medium
+          node-version: 24
           slither-args: --skip-assembly
 
       - name: Upload SARIF file
