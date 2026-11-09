@@ -1,0 +1,38 @@
+name: Litro L3
+description: Boot arbitrum-litro's L1+L2, deploy this checkout's contracts and an L3 rollup on the L2, and run the L3 node
+inputs:
+  fee-token-decimals:
+    description: 'Fee token decimals (18 or 6); empty for an ETH-fee L3'
+    required: false
+    default: ''
+  fee-token-pricer:
+    description: 'Deploy a ConstantExchangeRatePricer for the fee token'
+    required: false
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - id: litro
+      uses: OffchainLabs/arbitrum-litro@v0.5.1
+      with:
+        version: v0.5.1
+        l3-enabled: 'false'
+
+    - name: Deploy L3 rollup
+      shell: bash
+      env:
+        FEE_TOKEN_DECIMALS: ${{ inputs.fee-token-decimals }}
+        FEE_TOKEN_PRICER: ${{ inputs.fee-token-pricer }}
+      run: test/e2e/litro/l3.bash deploy "$RUNNER_TEMP/l3"
+
+    - name: Start L3 node
+      shell: bash
+      env:
+        L3_IMAGE: ${{ steps.litro.outputs.image-ref }}
+      run: test/e2e/litro/l3.bash start "$RUNNER_TEMP/l3"
+
+    - name: Fund L3 accounts
+      shell: bash
+      run: |
+        test/e2e/litro/l3.bash fund "$RUNNER_TEMP/l3"
+        echo "L3_DEPLOYMENT_PATH=$RUNNER_TEMP/l3/l3deployment.json" >> "$GITHUB_ENV"
