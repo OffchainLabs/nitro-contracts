@@ -8,7 +8,6 @@ import {ERC20Bridge, IERC20Bridge, IOwnable} from "../../src/bridge/ERC20Bridge.
 import {
     SequencerInbox,
     ISequencerInbox,
-    IReader4844,
     IFeeTokenPricer,
     BufferConfig
 } from "../../src/bridge/SequencerInbox.sol";
@@ -208,9 +207,7 @@ contract ERC20RollupEventInboxTest is AbsRollupEventInboxTest {
     function _setSequencerInbox(
         bool isArbHosted
     ) internal {
-        IReader4844 reader = IReader4844(makeAddr("reader"));
         if (isArbHosted) {
-            reader = IReader4844(address(0));
             vm.mockCall(
                 address(100),
                 abi.encodeWithSelector(ArbSys.arbOSVersion.selector),
@@ -222,9 +219,8 @@ contract ERC20RollupEventInboxTest is AbsRollupEventInboxTest {
             threshold: type(uint64).max, max: type(uint64).max, replenishRateInBasis: 0
         });
 
-        SequencerInbox si = SequencerInbox(
-            TestUtil.deployProxy(address(new SequencerInbox(10_000, reader, true, true)))
-        );
+        SequencerInbox si =
+            SequencerInbox(TestUtil.deployProxy(address(new SequencerInbox(10_000, true, true))));
         si.initialize(
             bridge,
             ISequencerInbox.MaxTimeVariation({

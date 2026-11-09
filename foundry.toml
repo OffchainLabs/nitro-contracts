@@ -36,15 +36,6 @@ additional_compiler_profiles = []
 compilation_restrictions = []
 skip = []
 
-[profile.yul]
-src = 'yul'
-out = 'out/yul'
-libs = ['node_modules', 'lib']
-cache_path = 'forge-cache/yul'
-remappings = []
-auto_detect_remappings = false
-skip = ['*.sol', 'test/*']
-
 [lint]
 lint_on_build = false
 

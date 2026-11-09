@@ -87,23 +87,18 @@ contract RollupTest is Test {
         address validatorWalletCreator
     );
 
-    IReader4844 dummyReader4844 = IReader4844(address(137));
     BridgeCreator.BridgeTemplates ethBasedTemplates = BridgeCreator.BridgeTemplates({
         bridge: new Bridge(),
-        sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false),
-        delayBufferableSequencerInbox: new SequencerInbox(
-            MAX_DATA_SIZE, dummyReader4844, false, true
-        ),
+        sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, false, false),
+        delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, false, true),
         inbox: new Inbox(MAX_DATA_SIZE),
         rollupEventInbox: new RollupEventInbox(),
         outbox: new Outbox()
     });
     BridgeCreator.BridgeTemplates erc20BasedTemplates = BridgeCreator.BridgeTemplates({
         bridge: new ERC20Bridge(),
-        sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
-        delayBufferableSequencerInbox: new SequencerInbox(
-            MAX_DATA_SIZE, dummyReader4844, true, true
-        ),
+        sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, true, false),
+        delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, true, true),
         inbox: new ERC20Inbox(MAX_DATA_SIZE),
         rollupEventInbox: new ERC20RollupEventInbox(),
         outbox: new ERC20Outbox()

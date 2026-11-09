@@ -2,7 +2,7 @@
 // For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.24;
 
 import {
     AlreadyInit,
@@ -22,7 +22,6 @@ import {
     NotCodelessOrigin,
     RollupNotChanged,
     DataBlobsNotSupported,
-    InitParamZero,
     MissingDataHashes,
     NotOwner,
     InvalidHeaderFlag,
@@ -45,11 +44,11 @@ import "./Messages.sol";
 import "../precompiles/ArbGasInfo.sol";
 import "../precompiles/ArbSys.sol";
 import "../libraries/CallerChecker.sol";
-import "../libraries/IReader4844.sol";
 
 import "../libraries/DelegateCallAware.sol";
 import {IGasRefunder} from "../libraries/IGasRefunder.sol";
 import {GasRefundEnabled} from "../libraries/GasRefundEnabled.sol";
+import {BlobDataHashReader} from "../libraries/BlobDataHashReader.sol";
 import "../libraries/ArbitrumChecker.sol";
 import {IERC20Bridge} from "./IERC20Bridge.sol";
 import "./DelayBuffer.sol";
@@ -118,7 +117,6 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     }
 
     mapping(address => bool) public isSequencer;
-    IReader4844 public immutable reader4844;
 
     // see ISequencerInbox.MaxTimeVariation
     uint64 internal delayBlocks;
@@ -146,17 +144,10 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
 
     constructor(
         uint256 _maxDataSize,
-        IReader4844 reader4844_,
         bool _isUsingFeeToken,
         bool _isDelayBufferable
     ) {
         maxDataSize = _maxDataSize;
-        if (hostChainIsArbitrum) {
-            if (reader4844_ != IReader4844(address(0))) revert DataBlobsNotSupported();
-        } else {
-            if (reader4844_ == IReader4844(address(0))) revert InitParamZero("Reader4844");
-        }
-        reader4844 = reader4844_;
         isUsingFeeToken = _isUsingFeeToken;
         isDelayBufferable = _isDelayBufferable;
     }
@@ -346,7 +337,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    ) external refundsGas(gasRefunder, IReader4844(address(0))) {
+    ) external refundsGas(gasRefunder, false) {
         if (!CallerChecker.isCallerCodelessOrigin()) revert NotCodelessOrigin();
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
         if (isDelayProofRequired(afterDelayedMessagesRead)) revert DelayProofRequired();
@@ -363,7 +354,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    ) external refundsGas(gasRefunder, reader4844) {
+    ) external refundsGas(gasRefunder, true) {
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
         if (isDelayProofRequired(afterDelayedMessagesRead)) revert DelayProofRequired();
 
@@ -380,7 +371,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 prevMessageCount,
         uint256 newMessageCount,
         DelayProof calldata delayProof
-    ) external refundsGas(gasRefunder, reader4844) {
+    ) external refundsGas(gasRefunder, true) {
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
         if (!isDelayBufferable) revert NotDelayBufferable();
 
@@ -399,7 +390,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 prevMessageCount,
         uint256 newMessageCount,
         DelayProof calldata delayProof
-    ) external refundsGas(gasRefunder, IReader4844(address(0))) {
+    ) external refundsGas(gasRefunder, false) {
         if (!CallerChecker.isCallerCodelessOrigin()) revert NotCodelessOrigin();
         if (!isBatchPoster[msg.sender]) revert NotBatchPoster();
         if (!isDelayBufferable) revert NotDelayBufferable();
@@ -416,6 +407,11 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 prevMessageCount,
         uint256 newMessageCount
     ) internal {
+        // blobs are currently not supported on host arbitrum chains, when support is added it may
+        // consume gas in a different way to L1, so explicitly block host arb chains so that if support for blobs
+        // on arb is added it will need to explicitly turned on in the sequencer inbox
+        if (hostChainIsArbitrum) revert DataBlobsNotSupported();
+
         (bytes32 dataHash, IBridge.TimeBounds memory timeBounds, uint256 blobGas) =
             formBlobDataHash(afterDelayedMessagesRead);
 
@@ -440,11 +436,6 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
             timeBounds,
             IBridge.BatchDataLocation.Blob
         );
-
-        // blobs are currently not supported on host arbitrum chains, when support is added it may
-        // consume gas in a different way to L1, so explicitly block host arb chains so that if support for blobs
-        // on arb is added it will need to explicitly turned on in the sequencer inbox
-        if (hostChainIsArbitrum) revert DataBlobsNotSupported();
 
         // submit a batch spending report to refund the entity that produced the blob batch data
         // same as using calldata, we only submit spending report if the caller is the origin and is codeless
@@ -502,7 +493,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         IGasRefunder gasRefunder,
         uint256 prevMessageCount,
         uint256 newMessageCount
-    ) external override refundsGas(gasRefunder, IReader4844(address(0))) {
+    ) external override refundsGas(gasRefunder, false) {
         if (!isBatchPoster[msg.sender] && msg.sender != address(rollup)) revert NotBatchPoster();
         if (isDelayProofRequired(afterDelayedMessagesRead)) revert DelayProofRequired();
 
@@ -520,7 +511,7 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
         uint256 prevMessageCount,
         uint256 newMessageCount,
         DelayProof calldata delayProof
-    ) external refundsGas(gasRefunder, IReader4844(address(0))) {
+    ) external refundsGas(gasRefunder, false) {
         if (!isBatchPoster[msg.sender] && msg.sender != address(rollup)) revert NotBatchPoster();
         if (!isDelayBufferable) revert NotDelayBufferable();
 
@@ -646,13 +637,13 @@ contract SequencerInbox is DelegateCallAware, GasRefundEnabled, ISequencerInbox 
     function formBlobDataHash(
         uint256 afterDelayedMessagesRead
     ) internal view virtual returns (bytes32, IBridge.TimeBounds memory, uint256) {
-        bytes32[] memory dataHashes = reader4844.getDataHashes();
+        bytes32[] memory dataHashes = BlobDataHashReader.getDataHashes();
         if (dataHashes.length == 0) revert MissingDataHashes();
 
         (bytes memory header, IBridge.TimeBounds memory timeBounds) =
             packHeader(afterDelayedMessagesRead);
 
-        uint256 blobCost = reader4844.getBlobBaseFee() * GAS_PER_BLOB * dataHashes.length;
+        uint256 blobCost = block.blobbasefee * GAS_PER_BLOB * dataHashes.length;
         return (
             keccak256(bytes.concat(header, DATA_BLOB_HEADER_FLAG, abi.encodePacked(dataHashes))),
             timeBounds,

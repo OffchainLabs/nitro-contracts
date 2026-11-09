@@ -9,10 +9,9 @@ import "../bridge/SequencerInbox.sol";
 contract SequencerInboxBlobMock is SequencerInbox {
     constructor(
         uint256 maxDataSize_,
-        IReader4844 reader_,
         bool isUsingFeeToken_,
         bool isDelayBufferable_
-    ) SequencerInbox(maxDataSize_, reader_, isUsingFeeToken_, isDelayBufferable_) {}
+    ) SequencerInbox(maxDataSize_, isUsingFeeToken_, isDelayBufferable_) {}
 
     /// @dev    Form a hash of the data being provided in 4844 data blobs
     /// @param  afterDelayedMessagesRead The delayed messages count read up to

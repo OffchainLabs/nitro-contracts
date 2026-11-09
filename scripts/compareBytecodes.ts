@@ -129,7 +129,7 @@ function findMatchingContracts(
 
 async function main() {
   console.log('\nBuilding with Foundry...')
-  execSync('yarn build:forge:sol --force', { stdio: 'inherit' })
+  execSync('yarn build:forge --force', { stdio: 'inherit' })
 
   console.log('\nLoading artifacts...')
   const hardhatArtifacts = getHardhatArtifacts()

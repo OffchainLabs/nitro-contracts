@@ -36,7 +36,6 @@ import {
   InboxInterface,
   InboxMessageDeliveredEvent,
 } from '../../build/types/src/bridge/Inbox'
-import { Toolkit4844 } from './toolkit4844'
 
 export const seqInterface = SequencerInbox__factory.createInterface()
 
@@ -309,13 +308,11 @@ export const setupSequencerInbox = async (
     'RollupMock'
   )) as RollupMock__factory
   const rollup = await rollupMockFac.deploy(await rollupOwner.getAddress())
-  const reader4844 = await Toolkit4844.deployReader4844(admin)
   const sequencerInboxFac = (await ethers.getContractFactory(
     isBlobMock ? 'SequencerInboxBlobMock' : 'SequencerInbox'
   )) as SequencerInbox__factory
   const seqInboxTemplate = await sequencerInboxFac.deploy(
     117964,
-    reader4844.address,
     false,
     isDelayBufferable
   )

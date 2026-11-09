@@ -11,8 +11,7 @@
   "files": [
     "src/",
     "build/contracts/src",
-    "build/contracts/@openzeppelin",
-    "out/yul/Reader4844.yul/Reader4844.json"
+    "build/contracts/@openzeppelin"
   ],
   "bugs": {
     "url": "https://github.com/offchainlabs/nitro-contracts/issues"
@@ -20,13 +19,11 @@
   "scripts": {
     "audit:ci": "audit-ci --config ./audit-ci.jsonc",
     "audit:fix": "yarn-audit-fix",
-    "prepublishOnly": "hardhat clean && forge clean && hardhat compile && yarn build:forge:yul",
+    "prepublishOnly": "hardhat clean && forge clean && hardhat compile",
     "coverage": "FOUNDRY_PROFILE=test forge coverage --report lcov --ir-minimum && lcov --remove lcov.info 'node_modules/*' 'test/*' 'script/*' 'src/test-helpers/*' 'challenge/*' --ignore-errors unused -o lcov.info && genhtml lcov.info --branch-coverage --output-dir coverage",
     "build:all": "yarn build && yarn build:forge",
     "build": "hardhat compile",
-    "build:forge:sol": "forge build --skip *.yul",
-    "build:forge:yul": "FOUNDRY_PROFILE=yul forge build",
-    "build:forge": "yarn build:forge:sol && yarn build:forge:yul",
+    "build:forge": "forge build",
     "contract:size": "hardhat size-contracts",
     "lint:test": "eslint ./test",
     "solhint": "solhint -f table src/**/*.sol",
