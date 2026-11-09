@@ -1207,6 +1207,8 @@ async function _getRollupCreatorFromLogs(
       ethers.utils.id(
         'RollupCreated(address,address,address,address,address,address,address,address,address,address,address)'
       ),
+      // the parent chain may hold other rollups (litro's own L3), so match ours
+      ethers.utils.hexZeroPad(l2Network.ethBridge.rollup, 32),
     ],
   }
 

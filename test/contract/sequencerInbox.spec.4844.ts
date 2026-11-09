@@ -51,6 +51,10 @@ import { SequencerInbox } from '../../build/types/src/bridge/SequencerInbox'
 import { InboxMessageDeliveredEvent } from '../../build/types/src/bridge/AbsInbox'
 import { SequencerBatchDeliveredEvent } from '../../build/types/src/bridge/ISequencerInbox.sol/ISequencerInbox'
 
+// Funded L1 account (testnode mnemonic index 9) that no testnode node sends from, so its nonce is ours.
+const FUNDING_KEY =
+  '0677fe9134183007401d356e1ec970114afde6363895f493b4f8aec3bfe20d86'
+
 describe('SequencerInbox', async () => {
   const findMatchingLogs = <TInterface extends Interface, TEvent extends Event>(
     receipt: TransactionReceipt,
@@ -342,8 +346,7 @@ describe('SequencerInbox', async () => {
   }
 
   it('can send normal batch', async () => {
-    const privKey =
-      'cb5790da63720727af975f42c79f69918580209889225fa7128c92402a6d3a65'
+    const privKey = FUNDING_KEY
     const prov = new JsonRpcProvider('http://127.0.0.1:8545')
     const wallet = new Wallet(privKey).connect(prov)
 
@@ -390,8 +393,7 @@ describe('SequencerInbox', async () => {
   })
 
   it('can send blob batch', async () => {
-    const privKey =
-      'cb5790da63720727af975f42c79f69918580209889225fa7128c92402a6d3a65'
+    const privKey = FUNDING_KEY
     const prov = new JsonRpcProvider('http://127.0.0.1:8545')
     const wallet = new Wallet(privKey).connect(prov)
 
