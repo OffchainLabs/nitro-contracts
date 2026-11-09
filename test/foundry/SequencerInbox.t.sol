@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
 import "./util/TestUtil.sol";
@@ -19,13 +19,17 @@ contract RollupMock {
 }
 
 // forge-std's Vm interface predates these cheatcodes
-interface BlobCheatcodes {
+interface NewerCheatcodes {
     function blobhashes(
         bytes32[] calldata hashes
     ) external;
     function blobBaseFee(
         uint256 newBlobBaseFee
     ) external;
+    function snapshotState() external returns (uint256 snapshotId);
+    function revertToState(
+        uint256 snapshotId
+    ) external returns (bool success);
 }
 
 contract GasRefunderRecorder is IGasRefunder {
@@ -42,30 +46,6 @@ contract GasRefunderRecorder is IGasRefunder {
 }
 
 contract SequencerInboxTest is Test {
-    // cannot reference events outside of the original contract until 0.8.21
-    // we currently use 0.8.9
-    event MessageDelivered(
-        uint256 indexed messageIndex,
-        bytes32 indexed beforeInboxAcc,
-        address inbox,
-        uint8 kind,
-        address sender,
-        bytes32 messageDataHash,
-        uint256 baseFeeL1,
-        uint64 timestamp
-    );
-    event InboxMessageDelivered(uint256 indexed messageNum, bytes data);
-    event SequencerBatchDelivered(
-        uint256 indexed batchSequenceNumber,
-        bytes32 indexed beforeAcc,
-        bytes32 indexed afterAcc,
-        bytes32 delayedAcc,
-        uint256 afterDelayedMessagesRead,
-        IBridge.TimeBounds timeBounds,
-        IBridge.BatchDataLocation dataLocation
-    );
-    event OwnerFunctionCalled(uint256 indexed id);
-
     Random RAND = new Random();
     address rollupOwner = address(137);
     uint256 maxDataSize = 10000;
@@ -226,7 +206,7 @@ contract SequencerInboxTest is Test {
 
         // spending report
         vm.expectEmit(true, true, true, true);
-        emit MessageDelivered(
+        emit IBridge.MessageDelivered(
             delayedMessagesRead,
             delayedAcc,
             address(seqInbox),
@@ -239,11 +219,13 @@ contract SequencerInboxTest is Test {
 
         // spending report event in seq inbox
         vm.expectEmit(true, true, true, true);
-        emit InboxMessageDelivered(delayedMessagesRead, expectedSpendingReportMsg);
+        emit IDelayedMessageProvider.InboxMessageDelivered(
+            delayedMessagesRead, expectedSpendingReportMsg
+        );
 
         // sequencer batch delivered
         vm.expectEmit(true, true, true, true);
-        emit SequencerBatchDelivered(
+        emit ISequencerInbox.SequencerBatchDelivered(
             sequenceNumber,
             beforeAcc,
             afterAcc,
@@ -289,7 +271,7 @@ contract SequencerInboxTest is Test {
         );
     }
 
-    BlobCheatcodes blobVm = BlobCheatcodes(address(vm));
+    NewerCheatcodes newerVm = NewerCheatcodes(address(vm));
 
     function makeBlobHashes(
         uint256 count
@@ -305,7 +287,7 @@ contract SequencerInboxTest is Test {
     function setBlobBaseFee(
         uint256 value
     ) internal returns (uint256) {
-        blobVm.blobBaseFee(value);
+        newerVm.blobBaseFee(value);
         return block.blobbasefee;
     }
 
@@ -331,14 +313,28 @@ contract SequencerInboxTest is Test {
         uint8 count
     ) public {
         bytes32[] memory hashes = makeBlobHashes(bound(count, 0, 32));
-        blobVm.blobhashes(hashes);
-        bytes32[] memory read = BlobDataHashReader.getDataHashes();
-        assertEq(abi.encode(read), abi.encode(hashes));
+        newerVm.blobhashes(hashes);
 
-        // the free memory pointer must sit past the returned array
-        bytes32[] memory next = new bytes32[](1);
-        next[0] = bytes32(uint256(1));
-        assertEq(abi.encode(read), abi.encode(hashes), "array overwritten by later allocation");
+        uint256 freeMemBefore;
+        assembly {
+            freeMemBefore := mload(0x40)
+        }
+        bytes32[] memory read = BlobDataHashReader.getDataHashes();
+        uint256 freeMemAfter;
+        uint256 readPtr;
+        assembly {
+            freeMemAfter := mload(0x40)
+            readPtr := read
+        }
+
+        assertEq(abi.encode(read), abi.encode(hashes));
+        // the array must be allocated at the free memory pointer, which must then move just past it
+        assertEq(readPtr, freeMemBefore, "array not allocated at the free memory pointer");
+        assertEq(
+            freeMemAfter,
+            readPtr + 32 * (read.length + 1),
+            "free memory pointer not moved past array"
+        );
     }
 
     function expectBlobBatchEvents(
@@ -366,7 +362,7 @@ contract SequencerInboxTest is Test {
         bytes32 delayedAcc = bridge.delayedInboxAccs(delayedMessagesRead - 1);
 
         vm.expectEmit(true, true, true, true);
-        emit SequencerBatchDelivered(
+        emit ISequencerInbox.SequencerBatchDelivered(
             sequenceNumber,
             bytes32(0),
             keccak256(abi.encodePacked(bytes32(0), dataHash, delayedAcc)),
@@ -380,7 +376,7 @@ contract SequencerInboxTest is Test {
             block.timestamp, tx.origin, dataHash, sequenceNumber, block.basefee, uint64(extraGas)
         );
         vm.expectEmit(true, true, true, true);
-        emit MessageDelivered(
+        emit IBridge.MessageDelivered(
             delayedMessagesRead,
             delayedAcc,
             address(seqInbox),
@@ -391,7 +387,7 @@ contract SequencerInboxTest is Test {
             uint64(block.timestamp)
         );
         vm.expectEmit(true, true, true, true);
-        emit InboxMessageDelivered(delayedMessagesRead, spendingReportMsg);
+        emit IDelayedMessageProvider.InboxMessageDelivered(delayedMessagesRead, spendingReportMsg);
     }
 
     function testAddSequencerL2BatchFromBlobs() public {
@@ -406,7 +402,7 @@ contract SequencerInboxTest is Test {
 
         bytes32[] memory hashes = makeBlobHashes(3);
         vm.fee(1 gwei);
-        blobVm.blobhashes(hashes);
+        newerVm.blobhashes(hashes);
         uint256 extraGas = blobGas(hashes.length, setBlobBaseFee(100_000_000));
         assertGt(extraGas, 0, "blob gas should be nonzero");
 
@@ -423,27 +419,65 @@ contract SequencerInboxTest is Test {
         );
     }
 
-    function testAddSequencerL2BatchFromBlobs_RefundsBlobGas() public {
-        (SequencerInbox seqInbox,,) = deployRollup(false, false, bufferConfigDefault);
+    function postBlobBatch(
+        SequencerInbox seqInbox,
+        IGasRefunder refunder,
+        bool withDelayProof,
+        address origin
+    ) internal {
+        // the batch poster is tx.origin, so any other origin makes the batch poster a non-origin caller
+        vm.prank(tx.origin, origin);
+        if (withDelayProof) {
+            // no new delayed messages are read, so the proof is not checked
+            DelayProof memory delayProof;
+            seqInbox.addSequencerL2BatchFromBlobsDelayProof(0, 0, refunder, 0, 1, delayProof);
+        } else {
+            seqInbox.addSequencerL2BatchFromBlobs(0, 0, refunder, 0, 1);
+        }
+    }
+
+    /// @dev Posts the same blob batch at a zero and a nonzero blob base fee, which is the only
+    ///      difference between the two posts
+    /// @return refundDelta How much more gas the refunder was told about at the higher fee
+    /// @return blobGasDelta How much more the blobs cost at the higher fee, in units of block.basefee
+    function blobRefundDelta(
+        bool withDelayProof,
+        address origin
+    ) internal returns (uint256 refundDelta, uint256 blobGasDelta) {
+        (SequencerInbox seqInbox,,) = deployRollup(false, withDelayProof, bufferConfigDefault);
         GasRefunderRecorder refunder = new GasRefunderRecorder();
         bytes32[] memory hashes = makeBlobHashes(2);
         vm.fee(1 gwei);
-        blobVm.blobhashes(hashes);
+        newerVm.blobhashes(hashes);
 
-        // the blob base fee is the only thing that differs between these two posts
-        uint256 snapshot = vm.snapshot();
+        uint256 snapshot = newerVm.snapshotState();
         uint256 lowBlobGas = blobGas(hashes.length, setBlobBaseFee(0));
-        vm.prank(tx.origin);
-        seqInbox.addSequencerL2BatchFromBlobs(0, 0, refunder, 0, 1);
+        postBlobBatch(seqInbox, refunder, withDelayProof, origin);
         uint256 lowGasUsed = refunder.gasUsed();
-        vm.revertTo(snapshot);
+        newerVm.revertToState(snapshot);
 
         uint256 highBlobGas = blobGas(hashes.length, setBlobBaseFee(100_000_000));
         assertGt(highBlobGas, lowBlobGas, "blob base fee did not change");
-        vm.prank(tx.origin);
-        seqInbox.addSequencerL2BatchFromBlobs(0, 0, refunder, 0, 1);
+        postBlobBatch(seqInbox, refunder, withDelayProof, origin);
 
-        assertEq(refunder.gasUsed() - lowGasUsed, highBlobGas - lowBlobGas, "blob gas not refunded");
+        return (refunder.gasUsed() - lowGasUsed, highBlobGas - lowBlobGas);
+    }
+
+    function testAddSequencerL2BatchFromBlobs_RefundsBlobGas() public {
+        (uint256 refundDelta, uint256 blobGasDelta) = blobRefundDelta(false, tx.origin);
+        assertEq(refundDelta, blobGasDelta, "blob gas not refunded");
+    }
+
+    function testAddSequencerL2BatchFromBlobsDelayProof_RefundsBlobGas() public {
+        (uint256 refundDelta, uint256 blobGasDelta) = blobRefundDelta(true, tx.origin);
+        assertEq(refundDelta, blobGasDelta, "blob gas not refunded");
+    }
+
+    function testAddSequencerL2BatchFromBlobs_NoBlobRefundForNonOriginCaller() public {
+        // a caller that isn't the origin could be refunded for blobs that someone else paid for
+        (uint256 refundDelta, uint256 blobGasDelta) = blobRefundDelta(false, address(0xbeef));
+        assertGt(blobGasDelta, 0, "blob gas should be nonzero");
+        assertEq(refundDelta, 0, "blob gas refunded to a non-origin caller");
     }
 
     function testAddSequencerL2BatchFromBlobs_revert_MissingDataHashes() public {
@@ -455,7 +489,7 @@ contract SequencerInboxTest is Test {
 
     function testAddSequencerL2BatchFromBlobs_revert_ArbitrumHosted() public {
         (SequencerInbox seqInbox,,) = deployRollup(true, false, bufferConfigDefault);
-        blobVm.blobhashes(makeBlobHashes(1));
+        newerVm.blobhashes(makeBlobHashes(1));
         vm.prank(tx.origin);
         vm.expectRevert(DataBlobsNotSupported.selector);
         seqInbox.addSequencerL2BatchFromBlobs(0, 0, IGasRefunder(address(0)), 0, 1);
@@ -796,7 +830,7 @@ contract SequencerInboxTest is Test {
         IFeeTokenPricer newPricer = IFeeTokenPricer(makeAddr("newPricer"));
 
         vm.expectEmit(true, true, true, true);
-        emit OwnerFunctionCalled(6);
+        emit ISequencerInbox.OwnerFunctionCalled(6);
 
         vm.prank(rollupOwner);
         seqInbox.setFeeTokenPricer(newPricer);
