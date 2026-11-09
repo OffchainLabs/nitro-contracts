@@ -185,9 +185,6 @@ error InvalidDelayedAccPreimage();
 /// @dev Thrown when the sequencer attempts to post a batch with delay / sync proofs without delay bufferability enabled
 error NotDelayBufferable();
 
-/// @dev Thrown when an init param was supplied as empty
-error InitParamZero(string name);
-
 /// @dev Thrown when data hashes where expected but not where present on the tx
 error MissingDataHashes();
 
