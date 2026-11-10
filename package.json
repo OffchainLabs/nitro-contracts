@@ -51,7 +51,6 @@
     "test:bytecodes": "hardhat clean && forge clean && hardhat run scripts/compareBytecodes.ts",
     "metadatahash": "yarn build:all && hardhat run scripts/printMetadataHashes.ts",
     "upload-4bytes": "forge build && find ./out -type f -name \"*.json\" -exec cast upload-signature {} + | grep -v Duplicated:",
-    "postinstall": "patch-package",
     "deploy-factory": "hardhat run scripts/deployment.ts",
     "deploy-eth-rollup": "hardhat run scripts/createEthRollup.ts",
     "deploy-erc20-rollup": "hardhat run scripts/createERC20Rollup.ts",
@@ -66,7 +65,6 @@
     "@offchainlabs/upgrade-executor": "1.1.0-beta.0",
     "@openzeppelin/contracts": "4.7.3",
     "@openzeppelin/contracts-upgradeable": "4.7.3",
-    "patch-package": "^6.5.1",
     "solady": "0.0.182"
   },
   "private": false,
