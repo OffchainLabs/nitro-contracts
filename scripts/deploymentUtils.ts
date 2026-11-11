@@ -6,13 +6,11 @@ import {
   abi as UpgradeExecutorABI,
   bytecode as UpgradeExecutorBytecode,
 } from '@offchainlabs/upgrade-executor/build/contracts/src/UpgradeExecutor.sol/UpgradeExecutor.json'
-import { Toolkit4844 } from '../test/contract/toolkit4844'
 import {
   ArbOwner__factory,
   ArbOwnerPublic__factory,
   ArbSys__factory,
   CacheManager__factory,
-  IReader4844__factory,
 } from '../build/types'
 import {
   concat,
@@ -20,7 +18,6 @@ import {
   hexDataLength,
   keccak256,
 } from 'ethers/lib/utils'
-import { bytecode as Reader4844Bytecode } from '../out/yul/Reader4844.yul/Reader4844.json'
 
 const INIT_CACHE_SIZE = 536870912
 const INIT_DECAY = 10322197911
@@ -264,39 +261,19 @@ export async function deployAllContracts(
   maxDataSize: BigNumber,
   verify: boolean = true
 ): Promise<Record<string, Contract>> {
-  const isOnArb = await _isRunningOnArbitrum(signer)
-  const isOnL1 = await _isRunningOnL1(signer)
-
   const ethBridge = await deployContract('Bridge', signer, [], verify, true)
-
-  let reader4844: string
-  if (isOnArb) reader4844 = ethers.constants.AddressZero
-  else if (!isOnL1)
-    reader4844 = '0x000000000000000000000000000000000000dead' // dead address
-  else
-    reader4844 = (
-      await create2(
-        new ContractFactory(
-          IReader4844__factory.abi,
-          Reader4844Bytecode,
-          signer
-        ),
-        [],
-        ethers.constants.HashZero
-      )
-    ).address
 
   const ethSequencerInbox = await deployContract(
     'SequencerInbox',
     signer,
-    [maxDataSize, reader4844, false, false],
+    [maxDataSize, false, false],
     verify,
     true
   )
   const ethSequencerInboxDelayBufferable = await deployContract(
     'SequencerInbox',
     signer,
-    [maxDataSize, reader4844, false, true],
+    [maxDataSize, false, true],
     verify,
     true
   )
@@ -327,14 +304,14 @@ export async function deployAllContracts(
   const erc20SequencerInbox = await deployContract(
     'SequencerInbox',
     signer,
-    [maxDataSize, reader4844, true, false],
+    [maxDataSize, true, false],
     verify,
     true
   )
   const erc20SequencerInboxDelayBufferable = await deployContract(
     'SequencerInbox',
     signer,
-    [maxDataSize, reader4844, true, true],
+    [maxDataSize, true, true],
     verify,
     true
   )

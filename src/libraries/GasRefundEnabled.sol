@@ -2,10 +2,9 @@
 // For license information, see https://github.com/OffchainLabs/nitro-contracts/blob/main/LICENSE
 // SPDX-License-Identifier: BUSL-1.1
 
-// solhint-disable-next-line compiler-version
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.24;
 
-import "./IReader4844.sol";
+import "./BlobDataHashReader.sol";
 import "./IGasRefunder.sol";
 import "../libraries/CallerChecker.sol";
 
@@ -15,9 +14,11 @@ abstract contract GasRefundEnabled {
     /// @dev this refunds the sender for execution costs of the tx
     /// calldata costs are only refunded if `msg.sender == tx.origin` to guarantee the value refunded relates to charging
     /// for the `tx.input`. this avoids a possible attack where you generate large calldata from a contract and get over-refunded
+    /// @param includeBlobCosts whether to also refund the cost of the tx's blobs. Only set this on code paths
+    ///        that require blobs: the BLOBHASH and BLOBBASEFEE opcodes do not work on every chain
     modifier refundsGas(
         IGasRefunder gasRefunder,
-        IReader4844 reader4844
+        bool includeBlobCosts
     ) {
         uint256 startGasLeft = gasleft();
         _;
@@ -35,16 +36,14 @@ abstract contract GasRefundEnabled {
             } else {
                 // for similar reasons to above we only refund blob gas when the tx.origin is the msg.sender
                 // this avoids the caller being able to send blobs to other contracts and still get refunded here
-                if (address(reader4844) != address(0)) {
-                    // add any cost for 4844 data, the data hash reader throws an error prior to 4844 being activated
+                if (includeBlobCosts) {
+                    // add any cost for 4844 data
                     // we do this addition here rather in the GasRefunder so that we can check the msg.sender is the tx.origin
-                    try reader4844.getDataHashes() returns (bytes32[] memory dataHashes) {
-                        if (dataHashes.length != 0) {
-                            uint256 blobBasefee = reader4844.getBlobBaseFee();
-                            startGasLeft += (dataHashes.length * gasPerBlob * blobBasefee)
-                                / block.basefee;
-                        }
-                    } catch {}
+                    bytes32[] memory dataHashes = BlobDataHashReader.getDataHashes();
+                    if (dataHashes.length != 0 && block.basefee != 0) {
+                        startGasLeft += (dataHashes.length * gasPerBlob * block.blobbasefee)
+                            / block.basefee;
+                    }
                 }
             }
 
