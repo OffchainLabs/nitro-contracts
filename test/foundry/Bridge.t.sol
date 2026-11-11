@@ -203,7 +203,8 @@ contract BridgeTest is AbsBridgeTest {
         // call params
         uint256 newVaultVersion = 7;
         uint256 withdrawalAmount = 3 ether;
-        bytes memory data = abi.encodeWithSelector(EthVault.setVersion.selector, newVaultVersion);
+        bytes memory data =
+            abi.encodeWithSelector(EthVault.setVersionAndRecordOutbox.selector, newVaultVersion);
 
         // expect event
         vm.expectEmit(true, true, true, true);
@@ -217,6 +218,8 @@ contract BridgeTest is AbsBridgeTest {
         //// checks
         assertTrue(success, "Execute call failed");
         assertEq(vault.version(), newVaultVersion, "Invalid newVaultVersion");
+        assertEq(vault.outboxCaller(), outbox);
+        assertEq(bridge.activeOutbox(), address(0));
 
         uint256 bridgeEthBalanceAfter = address(bridge).balance;
         assertEq(

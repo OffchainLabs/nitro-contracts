@@ -4,16 +4,27 @@
 
 pragma solidity ^0.8.0;
 
+import "../bridge/IBridge.sol";
+
 /**
  * Simple contract for testing bridge calls which include calldata
  */
 contract EthVault {
     uint256 public version = 0;
+    address public outboxCaller;
 
     function setVersion(
         uint256 _version
     ) external payable {
         version = _version;
+    }
+
+    /// @dev Also records the bridge's active outbox, so the caller must be the bridge
+    function setVersionAndRecordOutbox(
+        uint256 _version
+    ) external payable {
+        version = _version;
+        outboxCaller = IBridge(msg.sender).activeOutbox();
     }
 
     function justRevert() external payable {
