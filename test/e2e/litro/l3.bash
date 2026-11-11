@@ -4,7 +4,7 @@
 #
 # usage: test/e2e/litro/l3.bash deploy|start|fund <out dir>
 #   deploy  deploy the fee token (optional), RollupCreator and L3 rollup; write the L3 node config
-#   start   run the L3 node on :3347 and fund the staker's validator wallet
+#   start   stake the L3 validator, then run the L3 node on :3347
 #   fund    fee-token chains only: deposit fee token from user_fee_token_deployer to the L3
 #
 # env:
@@ -35,7 +35,7 @@ fee_token_deployer_key=$(user_key user_fee_token_deployer)
 
 send() { cast send "$@" --private-key "$owner_key" --rpc-url "$l2" >/dev/null; }
 
-# Test helpers live under test/foundry, which the default forge profile skips; build them on their own.
+# Build only the test helpers the fee-token chains need, so the jobs can skip the full forge build.
 test_contracts=out/litro
 create_test_contract() { # <file> <contract> [abi-encoded constructor args]
   local bytecode
@@ -55,13 +55,13 @@ deploy() {
   local fee_token=$zero pricer=$zero
   if [ -n "${FEE_TOKEN_DECIMALS:-}" ]; then
     FOUNDRY_SKIP='[]' FOUNDRY_OUT=$test_contracts FOUNDRY_CACHE_PATH=forge-cache/litro forge build \
-      test/foundry/ERC20Bridge.t.sol test/foundry/fee-token-pricers/ConstantExchangeRatePricer.sol >/dev/null
+      src/test-helpers/TestToken.sol test/foundry/ERC20Bridge.t.sol \
+      test/foundry/fee-token-pricers/ConstantExchangeRatePricer.sol >/dev/null
     local users=("$(cast wallet address "$token_bridge_deployer_key")" "$(cast wallet address "$fee_token_deployer_key")")
     case "$FEE_TOKEN_DECIMALS" in
       18)
-        fee_token=$(forge create src/test-helpers/TestToken.sol:TestToken --broadcast --json \
-          --private-key "$owner_key" --rpc-url "$l2" \
-          --constructor-args 1000000000000000000000000000 | jq -r .deployedTo)
+        fee_token=$(create_test_contract TestToken.sol TestToken \
+          "$(cast abi-encode 'constructor(uint256)' 1000000000000000000000000000)")
         for u in "${users[@]}"; do send "$fee_token" 'transfer(address,uint256)' "$u" 1000000000000000000000000; done
         ;;
       6)
@@ -94,10 +94,10 @@ deploy() {
 
   # litro's L3 config with our chain info. Nitro refuses both batch-size limits at once.
   # litro posts L3 batches after 100ms; at that pace the batch carrying one spending report is posted
-  # and reported before customFeeRollup reads the report it measured. nitro-testnode waits 30s.
+  # and reported before customFeeRollup reads the report it measured. 2s leaves room for that read.
   jq '.chain."info-files" = ["/config/l3_chain_info.json"] | del(.chain."info-json")
       | .node.staker.enable = true | del(.node."batch-poster"."max-size")
-      | .node."batch-poster"."max-delay" = "30s"' \
+      | .node."batch-poster"."max-delay" = "2s"' \
     "$litro_config/l3-nodeConfig.json" >"$out/l3-nodeConfig.json"
   echo "deployed L3 rollup $rollup"
 }
@@ -111,6 +111,25 @@ start() {
     net=(--add-host host.docker.internal:host-gateway -p 3347:3347 -p 3348:3348)
     parent=http://host.docker.internal:8547
   fi
+  # Set up the staker's validator wallet and stake before the node starts. Left to the node, it queues
+  # create wallet, wrap ETH and approve together; each estimate reverts until the step before it is mined,
+  # and the node retries every 30s, so the first assertion (and every withdrawal) waits about a minute.
+  local staker_key creator rollup weth stake prefunded
+  staker_key=0x$(jq -r '.node.staker."parent-chain-wallet"."private-key"' "$out/l3-nodeConfig.json")
+  creator=$(jq -r '."validator-wallet-creator"' "$out/l3deployment.json")
+  rollup=$(jq -r .rollup "$out/l3deployment.json")
+  weth=$(cast call "$rollup" 'stakeToken()(address)' --rpc-url "$l2")
+  stake=$(cast call "$rollup" 'baseStake()(uint256)' --rpc-url "$l2" | cut -d' ' -f1)
+  prefunded=$(cast send "$creator" 'createWallet(address[])' '[]' --private-key "$staker_key" --rpc-url "$l2" --json |
+    jq -r --arg c "$(echo "$creator" | tr A-F a-f)" '.logs[] | select((.address | ascii_downcase) == $c) | .topics[1]')
+  prefunded=$(cast to-check-sum-address "0x${prefunded:26}")
+  cast send "$prefunded" 'executeTransaction(bytes,address,uint256)' "$(cast calldata 'deposit()')" "$weth" "$stake" \
+    --value "$stake" --private-key "$staker_key" --rpc-url "$l2" >/dev/null
+  cast send "$prefunded" 'executeTransaction(bytes,address,uint256)' \
+    "$(cast calldata 'approve(address,uint256)' "$rollup" "$(cast max-uint)")" "$weth" 0 \
+    --private-key "$staker_key" --rpc-url "$l2" >/dev/null
+  echo "validator wallet $prefunded holds $stake stake token"
+
   docker rm -f nc-l3 >/dev/null 2>&1 || true
   docker run -d --name nc-l3 "${net[@]}" -v "$out":/config:ro -e HOME=/tmp/l3home \
     --entrypoint /usr/local/bin/nitro "$image" \
@@ -120,6 +139,7 @@ start() {
     --node.dangerous.disable-blob-reader \
     --node.staker.dangerous.without-block-validator \
     --node.bold.check-staker-switch-interval=1s \
+    --node.parent-chain-reader.poll-interval=250ms --execution.parent-chain-reader.poll-interval=250ms \
     --node.bold.state-provider-config.check-batch-finality=false \
     --execution.stylus-target.allow-offchain-activation \
     --http.addr=0.0.0.0 --http.port=3347 --http.api=net,web3,eth,txpool,debug \
@@ -133,26 +153,6 @@ start() {
     fi
     sleep 1
   done
-
-  # The staker creates its validator wallet on first run; the wallet wraps ETH for its stake.
-  local creator from wallet
-  creator=$(jq -r '."validator-wallet-creator"' "$out/l3deployment.json")
-  from=$(jq -r '."deployed-at"' "$out/l3deployment.json")
-  for i in $(seq 1 120); do
-    wallet=$(cast logs --address "$creator" --from-block "$from" --rpc-url "$l2" --json \
-      'WalletCreated(address indexed,address indexed,address indexed,address)' |
-      jq -r '.[0].topics[1] // empty')
-    if [ -n "$wallet" ]; then
-      wallet=0x${wallet:26}
-      send "$wallet" --value 1ether
-      echo "funded validator wallet $wallet"
-      return
-    fi
-    sleep 1
-  done
-  docker logs --tail 80 nc-l3
-  echo "staker never created its validator wallet" >&2
-  exit 1
 }
 
 # Fee-token L3s start with no balances: l3owner pays for ArbOwner calls and user_fee_token_deployer

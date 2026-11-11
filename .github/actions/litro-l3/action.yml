@@ -12,11 +12,22 @@ inputs:
 runs:
   using: composite
   steps:
+    # litro's L2 reads L1 every 15s by default, and an L3 assertion is confirmable only once the L2 has seen
+    # a newer L1 block, so each withdrawal waited up to 15s more. The v0.5.1 action can't set the image's
+    # TESTNODE_PARENT_CHAIN_POLL_INTERVAL, so boot an image that sets it.
+    - name: Build litro image that reads L1 every 250ms
+      shell: bash
+      run: |
+        docker pull ghcr.io/offchainlabs/arbitrum-litro:v0.5.1-nc3.2-l2
+        printf 'FROM ghcr.io/offchainlabs/arbitrum-litro:v0.5.1-nc3.2-l2\nENV TESTNODE_PARENT_CHAIN_POLL_INTERVAL=250ms\n' |
+          docker build -q -t local/arbitrum-litro:v0.5.1-l2-fast -
+
     - id: litro
       uses: OffchainLabs/arbitrum-litro@v0.5.1
       with:
         version: v0.5.1
         l3-enabled: 'false'
+        image-ref: local/arbitrum-litro:v0.5.1-l2-fast
 
     - name: Deploy L3 rollup
       shell: bash

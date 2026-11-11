@@ -18,7 +18,7 @@
 
 import { ethers } from 'hardhat'
 import { BigNumber } from '@ethersproject/bignumber'
-import { JsonRpcProvider, TransactionReceipt } from '@ethersproject/providers'
+import { TransactionReceipt } from '@ethersproject/providers'
 import { expect } from 'chai'
 import {
   Bridge,
@@ -47,6 +47,7 @@ import {
   solidityPack,
 } from 'ethers/lib/utils'
 import { Toolkit4844 } from './toolkit4844'
+import { localProvider } from '../../scripts/testSetup'
 import { SequencerInbox } from '../../build/types/src/bridge/SequencerInbox'
 import { InboxMessageDeliveredEvent } from '../../build/types/src/bridge/AbsInbox'
 import { SequencerBatchDeliveredEvent } from '../../build/types/src/bridge/ISequencerInbox.sol/ISequencerInbox'
@@ -347,7 +348,7 @@ describe('SequencerInbox', async () => {
 
   it('can send normal batch', async () => {
     const privKey = FUNDING_KEY
-    const prov = new JsonRpcProvider('http://127.0.0.1:8545')
+    const prov = localProvider('http://127.0.0.1:8545')
     const wallet = new Wallet(privKey).connect(prov)
 
     const {
@@ -394,7 +395,7 @@ describe('SequencerInbox', async () => {
 
   it('can send blob batch', async () => {
     const privKey = FUNDING_KEY
-    const prov = new JsonRpcProvider('http://127.0.0.1:8545')
+    const prov = localProvider('http://127.0.0.1:8545')
     const wallet = new Wallet(privKey).connect(prov)
 
     const {

@@ -8,6 +8,13 @@ export function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
+// ethers polls every 4s by default; local chains produce blocks far faster than that.
+export function localProvider(url: string) {
+  const provider = new JsonRpcProvider(url)
+  provider.pollingInterval = 250
+  return provider
+}
+
 export const getLocalNetworks = async (
   l1Url: string,
   l2Url: string

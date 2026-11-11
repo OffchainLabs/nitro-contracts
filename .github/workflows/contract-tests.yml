@@ -134,6 +134,10 @@ jobs:
           version: v0.5.1
           l3-enabled: 'false'
 
+      # These tests only use L1. Mine each transaction at once instead of on Anvil's next 1s block.
+      - name: Mine L1 transactions immediately
+        run: cast rpc evm_setAutomine true --rpc-url http://127.0.0.1:8545
+
       - name: Setup nodejs
         uses: actions/setup-node@v4
         with:
@@ -145,7 +149,7 @@ jobs:
         run: yarn install
 
       - name: Build
-        run: yarn build:all
+        run: yarn build && yarn build:forge:yul
 
       - name: Test 4844
         run: yarn test:4844
@@ -172,7 +176,7 @@ jobs:
         run: yarn
 
       - name: Compile contracts
-        run: yarn build:all
+        run: yarn build && yarn build:forge:yul
 
       - name: Boot litro and the L3
         uses: ./.github/actions/litro-l3
@@ -202,7 +206,7 @@ jobs:
         run: yarn
 
       - name: Compile contracts
-        run: yarn build:all
+        run: yarn build && yarn build:forge:yul
 
       - name: Boot litro and the L3
         uses: ./.github/actions/litro-l3
@@ -234,7 +238,7 @@ jobs:
         run: yarn
 
       - name: Compile contracts
-        run: yarn build:all
+        run: yarn build && yarn build:forge:yul
 
       - name: Boot litro and the L3
         uses: ./.github/actions/litro-l3
