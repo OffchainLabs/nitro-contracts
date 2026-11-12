@@ -204,4 +204,25 @@ contract DelayBufferableTest is Test {
         delayBuffer.update(elapse + 10000);
         assertEq(delayBuffer.bufferBlocks, bufferCalc);
     }
+
+    function testIsUpdatable() public {
+        delayBuffer = BufferData({
+            bufferBlocks: config.max,
+            max: config.max,
+            threshold: config.threshold,
+            prevBlockNumber: 100,
+            replenishRateInBasis: config.replenishRateInBasis,
+            prevSequencedBlockNumber: 100
+        });
+
+        vm.roll(100 + config.threshold);
+        assertFalse(delayBuffer.isUpdatable());
+
+        vm.roll(100 + config.threshold + 1);
+        assertTrue(delayBuffer.isUpdatable());
+
+        vm.roll(100 + config.threshold);
+        delayBuffer.bufferBlocks = config.max - 1;
+        assertTrue(delayBuffer.isUpdatable());
+    }
 }
