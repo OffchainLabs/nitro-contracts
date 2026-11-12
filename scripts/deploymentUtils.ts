@@ -466,6 +466,7 @@ export async function deployAllContracts(
     challengeManager,
     rollupAdmin,
     rollupUser,
+    melConfig,
     upgradeExecutor,
     validatorWalletCreator,
     rollupCreator,
