@@ -1,0 +1,30 @@
+diff --git a/node_modules/@arbitrum/sdk/dist/lib/abi-bold/factories/BoldRollupUserLogic__factory.js b/node_modules/@arbitrum/sdk/dist/lib/abi-bold/factories/BoldRollupUserLogic__factory.js
+index 2945ead..a819f93 100644
+--- a/node_modules/@arbitrum/sdk/dist/lib/abi-bold/factories/BoldRollupUserLogic__factory.js
++++ b/node_modules/@arbitrum/sdk/dist/lib/abi-bold/factories/BoldRollupUserLogic__factory.js
+@@ -102,9 +102,9 @@ const _abi = [
+                                         type: 'uint64',
+                                     },
+                                     {
+-                                        internalType: 'uint64',
+-                                        name: 'nextInboxPosition',
+-                                        type: 'uint64',
++                                        internalType: 'bytes32',
++                                        name: 'targetParentChainBlockHash',
++                                        type: 'bytes32',
+                                     },
+                                 ],
+                                 internalType: 'struct ConfigData',
+@@ -198,9 +198,9 @@ const _abi = [
+             },
+             {
+                 indexed: false,
+-                internalType: 'uint256',
+-                name: 'inboxMaxCount',
+-                type: 'uint256',
++                internalType: 'bytes32',
++                name: 'targetParentChainBlockHash',
++                type: 'bytes32',
+             },
+             {
+                 indexed: false,
