@@ -17,6 +17,7 @@ import "../state/Machine.sol";
 import "../bridge/ISequencerInbox.sol";
 import "../bridge/IBridge.sol";
 import "../bridge/IOutbox.sol";
+import "./IMelConfig.sol";
 import "../challengeV2/IEdgeChallengeManager.sol";
 import "../libraries/ArbitrumChecker.sol";
 
@@ -116,6 +117,8 @@ abstract contract RollupCore is IRollupCore, PausableUpgradeable {
     bool internal immutable _hostChainIsArbitrum = ArbitrumChecker.runningOnArbitrum();
     // If the chain RollupCore is deployed on, this will contain the ArbSys.blockNumber() at each node's creation.
     mapping(bytes32 => uint256) internal _assertionCreatedAtArbSysBlock;
+
+    IMelConfig public melConfig;
 
     function sequencerInbox() public view virtual returns (ISequencerInbox) {
         return ISequencerInbox(bridge.sequencerInbox());

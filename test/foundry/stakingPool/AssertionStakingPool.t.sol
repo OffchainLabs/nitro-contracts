@@ -8,6 +8,7 @@ import "../../../src/rollup/RollupProxy.sol";
 import "../../../src/rollup/RollupCore.sol";
 import "../../../src/rollup/RollupUserLogic.sol";
 import "../../../src/rollup/RollupAdminLogic.sol";
+import "../../../src/rollup/MelConfig.sol";
 import "../../../src/rollup/RollupCreator.sol";
 
 import "../../../src/osp/OneStepProver0.sol";
@@ -86,6 +87,7 @@ contract AssertionPoolTest is Test {
         address outbox,
         address rollupEventInbox,
         address challengeManager,
+        address melConfig,
         address adminProxy,
         address sequencerInbox,
         address bridge,
@@ -126,6 +128,7 @@ contract AssertionPoolTest is Test {
         EdgeChallengeManager edgeChallengeManager = new EdgeChallengeManager();
         RollupAdminLogic rollupAdminLogicImpl = new RollupAdminLogic();
         RollupUserLogic rollupUserLogicImpl = new RollupUserLogic();
+        MelConfig melConfigLogic = new MelConfig();
         DeployHelper deployHelper = new DeployHelper();
         IUpgradeExecutor upgradeExecutorLogic = new UpgradeExecutorMock();
         BridgeCreator bridgeCreator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
@@ -136,6 +139,7 @@ contract AssertionPoolTest is Test {
             edgeChallengeManager,
             rollupAdminLogicImpl,
             rollupUserLogicImpl,
+            melConfigLogic,
             upgradeExecutorLogic,
             address(0),
             deployHelper
@@ -180,6 +184,7 @@ contract AssertionPoolTest is Test {
 
         vm.expectEmit(false, false, false, false);
         emit RollupCreated(
+            address(0),
             address(0),
             address(0),
             address(0),

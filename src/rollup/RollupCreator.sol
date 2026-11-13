@@ -26,6 +26,7 @@ contract RollupCreator is Ownable {
         address outbox,
         address rollupEventInbox,
         address challengeManager,
+        address melConfig,
         address adminProxy,
         address sequencerInbox,
         address bridge,
@@ -52,6 +53,7 @@ contract RollupCreator is Ownable {
     IEdgeChallengeManager public challengeManagerTemplate;
     IRollupAdmin public rollupAdminLogic;
     IRollupUser public rollupUserLogic;
+    IMelConfig public melConfigTemplate;
     IUpgradeExecutor public upgradeExecutorLogic;
 
     address public validatorWalletCreator;
@@ -65,6 +67,7 @@ contract RollupCreator is Ownable {
         IEdgeChallengeManager _challengeManagerLogic,
         IRollupAdmin _rollupAdminLogic,
         IRollupUser _rollupUserLogic,
+        IMelConfig _melConfig,
         IUpgradeExecutor _upgradeExecutorLogic,
         address _validatorWalletCreator,
         DeployHelper _l2FactoriesDeployer
@@ -75,6 +78,7 @@ contract RollupCreator is Ownable {
             _challengeManagerLogic,
             _rollupAdminLogic,
             _rollupUserLogic,
+            _melConfig,
             _upgradeExecutorLogic,
             _validatorWalletCreator,
             _l2FactoriesDeployer
@@ -91,6 +95,7 @@ contract RollupCreator is Ownable {
         IEdgeChallengeManager _challengeManagerLogic,
         IRollupAdmin _rollupAdminLogic,
         IRollupUser _rollupUserLogic,
+        IMelConfig _melConfig,
         IUpgradeExecutor _upgradeExecutorLogic,
         address _validatorWalletCreator,
         DeployHelper _l2FactoriesDeployer
@@ -100,6 +105,7 @@ contract RollupCreator is Ownable {
         challengeManagerTemplate = _challengeManagerLogic;
         rollupAdminLogic = _rollupAdminLogic;
         rollupUserLogic = _rollupUserLogic;
+        melConfigTemplate = _melConfig;
         upgradeExecutorLogic = _upgradeExecutorLogic;
         validatorWalletCreator = _validatorWalletCreator;
         l2FactoriesDeployer = _l2FactoriesDeployer;
@@ -135,6 +141,20 @@ contract RollupCreator is Ownable {
         });
 
         return challengeManager;
+    }
+
+    function createMelConfig(
+        uint256 melVersion,
+        address bridge,
+        address proxyAdminAddr
+    ) internal returns (IMelConfig) {
+        IMelConfig melConfig = IMelConfig(
+            address(new TransparentUpgradeableProxy(address(melConfigTemplate), proxyAdminAddr, ""))
+        );
+
+        melConfig.initialize(melVersion, bridge);
+
+        return melConfig;
     }
 
     /**
@@ -221,6 +241,10 @@ contract RollupCreator is Ownable {
             address(rollup), address(proxyAdmin), deployParams.config, deployParams.customOsp
         );
 
+        // Hardcoded MEL version to 0 for the first MEL iteration
+        IMelConfig melConfig =
+            createMelConfig(0, address(bridgeContracts.bridge), address(proxyAdmin));
+
         // deploy and init upgrade executor
         address upgradeExecutor = _deployUpgradeExecutor(deployParams.config.owner, proxyAdmin);
 
@@ -241,7 +265,8 @@ contract RollupCreator is Ownable {
                 challengeManager: challengeManager,
                 rollupAdminLogic: address(rollupAdminLogic),
                 rollupUserLogic: rollupUserLogic,
-                validatorWalletCreator: validatorWalletCreator
+                validatorWalletCreator: validatorWalletCreator,
+                melConfig: melConfig
             })
         );
 
@@ -279,6 +304,7 @@ contract RollupCreator is Ownable {
             address(bridgeContracts.outbox),
             address(bridgeContracts.rollupEventInbox),
             address(challengeManager),
+            address(melConfig),
             address(proxyAdmin),
             address(bridgeContracts.sequencerInbox),
             address(bridgeContracts.bridge),
