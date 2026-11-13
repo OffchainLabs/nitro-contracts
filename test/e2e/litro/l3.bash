@@ -1,26 +1,28 @@
 #!/usr/bin/env bash
-# Deploys this checkout's RollupCreator and an L3 rollup on a running arbitrum-litro L2, then runs the
-# L3 node as a sidecar container so `yarn test:e2e` exercises these contracts.
+# Deploys this checkout's RollupCreator and an L3 rollup on arbitrum-litro's L2, then runs the L3 node
+# so `yarn test:e2e` exercises these contracts. Runs inside the litro test image (see ci.bash), which
+# has litro's Nitro binary and config.
 #
-# usage: test/e2e/litro/l3.bash deploy|start|fund <out dir>
+# usage: test/e2e/litro/l3.bash build|deploy|start|fund <out dir>
+#   build   compile the fee token and pricer test helpers
 #   deploy  deploy the fee token (optional), RollupCreator and L3 rollup; write the L3 node config
 #   start   stake the L3 validator, then run the L3 node on :3347
 #   fund    fee-token chains only: deposit fee token from user_fee_token_deployer to the L3
 #
 # env:
-#   ARBITRUM_TESTNODE_CONFIG_DIR  litro's exported config dir (set by the arbitrum-litro action)
-#   L3_IMAGE                      image to run the L3 node from; use the litro image so Nitro matches
+#   ARBITRUM_TESTNODE_CONFIG_DIR  litro's exported config dir (set in the test image)
 #   FEE_TOKEN_DECIMALS            18 or 6; unset deploys an ETH-fee L3
 #   FEE_TOKEN_PRICER              true deploys a ConstantExchangeRatePricer
 set -euo pipefail
 
-cmd=${1:?usage: l3.bash deploy|start|fund <out dir>}
-out=${2:?usage: l3.bash deploy|start|fund <out dir>}
+cmd=${1:?usage: l3.bash build|deploy|start|fund <out dir>}
+out=${2:?usage: l3.bash build|deploy|start|fund <out dir>}
 mkdir -p "$out"
 out=$(cd "$out" && pwd)
 cd "$(dirname "$0")/../../.."
 
-litro_config=${ARBITRUM_TESTNODE_CONFIG_DIR:?ARBITRUM_TESTNODE_CONFIG_DIR must point at litro exported config}
+litro_config=${ARBITRUM_TESTNODE_CONFIG_DIR:-/opt/arbitrum-testnode/export-config}
+[ -d "$litro_config" ] || { echo "ARBITRUM_TESTNODE_CONFIG_DIR must point at litro's exported config" >&2; exit 1; }
 l2=http://127.0.0.1:8547
 l3=http://127.0.0.1:3347
 zero=0x0000000000000000000000000000000000000000
@@ -29,7 +31,8 @@ zero=0x0000000000000000000000000000000000000000
 owner_key=0xecdf21cb41c65afb51f91df408b7656e2c8739a5877f2814add0afd780cc210e # l3owner
 owner=0x863c904166E801527125D8672442D736194A3362
 sequencer=0x3E6134aAD4C4d422FF2A4391Dc315c4DDf98D1a5 # l3sequencer
-user_key() { printf '0x%s' "$(printf %s "$1" | shasum -a 256 | cut -d' ' -f1)"; }
+sha256() { if command -v sha256sum >/dev/null; then sha256sum; else shasum -a 256; fi; }
+user_key() { printf '0x%s' "$(printf %s "$1" | sha256 | cut -d' ' -f1)"; }
 token_bridge_deployer_key=$(user_key user_token_bridge_deployer)
 fee_token_deployer_key=$(user_key user_fee_token_deployer)
 
@@ -37,6 +40,11 @@ send() { cast send "$@" --private-key "$owner_key" --rpc-url "$l2" >/dev/null; }
 
 # Build only the test helpers the fee-token chains need, so the jobs can skip the full forge build.
 test_contracts=out/litro
+build() {
+  FOUNDRY_SKIP='[]' FOUNDRY_OUT=$test_contracts FOUNDRY_CACHE_PATH=forge-cache/litro forge build \
+    src/test-helpers/TestToken.sol test/foundry/ERC20Bridge.t.sol \
+    test/foundry/fee-token-pricers/ConstantExchangeRatePricer.sol >/dev/null
+}
 create_test_contract() { # <file> <contract> [abi-encoded constructor args]
   local bytecode
   bytecode=$(jq -r .bytecode.object "$test_contracts/$1/$2.json")
@@ -54,9 +62,7 @@ deploy() {
 
   local fee_token=$zero pricer=$zero
   if [ -n "${FEE_TOKEN_DECIMALS:-}" ]; then
-    FOUNDRY_SKIP='[]' FOUNDRY_OUT=$test_contracts FOUNDRY_CACHE_PATH=forge-cache/litro forge build \
-      src/test-helpers/TestToken.sol test/foundry/ERC20Bridge.t.sol \
-      test/foundry/fee-token-pricers/ConstantExchangeRatePricer.sol >/dev/null
+    build
     local users=("$(cast wallet address "$token_bridge_deployer_key")" "$(cast wallet address "$fee_token_deployer_key")")
     case "$FEE_TOKEN_DECIMALS" in
       18)
@@ -95,7 +101,7 @@ deploy() {
   # litro's L3 config with our chain info. Nitro refuses both batch-size limits at once.
   # litro posts L3 batches after 100ms; at that pace the batch carrying one spending report is posted
   # and reported before customFeeRollup reads the report it measured. 2s leaves room for that read.
-  jq '.chain."info-files" = ["/config/l3_chain_info.json"] | del(.chain."info-json")
+  jq --arg info "$out/l3_chain_info.json" '.chain."info-files" = [$info] | del(.chain."info-json")
       | .node.staker.enable = true | del(.node."batch-poster"."max-size")
       | .node."batch-poster"."max-delay" = "2s"' \
     "$litro_config/l3-nodeConfig.json" >"$out/l3-nodeConfig.json"
@@ -103,14 +109,6 @@ deploy() {
 }
 
 start() {
-  local image=${L3_IMAGE:?L3_IMAGE must name the litro image}
-  local net parent
-  if [ "$(uname)" = Linux ]; then
-    net=(--network host) parent=http://127.0.0.1:8547
-  else
-    net=(--add-host host.docker.internal:host-gateway -p 3347:3347 -p 3348:3348)
-    parent=http://host.docker.internal:8547
-  fi
   # Set up the staker's validator wallet and stake before the node starts. Left to the node, it queues
   # create wallet, wrap ETH and approve together; each estimate reverts until the step before it is mined,
   # and the node retries every 30s, so the first assertion (and every withdrawal) waits about a minute.
@@ -130,11 +128,9 @@ start() {
     --private-key "$staker_key" --rpc-url "$l2" >/dev/null
   echo "validator wallet $prefunded holds $stake stake token"
 
-  docker rm -f nc-l3 >/dev/null 2>&1 || true
-  docker run -d --name nc-l3 "${net[@]}" -v "$out":/config:ro -e HOME=/tmp/l3home \
-    --entrypoint /usr/local/bin/nitro "$image" \
-    --conf.file=/config/l3-nodeConfig.json \
-    --parent-chain.connection.url="$parent" \
+  local pid
+  HOME=$out/l3home nohup /usr/local/bin/nitro --conf.file="$out/l3-nodeConfig.json" \
+    --parent-chain.connection.url=$l2 \
     --validation.wasm.allowed-wasm-module-roots=/home/user/nitro-legacy/machines,/home/user/target/machines \
     --node.dangerous.disable-blob-reader \
     --node.staker.dangerous.without-block-validator \
@@ -143,13 +139,15 @@ start() {
     --node.bold.state-provider-config.check-batch-finality=false \
     --execution.stylus-target.allow-offchain-activation \
     --http.addr=0.0.0.0 --http.port=3347 --http.api=net,web3,eth,txpool,debug \
-    --http.corsdomain='*' --http.vhosts='*' --ws.addr=0.0.0.0 --ws.port=3348 >/dev/null
+    --http.corsdomain='*' --http.vhosts='*' --ws.addr=0.0.0.0 --ws.port=3348 \
+    >"$out/l3node.log" 2>&1 &
+  pid=$!
 
   local i
   for i in $(seq 1 120); do
     if [ "$(cast chain-id --rpc-url "$l3" 2>/dev/null)" = 333333 ]; then echo "L3 up after ${i}s"; break; fi
-    if [ "$i" = 120 ] || [ "$(docker inspect -f '{{.State.Running}}' nc-l3)" != true ]; then
-      docker logs --tail 80 nc-l3; echo "L3 node did not start" >&2; exit 1
+    if [ "$i" = 120 ] || ! kill -0 "$pid" 2>/dev/null; then
+      tail -n 80 "$out/l3node.log"; echo "L3 node did not start" >&2; exit 1
     fi
     sleep 1
   done
@@ -226,6 +224,7 @@ send_and_wait_for_report() {
 }
 
 case "$cmd" in
+  build) build ;;
   deploy) deploy ;;
   start) start ;;
   fund) fund ;;

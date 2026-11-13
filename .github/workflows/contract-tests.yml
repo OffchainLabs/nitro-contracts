@@ -121,133 +121,67 @@ jobs:
   test-4844:
     name: 4844 tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Install Foundry
-        uses: ./.github/actions/install-foundry
-
-      - uses: OffchainLabs/arbitrum-litro@v0.5.1
+      - uses: ./.github/actions/litro-tests
         with:
-          version: v0.5.1
-          l3-enabled: 'false'
-
-      # These tests only use L1. Mine each transaction at once instead of on Anvil's next 1s block.
-      - name: Mine L1 transactions immediately
-        run: cast rpc evm_setAutomine true --rpc-url http://127.0.0.1:8545
-
-      - name: Setup nodejs
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: 'yarn'
-          cache-dependency-path: '**/yarn.lock'
-
-      - name: Install dependencies
-        run: yarn install
-
-      - name: Build
-        run: yarn build && yarn build:forge:yul
-
-      - name: Test 4844
-        run: yarn test:4844
+          # These tests only use L1. Mine each transaction at once instead of on Anvil's next 1s block.
+          command: cast rpc evm_setAutomine true --rpc-url http://127.0.0.1:8545 && yarn test:4844
+          l3: 'false'
 
   test-e2e:
     name: Test e2e
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Install Foundry
-        uses: ./.github/actions/install-foundry
-
-      - name: Setup node/yarn
-        uses: actions/setup-node@v4
+      - uses: ./.github/actions/litro-tests
         with:
-          node-version: 24
-          cache: 'yarn'
-          cache-dependency-path: '**/yarn.lock'
-
-      - name: Install packages
-        run: yarn
-
-      - name: Compile contracts
-        run: yarn build && yarn build:forge:yul
-
-      - name: Boot litro and the L3
-        uses: ./.github/actions/litro-l3
-
-      - name: Run e2e tests
-        run: yarn test:e2e
+          command: yarn test:e2e
 
   test-e2e-custom-fee-token:
     name: Test e2e custom fee token
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Install Foundry
-        uses: ./.github/actions/install-foundry
-
-      - name: Setup node/yarn
-        uses: actions/setup-node@v4
+      - uses: ./.github/actions/litro-tests
         with:
-          node-version: 24
-          cache: 'yarn'
-          cache-dependency-path: '**/yarn.lock'
-
-      - name: Install packages
-        run: yarn
-
-      - name: Compile contracts
-        run: yarn build && yarn build:forge:yul
-
-      - name: Boot litro and the L3
-        uses: ./.github/actions/litro-l3
-        with:
+          command: yarn test:e2e
           fee-token-decimals: '18'
-
-      - name: Run e2e tests
-        run: yarn test:e2e
 
   test-e2e-fee-token-6-decimals:
     name: Test e2e fee token with 6 decimals and pricer
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Install Foundry
-        uses: ./.github/actions/install-foundry
-
-      - name: Setup node/yarn
-        uses: actions/setup-node@v4
+      - uses: ./.github/actions/litro-tests
         with:
-          node-version: 24
-          cache: 'yarn'
-          cache-dependency-path: '**/yarn.lock'
-
-      - name: Install packages
-        run: yarn
-
-      - name: Compile contracts
-        run: yarn build && yarn build:forge:yul
-
-      - name: Boot litro and the L3
-        uses: ./.github/actions/litro-l3
-        with:
+          command: yarn test:e2e
           fee-token-decimals: '6'
           fee-token-pricer: 'true'
-
-      - name: Run e2e tests
-        run: yarn test:e2e
 
   # bold-upgrade:
   #   name: BOLD upgrade test
