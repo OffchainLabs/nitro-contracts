@@ -45,7 +45,7 @@ library RollupLib {
         uint256 requiredStake,
         address challengeManager,
         uint64 confirmPeriodBlocks,
-        uint64 nextInboxPosition
+        bytes32 targetParentChainBlockHash
     ) internal pure returns (bytes32) {
         return keccak256(
             abi.encodePacked(
@@ -53,7 +53,7 @@ library RollupLib {
                 requiredStake,
                 challengeManager,
                 confirmPeriodBlocks,
-                nextInboxPosition
+                targetParentChainBlockHash
             )
         );
     }
@@ -69,7 +69,7 @@ library RollupLib {
                     configData.requiredStake,
                     configData.challengeManager,
                     configData.confirmPeriodBlocks,
-                    configData.nextInboxPosition
+                    configData.targetParentChainBlockHash
                 ),
             "CONFIG_HASH_MISMATCH"
         );

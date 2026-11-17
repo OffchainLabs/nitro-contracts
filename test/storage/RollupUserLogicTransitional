@@ -1,0 +1,69 @@
+
+╭--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------╮
+| Name                           | Type                                          | Slot | Offset | Bytes | Contract                                                                          |
++============================================================================================================================================================================================+
+| _initialized                   | uint8                                         | 0    | 0      | 1     | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| _initializing                  | bool                                          | 0    | 1      | 1     | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| __gap                          | uint256[50]                                   | 1    | 0      | 1600  | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| _paused                        | bool                                          | 51   | 0      | 1     | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| __gap                          | uint256[49]                                   | 52   | 0      | 1568  | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| chainId                        | uint256                                       | 101  | 0      | 32    | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| confirmPeriodBlocks            | uint64                                        | 102  | 0      | 8     | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| validatorAfkBlocks             | uint64                                        | 102  | 8      | 8     | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| baseStake                      | uint256                                       | 103  | 0      | 32    | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| wasmModuleRoot                 | bytes32                                       | 104  | 0      | 32    | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| challengeManager               | contract IEdgeChallengeManager                | 105  | 0      | 20    | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| challengeGracePeriodBlocks     | uint64                                        | 105  | 20     | 8     | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| inbox                          | contract IInboxBase                           | 106  | 0      | 20    | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| bridge                         | contract IBridge                              | 107  | 0      | 20    | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| outbox                         | contract IOutbox                              | 108  | 0      | 20    | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| rollupEventInbox               | contract IRollupEventInbox                    | 109  | 0      | 20    | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| validatorWalletCreator         | address                                       | 110  | 0      | 20    | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| loserStakeEscrow               | address                                       | 111  | 0      | 20    | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| stakeToken                     | address                                       | 112  | 0      | 20    | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| minimumAssertionPeriod         | uint256                                       | 113  | 0      | 32    | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| validators                     | struct EnumerableSetUpgradeable.AddressSet    | 114  | 0      | 64    | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| _latestConfirmed               | bytes32                                       | 116  | 0      | 32    | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| _assertions                    | mapping(bytes32 => struct AssertionNode)      | 117  | 0      | 32    | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| _stakerList                    | address[]                                     | 118  | 0      | 32    | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| _stakerMap                     | mapping(address => struct IRollupCore.Staker) | 119  | 0      | 32    | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| _withdrawableFunds             | mapping(address => uint256)                   | 120  | 0      | 32    | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| totalWithdrawableFunds         | uint256                                       | 121  | 0      | 32    | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| rollupDeploymentBlock          | uint256                                       | 122  | 0      | 32    | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| validatorWhitelistDisabled     | bool                                          | 123  | 0      | 1     | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| anyTrustFastConfirmer          | address                                       | 123  | 1      | 20    | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| _assertionCreatedAtArbSysBlock | mapping(bytes32 => uint256)                   | 124  | 0      | 32    | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+|--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------|
+| melConfig                      | contract IMelConfig                           | 125  | 0      | 20    | src/rollup/transition/RollupUserLogicTransitional.sol:RollupUserLogicTransitional |
+╰--------------------------------+-----------------------------------------------+------+--------+-------+-----------------------------------------------------------------------------------╯
+

@@ -22,11 +22,11 @@ contract SimpleOneStepProofEntry is IOneStepProofEntry {
     }
 
     function proveOneStep(
-        ExecutionContext calldata execCtx,
+        ExecutionContext calldata,
         uint256 step,
         bytes32 beforeHash,
         bytes calldata proof
-    ) external view returns (bytes32 afterHash) {
+    ) external pure returns (bytes32 afterHash) {
         if (proof.length == 0) {
             revert("EMPTY_PROOF");
         }
@@ -36,10 +36,6 @@ contract SimpleOneStepProofEntry is IOneStepProofEntry {
         (globalState.u64Vals[1], offset) = Deserialize.u64(proof, offset);
         if (step > 0 && (beforeHash[0] == 0 || globalState.getPositionInMessage() == 0)) {
             // We end the block when the first byte of the hash hits 0 or we advance a batch
-            return beforeHash;
-        }
-        if (globalState.getInboxPosition() >= execCtx.maxInboxMessagesRead) {
-            // We can't continue further because we've hit the max inbox messages read
             return beforeHash;
         }
         require(globalState.hash() == beforeHash, "BAD_PROOF");
@@ -54,7 +50,11 @@ contract SimpleOneStepProofEntry is IOneStepProofEntry {
     function getMachineHash(
         ExecutionState calldata execState
     ) external pure override returns (bytes32) {
-        require(execState.machineStatus == MachineStatus.FINISHED, "BAD_MACHINE_STATUS");
+        require(
+            execState.machineStatus == MachineStatus.YIELDED
+                || execState.machineStatus == MachineStatus.FINISHED,
+            "BAD_MACHINE_STATUS"
+        );
         return execState.globalState.hash();
     }
 }

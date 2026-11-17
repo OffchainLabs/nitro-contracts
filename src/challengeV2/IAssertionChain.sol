@@ -6,12 +6,14 @@ pragma solidity ^0.8.0;
 
 import "../bridge/IBridge.sol";
 import "../osp/IOneStepProofEntry.sol";
+import "../rollup/IMelConfig.sol";
 import "../rollup/Assertion.sol";
 
 /// @title  Assertion chain interface
 /// @notice The interface required by the EdgeChallengeManager for requesting assertion data from the AssertionChain
 interface IAssertionChain {
     function bridge() external view returns (IBridge);
+    function melConfig() external view returns (IMelConfig);
     function validateAssertionHash(
         bytes32 assertionHash,
         AssertionState calldata state,

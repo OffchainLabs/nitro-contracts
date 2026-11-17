@@ -840,7 +840,6 @@ describe('Orbit Chain', () => {
       minimumAssertionPeriod: 75,
       validatorAfkBlocks: 201600,
       genesisAssertionState: genesisAssertionState, // AssertionState
-      genesisInboxCount: 0,
       miniStakeValues: [
         ethers.utils.parseEther('1'),
         ethers.utils.parseEther('1'),
@@ -1204,9 +1203,7 @@ async function _getRollupCreatorFromLogs(
 ): Promise<string> {
   const filter: Filter = {
     topics: [
-      ethers.utils.id(
-        'RollupCreated(address,address,address,address,address,address,address,address,address,address,address)'
-      ),
+      RollupCreator__factory.createInterface().getEventTopic('RollupCreated'),
       // the parent chain may hold other rollups (litro's own L3), so match ours
       ethers.utils.hexZeroPad(l2Network.ethBridge.rollup, 32),
     ],

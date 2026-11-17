@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import {IAssertionChain} from "../../../src/challengeV2/IAssertionChain.sol";
 import {IEdgeChallengeManager} from "../../../src/challengeV2/IEdgeChallengeManager.sol";
 import "../../../src/bridge/IBridge.sol";
+import {IMelConfig} from "../../../src/rollup/MelConfig.sol";
 import "../../../src/rollup/RollupLib.sol";
 import "./../challengeV2/StateTools.sol";
 
@@ -23,6 +24,7 @@ struct MockAssertion {
 contract MockAssertionChain is IAssertionChain {
     mapping(bytes32 => MockAssertion) assertions;
     IBridge public bridge; // TODO: set bridge in this mock
+    IMelConfig public melConfig;
     bytes32 public wasmModuleRoot;
     uint256 public baseStake;
     address public challengeManager;
@@ -37,7 +39,7 @@ contract MockAssertionChain is IAssertionChain {
         return assertions[assertionHash].height != 0;
     }
 
-    function stakeToken() public view returns (address) {
+    function stakeToken() public pure returns (address) {
         return address(0);
     }
 
@@ -45,7 +47,7 @@ contract MockAssertionChain is IAssertionChain {
         bytes32 assertionHash,
         AssertionState calldata state,
         bytes32 prevAssertionHash,
-        bytes32 inboxAcc
+        bytes32
     ) external view {
         require(assertionExists(assertionHash), "Assertion does not exist");
         // TODO: HN: This is not how the real assertion chain calculate assertion hash
@@ -79,7 +81,7 @@ contract MockAssertionChain is IAssertionChain {
                 requiredStake: configData.requiredStake,
                 challengeManager: configData.challengeManager,
                 confirmPeriodBlocks: configData.confirmPeriodBlocks,
-                nextInboxPosition: configData.nextInboxPosition
+                targetParentChainBlockHash: configData.targetParentChainBlockHash
             }) == assertions[assertionHash].configHash,
             "BAD_CONFIG"
         );
@@ -123,7 +125,7 @@ contract MockAssertionChain is IAssertionChain {
     function addAssertionUnsafe(
         bytes32 predecessorId,
         uint256 height,
-        uint64 nextInboxPosition,
+        bytes32 targetParentChainBlockHash,
         AssertionState memory afterState,
         bytes32 successionChallenge
     ) public returns (bytes32) {
@@ -142,7 +144,7 @@ contract MockAssertionChain is IAssertionChain {
                 requiredStake: baseStake,
                 challengeManager: challengeManager,
                 confirmPeriodBlocks: confirmPeriodBlocks,
-                nextInboxPosition: nextInboxPosition
+                targetParentChainBlockHash: targetParentChainBlockHash
             })
         });
         childCreated(predecessorId);
@@ -152,7 +154,7 @@ contract MockAssertionChain is IAssertionChain {
     function addAssertion(
         bytes32 predecessorId,
         uint256 height,
-        uint64 nextInboxPosition,
+        bytes32 targetParentChainBlockHash,
         AssertionState memory beforeState,
         AssertionState memory afterState,
         bytes32 successionChallenge
@@ -168,7 +170,7 @@ contract MockAssertionChain is IAssertionChain {
         );
 
         return addAssertionUnsafe(
-            predecessorId, height, nextInboxPosition, afterState, successionChallenge
+            predecessorId, height, targetParentChainBlockHash, afterState, successionChallenge
         );
     }
 
@@ -176,6 +178,12 @@ contract MockAssertionChain is IAssertionChain {
         bool x
     ) external {
         validatorWhitelistDisabled = x;
+    }
+
+    function setMelConfig(
+        IMelConfig x
+    ) external {
+        melConfig = x;
     }
 
     function setIsValidator(

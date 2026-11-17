@@ -71,6 +71,7 @@ contract EdgeChallengeManagerTest is Test {
     uint256 genesisHeight = 2;
     uint64 inboxMsgCountGenesis = 7;
     uint64 inboxMsgCountAssertion = 12;
+    bytes32 firstParentChainBlockHash = blockhash(block.number - 1);
 
     bytes32 h1 = rand.hash();
     bytes32 h2 = rand.hash();
@@ -129,7 +130,7 @@ contract EdgeChallengeManagerTest is Test {
         challengeManager.stakeToken().approve(address(challengeManager), type(uint256).max);
 
         genesisAssertionHash = assertionChain.addAssertionUnsafe(
-            0, genesisHeight, inboxMsgCountGenesis, genesisState, 0
+            0, genesisHeight, firstParentChainBlockHash, genesisState, 0
         );
         return (assertionChain, challengeManager, genesisAssertionHash);
     }
@@ -335,12 +336,16 @@ contract EdgeChallengeManagerTest is Test {
         );
         a2State.endHistoryRoot = MerkleTreeAccumulatorLib.root(a2RandomStatesExp);
 
+        // Roll a few blocks
+        _safeVmRoll(block.number + NUM_BLOCK_WAIT);
+        bytes32 targetParentChainBlockHash = blockhash(block.number - 1);
+
         // add one since heights are zero indexed in the history states
         bytes32 a1 = assertionChain.addAssertion(
-            genesis, genesisHeight + height1, inboxMsgCountAssertion, genesisState, a1State, 0
+            genesis, genesisHeight + height1, targetParentChainBlockHash, genesisState, a1State, 0
         );
         bytes32 a2 = assertionChain.addAssertion(
-            genesis, genesisHeight + height1, inboxMsgCountAssertion, genesisState, a2State, 0
+            genesis, genesisHeight + height1, targetParentChainBlockHash, genesisState, a2State, 0
         );
 
         return EdgeInitData({
@@ -357,11 +362,7 @@ contract EdgeChallengeManagerTest is Test {
     }
 
     function testWhitelist() public {
-        (
-            MockAssertionChain assertionChain,
-            EdgeChallengeManager challengeManager,
-            bytes32 genesis
-        ) = deploy();
+        (MockAssertionChain assertionChain, EdgeChallengeManager challengeManager,) = deploy();
 
         assertionChain.setValidatorWhitelistDisabled(false);
 
@@ -392,8 +393,12 @@ contract EdgeChallengeManagerTest is Test {
         );
         a1State.endHistoryRoot = MerkleTreeAccumulatorLib.root(exp);
 
+        // Roll a few blocks
+        _safeVmRoll(block.number + NUM_BLOCK_WAIT);
+        bytes32 targetParentChainBlockHash = blockhash(block.number - 1);
+
         bytes32 a1 = assertionChain.addAssertion(
-            genesis, genesisHeight + height1, inboxMsgCountAssertion, genesisState, a1State, 0
+            genesis, genesisHeight + height1, targetParentChainBlockHash, genesisState, a1State, 0
         );
 
         vm.expectRevert(abi.encodeWithSelector(AssertionNoSibling.selector));
@@ -643,7 +648,7 @@ contract EdgeChallengeManagerTest is Test {
     function testCanConfirmByTime() public {
         (EdgeInitData memory ei,,, bytes32 edgeId) = testCanCreateEdgeWithStake();
 
-        _safeVmRoll(START_BLOCK + challengePeriodBlock);
+        _safeVmRoll(START_BLOCK + NUM_BLOCK_WAIT + challengePeriodBlock);
 
         ei.challengeManager.confirmEdgeByTime(edgeId, ei.a1Data);
 
@@ -746,6 +751,10 @@ contract EdgeChallengeManagerTest is Test {
     function testRevertConfirmAnotherRival() public {
         (EdgeInitData memory ei, bytes32 edge1Id) = testCanConfirmByChildren();
 
+        // Roll a few blocks
+        _safeVmRoll(block.number + NUM_BLOCK_WAIT);
+        bytes32 targetParentChainBlockHash = blockhash(block.number - 1);
+
         AssertionState memory a2State = StateToolsLib.randomState(
             rand,
             GlobalStateLib.getInboxPosition(genesisState.globalState),
@@ -760,7 +769,7 @@ contract EdgeChallengeManagerTest is Test {
             .addAssertion(
                 ei.genesis,
                 genesisHeight + height1,
-                inboxMsgCountAssertion,
+                targetParentChainBlockHash,
                 genesisState,
                 a2State,
                 0
@@ -2016,11 +2025,9 @@ contract EdgeChallengeManagerTest is Test {
         BisectionData smallStepBisection;
     }
 
-    function testCanConfirmByOneStep()
-        public
-        returns (EdgeInitData memory, BisectionChildren[] memory)
-    {
-        EdgeInitData memory ei = deployAndInit();
+    function _bisectToOneStep(
+        EdgeInitData memory ei
+    ) internal returns (BisectionChildren[] memory allWinners, bytes32[] memory firstStates) {
         CanConfirmByOneStepData memory local;
 
         (local.blockStates1, local.blockStates2, local.blockEdges1, local.blockEdges2) =
@@ -2083,9 +2090,11 @@ contract EdgeChallengeManagerTest is Test {
             )
         );
 
-        _safeVmRoll(START_BLOCK + (NUM_BIGSTEP_LEVEL + 2) * (NUM_BLOCK_WAIT) + challengePeriodBlock);
+        _safeVmRoll(
+            START_BLOCK + (NUM_BIGSTEP_LEVEL + 2) * (NUM_BLOCK_WAIT * 2) + challengePeriodBlock
+        );
 
-        BisectionChildren[] memory allWinners = toDynamic(local.smallStepBisection.edges1);
+        allWinners = toDynamic(local.smallStepBisection.edges1);
         for (uint256 i = 0; i < NUM_BIGSTEP_LEVEL; ++i) {
             allWinners = concat(
                 allWinners, toDynamic(local.bigStepBisections[NUM_BIGSTEP_LEVEL - i - 1].edges1)
@@ -2093,24 +2102,40 @@ contract EdgeChallengeManagerTest is Test {
         }
         allWinners = concat(allWinners, toDynamic(local.blockEdges1));
 
-        bytes32[] memory firstStates = new bytes32[](2);
+        firstStates = new bytes32[](2);
         firstStates[0] = local.smallStepBisection.states1[0];
         firstStates[1] = local.smallStepBisection.states1[1];
+    }
 
+    function _confirmByOneStep(
+        EdgeInitData memory ei,
+        bytes32 edgeId,
+        bytes32[] memory firstStates
+    ) internal {
         ei.challengeManager
             .confirmEdgeByOneStepProof(
-                allWinners[0].lowerChildId,
+                edgeId,
                 OneStepData({beforeHash: firstStates[0], proof: abi.encodePacked(firstStates[1])}),
                 ConfigData({
                     wasmModuleRoot: bytes32(0),
                     requiredStake: 0,
                     challengeManager: address(0),
                     confirmPeriodBlocks: 0,
-                    nextInboxPosition: inboxMsgCountGenesis
+                    targetParentChainBlockHash: firstParentChainBlockHash
                 }),
                 ProofUtils.generateInclusionProof(ProofUtils.rehashed(genesisStates()), 0),
                 ProofUtils.generateInclusionProof(ProofUtils.rehashed(firstStates), 1)
             );
+    }
+
+    function testCanConfirmByOneStep()
+        public
+        returns (EdgeInitData memory, BisectionChildren[] memory)
+    {
+        EdgeInitData memory ei = deployAndInit();
+        (BisectionChildren[] memory allWinners, bytes32[] memory firstStates) = _bisectToOneStep(ei);
+
+        _confirmByOneStep(ei, allWinners[0].lowerChildId, firstStates);
 
         _updateTimers(ei, allWinners);
 
@@ -2122,6 +2147,29 @@ contract EdgeChallengeManagerTest is Test {
         );
 
         return (ei, allWinners);
+    }
+
+    // The execution context handed to the OSP must carry the assertion chain's MelConfig
+    function testConfirmByOneStepPassesMelConfigToOsp() public {
+        EdgeInitData memory ei = deployAndInit();
+        (BisectionChildren[] memory allWinners, bytes32[] memory firstStates) = _bisectToOneStep(ei);
+
+        address melConfig = makeAddr("melConfig");
+        ei.assertionChain.setMelConfig(IMelConfig(melConfig));
+
+        vm.expectCall(
+            address(ei.challengeManager.oneStepProofEntry()),
+            abi.encodeWithSelector(
+                IOneStepProofEntry.proveOneStep.selector,
+                ExecutionContext({
+                    initialWasmModuleRoot: bytes32(0),
+                    targetParentChainBlockHash: firstParentChainBlockHash,
+                    melConfig: melConfig,
+                    isFirstBlock: true // the proven edge starts at machine step 0 of the assertion
+                })
+            )
+        );
+        _confirmByOneStep(ei, allWinners[0].lowerChildId, firstStates);
     }
 
     /// @dev gracefully handle revert when updating timer cache
