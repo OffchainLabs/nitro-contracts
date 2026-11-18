@@ -16,9 +16,10 @@ COPY --from=node /usr/local/bin/node /opt/node24/bin/node
 COPY --from=node /usr/local/lib/node_modules/npm /opt/node24/lib/node_modules/npm
 USER root
 # litro's image stopped shipping yarn in v0.6.0, so install it next to Node 24.
-RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /opt/node24/bin/npm && \
+RUN export PATH=/opt/node24/bin:$PATH && \
+    ln -s ../lib/node_modules/npm/bin/npm-cli.js /opt/node24/bin/npm && \
     ln -s ../lib/node_modules/npm/bin/npx-cli.js /opt/node24/bin/npx && \
-    PATH=/opt/node24/bin:$PATH npm install -g --prefix /opt/node24 yarn@1.22.22 && \
+    npm install -g --prefix /opt/node24 yarn@1.22.22 && \
     npm cache clean --force
 USER user
 
