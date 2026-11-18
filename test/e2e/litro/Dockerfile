@@ -7,7 +7,7 @@
 FROM ghcr.io/foundry-rs/foundry:v1.9.0 AS foundry
 FROM node:24-bookworm-slim AS node
 
-FROM ghcr.io/offchainlabs/arbitrum-litro:v0.6.2-nc3.2-l2
+FROM ghcr.io/offchainlabs/arbitrum-litro:v0.6.5-nc3.2-l2
 LABEL org.opencontainers.image.source=https://github.com/OffchainLabs/nitro-contracts
 ENV ARBITRUM_TESTNODE_CONFIG_DIR=/opt/arbitrum-testnode/export-config
 COPY --from=foundry /usr/local/bin/forge /usr/local/bin/cast /usr/local/bin/
