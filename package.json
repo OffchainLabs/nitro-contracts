@@ -109,6 +109,6 @@
   },
   "resolutions": {
     "hardhat-deploy/axios": ">=0.33.0 <1",
-    "undici": "^6.27.0"
+    "undici": "^6.29.1"
   }
 }

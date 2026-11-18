@@ -25,7 +25,8 @@ if ! docker image inspect "$image" >/dev/null 2>&1 && ! docker pull -q "$image";
 fi
 
 docker rm -f "$ct" >/dev/null 2>&1 || true
-docker run -d --name "$ct" "$image" >/dev/null
+# Anvil mines every 250ms instead of litro's 1s default, so assertions and L1-to-L2 messages land sooner.
+docker run -d --name "$ct" -e TESTNODE_L1_BLOCK_TIME=0.25 "$image" >/dev/null
 step "started $image"
 
 x() {

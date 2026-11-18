@@ -7,19 +7,20 @@
 FROM ghcr.io/foundry-rs/foundry:v1.9.0 AS foundry
 FROM node:24-bookworm-slim AS node
 
-FROM ghcr.io/offchainlabs/arbitrum-litro:v0.5.1-nc3.2-l2
+FROM ghcr.io/offchainlabs/arbitrum-litro:v0.6.7-nc3.2-l2
 LABEL org.opencontainers.image.source=https://github.com/OffchainLabs/nitro-contracts
-# litro's L2 reads L1 every 15s by default, and an L3 assertion is confirmable only once the L2 has seen
-# a newer L1 block, so each withdrawal waited up to 15s more.
-ENV TESTNODE_PARENT_CHAIN_POLL_INTERVAL=250ms \
-    ARBITRUM_TESTNODE_CONFIG_DIR=/opt/arbitrum-testnode/export-config
+ENV ARBITRUM_TESTNODE_CONFIG_DIR=/opt/arbitrum-testnode/export-config
 COPY --from=foundry /usr/local/bin/forge /usr/local/bin/cast /usr/local/bin/
 # Tests run on Node 24 like the rest of CI; litro's own scripts keep the Node it ships.
 COPY --from=node /usr/local/bin/node /opt/node24/bin/node
 COPY --from=node /usr/local/lib/node_modules/npm /opt/node24/lib/node_modules/npm
 USER root
-RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /opt/node24/bin/npm && \
-    ln -s ../lib/node_modules/npm/bin/npx-cli.js /opt/node24/bin/npx
+# litro's image stopped shipping yarn in v0.6.0, so install it next to Node 24.
+RUN export PATH=/opt/node24/bin:$PATH && \
+    ln -s ../lib/node_modules/npm/bin/npm-cli.js /opt/node24/bin/npm && \
+    ln -s ../lib/node_modules/npm/bin/npx-cli.js /opt/node24/bin/npx && \
+    npm install -g --prefix /opt/node24 yarn@1.22.22 && \
+    npm cache clean --force
 USER user
 
 WORKDIR /home/user/nitro-contracts
