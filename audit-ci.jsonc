@@ -27,11 +27,15 @@
     // Below: dev tooling with no reachable code path. Delete an entry once its reason stops holding.
     // lodash injection and prototype pollution; reached only by `yarn audit:fix`, run by hand
     "GHSA-r5fr-rjxr-66jc",
-    "GHSA-f23m-r3pf-42rh",
     "GHSA-xxjr-mmjv-4gpg",
-    // serialize-javascript RCE and DoS; reached only by mocha parallel workers, which are not enabled
+    // serialize-javascript RCE, DoS and XSS; reached only by mocha parallel workers, which are not enabled
     "GHSA-5c6j-r48x-rmvq",
     "GHSA-qj8w-gfj5-8c6v",
+    "GHSA-m5mm-p8h7-m29v",
+    // glob AbortSignal bypass; mocha's spec lookup passes no signal. Fix needs glob 14, mocha pins ^10
+    "GHSA-3g3m-2fjr-6pw4",
+    // minimatch globparts DoS; mocha matches only this repo's spec globs. Fix needs 11, mocha pins ^9
+    "GHSA-g3hv-75wg-m249",
     // ws DoS and memory disclosure; reached only by ethers WebSocketProvider, never constructed here
     "GHSA-96hv-2xvq-fx4p",
     "GHSA-58qx-3vcg-4xpx",
@@ -43,10 +47,6 @@
     "GHSA-p634-w6r4-rjp2",
     "GHSA-c6fg-446q-cg94",
     "GHSA-8238-w5pm-2374",
-    // braces nested-brace DoS, no fix released; patterns are this repo's own globs
-    "GHSA-vfj7-8cjw-p6xm",
-    // sprintf-js unbounded precision DoS, no fix released; reached only by js-yaml's CLI, never run
-    "GHSA-hp3w-g68c-fv3c",
     // tmp path traversal; hardhat>solc and patch-package both pass fixed prefixes
     "GHSA-ph9p-34f9-6g65",
     // bn.js infinite loop; coverage only, over values from this repo's own contracts
