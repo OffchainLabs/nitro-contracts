@@ -1,0 +1,10 @@
+.git
+node_modules
+build
+cache
+out
+forge-cache
+coverage
+deployments
+lcov.info
+scripts/config.ts

@@ -121,132 +121,67 @@ jobs:
   test-4844:
     name: 4844 tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Install Foundry
-        uses: ./.github/actions/install-foundry
-
-      - uses: OffchainLabs/actions/run-nitro-test-node@main
+      - uses: ./.github/actions/litro-tests
         with:
-          args: --pos
-          no-token-bridge: true
-
-      - name: Setup nodejs
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: 'yarn'
-          cache-dependency-path: '**/yarn.lock'
-
-      - name: Install dependencies
-        run: yarn install
-
-      - name: Build
-        run: yarn build:all
-
-      - name: Test 4844
-        run: yarn test:4844
+          # These tests only use L1. Mine each transaction at once instead of on Anvil's next 1s block.
+          command: cast rpc evm_setAutomine true --rpc-url http://127.0.0.1:8545 && yarn test:4844
+          l3: 'false'
 
   test-e2e:
     name: Test e2e
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - uses: OffchainLabs/actions/run-nitro-test-node@main
+      - uses: ./.github/actions/litro-tests
         with:
-          l3-node: true
-          no-token-bridge: true
-          no-l3-token-bridge: true
-          nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
-          nitro-testnode-ref: release
-
-      - name: Setup node/yarn
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: 'yarn'
-          cache-dependency-path: '**/yarn.lock'
-
-      - name: Install packages
-        run: yarn
-
-      - name: Compile contracts
-        run: yarn build
-
-      - name: Run e2e tests
-        run: yarn test:e2e
+          command: yarn test:e2e
 
   test-e2e-custom-fee-token:
     name: Test e2e custom fee token
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - uses: OffchainLabs/actions/run-nitro-test-node@main
+      - uses: ./.github/actions/litro-tests
         with:
-          l3-node: true
-          args: --l3-fee-token
-          no-token-bridge: true
-          no-l3-token-bridge: true
-          nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
-          nitro-testnode-ref: release
-
-      - name: Setup node/yarn
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: 'yarn'
-          cache-dependency-path: '**/yarn.lock'
-
-      - name: Install packages
-        run: yarn
-
-      - name: Compile contracts
-        run: yarn build
-
-      - name: Run e2e tests
-        run: yarn test:e2e
+          command: yarn test:e2e
+          fee-token-decimals: '18'
 
   test-e2e-fee-token-6-decimals:
     name: Test e2e fee token with 6 decimals and pricer
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - uses: OffchainLabs/actions/run-nitro-test-node@main
+      - uses: ./.github/actions/litro-tests
         with:
-          l3-node: true
-          args: --l3-fee-token --l3-fee-token-pricer --l3-fee-token-decimals 6
-          no-token-bridge: true
-          no-l3-token-bridge: true
-          nitro-testnode-ref: release
-          nitro-contracts-branch: '${{ github.event.pull_request.head.sha || github.sha }}'
-
-      - name: Setup node/yarn
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: 'yarn'
-          cache-dependency-path: '**/yarn.lock'
-
-      - name: Install packages
-        run: yarn
-
-      - name: Compile contracts
-        run: yarn build
-
-      - name: Run e2e tests
-        run: yarn test:e2e
+          command: yarn test:e2e
+          fee-token-decimals: '6'
+          fee-token-pricer: 'true'
 
   # bold-upgrade:
   #   name: BOLD upgrade test

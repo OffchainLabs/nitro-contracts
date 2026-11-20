@@ -24,7 +24,7 @@ import {
   RollupCreator__factory,
 } from '../../build/types'
 import { AssertionStateStruct } from '../../build/types/src/challengeV2/IAssertionChain'
-import { getLocalNetworks } from '../../scripts/testSetup'
+import { getLocalNetworks, localProvider } from '../../scripts/testSetup'
 import { applyAlias } from '../contract/utils'
 import { BigNumber, ContractTransaction, Wallet, ethers } from 'ethers'
 import {
@@ -90,8 +90,8 @@ describe('Orbit Chain', () => {
       }
     }
 
-    l1Provider = new JsonRpcProvider(LOCALHOST_L2_RPC)
-    l2Provider = new JsonRpcProvider(LOCALHOST_L3_RPC)
+    l1Provider = localProvider(LOCALHOST_L2_RPC)
+    l2Provider = localProvider(LOCALHOST_L3_RPC)
     userL1Wallet = new Wallet(
       ethers.utils.sha256(
         ethers.utils.toUtf8Bytes('user_token_bridge_deployer')
@@ -597,7 +597,7 @@ describe('Orbit Chain', () => {
     // wait until dispute period passes and withdrawal is ready for execution
     const messages = await l2Receipt.getL2ToL1Messages(userL1Wallet)
     const l2ToL1Msg = messages[0]
-    const timeToWaitMs = 60 * 1000
+    const timeToWaitMs = 1000
     await l2ToL1Msg.waitUntilReadyToExecute(l2Provider, timeToWaitMs)
 
     // execute
@@ -1207,6 +1207,8 @@ async function _getRollupCreatorFromLogs(
       ethers.utils.id(
         'RollupCreated(address,address,address,address,address,address,address,address,address,address,address)'
       ),
+      // the parent chain may hold other rollups (litro's own L3), so match ours
+      ethers.utils.hexZeroPad(l2Network.ethBridge.rollup, 32),
     ],
   }
 

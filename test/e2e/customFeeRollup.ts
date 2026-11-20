@@ -12,7 +12,7 @@ import {
   IInbox__factory,
   SequencerInbox__factory,
 } from '../../build/types'
-import { getLocalNetworks } from '../../scripts/testSetup'
+import { getLocalNetworks, localProvider } from '../../scripts/testSetup'
 import { BigNumber, Wallet, ethers } from 'ethers'
 import { ARB_GAS_INFO } from '@arbitrum/sdk/dist/lib/dataEntities/constants'
 import {
@@ -88,8 +88,8 @@ describe('Custom fee token orbit rollup', () => {
       }
     }
 
-    l2Provider = new JsonRpcProvider(LOCALHOST_L2_RPC)
-    l3Provider = new JsonRpcProvider(LOCALHOST_L3_RPC)
+    l2Provider = localProvider(LOCALHOST_L2_RPC)
+    l3Provider = localProvider(LOCALHOST_L3_RPC)
     userL2Wallet = new Wallet(
       ethers.utils.sha256(ethers.utils.toUtf8Bytes('user_fee_token_deployer')),
       l2Provider
