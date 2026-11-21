@@ -38,7 +38,6 @@ export const config: PartialRollupParams = {
     minimumAssertionPeriod: 75,
     validatorAfkBlocks: 201600,
     genesisAssertionState: genesisAssertionState,
-    genesisInboxCount: 0,
     miniStakeValues: [
       0,
       ethers.utils.parseEther('0.5'),

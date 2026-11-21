@@ -399,4 +399,110 @@ contract OneStepProverHostIoTest is Test {
         vm.expectRevert("INVALID_CUSTOM_DA_RESPONSE");
         ospHostIo.executeReadPreImagePublic(context, mach, mod, inst, proof);
     }
+
+    // The opcode writes execCtx.targetParentChainBlockHash into the target memory leaf.
+    function testGetTargetParentChainBlockHashSuccess() public {
+        OneStepProverHostIoPublic ospHostIo =
+            new OneStepProverHostIoPublic(address(mockCustomDAProofValidator));
+
+        bytes32 targetHash = keccak256("TARGET_PARENT_CHAIN_BLOCK_HASH");
+
+        ExecutionContext memory context;
+        context.targetParentChainBlockHash = targetHash;
+        Machine memory mach;
+        Module memory mod;
+        Instruction memory inst;
+        inst.opcode = Instructions.GET_PARENT_CHAIN_INPUT;
+        inst.argumentData = Instructions.PARENT_CHAIN_INPUT_INDEX_TARGET_BLOCK_HASH;
+
+        mach.valueStack.push(ValueLib.newI32(0)); // ptr to the destination leaf
+        mod.moduleMemory.size = 32;
+        mod.moduleMemory.merkleRoot = keccak256(abi.encodePacked("Memory leaf:", bytes32(0)));
+        bytes memory proof = buildMerkleProof(bytes32(0));
+
+        (Machine memory resultMach, Module memory resultMod) =
+            ospHostIo.executeOneStep(context, mach, mod, inst, proof);
+
+        assertTrue(resultMach.status == MachineStatus.RUNNING, "machine should still be running");
+        assertEq(
+            resultMod.moduleMemory.merkleRoot,
+            keccak256(abi.encodePacked("Memory leaf:", targetHash)),
+            "target parent chain block hash not written to memory"
+        );
+    }
+
+    // The opcode writes execCtx.melConfig into the target memory leaf.
+    function testGetMelConfigSuccess() public {
+        OneStepProverHostIoPublic ospHostIo =
+            new OneStepProverHostIoPublic(address(mockCustomDAProofValidator));
+
+        address melConfigAddress = address(0x123abc);
+        bytes32 melConfigAddressHash = bytes32(uint256(uint160(melConfigAddress)));
+
+        ExecutionContext memory context;
+        context.melConfig = melConfigAddress;
+        Machine memory mach;
+        Module memory mod;
+        Instruction memory inst;
+        inst.opcode = Instructions.GET_PARENT_CHAIN_INPUT;
+        inst.argumentData = Instructions.PARENT_CHAIN_INPUT_INDEX_MEL_CONFIG;
+
+        mach.valueStack.push(ValueLib.newI32(0)); // ptr to the destination leaf
+        mod.moduleMemory.size = 32;
+        mod.moduleMemory.merkleRoot = keccak256(abi.encodePacked("Memory leaf:", bytes32(0)));
+        bytes memory proof = buildMerkleProof(bytes32(0));
+
+        (Machine memory resultMach, Module memory resultMod) =
+            ospHostIo.executeOneStep(context, mach, mod, inst, proof);
+
+        assertTrue(resultMach.status == MachineStatus.RUNNING, "machine should still be running");
+        assertEq(
+            resultMod.moduleMemory.merkleRoot,
+            keccak256(abi.encodePacked("Memory leaf:", melConfigAddressHash)),
+            "melConfig not written to memory"
+        );
+    }
+
+    // An index this OSP does not know writes the all-0xff ABSENT leaf, matching the prover.
+    function testGetParentChainInputUnknownIndexWritesAbsent() public {
+        OneStepProverHostIoPublic ospHostIo =
+            new OneStepProverHostIoPublic(address(mockCustomDAProofValidator));
+
+        ExecutionContext memory context;
+        Machine memory mach;
+        Module memory mod;
+        Instruction memory inst;
+        inst.opcode = Instructions.GET_PARENT_CHAIN_INPUT;
+        inst.argumentData = 2;
+
+        mach.valueStack.push(ValueLib.newI32(0));
+        mod.moduleMemory.size = 32;
+        mod.moduleMemory.merkleRoot = keccak256(abi.encodePacked("Memory leaf:", bytes32(0)));
+        bytes memory proof = buildMerkleProof(bytes32(0));
+
+        (Machine memory resultMach, Module memory resultMod) =
+            ospHostIo.executeOneStep(context, mach, mod, inst, proof);
+
+        assertTrue(resultMach.status == MachineStatus.RUNNING, "machine should still be running");
+        assertEq(
+            resultMod.moduleMemory.merkleRoot,
+            keccak256(abi.encodePacked("Memory leaf:", Instructions.PARENT_CHAIN_INPUT_ABSENT)),
+            "absent sentinel not written to memory"
+        );
+    }
+
+    // The executable READ_INBOX_MESSAGE host I/O path was removed; the opcode is no longer dispatched.
+    function testReadInboxMessageOpcodeReverts() public {
+        OneStepProverHostIoPublic ospHostIo =
+            new OneStepProverHostIoPublic(address(mockCustomDAProofValidator));
+
+        ExecutionContext memory context;
+        Machine memory mach;
+        Module memory mod;
+        Instruction memory inst;
+        inst.opcode = Instructions.READ_INBOX_MESSAGE;
+
+        vm.expectRevert("INVALID_HOSTIO_OPCODE");
+        ospHostIo.executeOneStep(context, mach, mod, inst, "");
+    }
 }

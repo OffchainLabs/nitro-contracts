@@ -100,6 +100,7 @@ async function main() {
       contracts.challengeManager.address,
       contracts.rollupAdmin.address,
       contracts.rollupUser.address,
+      contracts.melConfig.address,
       contracts.upgradeExecutor.address,
       contracts.validatorWalletCreator.address,
       contracts.deployHelper.address,
