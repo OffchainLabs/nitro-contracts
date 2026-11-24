@@ -20,6 +20,9 @@ concurrency:
 jobs:
   publish:
     name: Publish litro tests image
+    # The package belongs to this repo. A fork or mirror that receives a push to develop can't write
+    # to it, so the job would fail there.
+    if: github.repository == 'OffchainLabs/nitro-contracts'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
