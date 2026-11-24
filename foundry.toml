@@ -33,8 +33,14 @@ skip = ['test/*']
 [profile.test]
 optimizer = false
 additional_compiler_profiles = []
+gas_limit = "10000000000"
 compilation_restrictions = []
 skip = []
+
+[profile.test.coverage]
+report = ["summary", "lcov"]
+exclude_tests = true
+skip_files = ["src/mocks/**", "src/test-helpers/**"]
 
 [profile.yul]
 src = 'yul'
