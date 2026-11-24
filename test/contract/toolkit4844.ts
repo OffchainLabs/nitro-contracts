@@ -1,4 +1,7 @@
 import { execSync } from 'child_process'
+import { mkdtempSync, rmSync, writeFileSync } from 'fs'
+import { tmpdir } from 'os'
+import { join } from 'path'
 import { ContractFactory, Signer, ethers } from 'ethers'
 import * as http from 'http'
 import { IReader4844, IReader4844__factory } from '../../build/types'
@@ -103,22 +106,45 @@ export class Toolkit4844 {
     }
   }
 
+  // Bytes one blob holds in cast's blob encoding (4096 field elements of 31 bytes).
+  private static BLOB_CAPACITY = 4096 * 31
+
   public static async sendBlobTx(
     privKey: string,
     to: string,
     blobs: string[],
     data: string
   ) {
-    const blobStr = blobs.reduce((acc, blob) => acc + ' -b ' + blob, '')
-    const blobCommand = `docker run --network=nitro-testnode_default ethpandaops/goomy-blob:master-91c1ad7 blob-sender -p ${privKey} -r http://geth:8545 -t ${to} -d ${data} --gaslimit 1000000${blobStr} 2>&1`
-    const res = execSync(blobCommand).toString()
-    const txHashRegex = /0x[a-fA-F0-9]{64}/
-    const match = res.match(txHashRegex)
-    if (match) {
-      await wait(10000)
-      return match[0]
-    } else {
-      throw new Error('Error sending blob tx:\n' + res)
+    // cast packs one payload into as many blobs as it needs, so fill every blob but the last to
+    // capacity: the tx then carries exactly blobs.length blobs.
+    const payloads = blobs.map((blob, i) => {
+      const bytes = Buffer.from(blob.replace(/^0x/, ''), 'hex')
+      return i < blobs.length - 1
+        ? Buffer.concat([
+            bytes,
+            Buffer.alloc(this.BLOB_CAPACITY - bytes.length),
+          ])
+        : bytes
+    })
+    const dir = mkdtempSync(join(tmpdir(), 'blob-'))
+    const blobPath = join(dir, 'blobs.bin')
+    writeFileSync(blobPath, Buffer.concat(payloads))
+    try {
+      const res = execSync(
+        `cast send --json --private-key 0x${privKey} --rpc-url http://127.0.0.1:8545 ` +
+          `--gas-limit 1000000 --blob --eip4844 --path ${blobPath} ${to} ${data} 2>&1`
+      ).toString()
+      const txHash = JSON.parse(res).transactionHash as string
+      const tx = await this.getTx(txHash)
+      const blobCount = ((tx as any)['blobVersionedHashes'] as string[]).length
+      if (blobCount !== blobs.length) {
+        throw new Error(
+          `blob tx carried ${blobCount} blobs, wanted ${blobs.length}`
+        )
+      }
+      return txHash
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
     }
   }
 

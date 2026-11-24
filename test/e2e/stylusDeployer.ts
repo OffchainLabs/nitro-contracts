@@ -1,4 +1,4 @@
-import { JsonRpcProvider } from '@ethersproject/providers'
+import { localProvider } from '../../scripts/testSetup'
 import { expect } from 'chai'
 import {
   ArbWasm__factory,
@@ -28,7 +28,7 @@ const counterInterface = new ethers.utils.Interface([
 ])
 
 const getConnectedL2Wallet = async () => {
-  const l2Provider = new JsonRpcProvider(LOCALHOST_L2_RPC)
+  const l2Provider = localProvider(LOCALHOST_L2_RPC)
   const admin = ethers.Wallet.fromMnemonic(
     l1mnemonic,
     "m/44'/60'/0'/0/0"

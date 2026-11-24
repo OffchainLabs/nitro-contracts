@@ -14,6 +14,7 @@ jobs:
     with:
       reviewer: yahgwai
       fix-up: |
+        sed -i -E "s|(foundry-rs/foundry:)[^ ]+|\1$LATEST|" test/e2e/litro/Dockerfile
         forge fmt
         yarn test:storage || true
         yarn test:signatures || true
