@@ -21,7 +21,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: stable
+          version: v1.2.3
 
       - name: Setup node/yarn
         uses: actions/setup-node@v3
@@ -50,10 +50,10 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: stable
+          version: v1.2.3
 
       - name: Setup nodejs
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'yarn'
@@ -62,7 +62,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: stable
+          version: v1.2.3
 
       - name: Install dependencies
         run: yarn install
@@ -111,9 +111,6 @@ jobs:
           verbose: false
           token: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Upload 4bytes
-        run: yarn upload-4bytes
-
   test-4844:
     name: 4844 tests
     runs-on: ubuntu-latest
@@ -125,7 +122,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: stable
+          version: v1.2.3
 
       - uses: OffchainLabs/actions/run-nitro-test-node@main
         with:
@@ -133,7 +130,7 @@ jobs:
           no-token-bridge: true
 
       - name: Setup nodejs
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: 'yarn'
