@@ -5,16 +5,21 @@ import { expect } from 'chai'
 import {
   ArbGasInfo__factory,
   ArbOwner__factory,
+  Bridge__factory,
   ERC20,
   ERC20__factory,
   IERC20Bridge__factory,
   IFeeTokenPricer__factory,
   IInbox__factory,
+  NodeInterface__factory,
   SequencerInbox__factory,
 } from '../../build/types'
 import { getLocalNetworks, localProvider } from '../../scripts/testSetup'
 import { BigNumber, Wallet, ethers } from 'ethers'
-import { ARB_GAS_INFO } from '@arbitrum/sdk/dist/lib/dataEntities/constants'
+import {
+  ARB_GAS_INFO,
+  NODE_INTERFACE_ADDRESS,
+} from '@arbitrum/sdk/dist/lib/dataEntities/constants'
 import {
   l1Networks,
   l2Networks,
@@ -30,6 +35,19 @@ let l2Network: L2Network
 let userL2Wallet: Wallet
 let userL3Wallet: Wallet
 let nativeToken: ERC20 | undefined
+
+// Checks the condition every 250ms, and throws if it doesn't hold within the timeout.
+const waitUntil = async (
+  condition: () => Promise<boolean>,
+  timeoutSeconds: number,
+  timeoutMessage: string
+) => {
+  for (let i = 0; i < timeoutSeconds * 4; i++) {
+    if (await condition()) return
+    await wait(250)
+  }
+  throw new Error(timeoutMessage)
+}
 
 describe('Custom fee token orbit rollup', () => {
   async function _getFeeToken(
@@ -155,6 +173,60 @@ describe('Custom fee token orbit rollup', () => {
     }
 
     return batchPosterL3BalanceAfter.sub(batchPosterL3BalanceBefore)
+  }
+
+  // Sends an L3 transaction, then waits until the batch holding it is posted and the L3 has read that
+  // batch's spending report (an L3 block's nonce counts the delayed messages it has read).
+  const sendTxAndWaitForReport = async () => {
+    const receipt = await (
+      await userL3Wallet.sendTransaction({
+        to: '0x00000000000000000000000000000000000000dd',
+        value: 0,
+      })
+    ).wait()
+
+    const nodeInterface = NodeInterface__factory.connect(
+      NODE_INTERFACE_ADDRESS,
+      l3Provider
+    )
+    await waitUntil(
+      // reverts until the block is in a batch
+      () =>
+        nodeInterface.findBatchContainingBlock(receipt.blockNumber).then(
+          () => true,
+          () => false
+        ),
+      90,
+      `L3 block ${receipt.blockNumber} was never posted in a batch`
+    )
+
+    const delayedMessageCount = await Bridge__factory.connect(
+      l2Network.ethBridge.bridge,
+      l2Provider
+    ).delayedMessageCount()
+    await waitUntil(
+      async () =>
+        delayedMessageCount.lte((await l3Provider.getBlock('latest')).nonce),
+      60,
+      `the L3 never read the spending report for block ${receipt.blockNumber}`
+    )
+  }
+
+  // Every batch adds its cost to what the batch poster is owed, and the poster is paid only from the
+  // L1 fees that L3 transactions have paid in (surplus = fees paid in - amount owed). The few small
+  // transactions that set a chain up pay almost nothing, so a new chain owes its poster for those
+  // batches. That is paid off with later refunds, which makes a refund larger than its own batch.
+  // Send transactions until the surplus is non-negative: nothing is owed, and the next refund covers
+  // only its own batch.
+  const clearBatchPosterDues = async () => {
+    const arbGasInfo = ArbGasInfo__factory.connect(ARB_GAS_INFO, l3Provider)
+    for (let i = 0; i < 10; i++) {
+      await sendTxAndWaitForReport()
+      if ((await arbGasInfo.getL1PricingSurplus()).gte(0)) return
+    }
+    throw new Error(
+      `L1 pricing surplus still negative: ${await arbGasInfo.getL1PricingSurplus()}`
+    )
   }
 
   const getLatestBatchExpectedCost = async () => {
@@ -333,9 +405,9 @@ describe('Custom fee token orbit rollup', () => {
 
     await prepareBatchPostingTest()
 
-    // send 1 tx. We start out with a small negative surpluss, which will cause an over-refund
-    // in the first batch. So we just send one to clear it
-    await sendTxAndWaitForBatch()
+    // We start out with a negative surplus, which will cause an over-refund until it's paid off.
+    // So we send txs until it's cleared
+    await clearBatchPosterDues()
 
     // now send a tx and batch and measure that the gas reimbursed is correct
     const reimbursedTokens = await sendTxAndWaitForBatch()
