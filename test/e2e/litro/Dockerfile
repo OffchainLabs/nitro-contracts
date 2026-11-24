@@ -4,7 +4,7 @@
 # changed, so the tests always run the checkout's contracts.
 #
 #   docker build -f test/e2e/litro/Dockerfile -t ghcr.io/offchainlabs/nitro-contracts-litro-tests:develop .
-FROM ghcr.io/foundry-rs/foundry:v1.9.0 AS foundry
+FROM ghcr.io/foundry-rs/foundry:v1.10.0 AS foundry
 FROM node:24-bookworm-slim AS node
 
 FROM ghcr.io/offchainlabs/arbitrum-litro:v0.6.9-nc3.2-l2

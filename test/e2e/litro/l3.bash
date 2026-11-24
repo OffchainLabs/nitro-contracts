@@ -174,53 +174,6 @@ fund() {
     done
     echo "funded $user on the L3"
   done
-
-  pay_batch_poster_dues
-}
-
-arb_owner=0x0000000000000000000000000000000000000070
-arb_gas_info=0x000000000000000000000000000000000000006C
-surplus() { cast call "$arb_gas_info" 'getL1PricingSurplus()(int256)' --rpc-url "$l3" | cut -d' ' -f1; }
-
-# Every batch adds its L1 cost to the batch poster's dues, and the poster is paid only from L1 fees
-# that L3 transactions have paid in (surplus = fees available - dues). Setup's few small transactions
-# pay almost nothing, so a fresh L3 owes the poster more than customFeeRollup's single clearing batch
-# covers, and the rest is paid with the batch that test measures. nitro-testnode's L3 has worked its
-# dues off through traffic by test time. Do the same: raise the L1 price per unit the way that test
-# does, send transactions until the surplus is non-negative, then restore the price.
-pay_batch_poster_dues() {
-  local price round
-  price=$(cast call "$arb_gas_info" 'getL1BaseFeeEstimate()(uint256)' --rpc-url "$l3" | cut -d' ' -f1)
-  send_and_wait_for_report "$arb_owner" 'setL1PricePerUnit(uint256)' "$((price * 1000))"
-  for round in 1 2 3 4 5; do
-    [ "$(surplus | cut -c1)" = - ] || break
-    send_and_wait_for_report 0x00000000000000000000000000000000000000dd
-  done
-  [ "$(surplus | cut -c1)" != - ] || { echo "L1 pricing surplus still negative: $(surplus)" >&2; exit 1; }
-  send_and_wait_for_report "$arb_owner" 'setL1PricePerUnit(uint256)' "$price"
-  echo "batch poster dues paid; L1 pricing surplus $(surplus)"
-}
-
-# Sends an L3 transaction, then waits until the batch holding it is posted and the L3 has read that
-# batch's spending report (an L3 block's nonce counts the delayed messages it has read).
-send_and_wait_for_report() {
-  local block bridge target i
-  block=$(cast send "$@" --private-key "$owner_key" --rpc-url "$l3" --json | jq -r .blockNumber)
-  block=$(cast to-dec "$block")
-  for i in $(seq 1 90); do
-    cast call 0x00000000000000000000000000000000000000C8 'findBatchContainingBlock(uint64)(uint64)' "$block" \
-      --rpc-url "$l3" >/dev/null 2>&1 && break
-    [ "$i" != 90 ] || { echo "L3 block $block never posted in a batch" >&2; exit 1; }
-    sleep 1
-  done
-  bridge=$(jq -r .bridge "$out/l3deployment.json")
-  target=$(cast call "$bridge" 'delayedMessageCount()(uint256)' --rpc-url "$l2" | cut -d' ' -f1)
-  for i in $(seq 1 60); do
-    [ "$(cast to-dec "$(cast block latest -f nonce --rpc-url "$l3")")" -lt "$target" ] || return 0
-    sleep 1
-  done
-  echo "L3 never read the spending report for block $block" >&2
-  exit 1
 }
 
 case "$cmd" in
