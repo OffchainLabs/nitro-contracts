@@ -1901,7 +1901,7 @@ contract RollupTest is Test {
         address bridge
     ) internal returns (MelConfig) {
         MelConfig melConfig = new MelConfig();
-        melConfig.initialize(0, bridge);
+        melConfig.initialize(1, bridge);
         return melConfig;
     }
 
