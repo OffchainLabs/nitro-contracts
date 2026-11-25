@@ -7,6 +7,7 @@ import "../../../src/rollup/RollupProxy.sol";
 import "../../../src/rollup/RollupCore.sol";
 import "../../../src/rollup/RollupUserLogic.sol";
 import "../../../src/rollup/RollupAdminLogic.sol";
+import "../../../src/rollup/MelConfig.sol";
 import "../../../src/rollup/RollupCreator.sol";
 import "../../../src/rollup/transition/RollupUserLogicTransitional.sol";
 import "../../../src/osp/OneStepProver0.sol";
@@ -117,6 +118,7 @@ contract RollupTransitionTestBase is Test {
         BridgeCreator bridgeCreator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
         RollupAdminLogic rollupAdminLogicImpl = new RollupAdminLogic();
         RollupUserLogic rollupUserLogicImpl = new RollupUserLogic();
+        MelConfig melConfigLogic = new MelConfig();
         DeployHelper deployHelper = new DeployHelper();
         IUpgradeExecutor upgradeExecutorLogic = new UpgradeExecutorMock();
         RollupCreator rollupCreator = new RollupCreator(
@@ -126,6 +128,7 @@ contract RollupTransitionTestBase is Test {
             edgeChallengeManager,
             rollupAdminLogicImpl,
             rollupUserLogicImpl,
+            melConfigLogic,
             upgradeExecutorLogic,
             address(0),
             deployHelper

@@ -6,6 +6,7 @@ import "./util/TestUtil.sol";
 import "../../src/rollup/RollupCreator.sol";
 import "../../src/rollup/RollupAdminLogic.sol";
 import "../../src/rollup/RollupUserLogic.sol";
+import "../../src/rollup/MelConfig.sol";
 import "../../src/rollup/ValidatorWalletCreator.sol";
 import "../../src/challengeV2/EdgeChallengeManager.sol";
 import "../../src/osp/OneStepProver0.sol";
@@ -71,7 +72,8 @@ contract RollupCreatorTest is Test {
             IOneStepProofEntry ospEntry,
             IEdgeChallengeManager challengeManager,
             IRollupAdmin _rollupAdmin,
-            IRollupUser _rollupUser
+            IRollupUser _rollupUser,
+            IMelConfig _melConfig
         ) = _prepareRollupDeployment();
 
         rollupAdmin = _rollupAdmin;
@@ -85,6 +87,7 @@ contract RollupCreatorTest is Test {
             challengeManager,
             _rollupAdmin,
             _rollupUser,
+            _melConfig,
             upgradeExecutorLogic,
             address(new ValidatorWalletCreator()),
             deployHelper
@@ -197,6 +200,8 @@ contract RollupCreatorTest is Test {
         assertTrue(address(rollup.outbox()) != address(0), "Invalid outbox");
         assertTrue(address(rollup.rollupEventInbox()) != address(0), "Invalid rollupEventInbox");
         assertTrue(address(rollup.challengeManager()) != address(0), "Invalid challengeManager");
+        assertEq(rollup.melConfig().version(), 1, "Invalid melConfig version");
+        assertEq(rollup.melConfig().bridge(), address(rollup.bridge()), "Invalid melConfig bridge");
         assertTrue(rollup.isValidator(validators[0]), "Invalid validator set");
         assertTrue(rollup.isValidator(validators[1]), "Invalid validator set");
         assertTrue(rollup.sequencerInbox().isBatchPoster(batchPosters[0]), "Invalid batch poster");
@@ -253,7 +258,7 @@ contract RollupCreatorTest is Test {
         );
 
         // check upgrade executor owns proxyAdmin
-        address upgradeExecutorExpectedAddress = computeCreateAddress(address(rollupCreator), 4);
+        address upgradeExecutorExpectedAddress = computeCreateAddress(address(rollupCreator), 5);
         assertEq(
             ProxyAdmin(_getProxyAdmin(address(rollup.sequencerInbox()))).owner(),
             upgradeExecutorExpectedAddress,
@@ -388,6 +393,8 @@ contract RollupCreatorTest is Test {
         assertTrue(address(rollup.outbox()) != address(0), "Invalid outbox");
         assertTrue(address(rollup.rollupEventInbox()) != address(0), "Invalid rollupEventInbox");
         assertTrue(address(rollup.challengeManager()) != address(0), "Invalid challengeManager");
+        assertEq(rollup.melConfig().version(), 1, "Invalid melConfig version");
+        assertEq(rollup.melConfig().bridge(), address(rollup.bridge()), "Invalid melConfig bridge");
         assertTrue(rollup.isValidator(validators[0]), "Invalid validator set");
         assertTrue(rollup.isValidator(validators[1]), "Invalid validator set");
         assertTrue(
@@ -453,7 +460,7 @@ contract RollupCreatorTest is Test {
         );
 
         // check upgrade executor owns proxyAdmin
-        address upgradeExecutorExpectedAddress = computeCreateAddress(address(rollupCreator), 4);
+        address upgradeExecutorExpectedAddress = computeCreateAddress(address(rollupCreator), 5);
         assertEq(
             ProxyAdmin(_getProxyAdmin(address(rollup.sequencerInbox()))).owner(),
             upgradeExecutorExpectedAddress,
@@ -517,7 +524,7 @@ contract RollupCreatorTest is Test {
         address inbox = address(rollup.inbox());
         address proxyAdmin = computeCreateAddress(address(rollupCreator), 1);
         IUpgradeExecutor upgradeExecutor =
-            IUpgradeExecutor(computeCreateAddress(address(rollupCreator), 4));
+            IUpgradeExecutor(computeCreateAddress(address(rollupCreator), 5));
 
         Dummy newLogicImpl = new Dummy();
         bytes memory data = abi.encodeWithSelector(
@@ -538,7 +545,8 @@ contract RollupCreatorTest is Test {
             IOneStepProofEntry ospEntry,
             IEdgeChallengeManager challengeManager,
             IRollupAdmin rollupAdminLogic,
-            IRollupUser rollupUserLogic
+            IRollupUser rollupUserLogic,
+            IMelConfig melConfigLogic
         )
     {
         //// deploy challenge stuff
@@ -554,7 +562,9 @@ contract RollupCreatorTest is Test {
         rollupAdminLogic = IRollupAdmin(new RollupAdminLogic());
         rollupUserLogic = IRollupUser(new RollupUserLogic());
 
-        return (ospEntry, challengeManager, rollupAdminLogic, rollupUserLogic);
+        melConfigLogic = IMelConfig(new MelConfig());
+
+        return (ospEntry, challengeManager, rollupAdminLogic, rollupUserLogic, melConfigLogic);
     }
 
     function _getProxyAdmin(

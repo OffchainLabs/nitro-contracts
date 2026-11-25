@@ -3,7 +3,7 @@ output_dir="./test/signatures"
 PIDS=()
 CHANGED=0
 
-CONTRACTS="Bridge Inbox Outbox RollupCore RollupUserLogic RollupAdminLogic SequencerInbox EdgeChallengeManager ERC20Bridge ERC20Inbox ERC20Outbox BridgeCreator DeployHelper RollupCreator OneStepProofEntry OneStepProverHostIo OneStepProverMemory OneStepProverMath OneStepProver0 CacheManager ERC20MigrationOutbox"
+CONTRACTS="Bridge Inbox Outbox RollupCore RollupUserLogic RollupAdminLogic SequencerInbox EdgeChallengeManager ERC20Bridge ERC20Inbox ERC20Outbox BridgeCreator DeployHelper RollupCreator OneStepProofEntry OneStepProverHostIo OneStepProverMemory OneStepProverMath OneStepProver0 CacheManager ERC20MigrationOutbox MelConfig"
 TRANSITION_CONTRACTS="RollupCoreTransition RollupUserLogicTransitional RollupAdminLogicTransitional"
 
 forge build

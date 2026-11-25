@@ -1203,9 +1203,7 @@ async function _getRollupCreatorFromLogs(
 ): Promise<string> {
   const filter: Filter = {
     topics: [
-      ethers.utils.id(
-        'RollupCreated(address,address,address,address,address,address,address,address,address,address,address)'
-      ),
+      RollupCreator__factory.createInterface().getEventTopic('RollupCreated'),
     ],
   }
 
