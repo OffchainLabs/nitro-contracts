@@ -31,7 +31,10 @@ contract DecimalsConverterHelperTest is Test {
         assertEq(DecimalsConverterHelper.adjustDecimals(752, 21, 18), 0, "Invalid adjustment 7");
     }
 
-    function test_adjust_decimals_equalDecimal_Fuzz(uint256 amount, uint8 decimals) public {
+    function test_adjust_decimals_equalDecimal_Fuzz(
+        uint256 amount,
+        uint8 decimals
+    ) public {
         assertEq(
             DecimalsConverterHelper.adjustDecimals(amount, decimals, decimals), amount, "Invalid 8"
         );

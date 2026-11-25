@@ -1,0 +1,20 @@
+name: Foundry Update
+
+on:
+  schedule:
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+
+jobs:
+  foundry-update:
+    uses: OffchainLabs/actions/.github/workflows/foundry-update.yml@main
+    permissions:
+      contents: write
+      pull-requests: write
+    with:
+      reviewer: yahgwai
+      fix-up: |
+        sed -i -E "s|(foundry-rs/foundry:)[^ ]+|\1$LATEST|" test/e2e/litro/Dockerfile
+        forge fmt
+        yarn test:storage || true
+        yarn test:signatures || true

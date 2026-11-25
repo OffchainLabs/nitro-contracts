@@ -110,7 +110,10 @@ contract GasRefunder is IGasRefunder, Ownable {
         setContractsAllowedImpl(addresses, false);
     }
 
-    function setContractsAllowedImpl(address[] calldata addresses, bool allow) internal {
+    function setContractsAllowedImpl(
+        address[] calldata addresses,
+        bool allow
+    ) internal {
         for (uint256 i = 0; i < addresses.length; i++) {
             address addr = addresses[i];
             allowedContracts[addr] = allow;
@@ -131,7 +134,10 @@ contract GasRefunder is IGasRefunder, Ownable {
         setRefundeesAllowedImpl(addresses, false);
     }
 
-    function setRefundeesAllowedImpl(address[] calldata addresses, bool allow) internal {
+    function setRefundeesAllowedImpl(
+        address[] calldata addresses,
+        bool allow
+    ) internal {
         for (uint256 i = 0; i < addresses.length; i++) {
             address addr = addresses[i];
             allowedRefundees[addr] = allow;
@@ -185,7 +191,10 @@ contract GasRefunder is IGasRefunder, Ownable {
         emit Deposited(msg.sender, msg.value);
     }
 
-    function withdraw(address payable destination, uint256 amount) external onlyOwner {
+    function withdraw(
+        address payable destination,
+        uint256 amount
+    ) external onlyOwner {
         // It's expected that destination is an EOA
         // solhint-disable-next-line avoid-low-level-calls
         (bool success,) = destination.call{value: amount}("");
@@ -234,8 +243,8 @@ contract GasRefunder is IGasRefunder, Ownable {
         uint256 maxSingleGasUsage = commonParams.maxSingleGasUsage;
 
         // Add in a bit of a buffer for the tx costs not measured with gasleft
-        gasUsed +=
-            startGasLeft + commonParams.extraGasMargin + (calldataSize * commonParams.calldataCost);
+        gasUsed += startGasLeft + commonParams.extraGasMargin
+            + (calldataSize * commonParams.calldataCost);
         // Split this up into two statements so that gasleft() comes after the storage loads
         gasUsed -= gasleft();
 

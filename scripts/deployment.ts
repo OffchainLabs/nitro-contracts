@@ -1,6 +1,10 @@
 import { ethers } from 'hardhat'
 import '@nomiclabs/hardhat-ethers'
-import { deployAllContracts, _isRunningOnArbitrum, _isRunningOnL1 } from './deploymentUtils'
+import {
+  deployAllContracts,
+  _isRunningOnArbitrum,
+  _isRunningOnL1,
+} from './deploymentUtils'
 import { maxDataSize as defaultMaxDataSize } from './config'
 
 import { ArbSys__factory } from '../build/types'
@@ -15,6 +19,10 @@ async function main() {
   } else {
     const signers = await ethers.getSigners()
     signer = signers[0]
+  }
+
+  if (process.env.POLLING_INTERVAL !== undefined) {
+    signer.provider.pollingInterval = Number(process.env.POLLING_INTERVAL)
   }
 
   const maxDataSize =

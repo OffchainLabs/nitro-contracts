@@ -1,0 +1,26 @@
+diff --git a/node_modules/@arbitrum/sdk/dist/lib/message/L2ToL1MessageNitro.js b/node_modules/@arbitrum/sdk/dist/lib/message/L2ToL1MessageNitro.js
+index 2309d4a..9700b5c 100644
+--- a/node_modules/@arbitrum/sdk/dist/lib/message/L2ToL1MessageNitro.js
++++ b/node_modules/@arbitrum/sdk/dist/lib/message/L2ToL1MessageNitro.js
+@@ -263,8 +263,20 @@ class L2ToL1MessageReaderNitro extends L2ToL1MessageNitro {
+                     const latestConfirmed = await rollup.latestConfirmed();
+                     const latestConfirmedAssertion = await rollup.getAssertion(latestConfirmed);
+                     const eventFetcher = new eventFetcher_1.EventFetcher(rollup.provider);
++                    // createdAtBlock is block.number, which on an Arbitrum parent chain is the L1 block
++                    // number; map it to the parent chain's own block range (fixed upstream in 4.x)
++                    let queryFromBlock = latestConfirmedAssertion.createdAtBlock.toNumber();
++                    if (await (0, lib_1.isArbitrumChain)(this.l1Provider)) {
++                        try {
++                            const nodeInterface = NodeInterface__factory_1.NodeInterface__factory.connect(constants_1.NODE_INTERFACE_ADDRESS, this.l1Provider);
++                            queryFromBlock = (await nodeInterface.l2BlockRangeForL1(latestConfirmedAssertion.createdAtBlock)).firstBlock.toNumber();
++                        }
++                        catch (e) {
++                            queryFromBlock = 0;
++                        }
++                    }
+                     const assertionCreatedEvents = await eventFetcher.getEvents(BoldRollupUserLogic__factory_1.BoldRollupUserLogic__factory, t => t.filters.AssertionCreated(), {
+-                        fromBlock: latestConfirmedAssertion.createdAtBlock.toNumber(),
++                        fromBlock: queryFromBlock,
+                         toBlock: 'latest',
+                         address: rollup.address,
+                     });

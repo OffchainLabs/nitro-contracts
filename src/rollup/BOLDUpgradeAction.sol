@@ -127,7 +127,11 @@ contract StateHashPreImageLookup {
         );
     }
 
-    function set(bytes32 h, ExecutionState calldata executionState, uint256 inboxMaxCount) public {
+    function set(
+        bytes32 h,
+        ExecutionState calldata executionState,
+        uint256 inboxMaxCount
+    ) public {
         require(h == stateHash(executionState, inboxMaxCount), "Invalid hash");
         preImages[h] = abi.encode(executionState, inboxMaxCount);
         emit HashSet(h, executionState, inboxMaxCount);
@@ -429,13 +433,11 @@ contract BOLDUpgradeAction {
                 IMPL_SEQUENCER_INBOX,
                 abi.encodeCall(
                     ISeqInboxPostUpgradeInit.postUpgradeInit,
-                    (
-                        BufferConfig({
+                    (BufferConfig({
                             max: MAX,
                             threshold: THRESHOLD,
                             replenishRateInBasis: REPLENISH_RATE_IN_BASIS
-                        })
-                    )
+                        }))
                 )
             );
         } else {
@@ -454,14 +456,15 @@ contract BOLDUpgradeAction {
 
         delayBlocks = implDelayBlocks > delayBlocks ? implDelayBlocks : delayBlocks;
 
-        ISequencerInbox(SEQ_INBOX).setMaxTimeVariation(
-            ISequencerInbox.MaxTimeVariation({
-                delayBlocks: delayBlocks,
-                delaySeconds: delaySeconds,
-                futureBlocks: futureBlocks,
-                futureSeconds: futureSeconds
-            })
-        );
+        ISequencerInbox(SEQ_INBOX)
+            .setMaxTimeVariation(
+                ISequencerInbox.MaxTimeVariation({
+                    delayBlocks: delayBlocks,
+                    delaySeconds: delaySeconds,
+                    futureBlocks: futureBlocks,
+                    futureSeconds: futureSeconds
+                })
+            );
 
         ISequencerInbox(SEQ_INBOX).updateRollupAddress();
     }

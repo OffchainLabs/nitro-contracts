@@ -1,0 +1,40 @@
+name: Litro tests image
+
+# Publishes the image the litro test jobs in contract-tests.yml run in: arbitrum-litro plus Foundry,
+# Node 24, the yarn packages and develop's compiled contracts. Jobs compile their own checkout in it,
+# so a stale image only costs time, never correctness.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: litro-tests-image
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Publish litro tests image
+    # The package belongs to this repo. A fork or mirror that receives a push to develop can't write
+    # to it, so the job would fail there.
+    if: github.repository == 'OffchainLabs/nitro-contracts'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build and push
+        env:
+          TOKEN: ${{ github.token }}
+          ACTOR: ${{ github.actor }}
+          IMAGE: ghcr.io/offchainlabs/nitro-contracts-litro-tests
+        run: |
+          echo "$TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
+          docker build -f test/e2e/litro/Dockerfile -t "$IMAGE:develop" -t "$IMAGE:$GITHUB_SHA" .
+          docker push --all-tags "$IMAGE"

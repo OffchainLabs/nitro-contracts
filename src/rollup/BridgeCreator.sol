@@ -128,9 +128,8 @@ contract BridgeCreator {
         } else {
             IERC20Bridge(address(frame.bridge)).initialize(IOwnable(rollup), nativeToken);
         }
-        frame.sequencerInbox.initialize(
-            IBridge(frame.bridge), maxTimeVariation, bufferConfig, feeTokenPricer
-        );
+        frame.sequencerInbox
+            .initialize(IBridge(frame.bridge), maxTimeVariation, bufferConfig, feeTokenPricer);
         frame.inbox.initialize(frame.bridge, frame.sequencerInbox);
         frame.rollupEventInbox.initialize(frame.bridge);
         frame.outbox.initialize(frame.bridge);

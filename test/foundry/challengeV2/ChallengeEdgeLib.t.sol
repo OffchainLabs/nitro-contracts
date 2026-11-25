@@ -6,7 +6,7 @@ pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
 import "./Utils.sol";
-import "../../src/challengeV2/libraries/ChallengeEdgeLib.sol";
+import "../../../src/challengeV2/libraries/ChallengeEdgeLib.sol";
 
 contract TestChallengeEdge {
     function levelToType(
@@ -134,7 +134,10 @@ contract ChallengeEdgeLibAccess {
         return ChallengeEdgeLib.length(storageEdge);
     }
 
-    function setChildren(bytes32 lowerChildId, bytes32 upperChildId) public {
+    function setChildren(
+        bytes32 lowerChildId,
+        bytes32 upperChildId
+    ) public {
         return ChallengeEdgeLib.setChildren(storageEdge, lowerChildId, upperChildId);
     }
 

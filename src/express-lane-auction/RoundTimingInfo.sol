@@ -93,7 +93,8 @@ library RoundTimingInfoLib {
         uint64 timeSinceOffset = unsignedSinceTimestamp(info.offsetTimestamp);
         uint64 timeInRound = timeSinceOffset % info.roundDurationSeconds;
         return timeInRound
-            >= (info.roundDurationSeconds - info.auctionClosingSeconds - info.reserveSubmissionSeconds);
+            >= (info.roundDurationSeconds - info.auctionClosingSeconds
+                    - info.reserveSubmissionSeconds);
     }
 
     /// @notice Gets the start and end timestamps (seconds) of a specified round

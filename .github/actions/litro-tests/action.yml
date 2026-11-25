@@ -1,0 +1,34 @@
+name: Litro tests
+description: Run a command in the prebaked litro test image (test/e2e/litro/Dockerfile) against this checkout
+inputs:
+  command:
+    description: 'Command to run inside the container, from the repo root'
+    required: true
+  l3:
+    description: "Deploy and start this checkout's L3 rollup before the command"
+    required: false
+    default: 'true'
+  fee-token-decimals:
+    description: 'Fee token decimals (18 or 6); empty for an ETH-fee L3'
+    required: false
+    default: ''
+  fee-token-pricer:
+    description: 'Deploy a ConstantExchangeRatePricer for the fee token'
+    required: false
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - name: Run in litro test image
+      shell: bash
+      env:
+        COMMAND: ${{ inputs.command }}
+        L3: ${{ inputs.l3 }}
+        FEE_TOKEN_DECIMALS: ${{ inputs.fee-token-decimals }}
+        FEE_TOKEN_PRICER: ${{ inputs.fee-token-pricer }}
+        TOKEN: ${{ github.token }}
+        ACTOR: ${{ github.actor }}
+      run: |
+        # The image is published by litro-tests-image.yml; ci.bash builds it when it can't be pulled.
+        echo "$TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin >/dev/null || true
+        test/e2e/litro/ci.bash bash -c "$COMMAND"

@@ -11,7 +11,11 @@ contract NoZeroTransferToken is ERC20PresetFixedSupply {
         address owner
     ) ERC20PresetFixedSupply(name_, symbol_, initialSupply, owner) {}
 
-    function _transfer(address from, address to, uint256 amount) internal virtual override {
+    function _transfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal virtual override {
         require(amount > 0, "NoZeroTransferToken: zero transfer");
         super._transfer(from, to, amount);
     }

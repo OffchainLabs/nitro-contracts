@@ -304,7 +304,10 @@ interface ISequencerInbox is IDelayedMessageProvider {
      * @param addr the address
      * @param isBatchPoster_ if the specified address should be authorized as a batch poster
      */
-    function setIsBatchPoster(address addr, bool isBatchPoster_) external;
+    function setIsBatchPoster(
+        address addr,
+        bool isBatchPoster_
+    ) external;
 
     /**
      * @notice Makes Data Availability Service keyset valid
@@ -328,7 +331,10 @@ interface ISequencerInbox is IDelayedMessageProvider {
      * @param addr the address
      * @param isSequencer_ if the specified address should be authorized as a sequencer
      */
-    function setIsSequencer(address addr, bool isSequencer_) external;
+    function setIsSequencer(
+        address addr,
+        bool isSequencer_
+    ) external;
 
     /**
      * @notice Updates the batch poster manager, the address which has the ability to rotate batch poster keys

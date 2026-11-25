@@ -5,7 +5,10 @@ pragma solidity ^0.8.0;
 // DO NOT USE IN PRODUCTION
 
 library FullMath {
-    function fullMul(uint256 x, uint256 y) internal pure returns (uint256 l, uint256 h) {
+    function fullMul(
+        uint256 x,
+        uint256 y
+    ) internal pure returns (uint256 l, uint256 h) {
         unchecked {
             uint256 mm = mulmod(x, y, type(uint256).max);
             l = x * y;
@@ -14,7 +17,11 @@ library FullMath {
         }
     }
 
-    function fullDiv(uint256 l, uint256 h, uint256 d) private pure returns (uint256) {
+    function fullDiv(
+        uint256 l,
+        uint256 h,
+        uint256 d
+    ) private pure returns (uint256) {
         unchecked {
             uint256 pow2 = d & (0 - d);
             d /= pow2;
@@ -33,7 +40,11 @@ library FullMath {
         }
     }
 
-    function mulDiv(uint256 x, uint256 y, uint256 d) internal pure returns (uint256) {
+    function mulDiv(
+        uint256 x,
+        uint256 y,
+        uint256 d
+    ) internal pure returns (uint256) {
         unchecked {
             (uint256 l, uint256 h) = fullMul(x, y);
 

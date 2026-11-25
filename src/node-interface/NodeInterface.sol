@@ -114,10 +114,7 @@ interface NodeInterface {
         address to,
         bool contractCreation,
         bytes calldata data
-    )
-        external
-        payable
-        returns (uint64 gasEstimateForL1, uint256 baseFee, uint256 l1BaseFeeEstimate);
+    ) external payable returns (uint64 gasEstimateForL1, uint256 baseFee, uint256 l1BaseFeeEstimate);
 
     /**
      * @notice Returns the proof necessary to redeem a message

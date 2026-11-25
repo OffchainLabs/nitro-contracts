@@ -169,7 +169,10 @@ contract ValidatorWallet is OwnableUpgradeable, DelegateCallAware, GasRefundEnab
     receive() external payable {}
 
     /// @dev allows the owner to withdraw eth held by this contract
-    function withdrawEth(uint256 amount, address destination) external onlyOwner {
+    function withdrawEth(
+        uint256 amount,
+        address destination
+    ) external onlyOwner {
         // solhint-disable-next-line avoid-low-level-calls
         (bool success,) = destination.call{value: amount}("");
         if (!success) revert WithdrawEthFail(destination);

@@ -5,14 +5,17 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
-import "../../src/challengeV2/libraries/ArrayUtilsLib.sol";
+import "../../../src/challengeV2/libraries/ArrayUtilsLib.sol";
 import "./Utils.sol";
 
 /// forge-config: default.allow_internal_expect_revert = true
 contract ArrayUtilsLibTest is Test {
     Random random = new Random();
 
-    function areEqual(bytes32[] memory a, bytes32[] memory b) internal {
+    function areEqual(
+        bytes32[] memory a,
+        bytes32[] memory b
+    ) internal {
         assertEq(a.length, b.length, "Len unequal");
 
         for (uint256 i = 0; i < a.length; i++) {

@@ -1,10 +1,18 @@
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { L1Network, L2Network } from '@arbitrum/sdk'
 import { execSync } from 'child_process'
+import { readFileSync } from 'fs'
 import { Bridge__factory, RollupAdminLogic__factory } from '../build/types'
 
 export function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+// ethers polls every 4s by default; local chains produce blocks far faster than that.
+export function localProvider(url: string) {
+  const provider = new JsonRpcProvider(url)
+  provider.pollingInterval = 250
+  return provider
 }
 
 export const getLocalNetworks = async (
@@ -25,15 +33,19 @@ export const getLocalNetworks = async (
     rollup: '',
   }
 
-  let sequencerContainer = execSync(
-    'docker ps --filter "name=l3node" --format "{{.Names}}"'
-  )
-    .toString()
-    .trim()
+  if (process.env.L3_DEPLOYMENT_PATH) {
+    deploymentData = readFileSync(process.env.L3_DEPLOYMENT_PATH).toString()
+  } else {
+    const sequencerContainer = execSync(
+      'docker ps --filter "name=l3node" --format "{{.Names}}"'
+    )
+      .toString()
+      .trim()
 
-  deploymentData = execSync(
-    `docker exec ${sequencerContainer} cat /config/l3deployment.json`
-  ).toString()
+    deploymentData = execSync(
+      `docker exec ${sequencerContainer} cat /config/l3deployment.json`
+    ).toString()
+  }
 
   data = JSON.parse(deploymentData) as {
     bridge: string

@@ -18,7 +18,7 @@
 
 import { ethers } from 'hardhat'
 import { BigNumber } from '@ethersproject/bignumber'
-import { JsonRpcProvider, TransactionReceipt } from '@ethersproject/providers'
+import { TransactionReceipt } from '@ethersproject/providers'
 import { expect } from 'chai'
 import {
   Bridge,
@@ -47,9 +47,14 @@ import {
   solidityPack,
 } from 'ethers/lib/utils'
 import { Toolkit4844 } from './toolkit4844'
+import { localProvider } from '../../scripts/testSetup'
 import { SequencerInbox } from '../../build/types/src/bridge/SequencerInbox'
 import { InboxMessageDeliveredEvent } from '../../build/types/src/bridge/AbsInbox'
 import { SequencerBatchDeliveredEvent } from '../../build/types/src/bridge/ISequencerInbox.sol/ISequencerInbox'
+
+// Funded L1 account (testnode mnemonic index 9) that no testnode node sends from, so its nonce is ours.
+const FUNDING_KEY =
+  '0677fe9134183007401d356e1ec970114afde6363895f493b4f8aec3bfe20d86'
 
 describe('SequencerInbox', async () => {
   const findMatchingLogs = <TInterface extends Interface, TEvent extends Event>(
@@ -342,9 +347,8 @@ describe('SequencerInbox', async () => {
   }
 
   it('can send normal batch', async () => {
-    const privKey =
-      'cb5790da63720727af975f42c79f69918580209889225fa7128c92402a6d3a65'
-    const prov = new JsonRpcProvider('http://127.0.0.1:8545')
+    const privKey = FUNDING_KEY
+    const prov = localProvider('http://127.0.0.1:8545')
     const wallet = new Wallet(privKey).connect(prov)
 
     const {
@@ -390,9 +394,8 @@ describe('SequencerInbox', async () => {
   })
 
   it('can send blob batch', async () => {
-    const privKey =
-      'cb5790da63720727af975f42c79f69918580209889225fa7128c92402a6d3a65'
-    const prov = new JsonRpcProvider('http://127.0.0.1:8545')
+    const privKey = FUNDING_KEY
+    const prov = localProvider('http://127.0.0.1:8545')
     const wallet = new Wallet(privKey).connect(prov)
 
     const {

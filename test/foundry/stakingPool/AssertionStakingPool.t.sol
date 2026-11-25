@@ -3,28 +3,28 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import "../../src/rollup/RollupProxy.sol";
+import "../../../src/rollup/RollupProxy.sol";
 
-import "../../src/rollup/RollupCore.sol";
-import "../../src/rollup/RollupUserLogic.sol";
-import "../../src/rollup/RollupAdminLogic.sol";
-import "../../src/rollup/RollupCreator.sol";
+import "../../../src/rollup/RollupCore.sol";
+import "../../../src/rollup/RollupUserLogic.sol";
+import "../../../src/rollup/RollupAdminLogic.sol";
+import "../../../src/rollup/RollupCreator.sol";
 
-import "../../src/osp/OneStepProver0.sol";
-import "../../src/osp/OneStepProverMemory.sol";
-import "../../src/osp/OneStepProverMath.sol";
-import "../../src/osp/OneStepProverHostIo.sol";
-import "../../src/osp/OneStepProofEntry.sol";
-import "../../src/challengeV2/EdgeChallengeManager.sol";
+import "../../../src/osp/OneStepProver0.sol";
+import "../../../src/osp/OneStepProverMemory.sol";
+import "../../../src/osp/OneStepProverMath.sol";
+import "../../../src/osp/OneStepProverHostIo.sol";
+import "../../../src/osp/OneStepProofEntry.sol";
+import "../../../src/challengeV2/EdgeChallengeManager.sol";
 import "../challengeV2/Utils.sol";
 
-import "../../src/libraries/Error.sol";
+import "../../../src/libraries/Error.sol";
 
-import "../../src/mocks/TestWETH9.sol";
-import "../../src/mocks/UpgradeExecutorMock.sol";
+import "../../../src/mocks/TestWETH9.sol";
+import "../../../src/mocks/UpgradeExecutorMock.sol";
 
-import "../../src/assertionStakingPool/AssertionStakingPool.sol";
-import "../../src/assertionStakingPool/AssertionStakingPoolCreator.sol";
+import "../../../src/assertionStakingPool/AssertionStakingPool.sol";
+import "../../../src/assertionStakingPool/AssertionStakingPoolCreator.sol";
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -51,9 +51,7 @@ contract AssertionPoolTest is Test {
     AssertionState emptyAssertionState =
         AssertionState(emptyGlobalState, MachineStatus.FINISHED, bytes32(0));
     bytes32 genesisHash = RollupLib.assertionHash({
-        parentAssertionHash: bytes32(0),
-        afterState: emptyAssertionState,
-        inboxAcc: bytes32(0)
+        parentAssertionHash: bytes32(0), afterState: emptyAssertionState, inboxAcc: bytes32(0)
     });
     AssertionState firstState;
 
@@ -97,7 +95,9 @@ contract AssertionPoolTest is Test {
     BridgeCreator.BridgeTemplates ethBasedTemplates = BridgeCreator.BridgeTemplates({
         bridge: new Bridge(),
         sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, false),
-        delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, false, true),
+        delayBufferableSequencerInbox: new SequencerInbox(
+            MAX_DATA_SIZE, dummyReader4844, false, true
+        ),
         inbox: new Inbox(MAX_DATA_SIZE),
         rollupEventInbox: new RollupEventInbox(),
         outbox: new Outbox()
@@ -105,7 +105,9 @@ contract AssertionPoolTest is Test {
     BridgeCreator.BridgeTemplates erc20BasedTemplates = BridgeCreator.BridgeTemplates({
         bridge: new ERC20Bridge(),
         sequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
-        delayBufferableSequencerInbox: new SequencerInbox(MAX_DATA_SIZE, dummyReader4844, true, false),
+        delayBufferableSequencerInbox: new SequencerInbox(
+            MAX_DATA_SIZE, dummyReader4844, true, false
+        ),
         inbox: new ERC20Inbox(MAX_DATA_SIZE),
         rollupEventInbox: new ERC20RollupEventInbox(),
         outbox: new ERC20Outbox()
@@ -120,14 +122,13 @@ contract AssertionPoolTest is Test {
             oneStepProver, oneStepProverMemory, oneStepProverMath, oneStepProverHostIo
         );
         EdgeChallengeManager edgeChallengeManager = new EdgeChallengeManager();
-        BridgeCreator bridgeCreator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
-        RollupCreator rollupCreator = new RollupCreator();
         RollupAdminLogic rollupAdminLogicImpl = new RollupAdminLogic();
         RollupUserLogic rollupUserLogicImpl = new RollupUserLogic();
         DeployHelper deployHelper = new DeployHelper();
         IUpgradeExecutor upgradeExecutorLogic = new UpgradeExecutorMock();
-
-        rollupCreator.setTemplates(
+        BridgeCreator bridgeCreator = new BridgeCreator(ethBasedTemplates, erc20BasedTemplates);
+        RollupCreator rollupCreator = new RollupCreator(
+            owner,
             bridgeCreator,
             oneStepProofEntry,
             edgeChallengeManager,

@@ -3,11 +3,14 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import "../../src/assertionStakingPool/AbsBoldStakingPool.sol";
-import "../../src/mocks/TestWETH9.sol";
+import "../../../src/assertionStakingPool/AbsBoldStakingPool.sol";
+import "../../../src/mocks/TestWETH9.sol";
 
 contract FundsHolder {
-    function withdraw(IERC20 stakeToken, uint256 amount) external {
+    function withdraw(
+        IERC20 stakeToken,
+        uint256 amount
+    ) external {
         stakeToken.transfer(msg.sender, amount);
     }
 }

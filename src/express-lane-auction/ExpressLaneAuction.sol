@@ -5,14 +5,16 @@ import "./Errors.sol";
 import {Balance, BalanceLib} from "./Balance.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {AccessControlEnumerableUpgradeable} from
-    "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
+import {
+    AccessControlEnumerableUpgradeable
+} from "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 import {DelegateCallAware} from "../libraries/DelegateCallAware.sol";
 import {IExpressLaneAuction, Bid, InitArgs, Transferor} from "./IExpressLaneAuction.sol";
 import {ELCRound, LatestELCRoundsLib} from "./ELCRound.sol";
 import {RoundTimingInfo, RoundTimingInfoLib} from "./RoundTimingInfo.sol";
-import {EIP712Upgradeable} from
-    "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
+import {
+    EIP712Upgradeable
+} from "@openzeppelin/contracts-upgradeable/utils/cryptography/draft-EIP712Upgradeable.sol";
 
 /// @title ExpressLaneAuction
 /// @notice The express lane allows a controller to submit undelayed transactions to the sequencer
@@ -263,7 +265,10 @@ contract ExpressLaneAuction is
     }
 
     /// @inheritdoc IExpressLaneAuction
-    function balanceOfAtRound(address account, uint64 round) external view returns (uint256) {
+    function balanceOfAtRound(
+        address account,
+        uint64 round
+    ) external view returns (uint256) {
         if (round < roundTimingInfo.currentRound()) {
             revert RoundTooOld(round, roundTimingInfo.currentRound());
         }
@@ -387,9 +392,10 @@ contract ExpressLaneAuction is
         address expressLaneController,
         uint256 amount
     ) public view returns (bytes32) {
-        return _hashTypedDataV4(
-            keccak256(abi.encode(BID_DOMAIN, round, expressLaneController, amount))
-        );
+        return
+            _hashTypedDataV4(
+                keccak256(abi.encode(BID_DOMAIN, round, expressLaneController, amount))
+            );
     }
 
     /// @notice Recover the signing address of the provided bid, and check that that address has enough funds to fulfil that bid

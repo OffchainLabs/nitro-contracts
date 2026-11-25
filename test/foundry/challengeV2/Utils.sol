@@ -4,9 +4,9 @@
 //
 pragma solidity ^0.8.17;
 
-import "../../src/challengeV2/libraries/MerkleTreeAccumulatorLib.sol";
-import "../../src/challengeV2/libraries/UintUtilsLib.sol";
-import "../../src/challengeV2/libraries/ArrayUtilsLib.sol";
+import "../../../src/challengeV2/libraries/MerkleTreeAccumulatorLib.sol";
+import "../../../src/challengeV2/libraries/UintUtilsLib.sol";
+import "../../../src/challengeV2/libraries/ArrayUtilsLib.sol";
 import "forge-std/Test.sol";
 
 contract Random {
@@ -41,7 +41,10 @@ contract Random {
 }
 
 library Logger {
-    function bytes32Array(string memory name, bytes32[] memory arr) internal view {
+    function bytes32Array(
+        string memory name,
+        bytes32[] memory arr
+    ) internal view {
         console.log(name);
         for (uint256 i = 0; i < arr.length; i++) {
             console.logBytes32(arr[i]);
