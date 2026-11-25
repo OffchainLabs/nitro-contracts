@@ -11,6 +11,7 @@ contract MelConfig is IMelConfig {
     address public bridge; // slot 1
 
     error AlreadyInitialized();
+    error ZeroVersion();
 
     function initialize(
         uint256 _version,
@@ -18,6 +19,10 @@ contract MelConfig is IMelConfig {
     ) external override {
         if (bridge != address(0)) {
             revert AlreadyInitialized();
+        }
+        // MEL versions start at 1 so that 0 always means unset
+        if (_version == 0) {
+            revert ZeroVersion();
         }
 
         version = _version;

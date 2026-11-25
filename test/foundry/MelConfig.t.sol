@@ -61,4 +61,11 @@ contract MelConfigTest is Test {
         vm.expectRevert(MelConfig.AlreadyInitialized.selector);
         melConfig.initialize(VERSION + 1, makeAddr("otherBridge"));
     }
+
+    function testRevertZeroVersion() public {
+        MelConfig melConfig = new MelConfig();
+
+        vm.expectRevert(MelConfig.ZeroVersion.selector);
+        melConfig.initialize(0, bridge);
+    }
 }
