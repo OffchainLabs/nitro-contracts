@@ -241,9 +241,9 @@ contract RollupCreator is Ownable {
             address(rollup), address(proxyAdmin), deployParams.config, deployParams.customOsp
         );
 
-        // Hardcoded MEL version to 0 for the first MEL iteration
+        // Hardcoded MEL version to 1 for the first MEL iteration
         IMelConfig melConfig =
-            createMelConfig(0, address(bridgeContracts.bridge), address(proxyAdmin));
+            createMelConfig(1, address(bridgeContracts.bridge), address(proxyAdmin));
 
         // deploy and init upgrade executor
         address upgradeExecutor = _deployUpgradeExecutor(deployParams.config.owner, proxyAdmin);

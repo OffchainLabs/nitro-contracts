@@ -200,6 +200,8 @@ contract RollupCreatorTest is Test {
         assertTrue(address(rollup.outbox()) != address(0), "Invalid outbox");
         assertTrue(address(rollup.rollupEventInbox()) != address(0), "Invalid rollupEventInbox");
         assertTrue(address(rollup.challengeManager()) != address(0), "Invalid challengeManager");
+        assertEq(rollup.melConfig().version(), 1, "Invalid melConfig version");
+        assertEq(rollup.melConfig().bridge(), address(rollup.bridge()), "Invalid melConfig bridge");
         assertTrue(rollup.isValidator(validators[0]), "Invalid validator set");
         assertTrue(rollup.isValidator(validators[1]), "Invalid validator set");
         assertTrue(rollup.sequencerInbox().isBatchPoster(batchPosters[0]), "Invalid batch poster");
@@ -391,6 +393,8 @@ contract RollupCreatorTest is Test {
         assertTrue(address(rollup.outbox()) != address(0), "Invalid outbox");
         assertTrue(address(rollup.rollupEventInbox()) != address(0), "Invalid rollupEventInbox");
         assertTrue(address(rollup.challengeManager()) != address(0), "Invalid challengeManager");
+        assertEq(rollup.melConfig().version(), 1, "Invalid melConfig version");
+        assertEq(rollup.melConfig().bridge(), address(rollup.bridge()), "Invalid melConfig bridge");
         assertTrue(rollup.isValidator(validators[0]), "Invalid validator set");
         assertTrue(rollup.isValidator(validators[1]), "Invalid validator set");
         assertTrue(
